@@ -3,7 +3,7 @@
 # © 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).
 # 'Ortak Avukat' metodoloji sistemi. İzinsiz çoğaltma/dağıtma/türev yasaktır.
 """
-oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.1)
+oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.5)
 
 AMAÇ (illiyet): Model artık ham PDF/TIFF/JPG'yi GÖRÜNTÜ olarak açmasın.
 Her evraktan metni EN UCUZ doğru yoldan bir kez çıkar, _oa/metin/ altına
@@ -11,6 +11,11 @@ belge-başına Markdown + tek kunye.json + 00-INDEX.md yaz. Bütün oa- adımlar
 bundan sonra bu ucuz metni ve indeksi okur → milyonlarca token yerine yüz binler.
 Bağlam KOPMAZ: her .md kaynağına (dosya+sayfa+yöntem) bağlıdır; OCR çıktısı
 "⚠ teyit gerek" damgalıdır; orijinal salt-okunur arşivde durur.
+
+GENELLİK (kurucu ilke): Bu motor BELİRLİ bir dava/korpusa göre değil, SINIRSIZ ve
+genel hukuki içeriğe/kelimeye göre çalışır. Çıkarım İÇERİK-AGNOSTİKtir: hangi evrak,
+hangi hukuk dalı, hangi kelime olursa olsun aynı deterministik yolu (ölçümle tarama/
+metin ayrımı, OCR eşiği, XML çözümü) izler. Hız için içerik/korpus varsayımı YAPMAZ.
 
 v1.1 değişiklikleri (2026-07):
   - Windows/PowerShell UTF-8 çıktı güvencesi (cp1254 çökmesini önler).
@@ -57,6 +62,30 @@ v1.4 değişiklikleri (2026-07):
     baştan eklenir; yeni işlenen dosya md_yaz'da çakışmayı görür ve kisa_hash
     sonekiyle FARKLI ad alır — önbellekli md dosyaları asla ezilmez.
 
+v1.5 değişiklikleri (2026-07) — PARALEL ÇIKARIM, VERİ KAYBI KANITLI:
+  Amaç: büyük külliyatta (yüzlerce evrak) çıkarımı çok-çekirdekle hızlandır; ama
+  HİÇBİR veri kaybı/bozulma/determinizm kaybı olmadan. Mimari (Fable K reçetesi):
+    • SAF İŞÇİ / TEK-YAZAR EBEVEYN: işçiler yalnız metin ÇIKARIR (evrak_isle),
+      hiçbir paylaşılan durumu değiştirmez. md yazımı, künye, önbellek ve md-ad
+      ataması TAMAMEN ebeveynde, SIRALI-İNDEKS düzeninde, tek yazarda kalır. Böylece
+      v1.4'te kapatılan sessiz md-ezme paralelde HORTLAMAZ (tamamlanma sırası çıktıyı
+      DEĞİŞTİRMEZ — sonuçlar özgün sıralı indekse göre birleştirilir).
+    • DETERMİNİZM: çıktı çekirdek sayısından BAĞIMSIZDIR. `--isci 1` (seri) ile
+      `--isci N` (paralel) BYTE-AYNI 00-kunye.json, AYNI md ad kümesi, AYNI md sha256
+      üretir (tests/test_oa_ingest_paralel.py bunu kanıtlar).
+    • ATOMİK YAZIM: 00-kunye.json / 00-INDEX.md / önbellek `tmp + os.replace` ile
+      yazılır — çökmede yarım/kesik künye İMKANSIZ (eski tam sürüm kalır); künye EN SON
+      yazılır = commit işareti. (Bu, seri kodda da açık bir felaket moduydu.)
+    • MEKANİK KAPI (sessiz-atlama yasağı): üretilen kayıt sayısı beklenenle eşit
+      değilse künye YAZILMAZ, hata ile çıkılır. İşçi çökerse (BrokenProcessPool) o
+      evrak "işçi çöktü — elle kontrol" damgasıyla künyeye girer (asla sessiz düşmez).
+    • Tesseract aşırı-aboneliği önlenir (işçi ortamında OMP_THREAD_LIMIT=1); seri
+      yolda da aynı kısıt uygulanır ki OCR koşulları seri==paralel özdeş kalsın.
+    • try/finally temp: her işçi kendi geçici dizinini `with` ile açar → çökmede
+      müvekkil evrakının render'ları %TEMP%'te SIZMAZ (Layer 0 hijyeni).
+    • KIRMIZI ÇİZGİ: hız ASLA kayıplı parametreden gelmez — dpi ve sayfa-limit
+      varsayılanları düşürülmez; kazanç yalnız eşzamanlılık + önbellekten gelir.
+
 ÇIKARIM YOLLARI (model kurmaz, script çıkarır):
   PDF (metin katmanlı)  → PyMuPDF text            [BEDAVA, kayıpsız]
   PDF (taranmış/fontsuz) → PyMuPDF render + OCR    [OCR — ⚠ teyit]
@@ -81,6 +110,7 @@ Kullanım:
   python oa_ingest.py "<klasor>" --ocr auto|zorla|kapali
   python oa_ingest.py "<klasor>" --ocr-sayfa-limit 2      # demo/hızlı (0 = sınırsız)
   python oa_ingest.py "<klasor>" --yeniden                # önbelleği yok say
+  python oa_ingest.py "<klasor>" --isci 8                 # 8 paralel işçi (0=oto, 1=seri)
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -90,8 +120,9 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile, zipfile
+import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
 import xml.etree.ElementTree as ET
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 GORUNTU = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp", ".gif"}
 PDF, UDF, DOCX = {".pdf"}, {".udf"}, {".docx"}
@@ -158,7 +189,7 @@ def ocr_png(png_yol, dil):
     return r.stdout or ""
 
 
-# ---------------- çıkarım ----------------
+# ---------------- çıkarım (İÇERİK-AGNOSTİK, saf; işçide de ebeveynde de aynı) ----------------
 def pdf_isle(yol, opts, tmp):
     """PyMuPDF ile metin; zayıfsa render+OCR. (metin, yontem, teyit, sayfa, hata)."""
     if not FITZ:
@@ -264,6 +295,65 @@ def evrak_isle(yol, uz, opts, tmp_kok):
     return "", "bilinmeyen", True, None, "desteklenmeyen tür"
 
 
+# ---------------- v1.5: paralel çıkarım altyapısı (SAF İŞÇİ — durum değiştirmez) ----------------
+# NOT: Bu fonksiyonlar üst-düzeydir ve picklable'dır (Windows spawn zorunluluğu).
+# Yalnız METİN çıkarırlar; md/künye/önbellek yazımı EBEVEYNE aittir (tek-yazar doktrini).
+
+def _isci_init():
+    """Havuz işçisi başlatıcı: Tesseract'ın kendi çok-iş-parçacığını KIS (N işçi ×
+    çok-thread aşırı-abonelik olmasın). OCR metni thread sayısından bağımsızdır → çıktı DEĞİŞMEZ."""
+    os.environ["OMP_THREAD_LIMIT"] = "1"
+
+
+def _cikar_tekil(yol, uz, opts):
+    """SAF çıkarım (tek dosya). İçerik-agnostik: herhangi bir evrak/kelime aynı yolu izler."""
+    t0 = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="oaing_w_") as t:   # with: çökmede %TEMP% sızmaz
+        metin, y, teyit, sf, hata = evrak_isle(yol, uz, opts, t)
+    return {"metin": metin, "yontem": y, "teyit": teyit, "sayfa": sf, "hata": hata,
+            "sure_ms": (time.perf_counter() - t0) * 1000.0}
+
+
+def _cikar_arsiv(yol, opts):
+    """SAF çıkarım (EYP/ZIP) — arşivin TAMAMI tek iş birimi; içini ARŞİV-GÖRELİ YOLA göre
+    SIRALI açar, her evrağı çıkarır. a/b/c ek-harflemesi EBEVEYNDE atanır (burada yalnız sıralı metin).
+    KİMLİK = arşiv-göreli yol (yalnız taban ad DEĞİL): EYP içinde farklı alt klasörde aynı adlı
+    iki evrak (UYAP paketlerinde gerçekçi) hem DETERMİNİSTİK sıra alır hem `kaynak`'ı BENZERSİZ
+    kalır ('her md kaynağına bağlıdır' vaadi + geri-izleme korunur)."""
+    try:
+        with tempfile.TemporaryDirectory(prefix="oaing_a_") as t:
+            zipfile.ZipFile(yol).extractall(t)
+            icler = []
+            for dp, _, fs in os.walk(t):
+                for f in fs:
+                    ie = os.path.splitext(f)[1].lower()
+                    if ie in IC_BILINEN:
+                        tam = os.path.join(dp, f)
+                        gor = os.path.relpath(tam, t).replace(os.sep, "/")   # arşiv-göreli, benzersiz
+                        icler.append((tam, ie, gor))
+            icler.sort(key=lambda x: (x[2].lower(), x[2]))   # göreli yol; ikincil anahtar = kararlılık
+            if not icler:
+                return {"bos": True, "icler": [], "hata": None}
+            cikti = []
+            for ic, ie, icad in icler:
+                t0 = time.perf_counter()
+                metin, y, teyit, sf, hata = evrak_isle(ic, ie, opts, t)
+                cikti.append({"icad": icad, "ie": ie, "metin": metin, "yontem": y,
+                              "teyit": teyit, "sayfa": sf, "hata": hata,
+                              "sure_ms": (time.perf_counter() - t0) * 1000.0})
+            return {"bos": False, "icler": cikti, "hata": None}
+    except Exception as e:
+        return {"bos": False, "icler": None, "hata": f"EYP/ZIP açılamadı: {e}"}
+
+
+def _cikar_is(item, opts):
+    """Havuz/seri ORTAK giriş noktası: bir iş kalemini SAF çıkarır (picklable, üst-düzey)."""
+    if item["sinif"] == "arsiv":
+        return _cikar_arsiv(item["yol"], opts)
+    return _cikar_tekil(item["yol"], item["uz"], opts)
+
+
+# ---------------- yazım (yalnız EBEVEYN; tek-yazar) ----------------
 def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan):
     taban = f"{no or '000'}-{slug(ad)}"
     dosya = f"{taban}.md"
@@ -300,8 +390,69 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
     return kayit
 
 
+def _atomik_yaz(yol, veri):
+    """tmp'ye yaz + os.replace: yarım/kesik dosya İMKANSIZ (çökmede eski tam sürüm kalır).
+    os.replace aynı dizinde atomiktir; sonraki oa- adımları asla truncate künye görmez."""
+    d = os.path.dirname(os.path.abspath(yol)) or "."
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=".tmp-oaing-", suffix=".part")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(veri)
+        os.replace(tmp, yol)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+
+# ---------------- yardımcılar: FAZ A tarama, FAZ C birleştirme ----------------
+def _tara(klasor, hedef_abs, onbellek, yeniden):
+    """FAZ A — diski DETERMİNİSTİK (göreli-yol) sırada tara; sıralı iş kalemleri döndür.
+    Her kaleme sınıf (tekil/arsiv/bilinmeyen), imza ve önbellek-isabeti damgalanır."""
+    ham = []
+    for kok, dizinler, adlar in os.walk(klasor):
+        dizinler[:] = [d for d in dizinler
+                       if d.lower() not in ATLA_DIZIN
+                       and os.path.abspath(os.path.join(kok, d)) != hedef_abs]
+        for ad in adlar:
+            if ad.lower() in ATLA_DOSYA:
+                continue
+            ham.append((kok, ad))
+    ham.sort(key=lambda x: os.path.relpath(os.path.join(x[0], x[1]), klasor).lower())
+
+    items = []
+    for i, (kok, ad) in enumerate(ham):
+        yol = os.path.join(kok, ad)
+        gorece = os.path.relpath(yol, klasor)
+        uz = os.path.splitext(ad)[1].lower()
+        no, temiz, tarih = evrak_no_ad(ad)
+        it = {"index": i, "yol": yol, "gorece": gorece, "uz": uz, "no": no,
+              "temiz": temiz, "tarih": tarih, "hit": False, "cached": None, "imza": None}
+        if uz not in (PDF | UDF | ARSIV | DOCX | GORUNTU | DUZ):
+            it["sinif"] = "bilinmeyen"
+        else:
+            it["sinif"] = "arsiv" if uz in ARSIV else "tekil"
+            it["imza"] = f"{os.path.getmtime(yol):.0f}-{os.path.getsize(yol)}"
+            onb = onbellek.get(gorece)
+            if onb and not yeniden and onb.get("imza") == it["imza"]:
+                if it["sinif"] == "arsiv" and isinstance(onb.get("kayitlar"), list):
+                    it["hit"] = True; it["cached"] = onb
+                elif it["sinif"] == "tekil" and "kayit" in onb:
+                    it["hit"] = True; it["cached"] = onb
+        items.append(it)
+    return items
+
+
+def _hata_kaydi(no, ad, tarih, kaynak, yontem, hata):
+    return {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
+            "teyit_gerek": True, "karakter": 0, "sha": BOS_SHA, "sayfa": None,
+            "hata": hata, "md": ""}
+
+
 def main():
-    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru (PyMuPDF)")
+    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.5 (PyMuPDF, paralel)")
     ap.add_argument("klasor", nargs="?", default=".",
                     help="dava klasörü (verilmezse BULUNDUĞUN klasör işlenir)")
     ap.add_argument("--hedef")
@@ -310,10 +461,15 @@ def main():
     ap.add_argument("--ocr-dpi", type=int, default=300, dest="dpi")
     ap.add_argument("--ocr-sayfa-limit", type=int, default=0, dest="sayfa_limit")
     ap.add_argument("--yeniden", action="store_true")
+    ap.add_argument("--isci", type=int, default=0,
+                    help="paralel işçi sayısı (0=otomatik=min(çekirdek,8); 1=seri/tek-süreç)")
     a = ap.parse_args()
 
     if not os.path.isdir(a.klasor):
         sys.exit(f"HATA: klasör yok: {a.klasor}")
+    # Seri yolda da OCR thread'ini kıs → OCR koşulları seri==paralel özdeş (determinizm sigortası).
+    os.environ.setdefault("OMP_THREAD_LIMIT", "1")
+    t_bas = time.perf_counter()
     print(f"İşlenen klasör: {os.path.abspath(a.klasor)}")
     if not FITZ:
         print("UYARI: PyMuPDF yok → PDF'ler işlenemez. Kur:  pip install pymupdf", file=sys.stderr)
@@ -324,7 +480,6 @@ def main():
 
     hedef = a.hedef or os.path.join(a.klasor, "_oa", "metin")
     os.makedirs(hedef, exist_ok=True)
-    tmp_kok = tempfile.mkdtemp(prefix="oaing_")
     opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit}
 
     onbellek_yol = os.path.join(hedef, ".ingest-onbellek.json")
@@ -335,144 +490,172 @@ def main():
         except Exception:
             onbellek = {}
 
-    hedef_abs = os.path.abspath(hedef)  # yalnız FİİLÎ çıktı dizini budanır (bkz. ATLA_DIZIN notu)
-    dosyalar = []
-    for kok, dizinler, adlar in os.walk(a.klasor):
-        dizinler[:] = [d for d in dizinler
-                       if d.lower() not in ATLA_DIZIN
-                       and os.path.abspath(os.path.join(kok, d)) != hedef_abs]
-        for ad in adlar:
-            if ad.lower() in ATLA_DOSYA:
-                continue
-            dosyalar.append((kok, ad))
-    dosyalar.sort(key=lambda x: os.path.relpath(os.path.join(x[0], x[1]), a.klasor).lower())
+    # ---- FAZ A: tarama → sıralı iş listesi (deterministik: göreli-yol) ----
+    items = _tara(a.klasor, os.path.abspath(hedef), onbellek, a.yeniden)
 
-    kunye, yeni, atlanan, ocr_sayisi, bilinmeyen = [], 0, 0, 0, 0
+    # ---- FAZ B: SAF ÇIKARIM (seri veya havuz) — yalnız cache-MISS tekil/arşiv ----
+    is_kalemleri = [it for it in items if it["sinif"] in ("tekil", "arsiv") and not it["hit"]]
+    isci = a.isci if a.isci > 0 else max(1, min((os.cpu_count() or 1), 8))
+    sonuclar = {}   # index -> payload (None = işçi çöktü)
+    profil = {}     # yontem -> toplam_ms
+
+    def _profille(p):
+        if p is None:
+            return
+        if p.get("icler"):
+            for ic in p["icler"]:
+                profil[ic["yontem"]] = profil.get(ic["yontem"], 0.0) + ic.get("sure_ms", 0.0)
+        elif "sure_ms" in p:
+            profil[p["yontem"]] = profil.get(p["yontem"], 0.0) + p["sure_ms"]
+
+    t_cik = time.perf_counter()
+    if is_kalemleri and isci <= 1:
+        for it in is_kalemleri:
+            p = _cikar_is(it, opts)
+            sonuclar[it["index"]] = p
+            _profille(p)
+    elif is_kalemleri:
+        toplam = len(is_kalemleri); tamam = 0
+        with ProcessPoolExecutor(max_workers=isci, initializer=_isci_init) as ex:
+            gel = {ex.submit(_cikar_is, it, opts): it for it in is_kalemleri}
+            for fut in as_completed(gel):
+                it = gel[fut]
+                try:
+                    p = fut.result()
+                except Exception as e:   # BrokenProcessPool / işçi çöktü → FAZ C damgalar (sessiz atlama YOK)
+                    p = None
+                    print(f"  ⚠ işçi çöktü: {it['gorece']} ({e})", file=sys.stderr)
+                sonuclar[it["index"]] = p
+                _profille(p)
+                tamam += 1
+                if tamam % 25 == 0 or tamam == toplam:
+                    print(f"  … çıkarım {tamam}/{toplam}", file=sys.stderr)
+    cik_sn = time.perf_counter() - t_cik
+
+    # ---- FAZ C: BİRLEŞTİRME (tek-yazar ebeveyn, SIRALI-İNDEKS) — md/künye/önbellek ----
+    # NOT: yeni/atlanan yalnız stdout özeti içindir. ocr_sayisi/bilinmeyen künyeye GİRER;
+    # onlar döngüde artırılmaz, FİNAL künyeden TÜRETİLİR (aşağıda) — yol-bağımsız olsun ki
+    # soğuk==sıcak (idempotens) ve seri==paralel byte-eşitliği bir özet sayacında kırılmasın.
+    kunye, yeni, atlanan = [], 0, 0
     kullanilan = set()
-    # ÖNBELLEKLİ md ADLARI DÖNGÜ BAŞINDA REZERVE EDİLİR (v1.4 düzeltmesi):
-    # aksi halde döngüde önbellekli kayıttan ÖNCE sırası gelen aynı taban-adlı
-    # YENİ bir evrak, henüz kullanilan'a eklenmemiş bu md adını ele geçirip
-    # SESSİZCE ÜZERİNE YAZAR — bkz. modül docstring'i v1.4 notu.
+    # ÖNBELLEKLİ md ADLARI DÖNGÜ BAŞINDA REZERVE (v1.4 düzeltmesi — bkz. docstring).
     if not a.yeniden:
         for onb in onbellek.values():
-            kayitlar = [onb["kayit"]] if onb.get("kayit") else (onb.get("kayitlar") or [])
-            for k in kayitlar:
+            for k in ([onb["kayit"]] if onb.get("kayit") else (onb.get("kayitlar") or [])):
                 if k and k.get("md"):
                     kullanilan.add(k["md"])
-    for kok, ad in dosyalar:
-        yol = os.path.join(kok, ad)
-        gorece = os.path.relpath(yol, a.klasor)
-        uz = os.path.splitext(ad)[1].lower()
-        no, temiz, tarih = evrak_no_ad(ad)
 
-        if uz not in (PDF | UDF | ARSIV | DOCX | GORUNTU | DUZ):
-            # SESSİZ ATLAMA YASAK — bilinmeyen uzantı künyeye 'elle kontrol' ile girer
-            kunye.append({"no": no, "ad": temiz, "tarih": tarih, "kaynak": gorece,
-                          "yontem": "bilinmeyen", "teyit_gerek": True, "karakter": 0,
-                          "sha": BOS_SHA,
-                          "sayfa": None, "hata": f"desteklenmeyen uzantı ({uz}) — elle kontrol",
-                          "md": ""})
-            bilinmeyen += 1
+    temsil = set()   # MEKANİK KAPI (GERÇEK invaryant): HER kaynak ≥1 kayıtla temsil edilmeli
+    for it in items:      # items zaten SIRALI → md adlandırma seri koşuyla BİREBİR aynı
+        gorece, no, temiz, tarih = it["gorece"], it["no"], it["temiz"], it["tarih"]
+
+        if it["sinif"] == "bilinmeyen":
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "bilinmeyen",
+                                     f"desteklenmeyen uzantı ({it['uz']}) — elle kontrol"))
+            temsil.add(it["index"])
             continue
 
-        imza = f"{os.path.getmtime(yol):.0f}-{os.path.getsize(yol)}"
-
-        if uz in ARSIV:  # EYP / ZIP → içindeki tüm desteklenen evraklar
-            # ÖNBELLEK: arşiv imzası (mtime+size) tutuyorsa içeriği yeniden AÇMA/OCR ETME;
-            # önbellekteki çoklu kaydı doğrudan künyeye bas (arşiv her koşuda tekrar açılmasın).
-            onb = onbellek.get(gorece)
-            if (onb and onb.get("imza") == imza and isinstance(onb.get("kayitlar"), list)
-                    and not a.yeniden):
-                for k in onb["kayitlar"]:
+        if it["hit"]:      # önbellekten — yeniden açma/OCR YOK
+            onb = it["cached"]
+            if it["sinif"] == "arsiv":
+                for k in onb["kayitlar"]:      # BOŞ kayitlar (bozuk önbellek) → temsil EDİLMEZ → kapı yakalar
                     kunye.append(k)
                     if k.get("md"):
                         kullanilan.add(k["md"])
-                    ocr_sayisi += bool(k.get("teyit_gerek"))
-                    if k.get("yontem") == "arşiv-boş":
-                        bilinmeyen += 1
-                    else:
-                        atlanan += 1
-                continue
-            arsiv_kayitlari = []
-            try:
-                with tempfile.TemporaryDirectory(dir=tmp_kok) as t:
-                    zipfile.ZipFile(yol).extractall(t)
-                    icler = []
-                    for dp, _, fs in os.walk(t):
-                        for f in fs:
-                            ie = os.path.splitext(f)[1].lower()
-                            if ie in IC_BILINEN:
-                                icler.append((os.path.join(dp, f), ie, f))
-                    icler.sort(key=lambda x: x[2].lower())
-                    if not icler:
-                        rec = {"no": no, "ad": temiz, "tarih": tarih, "kaynak": gorece,
-                               "yontem": "arşiv-boş", "teyit_gerek": True, "karakter": 0,
-                               "sha": BOS_SHA, "sayfa": None,
-                               "hata": "EYP/ZIP içinde desteklenen evrak yok — elle kontrol",
-                               "md": ""}
-                        kunye.append(rec); arsiv_kayitlari.append(rec); bilinmeyen += 1
-                    for j, (ic, ie, icad) in enumerate(icler):
-                        metin, y, teyit, sf, hata = evrak_isle(ic, ie, opts, tmp_kok)
-                        son = "" if len(icler) == 1 else (chr(97 + j) if j < 26 else str(j))
-                        ic_no = f"{no or '000'}{son}"
-                        k = kaydet_evrak(metin, y, teyit, sf, hata,
-                                         f"{gorece}::{icad}", ic_no,
-                                         f"{temiz} (EYP içi: {icad})", tarih, hedef, kullanilan)
-                        kunye.append(k); arsiv_kayitlari.append(k)
-                        yeni += 1; ocr_sayisi += bool(teyit)
-                # başarıyla açıldı → çoklu kaydı önbelleğe bağla (sonraki koşuda tekrar açılmaz)
-                onbellek[gorece] = {"imza": imza, "kayitlar": arsiv_kayitlari}
-            except Exception as e:
-                # açılamadı → önbelleğe YAZMA (sonraki koşuda yeniden denensin)
-                kunye.append({"no": no, "ad": temiz, "tarih": tarih, "kaynak": gorece,
-                              "yontem": "hata", "teyit_gerek": True, "karakter": 0,
-                              "sha": BOS_SHA, "sayfa": None,
-                              "hata": f"EYP/ZIP açılamadı: {e}", "md": ""})
+                    atlanan += 1; temsil.add(it["index"])
+            else:
+                k = onb["kayit"]; kunye.append(k); atlanan += 1
+                if k.get("md"):
+                    kullanilan.add(k["md"])
+                temsil.add(it["index"])
             continue
 
-        # Geriye uyum: tekil dosya önbelleği eski biçimde {"imza":..., "kayit":{...}}
-        onb = onbellek.get(gorece, {})
-        if onb.get("imza") == imza and "kayit" in onb and not a.yeniden:
-            k = onb["kayit"]
-            kunye.append(k); atlanan += 1
-            if k.get("md"):
-                kullanilan.add(k["md"])
-            ocr_sayisi += bool(k.get("teyit_gerek"))
+        p = sonuclar.get(it["index"])
+        if p is None:      # işçi çöktü → HATA damgası (sessiz atlama YASAK), önbelleğe YAZMA
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "hata",
+                                     "çıkarım işçisi çöktü — elle kontrol"))
+            temsil.add(it["index"])
             continue
 
-        metin, y, teyit, sf, hata = evrak_isle(yol, uz, opts, tmp_kok)
-        k = kaydet_evrak(metin, y, teyit, sf, hata, gorece, no, temiz, tarih, hedef, kullanilan)
-        kunye.append(k); yeni += 1; ocr_sayisi += bool(teyit)
-        onbellek[gorece] = {"imza": imza, "kayit": k}
+        if it["sinif"] == "tekil":
+            k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
+                             gorece, no, temiz, tarih, hedef, kullanilan)
+            kunye.append(k); yeni += 1; temsil.add(it["index"])
+            onbellek[gorece] = {"imza": it["imza"], "kayit": k}
+            continue
+
+        # ---- arşiv (miss) ----
+        if p.get("icler") is None:     # açılamadı → önbelleğe YAZMA (sonraki koşuda tekrar denensin)
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "hata",
+                                     p.get("hata") or "EYP/ZIP açılamadı"))
+            temsil.add(it["index"])
+            continue
+        arsiv_kayitlari = []
+        if p.get("bos"):
+            rec = _hata_kaydi(no, temiz, tarih, gorece, "arşiv-boş",
+                              "EYP/ZIP içinde desteklenen evrak yok — elle kontrol")
+            kunye.append(rec); arsiv_kayitlari.append(rec); temsil.add(it["index"])
+        icler = p.get("icler") or []
+        for j, ic in enumerate(icler):
+            son = "" if len(icler) == 1 else (chr(97 + j) if j < 26 else str(j))
+            ic_no = f"{no or '000'}{son}"
+            k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
+                             f"{gorece}::{ic['icad']}", ic_no,
+                             f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan)
+            kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
+        onbellek[gorece] = {"imza": it["imza"], "kayitlar": arsiv_kayitlari}
+
+    # ---- ÖZET SAYAÇLARI: final künyeden TÜRET (yol-bağımsız → idempotent + seri==paralel) ----
+    # ocr_sayisi = gerçek OCR/zayıf çıkarım (teyit gerekli, idari-olmayan); idari kayıtlar
+    # (bilinmeyen uzantı / arşiv-boş / açılamayan) 'bilinmeyen/elle' kovasında toplanır.
+    _ADMIN = {"bilinmeyen", "arşiv-boş", "hata"}
+    ocr_sayisi = sum(1 for k in kunye if k.get("teyit_gerek") and k.get("yontem") not in _ADMIN)
+    bilinmeyen = sum(1 for k in kunye if k.get("yontem") in _ADMIN)
+
+    # ---- MEKANİK KAPI (sessiz-atlama yasağı): HER kaynak ≥1 kayıtla temsil edilmeli ----
+    # GERÇEK invaryant — 'append başına say' totolojisi DEĞİL: bozuk önbellekte "kayitlar":[]
+    # olan bir arşiv-hit SIFIR kayıt üretir; o kalem temsil'e girmez → burada YAKALANIR.
+    eksik = [it for it in items if it["index"] not in temsil]
+    if eksik:
+        ilk = ", ".join(e["gorece"] for e in eksik[:3])
+        sys.exit(f"HATA (mekanik kapı): {len(eksik)} kaynak HİÇ kayıt üretmedi (ilk: {ilk}) — "
+                 f"sessiz kayıp; künye YAZILMADI. Önbelleği atlamak için '--yeniden' ile tekrar koş.")
 
     kunye.sort(key=lambda k: (k.get("no") or "999", k.get("kaynak", "")))
     toplam = sum(k.get("karakter") or 0 for k in kunye)
     tahmini_token = toplam // KAR_PER_TOKEN
 
-    with open(os.path.join(hedef, "00-kunye.json"), "w", encoding="utf-8") as f:
-        json.dump({"klasor": os.path.abspath(a.klasor), "toplam_evrak": len(kunye),
-                   "ocr_teyit_gerek": ocr_sayisi, "bilinmeyen": bilinmeyen,
-                   "toplam_karakter": toplam, "tahmini_token": tahmini_token,
-                   "kayitlar": kunye}, f, ensure_ascii=False, indent=2)
-    with open(os.path.join(hedef, "00-INDEX.md"), "w", encoding="utf-8") as f:
-        f.write(f"# Evrak Metin İndeksi — {os.path.basename(os.path.abspath(a.klasor))}\n\n")
-        f.write(f"Toplam evrak: **{len(kunye)}** · OCR/teyit gerek: **{ocr_sayisi}** · "
-                f"bilinmeyen/elle: **{bilinmeyen}** · "
-                f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n")
-        f.write("| # | Evrak | Tarih | Yöntem | ⚠ | Karakter | Dosya |\n")
-        f.write("|---|-------|-------|--------|---|----------|-------|\n")
-        for k in kunye:
-            f.write(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
-                    f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
-                    f"| {k.get('karakter') or 0} | `{k.get('md','')}` |\n")
-        f.write("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
-                "Orijinal evrak salt-okunur arşivde durur.\n")
-    json.dump(onbellek, open(onbellek_yol, "w", encoding="utf-8"), ensure_ascii=False)
-    shutil.rmtree(tmp_kok, ignore_errors=True)
+    # ---- FAZ D: ATOMİK YAZIM (tmp+os.replace → yarım künye İMKANSIZ); künye EN SON = commit ----
+    idx = [f"# Evrak Metin İndeksi — {os.path.basename(os.path.abspath(a.klasor))}\n\n",
+           f"Toplam evrak: **{len(kunye)}** · OCR/teyit gerek: **{ocr_sayisi}** · "
+           f"bilinmeyen/elle: **{bilinmeyen}** · "
+           f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
+           "| # | Evrak | Tarih | Yöntem | ⚠ | Karakter | Dosya |\n",
+           "|---|-------|-------|--------|---|----------|-------|\n"]
+    for k in kunye:
+        idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
+                   f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
+                   f"| {k.get('karakter') or 0} | `{k.get('md','')}` |\n")
+    idx.append("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
+               "Orijinal evrak salt-okunur arşivde durur.\n")
 
+    _atomik_yaz(os.path.join(hedef, "00-INDEX.md"), "".join(idx))
+    # Önbellek sort_keys → tamamlanma/ekleme sırasından BAĞIMSIZ, byte-deterministik.
+    _atomik_yaz(onbellek_yol, json.dumps(onbellek, ensure_ascii=False, sort_keys=True))
+    kunye_str = json.dumps({"klasor": os.path.abspath(a.klasor), "toplam_evrak": len(kunye),
+                            "ocr_teyit_gerek": ocr_sayisi, "bilinmeyen": bilinmeyen,
+                            "toplam_karakter": toplam, "tahmini_token": tahmini_token,
+                            "kayitlar": kunye}, ensure_ascii=False, indent=2)
+    _atomik_yaz(os.path.join(hedef, "00-kunye.json"), kunye_str)   # EN SON = commit işareti
+
+    # ---- özet + profil (künye'ye YAZILMAZ → seri==paralel byte-eşitliği korunur) ----
+    top_sn = time.perf_counter() - t_bas
     print(f"BİTTİ · evrak: {len(kunye)} (yeni: {yeni}, önbellekten: {atlanan}, bilinmeyen: {bilinmeyen}) · "
           f"OCR/teyit: {ocr_sayisi} · ~{toplam:,} karakter (~{tahmini_token:,} token)")
-    print(f"Çıktı: {hedef}  → 00-INDEX.md, 00-kunye.json, NNN-*.md")
+    print(f"Süre: {top_sn:.1f} sn (çıkarım {cik_sn:.1f} sn · işçi={isci}) · Çıktı: {hedef}")
+    if profil:
+        sirali = sorted(profil.items(), key=lambda x: -x[1])
+        print("Çıkarım profili (yöntem→sn): " + " · ".join(f"{y}={ms/1000:.1f}" for y, ms in sirali[:6]))
 
 
 if __name__ == "__main__":
