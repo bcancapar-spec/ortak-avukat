@@ -1,0 +1,8 @@
+[project]
+name = "ortak-avukat"
+version = "0.1.0"
+description = "Ortak Avukat — Türk hukuku Claude Code eklentisi (test + CI altyapısı)"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

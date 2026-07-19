@@ -1,0 +1,64 @@
+{
+  "_aciklama": "Resmî tatil tablosu (güncellenebilir). 'sabit' = her yıl tekrarlayan ulusal tatiller (ay/gün). 'dini' = yıla göre KAYAN dini bayramlar (Ramazan/Kurban); resmî kaynaktan (Diyanet / Resmî Gazete) ELLE doldurulur, tahmin edilmez. Bir yıl için 'dini' boş/eksikse script o yıl için 'elle teyit' uyarısı verir. Adli tatil / idari çalışmaya ara penceresi (20 Tem-31 Ağu) script içinde sabittir (HMK m.102 / İYUK m.61).",
+  "_format_kurali": "DİKKAT: 'dini' altındaki girişler SALT ISO tarih ('YYYY-AA-GG') olmalıdır — etiketli dize ('2026-03-20 (Ramazan)') script eşleşmesini SESSİZCE bozar (tam dize karşılaştırması yapılır). Açıklama bu _yorum anahtarlarına yazılır.",
+  "_arife_notu": "Arife günleri (2429 s.K.: saat 13:00'ten itibaren yarım gün) tabloya TAM TATİL olarak GİRİLMEZ — yarım gün, sürenin son gününü kendiliğinden kaydırmaz. Son gün arifeye denk gelirse işlemi öğleden ÖNCE tamamla; UYAP elektronik işlemde 23:59'a kadar süre korunur ama fiziki işlem/harç gerektiren işte riske girme. 2026 arifeleri: 19 Mart (Ramazan), 26 Mayıs (Kurban).",
+  "_2026_kaynak": "2026 dini bayram tarihleri 11.06.2026'da birden çok bağımsız kaynaktan çapraz teyit edildi (Diyanet takvimi türevi yayınlar; tarihler geçmişte kaldığı için fiilen de kesinleşmiş durumda). 2027 girilmeden önce Diyanet/RG'den teyit edilecek — tahmin YAZMA.",
+  "sabit": [
+    {
+      "ay": 1,
+      "gun": 1,
+      "ad": "Yılbaşı"
+    },
+    {
+      "ay": 4,
+      "gun": 23,
+      "ad": "Ulusal Egemenlik ve Çocuk Bayramı"
+    },
+    {
+      "ay": 5,
+      "gun": 1,
+      "ad": "Emek ve Dayanışma Günü"
+    },
+    {
+      "ay": 5,
+      "gun": 19,
+      "ad": "Atatürk'ü Anma, Gençlik ve Spor Bayramı"
+    },
+    {
+      "ay": 7,
+      "gun": 15,
+      "ad": "Demokrasi ve Millî Birlik Günü"
+    },
+    {
+      "ay": 8,
+      "gun": 30,
+      "ad": "Zafer Bayramı"
+    },
+    {
+      "ay": 10,
+      "gun": 29,
+      "ad": "Cumhuriyet Bayramı"
+    }
+  ],
+  "dini": {
+    "2026": [
+      "2026-03-20",
+      "2026-03-21",
+      "2026-03-22",
+      "2026-05-27",
+      "2026-05-28",
+      "2026-05-29",
+      "2026-05-30"
+    ],
+    "2027": []
+  },
+  "_idari_izin_kurali": "İdari izin (Cumhurbaşkanlığı tasarrufu — Kararname/Karar/Genelge formunda olabilir — ile kamu personeline verilen izin) 2429 s.K. anlamında RESMÎ TATİL DEĞİLDİR: süreyi UZATMAZ, hukukta SÜREDEN SAYILIR. Script bu günlerde son günü ASLA kaydırmaz; yalnızca uyarı üretir (kurumlar fiilen kapalı — fiziki işlem/harç riski; UYAP elektronik kanal 23:59; fiilen imkânsızlıkta eski hâle getirme HMK m.95 ihtiyatla). Yıl bazında hem 2429 (sabit/dini) hem CB tasarrufları ÜÇ enstrümanıyla taranır: Mevzuat MCP search_cbk + search_cbbaskankarar + search_cbgenelge. SALT ISO tarih girilir; YARIM GÜN idari izinler GİRİLMEZ (kaydırma da uyarı da tetiklemez), gerekirse _yorum olarak not edilir.",
+  "idari_izin": {
+    "_2026_kaynak": "25 Mayıs 2026 (Pazartesi, tam gün) — Kurban öncesi köprü idari izni; CB Genel Sekreterliği genelgesi, 11.06.2026 tarihinde çoklu kaynaktan çapraz teyitli. 26 Mayıs arife sabahı yarım gün idari izin: tabloya GİRİLMEDİ (yarım gün). Ramazan 2026 için ilan edilmiş tam-gün idari izin teyit edilmedi (bayram hafta sonuna bitişikti). Yeni ilan → önce resmî kaynaktan teyit, sonra ekle.",
+    "2026": [
+      "2026-05-25"
+    ],
+    "2027": []
+  },
+  "_gelecek_yil_tahmini": "Tabloda tanımsız yıllar (ör. 2032) için script aritmetik hicri hesapla TAHMİNİ bayram penceresi üretir (1-3 Şevval / 10-13 Zilhicce; ±1-2 gün sapma) ve son gün pencereye bitişikse uyarır — tahmin tabloya YAZILMAZ, kaydırma yapmaz. Tahmin listesi: hesapla_sure.py --bayram YYYY. Kesinleşen tarihler Diyanet/RG teyidiyle buraya işlenir."
+}

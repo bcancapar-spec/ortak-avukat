@@ -1,0 +1,6 @@
+# Ortak Avukat — çalışma zamanı + test bağımlılıkları
+# Ingest (PDF/TIFF okuma) için:
+pymupdf
+pillow
+# Test için:
+pytest

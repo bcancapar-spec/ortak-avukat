@@ -1,0 +1,91 @@
+{
+  "_aciklama": "SÜRE KURALLARI tablosu (güncellenebilir). hesapla_sure.py bu dosya varsa buradan okur; yoksa script içindeki GÖMÜLÜ tabloya düşer (geriye uyumlu). Her kural: kanun-yolu/başvuru/itiraz süresinin KAÇ gün/hafta olduğunu ve dayanağını (kaynak) taşır. Script yalnızca DATE ARİTMETİĞİNİ deterministik yapar; sürenin miktarı/birimi HUKUKİ kuraldır ve resmî kaynaktan (Mevzuat MCP) TEYİT edilmelidir.",
+  "_teyit_notu": "mcp_teyit_tarihi: kuralın Mevzuat MCP'den (veya Resmî Gazete/güncel kanun metninden) en son teyit edildiği tarih (YYYY-MM-DD). BOŞ ise kural HENÜZ teyit edilmemiştir — kullanmadan önce teyit et ve bu alanı doldur. Süreler kanun değişiklikleriyle değişebilir (ör. 6183 m.58 7→15 gün, 7061 s.K.); tabloya körlemesine güvenme.",
+  "_dikkat_cmk": "CMK istinaf/temyiz süreleri bu tabloda kullanıcı talimatıyla 2 hafta olarak girildi; ANCAK yürürlükteki CMK metni istinaf (m.273) için 7 gün, temyiz (m.291) için 15 gün diyebilir. Bu kayıtlar TEYİT EDİLMEDEN kullanılmamalıdır (mcp_teyit_tarihi boş).",
+  "kurallar": {
+    "hmk_istinaf": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.345 — istinaf, ilamın tebliğinden",
+      "mcp_teyit_tarihi": ""
+    },
+    "hmk_temyiz": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.361 — temyiz, BAM kararının tebliğinden",
+      "mcp_teyit_tarihi": ""
+    },
+    "hmk_cevap": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.127 — cevap (kural; uzatma ayrı)",
+      "mcp_teyit_tarihi": ""
+    },
+    "iik_istinaf": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL)",
+      "mcp_teyit_tarihi": ""
+    },
+    "iik_sikayet": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.16 — icra mahkemesine şikâyet; kural 7 gün (SÜRESİZ şikâyet halleri ayrıktır — m.16/2)",
+      "mcp_teyit_tarihi": ""
+    },
+    "cmk_itiraz": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "CMK m.268 — itiraz; karar tebliğ/öğrenilmesinden 7 gün",
+      "mcp_teyit_tarihi": ""
+    },
+    "cmk_istinaf": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "CMK m.273 — istinaf (hükmün tefhim/tebliğinden). DİKKAT: yürürlükteki metin '7 GÜN' olabilir — Mevzuat MCP'den TEYİT ET.",
+      "mcp_teyit_tarihi": ""
+    },
+    "cmk_temyiz": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "CMK m.291 — temyiz (hükmün tefhim/tebliğinden). DİKKAT: yürürlükteki metin '15 GÜN' olabilir — Mevzuat MCP'den TEYİT ET.",
+      "mcp_teyit_tarihi": ""
+    },
+    "iyuk_dava_idare": {
+      "miktar": 60,
+      "birim": "gun",
+      "kaynak": "İYUK m.7 — idare mah./Danıştay dava açma",
+      "mcp_teyit_tarihi": ""
+    },
+    "iyuk_dava_vergi": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "İYUK m.7 — vergi mah. dava açma",
+      "mcp_teyit_tarihi": ""
+    },
+    "iyuk_istinaf": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "İYUK m.45 — BİM istinaf",
+      "mcp_teyit_tarihi": ""
+    },
+    "iyuk_temyiz": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "İYUK m.46 — Danıştay temyiz",
+      "mcp_teyit_tarihi": ""
+    },
+    "amme_6183_m58": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "6183 m.58 — ödeme emrine karşı dava; tebliğden 15 gün (7061 s.K. ile 7→15 değişti — TEYİT ET)",
+      "mcp_teyit_tarihi": ""
+    },
+    "aym_bireysel": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "6216 m.47/5 — AYM bireysel başvuru",
+      "mcp_teyit_tarihi": ""
+    }
+  }
+}

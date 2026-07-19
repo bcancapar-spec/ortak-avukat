@@ -1,0 +1,20 @@
+{
+  "name": "ortak-avukat",
+  "version": "0.5.0",
+  "description": "Türk hukukunda kıdemli Ortak Avukat (Co-Counsel) metodoloji sistemi. Çekirdek + 19 oa-* parça tek pakette: ilk inceleme/mülakat, illiyet grafı, vakıa-delil matrisi, ihtisas dairesi konumlama, içtihat/mevzuat araması, açık kıyas (silojizm), strateji, antitez/çökertme, süre-zamanaşımı, usul, dilekçe & sözleşme tahriri, teslim kontrolü, ceza müdafiliği & müşteki vekilliği, gizlilik/meslek sırrı süzgeci, meta-damıtma, 0. adım evrak metin çıkarım/AI katmanı (oa-ingest — token-verimli, kayıpsız) ve uçtan uca pipeline orkestrasyonu. İlk İlkeler ve illiyet odaklı derin muhakeme; içtihat/mevzuat doğrulaması Yargı Pro MCP ile (https://yargi.betaspacestudio.com/mcp).",
+  "author": {
+    "name": "Av. Bayram Can Çapar",
+    "email": "b.cancapar@gmail.com"
+  },
+  "keywords": [
+    "türk hukuku",
+    "co-counsel",
+    "ortak avukat",
+    "dilekçe",
+    "içtihat",
+    "mevzuat",
+    "yargı pro",
+    "legal",
+    "turkish-law"
+  ]
+}

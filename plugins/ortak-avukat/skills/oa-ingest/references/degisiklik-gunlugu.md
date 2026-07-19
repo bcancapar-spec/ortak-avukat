@@ -1,0 +1,6 @@
+# oa-ingest — Değişiklik Günlüğü
+
+(SKILL.md gövdesinden bağlam ekonomisi için ayrıldı; içerik aynen korunur.)
+
+- **2026-07 (v1.0):** İlk sürüm (Can yönlendirmesi — UYAP evrak indiricisinin "insan gözü" çıktısı yapay zekâda milyonlarca token yakıyor; 0. MANİFEST'in AI katmanı eksikti). Deterministik çıkarım motoru: metin PDF→PyMuPDF (bedava/kayıpsız), taranmış PDF→render+OCR, UDF→content.xml, EYP/.zip→aç, TIFF/JPG→OCR (çok sayfa), DOCX→document.xml. "Metin mi tarama mı" ölçümle (sayfa başına anlamlı karakter eşiği) belirlenir. Çıktı: belge-başına `_oa/metin/NNN-*.md` + `00-kunye.json` + `00-INDEX.md`; her metin kaynağına bağlı, OCR "⚠ teyit" damgalı, orijinal salt-okunur. Gerçek dava dosyalarında test edildi (Antalya idari: metin PDF'ler kayıpsız, taranmış PDF/TIFF/JPG OCR; Denizli iş: birleşik PDF'ten 159K karakter bedava, 39MB salt-görüntü ⚠ işaretlendi). Windows-dostu: `pip install pymupdf pillow` (binary'siz), OCR için Tesseract+`tur` opsiyonel.
+- **2026-07 (v1.0):** Çaba/token düsturu GÜNCELLENDİ (Can yönlendirmesi — "tasarruf da artık hedeftir; muhakemede değil mekanik/temsil katmanında, veri-kayıpsız"): eski "tasarruf hedef değildir" ilkesi, "verimlilik bir hedeftir ama yalnız mekanik katmanda ve kayıpsız; muhakeme/doğrulama/derinlik asla kısılmaz" biçiminde yeniden yazıldı. Bu parça ilkenin saf uygulamasıdır. Aynı düstur tüm aileye işlendi.

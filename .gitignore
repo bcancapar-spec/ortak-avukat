@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Çalışma evrakı (yerel hafıza — müvekkil verisi içerebilir, ASLA depoya girmez)
+_oa/
+**/_oa/
+
+# OS / editör
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Paket çıktısı
+*.plugin
