@@ -14,9 +14,19 @@ DEĞİL; genel/sınırsız evrak deseni: ad çakışması, çok-evraklı arşiv,
   3. İdempotens: soğuk koşu (önbellek üretir) == sıcak koşu (hepsi önbellekten) künye.
   4. SESSİZ-ATLAMA YASAĞI: bozuk arşiv / boş arşiv / bilinmeyen uzantı / 0-bayt dosya —
      hiçbiri DÜŞMEZ; her biri künyeye (hata/elle kontrol damgasıyla) GİRER.
+
+v1.5.1 EKLERİ (Fable backlog):
+  8. ARIZA SONUCU ({hata, atlandı}) önbelleğe YAZILMAZ — araç sonradan kurulunca bayat
+     'YÜKLENEMEDİ' tuzağına düşülmez.
+  9. ÖNBELLEK BUDAMA — diskte artık olmayan (silinmiş) kaynağın önbellek kaydı bir sonraki
+     koşuda atılır; hâlâ diskte duran kaynaklar dokunulmadan kalır.
+  10. POISON-EVRAK İZOLE YENİDEN DENEME — havuzda bir işçiyi gerçekten öldüren "zehirli"
+      evrak, aynı batch'teki masum evrakları kalıcı kaybettirmez (izole tek-işçi retry
+      onları kurtarır); zehirli evrak izole halde de çökerse nihai 'işçi çöktü' damgası alır.
 """
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -237,3 +247,101 @@ def test_arsiv_ic_ayni_taban_ad_ayrisir(tmp_path):
     no_map = {k["kaynak"]: k["no"] for k in ic}    # göreli-yol sırasına göre deterministik a/b
     assert no_map["010-cok.zip::klasorA/content.txt"].endswith("a")
     assert no_map["010-cok.zip::klasorB/content.txt"].endswith("b")
+
+
+# ---------------- 8) v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ ----------------
+def test_ariza_sonucu_onbellege_yazilmaz(tmp_path):
+    """'hata' (bozuk PDF açılamadı) ve 'atlandı' (OCR kapalıyken görüntü) — ikisi de
+    önbellek dosyasında YER ALMAMALI: araç (Tesseract/PyMuPDF) sonradan kurulsa/dosya
+    onarılsa bile imza (mtime+size) aynı kalırsa önbellekten bayat 'YÜKLENEMEDİ'
+    basılmaması gerekir — her koşuda yeniden denenmeye açık kalmalı."""
+    (tmp_path / "001-bozuk.pdf").write_bytes(b"BU GECERLI BIR PDF DEGIL " * 5)
+    pytest.importorskip("PIL")
+    from PIL import Image
+    Image.new("RGB", (10, 10), color="white").save(tmp_path / "002-resim.png")
+
+    cp = _kos(tmp_path, isci=1)
+
+    kunye = _kunye(tmp_path)
+    kayitlar = {k["kaynak"]: k for k in kunye["kayitlar"]}
+    bozuk_kayit = kayitlar[str(pathlib.Path("001-bozuk.pdf"))]
+    resim_kayit = kayitlar[str(pathlib.Path("002-resim.png"))]
+    assert bozuk_kayit["yontem"] == "hata", cp.stdout
+    assert resim_kayit["yontem"] == "atlandı", cp.stdout
+
+    onb_yol = _metin_dizin(tmp_path) / ".ingest-onbellek.json"
+    onb = json.loads(onb_yol.read_text(encoding="utf-8"))
+    assert str(pathlib.Path("001-bozuk.pdf")) not in onb, "hata sonucu önbelleğe yazılmamalı"
+    assert str(pathlib.Path("002-resim.png")) not in onb, "atlandı sonucu önbelleğe yazılmamalı"
+
+    # ikinci koşu (aynı imza, --yeniden YOK) — arızalı kayıtlar HÂLÂ önbellek-dışı yeniden
+    # denenmeli (kopmadan aynı 'hata'/'atlandı' sonucuna ulaşmalı, sessizce farklı davranmamalı).
+    _kos(tmp_path, isci=1)
+    kunye2 = _kunye(tmp_path)
+    kayitlar2 = {k["kaynak"]: k for k in kunye2["kayitlar"]}
+    assert kayitlar2[str(pathlib.Path("001-bozuk.pdf"))]["yontem"] == "hata"
+    assert kayitlar2[str(pathlib.Path("002-resim.png"))]["yontem"] == "atlandı"
+
+
+# ---------------- 9) v1.5.1 (c): önbellek budama — silinmiş kaynak, hâlâ-var kaynak DOKUNULMAZ ----------------
+def test_onbellek_budama_silinen_kaynak_atilir_kalan_dokunulmaz(tmp_path):
+    (tmp_path / "001-kalici.txt").write_text("kalici govde", encoding="utf-8")
+    (tmp_path / "002-silinecek.txt").write_text("silinecek govde", encoding="utf-8")
+    _kos(tmp_path, isci=1)
+
+    onb_yol = _metin_dizin(tmp_path) / ".ingest-onbellek.json"
+    onb_once = json.loads(onb_yol.read_text(encoding="utf-8"))
+    assert str(pathlib.Path("001-kalici.txt")) in onb_once
+    assert str(pathlib.Path("002-silinecek.txt")) in onb_once
+
+    (tmp_path / "002-silinecek.txt").unlink()   # kaynağı diskten SİL
+    _kos(tmp_path, isci=1)                      # --yeniden YOK: normal (önbellekli) koşu
+
+    onb_sonra = json.loads(onb_yol.read_text(encoding="utf-8"))
+    assert str(pathlib.Path("002-silinecek.txt")) not in onb_sonra, (
+        "silinmiş kaynağın önbellek kaydı budanmadı — önbellek tek-yönlü büyüyor"
+    )
+    assert str(pathlib.Path("001-kalici.txt")) in onb_sonra, (
+        "hâlâ diskte duran kaynağın önbellek kaydı YANLIŞLIKLA budandı"
+    )
+    # kalıcı kaynağın imza/kayıt içeriği budama sırasında bozulmamış olmalı
+    assert onb_sonra[str(pathlib.Path("001-kalici.txt"))] == onb_once[str(pathlib.Path("001-kalici.txt"))]
+
+    kunye = _kunye(tmp_path)
+    kaynaklar = {k["kaynak"] for k in kunye["kayitlar"]}
+    assert str(pathlib.Path("002-silinecek.txt")) not in kaynaklar
+    assert str(pathlib.Path("001-kalici.txt")) in kaynaklar
+
+
+# ---------------- 10) v1.5.1 (d): POISON-EVRAK izole yeniden deneme ----------------
+def test_zehirli_evrak_izole_yeniden_denenir_masumlar_kurtulur(tmp_path):
+    """Bir işçi süreci GERÇEKTEN öldürülünce (BrokenProcessPool) tüm havuz kırılabilir;
+    v1.5.1 bunu FAZ C'den ÖNCE tek-işçi izole havuzda birer birer yeniden dener. Zehirli
+    evrak izole halde de çökerse nihai 'işçi çöktü' damgasını alır; MASUM evraklar (poison
+    ile aynı havuza denk gelseler bile) izole yeniden denemede kurtarılır — hiçbiri
+    kalıcı olarak 'işçi çöktü' damgasıyla kaybolmaz. Gerçek OS süreç ölümünü simüle etmek
+    için test-only OA_INGEST_TEST_KILL ortam değişkeni kancası kullanılır (bkz. oa_ingest.py
+    _cikar_tekil — normal koşuda bu değişken hiç ayarlı değildir)."""
+    (tmp_path / "001-zehirli.txt").write_text("zehir govdesi", encoding="utf-8")
+    for i in range(2, 6):
+        (tmp_path / f"00{i}-masum.txt").write_text(f"masum govde {i}", encoding="utf-8")
+
+    env = dict(os.environ)
+    env["OA_INGEST_TEST_KILL"] = "001-zehirli.txt"
+    args = [sys.executable, str(SCRIPT), str(tmp_path), "--ocr", "kapali", "--isci", "4"]
+    cp = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
+    assert cp.returncode == 0, f"oa_ingest.py hata:\nSTDOUT:\n{cp.stdout}\nSTDERR:\n{cp.stderr}"
+
+    kunye = _kunye(tmp_path)
+    kayitlar = {k["kaynak"]: k for k in kunye["kayitlar"]}
+    zehir = kayitlar[str(pathlib.Path("001-zehirli.txt"))]
+    assert zehir["yontem"] == "hata" and "çöktü" in (zehir["hata"] or ""), (
+        "zehirli evrak izole yeniden denemede de çökmeli ve 'işçi çöktü' damgası almalı"
+    )
+    for i in range(2, 6):
+        masum = kayitlar[str(pathlib.Path(f"00{i}-masum.txt"))]
+        assert masum["yontem"] == "duz-metin", (
+            f"masum evrak {i} kurtarılmadı (yöntem={masum['yontem']}) — zehirli işçi "
+            "çökmesi masumu da kalıcı kaybettirdi"
+        )
+    assert kunye["toplam_evrak"] == len(kunye["kayitlar"]) == 5

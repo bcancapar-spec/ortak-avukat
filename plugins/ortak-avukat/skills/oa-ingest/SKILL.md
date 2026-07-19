@@ -24,6 +24,7 @@ python scripts/oa_ingest.py "<dava_klasoru>"           # _oa/metin/ üretir (IND
 python scripts/oa_ingest.py                            # argümansız = BULUNDUĞUN klasör
 python scripts/oa_ingest.py "<klasor>" --ocr auto|zorla|kapali
 python scripts/oa_ingest.py "<klasor>" --yeniden       # önbelleği yok say, hepsini yeniden çıkar
+python scripts/oa_ingest.py "<klasor>" --isci 8        # açık paralellik (0=oto varsayılan, 1=seri)
 ```
 
 Çıkarım yolları (model kurmaz, script çıkarır): metin PDF→**PyMuPDF** (bedava, kayıpsız) · taranmış PDF→render+**OCR** (⚠) · UDF→content.xml (bedava) · EYP/.zip→aç→içindeki PDF'i aynı hatta ver · TIFF/JPG/PNG→OCR (çok sayfa, ⚠) · DOCX→document.xml (bedava). Bir PDF'in "metin mi tarama mı" olduğu ELLE değil ÖLÇÜMLE (sayfa başına anlamlı karakter eşiği) belirlenir — "gördüm" beyanı değil, ölçüm.
@@ -40,9 +41,15 @@ Sonraki parçalar ham evrağı DEĞİL `00-INDEX.md`'yi okur, sonra yalnız gere
 
 ## İş akışı (pipeline adım 0)
 1. `manifest_olustur.py <klasor>` → sayım + sınıflandırma (kaç evrak, kaç OCR).
-2. `oa_ingest.py <klasor>` → çıkarım + `_oa/metin/`.
-3. Kanıtı deftere işle: `pipeline_kayit.py --isle --adim 0 --parca manifest --durum UYGULANDI --kanit "oa_ingest.py koştu: N evrak, M OCR, _oa/metin üretildi"`.
-4. **Sayım denetimi:** indirilen evrak adedi = `kunye.json.toplam_evrak` değilse analiz BAŞLAMAZ (eksik adıyla raporlanır).
+2. `oa_ingest.py <klasor>` → çıkarım + `_oa/metin/` — **v1.5 PARALEL**: `--isci`
+   verilmezse otomatik `min(çekirdek,8)` işçiyle koşar; büyük külliyatta (~50+
+   evrak veya ağır OCR yükü) bu varsayılan duvar-saatini kısaltır ve elle
+   müdahale GEREKTİRMEZ. Determinizm garantisi: `--isci 1` (seri) ile
+   `--isci N` (paralel) çıktısı (00-kunye.json, her md'nin sha256'sı)
+   BYTE-ÖZDEŞTİR — bkz. `tests/test_oa_ingest_paralel.py`. Hata ayıklarken veya
+   tek-çekirdek ortamda `--isci 1` açıkça verilebilir.
+3. Kanıtı deftere işle: `pipeline_kayit.py --isle --adim 0 --parca manifest --durum UYGULANDI --kanit "oa_ingest.py koştu: N evrak, M OCR, işçi=K, _oa/metin üretildi"`.
+4. **Sayım denetimi:** indirilen evrak adedi = `kunye.json.toplam_evrak` değilse analiz BAŞLAMAZ (eksik adıyla raporlanır); `manifest_olustur.py <klasor> --mutabakat _oa/metin/00-kunye.json` bunu paralel koşu sonrasında da aynen denetler (paralellik mutabakat mantığını değiştirmez).
 
 ## Anayasal bloklar — tek kaynak (anayasa.md)
 Bu parça, ailenin ortak anayasal ilkelerine tabidir — **Çaba/token standardı** (model/efor kullanıcının tercihi; muhakemede/doğrulamada/çıktı kalitesinde tasarruf YOK, yalnız mekanik katmanda kayıpsız verimlilik), **Örnekleme ilkesi** (konu sınırlaması yok — kapsam TÜM Türk hukuku), **Doğaçlama meşruiyeti** (yöntem serbest, olgu MCP-teyitli), ayrıca Doğrulama mimarisi, Anonimleştirme ve Layer 0 gizlilik. **Tek ve yetkili kaynak: `ortak-avukat/references/anayasa.md`.** (Bu parça alt-ajan olarak koşarken bu ilkeler `oa-pipeline/scripts/oa_hafiza.py ajan-brif` ile taşınır.)

@@ -6,18 +6,22 @@
 dilekce_denetim.py — oa-dilekce/oa-kontrol TESLİM ÖNCESİ ŞABLON + ZAAF KAPISI
 
 Deterministik denetim: taslak dilekçede (a) tip başına ZORUNLU UNSURLAR var mı,
-(b) "avukata yakışan tertip-düzen" (başlık/numaralı vakıa/netice-i talep/imza) kuruldu mu,
-(c) OCR ⚠ kaynaklı alıntı teyit şerhi taşıyor mu, (d) MÜVEKKİL-ALEYHİ ifade sinyali
-(anayasal TEK KATI SINIR — davalıda kabul/ikrar, davacıda kendi iddiasını çökerten
-ifade, sanıkta otomatik ikrar) var mı. Script hukuki karar VERMEZ; eksik/riski işaretler,
-nihai göz avukatındır — ama eksik/sinyal varsa exit 1 ile teslim öncesi durdurur.
+(b) "avukata yakışan tertip-düzen" — hem biçim (başlık/numaralı vakıa) hem de sekiz
+zorunlu unsurun (mahkeme başlığı, taraflar/vekil, konu, açıklamalar, hukuki sebepler,
+deliller, sonuç-istem, tarih-imza) mekanik VARLIK denetimi, tip'ten BAĞIMSIZ olarak
+her dilekçede — kuruldu mu, (c) OCR ⚠ kaynaklı alıntı teyit şerhi taşıyor mu,
+(d) MÜVEKKİL-ALEYHİ ifade sinyali, TARAF-BİLİNÇLİ (anayasal TEK KATI SINIR — davalıda
+kabul/ikrar/doğrudur, davacıda vazgeçme/haksızlık, müşteki/katılanda şikayetten
+vazgeçme/uzlaşma, sanıkta suç ikrarı) var mı. Script hukuki karar VERMEZ;
+eksik/riski işaretler, nihai göz avukatındır — ama eksik/sinyal varsa exit 1 ile
+teslim öncesi durdurur.
 
 Tip/unsur listeleri numerus clausus DEĞİL — düşünce metodunu gösteren ÖRNEKLEMDİR;
 bilinmeyen tip 'genel dilekçe unsurları' ile denetlenir (anayasa: örnekleme ilkesi).
 
 Kullanım:
   python dilekce_denetim.py <taslak.md> --tip dava|cevap|istinaf|temyiz|aym_bireysel|genel
-                            [--taraf davaci|davali|sanik|katilan|mudahil]
+                            [--taraf davaci|davali|sanik|katilan|mudahil|musteki]
 Çıkış kodu: 0 = temiz; 1 = eksik unsur / müvekkil-aleyhi sinyal / OCR-teyit şerhi eksik.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
@@ -29,6 +33,8 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import importlib.util
+import pathlib
 import re
 import sys
 
@@ -73,27 +79,88 @@ TIPLER = {
     "genel": GENEL,
 }
 
-# Tertip-düzen lint'i (avukata yakışan biçim)
+# Tertip-düzen: hem BİÇİM (başlık/numaralandırma) hem de "avukata yakışan" dilekçenin
+# ZORUNLU UNSURLARININ VARLIĞI — tip ne olursa olsun (dava/cevap/istinaf/temyiz/aym_bireysel/
+# genel) her dilekçede bulunması beklenen sekiz kalem: mahkeme başlığı, taraflar/vekil, konu,
+# açıklamalar, hukuki sebepler, deliller, sonuç-istem, tarih-imza. Bu katman [A]'daki tip-özel
+# listeden BAĞIMSIZ ve TÜM tiplere UYGULANIR — istinaf/temyiz/aym_bireysel gibi tip-özel
+# listeler "Konu"/"Deliller"/"Hukuki sebepler" gibi jenerik kalemleri her zaman içermeyebilir;
+# bu katman onu tamamlar. Script yalnız "unsur var/yok" der — "dilekçe iyi/kötü/kabule
+# elverişli" hükmü VERMEZ (sahte kesinlik yok); eksik olanı UYAR, nihai göz avukatındır.
 DUZEN = [
     ("Belirgin başlık bloğu", [r"^#", r"mahkeme", r"başkanlığı"]),
     ("Numaralı/bölümlü açıklama düzeni", [r"^\s*\d+[.)]", r"^\s*[-*]\s", r"##"]),
-    ("Belirgin NETİCE-İ TALEP bölümü", [r"netice-?i?\s*talep", r"sonuç\s*ve\s*istem"]),
-    ("Tarih + imza bloğu", [r"imza", r"\bvekil", r"saygı"]),
+    ("Mahkeme/merci başlığı", [r"mahkeme", r"başkanlığı", r"hakimliği", r"\bmerci", r"dairesi", r"kurulu"]),
+    ("Taraflar / vekil bilgisi", [r"davac[ıi]", r"daval[ıi]", r"başvurucu", r"müşteki", r"sanık",
+                                   r"katılan", r"müdahil", r"\bvekil", r"av\.\s"]),
+    ("Konu", [r"\bkonu\b"]),
+    ("Açıklamalar / vakıalar", [r"açıklama", r"vak[ıi]a", r"olay"]),
+    ("Hukuki sebepler", [r"hukuki\s*sebep", r"hukuki\s*neden", r"dayanak", r"hukuka\s*aykır"]),
+    ("Deliller", [r"delil", r"ispat", r"tanık", r"bilirkişi"]),
+    ("Sonuç ve istem (netice-i talep)", [r"netice-?i?\s*talep", r"sonuç\s*ve\s*istem", r"talep\s*(ederiz|ederim|olunur)"]),
+    ("Tarih + imza bloğu", [r"\d{1,2}[./]\d{1,2}[./]\d{4}", r"imza", r"\bvekil", r"saygı"]),
 ]
 
-# Müvekkil-aleyhi tehlike desenleri (taraf duyarlı) — HEURİSTİK; avukat teyit etmeli.
+# Müvekkil-aleyhi tehlike desenleri (TARAF-BİLİNÇLİ) — HEURİSTİK; avukat teyit etmeli.
+# Her taraf tipi kendi riskli kalıp setiyle taranır: davalı için kabul/ikrar/doğrudur ekseni,
+# davacı için vazgeçme/haksızlık ekseni, müşteki/katılan için şikayetten vazgeçme/uzlaşma
+# ekseni, sanık için suç ikrarı ekseni. "genel" seti her taraf için ek olarak taranır.
+_ALEYHE_DAVALI = [
+    r"davay[ıi]\s*kabul", r"kabul\s*ed(iyoruz|iyorum|eriz)", r"haklı\s*olduğunu\s*kabul",
+    r"borcu(muzu)?\s*kabul", r"\bikrar\s*ed", r"talebi(ni)?\s*kabul", r"davanın\s*kabul",
+    r"\bdoğrudur\b", r"iddia\s*doğrudur", r"kusurlu(yuz|yum)", r"sorumlu\s*olduğu(muzu|mu)",
+]
+_ALEYHE_DAVACI = [
+    r"iddiam[ıi]zdan\s*vazgeç", r"haksız\s*olduğumuz", r"talebimizi\s*geri",
+    r"talebimizden\s*vazgeç", r"davadan\s*feragat", r"iddiam[ıi]zdan\s*feragat",
+    r"haklı\s*değiliz", r"davamız\s*yersiz",
+]
+_ALEYHE_MUSTEKI = [
+    r"şikayet(im|imiz)i\s*geri", r"şikayetten\s*vazgeç", r"affediyor",
+    r"barıştık", r"şikayetçi\s*değil", r"davacı\s*olmak\s*istemiyor",
+]
+_ALEYHE_SANIK = [
+    r"suçu\s*kabul", r"işlediğim(i)?\s*kabul", r"\bikrar\s*ed", r"pişman.*kabul",
+    r"suçlu\s*olduğumu",
+]
 ALEYHE = {
-    "davali": [r"davay[ıi]\s*kabul", r"kabul\s*ed(iyoruz|iyorum|eriz)", r"haklı\s*olduğunu\s*kabul",
-               r"borcu(muzu)?\s*kabul", r"\bikrar\s*ed", r"talebi(ni)?\s*kabul", r"davanın\s*kabul"],
-    "davaci": [r"iddiam[ıi]zdan\s*vazgeç", r"haksız\s*olduğumuz", r"talebimizi\s*geri",
-               r"davadan\s*feragat", r"iddiam[ıi]zdan\s*feragat"],
-    "sanik": [r"suçu\s*kabul", r"işlediğim(i)?\s*kabul", r"\bikrar\s*ed", r"pişman.*kabul"],
+    "davali": _ALEYHE_DAVALI,
+    "davaci": _ALEYHE_DAVACI,
+    "musteki": _ALEYHE_MUSTEKI,
+    # katılan usulen müştekinin kamu davası açıldıktan sonraki devamıdır — aynı riskli eksen.
+    "katilan": _ALEYHE_MUSTEKI,
+    "sanik": _ALEYHE_SANIK,
     "genel": [r"karşı\s*taraf(ın)?\s*haklı", r"aleyhimize\s*kabul"],
 }
 
 
 def _bul(metin, desenler):
     return any(re.search(d, metin, re.I | re.M) for d in desenler)
+
+
+def _udf_yaz_yukle():
+    """udf_yaz.py'yi (kardeş script) dosya-yolundan yükler — paket değildir."""
+    yol = pathlib.Path(__file__).resolve().parent / "udf_yaz.py"
+    if not yol.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("udf_yaz", yol)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def udf_kapisi(udf_yolu):
+    """Üretilen UDF'in GEÇERLİ olup olmadığını udf_yaz.udf_dogrula ile denetler.
+
+    Bu, denetim hattının UDF-VARSAYILAN doktrinine bağlı mekanik kapısıdır:
+    dilekçe UDF olarak teslim edilecekse, önce bu kapı GEÇERLİ dönmelidir.
+    Sahte kesinlik yok — yalnız 'geçerli/geçersiz' + somut hata listesi döner,
+    'iyi dilekçe' hükmü vermez.
+    """
+    mod = _udf_yaz_yukle()
+    if mod is None:
+        return {"gecerli": False, "hatalar": ["udf_yaz.py yüklenemedi (kardeş script bulunamadı)"]}
+    return mod.udf_dogrula(udf_yolu)
 
 
 def denetle(metin, tip, taraf):
@@ -136,7 +203,11 @@ def main():
     ap.add_argument("taslak")
     ap.add_argument("--tip", default="genel",
                     choices=["dava", "cevap", "istinaf", "temyiz", "aym_bireysel", "genel"])
-    ap.add_argument("--taraf", default="", choices=["", "davaci", "davali", "sanik", "katilan", "mudahil"])
+    ap.add_argument("--taraf", default="",
+                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil", "musteki"])
+    ap.add_argument("--udf", metavar="YOL", default="",
+                    help="(opsiyonel) Üretilmiş .udf dosyasını da GEÇERLİLİK KAPISI ile "
+                         "denetler — UDF-VARSAYILAN doktrini burada mekanik olarak kapanır.")
     a = ap.parse_args()
 
     try:
@@ -183,8 +254,20 @@ def main():
         print(f"   [BİLGİ] olumsuzlanmış kalıp(lar) sinyal sayılmadı (ör. 'kabul anlamına "
               f"gelmemek kaydıyla'): {', '.join(sorted(set(aleyhe_notu)))}")
 
+    udf_gecersiz = False
+    if a.udf:
+        print("\n[E] UDF GEÇERLİLİK KAPISI (UDF-VARSAYILAN doktrini)")
+        udf_sonuc = udf_kapisi(a.udf)
+        if udf_sonuc["gecerli"]:
+            print(f"   [OK] {a.udf} geçerli UDF (zip + content.xml + XML + offset/round-trip tutarlı)")
+        else:
+            udf_gecersiz = True
+            print(f"   [EKSİK] {a.udf} GEÇERSİZ UDF:")
+            for h in udf_sonuc["hatalar"]:
+                print(f"      - {h}")
+
     print("\n" + cizgi)
-    engel = bool(eksik or ocr_uyari or aleyhe)
+    engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz)
     if engel:
         print("SONUÇ: TESLİM ÖNCESİ AVUKAT GÖZÜ ŞART (eksik unsur / aleyhe sinyal / teyit şerhi).")
         print(cizgi)

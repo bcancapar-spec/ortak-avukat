@@ -56,12 +56,13 @@ Sunulan dilekçede, karşı tarafın **henüz ileri sürmediği** bir savunmaya/
 ## Kompozisyon ve çıktı
 Süre satırı için `oa-sure`; her atıf `oa-ictihat`'tan teyitli; alan tespiti `oa-alan`.
 
-**Çıktı formatı (UDF):** Aksi istenmedikçe dilekçe, taslak metnin yanında **UDF** olarak da üretilir — `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` (UYAP'a yüklenebilir; gerçek editörde `format_id` teyidi gerekir).
+**Çıktı formatı — UDF VARSAYILAN (kurucu kural):** Kullanıcı/Fable kararı: **aksi açıkça talep edilmedikçe (ör. "md olarak ver", "docx istiyorum") dilekçe çıktısı UDF formatında üretilir.** md taslak her hâlde ARA ÜRÜNdür (UDF ondan türetilir), teslim edilen NİHAİ çıktı UDF'dir. Akış: taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` (UYAP'a yüklenebilir; gerçek editörde `format_id` teyidi gerekir) → aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır.
 
-**Teslim öncesi MEKANİK KAPILAR (üç yeşil ışık — geçmeden 'teslime hazır' yok):**
-1. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur).
-2. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
-3. `oa-kontrol` A (atıf) + B (usul+esas) listeleri.
+**Teslim öncesi MEKANİK KAPILAR (dört yeşil ışık — geçmeden 'teslime hazır' yok):**
+1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, paragraf `startOffset`/`length` UTF-16 code-unit biriminde ARDIŞIK ve CDATA metniyle toplamda tutarlı mı, metin round-trip ediyor mu. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
+2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur).
+3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
+4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri.
 
 ## Öğrenme günlüğü
 Yeni bir tip/zorunlu unsur/sık-atlanan alan öğrenildiğinde ilgili playbook'a ekle, aşağıya işle, yeniden paketle.
@@ -81,7 +82,7 @@ Teslim edilen dilekçe/sözleşme DIŞ çıktıdır: müvekkili zayıflatan, ger
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-dilekce` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.20**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.21**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

@@ -68,7 +68,7 @@ ZORUNLU TAM TUR **derinlik** kuralıdır (tümü incelenir, muhakeme doğru kuru
 **KADEMELİ YÜKLEME (bağlam disiplini):** Parçalar hepsi birden değil, **sırası geldiğinde** çağrılır. Amaç tasarruf değil (çaba standardı sabittir), dikkat bütünlüğüdür: şişkin bağlam, tam da önlenmek istenen kestirmeyi doğurur. Bir adım bitince **DEVİR PAKETİ** (ne yapıldı → ne bekleniyor → hangi kanıt) deftere/durum dosyasına yazılır; sonraki parça bağlamı oradan devralır. Parçadan parçaya doğrudan devir de (ör. `oa-ictihat` aleyhe kararı `oa-antitez`'e) aynı kurala tabidir: devralan parça fiilen çağrılır, devir paketi verilir.
 
 **SUBAGENT ORKESTRASYONU — tam turun AKTİF ve EŞGÜDÜMLÜ yürütülmesi (varsayılan — opsiyonel değil):** Agent/subagent aracı mevcutsa, Başbakan tam turu tek gövdede sırayla değil, **işin gerektirdiği ölçüde ALT-AJANLARLA paralel ve eşgüdümlü** yürütür — tek promptla tüm aile aynı anda dosyayı inceler. İlke: bağımsız cepheler eşzamanlı (fan-out), bağımlı adımlar zincirlenir.
-- **Fan-out (eşzamanlı):** büyük ölçüde bağımsız cepheler ayrı alt-ajanlara verilir — KONUMLAMA (`oa-alan`), ARAŞTIRMA (`oa-ictihat`), OLGU/DELİL (`oa-vakia`+`oa-illiyet`), USUL (`oa-usul`), SÜRE (`oa-sure`), ve ağır MANİFEST/OCR taraması (`oa-ingest`). Her alt-ajan kendi parçasının SKILL.md'sini yükler, disiplinini uygular, çıktı+kanıtı DEVİR PAKETİ olarak döndürür.
+- **Fan-out (eşzamanlı):** büyük ölçüde bağımsız cepheler ayrı alt-ajanlara verilir — KONUMLAMA (`oa-alan`), ARAŞTIRMA (`oa-ictihat`), OLGU/DELİL (`oa-vakia`+`oa-illiyet`), USUL (`oa-usul`), SÜRE (`oa-sure`), ve ağır MANİFEST/OCR taraması (`oa-ingest` — kendi içinde de `oa_ingest.py --isci` ile evrak-düzeyinde paralel çıkarım yapar; bu iki paralellik katmanı bağımsızdır, biri alt-ajan fan-out'u, diğeri tek alt-ajan içindeki süreç havuzudur). Her alt-ajan kendi parçasının SKILL.md'sini yükler, disiplinini uygular, çıktı+kanıtı DEVİR PAKETİ olarak döndürür.
 - **Zincir (bağımlı):** KIYAS (araştırma+olgu ister) → STRATEJİ → ANTİTEZ → YAZIM sırayla; her biri önceki alt-ajanların devir paketlerini girdi alır.
 - **Eşgüdüm — parçalar birbirinin FARKINDA:** ortak durum diskte yaşar (`_oa/defter`, `_oa/cikti`, illiyet `graf.json`, künye kütüğü); alt-ajanlar aynı grafı/künyeyi okuyup zenginleştirir — izole değil eşgüdümlü. Standart alt-ajan brifi **`scripts/oa_hafiza.py ajan-brif --parca oa-x --gorev "..."`** ile üretilir; brif her alt-ajana fiziksel aktivasyon + teyit kütüğü + **anayasa (`ortak-avukat/references/anayasa.md`)** + Layer 0 kurallarını taşır — böylece dedup edilmiş bir parça standalone koşsa bile anayasa brifle gelir.
 - **Zaman tasarrufu:** paralel fan-out, tam turun DERİNLİĞİNDEN ödün vermeden duvar-saati süresini kısaltır (muhakemede tasarruf yok — yalnız eşzamanlılık; çaba standardı korunur).
@@ -94,10 +94,19 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
                  HER dosya tek tek açılır ve numaralı döküm üretilir:
                  #no | dosya adı | tür (dilekçe/karar/bilirkişi/tebligat/yazışma...) |
                  sayfa | METİN mi GÖRÜNTÜ/TARAMA/TIFF mi | OCR durumu | tek satır içerik.
-                 Sayım denetimi: indirilen evrak adedi ile manifest adedi KARŞILAŞTIRILIR;
-                 eşleşmezse analiz BAŞLAYAMAZ (eksik adıyla raporlanır). Görüntü/TIFF/
-                 taranmış PDF'ler "OCR GEREKLİ" işaretlenir — metin sanılıp atlanamaz;
-                 OCR yapılamayan evrak "okunamadı" diye AÇIKÇA bildirilir, sessizce geçilmez.
+                 Sayım: `scripts/manifest_olustur.py <klasör>` (deterministik döküm) →
+                 metin çıkarımı `oa-ingest/scripts/oa_ingest.py <klasör>` (0. adımın AI
+                 katmanı — v1.5, PARALEL): `--isci` VARSAYILAN OTOMATİKTİR
+                 (`--isci 0` = min(çekirdek,8)); büyük külliyatta (~50+ evrak/OCR yükü
+                 ağır) bu varsayılan duvar-saatini kısaltır, çıktı (`00-kunye.json`,
+                 md sha256) `--isci 1` (seri) ile BYTE-ÖZDEŞTİR — paralellik
+                 determinizmi bozmaz, yalnız hızlandırır; tek işçiye düşürmek/hata
+                 ayıklamak için `--isci 1` açıkça verilir. Sayım denetimi: indirilen
+                 evrak adedi ile manifest adedi KARŞILAŞTIRILIR (`manifest_olustur.py
+                 --mutabakat _oa/metin/00-kunye.json`); eşleşmezse analiz BAŞLAYAMAZ
+                 (eksik adıyla raporlanır). Görüntü/TIFF/taranmış PDF'ler "OCR GEREKLİ"
+                 işaretlenir — metin sanılıp atlanamaz; OCR yapılamayan evrak
+                 "okunamadı" diye AÇIKÇA bildirilir, sessizce geçilmez.
 1. ALIM        → oa-interview + oa-illiyet (graf doğar) + oa-sure (süre flag'i,
                  `oa_hafiza.py sure-flag` ile `_oa/sureler.json`'a yazılır)
 2. KONUMLAMA   → oa-alan (hangi norm / hangi ihtisas dairesi)
@@ -137,7 +146,7 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
 
 **KALICI KATMANLAR (adım değil, her aşamayı sarar):** `oa-usul` (usulün esasa takaddümü), `oa-illiyet` (nedensellik grafı), `oa-gizlilik` (Layer 0 dış-araç süzgeci). Bunlar 0–10 adımlarının tümünde otomatik devrededir.
 
-**EVRAK ATLAMA YASAĞI (Başbakan — büyük dosya protokolü):** Çok büyük dosyalarda (UYAP klasörleri 300-500+ sayfa) model dikkat dağılması ve OCR yükü nedeniyle evrak atlamaya/yüzeysel geçmeye eğilimlidir. Başbakan bunu aktif bastırır: **sessiz atlama yasağı evrak düzeyinde de geçerlidir.** Manifest sayımı elle değil deterministik yapılır: `python scripts/manifest_olustur.py <klasör>` klasördeki her dosyayı numaralı döker (ad, uzantı, boyut, METİN/GÖRÜNTÜ-OCR tahmini) ve toplam sayımı verir; model bu iskeletin üzerine tür/içerik sütunlarını doldurur. UYAP UDF evrakı `python scripts/udf_metin.py <dosya.udf> --cikti _oa/cikti/...` ile metne dönüştürülerek okunur — "UDF okunamadı" ancak script fiilen başarısız olursa geçerlidir (o da manifeste açıkça yazılır). Görüntü/taranmış PDF ve TIFF'ler "okudum" diye varsayılamaz — gerçekten OCR'dan geçirilir veya geçirilemiyorsa açıkça "okunamadı, manuel inceleme gerekli" denir. Çok büyük klasör tek seferde güvenli taranamıyorsa, **mantıklı bloklara böl** (dilekçeler / kararlar / bilirkişi / tebligat / yazışmalar), her bloğu ayrı ve eksiksiz tara, sonra birleştir — her blok sonunda manifest sayımı tutturulur. Kullanıcının eksik yakalayıp elle eklemek zorunda kalması, bu protokolün ihlalidir.
+**EVRAK ATLAMA YASAĞI (Başbakan — büyük dosya protokolü):** Çok büyük dosyalarda (UYAP klasörleri 300-500+ sayfa) model dikkat dağılması ve OCR yükü nedeniyle evrak atlamaya/yüzeysel geçmeye eğilimlidir. Başbakan bunu aktif bastırır: **sessiz atlama yasağı evrak düzeyinde de geçerlidir.** Manifest sayımı elle değil deterministik yapılır: `python scripts/manifest_olustur.py <klasör>` klasördeki her dosyayı numaralı döker (ad, uzantı, boyut, METİN/GÖRÜNTÜ-OCR tahmini) ve toplam sayımı verir; model bu iskeletin üzerine tür/içerik sütunlarını doldurur. Metin çıkarımı `python oa-ingest/scripts/oa_ingest.py <klasör>` ile yapılır; büyük külliyatta (300-500+ sayfa/çok OCR) çıkarım varsayılan olarak PARALEL koşar (`--isci` verilmezse otomatik `min(çekirdek,8)`) — bu yalnız duvar-saatini kısaltır, çıktı seri koşuyla (`--isci 1`) BYTE-ÖZDEŞTİR; "OCR yükü fazla, tek tek bekleteyim" diye elle seri işletmek GEREKSİZ YAVAŞLIKTIR, varsayılan paralellik korunur. UYAP UDF evrakı `python scripts/udf_metin.py <dosya.udf> --cikti _oa/cikti/...` ile metne dönüştürülerek okunur — "UDF okunamadı" ancak script fiilen başarısız olursa geçerlidir (o da manifeste açıkça yazılır). Görüntü/taranmış PDF ve TIFF'ler "okudum" diye varsayılamaz — gerçekten OCR'dan geçirilir veya geçirilemiyorsa açıkça "okunamadı, manuel inceleme gerekli" denir. Çok büyük klasör tek seferde güvenli taranamıyorsa, **mantıklı bloklara böl** (dilekçeler / kararlar / bilirkişi / tebligat / yazışmalar), her bloğu ayrı ve eksiksiz tara, sonra birleştir — her blok sonunda manifest sayımı tutturulur. Kullanıcının eksik yakalayıp elle eklemek zorunda kalması, bu protokolün ihlalidir.
 
 **Usul katmanı (anayasal düstur — adım değil):** `oa-usul`, hattın **her** adımını sarar:
 ALIM'da usul soruları önce; ARAŞTIRMA'da usul içtihadı önce; OLGU/DELİL'de tarihli her

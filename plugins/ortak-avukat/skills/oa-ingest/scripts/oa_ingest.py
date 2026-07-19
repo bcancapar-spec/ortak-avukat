@@ -3,7 +3,7 @@
 # © 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).
 # 'Ortak Avukat' metodoloji sistemi. İzinsiz çoğaltma/dağıtma/türev yasaktır.
 """
-oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.5)
+oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.5.1)
 
 AMAÇ (illiyet): Model artık ham PDF/TIFF/JPG'yi GÖRÜNTÜ olarak açmasın.
 Her evraktan metni EN UCUZ doğru yoldan bir kez çıkar, _oa/metin/ altına
@@ -86,6 +86,32 @@ v1.5 değişiklikleri (2026-07) — PARALEL ÇIKARIM, VERİ KAYBI KANITLI:
     • KIRMIZI ÇİZGİ: hız ASLA kayıplı parametreden gelmez — dpi ve sayfa-limit
       varsayılanları düşürülmez; kazanç yalnız eşzamanlılık + önbellekten gelir.
 
+v1.5.1 değişiklikleri (2026-07) — FABLE BACKLOG SAĞLAMLAŞTIRMA:
+  (a) ARIZA SONUCU ÖNBELLEĞE YAZILMAZ: yöntem {hata, atlandı} olan kayıtlar önbelleğe
+      YAZILMAZ — Tesseract/araç sonradan kurulunca "imza aynı → önbellekten bas" yolu
+      bayat 'YÜKLENEMEDİ' damgasını SONSUZA dek tekrarlamasın; her koşuda yeniden
+      denenirler. 'zaman-aşımı' İSTİSNA: OCR 600 sn'lik zaman-aşımı PAHALI olduğu için
+      önbellekte TUTULABİLİR (aynı devasa evrakta koşu başına 10 dk tekrar beklenmesin);
+      avukat gerekirse `--yeniden` ile açıkça atlar.
+  (b) main() başında hedeften önceki çökmüş koşulardan kalan `.tmp-oaing-*.part`
+      atomik-yazım artıkları süpürülür (_atomik_yaz zaten çökmede eski TAM sürümü
+      korur; bu yalnız diskte kalan .part çöpünü temizler).
+  (c) ÖNBELLEK BUDAMA: FAZ A/C sonrası, önbellekte olup diskte artık OLMAYAN (silinmiş
+      kaynak) anahtarlar atılır — önbellek tek-yönlü BÜYÜMESİN, yetim md-adı rezervasyonu
+      kalmasın. FAZ A HER koşuda TÜM klasörü tarar (kısmi değil) → önbellekte olup o
+      koşunun `items` kümesinde OLMAYAN anahtar YALNIZ silinmiş kaynak olabilir; hâlâ
+      diskte duran ama bu koşuda sırası gelmemiş bir kaynak asla bu kümenin dışında kalmaz.
+  (d) POISON-EVRAK İZOLE YENİDEN DENEME: havuzda çöken (BrokenProcessPool) kalemler FAZ
+      C'den ÖNCE tek-işçi (max_workers=1) izole bir havuzda BİRER BİRER yeniden denenir —
+      bir "zehirli" evrak tüm havuzu düşürüp aynı batch'teki MASUM evrakları da 'işçi
+      çöktü' damgasıyla sürüklemesin. Yalnız izole halde de çöken evrak nihai 'işçi çöktü'
+      damgasını alır (canlı-kilit önlenir: tekrar tekrar tüm havuzu düşürmeye çalışmaz).
+  (e) _ADMIN kovasına 'atlandı' ve 'zaman-aşımı' EKLENDİ: OCR hiç YAPILMAMIŞ (atlanmış/
+      zaman-aşımına uğramış) kayıtlar artık `ocr_teyit_gerek` sayacına GİRMEZ — o sayaç
+      yalnız GERÇEKTEN OCR/zayıf-çıkarım yapılmış (teyit gerektiren) kayıtları yansıtır;
+      idari/işlenmemiş kayıtlar 'bilinmeyen' kovasına sayılır. (Bu, 00-kunye.json'daki
+      `ocr_teyit_gerek`/`bilinmeyen` BYTE-çıktısını etkiler — bkz. tests/test_oa_ingest*.py.)
+
 ÇIKARIM YOLLARI (model kurmaz, script çıkarır):
   PDF (metin katmanlı)  → PyMuPDF text            [BEDAVA, kayıpsız]
   PDF (taranmış/fontsuz) → PyMuPDF render + OCR    [OCR — ⚠ teyit]
@@ -120,7 +146,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, hashlib, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
+import argparse, glob, hashlib, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
 import xml.etree.ElementTree as ET
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
@@ -138,6 +164,11 @@ METIN_ESIK_KARAKTER_SAYFA = 40   # sayfa başına bu kadar anlamlı karakterin a
 KAR_PER_TOKEN = 3                 # Türkçe için kaba token tahmini (~3 karakter/token)
 TESSERACT = shutil.which("tesseract")
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabit içerik imzası
+# v1.5.1 (a): bu yöntemlerle biten kayıtlar önbelleğe YAZILMAZ — araç (Tesseract vb.)
+# sonradan kurulunca "imza aynı → önbellekten bas" yolu bayat 'YÜKLENEMEDİ' damgasını
+# tekrarlamasın. 'zaman-aşımı' kasıtlı olarak DIŞARIDA: OCR zaman-aşımı pahalıdır,
+# önbellekte kalması (--yeniden ile açıkça atlanabilir) kabul edilebilir bir ödünleşimdir.
+_ARIZA_ONBELLEKSIZ = {"hata", "atlandı"}
 
 try:
     import fitz  # PyMuPDF
@@ -307,6 +338,14 @@ def _isci_init():
 
 def _cikar_tekil(yol, uz, opts):
     """SAF çıkarım (tek dosya). İçerik-agnostik: herhangi bir evrak/kelime aynı yolu izler."""
+    # TEST KANCASI (yalnız pytest, v1.5.1 d): OA_INGEST_TEST_KILL ortam değişkeni bir
+    # dosya taban-adına eşitse işçi süreci GERÇEKTEN öldürülür (os._exit) — bu, poison-
+    # evrak izole yeniden denemesini (tests/test_oa_ingest_paralel.py) gerçek bir
+    # BrokenProcessPool ile test etmeyi sağlar. Normal koşuda bu değişken HİÇ ayarlı
+    # DEĞİLDİR → üretim davranışı hiçbir şekilde etkilenmez.
+    _oa_kill = os.environ.get("OA_INGEST_TEST_KILL")
+    if _oa_kill and os.path.basename(yol) == _oa_kill:
+        os._exit(137)
     t0 = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="oaing_w_") as t:   # with: çökmede %TEMP% sızmaz
         metin, y, teyit, sf, hata = evrak_isle(yol, uz, opts, t)
@@ -452,7 +491,7 @@ def _hata_kaydi(no, ad, tarih, kaynak, yontem, hata):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.5 (PyMuPDF, paralel)")
+    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.5.1 (PyMuPDF, paralel)")
     ap.add_argument("klasor", nargs="?", default=".",
                     help="dava klasörü (verilmezse BULUNDUĞUN klasör işlenir)")
     ap.add_argument("--hedef")
@@ -480,6 +519,14 @@ def main():
 
     hedef = a.hedef or os.path.join(a.klasor, "_oa", "metin")
     os.makedirs(hedef, exist_ok=True)
+    # v1.5.1 (b): önceki çökmüş bir koşudan kalan atomik-yazım artıklarını süpür.
+    # _atomik_yaz zaten çökmede eski TAM sürümü korur (yarım künye İMKANSIZ); bu yalnız
+    # os.replace'e hiç ulaşamamış .part çöp dosyalarını temizler — sessizce YIĞILMASINLAR.
+    for _art in glob.glob(os.path.join(hedef, ".tmp-oaing-*.part")):
+        try:
+            os.remove(_art)
+        except OSError:
+            pass
     opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit}
 
     onbellek_yol = os.path.join(hedef, ".ingest-onbellek.json")
@@ -532,6 +579,30 @@ def main():
                     print(f"  … çıkarım {tamam}/{toplam}", file=sys.stderr)
     cik_sn = time.perf_counter() - t_cik
 
+    # ---- v1.5.1 (d): POISON-EVRAK İZOLE YENİDEN DENEME (FAZ C'den ÖNCE) ----
+    # Havuzda çöken (BrokenProcessPool → sonuclar[idx] = None) kalemler tek-işçi
+    # (max_workers=1) İZOLE bir havuzda BİRER BİRER yeniden denenir. Amaç: bir "zehirli"
+    # evrak (ör. bozuk font tablolu PDF) tüm havuzu düşürüp AYNI BATCH'teki masum
+    # evrakları da 'işçi çöktü' damgasıyla sürüklemesin. İzole halde de çöken evrak
+    # nihai 'işçi çöktü' damgasını FAZ C'de alır (canlı-kilit önlenir: tekrar tekrar
+    # tüm havuzu düşürmeye çalışmaz — her zehirli evrak yalnız KENDİ izole denemesini yakar).
+    coken = [it for it in is_kalemleri if sonuclar.get(it["index"]) is None]
+    if coken:
+        print(f"  … {len(coken)} kalem havuzda çöktü, izole (tek-işçi) yeniden deneniyor",
+              file=sys.stderr)
+        for it in coken:
+            try:
+                with ProcessPoolExecutor(max_workers=1, initializer=_isci_init) as ex:
+                    p = ex.submit(_cikar_is, it, opts).result()
+            except Exception as e:
+                p = None
+                print(f"  ⚠ izole yeniden denemede de çöktü: {it['gorece']} ({e})", file=sys.stderr)
+            else:
+                if p is not None:
+                    print(f"  ✓ izole yeniden deneme kurtardı: {it['gorece']}", file=sys.stderr)
+            sonuclar[it["index"]] = p
+            _profille(p)
+
     # ---- FAZ C: BİRLEŞTİRME (tek-yazar ebeveyn, SIRALI-İNDEKS) — md/künye/önbellek ----
     # NOT: yeni/atlanan yalnız stdout özeti içindir. ocr_sayisi/bilinmeyen künyeye GİRER;
     # onlar döngüde artırılmaz, FİNAL künyeden TÜRETİLİR (aşağıda) — yol-bağımsız olsun ki
@@ -581,7 +652,10 @@ def main():
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
                              gorece, no, temiz, tarih, hedef, kullanilan)
             kunye.append(k); yeni += 1; temsil.add(it["index"])
-            onbellek[gorece] = {"imza": it["imza"], "kayit": k}
+            # v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ — sonraki koşuda
+            # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
+            if p["yontem"] not in _ARIZA_ONBELLEKSIZ:
+                onbellek[gorece] = {"imza": it["imza"], "kayit": k}
             continue
 
         # ---- arşiv (miss) ----
@@ -603,12 +677,30 @@ def main():
                              f"{gorece}::{ic['icad']}", ic_no,
                              f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan)
             kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
-        onbellek[gorece] = {"imza": it["imza"], "kayitlar": arsiv_kayitlari}
+        # v1.5.1 (a): arşiv içinde arıza {hata, atlandı} taşıyan EN AZ BİR iç kayıt varsa
+        # bu arşiv de önbelleğe YAZILMAZ (imza aynı kalır → araç sonradan kurulunca
+        # bütün arşiv sessizce bayat kalır; önbellek olmadan bir sonraki koşuda yeniden açılır).
+        if not any(k.get("yontem") in _ARIZA_ONBELLEKSIZ for k in arsiv_kayitlari):
+            onbellek[gorece] = {"imza": it["imza"], "kayitlar": arsiv_kayitlari}
+
+    # ---- v1.5.1 (c): ÖNBELLEK BUDAMA — diskte artık OLMAYAN (silinmiş) kaynakların
+    # önbellek kaydını at (önbellek tek-yönlü BÜYÜMESİN + yetim md-adı rezervasyonu kalmasın).
+    # DİKKAT: FAZ A (`_tara`) HER koşuda TÜM klasörü tarar (kısmi/delta DEĞİL) → bu koşuda
+    # diskte var olan HER kaynak `items` içindedir; onbellekte olup `items`'ta OLMAYAN
+    # anahtar YALNIZ silinmiş bir kaynak olabilir — hâlâ diskte duran ama bu koşuda sırası
+    # gelmemiş bir kaynak asla bu kümenin dışında kalmaz, YANLIŞLIKLA BUDANMAZ.
+    _mevcut_gorece = {it["gorece"] for it in items}
+    for _stale in [g for g in onbellek if g not in _mevcut_gorece]:
+        del onbellek[_stale]
 
     # ---- ÖZET SAYAÇLARI: final künyeden TÜRET (yol-bağımsız → idempotent + seri==paralel) ----
     # ocr_sayisi = gerçek OCR/zayıf çıkarım (teyit gerekli, idari-olmayan); idari kayıtlar
-    # (bilinmeyen uzantı / arşiv-boş / açılamayan) 'bilinmeyen/elle' kovasında toplanır.
-    _ADMIN = {"bilinmeyen", "arşiv-boş", "hata"}
+    # (bilinmeyen uzantı / arşiv-boş / açılamayan / OCR hiç YAPILMAMIŞ) 'bilinmeyen/elle'
+    # kovasında toplanır. v1.5.1 (e): 'atlandı' (OCR kapalı/araç yok → hiç denenmedi) ve
+    # 'zaman-asimi' (OCR başladı ama bitmedi) da BURAYA eklendi — bunlar GERÇEK OCR/zayıf-
+    # çıkarım DEĞİL, ocr_teyit_gerek sayacını (asıl 'yapıldı ama teyit gerekir' kovası) şişirip
+    # yanlış izlenim vermesin.
+    _ADMIN = {"bilinmeyen", "arşiv-boş", "hata", "atlandı", "zaman-asimi"}
     ocr_sayisi = sum(1 for k in kunye if k.get("teyit_gerek") and k.get("yontem") not in _ADMIN)
     bilinmeyen = sum(1 for k in kunye if k.get("yontem") in _ADMIN)
 

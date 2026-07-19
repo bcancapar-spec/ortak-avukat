@@ -188,19 +188,146 @@ def udf_metni_geri_oku(cikti_yolu):
     return m.group(1) if m else None
 
 
+# ───────────────── UDF GEÇERLİLİK KAPISI (mekanik denetim, hüküm YOK) ───────
+def udf_dogrula(yol):
+    """Var olan bir `.udf` dosyasının UYAP okuyucusunun (udf_metin.py) beklediği
+    yapıya uyup uymadığını MEKANİK olarak denetler.
+
+    Bu fonksiyon hukuki/biçimsel KALİTE hakkında hüküm VERMEZ ("iyi dilekçe"
+    demez); yalnız dört somut denetimi "var/yok" ve "tutarlı/tutarsız" olarak
+    raporlar — model kurar/script denetler ayrımı burada da geçerlidir:
+      1) zip açılır mı (bozuk/ZIP-olmayan dosya → GEÇERSİZ)
+      2) content.xml arşivde var mı
+      3) content.xml iyi biçimli XML mi (ET.fromstring parse eder mi)
+      4) <content><![CDATA[...]]></content> bulunuyor mu (metin round-trip'in
+         kaynağı) ve paragraph/content startOffset+length değerleri UTF-16
+         code-unit biriminde ARDIŞIK mı, toplamları CDATA metninin UTF-16
+         uzunluğuyla birebir tutuyor mu (offset kayması → UYAP'ta biçim/aralık
+         bozulur; bu denetim onu yazımdan SONRA da yakalayabilir, ör. dosya
+         elle düzenlenmiş/bozulmuşsa).
+
+    Döner: dict —
+      gecerli (bool), hatalar (list[str] — boşsa geçerli),
+      content_xml_var (bool), xml_iyi_bicimli (bool), cdata_bulundu (bool),
+      karakter_sayisi (int|None), paragraf_sayisi (int|None),
+      offsetler_tutarli (bool|None).
+    """
+    sonuc = {
+        "gecerli": False, "hatalar": [],
+        "content_xml_var": False, "xml_iyi_bicimli": False,
+        "cdata_bulundu": False, "karakter_sayisi": None,
+        "paragraf_sayisi": None, "offsetler_tutarli": None,
+    }
+
+    # 1) zip açılır mı
+    try:
+        zf = zipfile.ZipFile(yol)
+    except (zipfile.BadZipFile, FileNotFoundError, OSError) as e:
+        sonuc["hatalar"].append("ZIP açılamadı: %s" % e)
+        return sonuc
+
+    # 2) content.xml var mı
+    hedef = next((a for a in zf.namelist()
+                  if a.lower().endswith("content.xml")), None)
+    if hedef is None:
+        sonuc["hatalar"].append("content.xml arşivde bulunamadı")
+        return sonuc
+    sonuc["content_xml_var"] = True
+    ham = zf.read(hedef).decode("utf-8", errors="replace")
+
+    # 3) XML iyi biçimli mi
+    try:
+        kok = ET.fromstring(ham)
+        sonuc["xml_iyi_bicimli"] = True
+    except ET.ParseError as e:
+        sonuc["hatalar"].append("content.xml iyi biçimli değil: %s" % e)
+        return sonuc
+
+    # 4) CDATA + offset/uzunluk tutarlılığı (round-trip'in temeli)
+    m = re.search(r"<content>\s*<!\[CDATA\[(.*?)\]\]>\s*</content>", ham, re.S)
+    if not m:
+        sonuc["hatalar"].append("<content><![CDATA[...]]></content> bulunamadı")
+        return sonuc
+    sonuc["cdata_bulundu"] = True
+    tam = m.group(1)
+    sonuc["karakter_sayisi"] = len(tam)
+    toplam_u16 = utf16_uzunluk(tam)
+
+    paragraflar = kok.findall(".//elements/paragraph/content")
+    if not paragraflar:
+        paragraflar = kok.findall(".//paragraph/content")  # esnek arama
+    sonuc["paragraf_sayisi"] = len(paragraflar)
+    if not paragraflar:
+        sonuc["hatalar"].append(
+            "paragraph/content elemanı bulunamadı (offset/uzunluk denetlenemedi)")
+        return sonuc
+
+    imlec, tutarli = 0, True
+    for el in paragraflar:
+        try:
+            start = int(el.attrib["startOffset"])
+            length = int(el.attrib["length"])
+        except (KeyError, ValueError):
+            tutarli = False
+            sonuc["hatalar"].append(
+                "paragraph/content içinde startOffset/length okunamadı")
+            break
+        if start != imlec:
+            tutarli = False
+            sonuc["hatalar"].append(
+                "offset süreksiz: beklenen %d, bulunan %d" % (imlec, start))
+            break
+        imlec += length
+    if tutarli and imlec != toplam_u16:
+        tutarli = False
+        sonuc["hatalar"].append(
+            "paragraf uzunlukları toplamı (%d) CDATA UTF-16 uzunluğuyla (%d) uyuşmuyor"
+            % (imlec, toplam_u16))
+    sonuc["offsetler_tutarli"] = tutarli
+
+    if not sonuc["hatalar"]:
+        sonuc["gecerli"] = True
+    return sonuc
+
+
 # ───────────────────────────────── main ────────────────────────────────────
 def main():
     ap = argparse.ArgumentParser(
         description="Düz metin / markdown → UYAP UDF yazıcı (deterministik biçim motoru).")
     ap.add_argument("--girdi", "-g", metavar="YOL",
                     help="Girdi dosyası (.md veya .txt). Verilmezse stdin okunur.")
-    ap.add_argument("--cikti", "-c", metavar="YOL", required=True,
-                    help="Çıktı .udf dosyası.")
+    ap.add_argument("--cikti", "-c", metavar="YOL",
+                    help="Çıktı .udf dosyası (yazma modunda zorunlu).")
+    ap.add_argument("--dogrula", metavar="YOL",
+                    help="YAZMADAN — var olan bir .udf dosyasını GEÇERLİLİK "
+                         "KAPISI ile denetler (zip/content.xml/XML/offset "
+                         "round-trip). Diğer seçenekler yok sayılır.")
     ap.add_argument("--ham", action="store_true",
                     help="Markdown yorumlama; metni birebir satır-paragraf al.")
     ap.add_argument("--format-id", default=FORMAT_ID,
                     help="template format_id (varsayılan: %(default)s).")
     a = ap.parse_args()
+
+    if a.dogrula:
+        sonuc = udf_dogrula(a.dogrula)
+        print("UDF GEÇERLİLİK KAPISI: %s" % a.dogrula)
+        print("  content.xml var  : %s" % ("EVET" if sonuc["content_xml_var"] else "HAYIR"))
+        print("  XML iyi biçimli  : %s" % ("EVET" if sonuc["xml_iyi_bicimli"] else "HAYIR"))
+        print("  CDATA bulundu    : %s" % ("EVET" if sonuc["cdata_bulundu"] else "HAYIR"))
+        if sonuc["karakter_sayisi"] is not None:
+            print("  karakter (CDATA) : %d" % sonuc["karakter_sayisi"])
+        if sonuc["paragraf_sayisi"] is not None:
+            print("  paragraf sayısı  : %d" % sonuc["paragraf_sayisi"])
+        print("  offset/uzunluk   : %s" % (
+            "TUTARLI" if sonuc["offsetler_tutarli"]
+            else ("TUTARSIZ" if sonuc["offsetler_tutarli"] is False else "—")))
+        for h in sonuc["hatalar"]:
+            print("  [HATA] %s" % h, file=sys.stderr)
+        print("SONUÇ: %s" % ("GEÇERLİ ✓" if sonuc["gecerli"] else "GEÇERSİZ ✗"))
+        sys.exit(0 if sonuc["gecerli"] else 1)
+
+    if not a.cikti:
+        sys.exit("HATA: --cikti gerekli (yazma modu) ya da --dogrula (denetim modu) verin.")
 
     if a.girdi:
         with open(a.girdi, "r", encoding="utf-8", errors="replace") as f:
