@@ -137,6 +137,126 @@ def test_tam_temiz_taslakta_dilekce_ve_kunye_kapilari_acik(izole_kok):
     assert "TEYİTSİZ" not in cikti  # atıfsız taslakta hiç TEYİTSİZ atıf olamaz
 
 
+# ── (3) İçtihatli taslak — (b2) İÇTİHAT MUHAKEME ZİNCİRİ kapısı (M2-3) ─────
+# Uçtan uca: sentetik dilekçe + muhakeme kaydı + ham döküm → gate doğru
+# geçer/engeller. Taslak zorunlu unsurları taşır (a) açık olsun; içtihat
+# atfının aynı esas/karar no'su hem (b) kunye_teyit hem (b2) ictihat_
+# muhakeme_denetim'in KAYNAK-İZİ denetimi için AYNI döküm dosyasında yer
+# alır — böylece (b) her iki senaryoda da açık kalır, yalnız (b2) DAMGA/
+# muhakeme-kaydı durumuna göre değişir.
+
+KUNYE_ICTIHAT = "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023"
+TASLAK_ICTIHATLI = """İSTANBUL 4. ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİ'NE
+
+DAVACI: Ayşe Yılmaz (T.C. Kimlik No: 12345678901)
+Adres: Örnek Mahallesi No:1 İstanbul
+
+DAVALI: Mehmet Kaya
+
+KONU: Alacağın tahsili talebimizden ibarettir.
+
+AÇIKLAMALAR (VAKIALAR):
+1. Taraflar arasındaki ticari ilişkiden doğan alacak vakıası aşağıda özetlenmiştir.
+2. Somut olayda Yargıtay 4. HD'nin E. 2023/1234, K. 2023/5678 sayılı kararı emsal
+   teşkil etmektedir.
+
+HUKUKİ SEBEPLER:
+İlgili mevzuat hükümleri ve genel hukuk kuralları dayanak alınmıştır.
+
+DELİLLER:
+Tanık beyanları, bilirkişi incelemesi ve yazılı belgeler ispat vasıtasıdır.
+
+NETİCE-İ TALEP:
+Yukarıda açıklanan nedenlerle davanın kabulüne karar verilmesini saygılarımla talep ederim.
+
+Tarih: 01.07.2026
+
+Av. Ayşe Yılmaz
+Vekil
+İmza
+"""
+
+
+def _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE", ayirt_etme=""):
+    """Ortak döküm (kunye_teyit + ictihat_muhakeme_denetim'in KAYNAK-İZİ
+    denetimi AYNI dosyayı paylaşır) + isteğe bağlı muhakeme kaydı kurar;
+    taslak dosya yolunu döndürür."""
+    dokum_dizin = izole_kok / "_oa" / "teyit" / "dokum"
+    dokum_dizin.mkdir(parents=True, exist_ok=True)
+    (dokum_dizin / "kaynak.md").write_text(
+        "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 sayılı kararın tam metni "
+        "burada yer almaktadır...\n",
+        encoding="utf-8",
+    )
+    # kunye_teyit.py (b) yalnızca döküm dizinini değil, KÜTÜK DOSYASININ
+    # DE var olduğunu şart koşar (kütük yoksa yapısal blok — dosya boş
+    # olsa bile "var" sayılır, eşleşme yine dökümden gelir).
+    (izole_kok / "_oa" / "teyit" / "kunye-teyit.md").write_text(
+        "# Künye Teyit Kütüğü (test iskeleti — içerik dökümde)\n", encoding="utf-8")
+    if muhakeme_kaydi:
+        cikti_dizin = izole_kok / "_oa" / "cikti"
+        cikti_dizin.mkdir(parents=True, exist_ok=True)
+        satirlar = [
+            "# 01 — İçtihat Muhakeme Kaydı", "",
+            f"**KUNYE:** {KUNYE_ICTIHAT}",
+            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+            f"**DAMGA:** {damga}", "",
+            "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
+            "## İLLİYET", "...illiyet açıklaması...", "",
+            "## AYIRT-ETME", ayirt_etme, "",
+        ]
+        (cikti_dizin / "01-ictihat-muhakeme.md").write_text(
+            "\n".join(satirlar), encoding="utf-8")
+
+    taslak = izole_kok / "ictihatli.md"
+    taslak.write_text(TASLAK_ICTIHATLI, encoding="utf-8")
+    return taslak
+
+
+def test_ictihatli_taslak_muhakeme_kaydi_yoksa_b2_kapisi_engeller(izole_kok):
+    """(b) döküm izli olduğu için açılır ama (b2) muhakeme kaydı YOK — çıplak
+    atıf, zincir (b2)'de durmalı; UDF üretilmemeli."""
+    taslak = _b2_kur(izole_kok, muhakeme_kaydi=False)
+
+    kod, cikti = _cli(taslak, izole_kok)
+
+    assert kod != 0, f"muhakeme kaydı olmayan içtihatlı taslak geçmemeliydi; çıktı:\n{cikti}"
+    assert "[b2] İÇTİHAT MUHAKEME ZİNCİRİ" in cikti
+    assert "İLK KAPANAN KAPI: (b2)" in cikti
+    assert "[OK] kapı açık (exit 0)." in cikti.split("[b2]")[0], (
+        "(b2)'den önceki (a)/(b) kapıları açık olmalıydı")
+    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    assert not udf_yolu.exists()
+
+
+def test_ictihatli_taslak_aleyhe_damgali_kayitla_b2_kapisi_engeller(izole_kok):
+    """Muhakeme kaydı VAR ama DAMGA=ALEYHE — anayasa m.6, (b2) yine engel
+    (bu kez 'çıplak atıf' değil, DAMGA gerekçesiyle)."""
+    taslak = _b2_kur(izole_kok, muhakeme_kaydi=True, damga="ALEYHE")
+
+    kod, cikti = _cli(taslak, izole_kok)
+
+    assert kod != 0
+    assert "İLK KAPANAN KAPI: (b2)" in cikti
+    assert "ALEYHE" in cikti
+
+
+def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(izole_kok):
+    """Muhakeme kaydı VAR, DAMGA=LEHE, KAYNAK-İZİ dosyası döküm dizininde
+    gerçekten var ve künye orada dize olarak geçiyor → (b) VE (b2) açık,
+    zincirin tamamı geçer, UDF üretilir."""
+    taslak = _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE")
+
+    kod, cikti = _cli(taslak, izole_kok)
+
+    assert kod == 0, f"LEHE damgalı, tam alanlı muhakeme kaydıyla zincir geçmeliydi; çıktı:\n{cikti}"
+    assert "TESLİME HAZIR" in cikti
+    assert "(b2) içtihat muhakeme zinciri" in cikti
+    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    assert udf_yolu.exists()
+    assert udf_yolu.stat().st_size > 0
+
+
 def test_izole_kok_gercek_repoyu_kirletmez(izole_kok):
     """Testler bittiğinde gerçek repo kökünde _oa/ klasörü OLUŞMAMALI —
     izolasyonun kanıtı: --kok her zaman tempfile dizinine verilir."""

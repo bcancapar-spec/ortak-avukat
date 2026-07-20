@@ -19,10 +19,21 @@ teslim öncesi durdurur.
 Tip/unsur listeleri numerus clausus DEĞİL — düşünce metodunu gösteren ÖRNEKLEMDİR;
 bilinmeyen tip 'genel dilekçe unsurları' ile denetlenir (anayasa: örnekleme ilkesi).
 
+── [F] İÇTİHAT MUHAKEME ZİNCİRİ KAPISI (M2-3 — oa-kontrol'e BAĞLANDI) ──
+`--ictihat-muhakeme` verilirse, kardeş skill oa-kontrol'ün
+`ictihat_muhakeme_denetim.py`'si (çıplak/ALEYHE/eksik-alanlı içtihat atfı
+mekanik kapısı — bkz. o scriptin docstring'i) AYRI SÜREÇTE çalıştırılır ve
+raporu + exit kodu bu denetime [F] bölümü olarak eklenir. Tek tanım
+oa-kontrol'de yaşar, burada TEKRARLANMAZ — teslim öncesi MEKANİK KAPILAR
+zinciri artık BEŞ yerine ALTI yeşil ışıktan oluşur (A-F).
+
 Kullanım:
   python dilekce_denetim.py <taslak.md> --tip dava|cevap|istinaf|temyiz|aym_bireysel|genel
                             [--taraf davaci|davali|sanik|katilan|mudahil|musteki]
-Çıkış kodu: 0 = temiz; 1 = eksik unsur / müvekkil-aleyhi sinyal / OCR-teyit şerhi eksik.
+                            [--udf YOL]
+                            [--ictihat-muhakeme --kok KLASÖR]
+Çıkış kodu: 0 = temiz; 1 = eksik unsur / müvekkil-aleyhi sinyal / OCR-teyit şerhi
+eksik / GEÇERSİZ UDF / [F] içtihat muhakeme kapısı engeli.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -34,8 +45,10 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse
 import importlib.util
+import os
 import pathlib
 import re
+import subprocess
 import sys
 
 # Tip → [(unsur adı, [anahtar desen/kelime])] — herhangi biri geçerse unsur VAR sayılır.
@@ -163,6 +176,36 @@ def udf_kapisi(udf_yolu):
     return mod.udf_dogrula(udf_yolu)
 
 
+def _ictihat_muhakeme_yolu():
+    """Kardeş skill oa-kontrol'ün `ictihat_muhakeme_denetim.py` yolunu döndürür
+    (…/skills/oa-dilekce/scripts/ → …/skills/oa-kontrol/scripts/); yoksa None."""
+    yol = (pathlib.Path(__file__).resolve().parent.parent.parent
+           / "oa-kontrol" / "scripts" / "ictihat_muhakeme_denetim.py")
+    return yol if yol.is_file() else None
+
+
+def ictihat_muhakeme_kapisi(taslak_yolu, kok=None, muhakeme_dizin=None, dokum_dizin=None):
+    """[F] İçtihat Muhakeme Zinciri mekanik kapısını (oa-kontrol'ün
+    `ictihat_muhakeme_denetim.py`'si) AYRI SÜREÇTE çalıştırır ve (exit_kodu,
+    rapor_metni) döndürür. Tek tanım oa-kontrol'de yaşar — burada
+    TEKRARLANMAZ (M2-3: dilekce_denetim'in teslim-öncesi mekanik kapılar
+    zincirine bu adımı BAĞLAR, yeni yeşil ışık)."""
+    yol = _ictihat_muhakeme_yolu()
+    if yol is None:
+        return 1, ("[EKSİK] ictihat_muhakeme_denetim.py bulunamadı "
+                    "(oa-kontrol/scripts/ — kardeş skill kurulu mu?)")
+    args = [sys.executable, str(yol), taslak_yolu]
+    if kok:
+        args += ["--kok", kok]
+    if muhakeme_dizin:
+        args += ["--muhakeme-dizin", muhakeme_dizin]
+    if dokum_dizin:
+        args += ["--dokum-dizin", dokum_dizin]
+    cp = subprocess.run(
+        args, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return cp.returncode, ((cp.stdout or "") + (cp.stderr or "")).rstrip()
+
+
 def denetle(metin, tip, taraf):
     eksik, uyari = [], []
     unsurlar = TIPLER.get(tip, TIPLER["genel"])
@@ -189,8 +232,16 @@ def denetle(metin, tip, taraf):
     for anahtar in ([taraf] if taraf in ALEYHE else []) + ["genel"]:
         for d in ALEYHE.get(anahtar, []):
             for m in re.finditer(d, metin, re.I):
-                pencere = metin[max(0, m.start() - 70): m.end() + 70]
-                if NEG.search(pencere):
+                # EK-FİX (risk#2): pencere eşleşen kalıbın KENDİ aralığını İÇERMEZ.
+                # Bazı aleyhe kalıpları ('şikayetçi değil', 'haklı değiliz') 'değil'i
+                # kalıbın GÖVDESİ olarak taşır; eski kod pencereyi m.start()-70..m.end()+70
+                # (eşleşmenin kendisi dahil) alıyordu → NEG deseni ('değil') eşleşmenin
+                # içinde HER ZAMAN bulunuyor, bu kalıplar asla BLOKLAMIYOR, hep [BİLGİ]'ye
+                # düşüyordu. Artık pencere yalnız eşleşmenin ÖNCESİ ve SONRASIdır — gerçek
+                # bir olumsuzlama (eşleşmenin dışında) hâlâ doğru şekilde sinyali düşürür.
+                once = metin[max(0, m.start() - 70): m.start()]
+                sonra = metin[m.end(): m.end() + 70]
+                if NEG.search(once) or NEG.search(sonra):
                     aleyhe_notu.append(m.group(0))   # olumsuzlanmış → bilgi, engel değil
                 else:
                     aleyhe.append(m.group(0))
@@ -208,6 +259,21 @@ def main():
     ap.add_argument("--udf", metavar="YOL", default="",
                     help="(opsiyonel) Üretilmiş .udf dosyasını da GEÇERLİLİK KAPISI ile "
                          "denetler — UDF-VARSAYILAN doktrini burada mekanik olarak kapanır.")
+    ap.add_argument("--ictihat-muhakeme", action="store_true",
+                    help="(opsiyonel) [F] İçtihat Muhakeme Zinciri mekanik kapısını "
+                         "(oa-kontrol/ictihat_muhakeme_denetim.py) da bu tek çağrıda çalıştırır "
+                         "— çıplak/ALEYHE/eksik-alanlı içtihat atfı teslim engelidir.")
+    ap.add_argument("--kok", default=None,
+                    help="(opsiyonel) --ictihat-muhakeme ile birlikte; çalışma kökü "
+                         "(kunye_teyit.py/ictihat_muhakeme_denetim.py --kok simetrisi) — "
+                         "verilmezse --muhakeme-dizin/--ictihat-dokum-dizin CWD-göreli "
+                         "_oa/cikti, _oa/teyit/dokum'a düşer")
+    ap.add_argument("--muhakeme-dizin", default=None,
+                    help="(opsiyonel) --ictihat-muhakeme ile birlikte; verilmezse "
+                         "--kok/_oa/cikti (--kok yoksa CWD-göreli _oa/cikti)")
+    ap.add_argument("--ictihat-dokum-dizin", default=None,
+                    help="(opsiyonel) --ictihat-muhakeme ile birlikte; verilmezse "
+                         "--kok/_oa/teyit/dokum (--kok yoksa CWD-göreli _oa/teyit/dokum)")
     a = ap.parse_args()
 
     try:
@@ -266,10 +332,23 @@ def main():
             for h in udf_sonuc["hatalar"]:
                 print(f"      - {h}")
 
+    ictihat_muhakeme_engel = False
+    if a.ictihat_muhakeme:
+        print("\n[F] İÇTİHAT MUHAKEME ZİNCİRİ KAPISI (ictihat_muhakeme_denetim.py — oa-kontrol)")
+        muhakeme_dizin = a.muhakeme_dizin if a.muhakeme_dizin is not None else (
+            os.path.join(a.kok, "_oa", "cikti") if a.kok else None)
+        dokum_dizin = a.ictihat_dokum_dizin if a.ictihat_dokum_dizin is not None else (
+            os.path.join(a.kok, "_oa", "teyit", "dokum") if a.kok else None)
+        kod_f, cikti_f = ictihat_muhakeme_kapisi(a.taslak, a.kok, muhakeme_dizin, dokum_dizin)
+        for satir in cikti_f.splitlines():
+            print(f"   {satir}")
+        ictihat_muhakeme_engel = (kod_f != 0)
+
     print("\n" + cizgi)
-    engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz)
+    engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel)
     if engel:
-        print("SONUÇ: TESLİM ÖNCESİ AVUKAT GÖZÜ ŞART (eksik unsur / aleyhe sinyal / teyit şerhi).")
+        print("SONUÇ: TESLİM ÖNCESİ AVUKAT GÖZÜ ŞART (eksik unsur / aleyhe sinyal / teyit şerhi "
+              "/ ictihat muhakeme kapısı).")
         print(cizgi)
         sys.exit(1)
     print("SONUÇ: temel şablon denetimi temiz (nihai sorumluluk avukatındır).")

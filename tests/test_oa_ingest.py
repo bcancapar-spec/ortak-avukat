@@ -23,6 +23,7 @@ YALNIZ kendi kaynağının metnini içerdiğini doğrular.
 """
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -125,3 +126,54 @@ def test_yeniden_bayragi_onbellegi_yok_sayar_ve_yine_cakismaz(tmp_path):
     metin_dizin = tmp_path / "_oa" / "metin"
     assert "A_ICERIGI" in (metin_dizin / a_kayit["md"]).read_text(encoding="utf-8")
     assert "B_ICERIGI" in (metin_dizin / b_kayit["md"]).read_text(encoding="utf-8")
+
+
+# ── EK-FİX v0.5.2 risk#1: ARIZA onbellek kaydı HIT sayılmamalı ─────────────
+
+def test_ariza_onbellek_kaydi_hit_sayilmaz_yeniden_denenir(tmp_path):
+    """REGRESYON: FAZ C (yazma) v1.5.1 (a)'dan beri {hata, atlandı} yöntemli
+    sonuçları önbelleğe YAZMIYOR — ama eski/harici bir önbellek dosyasında böyle
+    bir kayıt ZATEN varsa (imza aynı kaldığı sürece), FAZ A (okuma) eskiden bunu
+    HIT sayıp doğrudan basıyordu: bayat 'YÜKLENEMEDİ' damgası SONSUZA dek servis
+    ediliyordu (araç sonradan kurulsa/dosya normalde işlenebilir olsa bile hiç
+    yeniden denenmiyordu). Bu test, imza eşleşen ama yöntemi 'hata' olan elle
+    yazılmış bir önbellek kaydının MISS'e düşüp dosyanın GERÇEKTEN yeniden
+    işlendiğini doğrular."""
+    dosya = tmp_path / "dosya.txt"
+    dosya.write_text("GERÇEK METİN İÇERİĞİ", encoding="utf-8")
+    imza = f"{dosya.stat().st_mtime:.0f}-{dosya.stat().st_size}"
+
+    metin_dizin = tmp_path / "_oa" / "metin"
+    metin_dizin.mkdir(parents=True)
+    onbellek = {
+        "dosya.txt": {
+            "imza": imza,
+            "kayit": {
+                "no": None, "ad": "dosya", "tarih": None, "kaynak": "dosya.txt",
+                "yontem": "hata", "teyit_gerek": True, "karakter": 0,
+                "sha": "0" * 16, "sayfa": None, "hata": "eski arıza (bayat)",
+                "md": "000-dosya.md",
+            },
+        }
+    }
+    (metin_dizin / ".ingest-onbellek.json").write_text(
+        json.dumps(onbellek, ensure_ascii=False), encoding="utf-8")
+
+    _ingest(tmp_path)
+
+    kunye = _kunye_oku(tmp_path)
+    assert len(kunye["kayitlar"]) == 1
+    kayit = kunye["kayitlar"][0]
+    assert kayit["yontem"] != "hata", (
+        "REGRESYON: eski ARIZA önbellek kaydı HIT sayılıp bayat sonuç basıldı — "
+        "dosya yeniden işlenmedi."
+    )
+    assert kayit["yontem"] == "duz-metin"
+    # karakter = anlamlı (boşluksuz) karakter sayısı — oa_ingest.anlamli() ile aynı ölçüm.
+    assert kayit["karakter"] == len(re.sub(r"\s+", "", "GERÇEK METİN İÇERİĞİ"))
+    md_metni = (metin_dizin / kayit["md"]).read_text(encoding="utf-8")
+    assert "GERÇEK METİN İÇERİĞİ" in md_metni
+
+    # Bu koşudan sonra önbellek GERÇEK (arıza-olmayan) sonuçla güncellenmiş olmalı.
+    yeni_onbellek = json.loads((metin_dizin / ".ingest-onbellek.json").read_text(encoding="utf-8"))
+    assert yeni_onbellek["dosya.txt"]["kayit"]["yontem"] == "duz-metin"

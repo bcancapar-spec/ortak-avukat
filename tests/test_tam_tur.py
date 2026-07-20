@@ -146,6 +146,91 @@ def test_islenmis_delta_gelisme_ile_kaydete_gecer(tmp_path):
     assert kod == 0, "GELİŞME'de anılmış bekleyen delta ikinci kaydet'i engellememeli"
 
 
+# ── Gate G — KALICILIK KAPISI: --durum mekanik "tamamlandi/tamamlanmadi" ────
+
+def test_durum_kaydet_sonrasi_mekanik_tamamlandi(tmp_path, capsys):
+    """--kaydet başarıyla bittikten sonra --durum'un mekanik Gate G satırı
+    'tamamlandi' demeli ve genel dönüş 0 olmalı."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 0
+    assert "Analiz kaydı" in cikti and "tamamlandi" in cikti
+
+
+def test_durum_analiz_md_silinirse_mekanik_tamamlanmadi(tmp_path, capsys):
+    """durum.json 'TAMAM' + delta temiz görünse bile dosya-analiz.md fiziken
+    SİLİNMİŞSE, --durum bunu MODEL BEYANINA değil DİSKE bakarak yakalamalı —
+    Gate G, json öz-beyanından bağımsız fiziksel kanıt ister."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    assert analiz_md.exists()
+    analiz_md.unlink()
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3, "dosya-analiz.md silinmişken --durum yine de 'güncel/tamam' demeli değildi"
+    assert "tamamlanmadi" in cikti
+    assert "dosya-analiz.md yok" in cikti
+
+
+def test_durum_analiz_md_bos_ise_mekanik_tamamlanmadi(tmp_path, capsys):
+    """dosya-analiz.md VAR ama BOŞ (0 bayt) — mekanik kapı yine 'tamamlanmadi' demeli."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    analiz_md.write_text("", encoding="utf-8")
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3
+    assert "tamamlanmadi" in cikti and "boş" in cikti
+
+
+def test_durum_yeniden_baslat_sonrasi_kaydetmeden_bayat_kayit(tmp_path, capsys):
+    """Tam tur --kaydet ile TAMAM'landıktan sonra --baslat TEKRAR çağrılıp
+    (tur yeniden açılıp) --kaydet ile TAZELENMEDEN bırakılırsa, eski
+    dosya-analiz.md artık YENİ başlangıçtan ESKİ sayılmalı (bayat kayıt)."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    durum = tt._durum_oku(str(tmp_path))
+    fiziksel_tamam, _ = tt._analiz_kaydi_fiziksel_tamam(str(tmp_path), durum)
+    assert fiziksel_tamam
+
+    # Yapay olarak ileri bir "baslatildi" zamanı yazarak yeniden-açılma simüle edilir
+    # (gerçek zamanlı testte dakika çözünürlüğü nedeniyle mtime farkı garanti olmayabilir).
+    durum["baslatildi"] = "2099-01-01 00:00"
+    durum["tam_tur_durumu"] = "DEVAM"
+    tt._durum_yaz(str(tmp_path), durum)
+
+    fiziksel_tamam2, sebep2 = tt._analiz_kaydi_fiziksel_tamam(str(tmp_path), durum)
+    assert not fiziksel_tamam2
+    assert "ESKİ" in sebep2 or "eski" in sebep2.lower()
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3
+    assert "tamamlanmadi" in cikti
+
+
 def test_zorla_ile_yutma_serh_dusulerek_gecer(tmp_path):
     """--zorla ile yutma engellenmez ama ŞERH düşülür (sessiz geçiş yok)."""
     _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
@@ -159,3 +244,65 @@ def test_zorla_ile_yutma_serh_dusulerek_gecer(tmp_path):
     analiz_md = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
     assert "ŞERH" in analiz_md
     assert "dilekce.pdf" in analiz_md
+
+
+# ── M1-4 GATE E — --brif (ARTIMLI MOD BRİFİ / TAM TUR DELTA ZORLAMA) ────────
+
+def test_brif_tam_tur_hic_yapilmamissa_kapali_der(tmp_path, capsys):
+    kod = tt.cmd_brif(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3
+    assert "ARTIMLI MOD: KAPALI" in cikti
+    assert "ZORUNLU TAM TUR" in cikti
+
+
+def test_brif_delta_yokken_tam_acik_ve_talimat_verir(tmp_path, capsys):
+    """Tam tur TAMAM + bekleyen delta yok → --brif 'TAM AÇIK' der ve ajanı
+    HAM evrağı toplu yeniden okumaması yönünde açıkça talimatlandırır."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+    tt.cmd_ekle(str(tmp_path), "ilk gelişme kaydı")
+
+    capsys.readouterr()
+    kod = tt.cmd_brif(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 0
+    assert "ARTIMLI MOD: TAM AÇIK" in cikti
+    assert "TOPLU yeniden OKUMASIN" in cikti
+    assert "dosya-analiz.md" in cikti
+    assert "ilk gelişme kaydı" in cikti  # son gelişmeler listelenmiş
+
+
+def test_brif_bekleyen_delta_varsa_kismi_der_ve_evraki_listeler(tmp_path, capsys):
+    """Yeni evrak eklenip henüz --ekle ile işlenmemişse --brif 'KISMİ' der ve
+    yalnız bekleyen evrakların tek tek işlenmesini talimatlandırır."""
+    _kunye_yaz(tmp_path, [{"kaynak": "ilk.pdf", "sha": _sha("a")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    _kunye_yaz(tmp_path, [
+        {"kaynak": "ilk.pdf", "sha": _sha("a")},
+        {"kaynak": "ikinci.pdf", "sha": _sha("b")},
+    ])
+
+    capsys.readouterr()
+    kod = tt.cmd_brif(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3
+    assert "ARTIMLI MOD: KISMİ" in cikti
+    assert "ikinci.pdf" in cikti
+    assert "TOPLU yeniden OKUMA" in cikti
+
+
+def test_brif_durum_ile_ayni_donus_kodunu_paylasir(tmp_path):
+    """--brif ve --durum aynı mekanik sinyale dayanır: ikisi de aynı anda
+    aynı yönde (0/3) dönmeli — iki ayrı gerçek icat edilmemiş olmalı."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    assert tt.cmd_brif(str(tmp_path)) == tt.cmd_durum(str(tmp_path)) == 0

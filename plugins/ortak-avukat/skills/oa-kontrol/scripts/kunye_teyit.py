@@ -15,6 +15,22 @@ kaynakta esas/karar no veya kanun+madde eşleşmesi bulunmayan künye çıktıya
 "teyitli" giremez. "Teyitli" etiketi ancak fiilen yapılmış bir MCP çağrısının
 izine konur; bu script o izi arar, üretmez.
 
+── PAYLAŞIMLI YARDIMCI (M2-3 — `kunye_ortak.py`) ──
+İçtihat esas/karar/daire çıkarım+normalizasyon mantığı artık `kunye_ortak.py`
+(oa-kontrol) modülünde TEK yerde yaşar; bu script kendi ESAS_RE/KARAR_RE/
+_norm_no/_daire_key/_daire_kumesi tanımlarını TUTMAZ, `ictihat_muhakeme_denetim.py`
+ile AYNI ortak modülü çağırır (iki-yazar riski kapalı — tek tanım, iki kullanan).
+Mevzuat madde-çıkarımı (kanun+madde regex'leri) bu modülün kapsamı dışıdır,
+burada yerel kalır.
+
+── F) KÜNYE TEYİT ÖNCE-BAK (`--once-bak`) ──
+Bir künye kütükte (+ ham MCP dökümünde) ZATEN varsa AYNI künye için tekrar bir
+MCP teyit turu koşmak gereksizdir. `--once-bak "<künye metni>"` bu durumu
+MEKANİK olarak denetler (advisory — teslim engeli DEĞİL, her hâlde exit 0):
+künyeyi kütük/döküm evreninde arar, VAR/YOK der. VARSA ajan aynı künye için
+yeni bir MCP çağrısını atlayabilir; YOKSA MCP teyidi hâlâ gereklidir. Bu mod
+`taslak` pozisyonel argümanını GEREKTİRMEZ.
+
 ── KAYNAK EVRENİ (kendi-kendini-teyit deliğinin kapatılması) ──
 Teyit EDİCİ kaynak evreni SADECE ikisidir:
   (1) künye teyit kütüğü      → `_oa/teyit/kunye-teyit.md`
@@ -38,6 +54,18 @@ oa-kontrol A-listesi muhakemesine bırakılır (mekanik iz ≠ daire doğruluğu
 Kullanım:
   python kunye_teyit.py <taslak.md> [--kutuk _oa/teyit/kunye-teyit.md] \
       [--dokum-dizin _oa/teyit/dokum] [--cikti-dizin _oa/cikti]
+  python kunye_teyit.py <taslak.md> --kok "<klasör>"   # oa_hafiza.py/tam_tur.py simetrisi
+  python kunye_teyit.py --once-bak "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678" \
+      [--kutuk ... | --kok "<klasör>"]                 # F — önce-bak (advisory)
+
+--kok: verilirse --kutuk/--dokum-dizin/--cikti-dizin'in VARSAYILANLARI
+<KLASÖR>/_oa/teyit/kunye-teyit.md, <KLASÖR>/_oa/teyit/dokum, <KLASÖR>/_oa/cikti olur
+(cwd'den BAĞIMSIZ, mutlak --kok verilebilir). Açıkça verilen --kutuk/--dokum-dizin/
+--cikti-dizin her zaman --kok'u EZER. --kok verilmezse davranış eskisiyle AYNIDIR
+(CWD-göreli VARSAYILAN_*). Gerekçe: Claude Code alt-ajan thread'lerinde cwd
+sıfırlandığından, --kok eksikliği "Failed to run citation gate" ile sonuçlanıyordu
+(gerçek Denizli testinde görüldü) — bu, oa_hafiza.py/tam_tur.py/pipeline_kayit.py'deki
+--kok simetrisinin oa-kontrol tarafındaki eksik parçasıydı.
 
 Çıkış kodları:
   0 = tüm atıflar teyitli (veya atıf yok) — kapı AÇIK
@@ -61,6 +89,12 @@ import argparse
 import os
 import re
 import sys
+
+BURA = os.path.dirname(os.path.abspath(__file__))
+if BURA not in sys.path:
+    sys.path.insert(0, BURA)
+
+import kunye_ortak as ko  # noqa: E402 — paylaşımlı esas/karar/daire yardımcısı (M2-3)
 
 VARSAYILAN_KUTUK = os.path.join("_oa", "teyit", "kunye-teyit.md")
 # Ham MCP dökümleri — TEYİT EDİCİ ikinci kaynak (Fikir-1: MCP döküm diski).
@@ -92,80 +126,11 @@ MERCILER = {
     "IDDK", "VDDK", "KANUN", "SAYILI", "MADDE", "ESAS", "KARAR",
 }
 
-# ── İçtihat: esas/karar numarası çıkarımı (iki yönlü etiket) ──
-# NOT (iki-geçişli çıkarım — bkz. _esas_karar_ham_cikar): düz künyede
-# ('E. 2023/1234 K. 2023/5678') KARAR_RE'nin TERS (numara-önce) alternatifi
-# tek başına taransa esas numarasını + 'K.' etiketini yutar (esas sayısı
-# hemen ardından 'K.' etiketiyle karşılaşır) — gerçek karar no'ya hiç sıra
-# gelmez. Simetrik olarak ESAS_RE'nin ters alternatifi de ters-sıralı
-# künyede ('K. X E. Y') karar numarasını yutabilir. ESAS_RE/KARAR_RE burada
-# DEĞİŞMEDİ (geriye uyum); yutma _esas_karar_ham_cikar'da, etiket-önce dalı
-# HER ZAMAN güvenilir sayıp ters dalı karşı tiple çakışınca eleyerek ve
-# ETİKET-ÖNCE-YALNIZ (ESAS_TAG_RE/KARAR_TAG_RE) ile yeniden tarayarak giderilir.
-_YN = r"\d{4}\s*/\s*\d{1,6}"
-ESAS_RE = re.compile(
-    r"(?:\bE\.\s*(?:No\.?)?\s*[:.]?\s*|\bEsas\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-    r"|(" + _YN + r")\s*(?:\bE\.|\bEsas\b)"
-)
-KARAR_RE = re.compile(
-    r"(?:\bK\.\s*(?:No\.?)?\s*[:.]?\s*|\bKarar\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-    r"|(" + _YN + r")\s*(?:\bK\.|\bKarar\b)"
-)
-# Etiket-önce YALNIZ (ters alternatifi YOK) — yutma-kurtarma taramasında kullanılır.
-ESAS_TAG_RE = re.compile(
-    r"(?:\bE\.\s*(?:No\.?)?\s*[:.]?\s*|\bEsas\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-)
-KARAR_TAG_RE = re.compile(
-    r"(?:\bK\.\s*(?:No\.?)?\s*[:.]?\s*|\bKarar\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-)
-
-# Mahkeme/daire markeri (künye metnini geriye doğru zenginleştirmek için)
-MERCI_RE = re.compile(
-    r"(?:Yargıtay|Danıştay|Anayasa\s+Mahkemesi|AYM|Sayıştay|Uyuşmazlık\s+Mahkemesi|"
-    r"A[İI]HM|(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+)?(?:BAM|B[İI]M|Bölge\s+Adliye\s+Mahkemesi|"
-    r"Bölge\s+İdare\s+Mahkemesi)|HGK|CGK|[İI]BK|[İI]DDK|VDDK|"
-    r"\d{1,2}\.\s*(?:HD|CD|D\b|Daire|Hukuk\s+Dairesi|Ceza\s+Dairesi|"
-    r"İdari\s+Dava\s+Dairesi|Vergi\s+Dava\s+Dairesi))"
-)
-
-# ── Merci/daire ayırt edicisi (numaralı daire) — merci katmanı için ──
-# "12. HD", "9. CD", "8. D", "8. Daire", "3. Hukuk Dairesi" ... → (no, tür)
-# Sıra önemli: çok-kelimeli ve HD/CD, çıplak "D"den ÖNCE gelir.
-DAIRE_RE = re.compile(
-    r"(\d{1,2})\s*\.\s*"
-    r"(HD|CD|Hukuk\s+Dairesi|Ceza\s+Dairesi|İdari\s+Dava\s+Dairesi|"
-    r"Vergi\s+Dava\s+Dairesi|Daire|D)(?![A-Za-zÇĞİÖŞÜçğıöşü])"
-)
-
-
-def _daire_aile(tur):
-    """Daire türünü kanonik aileye indirger: HD / CD / D / İDD / VDD."""
-    u = tur.upper()
-    if u.startswith("HD") or "HUKUK" in u:
-        return "HD"
-    if u.startswith("CD") or "CEZA" in u:
-        return "CD"
-    if "VERG" in u:
-        return "VDD"
-    if "DAR" in u:                       # İDARİ / IDARI Dava Dairesi
-        return "İDD"
-    if u.startswith("DAIRE") or u == "D":
-        return "D"
-    return u
-
-
-def _daire_key(metin):
-    """Metindeki İLK numaralı daireyi (no, aile) olarak döndürür; yoksa None.
-    Künye penceresinde merci öneki başta olduğundan ilk daire atfın dairesidir."""
-    m = DAIRE_RE.search(metin)
-    if not m:
-        return None
-    return (m.group(1), _daire_aile(m.group(2)))
-
-
-def _daire_kumesi(segment):
-    """Segmentteki TÜM numaralı daireleri {(no, aile), ...} olarak toplar."""
-    return {(no, _daire_aile(tur)) for (no, tur) in DAIRE_RE.findall(segment)}
+# ── İçtihat: esas/karar/daire çıkarımı — PAYLAŞIMLI (M2-3) ──
+# Bu script artık kendi ESAS_RE/KARAR_RE/_daire_key/_daire_kumesi tanımlarını
+# TUTMAZ; iki-geçişli etiket-önce/ters-alternatif çakışma çözümü ve daire
+# ayırt edici mantığı TEK yerde (`kunye_ortak.py`) yaşar — bkz. `ko.esas_karar_atiflari`,
+# `ko.norm_no`, `ko.daire_key`, `ko.daire_kumesi`, `ko.DAIRE_RE`.
 
 # ── Mevzuat: kanun tanıtıcısı + madde ──
 _KANUN = (
@@ -192,11 +157,6 @@ MEVZUAT_BARE_RE = re.compile(
 )
 
 OCR_RE = re.compile(r"OCR|⚠")
-
-
-def _norm_no(s):
-    """'2021 / 1234' → '2021/1234' ; iç boşlukları temizle."""
-    return re.sub(r"\s*/\s*", "/", s.strip())
 
 
 def _sikistir(s, n=140):
@@ -265,96 +225,32 @@ def _satir_metni(metin, konum):
     return metin[bas:son]
 
 
-def _cakisir(span, spanlar):
-    """span, spanlar listesindeki herhangi biriyle çakışıyor mu?"""
-    s, e = span
-    return any(s < b and a < e for (a, b) in spanlar)
-
-
-def _esas_karar_ham_cikar(metin):
-    """Esas/karar (başlangıç, bitiş, no) listelerini İKİ GEÇİŞLİ çıkarır.
-
-    Neden: ESAS_RE/KARAR_RE'nin TERS (numara-önce) alternatifi tek başına
-    finditer ile taranınca düz künyede ('E. X K. Y') karşı tipin numarasını +
-    etiketini yutabilir (bkz. modül başındaki ESAS_RE/KARAR_RE notu) — gerçek
-    etiket-önce eşleşmeye hiç sıra gelmez ve o alan None kalır.
-
-    Kural: etiket-önce (\\bE\\./\\bK\\. hemen numaradan önce) dal HER ZAMAN
-    güvenilirdir, asla elenmez. Ters dal yalnız KARŞI TİPİN (esas↔karar) hiçbir
-    eşleşmesiyle ÇAKIŞMIYORSA kabul edilir — çakışıyorsa o, karşı tipin
-    etiketini yutmuş sahte bir eşleşmedir ve elenir. Elenen ters eşleşmenin
-    gölgelediği GERÇEK etiket-önce eşleşmeyi geri kazanmak için metin,
-    etiket-önce-YALNIZ desenle (ESAS_TAG_RE/KARAR_TAG_RE) ikinci kez taranır;
-    zaten kabul edilmiş bir span'la çakışan tekrarlar atlanır (dedup)."""
-    esas_ham = [(m.start(), m.end(), _norm_no(m.group(1) or m.group(2)),
-                 m.group(1) is not None)
-                for m in ESAS_RE.finditer(metin)]
-    karar_ham = [(m.start(), m.end(), _norm_no(m.group(1) or m.group(2)),
-                  m.group(1) is not None)
-                 for m in KARAR_RE.finditer(metin)]
-
-    esas_span_tum = [(s, e) for (s, e, _no, _t) in esas_ham]
-    karar_span_tum = [(s, e) for (s, e, _no, _t) in karar_ham]
-
-    esaslar = [(s, e, no) for (s, e, no, tag_once) in esas_ham
-               if tag_once or not _cakisir((s, e), karar_span_tum)]
-    kararlar = [(s, e, no) for (s, e, no, tag_once) in karar_ham
-                if tag_once or not _cakisir((s, e), esas_span_tum)]
-
-    for m in ESAS_TAG_RE.finditer(metin):
-        span = (m.start(), m.end())
-        if _cakisir(span, [(s, e) for (s, e, _no) in esaslar]):
-            continue
-        esaslar.append((span[0], span[1], _norm_no(m.group(1))))
-    for m in KARAR_TAG_RE.finditer(metin):
-        span = (m.start(), m.end())
-        if _cakisir(span, [(s, e) for (s, e, _no) in kararlar]):
-            continue
-        kararlar.append((span[0], span[1], _norm_no(m.group(1))))
-
-    esaslar.sort(key=lambda t: t[0])
-    kararlar.sort(key=lambda t: t[0])
-    return esaslar, kararlar
+def _satir_metni_no(metin, no):
+    """satir_no (1-index, `ko._satir_no` ile aynı sayaç) numaralı satırın
+    metnini döndürür — `ko.esas_karar_atiflari` yalnız satir_no verir, ham
+    karakter konumu vermez (bkz. ictihat_cikar)."""
+    satirlar = metin.split("\n")
+    idx = no - 1
+    return satirlar[idx] if 0 <= idx < len(satirlar) else ""
 
 
 def ictihat_cikar(metin):
-    """Esas/karar numaralarını bulup künyelere eşle."""
-    esaslar, kararlar = _esas_karar_ham_cikar(metin)
-
-    kullanilan_k = set()
+    """Esas/karar numaralarını bulup künyelere eşle. Çıkarım + nearest-pairing
+    + merci-penceresi mantığı PAYLAŞIMLI `kunye_ortak.esas_karar_atiflari()`
+    iledir (M2-3) — burada TEKRARLANMAZ; yalnız OCR/merci-metni gibi bu
+    scripte özel alanlar üstüne eklenir."""
     atiflar = []
-    for (es, ee, eno) in esaslar:
-        # En yakın (60 karakter içinde, tercihen ileride) kararı eşle
-        en_iyi, en_mesafe = None, 61
-        for idx, (ks, ke, kno) in enumerate(kararlar):
-            if idx in kullanilan_k:
-                continue
-            mesafe = ks - ee if ks >= ee else es - ke
-            if 0 <= mesafe < en_mesafe:
-                en_iyi, en_mesafe = idx, mesafe
-        bas, son = es, ee
-        atif = Atif("ictihat", "")
-        atif.esas = eno
-        if en_iyi is not None:
-            kullanilan_k.add(en_iyi)
-            ks, ke, kno = kararlar[en_iyi]
-            atif.karar = kno
-            bas, son = min(bas, ks), max(son, ke)
-        # Geriye doğru ~70 karakterde mahkeme/daire markerini ekle
-        pencere = metin[max(0, bas - 70):bas]
-        merci_bulunan = list(MERCI_RE.finditer(pencere))
-        if merci_bulunan:
-            bas = max(0, bas - 70) + merci_bulunan[0].start()
-        ham_kunye = metin[bas:son]
-        atif.metin = _sikistir(ham_kunye)
-        # Merci katmanı: künyenin başındaki numaralı daireyi yakala (varsa).
-        dkey = _daire_key(ham_kunye)
-        if dkey:
-            atif.daire_key = dkey
-            dm = DAIRE_RE.search(ham_kunye)
-            atif.merci = _sikistir(dm.group(0), 40)
-        atif.satir_no = _satir_no(metin, es)
-        atif.ocr_taslak = bool(OCR_RE.search(_satir_metni(metin, es)))
+    for ham in ko.esas_karar_atiflari(metin):
+        atif = Atif("ictihat", ham["metin"])
+        atif.esas = ham["esas"]
+        atif.karar = ham["karar"]
+        atif.satir_no = ham["satir_no"]
+        if ham.get("daire_key"):
+            atif.daire_key = ham["daire_key"]
+            dm = ko.DAIRE_RE.search(ham["metin"])
+            if dm:
+                atif.merci = _sikistir(dm.group(0), 40)
+        atif.ocr_taslak = bool(OCR_RE.search(_satir_metni_no(metin, ham["satir_no"])))
         atiflar.append(atif)
     return atiflar
 
@@ -381,7 +277,7 @@ def mevzuat_cikar(metin):
             anahtarlar = _kanun_anahtarlari(kanun_ham)
             if not anahtarlar:
                 continue
-            madde = _norm_no(m.group("madde"))
+            madde = ko.norm_no(m.group("madde"))
             goruldu_span.append((s, e))
             atif = Atif("mevzuat", _sikistir(m.group(0)))
             atif.kanun_anahtar = anahtarlar
@@ -489,7 +385,7 @@ def _merci_durumu(atif, seg):
        'yok'     : izde hiç numaralı daire yok — merci doğrulanamadı."""
     if not atif.daire_key:
         return "eslesti"
-    seg_daireler = _daire_kumesi(seg)
+    seg_daireler = ko.daire_kumesi(seg)
     if not seg_daireler:
         return "yok"
     return "eslesti" if atif.daire_key in seg_daireler else "celiski"
@@ -625,21 +521,98 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu):
                   "orijinal kaynaktan teyit et (exit 0'ı bloklamaz).")
 
 
+# ───────────────────────── F) KÜNYE TEYİT ÖNCE-BAK ─────────────────────────
+def once_bak_calistir(kunye_metni, kutuk_yolu, dokum_dizin):
+    """F — bir künyenin kütükte (+ ham MCP dökümünde) ZATEN VAR olup olmadığını
+    MEKANİK olarak bakar. Advisory'dir (teslim engeli DEĞİL, her hâlde exit 0):
+    amaç AYNI künye için gereksiz bir tekrar MCP teyit turunu ÖNLEMEKTİR — VAR
+    ise ajan yeniden MCP çağrısı yapmadan geçebilir; YOK ise MCP teyidi hâlâ
+    gereklidir (bu fonksiyon teyidin YERİNE geçmez, yalnız tekrarı önler)."""
+    print("=" * 72)
+    print("KÜNYE TEYİT ÖNCE-BAK — oa-kontrol (advisory, teslim engeli DEĞİL)")
+    print("=" * 72)
+
+    esas, karar = ko.kunye_normalize(kunye_metni)
+    daire_key = ko.daire_key(kunye_metni)
+    if esas is None and karar is None:
+        print(f"[HATA] Verilen metinden esas/karar no çıkarılamadı: {kunye_metni!r}")
+        print("       Önce-bak yapılamıyor — künye biçimini (E./K. veya Esas/Karar) kontrol edin.")
+        sys.exit(1)
+
+    atif = Atif("ictihat", _sikistir(kunye_metni))
+    atif.esas, atif.karar = esas, karar
+    if daire_key:
+        atif.daire_key = daire_key
+        dm = ko.DAIRE_RE.search(kunye_metni)
+        if dm:
+            atif.merci = _sikistir(dm.group(0), 40)
+
+    kunye_goster = f"E. {esas or '—'} / K. {karar or '—'}"
+    if atif.merci:
+        kunye_goster += f" / {atif.merci}"
+
+    teyit_kaynaklar, _bilgi_kaynaklar, kutuk_var = kaynaklari_yukle(
+        kutuk_yolu, dokum_dizin, None)
+    if not kutuk_var:
+        print(f"[YOK] Kütük dosyası yok ({kutuk_yolu}) — {kunye_goster} için önce-bak "
+              "yapılamaz; MCP teyidi gerekli.")
+        sys.exit(0)
+
+    teyit_et(atif, teyit_kaynaklar, [])
+    if atif.durum == "TEYİTLİ":
+        print(f"[VAR] {kunye_goster} kütükte/ham dökümde ZATEN mevcut.")
+        print(f"      ↳ kaynak: {atif.kaynak}")
+        print(f"      ↳ iz    : {atif.kaynak_seg}")
+        if atif.merci_uyari:
+            print("      ⚠ MERCİ DOĞRULANAMADI — daireyi ayrıca orijinalinden teyit edin.")
+        print("SONUÇ: Bu künye için AYNI MCP teyit turu GEREKSİZDİR — tekrarlanmayabilir.")
+    else:
+        print(f"[YOK] {kunye_goster} kütükte/ham dökümde bulunamadı.")
+        print("SONUÇ: MCP teyidi gerekli — bu künye kütüğe/ham döküme HENÜZ girmemiş.")
+    sys.exit(0)
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="oa-kontrol atıf/künye doğrulama kapısı — teyitsiz atıf teslim engelidir.")
-    ap.add_argument("taslak", help="Taslak dilekçe/mütalaa (.md/.txt)")
-    ap.add_argument("--kutuk", default=VARSAYILAN_KUTUK,
-                    help="Künye teyit kütüğü — TEYİT EDİCİ (varsayılan: %(default)s)")
-    ap.add_argument("--dokum-dizin", default=VARSAYILAN_DOKUM,
+    ap.add_argument("taslak", nargs="?", default=None,
+                    help="Taslak dilekçe/mütalaa (.md/.txt) — --once-bak modunda gerekmez")
+    ap.add_argument("--once-bak", metavar="KUNYE_METNI", default=None,
+                    help="F — tek bir künyenin kütükte/ham dökümde ZATEN var olup olmadığını "
+                         "MEKANİK denetler (advisory, her hâlde exit 0); VARSA aynı künye için "
+                         "tekrar MCP teyit turu ATLANABİLİR. `taslak` argümanı bu modda gerekmez.")
+    ap.add_argument("--kok",
+                    help="çalışma kökü (oa_hafiza.py/tam_tur.py/pipeline_kayit.py simetrisi); "
+                         "verilirse --kutuk/--dokum-dizin/--cikti-dizin varsayılanları "
+                         "<KOK>/_oa/teyit/kunye-teyit.md, <KOK>/_oa/teyit/dokum, <KOK>/_oa/cikti "
+                         "olur (açıkça verilen --kutuk/--dokum-dizin/--cikti-dizin bunu ezer)")
+    ap.add_argument("--kutuk", default=None,
+                    help="Künye teyit kütüğü — TEYİT EDİCİ "
+                         f"(varsayılan: --kok yoksa {VARSAYILAN_KUTUK}, varsa <KOK>/{VARSAYILAN_KUTUK})")
+    ap.add_argument("--dokum-dizin", default=None,
                     help="Ham MCP döküm dizini — TEYİT EDİCİ ikinci kaynak "
-                         "(varsayılan: %(default)s)")
-    ap.add_argument("--cikti-dizin", default=VARSAYILAN_CIKTI,
+                         f"(varsayılan: --kok yoksa {VARSAYILAN_DOKUM}, varsa <KOK>/{VARSAYILAN_DOKUM})")
+    ap.add_argument("--cikti-dizin", default=None,
                     help="Çalışma evrakı dizini — BİLGİ AMAÇLI, TEYİT EDİCİ DEĞİL "
                          "(model çıktısı; geriye uyum için kabul edilir, statüyü TEYİTLİ "
-                         "YAPMAZ). (varsayılan: %(default)s)")
+                         f"YAPMAZ). (varsayılan: --kok yoksa {VARSAYILAN_CIKTI}, varsa <KOK>/{VARSAYILAN_CIKTI})")
     args = ap.parse_args()
 
+    # --kok verilirse ve ilgili --X açıkça verilmemişse, <KOK>/_oa/... varsayılanına düş.
+    # --kok verilmezse davranış ESKİSİYLE AYNI (CWD-göreli VARSAYILAN_*).
+    kutuk = args.kutuk if args.kutuk is not None else (
+        os.path.join(args.kok, VARSAYILAN_KUTUK) if args.kok else VARSAYILAN_KUTUK)
+    dokum_dizin = args.dokum_dizin if args.dokum_dizin is not None else (
+        os.path.join(args.kok, VARSAYILAN_DOKUM) if args.kok else VARSAYILAN_DOKUM)
+    cikti_dizin = args.cikti_dizin if args.cikti_dizin is not None else (
+        os.path.join(args.kok, VARSAYILAN_CIKTI) if args.kok else VARSAYILAN_CIKTI)
+
+    if args.once_bak is not None:
+        once_bak_calistir(args.once_bak, kutuk, dokum_dizin)
+        return  # once_bak_calistir sys.exit() çağırır; buraya normalde ulaşılmaz
+
+    if not args.taslak:
+        sys.exit("HATA: taslak pozisyonel argümanı gerekli (ya da --once-bak KUNYE_METNI kullanın)")
     if not os.path.isfile(args.taslak):
         sys.exit(f"HATA: taslak bulunamadı: {args.taslak}")
     with open(args.taslak, encoding="utf-8", errors="replace") as f:
@@ -647,14 +620,14 @@ def main():
 
     atiflar = atiflari_cikar(metin)
     teyit_kaynaklar, bilgi_kaynaklar, kutuk_var = kaynaklari_yukle(
-        args.kutuk, args.dokum_dizin, args.cikti_dizin)
+        kutuk, dokum_dizin, cikti_dizin)
 
     if kutuk_var:
         for a in atiflar:
             teyit_et(a, teyit_kaynaklar, bilgi_kaynaklar)
     # kütük yoksa: hepsi TEYİTSİZ kalır (yapısal blok)
 
-    rapor_yaz(atiflar, kutuk_var, args.kutuk)
+    rapor_yaz(atiflar, kutuk_var, kutuk)
 
     if not atiflar:
         sys.exit(0)  # doğrulanacak künye yok

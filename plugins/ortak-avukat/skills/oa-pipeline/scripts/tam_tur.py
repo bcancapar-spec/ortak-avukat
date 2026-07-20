@@ -39,6 +39,14 @@ mantığı alt süreçte koşturulur; BEKLIYOR veya kanıtsız adım varsa TAMAM
 (--zorla ile ŞERH düşülerek geçilebilir). Defter hiç açılmamışsa (defter kullanmayan akış)
 bu kapı sessizce atlanır — mevcut davranış korunur.
 
+GATE G — KALICILIK KAPISI (`--durum`, mekanik): "tamamlandi" durum.json'daki öz-beyandan
+(`tam_tur_durumu: TAMAM`) BAĞIMSIZ olarak, diskteki fiziksel kanıtla yeniden doğrulanır —
+dosya-analiz.md VAR + BOŞ DEĞİL + mtime, tam-tur başlangıcından (`--baslat` zamanı) ESKİ
+DEĞİL. Aksi hâlde "tamamlanmadi" basılır ve `--durum` exit 3 döner — bu, "tamamlandi = SCRIPT
+ÇIKTISI, model beyanı değil" ilkesinin fiziksel karşılığıdır (bkz. pipeline_kayit.py --denetle,
+aynı kapıyı KAPANIŞ'ta tekrar mekanik olarak sorar). Kalıcı kayıt (dosya-analiz.md ve
+dosya-analiz.json) her zaman ATOMİK (tmp + os.replace) yazılır.
+
 Kullanım:
   python tam_tur.py --durum                         # tam tur var mı, delta var mı, künye bayat mı
   python tam_tur.py --baslat --dosya "<ad>"         # tam tur başlat (snapshot planla)
@@ -46,6 +54,11 @@ Kullanım:
   python tam_tur.py --kaydet --zorla                 # boş-çıktı / bayat-künye / işlenmemiş-delta / defter-engeli ŞERH düşerek geç
   python tam_tur.py --delta                          # snapshot'tan bu yana YENİ/DEĞİŞEN/SİLİNEN evrak
   python tam_tur.py --ekle "<gelişme özeti>"         # artımlı gelişme kaydı (tam tur tekrar YOK)
+  python tam_tur.py --brif                            # M1-4 Gate E: ARTIMLI MOD BRİFİ (--durum'un aynı
+                                                        # mekanik sinyaline dayanır; ARAŞTIRMA/analiz
+                                                        # adımının "ham evrağı toplu yeniden okuma /
+                                                        # tam turu tekrar koşma" kararını verirken okuduğu
+                                                        # tek komut)
   python tam_tur.py --kok "<klasör>"                 # çalışma kökü (varsayılan: bulunulan klasör)
 
 Çıkış kodu: 0 = tam tur güncel / iş tamam; 3 = tam tur yok VEYA bekleyen delta var VEYA
@@ -272,9 +285,56 @@ def _durum_oku(kok):
 
 
 def _durum_yaz(kok, durum):
-    os.makedirs(_analiz_dizin(kok), exist_ok=True)
-    with open(_analiz_json(kok), "w", encoding="utf-8") as f:
+    """dosya-analiz.json'u ATOMİK yaz (tmp + os.replace) — kalıcı kayıt yarım
+    yazımda asla bozuk/yarım görünmesin (Gate G — KALICILIK KAPISI)."""
+    dizin = _analiz_dizin(kok)
+    os.makedirs(dizin, exist_ok=True)
+    hedef = _analiz_json(kok)
+    tmp = f"{hedef}.tmp.{os.getpid()}"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(durum, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, hedef)
+
+
+def _tam_tur_baslangic_epoch(durum):
+    """durum['baslatildi'] (varsa, `--baslat` ile _simdi() biçiminde yazılır)
+    epoch'a çevrilir. Ayrıştırılamazsa/yoksa None (kapı atlanır — --baslat hiç
+    kullanılmadan doğrudan --kaydet ile çalışan geriye-uyum akışları için)."""
+    s = durum.get("baslatildi") if durum else None
+    if not s:
+        return None
+    try:
+        return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M").timestamp()
+    except Exception:
+        return None
+
+
+def _analiz_kaydi_fiziksel_tamam(kok, durum):
+    """Gate G — KALICILIK KAPISI (mekanik, model beyanına DEĞİL diske dayanır):
+    dosya-analiz.md VAR + BOŞ DEĞİL + mtime >= tam-tur başlangıcı (varsa).
+    Bu denetim durum.json'daki `tam_tur_durumu: TAMAM` öz-beyanından BAĞIMSIZDIR
+    — o alan elle/başka araçla bozulsa, ya da dosya sonradan silinse/boşaltılsa
+    ya da `--baslat` ile tur yeniden açılıp `--kaydet` ile TAZELENMEDEN bırakılsa
+    bile bu fonksiyon fiziksel kanıtı yeniden doğrular. Döner: (tamam:bool, sebep:str)."""
+    yol = _analiz_md(kok)
+    if not os.path.exists(yol):
+        return False, "dosya-analiz.md yok"
+    try:
+        boyut = os.path.getsize(yol)
+    except OSError:
+        boyut = 0
+    if boyut == 0:
+        return False, "dosya-analiz.md boş"
+    baslangic = _tam_tur_baslangic_epoch(durum)
+    if baslangic is not None:
+        try:
+            mtime = os.path.getmtime(yol)
+        except OSError:
+            mtime = None
+        if mtime is not None and mtime < baslangic:
+            return False, ("dosya-analiz.md tam-tur başlangıcından ESKİ (bayat kayıt — "
+                            "--baslat sonrası --kaydet koşulmamış)")
+    return True, ""
 
 
 def _delta_hesapla(kok, durum):
@@ -463,40 +523,47 @@ def cmd_kaydet(kok, zorla=False):
     durum.setdefault("gelismeler", [])
     _durum_yaz(kok, durum)
 
-    # Model-okur kayıt belgesi
+    # Model-okur kayıt belgesi — Gate G (KALICILIK KAPISI): ATOMİK yaz (tmp +
+    # os.replace); yarım yazımda dosya asla bozuk/eksik görünmesin (--durum'un
+    # mekanik "VAR + BOŞ DEĞİL" denetimi bu garantiye dayanır).
     os.makedirs(_analiz_dizin(kok), exist_ok=True)
-    with open(_analiz_md(kok), "w", encoding="utf-8") as f:
-        f.write(f"# DOSYA ANALİZ KAYDI (TAM TUR) — {durum['dosya']}\n\n")
-        f.write(f"- Tam tur tarihi: **{durum['tam_tur_tarihi']}**\n")
-        f.write(f"- Snapshot evrak sayısı: **{durum['kunye_snapshot']['toplam_evrak']}**\n")
-        if bos_cikti_zorla or serh_yutma or serh_bayat or serh_defter:
-            f.write("- ⚠ **ŞERH (--zorla ile kaydedildi):**\n")
-            if bos_cikti_zorla:
-                f.write("  - _oa/cikti boş olmasına rağmen zorla damgalandı "
-                        "(adımlar çalışma evrakı bırakmamış).\n")
-            if serh_yutma:
-                f.write("  - GELİŞMELER'de anılmadan snapshot'a yutulan işlenmemiş evrak: "
-                        + ", ".join(f"`{e}`" for e in serh_yutma) + "\n")
-            if serh_bayat:
-                f.write("  - bayat künye üzerinden zorla damgalandı: "
-                        + ", ".join(f"`{e}`" for e in serh_bayat) + "\n")
-            if serh_defter:
-                tek_satir = " ".join(serh_defter.split())[:400]
-                f.write("  - Pipeline defteri TESLİM ENGELİ bildirmesine rağmen zorla "
-                        f"damgalandı: {tek_satir}\n")
-        f.write("- Bu belge, tam turun MODEL-OKUR çıktısıdır. Sonraki oturumlar TAM TURU\n")
-        f.write("  TEKRAR YAPMAZ; yeni evrak/gelişme geldiğinde `--delta` ile yalnız yeni\n")
-        f.write("  kısım işlenir ve `--ekle` ile aşağıdaki GELİŞMELER günlüğüne yazılır.\n\n")
-        f.write("## Adım çıktıları (tam turun kanıtı — _oa/cikti/)\n\n")
-        if kalemler:
-            f.write("| Çalışma evrakı | Boyut (bayt) |\n|---|---|\n")
-            for k in kalemler:
-                f.write(f"| `{k['yol']}` | {k['boyut']} |\n")
-        else:
-            f.write("> ⚠ _oa/cikti/ boş — tam tur adımları çalışma evrakı bırakmamış "
-                    "(FİZİKSEL İŞLETİM PROTOKOLÜ ihlali; adımlar evraksız 'UYGULANDI' sayılmaz).\n")
-        f.write("\n## GELİŞMELER GÜNLÜĞÜ (artımlı — tam tur tekrar edilmez)\n\n")
-        f.write("_(yeni evrak/delil/gelişme buraya `--ekle` ile eklenir)_\n")
+    parcalar = []
+    parcalar.append(f"# DOSYA ANALİZ KAYDI (TAM TUR) — {durum['dosya']}\n\n")
+    parcalar.append(f"- Tam tur tarihi: **{durum['tam_tur_tarihi']}**\n")
+    parcalar.append(f"- Snapshot evrak sayısı: **{durum['kunye_snapshot']['toplam_evrak']}**\n")
+    if bos_cikti_zorla or serh_yutma or serh_bayat or serh_defter:
+        parcalar.append("- ⚠ **ŞERH (--zorla ile kaydedildi):**\n")
+        if bos_cikti_zorla:
+            parcalar.append("  - _oa/cikti boş olmasına rağmen zorla damgalandı "
+                            "(adımlar çalışma evrakı bırakmamış).\n")
+        if serh_yutma:
+            parcalar.append("  - GELİŞMELER'de anılmadan snapshot'a yutulan işlenmemiş evrak: "
+                            + ", ".join(f"`{e}`" for e in serh_yutma) + "\n")
+        if serh_bayat:
+            parcalar.append("  - bayat künye üzerinden zorla damgalandı: "
+                            + ", ".join(f"`{e}`" for e in serh_bayat) + "\n")
+        if serh_defter:
+            tek_satir = " ".join(serh_defter.split())[:400]
+            parcalar.append("  - Pipeline defteri TESLİM ENGELİ bildirmesine rağmen zorla "
+                            f"damgalandı: {tek_satir}\n")
+    parcalar.append("- Bu belge, tam turun MODEL-OKUR çıktısıdır. Sonraki oturumlar TAM TURU\n")
+    parcalar.append("  TEKRAR YAPMAZ; yeni evrak/gelişme geldiğinde `--delta` ile yalnız yeni\n")
+    parcalar.append("  kısım işlenir ve `--ekle` ile aşağıdaki GELİŞMELER günlüğüne yazılır.\n\n")
+    parcalar.append("## Adım çıktıları (tam turun kanıtı — _oa/cikti/)\n\n")
+    if kalemler:
+        parcalar.append("| Çalışma evrakı | Boyut (bayt) |\n|---|---|\n")
+        for k in kalemler:
+            parcalar.append(f"| `{k['yol']}` | {k['boyut']} |\n")
+    else:
+        parcalar.append("> ⚠ _oa/cikti/ boş — tam tur adımları çalışma evrakı bırakmamış "
+                        "(FİZİKSEL İŞLETİM PROTOKOLÜ ihlali; adımlar evraksız 'UYGULANDI' sayılmaz).\n")
+    parcalar.append("\n## GELİŞMELER GÜNLÜĞÜ (artımlı — tam tur tekrar edilmez)\n\n")
+    parcalar.append("_(yeni evrak/delil/gelişme buraya `--ekle` ile eklenir)_\n")
+    _analiz_md_hedef = _analiz_md(kok)
+    _analiz_md_tmp = f"{_analiz_md_hedef}.tmp.{os.getpid()}"
+    with open(_analiz_md_tmp, "w", encoding="utf-8") as f:
+        f.write("".join(parcalar))
+    os.replace(_analiz_md_tmp, _analiz_md_hedef)
     print(f"TAM TUR kaydedildi: {durum['dosya']} · {durum['kunye_snapshot']['toplam_evrak']} evrak "
           f"snapshot · {len(kalemler)} adım çıktısı"
           + ("  [--zorla ile ŞERHLİ]" if (bos_cikti_zorla or serh_yutma or serh_bayat or serh_defter) else ""))
@@ -580,12 +647,19 @@ def cmd_durum(kok):
     durum = _durum_oku(kok)
     if not durum:
         print("TAM TUR: hiç yapılmamış. İlk iş: tam tur (manifest→ingest→...→kontrol) + `--kaydet`.")
+        print("Analiz kaydı    : tamamlanmadi (tam tur hiç başlatılmamış)")
         return 3
     print(f"Dosya           : {durum.get('dosya')}")
     print(f"Tam tur durumu  : {durum.get('tam_tur_durumu')}  ({durum.get('tam_tur_tarihi') or '—'})")
     snap = durum.get("kunye_snapshot", {})
     print(f"Snapshot evrak  : {snap.get('toplam_evrak', '—')}  (alındı: {snap.get('alindi', '—')})")
     print(f"Gelişme kaydı   : {len(durum.get('gelismeler', []))}")
+    # Gate G — KALICILIK KAPISI (mekanik): dosya-analiz.md fiziksel kanıtı,
+    # durum.json'daki öz-beyandan BAĞIMSIZ doğrulanır. "tamamlandi" = SCRIPT
+    # ÇIKTISI, model beyanı değil (bkz. _analiz_kaydi_fiziksel_tamam).
+    fiziksel_tamam, fiziksel_sebep = _analiz_kaydi_fiziksel_tamam(kok, durum)
+    print(f"Analiz kaydı    : {'tamamlandi' if fiziksel_tamam else 'tamamlanmadi'}"
+          + (f"  ({fiziksel_sebep})" if not fiziksel_tamam else ""))
     if durum.get("tam_tur_durumu") == "TAMAM":
         yeni, degisen, silinen = _delta_hesapla(kok, durum)
         if yeni is None:
@@ -599,9 +673,75 @@ def cmd_durum(kok):
             # künye diskle örtüşmüyor → "güncel" demek KÖRLÜK olurdu; ingest'e yönlendir.
             print("Delta           : KUNYE BAYAT (yukaridaki uyari) — once oa_ingest kos.")
             return 3
+        if not fiziksel_tamam:
+            # json "TAMAM" + delta temiz görünse de fiziksel kanıt yoksa/bayatsa
+            # "güncel" denemez — Gate G kalıcılık kapısı önceliklidir.
+            print("Delta           : yok ama fiziksel kalıcılık kapısı GEÇMEDİ (yukarı bkz).")
+            return 3
         print("Delta           : yok — tam tur güncel.")
         return 0
     return 3
+
+
+def cmd_brif(kok):
+    """M1-4 GATE E — ARTIMLI MOD BRİFİ (TAM TUR DELTA ZORLAMA).
+
+    --durum ile AYNI mekanik sinyale dayanır (tek gerçek kaynak — ayrı bir
+    mantık icat edilmedi): Gate G (kalıcılık kapısı) + delta hesabı. Amaç,
+    ARAŞTIRMA/analiz adımının önüne doğrudan tüketilebilir bir TALİMAT metni
+    koymaktır — "tam tur TAMAM + delta yok" ise hat HAM evrağı toplu yeniden
+    OKUMAZ / tam turu TEKRAR KOŞMAZ, yalnız dosya-analiz.md + GELİŞMELER
+    günlüğü okunur; bekleyen delta varsa yalnız o evrak(lar) tek tek işlenir.
+
+    Dönüş kodları --durum ile birebir aynı sözleşmeyi taşır: 0 = artımlı mod
+    TAM AÇIK (tam tur güncel, toplu yeniden okuma GEREKSİZ); 3 = ZORUNLU TAM
+    TUR gerekli VEYA yalnız bekleyen delta işlenmeli (KISMİ); 1 = ölçülemedi
+    (künye okunamadı)."""
+    bayat = _bayat_kontrol_yaz(kok)
+    durum = _durum_oku(kok)
+    if not durum or durum.get("tam_tur_durumu") != "TAMAM":
+        print("ARTIMLI MOD: KAPALI — tam tur hiç yapılmamış/TAMAM değil.")
+        print("TALİMAT: ZORUNLU TAM TUR işletilmeli (MANİFEST → ... → KONTROL), sonra --kaydet.")
+        return 3
+    fiziksel_tamam, fiziksel_sebep = _analiz_kaydi_fiziksel_tamam(kok, durum)
+    if not fiziksel_tamam:
+        print(f"ARTIMLI MOD: KAPALI — Gate G (kalıcılık kapısı) geçmedi ({fiziksel_sebep}).")
+        print("TALİMAT: tam tur yeniden kapatılmalı (--kaydet), sonra tekrar --brif.")
+        return 3
+    yeni, degisen, silinen = _delta_hesapla(kok, durum)
+    if yeni is None:
+        print("ARTIMLI MOD: ÖLÇÜLEMEDİ — güncel künye okunamadı (oa-ingest yeniden koşmalı).")
+        return 1
+    if bayat:
+        print("ARTIMLI MOD: KAPALI — künye diskle örtüşmüyor (yukarıdaki KÜNYE BAYAT uyarısı).")
+        print("TALİMAT: önce oa_ingest koş, sonra tekrar --brif.")
+        return 3
+    if yeni or degisen or silinen:
+        print(f"ARTIMLI MOD: KISMİ — tam tur ({durum.get('tam_tur_tarihi')}) KORUNUR, TEKRAR YAPILMAZ; "
+              f"{len(yeni)} yeni, {len(degisen)} değişen, {len(silinen)} silinen evrak bekliyor.")
+        print("TALİMAT: HAM evrağı TOPLU yeniden OKUMA — yalnız aşağıdaki evrak(lar) tek tek işlenir; "
+              "kalan evrak dosya-analiz.md'den (GELİŞMELER günlüğü) devralınır.")
+        for k in yeni:
+            print(f"   + YENİ: {k}")
+        for k in degisen:
+            print(f"   ~ DEĞİŞEN: {k}")
+        for k in silinen:
+            print(f"   - SİLİNEN: {k}")
+        print(f"Kayıt belgesi: {_analiz_md(kok)}")
+        print("İşlem sonrası: `--ekle \"...\"` ile GELİŞME yaz, sonra `--kaydet` ile snapshot tazele.")
+        return 3
+    print(f"ARTIMLI MOD: TAM AÇIK — tam tur ({durum.get('tam_tur_tarihi')}) güncel, bekleyen delta yok.")
+    print(f"Kayıt belgesi: {_analiz_md(kok)}")
+    print("TALİMAT: ARAŞTIRMA/analiz adımı HAM evrağı TOPLU yeniden OKUMASIN, tam tur TEKRAR "
+          "KOŞULMASIN — yalnız dosya-analiz.md + GELİŞMELER günlüğü okunur; avukatın somut yeni "
+          "sorusu belirli bir evrakı gerektiriyorsa yalnız O evrak (tek tek, haritadan/seçici) açılır.")
+    gelismeler = durum.get("gelismeler") or []
+    if gelismeler:
+        son = gelismeler[-3:]
+        print(f"Son gelişme(ler) ({len(son)}/{len(gelismeler)}):")
+        for g in son:
+            print(f"   - {g.get('tarih')}: {g.get('ozet')}")
+    return 0
 
 
 def main():
@@ -615,6 +755,9 @@ def main():
     ap.add_argument("--ekle", metavar="OZET")
     ap.add_argument("--zorla", action="store_true",
                     help="kaydet: boş-çıktı / işlenmemiş-delta engelini şerh düşerek geç")
+    ap.add_argument("--brif", action="store_true",
+                    help="M1-4 Gate E: ARTIMLI MOD BRİFİ (--durum sinyaline dayanır; "
+                         "ARAŞTIRMA/analiz adımının toplu-yeniden-okuma kararı için)")
     a = ap.parse_args()
 
     kok = a.kok
@@ -629,6 +772,8 @@ def main():
         sys.exit(cmd_delta(kok))
     if a.ekle is not None:
         sys.exit(cmd_ekle(kok, a.ekle))
+    if a.brif:
+        sys.exit(cmd_brif(kok))
     # varsayılan: durum
     sys.exit(cmd_durum(kok))
 

@@ -174,3 +174,136 @@ def test_klasor_yok_hata_ile_cikar(izole_kok):
     kod, cikti = _cli(olmayan)
     assert kod != 0
     assert "HATA" in cikti
+
+
+# ── (3) ANALİZ TOKEN RAPORU — Gate D (M1-4) ─────────────────────────────────
+
+def _tam_yukleme_yaz(kok, olaylar):
+    defter_d = kok / "_oa" / "defter"
+    defter_d.mkdir(parents=True, exist_ok=True)
+    satirlar = "\n".join(json.dumps(o, ensure_ascii=False) for o in olaylar) + "\n"
+    (defter_d / "tam-yukleme.jsonl").write_text(satirlar, encoding="utf-8")
+
+
+def test_tam_yukleme_yoksa_rapor_yok_damgalanir(izole_kok):
+    _ornek_iskelet_kur(izole_kok)
+    kod, _cikti = _cli(izole_kok)
+    assert kod == 0
+    metrik = json.loads((izole_kok / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
+    assert metrik["analiz_token_raporu"]["durum"] == "yok"
+    assert "toplam_token" not in metrik["analiz_token_raporu"]
+
+
+def test_analiz_token_raporu_ajan_bazinda_toplanir(izole_kok):
+    """İki ajan, iki büyük evrak — künyedeki karakter sayısına göre token'a
+    çevrilip ajan bazında + toplamda doğru toplanmalı."""
+    metin_d = izole_kok / "_oa" / "metin"
+    defter_d = izole_kok / "_oa" / "defter"
+    metin_d.mkdir(parents=True, exist_ok=True)
+    defter_d.mkdir(parents=True, exist_ok=True)
+
+    kunye = {
+        "toplam_evrak": 2, "toplam_karakter": 900_000, "tahmini_token": 300_000,
+        "kayitlar": [
+            {"kaynak": "buyuk1.pdf", "md": "001-buyuk1.md", "karakter": 300_000, "sha": "aaa"},
+            {"kaynak": "buyuk2.pdf", "md": "002-buyuk2.md", "karakter": 600_000, "sha": "bbb"},
+        ],
+    }
+    (metin_d / "00-kunye.json").write_text(json.dumps(kunye, ensure_ascii=False), encoding="utf-8")
+
+    _tam_yukleme_yaz(izole_kok, [
+        {"kaynak": "buyuk1.pdf", "ajan": "oa-vakia"},
+        {"kaynak": "buyuk2.pdf", "ajan": "oa-antitez"},
+        {"kaynak": "buyuk2.pdf", "ajan": "oa-antitez"},  # mükerrer tam yükleme — ayrı olay
+    ])
+
+    kod, cikti = _cli(izole_kok)
+    assert kod == 0, cikti
+    metrik = json.loads((izole_kok / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
+    r = metrik["analiz_token_raporu"]
+    assert r["durum"] == "olculdu"
+    assert r["olay_sayisi"] == 3
+
+    ajanlar = {a["ajan"]: a for a in r["ajan_bazinda"]}
+    assert ajanlar["oa-vakia"]["toplam_token"] == 300_000 // 3
+    assert ajanlar["oa-vakia"]["olay_sayisi"] == 1
+    assert ajanlar["oa-antitez"]["olay_sayisi"] == 2
+    assert ajanlar["oa-antitez"]["toplam_token"] == (600_000 // 3) * 2
+
+    beklenen_toplam = ajanlar["oa-vakia"]["toplam_token"] + ajanlar["oa-antitez"]["toplam_token"]
+    assert r["toplam_token"] == beklenen_toplam
+    assert "ANALİZ TOKEN RAPORU" in cikti
+
+
+def test_analiz_token_raporu_esik_asiminda_secici_oku_uyarisi(izole_kok):
+    """Toplam token, külliyat tahmini token'ını (varsayılan eşik) AŞARSA
+    'SEÇİCİ OKU' uyarısı basılmalı — ama exit kodu yine 0 (kapı değil, ölçer)."""
+    metin_d = izole_kok / "_oa" / "metin"
+    metin_d.mkdir(parents=True, exist_ok=True)
+    kunye = {
+        "toplam_evrak": 1, "toplam_karakter": 30_000, "tahmini_token": 10_000,
+        "kayitlar": [{"kaynak": "buyuk.pdf", "md": "001-buyuk.md", "karakter": 30_000, "sha": "ccc"}],
+    }
+    (metin_d / "00-kunye.json").write_text(json.dumps(kunye, ensure_ascii=False), encoding="utf-8")
+
+    # 4 ayrı ajan aynı büyük evrağı tam yüklüyor → toplam token eşiği (10.000) aşar.
+    _tam_yukleme_yaz(izole_kok, [
+        {"kaynak": "buyuk.pdf", "ajan": f"oa-ajan-{i}"} for i in range(4)
+    ])
+
+    kod, cikti = _cli(izole_kok)
+    assert kod == 0
+    metrik = json.loads((izole_kok / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
+    r = metrik["analiz_token_raporu"]
+    assert r["esik_token"] == 10_000
+    assert r["esik_kaynak"] == "kunye (kulliyat tahmini_token)"
+    assert r["esik_asimi"] is True
+    assert "uyari" in r
+    assert "SEÇİCİ OKU" in r["uyari"]
+    assert "SEÇİCİ OKU" in cikti
+
+
+def test_analiz_token_raporu_esik_elle_verilebilir(izole_kok):
+    metin_d = izole_kok / "_oa" / "metin"
+    metin_d.mkdir(parents=True, exist_ok=True)
+    kunye = {
+        "toplam_evrak": 1, "toplam_karakter": 3000, "tahmini_token": 1000,
+        "kayitlar": [{"kaynak": "a.pdf", "md": "001-a.md", "karakter": 3000, "sha": "ddd"}],
+    }
+    (metin_d / "00-kunye.json").write_text(json.dumps(kunye, ensure_ascii=False), encoding="utf-8")
+    _tam_yukleme_yaz(izole_kok, [{"kaynak": "a.pdf", "ajan": "oa-vakia"}])
+
+    args = [sys.executable, str(SCRIPT), "--kok", str(izole_kok), "--analiz-esik-token", "100"]
+    cp = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert cp.returncode == 0
+    metrik = json.loads((izole_kok / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
+    r = metrik["analiz_token_raporu"]
+    assert r["esik_token"] == 100
+    assert r["esik_kaynak"] == "elle (--analiz-esik-token)"
+    assert r["esik_asimi"] is True  # 3000/3=1000 token > 100
+
+
+def test_analiz_token_raporu_kaynak_kunyede_yoksa_ayri_sayilir_uydurulmaz(izole_kok):
+    """Künyede bulunmayan (elle girilmiş/silinmiş) bir kaynağın olayı token
+    toplamına dahil edilmemeli ama sessizce de yutulmamalı."""
+    metin_d = izole_kok / "_oa" / "metin"
+    metin_d.mkdir(parents=True, exist_ok=True)
+    kunye = {
+        "toplam_evrak": 1, "toplam_karakter": 300, "tahmini_token": 100,
+        "kayitlar": [{"kaynak": "bilinen.pdf", "md": "001-bilinen.md", "karakter": 300, "sha": "eee"}],
+    }
+    (metin_d / "00-kunye.json").write_text(json.dumps(kunye, ensure_ascii=False), encoding="utf-8")
+    _tam_yukleme_yaz(izole_kok, [
+        {"kaynak": "bilinen.pdf", "ajan": "oa-vakia"},
+        {"kaynak": "elle-girilmis.pdf", "ajan": "oa-vakia"},
+    ])
+
+    kod, _cikti = _cli(izole_kok)
+    assert kod == 0
+    metrik = json.loads((izole_kok / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
+    r = metrik["analiz_token_raporu"]
+    ajan = r["ajan_bazinda"][0]
+    assert ajan["olay_sayisi"] == 2
+    assert ajan["kaynak_bulunamadi"] == 1
+    assert ajan["toplam_token"] == 300 // 3  # yalnız bilinen.pdf sayıldı
+    assert "not_kaynak_bulunamadi" in r

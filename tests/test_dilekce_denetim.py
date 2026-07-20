@@ -114,6 +114,43 @@ def test_davaci_talebimizden_vazgecme_yakalanir():
     assert aleyhe
 
 
+# ── EK-FİX (risk#2): kalıbın KENDİ 'değil' gövdesi sahte-olumsuzlama sayılmamalı ──
+
+def test_sikayetci_degil_duz_cumlede_ARTIK_BLOKLAR_REGRESYON():
+    """REGRESYON: eski kod, aleyhe eşleşmesinin (m.start()..m.end()) KENDİSİNİ de
+    NEG penceresine dahil ediyordu. 'şikayetçi değil' kalıbının gövdesi 'değil'
+    kelimesini TAŞIDIĞI için NEG deseni eşleşmenin İÇİNDE hep bulunuyor, bu kalıp
+    düz bir cümlede bile ASLA bloklamıyor, hep [BİLGİ]'ye düşüyordu. Artık pencere
+    yalnız eşleşmenin ÖNCESİ/SONRASI olduğundan, gerçek bir olumsuzlama-eki
+    olmayan düz kullanım BLOKLAMALI (engel sinyali)."""
+    metin = "Müvekkilimiz şikayetçi değil, dosyaya yeni delil sunmaktadır."
+    _eksik, _duzen, _ocr, aleyhe, aleyhe_notu = dd.denetle(metin, "genel", "musteki")
+    assert aleyhe, (
+        f"REGRESYON: 'şikayetçi değil' düz cümlede BLOKLAMADI (eski hata geri geldi): "
+        f"aleyhe={aleyhe} notu={aleyhe_notu}")
+
+
+def test_hakli_degiliz_duz_cumlede_ARTIK_BLOKLAR_REGRESYON():
+    """Aynı regresyon sınıfı: 'haklı değiliz' kalıbı da 'değil' gövdesini taşır;
+    düz bir cümlede gerçek olumsuzlama-ekiyle çevrelenmediği sürece BLOKLAMALI."""
+    metin = "Bu davada haklı değiliz, ancak kısmi taleplerimiz mevcuttur."
+    _eksik, _duzen, _ocr, aleyhe, aleyhe_notu = dd.denetle(metin, "dava", "davaci")
+    assert aleyhe, (
+        f"REGRESYON: 'haklı değiliz' düz cümlede BLOKLAMADI (eski hata geri geldi): "
+        f"aleyhe={aleyhe} notu={aleyhe_notu}")
+
+
+def test_sikayetci_degil_gercek_olumsuzlama_ile_cevriliyse_hala_bilgiye_duser():
+    """Kontrast: kalıbın KENDİSİ dışında, penceresinde GERÇEK bir olumsuzlama-eki
+    varsa (ör. 'demek/anlamına gelmemek kaydıyla') sinyal hâlâ [BİLGİ]'ye düşmeli
+    — fix yalnız kalıbın KENDİ 'değil'ini pencereden çıkardı, dış olumsuzlamayı
+    yakalama yeteneğini bozmadı."""
+    metin = "Müvekkilimiz şikayetçi değil demek anlamına gelmemek kaydıyla beyanda bulunmaktadır."
+    _eksik, _duzen, _ocr, aleyhe, aleyhe_notu = dd.denetle(metin, "genel", "musteki")
+    assert not aleyhe, f"gerçek olumsuzlama varken engel sinyali üretilmemeli: {aleyhe}"
+    assert aleyhe_notu
+
+
 # ── [B] TERTİP/DÜZEN — zorunlu unsurların tip'ten BAĞIMSIZ mekanik varlık denetimi ──
 
 def test_duzen_tip_ozel_listede_olmayan_unsur_ayrica_yakalanir():
@@ -231,3 +268,114 @@ def test_main_udf_bayragi_gecersiz_udf_ile_engel_uretir(tmp_path, capsys):
     cikti = capsys.readouterr().out
     assert "[E] UDF GEÇERLİLİK KAPISI" in cikti
     assert "GEÇERSİZ" in cikti
+
+
+# ── [F] İÇTİHAT MUHAKEME ZİNCİRİ KAPISI — dilekce_denetim ↔ oa-kontrol bağlantısı (M2-3) ──
+
+KUNYE_F = "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023"
+TASLAK_ICTIHATLI = (
+    "# Mahkeme Başkanlığına\n\nDavacı: Ahmet ...\nDavalı: Mehmet ...\n\n"
+    "## Konu\nİşçilik alacakları.\n\n"
+    "## Açıklamalar\n1. Somut olayda Yargıtay 4. HD'nin E. 2023/1234 K. 2023/5678 "
+    "sayılı kararı emsal teşkil etmektedir.\n\n## Hukuki Sebepler\nHMK.\n\n"
+    "## Deliller\nTanık.\n\n## Netice-i Talep\nKabulünü talep ederiz.\n\n"
+    "01.01.2026\nAv. Test Vekil\nimza\n"
+)
+
+
+def _f_kur(tmp_path, damga="LEHE", ayirt_etme=""):
+    """[F] için _oa/teyit/dokum + _oa/cikti/*ictihat-muhakeme*.md iskeleti kurar;
+    taslak dosya yolunu döndürür."""
+    dokum_dizin = tmp_path / "_oa" / "teyit" / "dokum"
+    dokum_dizin.mkdir(parents=True)
+    cikti_dizin = tmp_path / "_oa" / "cikti"
+    cikti_dizin.mkdir(parents=True)
+    (dokum_dizin / "kaynak.md").write_text(
+        "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 sayılı kararın tam metni "
+        "burada yer almaktadır...\n",
+        encoding="utf-8",
+    )
+    satirlar = [
+        "# 01 — İçtihat Muhakeme Kaydı", "",
+        f"**KUNYE:** {KUNYE_F}",
+        "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+        f"**DAMGA:** {damga}", "",
+        "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
+        "## İLLİYET", "...illiyet açıklaması...", "",
+        "## AYIRT-ETME", ayirt_etme, "",
+    ]
+    (cikti_dizin / "01-ictihat-muhakeme.md").write_text("\n".join(satirlar), encoding="utf-8")
+
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(TASLAK_ICTIHATLI, encoding="utf-8")
+    return taslak
+
+
+def test_ictihat_muhakeme_kapisi_lehe_temiz_engel_uretmez(tmp_path):
+    """[F] fonksiyon-seviyesi: DAMGA=LEHE + tam alanlı kayıt → exit 0, [BLOK] yok."""
+    taslak = _f_kur(tmp_path, damga="LEHE")
+    kod, cikti = dd.ictihat_muhakeme_kapisi(str(taslak), kok=str(tmp_path))
+    assert kod == 0, cikti
+    assert "[BLOK]" not in cikti
+
+
+def test_ictihat_muhakeme_kapisi_aleyhe_engel_uretir(tmp_path):
+    """[F] fonksiyon-seviyesi: DAMGA=ALEYHE → exit 1 (anayasa m.6)."""
+    taslak = _f_kur(tmp_path, damga="ALEYHE")
+    kod, cikti = dd.ictihat_muhakeme_kapisi(str(taslak), kok=str(tmp_path))
+    assert kod == 1, cikti
+    assert "ALEYHE" in cikti
+
+
+def test_main_ictihat_muhakeme_bayragi_kapali_ise_f_bolumu_hic_calismaz(tmp_path):
+    """Bayrak verilmezse [F] hiç çalışmaz — mevcut A-E davranışı bozulmaz (geriye uyum)."""
+    taslak = _f_kur(tmp_path, damga="ALEYHE")  # ALEYHE olsa bile --ictihat-muhakeme YOK
+
+    argv_yedek = sys.argv
+    sys.argv = ["dilekce_denetim.py", str(taslak), "--tip", "dava", "--taraf", "davaci"]
+    try:
+        with pytest.raises(SystemExit) as exc:
+            dd.main()
+    finally:
+        sys.argv = argv_yedek
+
+    assert exc.value.code == 0, "flag verilmezse [F] hiç tetiklenmemeli; ALEYHE kaydı bloklamamalı"
+
+
+def test_main_ictihat_muhakeme_bayragi_ile_aleyhe_teslim_engeli_uretir(tmp_path, capsys):
+    """CLI ucu: --ictihat-muhakeme --kok ile ALEYHE damgalı kayıt genel SONUCU engellemeli
+    (exit 1) — mekanik kapılar zincirine YENİ yeşil ışık [F] eklendiğinin uçtan uca kanıtı."""
+    taslak = _f_kur(tmp_path, damga="ALEYHE")
+
+    argv_yedek = sys.argv
+    sys.argv = ["dilekce_denetim.py", str(taslak), "--tip", "dava", "--taraf", "davaci",
+                "--ictihat-muhakeme", "--kok", str(tmp_path)]
+    try:
+        with pytest.raises(SystemExit) as exc:
+            dd.main()
+    finally:
+        sys.argv = argv_yedek
+
+    assert exc.value.code == 1
+    cikti = capsys.readouterr().out
+    assert "[F] İÇTİHAT MUHAKEME ZİNCİRİ KAPISI" in cikti
+    assert "ALEYHE" in cikti
+
+
+def test_main_ictihat_muhakeme_bayragi_ile_lehe_temiz_gecer(tmp_path, capsys):
+    """Kontrast: LEHE + tam alanlı kayıtta [F] engel üretmemeli; diğer bölümler
+    (A-E) zaten temizse genel sonuç da temiz olmalı."""
+    taslak_yolu = _f_kur(tmp_path, damga="LEHE")
+
+    argv_yedek = sys.argv
+    sys.argv = ["dilekce_denetim.py", str(taslak_yolu), "--tip", "dava", "--taraf", "davaci",
+                "--ictihat-muhakeme", "--kok", str(tmp_path)]
+    try:
+        with pytest.raises(SystemExit) as exc:
+            dd.main()
+    finally:
+        sys.argv = argv_yedek
+
+    cikti = capsys.readouterr().out
+    assert "[F] İÇTİHAT MUHAKEME ZİNCİRİ KAPISI" in cikti
+    assert exc.value.code == 0, cikti

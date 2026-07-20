@@ -31,6 +31,19 @@ tahmini bir rakamla doldurulmaz. Kanıt yoksa metrik yoktur.
                   Delta varsa: tam tur TEKRAR edilmez → tam analiz token'ı tasarruf edilir.
   4) Defter     : parçaların statü dağılımı (UYGULANDI / GEREKSIZ / BILGI-EKSIK /
                   YUKLENEMEDI / BEKLIYOR) — işletimin eksiksizlik telemetrisi.
+  5) ANALİZ TOKEN RAPORU (M1-4, Gate D): `_oa/defter/tam-yukleme.jsonl` (Gate B —
+                  okuma_kapisi.py'nin TAM-YÜKLEME DEDUP DEFTERİ; her satır bir alt-
+                  ajanın büyük bir evrağı TAM yüklediği olayı: kaynak+ajan+zaman) okunur;
+                  her olayın `kaynak`ı 00-kunye.json'daki `karakter` alanıyla eşlenir ve
+                  ajan bazında + toplamda tahmini token'a çevrilir. Bu, "hangi alt-ajan
+                  ne kadar evrak-token okudu" sorusunun deterministik ÖLÇÜMÜdür (defter/
+                  okuma-log'dan derlenir, tahmin/varsayım YOK). Eşik (varsayılan: külliyat
+                  toplam tahmini token'ı — kunye yoksa sabit `ANALIZ_ESIK_VARSAYILAN`;
+                  `--analiz-esik-token` ile elle de verilebilir) aşılırsa "SEÇİCİ OKU"
+                  UYARISI basılır — bu bir ÖLÇÜM UYARISIDIR, engel/kapı değildir; derinlik
+                  kısılmaz, yalnız haritadan seçici okumaya dikkat çekilir. Defter yoksa
+                  (hiç tam-yükleme olayı) "yok" damgalanır (yokluk kanıt değildir, sıfır
+                  UYDURULMAZ).
 
 ÇIKTI:
   _oa/defter/metrik.json  (makine-okur, deterministik)
@@ -39,6 +52,7 @@ tahmini bir rakamla doldurulmaz. Kanıt yoksa metrik yoktur.
 Kullanım:
   python oa_metrik.py --kok "<çalışma_klasörü>"      # varsayılan: bulunulan klasör
   python oa_metrik.py --kok "<klasör>" --cikti "<metrik.json yolu>"
+  python oa_metrik.py --kok "<klasör>" --analiz-esik-token 200000   # eşiği elle ver
 
 Çıkış kodu: her zaman 0 (bu bir GEÇİT değil, ÖLÇERdir; boşluğu raporlar, engellemez).
 """
@@ -59,6 +73,9 @@ import sys
 KAR_PER_TOKEN = 3   # oa_ingest ile tutarlı kaba token tahmini (~3 karakter/token)
 YOK = "yok"
 OLCULEMEDI = "olculemedi"
+# Kunye okunamıyorsa (külliyat tahmini token'ı bilinmiyorsa) ANALİZ TOKEN RAPORU
+# eşiği için kullanılan sabit varsayılan (--analiz-esik-token ile ezilebilir).
+ANALIZ_ESIK_VARSAYILAN = 150_000
 
 
 # ---------------- yollar (tam_tur / pipeline_kayit ile hizalı) ----------------
@@ -80,6 +97,11 @@ def _defter_yolu(kok):
 
 def _metrik_yolu(kok):
     return os.path.join(_oa_kok(kok), "defter", "metrik.json")
+
+
+def _tam_yukleme_yolu(kok):
+    # okuma_kapisi.py (Gate B) ile AYNI yol — TAM-YÜKLEME DEDUP DEFTERİ.
+    return os.path.join(_oa_kok(kok), "defter", "tam-yukleme.jsonl")
 
 
 def _simdi():
@@ -305,6 +327,124 @@ def olc_defter(defter, defter_hata):
     }
 
 
+# ---------------- 5) ANALİZ TOKEN RAPORU (M1-4, Gate D) ----------------
+def _tam_yukleme_oku(yol):
+    """(olaylar, hata) — tam-yukleme.jsonl'i satır satır oku. Bozuk satır
+    atlanır (dayanıklılık); dosya okunamazsa hata metni döner (uydurma yok)."""
+    if not os.path.exists(yol):
+        return [], None
+    olaylar = []
+    try:
+        with open(yol, encoding="utf-8") as f:
+            for satir in f:
+                satir = satir.strip()
+                if not satir:
+                    continue
+                try:
+                    olaylar.append(json.loads(satir))
+                except json.JSONDecodeError:
+                    continue
+    except Exception as e:
+        return [], f"okunamadı ({e})"
+    return olaylar, None
+
+
+def olc_analiz_token(kunye, kok, esik_override=None):
+    """`_oa/defter/tam-yukleme.jsonl` (Gate B'nin TAM-YÜKLEME DEDUP DEFTERİ) her
+    alt-ajanın (`ajan`) TAM yüklediği evrak (`kaynak`) olaylarını tutar. Bu
+    fonksiyon her olayı 00-kunye.json'daki `karakter` alanıyla eşleyip ajan
+    bazında + toplamda tahmini token'a çevirir — SADECE ÖLÇER, yargı vermez.
+    Kaynak künyede bulunamazsa (elle girilmiş/silinmiş kayıt) o olay toplama
+    KATILMAZ ama sessizce de yok sayılmaz (`kaynak_bulunamadi` sayaçlı)."""
+    yol = _tam_yukleme_yolu(kok)
+    if not os.path.exists(yol):
+        return {"durum": YOK, "not": f"tam-yukleme.jsonl yok — hiç TAM yükleme olayı yok "
+                                      f"({os.path.relpath(yol, kok)})."}
+    olaylar, hata = _tam_yukleme_oku(yol)
+    if hata:
+        return {"durum": OLCULEMEDI, "not": f"tam-yukleme.jsonl {hata}"}
+    if not olaylar:
+        return {"durum": YOK, "not": "tam-yukleme.jsonl boş — hiç TAM yükleme olayı yok."}
+
+    kaynak_karakter = {}
+    if kunye:
+        for k in kunye.get("kayitlar", []):
+            if isinstance(k, dict) and k.get("kaynak"):
+                try:
+                    kaynak_karakter[k["kaynak"]] = int(k.get("karakter") or 0)
+                except Exception:
+                    pass
+
+    ajan_toplam = {}
+    toplam_karakter = 0
+    bilinmeyen_olay = 0
+    for o in olaylar:
+        if not isinstance(o, dict):
+            continue
+        ajan = o.get("ajan") or "bilinmeyen"
+        rec = ajan_toplam.setdefault(ajan, {"olay_sayisi": 0, "toplam_karakter": 0,
+                                            "kaynak_bulunamadi": 0})
+        rec["olay_sayisi"] += 1
+        kar = kaynak_karakter.get(o.get("kaynak"))
+        if kar is None:
+            rec["kaynak_bulunamadi"] += 1
+            bilinmeyen_olay += 1
+            continue
+        rec["toplam_karakter"] += kar
+        toplam_karakter += kar
+
+    ajanlar = []
+    for ajan, rec in sorted(ajan_toplam.items(), key=lambda kv: -kv[1]["toplam_karakter"]):
+        ajanlar.append({
+            "ajan": ajan,
+            "olay_sayisi": rec["olay_sayisi"],
+            "toplam_karakter": rec["toplam_karakter"],
+            "toplam_token": _token(rec["toplam_karakter"]),
+            "kaynak_bulunamadi": rec["kaynak_bulunamadi"],
+        })
+
+    toplam_token = _token(toplam_karakter)
+    kulliyat_token = None
+    if kunye is not None:
+        try:
+            tt = kunye.get("tahmini_token")
+            kulliyat_token = int(tt) if tt is not None else _token(int(kunye.get("toplam_karakter") or 0))
+        except Exception:
+            kulliyat_token = None
+
+    if esik_override is not None:
+        esik, esik_kaynak = esik_override, "elle (--analiz-esik-token)"
+    elif kulliyat_token:
+        esik, esik_kaynak = kulliyat_token, "kunye (kulliyat tahmini_token)"
+    else:
+        esik, esik_kaynak = ANALIZ_ESIK_VARSAYILAN, "sabit varsayilan (kunye yok)"
+
+    esik_asimi = bool(esik) and toplam_token > esik
+    sonuc = {
+        "durum": "olculdu",
+        "kaynak_dosya": os.path.relpath(yol, kok),
+        "olay_sayisi": len(olaylar),
+        "ajan_bazinda": ajanlar,
+        "toplam_karakter": toplam_karakter,
+        "toplam_token": toplam_token,
+        "esik_token": esik,
+        "esik_kaynak": esik_kaynak,
+        "esik_asimi": esik_asimi,
+    }
+    if bilinmeyen_olay:
+        sonuc["not_kaynak_bulunamadi"] = (f"{bilinmeyen_olay} olayda kaynak künyede bulunamadı "
+                                          "(elle girilmiş/silinmiş olabilir) — bu olaylar token "
+                                          "toplamına KATILMADI (uydurulmadı).")
+    if esik_asimi:
+        sonuc["uyari"] = ("SEÇİCİ OKU UYARISI: alt-ajanların TAM YÜKLEME token toplamı eşiği aştı "
+                          f"({toplam_token:,} > {esik:,} token) — büyük evrak(lar) haritadan "
+                          "(<evrak>.harita.json, Gate A) seçici okunmalı. Bu bir ÖLÇÜM UYARISIDIR; "
+                          "derinlik kısılmaz, teslim engellenmez.")
+    else:
+        sonuc["not"] = "eşik aşılmadı."
+    return sonuc
+
+
 # ---------------- insan-okur özet (ASCII işaretçi) ----------------
 def _s(v, birim=""):
     if v is None:
@@ -371,6 +511,25 @@ def ozet_yaz(metrik):
     else:
         o.append(f"    -> {d['durum'].upper()}: {d.get('not','')}")
 
+    r = metrik["analiz_token_raporu"]
+    o.append("[5] ANALİZ TOKEN RAPORU (alt-ajan bazında TAM YÜKLEME — Gate D)")
+    if r["durum"] == "olculdu":
+        o.append(f"    -> olay sayısı   : {_s(r['olay_sayisi'])}")
+        for a in r["ajan_bazinda"]:
+            eksik = f" (kaynak bulunamadı: {a['kaynak_bulunamadi']})" if a["kaynak_bulunamadi"] else ""
+            o.append(f"       - {a['ajan']:<20} {_s(a['toplam_token'])} token "
+                     f"({_s(a['olay_sayisi'])} olay){eksik}")
+        o.append(f"    -> TOPLAM token  : {_s(r['toplam_token'])}  "
+                 f"(eşik {_s(r['esik_token'])}, kaynak: {r['esik_kaynak']})")
+        if r.get("uyari"):
+            o.append(f"    -> ⚠ {r['uyari']}")
+        else:
+            o.append(f"    -> {r.get('not','')}")
+        if r.get("not_kaynak_bulunamadi"):
+            o.append(f"    -> NOT: {r['not_kaynak_bulunamadi']}")
+    else:
+        o.append(f"    -> {r['durum'].upper()}: {r.get('not','')}")
+
     o.append("-" * 66)
     o.append(f"  metrik.json -> {metrik['cikti']}")
     o.append("  NOT: ölçer, yorumlamaz. 'yok/ölçülemedi' = kanıt yok; sayı UYDURULMADI.")
@@ -383,6 +542,9 @@ def main():
         description="oa_metrik.py — token/verimlilik telemetrisi (deterministik ölçer)")
     ap.add_argument("--kok", default=".", help="çalışma kökü (varsayılan: bulunulan klasör)")
     ap.add_argument("--cikti", help="metrik.json yolu (varsayılan: <kok>/_oa/defter/metrik.json)")
+    ap.add_argument("--analiz-esik-token", type=int, default=None, dest="analiz_esik_token",
+                    help="ANALİZ TOKEN RAPORU eşiği (token); verilmezse külliyat tahmini "
+                         "token'ı (kunye yoksa sabit varsayılan) kullanılır")
     a = ap.parse_args()
 
     kok = a.kok
@@ -395,7 +557,7 @@ def main():
 
     metrik = {
         "arac": "oa_metrik",
-        "surum": "1.1",
+        "surum": "1.2",
         "olcum_zamani": _simdi(),
         "kok": os.path.abspath(kok),
         "kaynaklar": {
@@ -405,11 +567,14 @@ def main():
                        "durum": "var" if analiz is not None else (analiz_hata or YOK)},
             "defter": {"yol": os.path.relpath(_defter_yolu(kok), kok),
                        "durum": "var" if defter is not None else (defter_hata or YOK)},
+            "tam_yukleme": {"yol": os.path.relpath(_tam_yukleme_yolu(kok), kok),
+                            "durum": "var" if os.path.exists(_tam_yukleme_yolu(kok)) else YOK},
         },
         "kulliyat": olc_kulliyat(kunye, kunye_hata),
         "secicilik": olc_secicilik(kunye, defter_ham, _analiz_ham),
         "tam_tur": olc_tam_tur(analiz, analiz_hata, kunye),
         "defter": olc_defter(defter, defter_hata),
+        "analiz_token_raporu": olc_analiz_token(kunye, kok, a.analiz_esik_token),
     }
 
     cikti = a.cikti or _metrik_yolu(kok)

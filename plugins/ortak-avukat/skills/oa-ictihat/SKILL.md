@@ -41,6 +41,13 @@ Bir kararın uyuşmazlıkla **ilgili** olması yetmez; dilekçeye girecek içtih
 4. **Aleyhe olanı `oa-antitez`'e devret:** müvekkil aleyhine kararlar **atılmaz** — gizli cephanelikte dahili tutulur; karşı taraf ileri sürerse ayırt etme (distinguishing), aşılmışlık, somut olayla farklılık veya lehe yorumla çürütmek için `oa-antitez`'e taşınır. Aleyhe içtihadı sunulan belgeye proaktif yazma.
 5. **Dürüstlük sınırı:** "lehe seçmek" ≠ aleyhe/bağlayıcı otoriteyi mahkemeden gizlemek. Doğrudan uygulanabilir bağlayıcı bir içtihat aleyhe ise, stratejiyi (ayırt etme/uzlaşma) buna göre kur; yok sayıp riski müvekkile bildirmemek olmaz (HMK dürüstlük + `oa-kontrol`).
 
+Bu 2-3 adımdaki lehe/aleyhe ayrımı, İçtihat Muhakeme Zinciri'nde biçimsel bir
+karşılık bulur: her karar `oa-kiyas`/`oa-kontrol`'de **DAMGA** alanıyla
+(`LEHE`/`ALEYHE`/`ALEYHE-AYIRT`/`NOTR`) resmen damgalanır ve
+`_oa/cikti/NN-ictihat-muhakeme.md` kaydına yazılır (şema:
+`oa-kiyas/references/ictihat-muhakeme-sablonu.md`). Bu parça künyeyi CEK
+eder; damgayı **atamaz**.
+
 ## Kapsam — İstinaf + Yargıtay + Danıştay
 Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstinaf (BAM hukuk/ceza, BİM idare/vergi)**, **Yargıtay**, **Danıştay**. İstinaf içtihadı özellikle güncel eğilim ve henüz Yargıtay/Danıştay'a taşınmamış meselelerde değerlidir; üçünü birden tara, ihtisas dairesini `oa-alan` ile hedefle.
 
@@ -88,6 +95,22 @@ Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işl
 2. Kütük satırını o dosyaya bağla: `python oa-pipeline/scripts/oa_hafiza.py teyit --arac <arac> --sorgu "<sorgu>" --sonuc "<künye/özet>" --dokum _oa/teyit/dokum/<dosya>`.
 3. Yalnızca kütüğe satır yazıp dökümü atlamak da olur (kütük tek başına yeterli teyit kaynağıdır), ama uzun/parçalı metinlerde (gerekçe, madde tam metni) ham dökümü de diske yazmak ileride merci/daire ayrıştırmasını ve içerik çaprazını güçlendirir — özellikle şüpheli/OCR'lı veya çok terimli künyelerde döküm atlanmaz.
 
+## Karar çekme (CEK) — ictihat_getir → ham md → muhakeme girdisi
+İçtihat Muhakeme Zinciri'nde bu parçanın rolü **yalnızca CEK**tir; MUHAKEME
+(illiyet + LEHE/ALEYHE/ALEYHE-AYIRT/NOTR damgası) `oa-kiyas`/`oa-kontrol`'e
+aittir — bu iki adım **karıştırılmaz**. CEK adımı:
+1. Künyeyi bul ve teyit et (yukarıdaki akış).
+2. Kararın **tam metnini** `ictihat_getir`/`get_bedesten_document_markdown`
+   (veya kurulumdaki eşdeğer araç) ile çek — snippet yetmez.
+3. Ham metni "Ham MCP dökümü diske yazılır" bölümündeki kuralla
+   `_oa/teyit/dokum/<tarih>-<arac>-<slug>.md` yoluna yaz.
+4. Bu dosya adını `oa-kiyas`/`oa-kontrol`'e **KAYNAK-IZI** olarak devret —
+   MUHAKEME adımı bu izi kullanarak `_oa/cikti/NN-ictihat-muhakeme.md`
+   kaydını üretir (alan şeması: `oa-kiyas/references/ictihat-muhakeme-sablonu.md`).
+Bir karar **çekilmiş olması** onun **muhakeme edilmiş** sayılması için
+yeterli değildir — damga atanmadan (NOTR = "muhakeme edilmemiş",
+fail-closed) hiçbir içtihat dilekçeye giremez.
+
 ## Aktif çıkarım refleksi
 Edilgen "getir-koy" yapma. Bulduğun her teyitli kararı **müvekkil lehine bir argümana bağla**; aleyhe bir içtihat çıkarsa onu **ayırt etmenin (distinguishing)** yolunu ara; ve nötr aramanın yanı sıra müvekkilin konumunu **güçlendirecek** aramayı da kendiliğinden kur. İçtihat bir liste değil, lehe inşa edilecek malzemedir.
 
@@ -115,7 +138,7 @@ Bu parçanın getirdiği HER künye (mahkeme/daire, esas-karar no, tarih) Başba
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-ictihat` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.20**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

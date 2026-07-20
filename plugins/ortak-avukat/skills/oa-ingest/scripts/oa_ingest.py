@@ -3,7 +3,7 @@
 # © 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).
 # 'Ortak Avukat' metodoloji sistemi. İzinsiz çoğaltma/dağıtma/türev yasaktır.
 """
-oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.5.1)
+oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.6)
 
 AMAÇ (illiyet): Model artık ham PDF/TIFF/JPG'yi GÖRÜNTÜ olarak açmasın.
 Her evraktan metni EN UCUZ doğru yoldan bir kez çıkar, _oa/metin/ altına
@@ -112,6 +112,35 @@ v1.5.1 değişiklikleri (2026-07) — FABLE BACKLOG SAĞLAMLAŞTIRMA:
       idari/işlenmemiş kayıtlar 'bilinmeyen' kovasına sayılır. (Bu, 00-kunye.json'daki
       `ocr_teyit_gerek`/`bilinmeyen` BYTE-çıktısını etkiler — bkz. tests/test_oa_ingest*.py.)
 
+v1.5.2 değişiklikleri (2026-07) — EK-FİX (v0.5.2 risk#1):
+  - _tara() FAZ A'da (okuma tarafı): önbellekte ARIZA sonucu ({hata,atlandı}) taşıyan
+    bir kayıt artık HIT SAYILMAZ (miss'e düşer). FAZ C (yazma tarafı) v1.5.1 (a)'dan
+    beri arıza sonucunu önbelleğe YAZMIYORDU; ama eski/harici bir önbellek dosyasında
+    böyle bir kayıt hâlâ bulunuyorsa (imza aynı kaldığı sürece) sonsuza dek "YÜKLENEMEDİ"
+    olarak servis ediliyordu — Tesseract sonradan kurulsa bile hiç yeniden denenmiyordu.
+    Artık okuma tarafı da aynı kuralı uygular: seri==paralel ve idempotens KORUNUR.
+
+v1.6 değişiklikleri (2026-07) — GATE A+C (M1-2, Denizli canlı testinden):
+  (A) SAYFA/BÖLÜM HARİTASI: `karakter > --buyuk-esik` (varsayılan 40.000 anlamlı kar.)
+      olan her evrak için md YANINA `<taban>.harita.json` üretilir — mevcut
+      `<!-- --- sayfa N --- -->` ayracından offset (üretilen .md dosyasındaki karakter
+      konumu) + ilk-satır(başlık) + karakter/token. ÖZETLEME YOK: yalnız metnin
+      kendisinden türetilen DETERMİNİSTİK, KAYIPSIZ yapısal bölme. Ayraç yoksa (udf/
+      docx/duz-metin gibi sayfasız kaynak) tüm gövde tek 'bölüm' sayılır (birim='bolum'),
+      varsa 'birim'='sayfa'. Künyede `buyuk` (bool) + `harita` (dosya adı/"") alanları;
+      `00-INDEX.md`'de 'büyük' özet sayacı + harita linki sütunu.
+  (C) MEKANİK 'TUR~' TAHMİNİ: dosya adı/temiz addan (İÇERİK OKUMADAN) tebligat/karar/
+      dilekce/bilirkişi/sicil/bilanço/vekâletname/harç-makbuz/istinabe/duruşma-tutanağı
+      gibi bir tür TAHMİN edilir (ilk eşleşen kazanır, sıralı liste → deterministik);
+      eşleşme yoksa `null` (uydurulmuş varsayılan YASAK). Künyede `tur_tahmini` alanı;
+      `00-INDEX.md`'de daima "<tür> (tahmini)" damgasıyla — kesinlik gibi görünmesi
+      engellenir, advisory'dir. Hem 'hata'/'bilinkeyen' gibi arızalı kayıtlarda hem
+      normal kayıtlarda çalışır (yalnız ad/kaynak string'ine bakar).
+  Her iki kapı da SAF (yalnız ebeveyn tek-yazar aşamasında, metin/ad/kaynak'tan türer)
+  → seri==paralel byte-eşitliği ve idempotens ETKİLENMEZ (bkz. tests/test_oa_ingest_gate_ac.py).
+  Künye şeması GENİŞLEDİ (`buyuk`, `harita`, `tur_tahmini` + üst seviyede `buyuk_evrak`,
+  `buyuk_esik`) — geriye dönük UYUMLU (eski okuyucular ekstra anahtarı yok sayar).
+
 ÇIKARIM YOLLARI (model kurmaz, script çıkarır):
   PDF (metin katmanlı)  → PyMuPDF text            [BEDAVA, kayıpsız]
   PDF (taranmış/fontsuz) → PyMuPDF render + OCR    [OCR — ⚠ teyit]
@@ -137,6 +166,7 @@ Kullanım:
   python oa_ingest.py "<klasor>" --ocr-sayfa-limit 2      # demo/hızlı (0 = sınırsız)
   python oa_ingest.py "<klasor>" --yeniden                # önbelleği yok say
   python oa_ingest.py "<klasor>" --isci 8                 # 8 paralel işçi (0=oto, 1=seri)
+  python oa_ingest.py "<klasor>" --buyuk-esik 20000        # Gate A eşiğini daralt/genişlet
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -162,6 +192,7 @@ ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git"}
 ATLA_DOSYA = {"thumbs.db", "desktop.ini", ".ds_store", ".ingest-onbellek.json"}
 METIN_ESIK_KARAKTER_SAYFA = 40   # sayfa başına bu kadar anlamlı karakterin altı → OCR
 KAR_PER_TOKEN = 3                 # Türkçe için kaba token tahmini (~3 karakter/token)
+BUYUK_ESIK_KARAKTER = 40000        # Gate A: bu eşiği aşan evrak için sayfa/bölüm haritası üretilir
 TESSERACT = shutil.which("tesseract")
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabit içerik imzası
 # v1.5.1 (a): bu yöntemlerle biten kayıtlar önbelleğe YAZILMAZ — araç (Tesseract vb.)
@@ -169,6 +200,24 @@ BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabi
 # tekrarlamasın. 'zaman-aşımı' kasıtlı olarak DIŞARIDA: OCR zaman-aşımı pahalıdır,
 # önbellekte kalması (--yeniden ile açıkça atlanabilir) kabul edilebilir bir ödünleşimdir.
 _ARIZA_ONBELLEKSIZ = {"hata", "atlandı"}
+
+# ---- Gate C: dosya adı/anahtar-kelimeden MEKANİK tür TAHMİNİ (advisory, kesinlik DEĞİL) ----
+# Sıralı liste: İLK eşleşen kazanır (deterministik). Yalnız dosya adı/temiz ad üzerinde
+# çalışır — içerik OKUMAZ, ölçüm/OCR gerektirmez. INDEX'te daima "(tahmini)" damgalıdır.
+_TR_KUCUK = {"ç": "c", "Ç": "c", "ğ": "g", "Ğ": "g", "ı": "i", "İ": "i",
+             "ö": "o", "Ö": "o", "ş": "s", "Ş": "s", "ü": "u", "Ü": "u"}
+TUR_TAHMIN_ANAHTAR = [
+    ("tebligat", ("tebligat", "teblig")),
+    ("bilirkisi", ("bilirkisi", "bilirkis")),
+    ("karar", ("karar", "ilam", "hukum")),
+    ("durusma_tutanagi", ("durusma", "tutanak")),
+    ("dilekce", ("dilekce", "istinaf", "temyiz", "itiraz")),
+    ("sicil", ("sicil", "nufus")),
+    ("bilanco", ("bilanco", "mizan", "gelir tablosu")),
+    ("vekaletname", ("vekaletname", "vekalet")),
+    ("harc_makbuz", ("makbuz", "harc")),
+    ("istinabe", ("istinabe",)),
+]
 
 try:
     import fitz  # PyMuPDF
@@ -184,6 +233,54 @@ except ImportError:
 
 def anlamli(s):
     return len(re.sub(r"\s+", "", s or ""))
+
+
+def _ascii_kucuk(s):
+    """Türkçe karakterleri ASCII'ye katla + küçük harfe çevir (tür tahmini için)."""
+    return "".join(_TR_KUCUK.get(c, c) for c in (s or "")).lower()
+
+
+def tur_tahmin_et(ad, kaynak):
+    """Gate C — dosya adı/anahtar-kelimeden MEKANİK 'tur~' TAHMİNİ (advisory).
+    İçerik OKUMAZ; yalnız 'ad' (temiz ad) + 'kaynak' (dosya/arşiv yolu) üzerinde
+    çalışır → sonuç OCR/çıkarım başarısından BAĞIMSIZ, deterministiktir. Hiçbir
+    anahtar eşleşmezse None (kesinlik gibi görünmesin — 'diğer' UYDURULMAZ)."""
+    metin = _ascii_kucuk(f"{ad or ''} {kaynak or ''}")
+    for tur, anahtarlar in TUR_TAHMIN_ANAHTAR:
+        if any(a in metin for a in anahtarlar):
+            return tur
+    return None
+
+
+def _harita_yaz(yol, metin, govde_uzunluk, kaynak_md):
+    """Gate A — DETERMİNİSTİK, KAYIPSIZ sayfa/bölüm haritası: mevcut
+    '<!-- --- sayfa N --- -->' ayracından offset (üretilen .md dosyasındaki karakter
+    konumu) + ilk-satır(başlık) + karakter/token. ÖZETLEME YOK — metnin kendisinden
+    saf YAPISAL bölme türetilir. Ayraç yoksa (udf/docx/duz-metin gibi sayfasız kaynak)
+    gövdenin TAMAMI tek 'bölüm' sayılır (içerik yine kaybolmaz, yalnız tek birim olur)."""
+    ayrac = re.compile(r"<!-- --- sayfa (\d+) --- -->\n?")
+    eslesmeler = list(ayrac.finditer(metin or ""))
+    bolumler = []
+    if not eslesmeler:
+        gov = metin or ""
+        ilk = next((s.strip() for s in gov.splitlines() if s.strip()), "")
+        kar = anlamli(gov)
+        bolumler.append({"sayfa": None, "offset": govde_uzunluk, "baslik": ilk[:120],
+                          "karakter": kar, "token": kar // KAR_PER_TOKEN})
+    else:
+        for i, m in enumerate(eslesmeler):
+            no = int(m.group(1))
+            bas_ofs = m.end()
+            bit_ofs = eslesmeler[i + 1].start() if i + 1 < len(eslesmeler) else len(metin)
+            gov = metin[bas_ofs:bit_ofs]
+            ilk = next((s.strip() for s in gov.splitlines() if s.strip()), "")
+            kar = anlamli(gov)
+            bolumler.append({"sayfa": no, "offset": govde_uzunluk + bas_ofs, "baslik": ilk[:120],
+                              "karakter": kar, "token": kar // KAR_PER_TOKEN})
+    veri = {"kaynak_md": kaynak_md, "birim": "sayfa" if eslesmeler else "bolum",
+            "adet": len(bolumler), "bolumler": bolumler}
+    with open(yol, "w", encoding="utf-8") as f:
+        json.dump(veri, f, ensure_ascii=False, indent=2, sort_keys=True)
 
 
 def slug(ad):
@@ -393,7 +490,7 @@ def _cikar_is(item, opts):
 
 
 # ---------------- yazım (yalnız EBEVEYN; tek-yazar) ----------------
-def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan):
+def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
     taban = f"{no or '000'}-{slug(ad)}"
     dosya = f"{taban}.md"
     if dosya in kullanilan:                       # çakışma → göreli-yol hash'i ekle
@@ -412,20 +509,31 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan):
     bas.append(f"- Karakter: {kayit['karakter']}")
     if kayit["teyit_gerek"]:
         bas.append("- ⚠ **OCR/zayıf çıkarım — künye ve sayısal veri için orijinalden TEYİT gerekir.**")
+    if kayit.get("tur_tahmini"):
+        bas.append(f"- Tür~: {kayit['tur_tahmini']} (dosya adından TAHMİNİ, kesinlik değildir)")
     if kayit.get("hata"):
         bas.append(f"- Not: {kayit['hata']}")
     bas.append("\n---\n")
+    govde = "\n".join(bas)
     with open(os.path.join(hedef, dosya), "w", encoding="utf-8") as f:
-        f.write("\n".join(bas) + (metin or "*(metin çıkarılamadı)*") + "\n")
-    return dosya
+        f.write(govde + (metin or "*(metin çıkarılamadı)*") + "\n")
+    # ---- Gate A: büyük evrak (>eşik anlamlı karakter) → md YANINA sayfa/bölüm haritası ----
+    harita_dosya = ""
+    if kayit["karakter"] > buyuk_esik and metin:
+        harita_dosya = os.path.splitext(dosya)[0] + ".harita.json"
+        _harita_yaz(os.path.join(hedef, harita_dosya), metin, len(govde), dosya)
+    return dosya, harita_dosya
 
 
-def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan):
+def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan, buyuk_esik):
+    karakter = anlamli(metin)
     kayit = {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
-             "teyit_gerek": teyit, "karakter": anlamli(metin),
+             "teyit_gerek": teyit, "karakter": karakter,
              "sha": hashlib.sha256((metin or "").encode("utf-8", "replace")).hexdigest()[:16],
-             "sayfa": sayfa, "hata": hata}
-    kayit["md"] = md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan)
+             "sayfa": sayfa, "hata": hata,
+             "tur_tahmini": tur_tahmin_et(ad, kaynak),
+             "buyuk": karakter > buyuk_esik}
+    kayit["md"], kayit["harita"] = md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik)
     return kayit
 
 
@@ -476,10 +584,19 @@ def _tara(klasor, hedef_abs, onbellek, yeniden):
             it["imza"] = f"{os.path.getmtime(yol):.0f}-{os.path.getsize(yol)}"
             onb = onbellek.get(gorece)
             if onb and not yeniden and onb.get("imza") == it["imza"]:
+                # v0.5.1 risk#1: ARIZA sonucu ({hata,atlandı}) taşıyan bir önbellek kaydı
+                # HIT SAYILMAZ (miss'e düşer, yeniden denenir). Eski (v1.5 öncesi) önbellek
+                # yazıcısı arıza sonuçlarını da kaydediyordu; imza aynı kaldığı sürece bu
+                # bayat 'YÜKLENEMEDİ' damgası SONSUZA dek servis ediliyordu — araç (Tesseract
+                # vb.) sonradan kurulsa bile hiç yeniden denenmiyordu. _ARIZA_ONBELLEKSIZ
+                # yazım tarafında zaten böyle kayıtları önbelleğe YAZMIYOR (bkz. FAZ C); bu,
+                # yazım öncesi/eski önbelleklerden kalan artıkları OKUMA tarafında da kapatır.
                 if it["sinif"] == "arsiv" and isinstance(onb.get("kayitlar"), list):
-                    it["hit"] = True; it["cached"] = onb
+                    if not any(k.get("yontem") in _ARIZA_ONBELLEKSIZ for k in onb["kayitlar"]):
+                        it["hit"] = True; it["cached"] = onb
                 elif it["sinif"] == "tekil" and "kayit" in onb:
-                    it["hit"] = True; it["cached"] = onb
+                    if onb["kayit"].get("yontem") not in _ARIZA_ONBELLEKSIZ:
+                        it["hit"] = True; it["cached"] = onb
         items.append(it)
     return items
 
@@ -487,11 +604,12 @@ def _tara(klasor, hedef_abs, onbellek, yeniden):
 def _hata_kaydi(no, ad, tarih, kaynak, yontem, hata):
     return {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
             "teyit_gerek": True, "karakter": 0, "sha": BOS_SHA, "sayfa": None,
-            "hata": hata, "md": ""}
+            "hata": hata, "md": "", "tur_tahmini": tur_tahmin_et(ad, kaynak),
+            "buyuk": False, "harita": ""}
 
 
 def main():
-    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.5.1 (PyMuPDF, paralel)")
+    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.6 (PyMuPDF, paralel, Gate A+C)")
     ap.add_argument("klasor", nargs="?", default=".",
                     help="dava klasörü (verilmezse BULUNDUĞUN klasör işlenir)")
     ap.add_argument("--hedef")
@@ -502,6 +620,9 @@ def main():
     ap.add_argument("--yeniden", action="store_true")
     ap.add_argument("--isci", type=int, default=0,
                     help="paralel işçi sayısı (0=otomatik=min(çekirdek,8); 1=seri/tek-süreç)")
+    ap.add_argument("--buyuk-esik", type=int, default=BUYUK_ESIK_KARAKTER, dest="buyuk_esik",
+                    help=f"Gate A: bu anlamlı karakter sayısını aşan evrak için md yanına "
+                         f"sayfa/bölüm haritası (.harita.json) üretilir (varsayılan {BUYUK_ESIK_KARAKTER})")
     a = ap.parse_args()
 
     if not os.path.isdir(a.klasor):
@@ -650,7 +771,7 @@ def main():
 
         if it["sinif"] == "tekil":
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
-                             gorece, no, temiz, tarih, hedef, kullanilan)
+                             gorece, no, temiz, tarih, hedef, kullanilan, a.buyuk_esik)
             kunye.append(k); yeni += 1; temsil.add(it["index"])
             # v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ — sonraki koşuda
             # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
@@ -675,7 +796,8 @@ def main():
             ic_no = f"{no or '000'}{son}"
             k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
                              f"{gorece}::{ic['icad']}", ic_no,
-                             f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan)
+                             f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan,
+                             a.buyuk_esik)
             kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
         # v1.5.1 (a): arşiv içinde arıza {hata, atlandı} taşıyan EN AZ BİR iç kayıt varsa
         # bu arşiv de önbelleğe YAZILMAZ (imza aynı kalır → araç sonradan kurulunca
@@ -703,6 +825,8 @@ def main():
     _ADMIN = {"bilinmeyen", "arşiv-boş", "hata", "atlandı", "zaman-asimi"}
     ocr_sayisi = sum(1 for k in kunye if k.get("teyit_gerek") and k.get("yontem") not in _ADMIN)
     bilinmeyen = sum(1 for k in kunye if k.get("yontem") in _ADMIN)
+    # Gate A özeti: kaç evrak eşiği aştı (>buyuk_esik anlamlı karakter).
+    buyuk_sayisi = sum(1 for k in kunye if k.get("buyuk"))
 
     # ---- MEKANİK KAPI (sessiz-atlama yasağı): HER kaynak ≥1 kayıtla temsil edilmeli ----
     # GERÇEK invaryant — 'append başına say' totolojisi DEĞİL: bozuk önbellekte "kayitlar":[]
@@ -720,22 +844,34 @@ def main():
     # ---- FAZ D: ATOMİK YAZIM (tmp+os.replace → yarım künye İMKANSIZ); künye EN SON = commit ----
     idx = [f"# Evrak Metin İndeksi — {os.path.basename(os.path.abspath(a.klasor))}\n\n",
            f"Toplam evrak: **{len(kunye)}** · OCR/teyit gerek: **{ocr_sayisi}** · "
-           f"bilinmeyen/elle: **{bilinmeyen}** · "
+           f"bilinmeyen/elle: **{bilinmeyen}** · büyük (>{a.buyuk_esik:,} kar): **{buyuk_sayisi}** · "
            f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
-           "| # | Evrak | Tarih | Yöntem | ⚠ | Karakter | Dosya |\n",
-           "|---|-------|-------|--------|---|----------|-------|\n"]
+           "| # | Evrak | Tarih | Yöntem | ⚠ | Tür~ | Karakter | Harita | Dosya |\n",
+           "|---|-------|-------|--------|---|------|----------|--------|-------|\n"]
     for k in kunye:
+        tur_hucre = f"{k['tur_tahmini']} (tahmini)" if k.get("tur_tahmini") else ""
+        if k.get("harita"):
+            harita_hucre = f"`{k['harita']}`"
+        elif k.get("buyuk"):
+            harita_hucre = "büyük"
+        else:
+            harita_hucre = ""
         idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
                    f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
-                   f"| {k.get('karakter') or 0} | `{k.get('md','')}` |\n")
+                   f"| {tur_hucre} | {k.get('karakter') or 0} | {harita_hucre} | `{k.get('md','')}` |\n")
     idx.append("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
                "Orijinal evrak salt-okunur arşivde durur.\n")
+    idx.append("> Tür~ = dosya adından MEKANİK tahmin (Gate C), kesinlik DEĞİLDİR — advisory.\n")
+    idx.append(f"> Harita = büyük evrağın (>{a.buyuk_esik:,} anlamlı karakter) sayfa/bölüm "
+               "haritası (`<dosya>.harita.json`, md yanında); DETERMİNİSTİK ve KAYIPSIZ "
+               "yapısal bölme, özet DEĞİLDİR (Gate A).\n")
 
     _atomik_yaz(os.path.join(hedef, "00-INDEX.md"), "".join(idx))
     # Önbellek sort_keys → tamamlanma/ekleme sırasından BAĞIMSIZ, byte-deterministik.
     _atomik_yaz(onbellek_yol, json.dumps(onbellek, ensure_ascii=False, sort_keys=True))
     kunye_str = json.dumps({"klasor": os.path.abspath(a.klasor), "toplam_evrak": len(kunye),
                             "ocr_teyit_gerek": ocr_sayisi, "bilinmeyen": bilinmeyen,
+                            "buyuk_evrak": buyuk_sayisi, "buyuk_esik": a.buyuk_esik,
                             "toplam_karakter": toplam, "tahmini_token": tahmini_token,
                             "kayitlar": kunye}, ensure_ascii=False, indent=2)
     _atomik_yaz(os.path.join(hedef, "00-kunye.json"), kunye_str)   # EN SON = commit işareti

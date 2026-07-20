@@ -31,6 +31,8 @@ Kullanım:
   python pipeline_kayit.py --katman oa-gizlilik --durum UYGULANDI --kanit "gizlilik_tara.py 2 çağrıda ALLOW"
   python pipeline_kayit.py --goster [--kok KLASÖR]
   python pipeline_kayit.py --denetle [--kok KLASÖR]        # teslim öncesi; boşluk varsa exit 1
+  python pipeline_kayit.py --arac-hata --arac ictihat_getir --sorgu "12.HD 2023/1234" \
+      --hata "MCP zaman aşımı / araç erişilemedi" [--adim 3] [--parca oa-ictihat] [--kok KLASÖR]
 
 --kok: çalışma kökü (tam_tur.py / oa_metrik.py ile simetri). Verilirse defter
 <KLASÖR>/_oa/defter altındadır; verilmezse mevcut davranış (CWD/_oa). Claude Code
@@ -39,6 +41,22 @@ hayalet _oa oluşmasını önler. (Geriye uyum için --yol da desteklenir.)
 
 Statüler: UYGULANDI (kanıt zorunlu) · GEREKSIZ (gerekçe zorunlu) ·
           BILGI-EKSIK (eksik tanımı zorunlu) · YUKLENEMEDI (açıklama zorunlu)
+
+D5 — SESSİZ-ARAÇ HATASI KAPISI: bir MCP/araç çağrısı (ictihat_getir/mevzuat_ara vb.)
+ÇÖKERSE (zaman aşımı, erişilemedi, hata döndü) bu, sessizce geçilemez — "sessiz-atlama
+yasağı"nın MCP tarafı. `--arac-hata --arac <araç> [--sorgu "..."] --hata "..."` ile
+deftere "ARAÇ ÇÖKTÜ — teyitsiz" olarak İŞLENİR (defter --baslat ile açılmış olmalı).
+`--goster`/`--denetle` bunu her zaman GÖRÜNÜR bir UYARI olarak listeler (sessizce
+gizlenemez); tek başına --denetle'yi TESLİM ENGELİ (exit 1) yapmaz — araç hatası sonrası
+alternatif kaynak/yöntemle iş fiilen tamamlanmış olabilir; ama kaydı asla YOKTUR.
+
+GATE G — KALICILIK KAPISI: `--denetle`, tam_tur.py bu kökte kullanılmışsa
+(`_oa/analiz/dosya-analiz.json` var), tam_tur.py --durum'u alt süreçte koştrup onun
+MEKANİK "tamamlandi/tamamlanmadi" sinyalini de sorar — pipeline "analiz tamamlandi"
+damgasını, dosya-analiz.md + _oa/cikti özetleri ATOMİK yazılmadan (ve güncel
+olmadan) VURAMAZ. "tamamlandi" = SCRIPT ÇIKTISI (tam_tur --durum / pipeline_kayit
+--denetle), MODEL BEYANI DEĞİL. tam_tur hiç kullanılmamışsa (dosya-analiz.json
+yok) bu kapı sessizce atlanır — defter kapısıyla simetrik davranış.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -48,7 +66,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, json, os, sys, datetime
+import argparse, json, os, sys, datetime, subprocess
 
 # Gerçeğin kaynağı (append-only) ve türev görünüm — aynı 'defter' klasöründe yaşar.
 OLAYLAR_ADI = "pipeline-olaylar.jsonl"   # append-only olay defteri (SOURCE OF TRUTH)
@@ -151,7 +169,7 @@ def olaylari_oku(olaylar_yol):
 # --- durum derleme (olaylardan) ----------------------------------------------
 def _iskelet(dosya, olusturma, ceza_dali):
     d = {"dosya": dosya, "olusturma": olusturma, "ceza_dali": ceza_dali,
-         "adimlar": {}, "katmanlar": {}, "gunluk": []}
+         "adimlar": {}, "katmanlar": {}, "gunluk": [], "arac_hatalari": []}
     for no, (ad, parcalar) in ADIMLAR.items():
         d["adimlar"][str(no)] = {
             "ad": ad,
@@ -191,6 +209,17 @@ def _uygula_katman(d, o):
     d["katmanlar"][k].update({"durum": o.get("durum"), "kanit": o.get("kanit"),
                               "zaman": o.get("zaman")})
     d["gunluk"].append({"zaman": o.get("zaman"), "katman": k, "durum": o.get("durum")})
+
+
+def _uygula_arac_hata(d, o):
+    """D5 — 'ARAÇ ÇÖKTÜ' olayını GÖRÜNÜR bir listeye ekler (asla üzerine yazılmaz,
+    append-only). Bir MCP/araç çöküşü sessizce kaybolmasın diye ayrı bir kova."""
+    d.setdefault("arac_hatalari", []).append({
+        "zaman": o.get("zaman"), "arac": o.get("arac"), "sorgu": o.get("sorgu"),
+        "hata": o.get("hata"), "adim": o.get("adim"), "parca": o.get("parca"),
+    })
+    d["gunluk"].append({"zaman": o.get("zaman"), "arac_hatasi": o.get("arac"),
+                        "hata": o.get("hata")})
 
 
 def _migrasyon(olaylar_yol, durum_yol):
@@ -251,6 +280,10 @@ def derle(olaylar_yol, durum_yol=None):
             if d is None:
                 d = _iskelet(None, o.get("zaman"), None)
             _uygula_katman(d, o)
+        elif tip == "arac-hatasi":
+            if d is None:
+                d = _iskelet(None, o.get("zaman"), None)
+            _uygula_arac_hata(d, o)
     return d
 
 
@@ -348,6 +381,40 @@ def katman_isle(args):
     print(f"İşlendi: katman {args.katman} → {args.durum}")
 
 
+def _arac_hatalari_yaz(arac_hatalari):
+    """D5: kayıtlı 'ARAÇ ÇÖKTÜ' olaylarını GÖRÜNÜR biçimde bas — sessizce atlanamaz."""
+    if not arac_hatalari:
+        return
+    print(f"— ⚠ ARAÇ ÇÖKTÜ — teyitsiz ({len(arac_hatalari)}) —")
+    for h in arac_hatalari:
+        konum = ""
+        if h.get("adim") is not None or h.get("parca"):
+            konum = f" [adım {h.get('adim')}/{h.get('parca')}]" if h.get("adim") is not None \
+                else f" [{h.get('parca')}]"
+        sorgu = f" · sorgu: {h['sorgu']}" if h.get("sorgu") else ""
+        print(f"  ⚠ {h.get('arac')}{konum}{sorgu} · hata: {h.get('hata')}")
+
+
+def arac_hata(args):
+    """D5 — SESSİZ-ARAÇ HATASI KAPISI: bir MCP/araç çağrısı çökerse deftere
+    'ARAÇ ÇÖKTÜ — teyitsiz' olarak İŞLENİR; sessizce geçilmez (sessiz-atlama
+    yasağının MCP tarafı). Defter önceden --baslat ile açılmış olmalı (diğer
+    --isle/--katman komutlarıyla aynı ön-koşul)."""
+    olaylar_yol, durum_yol = _yollar(args)
+    if not _defter_var(olaylar_yol, durum_yol):
+        sys.exit(f"HATA: defter bulunamadı: {olaylar_yol} — önce --baslat ile aç.")
+    olay = {"zaman": simdi(), "tip": "arac-hatasi", "arac": args.arac,
+            "sorgu": args.sorgu, "hata": args.hata, "adim": args.adim, "parca": args.parca}
+    olay_ekle(olaylar_yol, olay)
+    _durum_yaz(durum_yol, derle(olaylar_yol))
+    konum = f" [adım {args.adim}/{args.parca}]" if args.adim is not None else \
+        (f" [{args.parca}]" if args.parca else "")
+    sorgu = f" · sorgu: {args.sorgu}" if args.sorgu else ""
+    print(f"KAYDEDİLDİ: ⚠ ARAÇ ÇÖKTÜ — teyitsiz · araç: {args.arac}{konum}{sorgu} · hata: {args.hata}")
+    print("Bu olay --goster/--denetle çıktısında HER ZAMAN görünür (sessizce geçilmez); "
+          "iş alternatif kaynak/yöntemle tamamlandıysa bunu ilgili adımın kanıtına da yaz.")
+
+
 def goster(args):
     olaylar_yol, durum_yol = _yollar(args)
     d = derle(olaylar_yol, durum_yol)
@@ -365,6 +432,37 @@ def goster(args):
     print("— Katmanlar —")
     for k, p in d["katmanlar"].items():
         print(f"  {k:<18} {p['durum']}" + (f" — {p['kanit'][:90]}" if p["kanit"] else ""))
+    _arac_hatalari_yaz(d.get("arac_hatalari") or [])
+
+
+def _gate_g_kalicilik_denetle(kok):
+    """Gate G — KALICILIK KAPISI (§ pipeline KAPANIŞ mekanik kapısı): tam_tur.py bu
+    kökte KULLANILMIŞSA (`_oa/analiz/dosya-analiz.json` var), pipeline "analiz
+    tamamlandi" damgasını tam_tur'un KENDİ mekanik --durum sinyali olmadan VURAMAZ
+    — dosya-analiz.md + _oa/cikti özetleri ATOMİK yazılmış ve GÜNCEL olmalı.
+    'tamamlandi' = SCRIPT ÇIKTISI (tam_tur --durum), MODEL BEYANI DEĞİL.
+
+    tam_tur.py bu kökte HİÇ kullanılmamışsa (dosya-analiz.json yok — tam_tur
+    kullanmayan akış) kapı SESSİZCE atlanır (defter kapısıyla simetrik davranış;
+    mevcut/tam_tur'suz akışlar bloklanmaz). Döner: (sorun:str|None, uyari:str|None)."""
+    analiz_json = os.path.join(kok or ".", "_oa", "analiz", "dosya-analiz.json")
+    if not os.path.exists(analiz_json):
+        return None, None
+    betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tam_tur.py")
+    if not os.path.isfile(betik):
+        return None, "Gate G (kalıcılık): tam_tur.py bulunamadı — kapı atlandı."
+    try:
+        r = subprocess.run([sys.executable, betik, "--durum", "--kok", kok or "."],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=60)
+    except Exception as e:
+        return None, f"Gate G (kalıcılık) denetlenemedi: tam_tur.py çalıştırılamadı ({e})."
+    if r.returncode == 0:
+        return None, None
+    cikti = ((r.stdout or "") + (r.stderr or "")).strip()
+    tek_satir = " ".join(cikti.split())[:400]
+    return (f"Gate G (kalıcılık): tam_tur --durum TAMAMLANMADI bildiriyor — "
+            f"dosya-analiz.md kalıcılık kapısı geçmiyor: {tek_satir}"), None
 
 
 def denetle(args):
@@ -390,6 +488,21 @@ def denetle(args):
     for k, p in d["katmanlar"].items():
         if p["durum"] == "BEKLIYOR":
             sorunlar.append(f"katman {k}: statü YOK (kalıcı katman 'gereksiz' olamaz; somut çıktısı kaydedilmeli)")
+    # D5: araç hataları --denetle'yi TEK BAŞINA bloklamaz (alternatif kaynakla iş fiilen
+    # tamamlanmış olabilir) ama GÖRÜNÜR uyarı olarak HER ZAMAN basılır — sessiz-atlama YOK.
+    arac_hatalari = d.get("arac_hatalari") or []
+    for h in arac_hatalari:
+        konum = f" (adım {h.get('adim')}/{h.get('parca')})" if h.get("adim") is not None else ""
+        uyarilar.append(f"ARAÇ ÇÖKTÜ — teyitsiz: {h.get('arac')}{konum} · hata: {h.get('hata')}")
+    # Gate G — KALICILIK KAPISI: tam_tur.py bu kökte kullanılmışsa, pipeline
+    # "analiz tamamlandi" damgasını tam_tur'un KENDİ mekanik --durum sinyali
+    # olmadan vuramaz (bkz. _gate_g_kalicilik_denetle). tam_tur hiç
+    # kullanılmamışsa sessizce atlanır (defter kapısıyla simetrik).
+    gate_g_sorun, gate_g_uyari = _gate_g_kalicilik_denetle(getattr(args, "kok", None))
+    if gate_g_sorun:
+        sorunlar.append(gate_g_sorun)
+    if gate_g_uyari:
+        uyarilar.append(gate_g_uyari)
     if uyarilar:
         print("UYARILAR:")
         for u in uyarilar:
@@ -421,6 +534,11 @@ def main():
     ap.add_argument("--eksik")
     ap.add_argument("--goster", action="store_true")
     ap.add_argument("--denetle", action="store_true")
+    ap.add_argument("--arac-hata", action="store_true", dest="arac_hata",
+                    help="D5: bir MCP/araç çağrısı çöktüğünde deftere 'ARAÇ ÇÖKTÜ' işler")
+    ap.add_argument("--arac", help="--arac-hata: çöken aracın adı (ör. ictihat_getir)")
+    ap.add_argument("--sorgu", help="--arac-hata: (opsiyonel) yapılan sorgu")
+    ap.add_argument("--hata", help="--arac-hata: hata açıklaması (zorunlu)")
     args = ap.parse_args()
 
     if args.baslat:
@@ -431,6 +549,12 @@ def main():
         isle(args)
     elif args.katman and args.durum:
         katman_isle(args)
+    elif args.arac_hata:
+        if not args.arac:
+            sys.exit("HATA: --arac-hata için --arac (araç adı) gerekli.")
+        if not args.hata:
+            sys.exit("HATA: --arac-hata için --hata (hata açıklaması) gerekli.")
+        arac_hata(args)
     elif args.goster:
         goster(args)
     elif args.denetle:

@@ -21,8 +21,25 @@ Bu parça `ortak-avukat` ailesinin yazım çıktısıdır ve ailenin tasarımcı
 ## Ortak omurga (her dilekçede)
 Doğru merci + hitap → taraflar (ad/unvan, TCKN/VKN, adres, vekil + baro/sicil) → esas no → konu → açıklamalar (vakıa → illiyet → norm/içtihat) → hukuki sebepler → deliller → **netice-i talep** → tarih + imza + sıfat. Talep gerekçeyle birebir örtüşür; her iddia bir delile bağlanır.
 
+## Çıplak künye yasağı — yalnız MUHAKEME EDİLMİŞ içtihat girer (kritik, fail-closed)
+Dilekçeye giren her içtihat, önce İçtihat Muhakeme Zinciri'nden geçmiş
+olmalıdır: `oa-ictihat` künyeyi CEK eder → `oa-kiyas`/`oa-kontrol` MUHAKEME
+eder ve `_oa/cikti/NN-ictihat-muhakeme.md` kaydını üretir (alan şeması:
+`oa-kiyas/references/ictihat-muhakeme-sablonu.md`). Dilekçeye **yalnız**:
+- DAMGA `LEHE` **veya** `ALEYHE-AYIRT` (AYIRT-ETME alanı dolu) olan,
+- muhakeme kaydı KUNYE/KAYNAK-IZI/İLGİLİ-KISIM/İLLİYET alanları tam olan
+
+kararlar girer. **Çıplak künye** (yalnız daire+esas+karar, muhakeme kaydı
+olmadan veya kaydı `NOTR`/damgasız olan) dilekçeye **YASAKTIR** — bu,
+"muhakeme edilmemiş" demektir (fail-closed: damga yoksa/`NOTR` ise geçerli
+sayılmaz). `ALEYHE` (ayırt edilmemiş) damgalı karar dilekçeye **hiçbir
+zaman girmez**; iç analizde (muhakeme kaydı + `oa-antitez` cephaneliği)
+işlenmesi **ZORUNLU**dur ama dış çıktıya yazılmaz — dış çıktı daima müvekkil
+LEHİNEdir. Esaslı bir sonuç Yargıtay/BAM atfı içermiyorsa muhakeme "zayıf"
+sayılır; bu açık uç olarak `oa-kontrol` çıktısında görünür kalır.
+
 ## İçtihat kullanımı — tam künye + aynen alıntı + bağlamsal açıklama
-Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli), dilekçede üç adım birlikte yürür:
+Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli **ve yukarıdaki çıplak künye yasağı uyarınca muhakeme edilmiş**), dilekçede üç adım birlikte yürür:
 1. **Tam künye:** daire + esas no + karar no + tarih eksiksiz yazılır.
 2. **İlgili kısmın aynen alıntısı:** kararın yalnızca uyuşmazlıkla **ilgili pasajı** (gerekçenin ilgili yeri) **birebir** alıntılanır — tüm karar değil, davayla bağlantılı kısım. Alıntı, MCP'den çekilen **karar metninden** gelir; **hafızadan/yeniden kurarak alıntı yapılmaz** (atıf denetimi → `oa-kontrol` A). **OCR kontrolü:** metin OCR/markdown dönüşümünden geldiği için bozuk olabilir; alıntıda kusur sezilirse **çalışmada "OCR şüphesi" diye bildir** ve kanonik kaynakla teyit et (`oa-ictihat`) — OCR hatasını "birebir" diye dilekçeye taşıma.
 3. **Bağlamsal-anlamsal açıklama (alıntıyı boşta bırakma):** alıntının hemen ardından, içtihadı **somut dosyaya bağlayan** yeterli açıklama yazılır — bu karar neden bu olguya uygulanır, olgular arasındaki benzerlik/illiyet nedir, müvekkil lehine hangi sonucu doğurur. Çıplak alıntı (açıklamasız) kabul edilmez; içtihat ancak davaya **uygulanarak** değer üretir.
@@ -82,7 +99,7 @@ Teslim edilen dilekçe/sözleşme DIŞ çıktıdır: müvekkili zayıflatan, ger
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-dilekce` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.21**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

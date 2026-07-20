@@ -26,6 +26,10 @@ Kullanım (çalışılan klasörün kökünden — ya da mutlak --kok ile):
 _oa kökü <KLASÖR>/_oa; verilmezse mevcut davranış (CWD/_oa). Claude Code alt-ajan
 thread'lerinde cwd sıfırlandığından mutlak --kok, hayalet _oa oluşmasını önler.
 --dokum (teyit): teyit satırını ham MCP döküm dosyasına bağlar (kütük+döküm okuma altyapısı).
+
+`ajan-brif` kural #4 mekanik denetimi: `oturum-kapat` (KAPANIŞ ritüeli), _oa/cikti'da
+hiç çalışma evrakı YOKSA görünür bir UYARI basar (bloklamaz) — alt-ajanların "her üretim
+_oa/cikti'ya" kuralını hiç uygulamadan bir oturumun sessizce kapanmasını önler.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -167,12 +171,28 @@ def cmd_oturum(args):
     print("Oturum kaydı: " + _oturum_notu(args.not_ or "[not girilmedi]"))
 
 
+def _cikti_bos_mu():
+    """Ajan-brif kural #4 mekanik kontrolü ('her üretim _oa/cikti'ya çalışma
+    evrakı') — KAPANIŞ ritüelinde UYARI için: _oa/cikti'da hiç dosya YOKSA True.
+    Yalnız GÖRÜNÜR kılar, kapanışı BLOKLAMAZ (defter/tam_tur'un kendi sert
+    kapıları zaten var; bu, alt-ajan çıktısı hiç bırakmadan kapanan bir oturumu
+    sessizce geçirmemek için ek bir mekanik uyarı katmanıdır)."""
+    cdir = yol("cikti")
+    if not os.path.isdir(cdir):
+        return True
+    return not any(os.path.isfile(os.path.join(cdir, ad)) for ad in os.listdir(cdir))
+
+
 def cmd_oturum_kapat(args):
     kontrol()
     if not args.not_ or len(args.not_.strip()) < 15:
         sys.exit("RET: kapanış ritüelsiz olmaz. --not içinde üç soruyu cevapla: "
                  "(1) defter --denetle'den geçti mi / hangi adımda kalındı? "
                  "(2) süre flag'leri + hatırlatıcı güncel mi? (3) bekleyen avukat kararı ne?")
+    if _cikti_bos_mu():
+        print("UYARI: _oa/cikti boş — ajan-brif kural #4 ('her üretim _oa/cikti'ya "
+              "çalışma evrakı adıyla yazılır') karşılanmamış görünüyor; KAPANIŞ'a kadar "
+              "hiçbir alt-ajan çalışma evrakı bırakmamış olabilir (mekanik uyarı — engel değil).")
     dosya = _oturum_notu("KAPANIŞ RİTÜELİ:\n" + args.not_.strip())
     if os.path.exists(KILIT):
         os.remove(KILIT)
@@ -378,15 +398,25 @@ Sen Ortak Avukat ailesinin `{args.parca}` parçasını yürüten alt-ajansın.
 1) ÖNCE şu dosyayı Read ile TAM oku ve disiplinini aynen uygula: {skill_yol}
 2) Bağlamı devral: `_oa/dosya.md` + son devir paketi ({son_devir}) + `_oa/defter/pipeline-durum.json`.
 3) Görev: {args.gorev}
-4) KURALLAR (anayasal — operasyonel):
+4) OKUMA DİSİPLİNİ (GATE B — `okuma_kapisi.py`, mekanik, ADVISORY): evrak okumaya
+   başlamadan ÖNCE `_oa/metin/00-INDEX.md` + `python <oa-pipeline>/scripts/okuma_kapisi.py
+   --kok .` ile öncelikli evrak listesini ve büyük-evrak uyarısını al. BÜYÜK işaretli
+   (harita var / `buyuk: true`) bir evrağı TAM yüklemeden önce `<evrak>.harita.json`dan
+   ilgili sayfa/bölümü oku; gerçekten gerekiyorsa TAM yükle ve
+   `okuma_kapisi.py --kok . --tam-yukle-kaydet "<kaynak>" --ajan {args.parca}` ile deftere
+   logla — aynı büyük evrak İKİNCİ kez tam yüklenirse script yalnız UYARIR, BLOKLAMAZ.
+   Bu disiplin ADVISORY'dir: konu gerektiriyorsa fazlasını/tamamını okumak SERBESTTİR,
+   DERİNLİK ASLA KISILMAZ — amaç körlemesine sırayla okumak değil, önce haritaya bakıp
+   bilinçli seçmektir.
+5) KURALLAR (anayasal — operasyonel):
    - Fiilen yapılmadan hiçbir MCP çağrısı "yapıldı", koşmadan hiçbir script "koştu" sayılmaz.
    - Her künye/madde teyidini `python <oa-pipeline>/scripts/oa_hafiza.py teyit --arac ... --sorgu ... --sonuc ...` ile kütüğe işle; kütükte olmayan künye çıktına giremez.
    - Kalıcı her üretimini `_oa/cikti/` altına ÇALIŞMA EVRAKI adıyla yaz (NN-parca-icerik); müvekkil evrakını DEĞİŞTİRME (salt-okunur).
    - Dışarı (bulut/web) veri gönderilecekse önce oa-gizlilik taraması (Layer 0).
    - Çıktın karar materyalidir, karar değildir; belirsizliği etiketle, uydurma.
-5) ANAYASA ÖZETİ — standalone koşan alt-ajana taşınan çekirdek (kaynak: {anayasa_kaynak}):
+6) ANAYASA ÖZETİ — standalone koşan alt-ajana taşınan çekirdek (kaynak: {anayasa_kaynak}):
 {anayasa_blok}
-6) Dönüşünü DEVİR PAKETİ formatında ver (ne yapıldı → ne bekleniyor → kanıt) ve
+7) Dönüşünü DEVİR PAKETİ formatında ver (ne yapıldı → ne bekleniyor → kanıt) ve
    `oa_hafiza.py devir` ile dosyala; ana hat defteri buna göre güncellenecek.
 
 >>> BAĞLAYICILIK: Bu parça standalone koşuyorsan (çekirdek + anayasa bağlamda olmayabilir)

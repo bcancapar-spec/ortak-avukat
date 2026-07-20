@@ -12,13 +12,19 @@ tek raporda basar. Amaç: teslim öncesi denetimi "hatırlanan bir liste" olmakt
 scriptleri çağırır, çıkış kodlarını okur ve raporlar. Nihai göz avukatındır.
 
 Zincir (ilk exit != 0'da DURUR — kalan kapılar çalıştırılmaz):
-  (a) dilekce_denetim.py <taslak> --tip --taraf  → zorunlu unsur + müvekkil-aleyhi
-  (b) kunye_teyit.py <taslak>                     → atıf/künye izi (teyitsiz = engel)
-  (c) gizlilik_tara.py <taslak>   [yalnız --dis-arac ise]  → Privacy Layer 0
-  (d) pipeline_kayit.py --denetle --kok <kök> [yalnız defter varsa]  → defter boşluğu
-      ("defter var" kuralı tam_tur.py._defter_var_mi ile AYNI: pipeline-olaylar.jsonl
-      boş-değil VEYA pipeline-durum.json mevcut — kapılar arası tutarlılık için)
-  (e) tam_tur.py --durum          → tam tur / delta durumu (BİLGİ; engel SAYILMAZ)
+  (a)  dilekce_denetim.py <taslak> --tip --taraf  → zorunlu unsur + müvekkil-aleyhi
+  (b)  kunye_teyit.py <taslak>                     → atıf/künye izi (teyitsiz = engel)
+  (b2) ictihat_muhakeme_denetim.py <taslak> --kok <kök>  → İçtihat Muhakeme Zinciri
+       (MODÜL 2, M2-3'te zincire BAĞLANDI — yeni yeşil ışık): çıplak içtihat atfı /
+       DAMGA=ALEYHE / eksik AYIRT-ETME / damgasız-geçersiz DAMGA → engel; NOTR/emsal-yok
+       yalnız uyarı (bloklamaz). (b)'nin künye-izi denetiminden AYRI ve TAMAMLAYICIDIR —
+       (b) künyenin kaynakta İZİNİ, (b2) o künyenin GERÇEKTEN MUHAKEME EDİLİP EDİLMEDİĞİNİ
+       ve DAMGA'sına göre dış-çıktıya girip giremeyeceğini denetler.
+  (c)  gizlilik_tara.py <taslak>   [yalnız --dis-arac ise]  → Privacy Layer 0
+  (d)  pipeline_kayit.py --denetle --kok <kök> [yalnız defter varsa]  → defter boşluğu
+       ("defter var" kuralı tam_tur.py._defter_var_mi ile AYNI: pipeline-olaylar.jsonl
+       boş-değil VEYA pipeline-durum.json mevcut — kapılar arası tutarlılık için)
+  (e)  tam_tur.py --durum          → tam tur / delta durumu (BİLGİ; engel SAYILMAZ)
 Hepsi geçerse:
   udf_yaz.py --girdi <taslak> --cikti <taslak>.udf  → UDF üret, "TESLİME HAZIR".
 
@@ -64,6 +70,7 @@ def _script(skill, ad):
 
 S_DILEKCE = _script("oa-dilekce", "dilekce_denetim.py")   # (a)
 S_KUNYE = _script("oa-kontrol", "kunye_teyit.py")          # (b)
+S_ICTIHAT_MUHAKEME = _script("oa-kontrol", "ictihat_muhakeme_denetim.py")  # (b2)
 S_GIZLILIK = _script("oa-gizlilik", "gizlilik_tara.py")    # (c)
 S_PIPELINE = _script("oa-pipeline", "pipeline_kayit.py")   # (d)
 S_TAMTUR = _script("oa-pipeline", "tam_tur.py")            # (e)
@@ -196,6 +203,18 @@ def main():
             kapanan = ("(b) ATIF/KÜNYE DOĞRULAMA", rc)
         elif sonuc == "OK":
             gecen.append("(b) atıf/künye")
+
+    # ── (b2) İçtihat Muhakeme Zinciri — çıplak/ALEYHE/eksik-alanlı atıf ─────
+    if kapanan is None:
+        _bolum("[b2] İÇTİHAT MUHAKEME ZİNCİRİ — çıplak/ALEYHE/eksik-alanlı atıf "
+               "(ictihat_muhakeme_denetim.py)")
+        sonuc, rc = _kapi(S_ICTIHAT_MUHAKEME, [taslak, "--kok", kok], kok)
+        if sonuc == "ATLA":
+            atlanan.append("(b2) ictihat_muhakeme_denetim.py")
+        elif sonuc == "BLOK":
+            kapanan = ("(b2) İÇTİHAT MUHAKEME ZİNCİRİ", rc)
+        elif sonuc == "OK":
+            gecen.append("(b2) içtihat muhakeme zinciri")
 
     # ── (c) gizlilik / Privacy Layer 0 — yalnız --dis-arac ise ─────────────
     if kapanan is None:

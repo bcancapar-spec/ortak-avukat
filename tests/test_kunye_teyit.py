@@ -142,6 +142,66 @@ def test_dogru_karar_no_teyitli_exit0(tmp_path):
     assert "TEYİTLİ" in cikti
 
 
+# ── EK-FİX: --kok (oa_hafiza.py/tam_tur.py simetrisi) ──────────────────────
+
+def test_kok_ile_varsayilan_yollar_kok_altinda_cozulur(tmp_path):
+    """--kok verilirse --kutuk/--dokum-dizin/--cikti-dizin AÇIKÇA verilmeden
+    <KOK>/_oa/teyit/kunye-teyit.md vb. altında bulunmalı — cwd'den BAĞIMSIZ.
+    Gerçek Denizli testinde bu eksiklik 'Failed to run citation gate'e yol açtı."""
+    kok = tmp_path / "dava-klasoru"
+    kutuk_dizin = kok / "_oa" / "teyit"
+    kutuk_dizin.mkdir(parents=True)
+    (kutuk_dizin / "kunye-teyit.md").write_text(
+        "Yargıtay 3. HD, E. 2023/1234 K. 2023/5678 sayılı kararında ...\n",
+        encoding="utf-8",
+    )
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(
+        "Somut olayda Yargıtay 3. HD'nin E. 2023/1234 K. 2023/5678 sayılı "
+        "kararı emsal teşkil etmektedir.\n",
+        encoding="utf-8",
+    )
+    # cwd BİLEREK farklı (tmp_path, kök klasörün kendisi DEĞİL) — --kok cwd'den
+    # bağımsız çözülmeli; --kutuk/--dokum-dizin/--cikti-dizin hiç verilmiyor.
+    kod, cikti = _cli(["taslak.md", "--kok", str(kok)], cwd=tmp_path)
+    assert kod == 0, f"--kok ile kütük bulunup TEYİTLİ/exit 0 vermeli; çıktı:\n{cikti}"
+    assert "TEYİTLİ" in cikti
+    assert "KÜTÜK YOK" not in cikti
+
+
+def test_kok_verilse_de_acik_kutuk_onceliklidir(tmp_path):
+    """Açıkça verilen --kutuk, --kok'un türettiği varsayılanı EZER (geriye uyum)."""
+    kok = tmp_path / "dava-klasoru"
+    (kok / "_oa" / "teyit").mkdir(parents=True)
+    # --kok altında KASITLI olarak kütük YOK; ayrı bir açık kütük dosyası veriyoruz.
+    acik_kutuk = tmp_path / "baska-yer" / "kunye-teyit.md"
+    acik_kutuk.parent.mkdir(parents=True)
+    acik_kutuk.write_text(
+        "Yargıtay 3. HD, E. 2023/1234 K. 2023/5678 sayılı kararında ...\n",
+        encoding="utf-8",
+    )
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(
+        "Somut olayda Yargıtay 3. HD'nin E. 2023/1234 K. 2023/5678 sayılı "
+        "kararı emsal teşkil etmektedir.\n",
+        encoding="utf-8",
+    )
+    kod, cikti = _cli(
+        ["taslak.md", "--kok", str(kok), "--kutuk", str(acik_kutuk)], cwd=tmp_path)
+    assert kod == 0, f"açık --kutuk --kok'u ezmeli; çıktı:\n{cikti}"
+    assert "TEYİTLİ" in cikti
+
+
+def test_kok_verilmezse_davranis_eskisiyle_ayni(tmp_path):
+    """--kok hiç verilmezse (geriye uyum) davranış CWD-göreli VARSAYILAN_* ile
+    AYNI kalmalı — kütük yoksa KÜTÜK YOK + exit 1."""
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text("E. 2023/1234 K. 2023/5678 sayılı karar.\n", encoding="utf-8")
+    kod, cikti = _cli(["taslak.md"], cwd=tmp_path)
+    assert kod == 1
+    assert "KÜTÜK YOK" in cikti
+
+
 def test_cikti_izi_teyit_sayilmaz(tmp_path):
     """Kendi-kendini-teyit deliği kapalı kalmalı: uydurma karar no yalnız
     `_oa/cikti/` (model çalışma evrakı) içinde geçiyorsa bile TEYİT SAYILMAZ;
@@ -193,3 +253,95 @@ def test_atif_yok_exit0(tmp_path):
     kod, cikti = _cli(["taslak.md", "--kutuk", str(tmp_path / "yok.md")], cwd=tmp_path)
     assert kod == 0
     assert "BULUNAMADI" in cikti
+
+
+# ── F) KÜNYE TEYİT ÖNCE-BAK (--once-bak) — M2-3 ─────────────────────────────
+# Advisory: teslim engeli DEĞİL, her hâlde exit 0 (usage hatası hariç). Amaç:
+# kütükte ZATEN VAR olan bir künye için gereksiz tekrar MCP teyit turunu önlemek.
+
+def test_once_bak_kutukte_var_ise_VAR_der(tmp_path):
+    kok = tmp_path / "dava-klasoru"
+    kutuk_dizin = kok / "_oa" / "teyit"
+    kutuk_dizin.mkdir(parents=True)
+    (kutuk_dizin / "kunye-teyit.md").write_text(
+        "Yargıtay 3. HD, E. 2023/1234 K. 2023/5678 sayılı kararında ...\n",
+        encoding="utf-8",
+    )
+    kod, cikti = _cli(
+        ["--once-bak", "Yargıtay 3. HD, E. 2023/1234, K. 2023/5678", "--kok", str(kok)],
+        cwd=tmp_path,
+    )
+    assert kod == 0, cikti
+    assert "[VAR]" in cikti
+    assert "GEREKSİZDİR" in cikti
+
+
+def test_once_bak_kutukte_yok_ise_YOK_der(tmp_path):
+    kok = tmp_path / "dava-klasoru"
+    kutuk_dizin = kok / "_oa" / "teyit"
+    kutuk_dizin.mkdir(parents=True)
+    (kutuk_dizin / "kunye-teyit.md").write_text(
+        "Yargıtay 3. HD, E. 2023/1234 K. 2023/5678 sayılı kararında ...\n",
+        encoding="utf-8",
+    )
+    kod, cikti = _cli(
+        ["--once-bak", "Yargıtay 3. HD, E. 2099/1, K. 2099/2", "--kok", str(kok)],
+        cwd=tmp_path,
+    )
+    assert kod == 0, cikti
+    assert "[YOK]" in cikti
+    assert "MCP teyidi gerekli" in cikti
+
+
+def test_once_bak_farkli_daire_uydurma_karar_YOK_der(tmp_path):
+    """Aynı esas/karar no'su AMA farklı daire — merci katmanı 'celiski' bulur,
+    yine de eşleşen segment izlendiği için TEYİTLİ/VAR sayılabilir; bu test
+    esas/karar hiç bulunmayan bir uydurma karar no'nun kesin YOK dönmesini
+    doğrular (regresyon: karar no'nun yutulmadığından emin ol)."""
+    kok = tmp_path / "dava-klasoru"
+    kutuk_dizin = kok / "_oa" / "teyit"
+    kutuk_dizin.mkdir(parents=True)
+    (kutuk_dizin / "kunye-teyit.md").write_text(
+        "Yargıtay 3. HD, E. 2023/1234 K. 2023/5678 sayılı kararında ...\n",
+        encoding="utf-8",
+    )
+    kod, cikti = _cli(
+        ["--once-bak", "Yargıtay 3. HD, E. 2023/1234, K. 2029/9999", "--kok", str(kok)],
+        cwd=tmp_path,
+    )
+    assert kod == 0, cikti
+    assert "[YOK]" in cikti
+
+
+def test_once_bak_kutuk_yok_YOK_der_exit0(tmp_path):
+    """Kütük hiç yoksa önce-bak yapılamaz ama bu bir kullanım hatası DEĞİLDİR
+    (advisory) — MCP teyidinin gerektiğini bildirip exit 0 döner."""
+    kod, cikti = _cli(
+        ["--once-bak", "E. 2023/1234 K. 2023/5678",
+         "--kutuk", str(tmp_path / "yok" / "kunye-teyit.md")],
+        cwd=tmp_path,
+    )
+    assert kod == 0, cikti
+    assert "[YOK]" in cikti
+    assert "Kütük dosyası yok" in cikti
+
+
+def test_once_bak_kunye_parse_edilemezse_hata_exit1(tmp_path):
+    """Verilen metinden esas/karar hiç çıkarılamıyorsa (kullanım hatası) exit 1."""
+    kod, cikti = _cli(["--once-bak", "bu bir künye değil"], cwd=tmp_path)
+    assert kod == 1, cikti
+    assert "[HATA]" in cikti
+
+
+def test_once_bak_taslak_argumani_gerekmez(tmp_path):
+    """--once-bak modunda pozisyonel taslak argümanı HİÇ verilmese de çalışmalı."""
+    kod, cikti = _cli(["--once-bak", "E. 2023/1234 K. 2023/5678"], cwd=tmp_path)
+    assert kod == 0
+    assert "[YOK]" in cikti  # kütük yok (varsayılan CWD-göreli yol)
+
+
+def test_taslak_verilmezse_ve_once_bak_yoksa_kullanim_hatasi(tmp_path):
+    """Ne taslak ne --once-bak verilmezse net bir kullanım hatası (exit != 0) döner."""
+    kod, cikti = _cli([], cwd=tmp_path)
+    assert kod != 0
+    assert "taslak" in cikti.lower()

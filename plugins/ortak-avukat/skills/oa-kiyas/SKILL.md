@@ -68,6 +68,32 @@ delile bağlanmamış küçük önerme, içtihatsız büyük önerme.
 Tatbiki yaz: her unsur karşılandı mı, karşılanmayan varsa sonuç ne (talep reddine mi
 yol açar, ek ispat mı gerekir). Boşlukları açıkça bildir (anayasa: zaafı söyle).
 
+## İçtihat muhakemesi (MUHAKEME adımı) — DAMGA + illiyet + ilgili kısım
+Büyük önermenin içtihat bileşeni (`buyuk_onerme.ictihat`) tek başına yeterli
+değildir: her içtihat için ayrı bir **muhakeme kaydı** üretilmeden o karar
+"muhakeme edilmiş" sayılmaz (İçtihat Muhakeme Zinciri, şema:
+`references/ictihat-muhakeme-sablonu.md`). Bu parça `oa-ictihat`'ın CEK
+ettiği (künye + `_oa/teyit/dokum/`'a yazılmış ham metin) her kararı MUHAKEME
+eder — bu iki adım ayrıdır, karıştırılmaz:
+1. **KUNYE** ve **KAYNAK-IZI**'nı `oa-ictihat`'tan devral.
+2. **İLGİLİ-KISIM**'ı KAYNAK-IZI dosyasından aynen çıkar (davayla ilgili
+   gerekçe pasajı — tüm karar değil).
+3. **İLLİYET**'i yaz: bu karar büyük önermenin hangi unsurunu somutlaştırıyor,
+   küçük önermenin (vakıa) hangi olgusuyla eşleşiyor.
+4. **DAMGA**'yı ata — kapalı enum, dört değer: `LEHE` \| `ALEYHE` \|
+   `ALEYHE-AYIRT` \| `NOTR`. `ALEYHE-AYIRT` ise **AYIRT-ETME** alanı zorunlu
+   (kararın somut olaya neden uymadığı — bu meşru bir savunma tekniğidir,
+   m.6 ihlali değildir). Damga atanmazsa kayıt `NOTR` sayılır (fail-closed:
+   "muhakeme edilmemiş", kullanılamaz).
+5. Kaydı `_oa/cikti/NN-ictihat-muhakeme.md` olarak yaz (bir karar = bir dosya).
+
+**Kritik doktrin (bağlayıcı):** dış çıktı (dilekçe) daima müvekkil LEHİNEdir
+— yalnız `LEHE`/`ALEYHE-AYIRT` damgalı kayıtlar dilekçeye girer. `ALEYHE`
+(ayırt edilmemiş) içtihat dilekçeye **girmez**, ama iç analizde (bu kayıt +
+`oa-antitez` cephaneliği) işlenmesi **ZORUNLUdur** — saklanmaz, dahili
+tutulur. Yargıtay/BAM atfı olmayan esaslı bir dilekçe muhakemesi **zayıf**
+sayılır.
+
 ## Diğer parçalara entegrasyon
 - **oa-ictihat** → büyük önermenin teyitli norm+künyesini sağlar.
 - **oa-illiyet** → küçük önerme = illiyet grafı (illiyet bağı unsuru oradan gelir).
@@ -93,7 +119,7 @@ Bu parça, ailenin Başbakanı `oa-pipeline`'ın icra+denetimine tabidir: çağr
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-kiyas` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.20**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
