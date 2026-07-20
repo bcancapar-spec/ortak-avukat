@@ -78,8 +78,10 @@ eder — bu iki adım ayrıdır, karıştırılmaz:
 1. **KUNYE** ve **KAYNAK-IZI**'nı `oa-ictihat`'tan devral.
 2. **İLGİLİ-KISIM**'ı KAYNAK-IZI dosyasından aynen çıkar (davayla ilgili
    gerekçe pasajı — tüm karar değil).
-3. **İLLİYET**'i yaz: bu karar büyük önermenin hangi unsurunu somutlaştırıyor,
-   küçük önermenin (vakıa) hangi olgusuyla eşleşiyor.
+3. **DAVAYA-BAĞ**'ı yaz (R4 — eski adı "İLLİYET"; `oa-illiyet`'in nedensellik
+   grafıyla karışmasın diye analoji/emsal-uygunluk bağı bu adı taşır): bu
+   karar büyük önermenin hangi unsurunu somutlaştırıyor, küçük önermenin
+   (vakıa) hangi olgusuyla eşleşiyor.
 4. **DAMGA**'yı ata — kapalı enum, dört değer: `LEHE` \| `ALEYHE` \|
    `ALEYHE-AYIRT` \| `NOTR`. `ALEYHE-AYIRT` ise **AYIRT-ETME** alanı zorunlu
    (kararın somut olaya neden uymadığı — bu meşru bir savunma tekniğidir,
@@ -119,7 +121,7 @@ Bu parça, ailenin Başbakanı `oa-pipeline`'ın icra+denetimine tabidir: çağr
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-kiyas` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

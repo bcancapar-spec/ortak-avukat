@@ -9,7 +9,7 @@
 > buraya işaret eder.** (Parçalardaki blokların bu dosyaya göç ettirilmesi kademeli
 > yapılır — bkz. yol haritası; göç tamamlanana kadar bu dosya referans metindir.)
 
-Sürüm: **v3.20** · son harmonizasyon: 2026-07 (token maddesi).
+Sürüm: **v3.22** · son harmonizasyon: 2026-07 (M3-4 hizalama kapanışı).
 
 ---
 
@@ -54,6 +54,10 @@ kapsamı DARALTMAZ; yalnızca düşünce metodunu gösteren **ÖRNEKLEMDİR.** L
 aynı metotla işlenir: en yakın örnek **kıyasen** uygulanır + norm/içtihat resmî kaynaktan
 teyit edilir. Bakım kuralı: bir örneklem metodu iyi temsil etmiyorsa değişen yalnız
 ÖRNEKLEMDİR — metot ve kapsam sabittir (ilgili parçanın öğrenme günlüğüne işlenir).
+İçtihat Muhakeme Zinciri (CEK→MUHAKEME→KULLAN, `oa-kiyas/references/
+ictihat-muhakeme-sablonu.md`) bu ilkenin somut uygulamasıdır: yöntem (teyit+muhakeme
+ayrımı, kapalı DAMGA enumu) sabittir; hangi içtihadın bu yönteme tabi tutulacağı
+ÖRNEKLEMDİR — sınırlı bir konu/daire sayımı değildir.
 
 ## 4. Doğaçlama meşruiyeti — yöntem serbest, olgu teyitli (anayasal)
 
@@ -76,6 +80,17 @@ daima MCP/resmî kaynaktan teyitlidir.
   (Literatür/YokTez).** Doktrin argümanı güçlendirir ama doğrulamaz.
 - İç sınama yalnız iç tutarsızlığı yakalar, doğruluğu KANITLAMAZ; bu sınır bilinir ve
   gizlenmez.
+- **Teyit ≠ muhakeme; ikisi ayrı ve birlikte şarttır.** Bir içtihadın resmî kaynaktan
+  teyitli olması (künyenin var olduğunun doğrulanması) onun somut olaya isabetli
+  biçimde **muhakeme edildiği** anlamına gelmez — teyit atfın **varlığını**, muhakeme
+  atfın **davaya uygulanabilirliğini** (İçtihat Muhakeme Zinciri: DAMGA + davaya-bağ,
+  `oa-kiyas/references/ictihat-muhakeme-sablonu.md`) garanti eder. İkisi de
+  tamamlanmadan bir içtihat dış çıktıya (dilekçe) giremez — yalnız teyitli olup
+  muhakeme edilmemiş (damgasız/NOTR) atıf, çıplak künyeden farksızdır (fail-closed).
+  Açık ölçüt: içtihat için teyit yetmez, **muhakeme edilmiş** olmalı (tam metin çekilmiş +
+  davaya bağı kurulmuş + LEHE/ALEYHE/ALEYHE-AYIRT olarak damgalanmış). Dilekçeye (dış çıktı)
+  yalnız **LEHE** ya da ayırt edilmiş **ALEYHE-AYIRT** girer; salt **ALEYHE** GİRMEZ (m.6) —
+  iç analizde/antitezde işlenir.
 
 ## 6. Müvekkil-aleyhi dış çıktı yasağı — iç dürüstlük / dış koruma (anayasal)
 

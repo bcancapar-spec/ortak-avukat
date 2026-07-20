@@ -21,13 +21,25 @@ Bu parça `ortak-avukat` ailesinin yazım çıktısıdır ve ailenin tasarımcı
 ## Ortak omurga (her dilekçede)
 Doğru merci + hitap → taraflar (ad/unvan, TCKN/VKN, adres, vekil + baro/sicil) → esas no → konu → açıklamalar (vakıa → illiyet → norm/içtihat) → hukuki sebepler → deliller → **netice-i talep** → tarih + imza + sıfat. Talep gerekçeyle birebir örtüşür; her iddia bir delile bağlanır.
 
+## GİRİŞ ve rütbelendirme — kanun yolu mimarisi (kısa çapa)
+Kanun yolu dilekçelerinde (istinaf/temyiz/itiraz tipi) GİRİŞ bölümü **olay
+özeti değildir**: karşı/aleyhe kararı 2-3 taşıyıcı dayanağa indirger ve her
+dayanak için yıkım silahını önden ilan eder; ancak karşı kararın gerekçesi
+**gerçekten muhakeme edilmişse** yazılabilir (muhakeme edilmemiş kararı
+"indirgiyormuş gibi" özetlemek halüsinasyondur). Bölüm mimarisinde her
+sebep **rütbelendirilir** (asıl neden / destekleyici) ve sıra usul → esas →
+ölçülülük/belirlilik → gerekçe eksikliğidir (bkz. aşağıdaki "Anayasal
+düstur"); SONUÇ/İSTEM numaralı ve önceliklidir. Tam mimari (B1 künye, B2
+GİRİŞ, B3 argüman-yüklü vakıa, B5 5-turlu çökertme protokolü, B6 bölüm
+mimarisi/rütbelendirme, B7 yardımcı desenler): `references/kanun-yolu-mimari-playbook.md`.
+
 ## Çıplak künye yasağı — yalnız MUHAKEME EDİLMİŞ içtihat girer (kritik, fail-closed)
 Dilekçeye giren her içtihat, önce İçtihat Muhakeme Zinciri'nden geçmiş
 olmalıdır: `oa-ictihat` künyeyi CEK eder → `oa-kiyas`/`oa-kontrol` MUHAKEME
 eder ve `_oa/cikti/NN-ictihat-muhakeme.md` kaydını üretir (alan şeması:
 `oa-kiyas/references/ictihat-muhakeme-sablonu.md`). Dilekçeye **yalnız**:
 - DAMGA `LEHE` **veya** `ALEYHE-AYIRT` (AYIRT-ETME alanı dolu) olan,
-- muhakeme kaydı KUNYE/KAYNAK-IZI/İLGİLİ-KISIM/İLLİYET alanları tam olan
+- muhakeme kaydı KUNYE/KAYNAK-IZI/İLGİLİ-KISIM/DAVAYA-BAĞ (R4 — eski adı "İLLİYET") alanları tam olan
 
 kararlar girer. **Çıplak künye** (yalnız daire+esas+karar, muhakeme kaydı
 olmadan veya kaydı `NOTR`/damgasız olan) dilekçeye **YASAKTIR** — bu,
@@ -38,11 +50,15 @@ işlenmesi **ZORUNLU**dur ama dış çıktıya yazılmaz — dış çıktı daim
 LEHİNEdir. Esaslı bir sonuç Yargıtay/BAM atfı içermiyorsa muhakeme "zayıf"
 sayılır; bu açık uç olarak `oa-kontrol` çıktısında görünür kalır.
 
-## İçtihat kullanımı — tam künye + aynen alıntı + bağlamsal açıklama
-Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli **ve yukarıdaki çıplak künye yasağı uyarınca muhakeme edilmiş**), dilekçede üç adım birlikte yürür:
-1. **Tam künye:** daire + esas no + karar no + tarih eksiksiz yazılır.
-2. **İlgili kısmın aynen alıntısı:** kararın yalnızca uyuşmazlıkla **ilgili pasajı** (gerekçenin ilgili yeri) **birebir** alıntılanır — tüm karar değil, davayla bağlantılı kısım. Alıntı, MCP'den çekilen **karar metninden** gelir; **hafızadan/yeniden kurarak alıntı yapılmaz** (atıf denetimi → `oa-kontrol` A). **OCR kontrolü:** metin OCR/markdown dönüşümünden geldiği için bozuk olabilir; alıntıda kusur sezilirse **çalışmada "OCR şüphesi" diye bildir** ve kanonik kaynakla teyit et (`oa-ictihat`) — OCR hatasını "birebir" diye dilekçeye taşıma.
-3. **Bağlamsal-anlamsal açıklama (alıntıyı boşta bırakma):** alıntının hemen ardından, içtihadı **somut dosyaya bağlayan** yeterli açıklama yazılır — bu karar neden bu olguya uygulanır, olgular arasındaki benzerlik/illiyet nedir, müvekkil lehine hangi sonucu doğurur. Çıplak alıntı (açıklamasız) kabul edilmez; içtihat ancak davaya **uygulanarak** değer üretir.
+## İçtihat kullanımı — 5 adım (İçtihat Muhakeme Zinciri'nin düzyazı izdüşümü)
+Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli **ve yukarıdaki çıplak künye yasağı uyarınca muhakeme edilmiş**), dilekçede beş adım sırayla yürür (tam mimari — örüntüler + a fortiori/sınırlama tekniği: `references/kanun-yolu-mimari-playbook.md` B4):
+1. **Tam künye:** merci + daire + esas no + karar no + tarih eksiksiz yazılır.
+2. **İlgili kısmın aynen (birebir blok-)alıntısı:** kararın yalnızca uyuşmazlıkla **ilgili pasajı** (gerekçenin ilgili yeri) **birebir** alıntılanır — tüm karar değil, davayla bağlantılı kısım. Alıntı, MCP'den çekilen **karar metninden** (muhakeme kaydının İLGİLİ-KISIM alanı) gelir; **hafızadan/yeniden kurarak alıntı yapılmaz** (atıf denetimi → `oa-kontrol` A). **OCR kontrolü:** metin OCR/markdown dönüşümünden geldiği için bozuk olabilir; alıntıda kusur sezilirse **çalışmada "OCR şüphesi" diye bildir** ve kanonik kaynakla teyit et (`oa-ictihat`) — OCR hatasını "birebir" diye dilekçeye taşıma.
+3. **Damıtma cümlesi:** alıntıdan hemen sonra, kararın koyduğu kuralı **soyutlayan** tek/birkaç cümle yazılır ("Bu karar ... hâllerde ... ortaya koymaktadır") — alıntıyı tekrar etmez, kuralı çıkarır.
+4. **Somut tatbik:** damıtılan kural dosyanın olgu desenine **eşlenir** — olgular arasındaki benzerlik açıkça kurulur, mümkünse **a fortiori** ("emsaldeki olguda dahi kabul edilmişken, dosyamızdaki daha güçlü olguda evleviyetle kabul edilmelidir").
+5. **Gerekirse sınırlama/ayırt şerhi:** **yalnız kendi lehe dayanağının** zayıf yönü, karşı taraf söylemeden önce dar biçimde sınırlanır (ALEYHE-AYIRT damgasının dilekçe-yüzü). **Sunum disiplini sınırı:** yalnız DUYULMUŞ (karşı tarafın fiilen dayandığı/kararda fiilen değerlendirilmiş) aleyhe içtihat ayırt edilir; duyulmamış aleyhe içtihat preemptive çürütülmez, `oa-antitez` cephaneliğinde dahili kalır (aşağıdaki "Sunum disiplini" ile aynı kök).
+
+Çıplak alıntı (damıtma/tatbik açıklaması olmadan bırakılan alıntı) kabul edilmez; içtihat ancak davaya **uygulanarak** değer üretir.
 
 ## Playbook'lar
 
@@ -75,9 +91,9 @@ Süre satırı için `oa-sure`; her atıf `oa-ictihat`'tan teyitli; alan tespiti
 
 **Çıktı formatı — UDF VARSAYILAN (kurucu kural):** Kullanıcı/Fable kararı: **aksi açıkça talep edilmedikçe (ör. "md olarak ver", "docx istiyorum") dilekçe çıktısı UDF formatında üretilir.** md taslak her hâlde ARA ÜRÜNdür (UDF ondan türetilir), teslim edilen NİHAİ çıktı UDF'dir. Akış: taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` (UYAP'a yüklenebilir; gerçek editörde `format_id` teyidi gerekir) → aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır.
 
-**Teslim öncesi MEKANİK KAPILAR (dört yeşil ışık — geçmeden 'teslime hazır' yok):**
+**Teslim öncesi MEKANİK KAPILAR (R2 — tek ölçüt `teslim_paketi.py` exit 0; aşağıdaki alt kapılar bu tek script'in içinde sabit sırada koşar, elle sayılmaz):**
 1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, paragraf `startOffset`/`length` UTF-16 code-unit biriminde ARDIŞIK ve CDATA metniyle toplamda tutarlı mı, metin round-trip ediyor mu. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
-2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur).
+2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur). **`--tip istinaf|temyiz` iken (M3-2):** [B] TERTİP-DÜZEN kapısı, `kanun-yolu-mimari-playbook.md`'nin B1/B2/B4/B6 mekanik izdüşümünü de denetler — künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu + dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması, her içtihat blok-alıntısının ardından açıklama paragrafı bulunması — yalnız VAR/YOK (uyarı, bloklamaz). `--ictihat-muhakeme` ile birlikte `--tip` değeri [F] kapısına da geçer: G1 "emsal içtihat yok" uyarısı yalnız "esaslı" tiplerde (dava/cevap/istinaf/temyiz/aym_bireysel) basılır, `yemin`/`idari-kanal` gibi hafif tiplerde [BİLGİ]'ye düşer (R6).
 3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
 4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri.
 
@@ -99,7 +115,7 @@ Teslim edilen dilekçe/sözleşme DIŞ çıktıdır: müvekkili zayıflatan, ger
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-dilekce` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

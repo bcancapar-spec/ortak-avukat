@@ -160,6 +160,8 @@ Kalıcı katmanlar (`oa-usul`, `oa-illiyet`, `oa-gizlilik`) her adımda devreded
 
 > **Sıralama notu (bilinçli tercih):** Bu 11 adımın dizilişi genel hattan (oa-pipeline sabit hattı) bilerek sapar — ceza merceğinde USUL+SÜRE, konumlama ve araştırmadan önce gelir, çünkü telafisiz süre riski her şeyden önce kapatılır. Fark tutarsızlık değil, ceza disiplini tercihidir.
 
+> **İçtihat Muhakeme Zinciri çapası:** 6. adımda çekilen lehe içtihat, teslimden önce muhakeme edilip (DAMGA + davaya-bağ, `oa-kiyas/references/ictihat-muhakeme-sablonu.md`) DAMGA=`LEHE`/`ALEYHE-AYIRT` olmadan savunma metnine giremez — G1-G3 mekanik kapıları `oa-kontrol/scripts/ictihat_muhakeme_denetim.py`'dedir.
+
 ## Aktif çıkarım refleksi
 Dosyayı edilgen okuma. İsnadın **en zayıf halkasını** ara: unsur boşluğu, kopuk illiyet,
 huzurda sınanmamış beyan, toplanmamış lehe delil, çağdaş beyanla çelişki. İddia makamının
@@ -214,7 +216,7 @@ Skill metinlerinde tasarımcı Av. Bayram Can Çapar dışında kişi/müvekkil/
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-mudafii` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

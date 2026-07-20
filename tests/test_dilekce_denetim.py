@@ -198,6 +198,161 @@ def test_duzen_tam_dilekcede_temiz_gecis():
     assert not aleyhe, f"temiz dilekçede aleyhe sinyal çıkmamalı: {aleyhe}"
 
 
+# ── [B2] KANUN-YOLU (istinaf/temyiz) YAPISAL KALEMLERİ — M3-2 ──────────────
+
+KANUN_YOLU_TAM = (
+    "# Bölge Adliye Mahkemesi 3. Hukuk Dairesi Başkanlığına\n\n"
+    "## GİRİŞ\n"
+    "İlk derece mahkemesi kararı iki taşıyıcı dayanağa indirgenmektedir.\n\n"
+    "## Taraflar\n"
+    "Davacı: Ahmet Yılmaz\nDavalı: XYZ A.Ş.\nVekil: Av. Test Vekil\n\n"
+    "İlk derece esas no: 2024/10 karar no: 2024/20 sayılı ilk derece "
+    "kararında davanın reddine karar verilmiştir.\n\n"
+    "Dava konusu işlemin dayanağı 4857 sayılı Kanun m. 20'dir.\n\n"
+    "Tebliğ tarihi: 01.01.2026\n\n"
+    "## Konu\nİşçilik alacaklarına ilişkindir.\n\n"
+    "## Açıklamalar\n1. Birinci vakıa.\n\n"
+    "## İstinaf Sebepleri\nHukuka aykırı karar verilmiştir.\n\n"
+    "## Hukuki Sebepler\nHMK ve ilgili mevzuat.\n\n"
+    "## Deliller\nTanık, bilirkişi.\n\n"
+    "## Netice-i Talep\n"
+    "1. Kararın kaldırılmasına,\n"
+    "2. Yargılama giderlerinin karşı tarafa yükletilmesine karar verilmesini "
+    "saygıyla talep ederiz.\n\n"
+    "01.01.2026\nAv. Test Vekil\nimza\n"
+)
+
+KANUN_YOLU_EKSIK = (
+    "# Bölge Adliye Mahkemesi Başkanlığına\n\n"
+    "İstinaf eden: Ahmet ...\n\n"
+    "İlk derece esas no: 2024/1 karar no: 2024/2\n\n"
+    "İstinaf sebepleri: hukuka aykırı karar verilmiştir.\n\n"
+    "Netice-i talep: kaldırılmasını talep ederiz.\n\n"
+    "01.01.2026\nimza\nAv. Vekil\n"
+)
+
+
+def test_kanun_yolu_kalemleri_istinaf_tipinde_eksikse_yakalanir():
+    """--tip istinaf iken B1/B2/B4/B6 mekanik kalemleri (künye alan seti,
+    TEBLİĞ TARİHİ ayrı satır, GİRİŞ, numaralı SONUÇ) eksikse [B]'ye eklenmeli."""
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(KANUN_YOLU_EKSIK, "istinaf", "davaci")
+    birlesik = " | ".join(duzen_eksik)
+    assert "TEBLİĞ TARİHİ" in birlesik
+    assert "GİRİŞ" in birlesik
+    assert "Numaralı SONUÇ/İSTEM" in birlesik
+
+
+def test_kanun_yolu_kalemleri_temyiz_tipinde_de_uygulanir():
+    """Kapsam yalnız istinaf'a değil, temyiz tipine de uygulanır."""
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(KANUN_YOLU_EKSIK, "temyiz", "davaci")
+    birlesik = " | ".join(duzen_eksik)
+    assert "GİRİŞ" in birlesik
+
+
+def test_kanun_yolu_kalemleri_dava_tipinde_UYGULANMAZ():
+    """G1 gibi tip-koşullu: --tip dava/cevap/genel/aym_bireysel gibi kanun-yolu
+    OLMAYAN tiplerde B1/B2/B4/B6 kalemleri hiç eklenmemeli (aynı eksik metin,
+    tip='dava' olunca kanun-yolu etiketli kalemler duzen_eksik'te GÖRÜNMEMELİ)."""
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(KANUN_YOLU_EKSIK, "dava", "davaci")
+    birlesik = " | ".join(duzen_eksik)
+    assert "GİRİŞ" not in birlesik
+    assert "TEBLİĞ TARİHİ" not in birlesik
+    assert "Numaralı SONUÇ/İSTEM" not in birlesik
+
+
+def test_kanun_yolu_kalemleri_tam_dilekcede_eksik_cikmiyor():
+    """Tüm B1/B2/B4/B6 kalemleri mevcut kanun-yolu dilekçesinde [B2] eksik
+    listesine hiçbir yeni kalem eklenmemeli."""
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(KANUN_YOLU_TAM, "istinaf", "davaci")
+    birlesik = " | ".join(duzen_eksik)
+    assert "B1 Künye" not in birlesik
+    assert "GİRİŞ" not in birlesik
+    assert "Numaralı SONUÇ/İSTEM" not in birlesik
+    assert "B4" not in birlesik
+
+
+def test_tebligi_tarihi_gomulu_cumle_icinde_ayri_satir_sayilmaz():
+    """B1 sık atlanan hata: tebliğ tarihinin bir cümlenin ORTASINA gömülmesi
+    'ayrı satır' zorunluluğunu KARŞILAMAZ — mekanik kapı bunu yakalamalı."""
+    metin = (
+        "# BAM Başkanlığına\n\n## GİRİŞ\nKarar indirgenmektedir.\n\n"
+        "İlk derece esas no: 2024/1 karar no: 2024/2 sayılı kararında davanın "
+        "reddine karar verilmiş olup bu karar tarafımıza tebliğ tarihi olan "
+        "01.01.2026'da tebliğ edilmiştir, dayanak 4857 sayılı Kanun m.20'dir.\n\n"
+        "## Netice-i Talep\n1. Kaldırılmasına karar verilmesini talep ederiz.\n\n"
+        "01.01.2026\nimza\nAv. Vekil\n"
+    )
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(metin, "istinaf", "davaci")
+    assert any("TEBLİĞ TARİHİ" in u for u in duzen_eksik)
+
+
+def test_giris_bolumu_var_mi_baslik_taniyor():
+    assert dd._giris_bolumu_var_mi("# BAM\n\n## GİRİŞ\nİçerik.\n") is True
+    assert dd._giris_bolumu_var_mi("# BAM\n\nGiriş niteliğinde bir cümle.\n") is False
+
+
+def test_sonuc_numarali_mi_numarasiz_ise_false():
+    assert dd._sonuc_numarali_mi("Netice-i Talep\nKabulüne karar verilmesini talep ederiz.\n") is False
+    assert dd._sonuc_numarali_mi("Netice-i Talep\n1. Kabulüne karar verilmesini talep ederiz.\n") is True
+
+
+def test_alinti_aciklama_denetle_aciklamasiz_alinti_yakalanir():
+    metin = "## İçtihat\n> Karardan birebir alıntı.\n\n## Sonraki Bölüm\nBaşka içerik.\n"
+    toplam, eksik = dd._alinti_aciklama_denetle(metin)
+    assert toplam == 1
+    assert eksik == 1
+
+
+def test_alinti_aciklama_denetle_aciklamali_alinti_temiz():
+    metin = ("## İçtihat\n> Karardan birebir alıntı.\n\n"
+             "Bu karar, somut olaya uygulandığında ... sonucunu ortaya koymaktadır.\n")
+    toplam, eksik = dd._alinti_aciklama_denetle(metin)
+    assert toplam == 1
+    assert eksik == 0
+
+
+def test_alinti_aciklama_denetle_alinti_yoksa_sifir_sifir():
+    metin = "Bu metinde hiç blok alıntı yok, düz metin var.\n"
+    toplam, eksik = dd._alinti_aciklama_denetle(metin)
+    assert (toplam, eksik) == (0, 0)
+
+
+def test_kanun_yolu_alinti_aciklamasiz_ise_duzen_eksige_eklenir():
+    """KANUN_YOLU_TAM'ın diğer tüm kalemleri temiz kalırken, yalnız İstinaf
+    Sebepleri bölümüne açıklamasız bırakılan bir blok-alıntı eklenir — [B2]
+    yalnız bu YENİ eksiği yakalamalı, diğerlerini bozmamalı."""
+    metin = KANUN_YOLU_TAM.replace(
+        "## İstinaf Sebepleri\nHukuka aykırı karar verilmiştir.\n\n",
+        "## İstinaf Sebepleri\n> Karardan birebir alıntı.\n\n## Hukuki Sebepler\n",
+    )
+    _eksik, duzen_eksik, _ocr, _aleyhe, _notu = dd.denetle(metin, "istinaf", "davaci")
+    assert any("B4" in u and "açıklama" in u for u in duzen_eksik), duzen_eksik
+
+
+# ── [F] --tip pass-through — G1 esaslı-dilekçe tip listesi (M3-2/R6) ────────
+
+def test_ictihat_muhakeme_kapisi_tip_ile_esasli_olmayanda_uyari_bilgiye_duser(tmp_path):
+    """dilekce_denetim ictihat_muhakeme_kapisi()'nin --tip'i kardeş scripte
+    aktardığının uçtan-uca kanıtı: tip='yemin' iken hiç atıf yoksa G1
+    [UYARI] değil [BİLGİ] olarak basılmalı (yine bloklamaz, exit 0)."""
+    dokum_dizin = tmp_path / "_oa" / "teyit" / "dokum"
+    dokum_dizin.mkdir(parents=True)
+    cikti_dizin = tmp_path / "_oa" / "cikti"
+    cikti_dizin.mkdir(parents=True)
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text("Bu dilekçe hiçbir içtihat atfı içermemektedir.\n", encoding="utf-8")
+
+    kod_esasli, cikti_esasli = dd.ictihat_muhakeme_kapisi(
+        str(taslak), kok=str(tmp_path), tip="dava")
+    kod_hafif, cikti_hafif = dd.ictihat_muhakeme_kapisi(
+        str(taslak), kok=str(tmp_path), tip="yemin")
+
+    assert kod_esasli == 0 and kod_hafif == 0
+    assert "[UYARI]" in cikti_esasli
+    assert "[BİLGİ]" in cikti_hafif
+    assert "[UYARI] Dilekçede esas/karar" not in cikti_hafif
+
+
 # ── zorunlu unsur + OCR şerhi (dumb ama temel golden vaka) ──────────────────
 
 def test_eksik_unsur_tip_dava_icin_tespit_edilir():
@@ -301,7 +456,7 @@ def _f_kur(tmp_path, damga="LEHE", ayirt_etme=""):
         "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
         f"**DAMGA:** {damga}", "",
         "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
-        "## İLLİYET", "...illiyet açıklaması...", "",
+        "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",
         "## AYIRT-ETME", ayirt_etme, "",
     ]
     (cikti_dizin / "01-ictihat-muhakeme.md").write_text("\n".join(satirlar), encoding="utf-8")

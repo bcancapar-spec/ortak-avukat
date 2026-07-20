@@ -38,7 +38,7 @@ karışıklığını önler, `oa-pipeline/scripts/capraz_denetim.py` benzeri ile
 | **KAYNAK-IZI** | Her zaman | `oa-ictihat`'ın CEK adımı | Kararın tam metninin ham hâlinin diske yazıldığı dosya adı: `_oa/teyit/dokum/<dosya>.md`. Bu, `kunye_teyit.py`'nin ikinci teyit kaynağıdır (kütük + döküm). İz yoksa (dosya gerçekten diskte yoksa) kayıt eksik sayılır. |
 | **İLGİLİ-KISIM** | Her zaman | KAYNAK-IZI dosyasından **aynen** | Kararın **somut davayla ilgili** gerekçe pasajı — tüm karar değil, ilgili kısım. Birebir alıntı; hafızadan yeniden kurulmaz. OCR şüphesi varsa açıkça işaretlenir (kanonik kaynakla teyit edilene kadar). |
 | **DAMGA** | Her zaman | Model muhakemesi (`oa-kiyas`/`oa-kontrol`) | **Kapalı enum — yalnız dört değer:** `LEHE` \| `ALEYHE` \| `ALEYHE-AYIRT` \| `NOTR`. Aşağıdaki "DAMGA enumu" bölümüne bkz. |
-| **İLLİYET** | Her zaman | Model muhakemesi | Bu karar **neden** somut olaya uygulanır — kararın hükmü ile davanın vakıası arasındaki bağ (norm-unsuru/vakıa eşleşmesi; `oa-kiyas` büyük önermesiyle ilişkilendirilir). Boş/yüzeysel İLLİYET = kayıt eksik sayılır. |
+| **DAVAYA-BAĞ** | Her zaman | Model muhakemesi | Bu karar **neden** somut olaya uygulanır — kararın hükmü ile davanın vakıası arasındaki bağ (norm-unsuru/vakıa eşleşmesi; `oa-kiyas` büyük önermesiyle ilişkilendirilir). **Alan adı bilinçli seçildi (R4):** bu bir **analoji/emsal-uygunluk** bağıdır, `oa-illiyet`'in modellediği fiil→netice **nedensellik** zinciriyle KARIŞTIRILMASIN diye eskiden "İLLİYET" olan bu alan **DAVAYA-BAĞ** olarak adlandırılmıştır (terim değişikliği; muhakeme içeriği aynıdır). Boş/yüzeysel DAVAYA-BAĞ = kayıt eksik sayılır. |
 | **AYIRT-ETME** | **Yalnız** `DAMGA: ALEYHE-AYIRT` olduğunda ZORUNLU; diğer üç damgada bu alan yazılmaz/boş kalır | Model muhakemesi | Kararın somut olaya **neden uymadığı** — ayırt etme (distinguishing) gerekçesi. Bu alan olmadan `ALEYHE-AYIRT` damgası geçersizdir (fail-closed: alan boşsa kayıt `ALEYHE` gibi işlem görür, dilekçeye giremez). |
 
 ## DAMGA enumu — kapalı, dört değer
@@ -76,6 +76,11 @@ karışıklığını önler, `oa-pipeline/scripts/capraz_denetim.py` benzeri ile
    Hiçbir script veya model "damga yoksa nötr/geçerli say" varsayımına
    girmez; damgasız kayıt kullanılamaz durumdadır, kullanılabilir hâle
    gelmesi için açıkça muhakeme edilmesi (DAMGA atanması) gerekir.
+   **(YENİ-1, backlog)** NOTR'un mekanik karşılığı `ictihat_muhakeme_denetim.py`
+   düzeyinde yalnız bir **UYARIDIR** (bloklamaz — bkz. yukarıdaki "Denetim"
+   bölümü); giriş yasağının (NOTR'un dilekçeye girmemesi gerektiği hükmünün)
+   nihai uygulayıcısı script değil, **model + avukat gözüdür** — mekanik kapı
+   burada da sahte kesinlik üretmez, yalnız işaret verir.
 4. **Yargıtay/BAM atfı OLMAYAN esaslı dilekçe muhakemesi ZAYIF sayılır.**
    Esaslı bir hukuki sonuç (özellikle içtihadın yerleşik olduğu konularda)
    hiç Yargıtay/BAM içtihadına dayanmıyorsa, bu açıkça "zayıf/teyitsiz
@@ -95,7 +100,7 @@ karışıklığını önler, `oa-pipeline/scripts/capraz_denetim.py` benzeri ile
 > arasında illiyet bağı kurulmuş olup, TBK m.49 uyarınca tazminat
 > sorumluluğu doğduğu..." (KAYNAK-IZI dosyasından aynen alıntı)
 
-## İLLİYET
+## DAVAYA-BAĞ
 Bu karar, dosyamızdaki trafik kazası olgusuyla (kırmızı ışıkta geçme +
 yaralanma) aynı unsur setini (fiil, hukuka aykırılık, illiyet, zarar)
 içeriyor; TBK m.49'un büyük önermesini somutlaştıran doğrudan emsaldir.
@@ -117,7 +122,7 @@ içeriyor; TBK m.49'un büyük önermesini somutlaştıran doğrudan emsaldir.
 > "...somut olayda davacının kendi kusuru ağır basmakta olup, illiyet
 > bağının kesildiği..." (KAYNAK-IZI dosyasından aynen alıntı)
 
-## İLLİYET
+## DAVAYA-BAĞ
 Karar, illiyet bağının davacı kusuruyla kesildiği hâllere ilişkindir;
 bizim dosyamızda ise davacı kusuru yoktur (delil: trafik tutanağı, tam
 kusur davalıda).
@@ -135,7 +140,7 @@ ictihat_muhakeme_denetim.py`) deterministik bir script'e bağlandı — bu,
 `kiyas_denetim.py`'nin yapısal denetim felsefesiyle aynıdır: script "DAMGA
 doğru mu" demez, yalnız "DAMGA alanı kapalı enumdan biri mi, AYIRT-ETME
 gerekliyken dolu mu, KAYNAK-IZI dosyası `_oa/teyit/dokum` içinde fiilen var
-mı ve künye orada dize olarak geçiyor mu, İLGİLİ-KISIM/İLLİYET dolu mu"
+mı ve künye orada dize olarak geçiyor mu, İLGİLİ-KISIM/DAVAYA-BAĞ dolu mu"
 der. Damganın hukuken isabetli olup olmadığı (İLGİLİ-KISIM'ın GERÇEKTEN
 ilgili olup olmadığı dahil) avukat muhakemesidir — script bu muhakemeye
 girmez, yalnız varlık+bağ+alan bütünlüğünü denetler. Çıplak/eksik/ALEYHE
@@ -144,7 +149,7 @@ veya hiç doğrulanmış içtihat atfı olmaması yalnız **uyarı** üretir (bl
 
 ## Kompozisyon
 - **`oa-ictihat`** → CEK adımını yürütür (künye + ham metin, `_oa/teyit/dokum/`).
-- **`oa-kiyas`** → MUHAKEME adımını yürütür (İLLİYET, büyük önerme bağı);
+- **`oa-kiyas`** → MUHAKEME adımını yürütür (DAVAYA-BAĞ, büyük önerme bağı);
   kayıt `oa-kiyas`'ın kendi kıyas JSON'una da (`buyuk_onerme.ictihat`) beslenir.
 - **`oa-kontrol`** → MUHAKEME'nin DAMGA/AYIRT-ETME disiplinini + A listesi
   atıf denetimini birlikte yürütür; teslim öncesi son kapıdır.

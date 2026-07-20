@@ -407,7 +407,9 @@ Sen Ortak Avukat ailesinin `{args.parca}` parçasını yürüten alt-ajansın.
    logla — aynı büyük evrak İKİNCİ kez tam yüklenirse script yalnız UYARIR, BLOKLAMAZ.
    Bu disiplin ADVISORY'dir: konu gerektiriyorsa fazlasını/tamamını okumak SERBESTTİR,
    DERİNLİK ASLA KISILMAZ — amaç körlemesine sırayla okumak değil, önce haritaya bakıp
-   bilinçli seçmektir.
+   bilinçli seçmektir. Ham evraktan ÖNCE `_oa/analiz/dosya-analiz.md`'yi (M3-0 —
+   `tam_tur.py --senkron/--kaydet`in ucuz DEVİR giriş noktası) oku: dosya daha önce
+   işlenmişse toplu yeniden okuma GEREKSİZ olabilir (bkz. `tam_tur.py --brif`).
 5) KURALLAR (anayasal — operasyonel):
    - Fiilen yapılmadan hiçbir MCP çağrısı "yapıldı", koşmadan hiçbir script "koştu" sayılmaz.
    - Her künye/madde teyidini `python <oa-pipeline>/scripts/oa_hafiza.py teyit --arac ... --sorgu ... --sonuc ...` ile kütüğe işle; kütükte olmayan künye çıktına giremez.

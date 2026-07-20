@@ -202,7 +202,7 @@ def _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE", ayirt_etme=""):
             "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
             f"**DAMGA:** {damga}", "",
             "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
-            "## İLLİYET", "...illiyet açıklaması...", "",
+            "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",
             "## AYIRT-ETME", ayirt_etme, "",
         ]
         (cikti_dizin / "01-ictihat-muhakeme.md").write_text(

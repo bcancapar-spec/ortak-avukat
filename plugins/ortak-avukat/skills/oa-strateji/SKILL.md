@@ -42,7 +42,7 @@ Sorulan tek yolu değerlendirip durma. **Sorulmayan daha iyi yolu** kendiliğind
 - **Taşeron/eser (taşeron/eser örüntüsü):** kendi ihtarname zaafı (teslim çelişkisi, ihtirazi kayıt yok, desteksiz rakam) varsa, zayıf pozisyonda **müzakere edilmiş sulh** davadan rasyonel olabilir; `oa-vakia` ispat boşluğu + `oa-antitez` zaafı bu kararı besler.
 
 ## Kompozisyon
-`oa-vakia` + `oa-ictihat` + `oa-antitez` + `oa-sure` çıktıları burada birleşir → karar çıkar → karar dava yolunu seçtiyse `oa-dilekce` devreye girer. Strateji, dilekçeden **önce** gelir.
+`oa-vakia` + `oa-ictihat` + `oa-antitez` + `oa-sure` çıktıları burada birleşir → karar çıkar → karar dava yolunu seçtiyse `oa-dilekce` devreye girer. Strateji, dilekçeden **önce** gelir. Not (İçtihat Muhakeme Zinciri çapası): "içtihat eğilimi" girdisi çıplak künye değil, `_oa/cikti/NN-ictihat-muhakeme.md` kayıtlarındaki DAMGA'dır (LEHE/ALEYHE/ALEYHE-AYIRT/NOTR) — strateji yalnız muhakeme edilmiş, teyitli eğilime dayanır (G1-G3 mekanik kapıları `oa-kontrol`'dedir).
 
 ## Öğrenme günlüğü
 Yeni bir karar örüntüsü, maliyet kalemi veya tahsilat dersi öğrenildiğinde buraya işle, aşağıya tek satır ekle, yeniden paketle.
@@ -59,7 +59,7 @@ Bu parça, ailenin Başbakanı `oa-pipeline`'ın icra+denetimine tabidir: çağr
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-strateji` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

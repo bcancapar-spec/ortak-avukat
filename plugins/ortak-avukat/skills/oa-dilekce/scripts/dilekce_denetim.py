@@ -28,12 +28,34 @@ oa-kontrol'de yaşar, burada TEKRARLANMAZ — teslim öncesi MEKANİK KAPILAR
 zinciri artık BEŞ yerine ALTI yeşil ışıktan oluşur (A-F).
 
 Kullanım:
-  python dilekce_denetim.py <taslak.md> --tip dava|cevap|istinaf|temyiz|aym_bireysel|genel
+  python dilekce_denetim.py <taslak.md>
+                            --tip dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal|genel
                             [--taraf davaci|davali|sanik|katilan|mudahil|musteki]
                             [--udf YOL]
                             [--ictihat-muhakeme --kok KLASÖR]
 Çıkış kodu: 0 = temiz; 1 = eksik unsur / müvekkil-aleyhi sinyal / OCR-teyit şerhi
 eksik / GEÇERSİZ UDF / [F] içtihat muhakeme kapısı engeli.
+
+── [B2] KANUN-YOLU YAPISAL KALEMLERİ (M3-2 — kanun-yolu-mimari-playbook.md B1/B2/B4/B6) ──
+`--tip istinaf|temyiz` verildiğinde [B] TERTİP-DÜZEN kapısı, kanun yolu
+dilekçesinin fiziksel mimarisine özgü YAPISAL kalemleri de mekanik olarak
+denetler: künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu +
+dava konusu işlem/dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ
+bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması ve her içtihat blok-
+alıntısının (markdown '>' satırı) ardından bir açıklama paragrafı bulunması
+(B4'ün "çıplak alıntı kabul edilmez" kuralının tertip-düzen izdüşümü). Bu da
+[A]/[B] gibi YALNIZ var/yok der — "iyi dilekçe" hükmü VERMEZ; `denetle()`'nin
+imzası/dönüş arity'si DEĞİŞMEZ (mevcut çağıranlar bozulmaz), yeni kalemler tip
+koşuluyla mevcut `duzen_eksik` listesine eklenir.
+
+── G1 "ESASLI DİLEKÇE" TİP LİSTESİ (M3-2/R6) ──
+`--ictihat-muhakeme` ile birlikte `--tip` değeri de [F] kapısına
+(`ictihat_muhakeme_denetim.py`) aktarılır: o scriptin G1 "emsal içtihat yok"
+UYARISI yalnız "esaslı" dilekçe tiplerinde (dava/cevap/istinaf/temyiz/
+aym_bireysel) basılır; `yemin`/`idari-kanal` gibi hafif tiplerde bu uyarı
+[BİLGİ]'ye düşer (G1 zaten hiçbir zaman bloklamaz — bu yalnız gürültüyü
+azaltır). Tek kaynak liste `ictihat_muhakeme_denetim.ESASLI_OLMAYAN_TIPLER`'dir
+(burada TEKRARLANMAZ).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -114,6 +136,110 @@ DUZEN = [
     ("Tarih + imza bloğu", [r"\d{1,2}[./]\d{1,2}[./]\d{4}", r"imza", r"\bvekil", r"saygı"]),
 ]
 
+# ── [B2] KANUN-YOLU (istinaf/temyiz) YAPISAL KALEMLERİ — M3-2 ──────────────
+# kanun-yolu-mimari-playbook.md B1 (künye disiplini) / B2 (GİRİŞ) / B4 (içtihat
+# bloğu 5-adım) / B6 (bölüm mimarisi) 'nin dilekçe-içi mekanik izdüşümü. [B]
+# TERTİP-DÜZEN kapısının tip-koşullu UZANTISIDIR — yalnız --tip istinaf|temyiz
+# iken devreye girer; DUZEN listesinden BAĞIMSIZ yeni bir alan çifti EKLER,
+# denetle()'nin dönüş imzasını DEĞİŞTİRMEZ. Sahte kesinlik yok: yalnız
+# var/yok listesi döner, "iyi dilekçe" hükmü VERMEZ.
+KANUN_YOLU_TIPLERI = {"istinaf", "temyiz"}
+
+# B1 künye blok alan seti — DUZEN'de zaten denetlenen merci/taraflar/tarih
+# kalemleriyle ÇAKIŞMAYAN, kanun yoluna özgü iki alan.
+KANUN_YOLU_KUNYE_EK = [
+    ("B1 Künye — kanun yoluna konu kararın kimliği/operatif sonucu",
+     [r"ilk\s*derece.{0,40}karar", r"karar\s*ver(ilmiş|di)", r"hükm",
+      r"reddine|kabulüne|karar\s*verilmiştir"]),
+    ("B1 Künye — dava konusu işlem + dayanak norm",
+     [r"dayanak", r"\bm\.\s*\d", r"madde\s*\d+", r"kanun(?:'?un|\s+m\.)"]),
+]
+
+
+def _satir_basi(metin, desen):
+    """Bir satırın (markdown başlık/liste işaretleri temizlendikten sonra)
+    BAŞI verilen desenle eşleşiyor mu — 'ayrı satır' zorunluluğunun mekanik
+    karşılığı. Metnin ortasına/başka bir cümlenin içine gömülü geçiş bu
+    denetim için YETERSİZ sayılır (B1: 'tebliğ tarihinin künye metnine
+    gömülmesi' sık atlanan hatadır — süre denetimi bu satırı ayrıca arar)."""
+    for satir in metin.splitlines():
+        temiz = re.sub(r"^[\s#>*\-\d.)]+", "", satir).strip()
+        if re.match(desen, temiz, re.I):
+            return True
+    return False
+
+
+def _giris_bolumu_var_mi(metin):
+    """B2 — 'GİRİŞ' başlıklı bir markdown bölümü var mı (yalnız VARLIK;
+    içeriğin gerçekten 'çatı indirgeme' yapıp yapmadığı script'in işi
+    DEĞİLDİR — bkz. playbook B2 ön koşulu)."""
+    return bool(re.search(r"^\s*#{1,3}\s*[Gg][İIiı][Rr][İIiı][Şş]\b", metin, re.M))
+
+
+def _sonuc_numarali_mi(metin):
+    """B6 — netice-i talep/sonuç-istem bölümünden SONRAKİ metinde numaralı
+    ('1. ...'/'1) ...') bir liste var mı. Rakam sayısı 1-2 hane + noktalama +
+    ARDINDAN BOŞLUK ile sınırlanır ki '01.01.2026' gibi bir TARİH satırı
+    (tarih-imza bloğu her dilekçenin sonunda bulunur) numaralı liste maddesi
+    sanılıp YANLIŞ pozitif üretmesin."""
+    m = re.search(r"netice-?i?\s*talep|sonuç\s*ve\s*istem", metin, re.I)
+    if not m:
+        return False
+    return bool(re.search(r"^\s*\d{1,2}[.)]\s+\S", metin[m.end():], re.M))
+
+
+def _alinti_aciklama_denetle(metin):
+    """B4 — markdown blok-alıntı ('>' ile başlayan ardışık satır grupları)
+    gruplarının HER BİRİ için, grup bittikten sonraki birkaç satır içinde
+    boş-olmayan/alıntı-olmayan/BAŞLIK-OLMAYAN bir açıklama paragrafı var mı.
+    (toplam_alinti, aciklamasiz_sayisi) döndürür — alıntı hiç yoksa (0, 0):
+    bu denetim yalnız VAR OLAN alıntıların ardışıklığını denetler, alıntı
+    yokluğunu YAKALAMAZ (o [F]/G1'in — oa-kontrol'ün — işidir). Bir sonraki
+    markdown başlığı ('#...') açıklama SAYILMAZ — bölüm bittiği anlamına
+    gelir, alıntı çıplak kalmış demektir (B4: 'çıplak alıntı kabul edilmez')."""
+    satirlar = metin.splitlines()
+    n = len(satirlar)
+    toplam, eksik = 0, 0
+    i = 0
+    while i < n:
+        if satirlar[i].lstrip().startswith(">"):
+            toplam += 1
+            j = i
+            while j < n and satirlar[j].lstrip().startswith(">"):
+                j += 1
+            aciklama_var = False
+            for k in range(j, min(j + 8, n)):
+                s = satirlar[k].strip()
+                if not s:
+                    continue
+                aciklama_var = not (s.startswith(">") or s.startswith("#"))
+                break
+            if not aciklama_var:
+                eksik += 1
+            i = j
+        else:
+            i += 1
+    return toplam, eksik
+
+
+def _kanun_yolu_yapisal_eksik(metin):
+    """Kanun-yolu (istinaf/temyiz) tipleri için B1/B2/B4/B6 mekanik
+    izdüşümünün eksik kalemlerini döndürür (yalnız VAR/YOK; hüküm YOK)."""
+    eksik = [ad for ad, des in KANUN_YOLU_KUNYE_EK if not _bul(metin, des)]
+    if not _satir_basi(metin, r"tebliğ\s*tarih"):
+        eksik.append("B1 Künye — TEBLİĞ TARİHİ (ayrı satırda)")
+    if not _giris_bolumu_var_mi(metin):
+        eksik.append("B2 — GİRİŞ bölümü")
+    if not _sonuc_numarali_mi(metin):
+        eksik.append("B6 — Numaralı SONUÇ/İSTEM")
+    toplam_alinti, eksik_aciklama = _alinti_aciklama_denetle(metin)
+    if toplam_alinti and eksik_aciklama:
+        eksik.append(
+            f"B4 — İçtihat blok-alıntısı sonrası açıklama paragrafı "
+            f"({eksik_aciklama}/{toplam_alinti} alıntıda eksik görünüyor)")
+    return eksik
+
+
 # Müvekkil-aleyhi tehlike desenleri (TARAF-BİLİNÇLİ) — HEURİSTİK; avukat teyit etmeli.
 # Her taraf tipi kendi riskli kalıp setiyle taranır: davalı için kabul/ikrar/doğrudur ekseni,
 # davacı için vazgeçme/haksızlık ekseni, müşteki/katılan için şikayetten vazgeçme/uzlaşma
@@ -184,12 +310,15 @@ def _ictihat_muhakeme_yolu():
     return yol if yol.is_file() else None
 
 
-def ictihat_muhakeme_kapisi(taslak_yolu, kok=None, muhakeme_dizin=None, dokum_dizin=None):
+def ictihat_muhakeme_kapisi(taslak_yolu, kok=None, muhakeme_dizin=None, dokum_dizin=None,
+                             tip=None):
     """[F] İçtihat Muhakeme Zinciri mekanik kapısını (oa-kontrol'ün
     `ictihat_muhakeme_denetim.py`'si) AYRI SÜREÇTE çalıştırır ve (exit_kodu,
     rapor_metni) döndürür. Tek tanım oa-kontrol'de yaşar — burada
     TEKRARLANMAZ (M2-3: dilekce_denetim'in teslim-öncesi mekanik kapılar
-    zincirine bu adımı BAĞLAR, yeni yeşil ışık)."""
+    zincirine bu adımı BAĞLAR, yeni yeşil ışık). `tip` verilirse (M3-2/R6)
+    kardeş scripte `--tip` olarak aktarılır — G1 "esaslı dilekçe" tip
+    listesinin tek kaynağı orada yaşar, burada TEKRARLANMAZ."""
     yol = _ictihat_muhakeme_yolu()
     if yol is None:
         return 1, ("[EKSİK] ictihat_muhakeme_denetim.py bulunamadı "
@@ -201,6 +330,8 @@ def ictihat_muhakeme_kapisi(taslak_yolu, kok=None, muhakeme_dizin=None, dokum_di
         args += ["--muhakeme-dizin", muhakeme_dizin]
     if dokum_dizin:
         args += ["--dokum-dizin", dokum_dizin]
+    if tip:
+        args += ["--tip", tip]
     cp = subprocess.run(
         args, capture_output=True, text=True, encoding="utf-8", errors="replace")
     return cp.returncode, ((cp.stdout or "") + (cp.stderr or "")).rstrip()
@@ -215,8 +346,10 @@ def denetle(metin, tip, taraf):
         if not _bul(metin, des):
             eksik.append(ad)
 
-    # B) tertip-düzen
+    # B) tertip-düzen (+ [B2] kanun-yolu tip-koşullu yapısal kalemler — M3-2)
     duzen_eksik = [ad for ad, des in DUZEN if not _bul(metin, des)]
+    if tip in KANUN_YOLU_TIPLERI:
+        duzen_eksik += _kanun_yolu_yapisal_eksik(metin)
 
     # C) OCR ⚠ alıntı → teyit şerhi
     ocr_var = ("⚠" in metin) or re.search(r"\bOCR\b", metin, re.I)
@@ -253,7 +386,8 @@ def main():
     ap = argparse.ArgumentParser(description="dilekce_denetim.py — teslim öncesi şablon + zaaf kapısı")
     ap.add_argument("taslak")
     ap.add_argument("--tip", default="genel",
-                    choices=["dava", "cevap", "istinaf", "temyiz", "aym_bireysel", "genel"])
+                    choices=["dava", "cevap", "istinaf", "temyiz", "aym_bireysel",
+                             "yemin", "idari-kanal", "genel"])
     ap.add_argument("--taraf", default="",
                     choices=["", "davaci", "davali", "sanik", "katilan", "mudahil", "musteki"])
     ap.add_argument("--udf", metavar="YOL", default="",
@@ -339,7 +473,8 @@ def main():
             os.path.join(a.kok, "_oa", "cikti") if a.kok else None)
         dokum_dizin = a.ictihat_dokum_dizin if a.ictihat_dokum_dizin is not None else (
             os.path.join(a.kok, "_oa", "teyit", "dokum") if a.kok else None)
-        kod_f, cikti_f = ictihat_muhakeme_kapisi(a.taslak, a.kok, muhakeme_dizin, dokum_dizin)
+        kod_f, cikti_f = ictihat_muhakeme_kapisi(a.taslak, a.kok, muhakeme_dizin, dokum_dizin,
+                                                  tip=a.tip)
         for satir in cikti_f.splitlines():
             print(f"   {satir}")
         ictihat_muhakeme_engel = (kod_f != 0)

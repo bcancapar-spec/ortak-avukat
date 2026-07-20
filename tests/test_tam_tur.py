@@ -165,8 +165,10 @@ def test_durum_kaydet_sonrasi_mekanik_tamamlandi(tmp_path, capsys):
 
 def test_durum_analiz_md_silinirse_mekanik_tamamlanmadi(tmp_path, capsys):
     """durum.json 'TAMAM' + delta temiz görünse bile dosya-analiz.md fiziken
-    SİLİNMİŞSE, --durum bunu MODEL BEYANINA değil DİSKE bakarak yakalamalı —
-    Gate G, json öz-beyanından bağımsız fiziksel kanıt ister."""
+    SİLİNMİŞSE, --durum bunu MODEL BEYANINA değil DİSKE bakarak yakalamalı.
+    M3-0 (Gate G+ + kendini-onarma): --durum md'yi birincil kaynaklardan
+    YENİDEN KURAR (GÖRÜNÜR uyarıyla) ama bu onarım TAMAM işaretçisi ÜRETMEZ —
+    dolayısıyla sonuç yine 'tamamlanmadi' kalır (fail-closed korunur)."""
     _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
     _cikti_birak(tmp_path)
     tt.cmd_baslat(str(tmp_path), "Test Dosyası")
@@ -178,14 +180,19 @@ def test_durum_analiz_md_silinirse_mekanik_tamamlanmadi(tmp_path, capsys):
 
     capsys.readouterr()
     kod = tt.cmd_durum(str(tmp_path))
-    cikti = capsys.readouterr().out
+    yakalanan = capsys.readouterr()
+    cikti = yakalanan.out
     assert kod == 3, "dosya-analiz.md silinmişken --durum yine de 'güncel/tamam' demeli değildi"
     assert "tamamlanmadi" in cikti
-    assert "dosya-analiz.md yok" in cikti
+    assert "TAMAM işaretçisi yok" in cikti
+    assert "UYARI" in yakalanan.err and "yeniden kuruldu" in yakalanan.err
+    # Kendini-onarma: md fiilen YENİDEN KURULMUŞ olmalı (DAİMA MEVCUT garantisi).
+    assert analiz_md.exists()
 
 
 def test_durum_analiz_md_bos_ise_mekanik_tamamlanmadi(tmp_path, capsys):
-    """dosya-analiz.md VAR ama BOŞ (0 bayt) — mekanik kapı yine 'tamamlanmadi' demeli."""
+    """dosya-analiz.md VAR ama BOŞ (0 bayt) — mekanik kapı yine 'tamamlanmadi'
+    demeli; M3-0 kendini-onarma burada da tetiklenir (boş = bozuk)."""
     _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
     _cikti_birak(tmp_path)
     tt.cmd_baslat(str(tmp_path), "Test Dosyası")
@@ -196,9 +203,12 @@ def test_durum_analiz_md_bos_ise_mekanik_tamamlanmadi(tmp_path, capsys):
 
     capsys.readouterr()
     kod = tt.cmd_durum(str(tmp_path))
-    cikti = capsys.readouterr().out
+    yakalanan = capsys.readouterr()
+    cikti = yakalanan.out
     assert kod == 3
-    assert "tamamlanmadi" in cikti and "boş" in cikti
+    assert "tamamlanmadi" in cikti
+    assert "UYARI" in yakalanan.err and "eksik/bozuktu" in yakalanan.err
+    assert analiz_md.stat().st_size > 0, "kendini-onarma boş dosyayı yeniden kurmalıydı"
 
 
 def test_durum_yeniden_baslat_sonrasi_kaydetmeden_bayat_kayit(tmp_path, capsys):
@@ -306,3 +316,219 @@ def test_brif_durum_ile_ayni_donus_kodunu_paylasir(tmp_path):
     assert tt.cmd_kaydet(str(tmp_path)) == 0
 
     assert tt.cmd_brif(str(tmp_path)) == tt.cmd_durum(str(tmp_path)) == 0
+
+
+# ── M3-0 — DOĞUM-ANI KALICILIK: iskelet doğumu / --senkron / Gate G+ ────────
+
+def test_baslat_iskeleti_atomik_dogurur_ve_idempotenttir(tmp_path):
+    """`--baslat` dosya-analiz.md YOKKEN 15 bölüm ayracını (0-14) taşıyan bir
+    İSKELET doğurur; TAMAM işaretçisi ASLA içermez. İkinci `--baslat` çağrısı
+    gövdeye DOKUNMAZ (idempotent) — yalnız başlık gerekiyorsa tazelenir."""
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    assert analiz_md.exists() and analiz_md.stat().st_size > 0
+    icerik = analiz_md.read_text(encoding="utf-8")
+    for n, slug, _ in tt.BOLUM_TANIMLARI:
+        assert f"<!-- oa:bolum:{n:02d}-{slug} -->" in icerik, f"bölüm {n} ayracı eksik"
+    assert not tt._tamam_isaretci_var_mi(icerik), "--baslat TAMAM işaretçisi ÜRETMEMELİ"
+
+    ilk_mtime = analiz_md.stat().st_mtime
+    ilk_icerik = icerik
+    # aynı dosya adıyla ikinci --baslat: gövde AYNI kalmalı (idempotent, dokunma).
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    assert analiz_md.read_text(encoding="utf-8") == ilk_icerik
+
+
+def test_baslat_farkli_dosya_adiyla_basligi_tazeler_govdeye_dokunmaz(tmp_path):
+    """`--baslat` md VARKEN çağrılırsa yalnız başlık satırı (dosya adı farklıysa)
+    tazelenir; bölüm gövdesi/markerları bozulmaz."""
+    assert tt.cmd_baslat(str(tmp_path), "İlk Ad") == 0
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    assert "İlk Ad" in analiz_md.read_text(encoding="utf-8")
+
+    assert tt.cmd_baslat(str(tmp_path), "Yeni Ad") == 0
+    icerik = analiz_md.read_text(encoding="utf-8")
+    assert icerik.splitlines()[0].endswith("Yeni Ad")
+    assert tt._iskelet_saglam_mi(icerik)
+    assert not tt._tamam_isaretci_var_mi(icerik)
+
+
+def test_senkron_cikti_dosyasini_kayipsiz_turetir(tmp_path):
+    """`--senkron`, `_oa/cikti/NN-*` dosyasının içeriğini (okunabilirse TAM gömülü)
+    doğru bölüme yerleştirir; NN=00-09 → bölüm NN+1 eşlemesi ve CATCH-ALL (14,
+    eşlenmeyen dosya adı) birlikte doğrulanır — hiçbir çalışma evrakı düşmez."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    _cikti_birak(tmp_path, ad="04-vakia.json", icerik='{"olgu": "örnek olgu içeriği"}')
+    _cikti_birak(tmp_path, ad="capraz-denetim.json", icerik='{"eslesme": true}')
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert not tt._tamam_isaretci_var_mi(icerik), "--senkron TAMAM işaretçisi ÜRETMEMELİ"
+    # 04-vakia.json → OLGU/DELİL (bölüm 5) NN+1 eşlemesiyle.
+    bolum5_idx = icerik.index("<!-- oa:bolum:05-Olgu-delil -->")
+    bolum6_idx = icerik.index("<!-- oa:bolum:06-Kiyas -->")
+    assert bolum5_idx < icerik.index("04-vakia.json") < bolum6_idx
+    assert "örnek olgu içeriği" in icerik
+    # NN-öneki taşımayan dosya → CATCH-ALL (bölüm 14).
+    bolum14_idx = icerik.index("<!-- oa:bolum:14-Diger-calisma-evraklari -->")
+    assert bolum14_idx < icerik.index("capraz-denetim.json")
+    assert "eslesme" in icerik
+
+
+def test_buyuk_muhakeme_ciktisi_ozetlenmeden_tam_gomulur(tmp_path):
+    """M3-0 DÜZELTMESİ (Gate G+ — muhakeme kaybı denetçi bulgusu): eski davranışta
+    KUCUK_ESIK=4000 karakter üzerindeki HER `_oa/cikti/*` dosyası (bölüm ayrımı
+    yapılmadan) yalnız ilk ~300 karakterlik bir 'Öz' ile temsil ediliyordu — bu,
+    07-Strateji/08-Antitez gibi SAF MUHAKEME bölümlerinde gerçek gerekçelendirmeyi
+    ARTIMLI MOD'da (yalnız dosya-analiz.md okunur) görünmez kılardı. Bu test 4000
+    karakteri AÇIKÇA aşan okunabilir bir muhakeme çıktısının TAM (özetlenmeden)
+    gömüldüğünü doğrular — 'Öz:' özetleme deseni ARTIK üretilmemeli."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    # 08-antitez → bölüm 9 (Antitez, NN+1) — eski eşiğin çok üzerinde (>4000 kar.).
+    uzun_muhakeme = "KARŞI TARAF ARGÜMANI VE ÇÖKERTME GEREKÇESİ. " * 200  # ~9000+ kar.
+    assert len(uzun_muhakeme) > 4000
+    _cikti_birak(tmp_path, ad="08-antitez.md", icerik=uzun_muhakeme)
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert uzun_muhakeme.rstrip("\n") in icerik, (
+        "büyük muhakeme çıktısı TAM gömülmedi — muhakeme kaybı regresyonu")
+    assert "> Öz:" not in icerik, "eski özetleme deseni ('> Öz:') hâlâ üretiliyor"
+
+
+def test_ikili_icerik_hala_oz_temsille_gosterilir(tmp_path):
+    """Gerçekten ikili/okunamayan (utf-8 çözülemeyen) bir `_oa/cikti/*` dosyası
+    TAM metin olarak gömülmez (gömülemez) — yol+sha ile temsil edilmeye devam
+    eder; bu bir 'özetleme' değildir çünkü ikili veri zaten düzyazı muhakeme
+    taşımaz (kayıpsızlık: tam içerik diskte, sha ile doğrulanabilir kalır)."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    cikti_dizin = tmp_path / "_oa" / "cikti"
+    cikti_dizin.mkdir(parents=True, exist_ok=True)
+    (cikti_dizin / "09-ek-gorsel.bin").write_bytes(b"\xff\xfe\x00\x01ikili-veri\x80\x81")
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert "09-ek-gorsel.bin" in icerik
+    assert "ikili/okunamayan içerik" in icerik
+    assert "sha ile doğrulanır" in icerik
+
+
+def test_senkron_kaydet_sonrasi_tamam_isaretcisini_dusurur_ve_uyarir(tmp_path, capsys):
+    """Yan-bulgu düzeltmesi: `--kaydet` sonrası (TAMAM damgalı) bir dosya-analiz.md
+    üzerinde `--senkron` çağrılırsa TAMAM işaretçisi bu render'da düşer (yalnız
+    `--kaydet` işaretçi yazar) — veri kaybı YOK ama sessiz olursa şaşırtıcıdır;
+    script bunu artık AÇIKÇA (stderr) bildirir."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+    icerik_kaydet = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert tt._tamam_isaretci_var_mi(icerik_kaydet)
+
+    capsys.readouterr()
+    kod = tt.cmd_senkron(str(tmp_path))
+    yakalanan = capsys.readouterr()
+    assert kod == 0
+    assert "TAMAM işaretçisini ASLA yazmaz" in yakalanan.err
+    assert "damga bu render'da DÜŞTÜ" in yakalanan.err
+
+    icerik_senkron = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert not tt._tamam_isaretci_var_mi(icerik_senkron)
+
+
+def test_gate_g_plus_isaretcisiz_iskelet_tamamlanmadi_sayar(tmp_path, capsys):
+    """ZORUNLU iskelet↔Gate G+ etkileşimi: yalnız `--baslat` (VAR+dolu+taze
+    iskelet, eski Gate G'yi GEÇERDİ) çalıştıktan sonra `--durum` YİNE DE
+    'tamamlanmadi' demeli — işaretçisiz iskelet asla 'tamamlandi' sayılmaz."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    assert analiz_md.exists() and analiz_md.stat().st_size > 0  # eski Gate G'nin 3 koşulu GEÇERDİ
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 3
+    assert "tamamlanmadi" in cikti
+    assert "TAMAM işaretçisi yok" in cikti
+
+    # Gerçek --kaydet sonrası aynı sinyal 'tamamlandi'ya döner (kontrast).
+    _cikti_birak(tmp_path)
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+    capsys.readouterr()
+    kod2 = tt.cmd_durum(str(tmp_path))
+    cikti2 = capsys.readouterr().out
+    assert kod2 == 0
+    assert "tamamlandi" in cikti2
+
+
+def test_senkron_kendini_onarma_bozuk_iskeleti_yeniden_kurar(tmp_path, capsys):
+    """`--senkron` de (tıpkı `--durum` gibi) md bozuksa (bölüm ayraçları eksik/
+    elle bozulmuş) birincil kaynaklardan YENİDEN KURAR + GÖRÜNÜR uyarı basar;
+    onarım TAMAM üretmez."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    analiz_md.write_text("# eski biçim, bölüm ayraçsız içerik\n", encoding="utf-8")
+
+    capsys.readouterr()
+    kod = tt.cmd_senkron(str(tmp_path))
+    yakalanan = capsys.readouterr()
+    assert kod == 0
+    assert "UYARI" in yakalanan.err and "eksik/bozuktu" in yakalanan.err
+    icerik = analiz_md.read_text(encoding="utf-8")
+    assert tt._iskelet_saglam_mi(icerik)
+    assert not tt._tamam_isaretci_var_mi(icerik)
+
+
+def test_serh_tarihcesi_senkron_sonrasi_da_kaybolmaz(tmp_path):
+    """Şerh (durum.json `serh_tarihcesi`) KALICIDIR — md sonradan `--senkron` ile
+    yeniden türetilse bile bölüm 13'te GÖRÜNÜR kalmaya devam eder (kayıpsızlık:
+    md şerh bilgisinin TEK nüshası değildir, durum.json'dan yeniden basılır)."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v2")}])
+    assert tt.cmd_kaydet(str(tmp_path), zorla=True) == 0
+
+    assert tt.cmd_senkron(str(tmp_path)) == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert "ŞERH" in icerik
+    assert "dilekce.pdf" in icerik
+
+
+def test_gomulu_marker_sahte_tamam_uretmez(tmp_path):
+    """Gate G+ DELİNME KAPATMA (Fable K CONFIRMED smoke): --kaydet HİÇ koşmadan bir
+    _oa/cikti/*.md İÇİNE TAMAM marker metni (örnek/backtick olarak) yazılırsa, --senkron
+    onu gömse bile --durum SAHTE 'tamamlandı' DEMEMELİDİR (exit 3). Ayrıca gömülü
+    muhakeme metni KAYBOLMAMALIDIR (kayıpsızlık)."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    cikti_dir = tmp_path / "_oa" / "cikti"
+    cikti_dir.mkdir(parents=True, exist_ok=True)
+    marker = tt._tamam_marker("2099-01-01 00:00")
+    (cikti_dir / "04-arastirma.md").write_text(
+        f"# Araştırma\n\nÖrnek marker (belge): {marker}\n\nMUHAKEME METNI burada — kaybolmamalı.\n",
+        encoding="utf-8")
+    assert tt.cmd_senkron(str(tmp_path)) == 0
+    assert tt.cmd_durum(str(tmp_path)) == 3, "gömülü marker SAHTE-TAMAM üretti — Gate G+ delindi"
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert "MUHAKEME METNI burada" in icerik
+
+
+def test_tamam_isaretci_yalniz_son_satirda_ve_notrleme(tmp_path):
+    """Birim: TAMAM yalnız SON boş-olmayan satırda tam-satır sayılır; nötrleme
+    muhakeme metnini silmeden marker'ı son-satır eşleşmesinden çıkarır."""
+    m = tt._tamam_marker("2026-07-20 03:00")
+    assert tt._tamam_isaretci_var_mi(f"x\n\n{m}\n") is True        # gerçek son satır → TAMAM
+    assert tt._tamam_isaretci_var_mi(f"{m}\n\ndevam\n") is False   # belge ortası → değil
+    assert tt._tamam_isaretci_var_mi("iskelet\n") is False         # marker yok → değil
+    notr = tt._marker_etkisizlestir(f"muhakeme\n{m}")
+    assert tt._tamam_isaretci_var_mi(notr + "\n") is False and "muhakeme" in notr

@@ -40,7 +40,7 @@ python scripts/vakia_matris.py --dogrula _oa/cikti/04-vakia.json   # kronoloji +
 Kronolojiyi edilgen dizme. Sıralama sırasında **müvekkil lehine örüntü** ara: bir illiyet zinciri, bir karşı tarafın temerrüt anı, bir hak düşürücü sürenin başlangıcı, lehe bir karine doğuran olgu. Boşluğu yalnız işaretleme — **nasıl kapatılacağını** da öner.
 
 ## Kompozisyon
-`oa-interview` olguyu toplar → **oa-vakia** sıralar/eşler → `oa-antitez` ispat/delil cephesini bu matrisle test eder → `oa-dilekce` vakıa anlatımını ve delil listesini buradan kurar (her iddia bir delile bağlı).
+`oa-interview` olguyu toplar → **oa-vakia** sıralar/eşler → `oa-antitez` ispat/delil cephesini bu matrisle test eder → `oa-dilekce` vakıa anlatımını ve delil listesini buradan kurar (her iddia bir delile bağlı). Not (İçtihat Muhakeme Zinciri çapası): bu parçanın kurduğu olgu örüntüsü, `oa-kiyas`'ın MUHAKEME adımında her içtihat için yazdığı DAVAYA-BAĞ alanının (bkz. `oa-kiyas/references/ictihat-muhakeme-sablonu.md`) somut malzemesidir — DAMGA/G1-G3 mekanik kapıları `oa-kontrol`'dedir, bu parça yalnız girdisini besler.
 
 ## Öğrenme günlüğü
 Yeni bir ispat aracı, tasnif kalıbı veya tekrar eden boşluk tipi öğrenildiğinde script/şablona ekle, aşağıya işle, yeniden paketle.
@@ -60,7 +60,7 @@ Büyük dosyalarda (UYAP 300-500+ sf) kronolojiden ÖNCE EVRAK MANİFESTOSU çı
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-vakia` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

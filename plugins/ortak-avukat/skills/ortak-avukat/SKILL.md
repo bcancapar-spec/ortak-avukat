@@ -127,7 +127,7 @@ Bu **çekirdek**, sistemin omurgası ve orkestra şefidir; tek dev skill değild
 Parçalar ezber değil **harita + disiplin + deterministik araçtır**: madde, süre, parasal sınır ve künyeler kullanım anında resmî kaynaktan teyit edilir. Her parça kendi **öğrenme günlüğüyle** dosya tecrübesiyle büyür; yeni bir tuzak/daire kayması öğrenildiğinde ilgili parçaya işlenip yeniden paketlenir. Bu, "skill yönlendirmelerime ve işlerimize göre gelişsin" mekanizmasının somut hâlidir.
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.22**.
+Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

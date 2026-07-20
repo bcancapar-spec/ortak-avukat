@@ -55,6 +55,7 @@ Sonraki parçalar ham evrağı DEĞİL `00-INDEX.md`'yi okur, sonra yalnız gere
    tek-çekirdek ortamda `--isci 1` açıkça verilebilir.
 3. Kanıtı deftere işle: `pipeline_kayit.py --isle --adim 0 --parca manifest --durum UYGULANDI --kanit "oa_ingest.py koştu: N evrak, M OCR, işçi=K, _oa/metin üretildi"`.
 4. **Sayım denetimi:** indirilen evrak adedi = `kunye.json.toplam_evrak` değilse analiz BAŞLAMAZ (eksik adıyla raporlanır); `manifest_olustur.py <klasor> --mutabakat _oa/metin/00-kunye.json` bunu paralel koşu sonrasında da aynen denetler (paralellik mutabakat mantığını değiştirmez).
+5. **M3-0 — DOĞUM-ANI KALICILIK:** bu adımdan sonra `oa-pipeline/scripts/tam_tur.py --senkron --kok .` çalıştırılır — `_oa/analiz/dosya-analiz.md`'nin MANİFEST bölümü (0. Künye) az önce üretilen `00-kunye.json`'dan deterministik doldurulur (tek sahip `tam_tur.py`dir; bu script dosya-analiz.md'ye yazmaz).
 
 ## Anayasal bloklar — tek kaynak (anayasa.md)
 Bu parça, ailenin ortak anayasal ilkelerine tabidir — **Çaba/token standardı** (model/efor kullanıcının tercihi; muhakemede/doğrulamada/çıktı kalitesinde tasarruf YOK, yalnız mekanik katmanda kayıpsız verimlilik), **Örnekleme ilkesi** (konu sınırlaması yok — kapsam TÜM Türk hukuku), **Doğaçlama meşruiyeti** (yöntem serbest, olgu MCP-teyitli), ayrıca Doğrulama mimarisi, Anonimleştirme ve Layer 0 gizlilik. **Tek ve yetkili kaynak: `ortak-avukat/references/anayasa.md`.** (Bu parça alt-ajan olarak koşarken bu ilkeler `oa-pipeline/scripts/oa_hafiza.py ajan-brif` ile taşınır.)
@@ -78,7 +79,7 @@ Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Sk
 Yeni bir evrak biçimi, çıkarım tuzağı (ör. sınır PDF, çok-katmanlı EYP) veya eşik ayarı öğrenildiğinde script/şablona ekle, aşağıya işle, yeniden paketle.
 
 ## Değişiklik Günlüğü
-Tam günlük `references/degisiklik-gunlugu.md`'dedir. Güncel sürüm: **v3.22** (parça girişi v1.0; aile metodoloji sürümüne hizalandı).
+Tam günlük `references/degisiklik-gunlugu.md`'dedir. Güncel sürüm: **v3.26** (parça girişi v1.0; aile metodoloji sürümüne hizalandı).
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.

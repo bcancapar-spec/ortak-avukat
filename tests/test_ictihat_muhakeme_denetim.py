@@ -58,8 +58,8 @@ def _bos_iskelet(tmp_path):
 
 def _kur(tmp_path, damga="LEHE", ayirt_etme="", kaynak_izi_var=True,
          kaynak_dosya_ad="kaynak.md", ilgili_kisim="...ilgili kısım metni...",
-         illiyet="...illiyet açıklaması...", damga_satiri=True, kaynak_icerik=None,
-         kaynak_izi_deger_override=None):
+         davaya_bag="...davaya bağ açıklaması...", damga_satiri=True, kaynak_icerik=None,
+         kaynak_izi_deger_override=None, davaya_bag_baslik="DAVAYA-BAĞ"):
     """Tek atıflı, tek muhakeme kayıtlı bir _oa iskeleti + taslak kurar; taslak
     dosya yolunu döndürür (CLI'ye cwd-göreli 'taslak.md' olarak verilir)."""
     dokum_dizin, cikti_dizin = _bos_iskelet(tmp_path)
@@ -82,8 +82,8 @@ def _kur(tmp_path, damga="LEHE", ayirt_etme="", kaynak_izi_var=True,
     satirlar.append("")
     if ilgili_kisim:
         satirlar += ["## İLGİLİ-KISIM", ilgili_kisim, ""]
-    if illiyet:
-        satirlar += ["## İLLİYET", illiyet, ""]
+    if davaya_bag:
+        satirlar += [f"## {davaya_bag_baslik}", davaya_bag, ""]
     satirlar += ["## AYIRT-ETME", ayirt_etme or "", ""]
 
     (cikti_dizin / "01-ictihat-muhakeme.md").write_text("\n".join(satirlar), encoding="utf-8")
@@ -191,7 +191,7 @@ def test_kaynak_izi_dokum_disinda_engel(tmp_path):
     assert "dökum dizini dışında" in cikti.lower() or "dokum dizini dışında" in cikti.lower()
 
 
-# ── NEGATİF: İLGİLİ-KISIM / İLLİYET alanları boş → G2 engeli ───────────────
+# ── NEGATİF: İLGİLİ-KISIM / DAVAYA-BAĞ alanları boş → G2 engeli ────────────
 
 def test_ilgili_kisim_bos_engel(tmp_path):
     _kur(tmp_path, ilgili_kisim="")
@@ -200,11 +200,22 @@ def test_ilgili_kisim_bos_engel(tmp_path):
     assert "İLGİLİ-KISIM" in cikti
 
 
-def test_illiyet_bos_engel(tmp_path):
-    _kur(tmp_path, illiyet="")
+def test_davaya_bag_bos_engel(tmp_path):
+    _kur(tmp_path, davaya_bag="")
     kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod == 1, cikti
-    assert "İLLİYET" in cikti
+    assert "DAVAYA-BAĞ" in cikti
+
+
+# ── R4 — geriye dönük uyumluluk: eski "İLLİYET" başlığı hâlâ okunur ─────────
+# (kayıpsızlık invaryantı: göç edilmemiş eski muhakeme kayıtları bozulmaz)
+
+def test_eski_illiyet_basligi_geriye_donuk_okunur(tmp_path):
+    _kur(tmp_path, davaya_bag="...eski başlıkla yazılmış açıklama...",
+         davaya_bag_baslik="İLLİYET")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "DAVAYA-BAĞ alanı boş/yok" not in cikti
 
 
 # ── KRİTİK — çok-daireli çakışma: esas/karar no'su AYNI, DAİRE FARKLI ──────
@@ -231,7 +242,7 @@ def _coklu_kunye_kur(tmp_path, kayitlar, taslak_metin=TASLAK_METIN):
             f"**KAYNAK-IZI:** _oa/teyit/dokum/{kaynak_dosya_ad}",
             f"**DAMGA:** {k['damga']}", "",
             "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
-            "## İLLİYET", "...illiyet açıklaması...", "",
+            "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",
             "## AYIRT-ETME", k.get("ayirt_etme", ""), "",
         ]
         (cikti_dizin / f"{i:02d}-ictihat-muhakeme.md").write_text(
@@ -298,6 +309,39 @@ def test_coklu_daire_atif_daire_belirtmiyorsa_belirsizlik_fail_closed_engeli(tmp
     assert "belirlenemiyor" in cikti.lower() or "belirsiz" in cikti.lower()
 
 
+# ── YENİ-2 (backlog) — AYNI esas/karar/daire için ÇELİŞEN damgalı iki kayıt ─
+# Eskiden: script "temiz" (engelsiz) adayı sessizce seçip ALEYHE ikizini
+# görünmez kılıyordu. Artık bu durum bir UYARI olarak açıkça raporlanır —
+# bloklamaz (mekanik kapı yine geçebilir), ama tutarsızlık gizlenmez.
+
+def test_ayni_daire_esas_karar_celisen_damga_uyarir_ama_bloklamaz(tmp_path):
+    """İki muhakeme kaydı AYNI esas/karar/daireye sahip (gerçek bir çakışma/veri
+    hatası) — biri LEHE (temiz), diğeri ALEYHE. Dilekçe atfı bu daireyi anıyor;
+    script LEHE kaydı bulup OK dönebilir (mekanik kapı açık) AMA çelişkiyi
+    UYARI olarak basmalıdır — ALEYHE ikizi sessizce gölgelenmemeli."""
+    _coklu_kunye_kur(tmp_path, [
+        {"kunye": KUNYE, "damga": "LEHE"},
+        {"kunye": KUNYE, "damga": "ALEYHE"},
+    ])
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "ÇELİŞEN DAMGA" in cikti
+    assert "YENİ-2" in cikti
+
+
+def test_ayni_daire_esas_karar_ayni_damga_celisen_uyari_uretmez(tmp_path):
+    """Simetrik negatif kontrol: iki kayıt aynı esas/karar/daireye sahip AMA
+    damgaları AYNIYSA (gerçek bir çelişki yok — ör. iki ayrı dosyada aynı
+    kararın tekrar muhakeme edilmesi), ÇELİŞEN DAMGA uyarısı basılmamalı."""
+    _coklu_kunye_kur(tmp_path, [
+        {"kunye": KUNYE, "damga": "LEHE"},
+        {"kunye": KUNYE, "damga": "LEHE"},
+    ])
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "ÇELİŞEN DAMGA" not in cikti
+
+
 def test_taslaktaki_atiflari_ayni_esas_karar_farkli_daire_ayri_atif_sayilir():
     """Aynı esas/karar no'suyla FARKLI dairelere ait iki atıf tek bir atıfmış
     gibi birleştirilip biri sessizce kaybolmamalı (dedup anahtarı daire'yi de
@@ -332,6 +376,72 @@ def test_g1_atif_yoksa_uyarir_bloklamaz(tmp_path):
     kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod == 0, cikti
     assert "emsal içtihat yok" in cikti.lower() or "emsal ictihat yok" in cikti.lower()
+
+
+# ── G1 "ESASLI DİLEKÇE" TİP LİSTESİ — M3-2/R6 ───────────────────────────────
+# dava/cevap/istinaf/temyiz/aym_bireysel = esaslı (G1 UYARI basılır);
+# yemin/idari-kanal = esaslı DEĞİL (G1 [BİLGİ]'ye düşer, hiçbir hâlde bloklamaz).
+
+def test_esasli_mi_bilinen_esasli_tipler_true():
+    for tip in ("dava", "cevap", "istinaf", "temyiz", "aym_bireysel"):
+        assert imd.esasli_mi(tip) is True, tip
+
+
+def test_esasli_mi_bilinen_esasli_olmayan_tipler_false():
+    for tip in ("yemin", "idari-kanal"):
+        assert imd.esasli_mi(tip) is False, tip
+
+
+def test_esasli_mi_tip_verilmezse_fail_safe_esasli_sayilir():
+    assert imd.esasli_mi(None) is True
+    assert imd.esasli_mi("") is True
+
+
+def test_esasli_mi_taninmayan_tip_fail_safe_esasli_sayilir():
+    """Bilinmeyen bir tip (ör. 'sozlesme') FAIL-SAFE: esaslı sayılır — yalnız
+    AÇIKÇA 'esaslı değil' listesindeki tipler uyarıyı bastırır."""
+    assert imd.esasli_mi("sozlesme") is True
+
+
+def test_g1_esasli_tipte_tip_bayragiyla_hala_uyarir(tmp_path):
+    _bos_iskelet(tmp_path)
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text("Bu dilekçe hiçbir içtihat atfı içermemektedir.\n", encoding="utf-8")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path), "--tip", "dava"], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[UYARI]" in cikti
+    assert "emsal içtihat yok" in cikti.lower()
+
+
+def test_g1_esasli_olmayan_tipte_bilgiye_duser_bloklamaz(tmp_path):
+    _bos_iskelet(tmp_path)
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text("Bu dilekçe hiçbir içtihat atfı içermemektedir.\n", encoding="utf-8")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path), "--tip", "yemin"], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[BİLGİ]" in cikti
+    assert "esaslı-dilekçe" in cikti or "esasli-dilekce" in cikti.lower()
+    # G1 uyarısı bu tipte basılmamalı (yalnız [BİLGİ] notu var)
+    assert "[UYARI] Dilekçede esas/karar" not in cikti
+
+
+def test_g1_idari_kanal_tipinde_de_bilgiye_duser(tmp_path):
+    _bos_iskelet(tmp_path)
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text("Bu dilekçe hiçbir içtihat atfı içermemektedir.\n", encoding="utf-8")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path), "--tip", "idari-kanal"], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[BİLGİ]" in cikti
+    assert "[UYARI] Dilekçede esas/karar" not in cikti
+
+
+def test_g1_tip_bayragi_g2_g3_engellerini_etkilemez(tmp_path):
+    """--tip yalnız G1 gürültüsünü etkiler; ALEYHE damgalı çıplak atıf hâlâ
+    tip ne olursa olsun TESLİM ENGELİ üretmelidir (G2/G3 tip'ten bağımsızdır)."""
+    _kur(tmp_path, damga="ALEYHE")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path), "--tip", "yemin"], cwd=tmp_path)
+    assert kod == 1, cikti
+    assert "ALEYHE" in cikti
 
 
 # ── kunye_ortak.py — paylaşımlı yardımcının sözleşmesi ─────────────────────

@@ -12,12 +12,17 @@ denetler. "Çıplak künye" (yalnız daire+esas+karar, arkasında bir NN-ictihat
 muhakeme.md kaydı olmadan) dilekçede kalamaz — bu script o yasağın mekanik
 karşılığıdır.
 
+NOT (R4 — terim netliği): şemanın "İLLİYET" alanı `oa-illiyet`'in modellediği
+fiil→netice NEDENSELLİK grafıyla karışmasın diye **DAVAYA-BAĞ** olarak
+adlandırılmıştır (bkz. `oa-kiyas/references/ictihat-muhakeme-sablonu.md`);
+bu bir analoji/emsal-uygunluk bağıdır, nedensellik değildir.
+
 ── SCRIPT NE YAPAR / NE YAPMAZ (bağlayıcı sınır) ──
 Script "bu içtihat GERÇEKTEN ilgili mi" MUHAKEMESİNE GİRMEZ. Yalnız üç şeyi
 mekanik olarak denetler: (1) VARLIK — dilekçedeki her künye için bir muhakeme
 kaydı var mı; (2) BAĞ — o kaydın KAYNAK-İZİ dosyası gerçekten diskte var mı ve
 künye o dosyada bir dize olarak geçiyor mu; (3) ALAN BÜTÜNLÜĞÜ — İLGİLİ-KISIM/
-İLLİYET/DAMGA alanları dolu mu, DAMGA=ALEYHE-AYIRT ise AYIRT-ETME dolu mu.
+DAVAYA-BAĞ/DAMGA alanları dolu mu, DAMGA=ALEYHE-AYIRT ise AYIRT-ETME dolu mu.
 "İlgili kısım gerçekten ilgili mi", "illiyet muhakemesi isabetli mi", "hangi
 dairenin baktığı doğru mu" gibi İÇERİK/MUHAKEME soruları bu scriptin işi
 DEĞİLDİR — onlar oa-kontrol A listesi + avukatın nihai gözüdür (model kurar,
@@ -31,6 +36,13 @@ kaydı tamamlar; script bunun YERİNE geçmez.
 G1 (UYARI — BLOKLAMAZ): Dilekçede hiç doğrulanabilir içtihat atfı (esas/karar
    no'lu künye) yoksa "emsal içtihat yok — muhakeme zayıf" uyarısı basılır.
    Bu, "esaslı mı" hükmü DEĞİLDİR; yalnız bir eksiklik bulgusudur.
+   **`--tip` ile bağlanır (M3-2/R6):** bu uyarı yalnız "esaslı" dilekçe
+   tiplerinde (dava/cevap/istinaf/temyiz/aym_bireysel) anlamlıdır; yemin
+   teklif/idari kanal başvurusu gibi hafif tiplerde içtihat atfı yapısal
+   olarak beklenmez — bu tiplerde uyarı [BİLGİ]'ye düşer (yine bloklamaz).
+   `--tip` verilmezse veya tanınmayan bir değerse FAIL-SAFE: esaslı sayılır
+   (uyarı bastırılmaz) — yalnız açıkça "esaslı değil" listesindeki tipler
+   bastırır.
 
 G2 (ENGEL — yalnız yapısal): Dilekçedeki HER içtihat künyesi için:
    - `_oa/cikti/*ictihat-muhakeme*.md` kayıtları arasında künyesi
@@ -45,7 +57,7 @@ G2 (ENGEL — yalnız yapısal): Dilekçedeki HER içtihat künyesi için:
      `kunye_ortak.daire_key`).
    - O kaydın KAYNAK-İZİ alanındaki dosya `--dokum-dizin` içinde GERÇEKTEN
      var mı ve künye (esas/karar sayıları) o dosyada bir dize olarak geçiyor mu?
-   - İLGİLİ-KISIM / İLLİYET / DAMGA alanları DOLU mu?
+   - İLGİLİ-KISIM / DAVAYA-BAĞ / DAMGA alanları DOLU mu?
    Yoksa → "çıplak/muhakeme edilmemiş atıf" → ENGEL.
 
 G3 (ENGEL): Eşleşen kaydın DAMGA değerine göre:
@@ -57,6 +69,12 @@ G3 (ENGEL): Eşleşen kaydın DAMGA değerine göre:
    - DAMGA yok/geçersiz enum → FAIL-CLOSED ENGEL ("muhakeme edilmemiş" sayılır;
                                  hiçbir hâlde varsayılan-nötr/geçerli sayılmaz).
    - DAMGA=LEHE              → sorun yok.
+
+G-EK (UYARI — BLOKLAMAZ, YENİ-2 backlog): Aynı esas+karar+daireye ait BİRDEN
+   FAZLA muhakeme kaydı varsa VE bu kayıtların DAMGA değerleri birbirinden
+   FARKLIYSA (ör. biri LEHE biri ALEYHE), "ÇELİŞEN DAMGA" UYARISI basılır —
+   script "temiz" (engelsiz) adayı bulup kullanabilir (mekanik kapı yine
+   açık kalabilir) ama bu yapısal tutarsızlığı SESSİZCE gizlemez.
 
 Paylaşımlı `kunye_normalize()` — bkz. `kunye_ortak.py` (M2-3'te `kunye_teyit.py`
 ile PAYLAŞILMASI planlanan ortak yardımcı; esas/karar normalizasyon mantığı).
@@ -100,6 +118,24 @@ VARSAYILAN_DOKUM = os.path.join("_oa", "teyit", "dokum")
 
 DAMGA_ENUM = {"LEHE", "ALEYHE", "ALEYHE-AYIRT", "NOTR"}
 
+# G1 — "esaslı dilekçe" tip listesi (M3-2/R6): dilekce_denetim.py --tip
+# taksonomisine bağlı. Yalnız bu listede AÇIKÇA "esaslı değil" sayılan tipler
+# G1 uyarısını [BİLGİ]'ye düşürür; her başka değer (tanınmayan tip dahil)
+# fail-safe olarak esaslı sayılır.
+ESASLI_OLMAYAN_TIPLER = {"yemin", "idari-kanal"}
+
+
+def esasli_mi(tip):
+    """R6: G1 (emsal içtihat yokluğu) uyarısı yalnız 'esaslı' dilekçe
+    tiplerinde (dava/cevap/istinaf/temyiz/aym_bireysel) UYARI olarak basılır;
+    yemin teklif/idari kanal başvurusu gibi hafif tiplerde içtihat atfı
+    yapısal olarak beklenmez. `tip` boş/None/tanınmayansa FAIL-SAFE: True
+    (esaslı) — yalnız ESASLI_OLMAYAN_TIPLER'de AÇIKÇA sayılan tipler False
+    döner."""
+    if not tip:
+        return True
+    return tip not in ESASLI_OLMAYAN_TIPLER
+
 KUNYE_LINE_RE = re.compile(r"^\*\*KUNYE:\*\*\s*(.+)$", re.M)
 KAYNAK_IZI_LINE_RE = re.compile(r"^\*\*KAYNAK-IZI:\*\*\s*(.+)$", re.M)
 DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
@@ -119,7 +155,7 @@ def _bolum_al(metin, baslik):
 
 class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
-                 "damga_ham", "damga", "ilgili_kisim", "illiyet", "ayirt_etme")
+                 "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -136,7 +172,10 @@ class MuhakemeKaydi:
         self.damga = self.damga_ham.upper() if self.damga_ham else None
 
         self.ilgili_kisim = _bolum_al(metin, "İLGİLİ-KISIM")
-        self.illiyet = _bolum_al(metin, "İLLİYET")
+        # R4: eski "İLLİYET" alanı DAVAYA-BAĞ oldu (oa-illiyet nedensellik
+        # grafıyla karışmasın diye); geriye dönük uyumluluk için eski "##
+        # İLLİYET" başlığı da hâlâ okunur (henüz göçürülmemiş eski kayıtlar).
+        self.davaya_bag = _bolum_al(metin, "DAVAYA-BAĞ") or _bolum_al(metin, "İLLİYET")
         self.ayirt_etme = _bolum_al(metin, "AYIRT-ETME")
 
     def kunye_var_mi(self):
@@ -232,13 +271,13 @@ def kaynak_izi_denetle(kayit, kok, dokum_dizin):
 
 
 def alan_butunlugu_denetle(kayit):
-    """G2 — İLGİLİ-KISIM / İLLİYET / DAMGA alanları DOLU mu (yalnız varlık;
+    """G2 — İLGİLİ-KISIM / DAVAYA-BAĞ / DAMGA alanları DOLU mu (yalnız varlık;
     içerik isabeti muhakeme işidir, bu fonksiyon YARGILAMAZ)."""
     sorunlar = []
     if not kayit.ilgili_kisim:
         sorunlar.append("İLGİLİ-KISIM alanı boş/yok")
-    if not kayit.illiyet:
-        sorunlar.append("İLLİYET alanı boş/yok")
+    if not kayit.davaya_bag:
+        sorunlar.append("DAVAYA-BAĞ alanı boş/yok")
     if not kayit.damga_ham:
         sorunlar.append("DAMGA alanı boş/yok")
     return sorunlar
@@ -323,6 +362,28 @@ def _atif_icin_kayit_bul(atif, kayitlar):
             if k.eslesir(atif["esas"], atif["karar"], atif.get("daire_key"))]
 
 
+def _celisen_damga_uyarisi(adaylar):
+    """YENİ-2 (backlog): AYNI esas+karar+daireye ait BİRDEN FAZLA muhakeme
+    kaydı varsa ve bunların DAMGA değerleri birbirinden FARKLIYSA (ör. biri
+    LEHE biri ALEYHE), bu yapısal bir tutarsızlıktır — script "temiz" adayı
+    sessizce seçip ALEYHE ikizini gölgelememelidir. UYARI döndürür (None =
+    çelişki yok); bu bir ENGEL değildir, yalnız görünürlük sağlar — hangi
+    kaydın isabetli olduğu avukat/model muhakemesidir."""
+    if len(adaylar) < 2:
+        return None
+    damgalar = {k.damga for k in adaylar if k.damga}
+    if len(damgalar) < 2:
+        return None
+    dosyalar = ", ".join(f"{k.dosya} ({k.damga_ham})" for k in adaylar if k.damga_ham)
+    return (
+        "ÇELİŞEN DAMGA (YENİ-2): aynı esas/karar/daireye ait BİRDEN FAZLA "
+        f"muhakeme kaydı var ve DAMGA değerleri farklı — {dosyalar}. Bu "
+        "yapısal bir tutarsızlıktır (aynı karar iki farklı damga taşıyamaz); "
+        "hangi kaydın isabetli olduğu avukat/model muhakemesiyle çözülmeli, "
+        "temiz olan sessizce seçilip diğeri gölgelenmemeli."
+    )
+
+
 def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
     """Bir dilekçe atfı için tüm denetimi yürütür.
     Döndürür: (durum: 'OK'|'BLOK', engeller: [str], uyarilar: [str], kayit veya None)."""
@@ -358,6 +419,12 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
                  "(çıplak/muhakeme edilmemiş atıf) — dilekçede çıplak künye kalamaz"],
                 [], None)
 
+    # YENİ-2: aynı esas/karar/daireye ait birden çok aday ÇELİŞEN damga
+    # taşıyorsa, hangi sonuç dönerse dönsün (OK ya da BLOK) bu tutarsızlık
+    # UYARI olarak görünür kalır — temiz aday sessizce seçilip ALEYHE ikizi
+    # gölgelenmez.
+    celisen_uyari = _celisen_damga_uyarisi(adaylar)
+
     # Birden çok aday varsa: TAM temiz (engelsiz) olan varsa onu kullan;
     # yoksa raporlama için İLK adayı esas al (deterministik).
     en_iyi = None
@@ -368,14 +435,21 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
         damga_engel, damga_uyari = damga_denetle(kayit)
         engeller += damga_engel
         if not engeller:
-            return ("OK", [], damga_uyari, kayit)
+            uyarilar = list(damga_uyari)
+            if celisen_uyari:
+                uyarilar.append(celisen_uyari)
+            return ("OK", [], uyarilar, kayit)
         if en_iyi is None:
             en_iyi, en_iyi_engeller, en_iyi_uyarilar = kayit, engeller, damga_uyari
 
-    return ("BLOK", en_iyi_engeller, en_iyi_uyarilar or [], en_iyi)
+    en_iyi_uyarilar = list(en_iyi_uyarilar or [])
+    if celisen_uyari:
+        en_iyi_uyarilar.append(celisen_uyari)
+    return ("BLOK", en_iyi_engeller, en_iyi_uyarilar, en_iyi)
 
 
-def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk_bos_mu):
+def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk_bos_mu,
+              tip=None):
     print("=" * 72)
     print("İÇTİHAT MUHAKEME DENETİMİ — oa-kontrol (deterministik, YAPISAL)")
     print("=" * 72)
@@ -388,12 +462,18 @@ def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk
               "bu yüzden 'çıplak' görünüyor olabilir.")
 
     print("\n" + "-" * 72)
-    print("[G1] EMSAL İÇTİHAT TARAMASI")
+    print("[G1] EMSAL İÇTİHAT TARAMASI" + (f" (tip: {tip})" if tip else ""))
     print("-" * 72)
     if not atiflar:
-        print("[UYARI] Dilekçede esas/karar no'lu hiçbir içtihat atfı bulunamadı — "
-              "emsal içtihat yok, muhakeme zayıf. (Bu bir 'esaslı mı' hükmü DEĞİLDİR; "
-              "yalnız bir eksiklik bulgusudur — bloklamaz.)")
+        if esasli_mi(tip):
+            print("[UYARI] Dilekçede esas/karar no'lu hiçbir içtihat atfı bulunamadı — "
+                  "emsal içtihat yok, muhakeme zayıf. (Bu bir 'esaslı mı' hükmü DEĞİLDİR; "
+                  "yalnız bir eksiklik bulgusudur — bloklamaz.)")
+        else:
+            print(f"[BİLGİ] Dilekçede içtihat atfı yok; tip='{tip}' esaslı-dilekçe "
+                  "listesinde değil (R6: yemin/idari-kanal) — bu tipte içtihat atfı "
+                  "yapısal olarak beklenmez, emsal-yokluğu uyarısı bu yüzden atlandı "
+                  "(zaten bloklamıyordu).")
     else:
         print(f"Dilekçede {len(atiflar)} tekil içtihat atfı bulundu.")
 
@@ -448,6 +528,13 @@ def main():
                      help="Ham MCP döküm dizini — KAYNAK-IZI'nin doğrulandığı yer "
                           f"(varsayılan: --kok yoksa {VARSAYILAN_DOKUM}, "
                           f"varsa <KOK>/{VARSAYILAN_DOKUM})")
+    ap.add_argument("--tip", default=None,
+                     help="(opsiyonel, M3-2/R6) dilekce_denetim.py --tip değeri; "
+                          "yalnız G1 (emsal içtihat yokluğu) uyarısının 'esaslı' "
+                          "dilekçe tiplerinde mi UYARI yoksa [BİLGİ] olarak mı "
+                          "basılacağını belirler (dava/cevap/istinaf/temyiz/"
+                          "aym_bireysel=esaslı; yemin/idari-kanal=değil). G2/G3 "
+                          "engellerini ETKİLEMEZ.")
     args = ap.parse_args()
 
     if not os.path.isfile(args.taslak):
@@ -468,7 +555,7 @@ def main():
     sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin) for a in atiflar]
 
     engel_var = rapor_yaz(args.taslak, atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
-                           kutuk_bos_mu=not kayitlar)
+                           kutuk_bos_mu=not kayitlar, tip=args.tip)
 
     sys.exit(1 if engel_var else 0)
 

@@ -14,12 +14,16 @@ scriptleri çağırır, çıkış kodlarını okur ve raporlar. Nihai göz avuka
 Zincir (ilk exit != 0'da DURUR — kalan kapılar çalıştırılmaz):
   (a)  dilekce_denetim.py <taslak> --tip --taraf  → zorunlu unsur + müvekkil-aleyhi
   (b)  kunye_teyit.py <taslak>                     → atıf/künye izi (teyitsiz = engel)
-  (b2) ictihat_muhakeme_denetim.py <taslak> --kok <kök>  → İçtihat Muhakeme Zinciri
-       (MODÜL 2, M2-3'te zincire BAĞLANDI — yeni yeşil ışık): çıplak içtihat atfı /
-       DAMGA=ALEYHE / eksik AYIRT-ETME / damgasız-geçersiz DAMGA → engel; NOTR/emsal-yok
-       yalnız uyarı (bloklamaz). (b)'nin künye-izi denetiminden AYRI ve TAMAMLAYICIDIR —
-       (b) künyenin kaynakta İZİNİ, (b2) o künyenin GERÇEKTEN MUHAKEME EDİLİP EDİLMEDİĞİNİ
-       ve DAMGA'sına göre dış-çıktıya girip giremeyeceğini denetler.
+  (b2) ictihat_muhakeme_denetim.py <taslak> --kok <kök> --tip <tip>  → İçtihat
+       Muhakeme Zinciri (MODÜL 2, M2-3'te zincire BAĞLANDI — yeni yeşil ışık):
+       çıplak içtihat atfı / DAMGA=ALEYHE / eksik AYIRT-ETME / damgasız-geçersiz
+       DAMGA → engel; NOTR/emsal-yok yalnız uyarı (bloklamaz). `--tip` (M3-2/R6)
+       emsal-yok uyarısını yalnız "esaslı" tiplerde basar (dava/cevap/istinaf/
+       temyiz/aym_bireysel); yemin/idari-kanal gibi hafif tiplerde bu uyarı
+       [BİLGİ]'ye düşer (yine bloklamaz). (b)'nin künye-izi denetiminden AYRI ve
+       TAMAMLAYICIDIR — (b) künyenin kaynakta İZİNİ, (b2) o künyenin GERÇEKTEN
+       MUHAKEME EDİLİP EDİLMEDİĞİNİ ve DAMGA'sına göre dış-çıktıya girip
+       giremeyeceğini denetler.
   (c)  gizlilik_tara.py <taslak>   [yalnız --dis-arac ise]  → Privacy Layer 0
   (d)  pipeline_kayit.py --denetle --kok <kök> [yalnız defter varsa]  → defter boşluğu
        ("defter var" kuralı tam_tur.py._defter_var_mi ile AYNI: pipeline-olaylar.jsonl
@@ -37,7 +41,8 @@ DOSYA-YOLU + TEMEL argümanlarla çağırır, opsiyonel yeni bayraklara güvenme
 
 Kullanım (Windows/PowerShell — 'python'):
   python teslim_paketi.py <taslak.md> --tip <tip> --taraf <taraf> [--dis-arac] [--kok <klasör>]
-    --tip   : dava|cevap|istinaf|temyiz|aym_bireysel|genel  (dilekce_denetim'e geçer)
+    --tip   : dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal|genel
+              (dilekce_denetim'e VE ictihat_muhakeme_denetim'e geçer)
     --taraf : davaci|davali|sanik|katilan|mudahil            (boş bırakılabilir)
     --dis-arac : çıktı dış araca (web/bulut/e-posta) gidecekse Layer 0 taramasını ekler
     --kok   : çalışma kökü; _oa/... göreli yolları buradan çözülür (varsayılan: bulunulan klasör)
@@ -149,8 +154,9 @@ def main():
         description="oa-kontrol tek komut teslim zinciri — ilk engelde durur, tek rapor basar.")
     ap.add_argument("taslak", help="Teslim edilecek taslak (.md/.txt)")
     ap.add_argument("--tip", default="genel",
-                    help="dilekçe tipi (dava|cevap|istinaf|temyiz|aym_bireysel|genel); "
-                         "dilekce_denetim.py'ye geçer (varsayılan: genel)")
+                    help="dilekçe tipi (dava|cevap|istinaf|temyiz|aym_bireysel|yemin|"
+                         "idari-kanal|genel); dilekce_denetim.py'ye VE "
+                         "ictihat_muhakeme_denetim.py'ye geçer (varsayılan: genel)")
     ap.add_argument("--taraf", default="",
                     choices=["", "davaci", "davali", "sanik", "katilan", "mudahil"],
                     help="taraf sıfatı (müvekkil-aleyhi taraması için); boş bırakılabilir")
@@ -208,7 +214,7 @@ def main():
     if kapanan is None:
         _bolum("[b2] İÇTİHAT MUHAKEME ZİNCİRİ — çıplak/ALEYHE/eksik-alanlı atıf "
                "(ictihat_muhakeme_denetim.py)")
-        sonuc, rc = _kapi(S_ICTIHAT_MUHAKEME, [taslak, "--kok", kok], kok)
+        sonuc, rc = _kapi(S_ICTIHAT_MUHAKEME, [taslak, "--kok", kok, "--tip", a.tip], kok)
         if sonuc == "ATLA":
             atlanan.append("(b2) ictihat_muhakeme_denetim.py")
         elif sonuc == "BLOK":

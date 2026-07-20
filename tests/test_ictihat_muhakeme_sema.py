@@ -36,7 +36,7 @@ def test_sema_dosyasi_mevcut():
     assert SEMA.is_file(), f"ictihat-muhakeme-sablonu.md bulunamadı: {SEMA}"
 
 
-ZORUNLU_ALANLAR = ["KUNYE", "KAYNAK-IZI", "İLGİLİ-KISIM", "DAMGA", "İLLİYET", "AYIRT-ETME"]
+ZORUNLU_ALANLAR = ["KUNYE", "KAYNAK-IZI", "İLGİLİ-KISIM", "DAMGA", "DAVAYA-BAĞ", "AYIRT-ETME"]
 
 
 @pytest.mark.parametrize("alan", ZORUNLU_ALANLAR)
