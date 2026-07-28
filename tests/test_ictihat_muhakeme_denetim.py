@@ -310,23 +310,28 @@ def test_coklu_daire_atif_daire_belirtmiyorsa_belirsizlik_fail_closed_engeli(tmp
 
 
 # ── YENİ-2 (backlog) — AYNI esas/karar/daire için ÇELİŞEN damgalı iki kayıt ─
-# Eskiden: script "temiz" (engelsiz) adayı sessizce seçip ALEYHE ikizini
-# görünmez kılıyordu. Artık bu durum bir UYARI olarak açıkça raporlanır —
-# bloklamaz (mekanik kapı yine geçebilir), ama tutarsızlık gizlenmez.
+# Tarihçe: v0.5.4'te çelişki yalnız UYARI'ydı; script "temiz" (LEHE) adayı
+# seçip OK dönüyordu. v0.5.5 son sınavı bunun m.6 KAÇAĞI olduğunu gösterdi:
+# salt-ALEYHE bir karar, lehe ikizi sayesinde dilekçeye girebiliyordu.
+# YENİ KURAL (v0.5.5): çelişki SINIF-ÖTESİYSE — biri "giremez" (ALEYHE/NOTR),
+# diğeri "girebilir" (LEHE/ALEYHE-AYIRT) — ENGEL. Script hangi damganın
+# İSABETLİ olduğuna karar VERMEZ (o muhakemedir); yalnız çelişki çözülmeden
+# ilerlemeyi reddeder. Çözüm yolu açık: isabetsiz kayıt --damga-degistir ile
+# GEÇERSİZ-KILINDI olur, aday havuzundan düşer, engel kalkar.
+# AYNI SINIF içi çelişki (LEHE ↔ ALEYHE-AYIRT) engel DEĞİL, uyarı kalır.
 
-def test_ayni_daire_esas_karar_celisen_damga_uyarir_ama_bloklamaz(tmp_path):
-    """İki muhakeme kaydı AYNI esas/karar/daireye sahip (gerçek bir çakışma/veri
-    hatası) — biri LEHE (temiz), diğeri ALEYHE. Dilekçe atfı bu daireyi anıyor;
-    script LEHE kaydı bulup OK dönebilir (mekanik kapı açık) AMA çelişkiyi
-    UYARI olarak basmalıdır — ALEYHE ikizi sessizce gölgelenmemeli."""
+def test_ayni_daire_esas_karar_celisen_damga_sinif_otesi_bloklar(tmp_path):
+    """İki muhakeme kaydı AYNI esas/karar/daireye sahip — biri LEHE (girebilir),
+    diğeri ALEYHE (giremez). Lehe olan SESSİZCE seçilip OK dönemez; çelişki
+    çözülene kadar TESLİM ENGELİ."""
     _coklu_kunye_kur(tmp_path, [
         {"kunye": KUNYE, "damga": "LEHE"},
         {"kunye": KUNYE, "damga": "ALEYHE"},
     ])
     kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
-    assert kod == 0, cikti
+    assert kod == 1, f"ALEYHE ikizi gölgelendi — m.6 kaçağı:\n{cikti}"
     assert "ÇELİŞEN DAMGA" in cikti
-    assert "YENİ-2" in cikti
+    assert "damga-degistir" in cikti, "çözüm yolu gösterilmiyor"
 
 
 def test_ayni_daire_esas_karar_ayni_damga_celisen_uyari_uretmez(tmp_path):
@@ -476,3 +481,89 @@ def test_esas_karar_atiflari_iki_ayri_atif_karismaz():
 def test_sayi_var_komsu_rakami_izole_eder():
     assert ko.sayi_var("... 2023/1234 ...", "2023/1234") is True
     assert ko.sayi_var("... 2023/12349 ...", "2023/1234") is False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DÜZELTME TURU (v0.5.5 — Paket A) — **GEÇERSİZ-KILINDI:** artık TÜKETİLİR:
+# hükümsüz kılınan bölüm aday havuzundan düşer, rapora sayaç basılır.
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_gecersiz_kilinmis_bolum_aday_havuzundan_dusurulur(tmp_path):
+    cikti_dizin = tmp_path / "_oa" / "cikti"
+    cikti_dizin.mkdir(parents=True)
+    icerik = (
+        "# 01 — İçtihat Muhakeme Kaydı\n\n"
+        f"**KUNYE:** {KUNYE}\n"
+        "**KAYNAK-IZI:** _oa/teyit/dokum/a.md\n"
+        "**DAMGA:** ALEYHE\n"
+        "**GEÇERSİZ-KILINDI:** 2026-01-01T00:00:00 test gerekçesi.\n\n"
+        "## İLGİLİ-KISIM\n...ilgili kısım...\n\n"
+        "## DAVAYA-BAĞ\n...davaya bağ...\n\n"
+        "## AYIRT-ETME\n\n"
+    )
+    (cikti_dizin / "03-ictihat-muhakeme.md").write_text(icerik, encoding="utf-8")
+
+    kayitlar, gecersiz_sayisi = imd.muhakeme_kayitlarini_yukle(str(cikti_dizin))
+    assert kayitlar == []
+    assert gecersiz_sayisi == 1
+
+
+def test_gecersiz_kilinmis_kayit_rapora_bilgi_satiri_basar(tmp_path):
+    dokum_dizin, cikti_dizin = _bos_iskelet(tmp_path)
+    kaynak = dokum_dizin / "a.md"
+    kaynak.write_text(f"{KUNYE} sayılı kararın tam metni burada...\n", encoding="utf-8")
+    icerik = (
+        "# 01 — İçtihat Muhakeme Kaydı\n\n"
+        f"**KUNYE:** {KUNYE}\n"
+        "**KAYNAK-IZI:** _oa/teyit/dokum/a.md\n"
+        "**DAMGA:** ALEYHE\n"
+        "**GEÇERSİZ-KILINDI:** 2026-01-01T00:00:00 test gerekçesi.\n\n"
+        "## İLGİLİ-KISIM\n...ilgili kısım...\n\n"
+        "## DAVAYA-BAĞ\n...davaya bağ...\n\n"
+        "## AYIRT-ETME\n\n"
+    )
+    (cikti_dizin / "03-ictihat-muhakeme.md").write_text(icerik, encoding="utf-8")
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(TASLAK_METIN, encoding="utf-8")
+
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    # hükümsüz kılınmış TEK aday düştüğünden atıf artık çıplak sayılır (BLOK) —
+    # eskiden bu ALEYHE kayıt hâlâ aday havuzundaydı ve ZATEN ALEYHE gerekçesiyle
+    # BLOK veriyordu; asıl regresyon kilidi budur: aday havuzundan düştüğü
+    # AÇIKÇA raporlanır (sessiz atlama yasağı).
+    assert kod == 1, cikti
+    assert "hükümsüz kılınmış" in cikti
+
+
+# ── M2 (Paket D, v0.5.5) — KIYAS ŞEMASI: ÖRTÜŞME zenginliği (advisory) ─────
+
+def test_ortusme_zayif_tek_cumle_uyari_uretir_ama_bloklamaz(tmp_path):
+    _kur(tmp_path, damga="LEHE", davaya_bag="Bu karar somut olaya uygulanır.")
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "DAVAYA-BAĞ (ÖRTÜŞME)" in cikti
+    assert "somut nokta" in cikti
+
+
+def test_ortusme_zengin_uc_madde_uyari_uretmez(tmp_path):
+    zengin = ("- Taraflar arasında aynı sözleşme türü var.\n"
+              "- Kusur oranı davalı lehine aynı şekilde belirlenmiş.\n"
+              "- Zarar kalemleri (maddi+manevi) birebir örtüşüyor.")
+    _kur(tmp_path, damga="LEHE", davaya_bag=zengin)
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "DAVAYA-BAĞ (ÖRTÜŞME)" not in cikti
+
+
+def test_ortusme_zenginligi_uyarisi_fonksiyonu_dogrudan():
+    class _Sahte:
+        davaya_bag = "Tek cümlelik yüzeysel açıklama."
+    assert imd.ortusme_zenginligi_uyarisi(_Sahte()) is not None
+
+    class _Zengin:
+        davaya_bag = "Nokta bir. Nokta iki. Nokta üç."
+    assert imd.ortusme_zenginligi_uyarisi(_Zengin()) is None
+
+    class _Bos:
+        davaya_bag = ""
+    assert imd.ortusme_zenginligi_uyarisi(_Bos()) is None

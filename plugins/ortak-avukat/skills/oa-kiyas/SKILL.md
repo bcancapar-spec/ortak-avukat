@@ -19,6 +19,8 @@ oturtur. Türk hukukunun subsumtion (tatbik) mantığı zaten budur: norm → ma
 → hukuki sonuç. Bu parça o yapıyı zorunlu kılar; böylece her sonuç hâkim ve karşı
 taraf tarafından adım adım denetlenebilir, gizli sıçramalar görünür olur.
 
+> **VECİZE (P1-11 doktrin senkronu):** Künyeyi bulmak yetmez; kararın müvekkilin işine yarayıp yaramadığının muhakemesi güç çarpanıdır — çıplak künye sıfırdır, damgalı ve davaya bağlı karar çarpandır.
+
 ## Neden zorunlu üçlü yapı
 
 Bir hukuki sonuç "şu sebeple şöyle olur" diye tek hamlede verilirse, hangi normun
@@ -72,9 +74,38 @@ yol açar, ek ispat mı gerekir). Boşlukları açıkça bildir (anayasa: zaafı
 Büyük önermenin içtihat bileşeni (`buyuk_onerme.ictihat`) tek başına yeterli
 değildir: her içtihat için ayrı bir **muhakeme kaydı** üretilmeden o karar
 "muhakeme edilmiş" sayılmaz (İçtihat Muhakeme Zinciri, şema:
-`references/ictihat-muhakeme-sablonu.md`). Bu parça `oa-ictihat`'ın CEK
-ettiği (künye + `_oa/teyit/dokum/`'a yazılmış ham metin) her kararı MUHAKEME
-eder — bu iki adım ayrıdır, karıştırılmaz:
+`references/ictihat-muhakeme-sablonu.md`). **Doktrin (P1-11 — bağlayıcı):
+ölçüt dosya sayısı DEĞİL, kaydın varlığıdır — "bir karar = bir MUHAKEME KAYDI"**
+— kayıt iki eşdeğer FORM'da var olabilir:
+
+- **STANDART YOL (çoğunluk hâli — tek komut):** `oa_hafiza.py teyit --damga
+  ... --bag ... --ilgili-kisim ... --dokum-icerik ...` — bu TEK çağrı hem
+  döküm dosyasını hem `_oa/cikti/03-ictihat-muhakeme.md`'ye bölüm-append
+  muhakeme kaydını KENDİSİ yazar (bkz. aşağıdaki tek-blok örnek). 1-5
+  içtihat/rutin atıf için budur; ayrı bir dosya AÇILMAZ.
+- **DERİN YOL (kilit kararlar):** uzun kıyas/ayırt-etme gerektiren, birden
+  fazla unsuru birden karşılaştıran kilit bir karar için AYRI bir
+  `_oa/cikti/NN-ictihat-muhakeme.md` dosyası açılır — alan şeması AYNIDIR
+  (KUNYE/KAYNAK-IZI/İLGİLİ-KISIM/DAVAYA-BAĞ/DAMGA/AYIRT-ETME), yalnız
+  gerekçe/ayırt-etme metni tek-komutun `--bag`/`--ayirt` alanlarına
+  sığmayacak kadar uzundur.
+
+**Hangi durumda dosya açılır:** derin yol yalnız (a) birden fazla emsalin
+ÇAPRAZ kıyaslandığı, (b) ayırt-etmenin çok-paragraflı gerekçe gerektirdiği,
+veya (c) aynı künyeye ait çelişen damga adaylarının tartışıldığı durumlarda
+tercih edilir; aksi hâlde standart (tek-komut) yol RESMÎ ve yeterli yoldur.
+
+**Standart yol — tek-blok örnek (anonim sorgu):**
+```bash
+# 1) MCP: ictihat_getir ile tam metni çek — 2) tek komut kütük+döküm+muhakeme yazar:
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "4. HD haksız fiil zamanaşımı" --sonuc "Yargıtay 4. HD, E. .../K. ..." --damga LEHE --bag "...(≥40 kr, hangi unsuru somutlaştırıyor)..." --ilgili-kisim "...(döküm içinde VERBATİM geçen alıntı)..." --dokum-icerik @ham.md
+```
+Bu tek komut kütük satırını, döküm dosyasını (provenans notlu) VE
+`03-ictihat-muhakeme.md`'ye bölüm-append muhakeme kaydını AYNI ANDA üretir —
+alan eşleme sözlüğü: kütük `DAMGA=`↔bölüm `**DAMGA:**`, `--bag`↔`##
+DAVAYA-BAĞ`, `--ilgili-kisim`↔`## İLGİLİ-KISIM`, döküm yolu↔`**KAYNAK-IZI:**`.
+
+Adım adım (her iki YOL için de geçerli alanlar):
 1. **KUNYE** ve **KAYNAK-IZI**'nı `oa-ictihat`'tan devral.
 2. **İLGİLİ-KISIM**'ı KAYNAK-IZI dosyasından aynen çıkar (davayla ilgili
    gerekçe pasajı — tüm karar değil).
@@ -87,7 +118,9 @@ eder — bu iki adım ayrıdır, karıştırılmaz:
    (kararın somut olaya neden uymadığı — bu meşru bir savunma tekniğidir,
    m.6 ihlali değildir). Damga atanmazsa kayıt `NOTR` sayılır (fail-closed:
    "muhakeme edilmemiş", kullanılamaz).
-5. Kaydı `_oa/cikti/NN-ictihat-muhakeme.md` olarak yaz (bir karar = bir dosya).
+5. Kaydı standart yolda `teyit --damga` KENDİSİ, derin yolda avukat/model
+   `_oa/cikti/NN-ictihat-muhakeme.md` olarak yazar (bir karar = bir MUHAKEME
+   KAYDI — dosya sayısı değil kaydın varlığı ölçüttür).
 
 **Kritik doktrin (bağlayıcı):** dış çıktı (dilekçe) daima müvekkil LEHİNEdir
 — yalnız `LEHE`/`ALEYHE-AYIRT` damgalı kayıtlar dilekçeye girer. `ALEYHE`
@@ -95,6 +128,12 @@ eder — bu iki adım ayrıdır, karıştırılmaz:
 `oa-antitez` cephaneliği) işlenmesi **ZORUNLUdur** — saklanmaz, dahili
 tutulur. Yargıtay/BAM atfı olmayan esaslı bir dilekçe muhakemesi **zayıf**
 sayılır.
+
+**TESLİM tanımı tekildir (P1-11):** bu parçanın ürettiği muhakeme kayıtları
+(standart veya derin yol) `oa-kontrol/scripts/ictihat_muhakeme_denetim.py`
+tarafından TESLİM aşamasında (`teslim_paketi.py` → `_oa/defter/teslim-makbuz.json`)
+yeniden denetlenir; kayıt eksik/çıplak kalırsa makbuz kapısı kapanmaz —
+muhakeme burada kurulur, geçerliliği orada mühürlenir.
 
 ## Diğer parçalara entegrasyon
 - **oa-ictihat** → büyük önermenin teyitli norm+künyesini sağlar.

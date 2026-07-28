@@ -257,6 +257,43 @@ def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(
     assert udf_yolu.stat().st_size > 0
 
 
+# ── YENİ-2 (Paket D DÜZELTME) — [G] ANTİTEZ-CEVAP-ÇAPASI kanonik teslim
+# hattında ÖLÜ değil: teslim_paketi.py artık (a) çağrısına AÇIKÇA `--kok`
+# geçiyor (eskiden `arglar_a`da yoktu → dilekce_denetim.py `a.kok is None`
+# görüp `_antitez_matris_dosyalari` SERT `[]` dönüyordu, matris dolu olsa
+# bile [G] her zaman [BİLGİ] 'koşulmamış olabilir' basıyordu — matris FİİLEN
+# duran ve DUYULMUŞ+çürütülmemiş bir cephe taşırken bile).
+
+def test_ictihatli_taslakta_antitez_matrisi_teslim_hattinda_gorulur(izole_kok):
+    """DOLU bir `_oa/cikti/07-antitez-matris.json` (DUYULMUŞ=true, çürütme
+    taslakta YOK) varken teslim_paketi.py'nin (a) DİLEKÇE DENETİMİ bölümü
+    [UYARI] cephe DUYULMUŞ … çapa bulunamadı sinyalini GÖSTERMELİ — kanonik
+    hatta artık sessizce [BİLGİ] 'koşulmamış olabilir'e düşmemeli."""
+    taslak = izole_kok / "temiz.md"
+    taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
+
+    curutme = ("Alacağın muaccel olduğu vergilendirme dönemi farklı hesaplanmalı "
+               "davalı beyanı gerçeği yansıtmıyor")
+    cikti_dizin = izole_kok / "_oa" / "cikti"
+    cikti_dizin.mkdir(parents=True, exist_ok=True)
+    import json as _json
+    (cikti_dizin / "07-antitez-matris.json").write_text(
+        _json.dumps({"tez": "test tezi", "cepheler": [
+            {"cephe": "zamanasimi", "curutme": curutme, "duyulmus": True},
+        ]}, ensure_ascii=False),
+        encoding="utf-8")
+
+    kod, cikti = _cli(taslak, izole_kok)
+
+    a_bolumu = cikti.split("[a] DİLEKÇE DENETİMİ")[1].split("[b]")[0]
+    assert "[UYARI]" in a_bolumu and "zamanasimi" in a_bolumu and "DUYULMUŞ" in a_bolumu, (
+        f"kanonik teslim hattında DUYULMUŞ+çürütülmemiş antitez sinyali görünmedi:\n{a_bolumu}")
+    assert "[BİLGİ]" not in a_bolumu, (
+        "matris FİİLEN dururken '[BİLGİ] … koşulmamış olabilir' YANILTMASI basıldı")
+    # (a) hâlâ açık (bu kapı ASLA bloklamaz) → zincir devam eder, exit 0.
+    assert kod == 0, cikti
+
+
 def test_izole_kok_gercek_repoyu_kirletmez(izole_kok):
     """Testler bittiğinde gerçek repo kökünde _oa/ klasörü OLUŞMAMALI —
     izolasyonun kanıtı: --kok her zaman tempfile dizinine verilir."""

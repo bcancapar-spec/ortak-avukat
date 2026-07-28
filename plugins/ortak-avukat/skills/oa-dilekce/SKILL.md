@@ -60,6 +60,56 @@ Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden t
 
 Çıplak alıntı (damıtma/tatbik açıklaması olmadan bırakılan alıntı) kabul edilmez; içtihat ancak davaya **uygulanarak** değer üretir.
 
+## GÖRÜNMEZ İSKELET — paragrafın iç mantığı (P1-11 ek kural)
+İDDİA→NORM→İÇTİHAT→ÖRTÜŞME→SONUÇ zinciri paragrafın **İÇ MANTIĞI**dır, yüzey
+metnine **ETİKET olarak sızmaz** (saha dersi: canlı testte model iskeleti
+görünür kalıba çevirdi — paragraf başlarına "İddiamız:", "Norm:", "Somut
+örtüşme:" yazdı — akıcılık bozuldu, kullanıcı düzeltme istedi). Paragraflar
+**geçiş cümleleriyle** anlam bütünlüğünde örülür; iskelet okurun
+**hissettiği ama görmediği** bir mimaridir — tıpkı bir binanın taşıyıcı
+kolonlarının sıvanın altında kalması gibi. `dilekce_denetim.py`'nin **[H]
+GÖRÜNMEZ İSKELET TARAMASI** kapısı (advisory — ASLA bloklamaz) bu kalıp-
+açılışları satır başında arar ve bulursa bir akıcılık uyarısı basar; bu
+hukuki içerik denetimi DEĞİLDİR, yalnız biçim sinyalidir.
+
+## ÖMERALP ÜSLUP BAĞLAMASI — yazım disiplini playbook'a zorunlu bağlı
+Bu parçanın yazım disiplini `references/kanun-yolu-mimari-playbook.md`
+(B1-B7, ömeralp temyizinden damıtık) üslubuna **ZORUNLU referansla bağlıdır:**
+dilekçe o playbook'un yazım konseptiyle — **tez-omurgalı, akıcı, bütünsel
+bağlantılı** — yazılır; yukarıdaki GÖRÜNMEZ İSKELET kuralı bunun ayrılmaz
+parçasıdır (etiketli-parça değil, örülü-bütün). Teslim öncesi kontrol
+listesine ek madde: **"üslup playbook'a uygun mu?"** — bkz. aşağıdaki
+"Teslim öncesi MEKANİK KAPILAR" listesi ve `oa-kontrol/SKILL.md` B listesi
+("Teslim öncesi kontrol (pre-filing)").
+
+## KUSUR→SONUÇ→TALEP ASİMETRİSİ (P1-11 ek kural — taraf-bilinçli)
+Karşı tarafın kusuru **TESPİT** edilir, doğurduğu **SONUÇ** yazılır, ama
+**GİDERİLMESİNE yönelik ara karar talebi KURULMAZ.** (Ör. davalıysak: dava
+şartı eksikliği tespit edilir + ret talebi KURULUR; "tamamlanması için süre
+verilsin" talebi KURULMAZ — rakibin davasını onarmasına yardım etmek
+müvekkil-aleyhi talep inşasıdır.) Bu, Anayasa m.6'nın (müvekkil-aleyhi dış
+çıktı yasağı) **taktik yüzüdür** ve **taraf-bilinçlidir** — davacıysak ve
+karşı taraf (davalı) kusurluysa aynı asimetri simetrik biçimde işler.
+`dilekce_denetim.py`'nin **[I] KUSUR→SONUÇ→TALEP ASİMETRİSİ TARAMASI** kapısı
+(advisory — ASLA bloklamaz) karşı-taraf-kusuru bağlamında "süre verilsin/
+tamamlan-/gideril-" kalıplarını arar ve bulursa bir uyarı basar.
+
+## İÇTİHAT PORTFÖYÜ — gövde vs kütük ayrımı (M6, Paket D — v0.5.5)
+Muhakeme edilmiş (LEHE/ALEYHE-AYIRT) kararların SAYISI arttıkça hepsini gövdeye
+5 adımla işlemek dilekçeyi ŞİŞİRİR ve en güçlü argümanı gürültüye gömer.
+**v0.3.20 FINAL-MAX deseni:** gövdeye yalnız **en güçlü 3-5 karar** girer;
+kalan tüm muhakeme edilmiş kararlar `_oa/cikti/03-ictihat-muhakeme.md`
+kütüğünde **yedek** olarak durur (dış çıktıya İŞLENMEZ ama kaybolmaz —
+gerekirse cevaba-cevap/istinaf aşamasında oradan çekilir). Güç sıralaması
+(en güçlüden başlanır, gövdeye bu sırayla 3-5 tanesi girer):
+1. **HGK/İBK > Daire kararı** — Hukuk/Ceza Genel Kurulu veya İçtihadı Birleştirme Kararı, tek daire kararından her zaman daha bağlayıcı/ağırlıklıdır.
+2. **Yeni > Eski** — aynı ağırlıktaki kararlar arasında güncel tarihli olan (içtihat değişikliği/güncellenme riskine karşı) tercih edilir.
+3. **İhtisas dairesi** — uyuşmazlığın gerçek ihtisas dairesinden gelen karar (bkz. `oa-alan` HSK iş bölümü tespiti), dolaylı/genel bir daireden gelene tercih edilir.
+Bu sıralama bir hukuki isabet hükmü DEĞİLDİR (avukat muhakemesi son sözdür) —
+yalnız "hangi 3-5'i gövdeye, kalanı kütüğe" seçimini disipline eden bir
+heuristiktir; `oa-kontrol`'ün G1-G3 kapıları hâlâ HER karara (gövdedeki
+VEYA kütükteki) aynen uygulanır.
+
 ## Playbook'lar
 
 **Dava dilekçesi** — Zorunlu (HMK m.119): mahkeme; taraflar+TCKN; vekil; konu ve **değer/miktar** (harç/görev/kesinlik); vakıalar (sıra no); deliller (vakıayla eşli); hukuki sebepler; talep; imza. Sık atlanan: dava değeri, delil-vakıa eşlemesi, yetki/görev.
@@ -83,19 +133,39 @@ Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden t
 ## Aktif çıkarım refleksi
 Şablonu edilgen doldurma. **En güçlü müvekkil-lehi çerçeveyi sen kur**: olguların desteklediği ama anılmamış bir talebi/savunmayı ekle; argümanları en yüksek etki için sırala; zayıf görüneni lehte konumlandır (gizleyerek değil, yöneterek). Dilekçe bir form değil, lehe inşa edilen bir stratejidir.
 
+## ANTİTEZ PASI — zorunlu girdi (M3, Paket D — v0.5.5)
+Yazımdan ÖNCE `oa-antitez`'in çıktısı (`_oa/cikti/*antitez*.json` matrisi) **zorunlu bir pas girdisidir** — antitez koşulmadan yazılan bir dilekçe, karşı tarafın en güçlü kozları görülmeden kurulmuş demektir (durum farkındalığı eksik). `dilekce_denetim.py`'nin **[G] ANTİTEZ-CEVAP-ÇAPASI** kapısı (advisory — ASLA bloklamaz) matristeki her **DUYULMUŞ** (karşı taraf fiilen ileri sürmüş) + çürütülmüş cephe için dilekçede bir anahtar-kelime çapası arar; bulamazsa görünür bir uyarı basar ("çürütme dış çıktıya işlenmemiş olabilir"). Aleyhe tarama İÇ dosyaya (matris, `duyulmus:false` kayıtlar) **AKTİF** kalır — dış dilekçeye yalnız **DUYULMUŞ** olan girer (aşağıdaki "Sunum disiplini" ile aynı kök).
+
 ## Sunum disiplini — sunulmamış antiteze değinme
 Sunulan dilekçede, karşı tarafın **henüz ileri sürmediği** bir savunmaya/iddiaya karşı preemptive çürütme **yazma** — kendi zayıf noktanı işaret etmek ve karşı tarafı silahlandırmaktır. Dilekçeyi dosyada/karar gerekçesinde fiilen **var olana** göre kur (dava dilekçesi kendi tezini; cevap karşı tarafın ileri sürdüğünü; istinaf/temyiz kararın gerekçesini karşılar). Hipotetik antiteze hazırlık `oa-antitez` cephaneliğinde **dahili** durur; karşı taraf ileri sürünce devreye girer. (Not: olguların desteklediği kendi olumlu talebini eklemek bundan farklıdır ve teşvik edilir.)
 
 ## Kompozisyon ve çıktı
 Süre satırı için `oa-sure`; her atıf `oa-ictihat`'tan teyitli; alan tespiti `oa-alan`.
 
-**Çıktı formatı — UDF VARSAYILAN (kurucu kural):** Kullanıcı/Fable kararı: **aksi açıkça talep edilmedikçe (ör. "md olarak ver", "docx istiyorum") dilekçe çıktısı UDF formatında üretilir.** md taslak her hâlde ARA ÜRÜNdür (UDF ondan türetilir), teslim edilen NİHAİ çıktı UDF'dir. Akış: taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` (UYAP'a yüklenebilir; gerçek editörde `format_id` teyidi gerekir) → aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır.
+**Çıktı formatı — UDF VARSAYILAN (kurucu kural):** Kullanıcı/Fable kararı: **aksi açıkça talep edilmedikçe (ör. "md olarak ver", "docx istiyorum") dilekçe çıktısı UDF formatında üretilir.** md taslak her hâlde ARA ÜRÜNdür (UDF ondan türetilir), teslim edilen NİHAİ çıktı UDF'dir. Akış (P0-10 — Yargı Pro UDF rehberine BİREBİR uyumlu, v0.5.5): taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` — bu VARSAYILAN komut md'yi UDF-HTML'e çevirir (`md_udf_html.py`) ve rehberin ZORUNLU kıldığı gerçek yazıcıyı (`npx -y udf-cli@latest html2udf`, ağ+oturum ister) çağırır; opsiyonel `--pdf dilekce.pdf` ile aynı ara HTML'den A4 PDF de üretir (`udf_html2pdf.py`, ağsız). Ağ/oturum yoksa `--yerel-motor` (hand-rolled, ağsız) yedek olarak kullanılabilir — ama bu motorun ürettiği dosya rehber gereği UYAP editör uyumu **garanti etmez**, script her koşuda bunu açıkça basar. Ardından aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır.
+
+**TESLİM tanımı tekildir (P1-11 — bağlayıcı doktrin):** bir taslak ancak
+`oa-kontrol/scripts/teslim_paketi.py` **exit 0 + `_oa/defter/teslim-makbuz.json`**
+üretiminden geçtiyse TESLİM EDİLMİŞ sayılır — başka hiçbir işaret (dosya adı,
+sözel beyan, "hazır" demek) TESLİM'i belgelemez. **`TESLİM`/`FINAL` adı**
+(ör. `08-dilekce-TESLIM.md`) makbuz kapısını tetikleyen hızlı ad-deseni
+sinyalidir (`pipeline_kayit.py`'nin ad-bağımsız uyarısı da her hâlükârda
+çalışır) — **FINAL adını yalnız gerçekten son sürüme sakla**; ara taslaklara
+bu adı erken vermek makbuz kapısını yanlış zamanda tetikler.
 
 **Teslim öncesi MEKANİK KAPILAR (R2 — tek ölçüt `teslim_paketi.py` exit 0; aşağıdaki alt kapılar bu tek script'in içinde sabit sırada koşar, elle sayılmaz):**
 1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, paragraf `startOffset`/`length` UTF-16 code-unit biriminde ARDIŞIK ve CDATA metniyle toplamda tutarlı mı, metin round-trip ediyor mu. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
 2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur). **`--tip istinaf|temyiz` iken (M3-2):** [B] TERTİP-DÜZEN kapısı, `kanun-yolu-mimari-playbook.md`'nin B1/B2/B4/B6 mekanik izdüşümünü de denetler — künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu + dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması, her içtihat blok-alıntısının ardından açıklama paragrafı bulunması — yalnız VAR/YOK (uyarı, bloklamaz). `--ictihat-muhakeme` ile birlikte `--tip` değeri [F] kapısına da geçer: G1 "emsal içtihat yok" uyarısı yalnız "esaslı" tiplerde (dava/cevap/istinaf/temyiz/aym_bireysel) basılır, `yemin`/`idari-kanal` gibi hafif tiplerde [BİLGİ]'ye düşer (R6).
 3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
-4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri.
+4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri — B listesine eklenen **"üslup playbook'a uygun mu?"** maddesi dahil (aşağıya bkz.).
+
+Aynı `dilekce_denetim.py` çağrısı (madde 2) iki ADVISORY kapıyı da (ASLA
+bloklamaz, exit koduna dokunmaz) tek raporda basar: **[H] GÖRÜNMEZ İSKELET
+TARAMASI** (yukarıdaki "GÖRÜNMEZ İSKELET" kuralı) ve **[I] KUSUR→SONUÇ→TALEP
+ASİMETRİSİ TARAMASI** (yukarıdaki "KUSUR→SONUÇ→TALEP ASİMETRİSİ" kuralı).
+Teslim öncesi son avukat gözünde bu iki uyarı da — **üslup playbook'a uygun
+mu?** sorusuyla birlikte — okunur; bloklamadıkları için elle görülmezlerse
+sessizce geçilebilirler.
 
 ## Öğrenme günlüğü
 Yeni bir tip/zorunlu unsur/sık-atlanan alan öğrenildiğinde ilgili playbook'a ekle, aşağıya işle, yeniden paketle.

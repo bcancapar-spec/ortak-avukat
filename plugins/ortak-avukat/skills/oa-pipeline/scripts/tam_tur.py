@@ -107,10 +107,10 @@ for _s in (_sys.stdout, _sys.stderr):
 import argparse
 import datetime
 import hashlib
+import importlib.util
 import json
 import os
 import re
-import subprocess
 import sys
 
 # Diskte "ham evrak" sayılan uzantılar (oa_ingest'in işlediği tipler). `_oa` taranmaz.
@@ -144,6 +144,17 @@ BOLUM_TANIMLARI = [
     (14, "Diger-calisma-evraklari", "Diğer Çalışma Evrakları (CATCH-ALL)"),
 ]
 TAMAM_DESEN = re.compile(r"<!--\s*oa:tam-tur:TAMAM\b[^>]*-->")
+
+# ── M1 (Paket D, v0.5.5) — DAVA TEZİ ────────────────────────────────────────
+# dosya-analiz.md'nin İLK bölümü (bölüm iskeletinin 0-14 numaralı sabit
+# sırasına EKLENMEZ — o sıra/slug seti DOKUNULMAZ kalır; TEZ ayrı, kendi
+# markerıyla, en başta render edilir). Tek paragraf: bu dosyada müvekkilin
+# hukuki tezi NEDİR. `--tez` ile yazılır; mevcut bir tez DEĞİŞTİRİLİYORSA
+# `--tez-gerekce` (≥TEZ_GEREKCE_MIN karakter) ZORUNLUDUR — sessiz tez
+# kaymasının (bir pasın diğerinin tezini fark ettirmeden değiştirmesinin)
+# önüne geçer; her değişiklik `tez_gecmisi`de (durum.json, kalıcı) loglanır.
+_TEZ_MARKER = "<!-- oa:bolum:TEZ -->"
+TEZ_GEREKCE_MIN = 20  # karakter — tez DEĞİŞİKLİĞİ gerekçesi alt sınırı
 
 
 def _bolum_marker(no):
@@ -190,6 +201,8 @@ def _iskelet_saglam_mi(icerik):
     'bozuk' sayıp kendini-onarmayı tetikler)."""
     if not icerik:
         return False
+    if _TEZ_MARKER not in icerik:
+        return False
     for n, slug, _ in BOLUM_TANIMLARI:
         if _bolum_marker(n) not in icerik:
             return False
@@ -198,8 +211,14 @@ def _iskelet_saglam_mi(icerik):
 
 def _cikti_bolum_no(dosya_adi):
     """`_oa/cikti/NN-...` adlandırmasındaki NN (00-09) → bölüm (1-10). Eşleşmeyen
-    her şey (NN 00-09 dışında, ya da hiç NN yoksa) CATCH-ALL bölüm 14'e düşer."""
-    m = re.match(r"^(\d{2})-", dosya_adi or "")
+    her şey (NN 00-09 dışında, ya da hiç NN yoksa) CATCH-ALL bölüm 14'e düşer.
+
+    DÜZELTME (v0.5.5 şerh turu — Ş9): `dosya_adi` artık bir ALT KLASÖR
+    öneki taşıyabilir (ör. `dilekce/08-...md` — `_cikti_topla` özyinelemeli
+    hâle geldi); NN deseni her zaman TABAN ADINA (basename) göre aranır ki
+    alt klasördeki bir dosya salt yolu yüzünden yanlışlıkla catch-all'a
+    düşmesin."""
+    m = re.match(r"^(\d{2})-", os.path.basename(dosya_adi or ""))
     if not m:
         return 14
     n = int(m.group(1))
@@ -250,27 +269,68 @@ def _defter_var_mi(kok):
     return os.path.exists(_defter_durum_yolu(kok))  # jsonl'den önceki eski görünüm
 
 
-def _defter_denetle(kok):
-    """Pipeline defteri (§6-B(iv) kapısı): varsa aynı dizindeki pipeline_kayit.py'yi
-    `--denetle --kok <kok>` ile alt süreçte koştur — BEKLIYOR/kanıtsız adım varsa
-    boşluklu tur teslim edilemez. Döner: (temiz, çıktı).
-      - Defter yoksa: (True, "") — kapı atlanır, mevcut davranış korunur.
-      - Betik bulunamaz/çalıştırılamazsa: (True, uyarı) — defter kapısındaki bir
-        arıza defterden ÖNCEKİ davranışı kilitli bir çıkmaza sokmasın; yine de
-        uyarı metni çağırana döner (sessiz geçilmez)."""
-    if not _defter_var_mi(kok):
-        return True, ""
+# P0-4 (v0.5.5) — Gate G dairesel bağımlılık kırıcı, KÖKTEN çözüm: subprocess
+# sınıfı TAMAMEN kalkar. `tam_tur.py` `pipeline_kayit.py`'yi İN-PROCESS import
+# eder ve doğrudan `denetle_calistir(kok, gate_g_atla=True)` çağırır —
+# `gate_g_atla=True` YALNIZ burada geçirilir (bkz. pipeline_kayit.py'deki uzun
+# not): tam_tur.cmd_kaydet, TAMAM işaretini YAZACAK OLAN operasyonun ta
+# kendisidir; bu işaret yazılmadan önce kendine karşı sınanamaz (fiziksel
+# imkânsızlık — döngü tam burada kurulurdu). Atlama HER ZAMAN GÖRÜNÜR bir
+# satır üretir (pipeline_kayit.py tarafında), sessizce yutulmaz. Bağımsız
+# `pipeline_kayit.py --denetle` (CLI) çağrılarında bu bayrağa hiçbir şekilde
+# ERİŞİLEMEZ — Gate G orada TAM GÜÇTE çalışmaya devam eder.
+_PIPELINE_KAYIT_MOD = None
+
+
+def _pipeline_kayit_modulu():
+    global _PIPELINE_KAYIT_MOD
+    if _PIPELINE_KAYIT_MOD is not None:
+        return _PIPELINE_KAYIT_MOD
     betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipeline_kayit.py")
     if not os.path.isfile(betik):
-        return True, "UYARI: pipeline_kayit.py bulunamadı — defter kapısı atlandı."
+        return None
     try:
-        r = subprocess.run([sys.executable, betik, "--denetle", "--kok", kok],
-                           capture_output=True, text=True,
-                           encoding="utf-8", errors="replace", timeout=60)
+        spec = importlib.util.spec_from_file_location("_oa_tam_tur_pipeline_kayit_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
     except Exception as e:
-        return True, f"UYARI: defter denetimi çalıştırılamadı ({e}) — kapı atlandı."
-    cikti = ((r.stdout or "") + (r.stderr or "")).strip()
-    return (r.returncode == 0), cikti
+        # P0-4 DÜZELTME: istisna metni ÇAĞIRANA taşınır (aşağıdaki `pk is None`
+        # dalı görünür bir uyarıya çevirir) — eski subprocess yolu istisnayı
+        # `({e})` ile raporluyordu, in-process sarmalayıcı bunu YUTMASIN.
+        print(f"UYARI: pipeline_kayit.py import edilemedi ({e}) — tam yol: {betik}")
+        return None
+    _PIPELINE_KAYIT_MOD = mod
+    return _PIPELINE_KAYIT_MOD
+
+
+def _defter_denetle(kok):
+    """Pipeline defteri (§6-B(iv) kapısı): varsa `pipeline_kayit.py`'yi İN-PROCESS
+    import edip `denetle_calistir(kok, gate_g_atla=True)` çağır — BEKLIYOR/kanıtsız
+    adım varsa boşluklu tur teslim edilemez. `gate_g_atla=True` yalnız BU çağrıda
+    (P0-4 dairesel bağımlılık kırıcı — bkz. yukarıdaki not). Döner: (temiz, çıktı).
+      - Defter yoksa: (True, "") — kapı atlanır, mevcut davranış korunur.
+      - Modül import edilemezse/çökerse: (False, hata) — P1-12 DÜZELTME:
+        FAIL-CLOSED (eski (True, uyarı) 'çöken kapı = atlanan kapı' sınıfıydı,
+        TESLİM Gate'in en kritik yolunu sessizce açık bırakıyordu); çağıran
+        `--zorla` ile GEREKÇELİ geçebilir (serh_defter), sessiz geçiş yoktur."""
+    if not _defter_var_mi(kok):
+        return True, ""
+    # P1-12 DÜZELTME (BLOKER, sinav bulgusu) — 'çöken kapı = atlanan kapı'
+    # sınıfı burada da FAIL-CLOSED'a çevrilir: defter AÇIKKEN pipeline_kayit.py
+    # import edilemiyor/çöküyorsa, defter kapısı GERÇEKTEN sınanamamış demektir
+    # (eski davranış (True, uyarı) TESLİM Gate'in en kritik yolunu fail-open
+    # bırakıyordu). --zorla ile GEREKÇELİ geçilebilir (mevcut serh_defter
+    # mekanizması); sessiz geçiş yoktur.
+    pk = _pipeline_kayit_modulu()
+    if pk is None:
+        return False, ("HATA: pipeline_kayit.py import edilemedi — defter kapısı KAPALI "
+                        "(FAIL-CLOSED, P1-12); tam yolu için yukarıdaki UYARI satırına bkz.")
+    try:
+        temiz, cikti = pk.denetle_calistir(kok, gate_g_atla=True)
+    except Exception as e:
+        return False, (f"HATA: defter denetimi çalıştırılamadı ({e}) — kapı KAPALI "
+                        "(FAIL-CLOSED, P1-12).")
+    return temiz, cikti
 
 
 def _simdi():
@@ -412,11 +472,47 @@ def _durum_yaz(kok, durum):
     os.replace(tmp, hedef)
 
 
+def _md_arsivle_oncesi(kok, hedef):
+    """P1-10 DÜZELTME (sinav-turu) — dosya-analiz.md'nin ÜZERİNE yazmadan ÖNCE
+    mevcut içeriğin bir NÜSHASINI `_oa/arsiv-yerel/dosya-analiz-<ts>.md`'ye
+    saklar. `--senkron`/`--kaydet` bu render'ı ATOMİK YENİDEN ÜRETİR — md'ye
+    (doktrine aykırı biçimde) ELLE yazılmış bir muhakeme cümlesi varsa bu
+    yazım onu SİLER; nadir bir kayıp, kapı zorunlu hâle gelince SİSTEMATİK
+    risk olur (invaryant m.1 — muhakeme kaybı yok). Arşivleme maliyeti sıfıra
+    yakındır (bir dosya kopyası); başarısız olsa da ANA YAZIM durmaz (fail-
+    open — kayıpsızlık EK bir katmandır, tek koruma DEĞİLDİR)."""
+    try:
+        if not os.path.isfile(hedef):
+            return
+        with open(hedef, encoding="utf-8", errors="replace") as f:
+            eski = f.read()
+        if not eski.strip():
+            return
+        arsiv_dizin = os.path.join(kok or ".", "_oa", "arsiv-yerel")
+        os.makedirs(arsiv_dizin, exist_ok=True)
+        etiket = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        arsiv_yol = os.path.join(arsiv_dizin, f"dosya-analiz-{etiket}.md")
+        sayac = 1
+        while os.path.exists(arsiv_yol):
+            arsiv_yol = os.path.join(arsiv_dizin, f"dosya-analiz-{etiket}-{sayac}.md")
+            sayac += 1
+        with open(arsiv_yol, "w", encoding="utf-8") as f:
+            f.write(eski)
+    except OSError:
+        pass
+
+
 def _md_yaz_atomik(kok, icerik):
     """dosya-analiz.md'yi ATOMİK yaz (tmp + os.replace) — Gate G+'nin fiziksel
-    kanıt denetimi (VAR+dolu+taze) yarım yazımda asla yanlış sinyal vermesin."""
+    kanıt denetimi (VAR+dolu+taze) yarım yazımda asla yanlış sinyal vermesin.
+    Yazmadan ÖNCE eski içerik (varsa) `_md_arsivle_oncesi` ile nüshalanır
+    (P1-10) — mevcut Gate G+ mtime denetimini ETKİLEMEMEK için davranış
+    BİLEREK KOŞULSUZDUR (içerik aynı olsa dahi dosya yeniden yazılır — bu,
+    bu fonksiyonun ÖNCEKİ davranışıyla birebir aynıdır, yalnız arşivleme
+    EKLENMİŞTİR)."""
     os.makedirs(_analiz_dizin(kok), exist_ok=True)
     hedef = _analiz_md(kok)
+    _md_arsivle_oncesi(kok, hedef)
     tmp = f"{hedef}.tmp.{os.getpid()}"
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(icerik)
@@ -519,20 +615,32 @@ def _anilan_evraklar(durum, since_index=0):
 # ── M3-0 — TEK RENDER MOTORU (--baslat/--senkron/--kaydet hepsi bunu kullanır) ──
 
 def _cikti_topla(kok):
-    """_oa/cikti/ altındaki adım çıktılarını (NN-parca-*.md/.json) toplar."""
+    """_oa/cikti/ altındaki adım çıktılarını (NN-parca-*.md/.json) toplar.
+
+    DÜZELTME (v0.5.5 şerh turu — Ş9 ÖNEMLİ, ALT KLASÖR körlüğü): eskiden
+    `os.listdir` ile ÖZYİNELEMESİZDİ — `_oa/cikti/dilekce/08-...md` gibi bir
+    alt klasördeki üretim SESSİZCE atlanıyordu (kayıpsızlık invaryantı ihlali:
+    dosya-analiz.md'ye hiç gömülmüyor, (iv-a)/(iv-d) kapılarına hiç
+    görünmüyordu — `_oa/teyit/dokum/` zaten bu ailede alt-klasör kullanan bir
+    idiom olduğundan bu yabancı bir durum DEĞİLDİR). Artık `os.walk` ile
+    ÖZYİNELEMELİ taranır (deterministik sırayla — dizinler ve dosyalar her
+    seviyede sıralanır)."""
     cdiz = os.path.join(_oa_kok(kok), "cikti")
     kalemler = []
     if os.path.isdir(cdiz):
-        for ad in sorted(os.listdir(cdiz)):
-            yol = os.path.join(cdiz, ad)
-            if not os.path.isfile(yol):
-                continue
-            try:
-                boyut = os.path.getsize(yol)
-            except OSError:
-                boyut = 0
-            kalemler.append({"dosya": ad, "boyut": boyut,
-                             "yol": os.path.relpath(yol, kok)})
+        for kok_dizin, alt_dizinler, dosyalar in os.walk(cdiz):
+            alt_dizinler.sort()
+            for ad in sorted(dosyalar):
+                yol = os.path.join(kok_dizin, ad)
+                if not os.path.isfile(yol):
+                    continue
+                try:
+                    boyut = os.path.getsize(yol)
+                except OSError:
+                    boyut = 0
+                goreli_ad = os.path.relpath(yol, cdiz).replace(os.sep, "/")
+                kalemler.append({"dosya": goreli_ad, "boyut": boyut,
+                                 "yol": os.path.relpath(yol, kok)})
     return kalemler
 
 
@@ -596,6 +704,23 @@ def _md_render(kok, durum, tamam_tarih=None):
 
     p = []
     p.append(f"# DOSYA ANALİZ KAYDI (TAM TUR) — {dosya_adi}\n\n")
+    # P1-9 KUCUK-DÜZELTME (sinav bulgusu) — kısmi (--onbakis) ingest gerçeği
+    # working-memory'nin BAŞLIĞINDA deterministik damgalanır: modelin şerhte
+    # bunu anıp anmadığına bağlı KALMAZ (bkz. pipeline_kayit._kismi_ingest_durumu,
+    # TEK KAYNAK).
+    pk_ki = _pipeline_kayit_modulu()
+    if pk_ki is not None and hasattr(pk_ki, "_kismi_ingest_durumu"):
+        try:
+            kismi, n, m = pk_ki._kismi_ingest_durumu(kok)
+        except Exception:
+            kismi, n, m = False, None, None
+        if kismi:
+            ns = n if n is not None else "?"
+            ms = m if m is not None else "?"
+            p.append(f"> ⚠ **ÖN-BAKIŞ — DOSYA TAM OKUNMADI ({ns}/{ms})** — bu kök yalnız "
+                     "`oa_ingest.py --onbakis` ile KISMİ tarandı; ana `_oa/metin/00-kunye.json` "
+                     "henüz yok. Tam bir `oa_ingest.py` koşusu tamamlanana kadar bu bulgu "
+                     "GEÇİCİDİR.\n\n")
     p.append("_Bu belge `tam_tur.py --senkron`/`--kaydet` ile birincil kaynaklardan "
               "(iskelet + `_oa/cikti/*` + `00-kunye.json` + `dosya-analiz.json`) "
               "DETERMİNİSTİK olarak yeniden türetilir; hiçbir bölüm burada TEK nüsha "
@@ -611,6 +736,23 @@ def _md_render(kok, durum, tamam_tarih=None):
     if kunye is not None:
         p.append(f"- Künye toplam evrak  : **{kunye.get('toplam_evrak', '—')}**\n")
     p.append("\n")
+
+    # TEZ — M1 (Paket D): dosya-analiz.md'nin İLK bölümü, bölüm 0'dan ÖNCE.
+    p.append(_TEZ_MARKER + "\n")
+    p.append("## TEZ\n\n")
+    tez = (durum.get("tez") or "").strip()
+    if tez:
+        p.append(f"**TEZ:** {tez}\n\n")
+    else:
+        p.append("_(henüz belirlenmedi — `tam_tur.py --tez \"<tek paragraf tez>\"` ile "
+                  "kaydedilir; her pas/brif başında bu satır TEZ referansıdır)_\n\n")
+    tez_gecmisi = durum.get("tez_gecmisi") or []
+    if tez_gecmisi:
+        p.append("**Tez değişikliği günlüğü** (kalıcı, gerekçeli):\n\n")
+        for kayit in tez_gecmisi:
+            p.append(f"- {kayit.get('tarih')} — eski: \"{kayit.get('eski') or '(yok)'}\" "
+                      f"→ yeni: \"{kayit.get('yeni')}\" — gerekçe: {kayit.get('gerekce') or '(ilk belirleme)'}\n")
+        p.append("\n")
 
     # bölüm 0 — Künye
     p.append(_bolum_marker(0) + "\n")
@@ -672,8 +814,12 @@ def _md_render(kok, durum, tamam_tarih=None):
     else:
         for s in serhler:
             p.append(f"### ⚠ ŞERH — {s.get('tarih')} (--zorla ile kaydedildi)\n")
+            if s.get("gerekce"):
+                p.append(f"- Gerekçe: {s['gerekce']}\n")
             for satir in s.get("aciklamalar", []):
                 p.append(f"- {satir}\n")
+            if s.get("tam_dosya"):
+                p.append(f"- Tam kayıpsız döküm: `{s['tam_dosya']}`\n")
             p.append("\n")
 
     # bölüm 14 — Diğer Çalışma Evrakları (CATCH-ALL)
@@ -804,7 +950,120 @@ def cmd_senkron(kok):
     return 0
 
 
-def cmd_kaydet(kok, zorla=False):
+ZORLA_GEREKCE_MIN = 30  # karakter — P0-4: --zorla artık tek başına yetmez
+
+# ── P0-5(e) (v0.5.5) — TESLİM/FINAL-desenli çıktı için TESLİM MAKBUZU şartı ──
+_TESLIM_FINAL_DESEN = re.compile(r"(teslim|final)", re.I)
+
+
+def _sha256_tam(yol):
+    h = hashlib.sha256()
+    try:
+        with open(yol, "rb") as f:
+            for blok in iter(lambda: f.read(65536), b""):
+                h.update(blok)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _teslim_final_aday_mi(kok, k, dilekce_desen):
+    """Bir `_oa/cikti` kalemi TESLİM/FINAL kapısının adayı mı? (a) adı
+    `*TESLIM*`/`*FINAL*` deseniyle eşleşiyorsa HER ZAMAN aday (ad sinyali
+    KALIR — ek/ikinci bir sinyal); (b) İÇERİĞİ dilekçe-şekilliyse (NETİCE-İ
+    TALEP/SONUÇ VE İSTEM/DAVACI/DAVALI/SANIK/MÜŞTEKİ) de aday — ad deseni TEK
+    TETİK OLMAKTAN çıkar (sinav bulgusu: `08-dilekce-son.md`/`08-dava-
+    dilekcesi.md` gibi ad-deseni TAŞIMAYAN ama gerçekte teslim edilecek
+    dilekçe dosyaları eski kapıdan hiç geçmiyordu)."""
+    if _TESLIM_FINAL_DESEN.search(k.get("dosya") or ""):
+        return True
+    if dilekce_desen is None:
+        return False
+    tam_yol = os.path.join(kok, k.get("yol") or "")
+    try:
+        with open(tam_yol, encoding="utf-8", errors="replace") as f:
+            icerik = f.read()
+    except OSError:
+        return False
+    return bool(dilekce_desen.search(icerik))
+
+
+def _teslim_final_kontrol(kok, kalemler):
+    """P0-5(e) — `_oa/cikti`'da TESLİM/FINAL kapısının bir ADAYI (bkz.
+    `_teslim_final_aday_mi`: ad-deseni VEYA dilekçe-şekilli İÇERİK) VARSA,
+    TAMAM damgalanmadan ÖNCE bir TESLİM MAKBUZU (başarılı VEYA RED) denemesi
+    olmalı — HİÇ denenmemiş bir teslim TAMAM damgasına sızamaz. Sinav önerisi
+    (T1): 'makbuz VAR' değil 'makbuz VEYA makbuz-RED denemesi var' şartı —
+    kapanmış (RED) bir kapıyı ikinci kez cezalandırmaz, yalnız HİÇ
+    denenmemişi yakalar. Makbuz (başarılı) VARSA VE kayıtlı taslak BU
+    TESLİM/FINAL dosyasına karşılık geliyorsa, güncel sha kayıtlı sha256 ile
+    eşleşmeli (teslim sonrası dosya sessizce değişmemiş).
+
+    DÜZELTME (v0.5.5 şerh turu — Ş8 BLOKER, P0-5(e) kabul ölçütü ayrışması):
+    eski kriter yalnız 'makbuzun taslağı ADAY KÜMESİNDE VAR MI' soruyordu —
+    bu, DEFTERSİZ akışta (pipeline_kayit --isle/--baslat HİÇ çağrılmamış;
+    (iv-c) defter kapısı bu yüzden hiç devreye girmez) 'doğal-sıra bypass'ı
+    tamamen AÇIK bırakıyordu: makbuz ESKİ bir taslak (v1) için geçerliyken,
+    ondan SONRA yazılmış hiç-teslim-denenmemiş bir REVİZE (v2) dosyası, salt
+    "aday kümesinde bir şeye karşılık geliyor" diye sessizce TAMAM
+    damgalanabiliyordu. Artık `pipeline_kayit._dilekce_sekilli_makbuzsuz_
+    uyarisi` (TEK KAYNAK — pipeline'ın `--denetle`'de kullandığı AYNI
+    fonksiyon) çağrılır: makbuzun taslağı EN YENİ dilekçe-şekilli dosya
+    DEĞİLSE BLOK. Bu, tam_tur ile pipeline_kayit'in kabul ölçütünü SİMETRİK
+    yapar (iki ayrı yerde iki farklı 'en yeni dilekçe' tanımı YAŞAMAZ).
+    Döner: (sorun:str|None) — None ise engel yok."""
+    pk = _pipeline_kayit_modulu()
+    dilekce_desen = getattr(pk, "_DILEKCE_DESEN", None) if pk is not None else None
+    adaylar = [k for k in kalemler if _teslim_final_aday_mi(kok, k, dilekce_desen)]
+    if not adaylar:
+        return None
+    defter = os.path.join(kok, "_oa", "defter")
+    makbuz_yol = os.path.join(defter, "teslim-makbuz.json")
+    red_yol = os.path.join(defter, "teslim-makbuz-RED.json")
+    if not os.path.isfile(makbuz_yol) and not os.path.isfile(red_yol):
+        aday_adlari = ", ".join(k["dosya"] for k in adaylar)
+        return (f"TESLİM/FINAL-desenli dosya var ({aday_adlari}) ama HİÇ teslim denemesi "
+                "yok (_oa/defter/teslim-makbuz*.json yok) — önce teslim_paketi.py koş.")
+    if os.path.isfile(makbuz_yol):
+        try:
+            with open(makbuz_yol, encoding="utf-8") as f:
+                m = json.load(f)
+        except Exception as e:
+            return f"teslim-makbuz.json okunamadı/bozuk ({e})."
+        taslak = m.get("taslak_yol")
+        sha_kayitli = m.get("taslak_sha256")
+        if taslak and sha_kayitli:
+            aday_yollari = {os.path.abspath(os.path.join(kok, k["yol"])) for k in adaylar}
+            if os.path.abspath(taslak) in aday_yollari:
+                if not os.path.isfile(taslak):
+                    return f"teslim-makbuz.json'daki taslak artık diskte yok: {taslak}"
+                guncel = _sha256_tam(taslak)
+                if guncel != sha_kayitli:
+                    return (f"teslim-makbuz.json'daki taslak SONRADAN DEĞİŞTİRİLMİŞ "
+                            f"(sha uyumsuz) — {taslak} (teslim_paketi.py'yi yeniden koş).")
+        # DÜZELTME (Ş8): 'aday kümesinde var mı' yerine pipeline ile TEK
+        # KAYNAK/SİMETRİK ölçüt — makbuz EN YENİ dilekçe-şekilli dosyaya mı
+        # ait? (doğal-sıra/deftersiz-akış bypass'ı burada kapanır.)
+        if pk is not None and hasattr(pk, "_dilekce_sekilli_makbuzsuz_uyarisi"):
+            try:
+                dogal_sira_sorunu = pk._dilekce_sekilli_makbuzsuz_uyarisi(kok)
+            except Exception:
+                dogal_sira_sorunu = None
+            if dogal_sira_sorunu:
+                return dogal_sira_sorunu
+    return None
+
+
+def cmd_kaydet(kok, zorla=False, zorla_gerekce=None):
+    # P0-4 (v0.5.5) — --zorla artık TEK BAŞINA geçmez: bilinçli-geçiş imza
+    # göçü (davranış değil, çağrı sözleşmesi değişir). Bootstrap-kaçışı olan
+    # eski kullanım kapanır: her --zorla GEREKÇELİ ve kayıpsız şerh dosyalı olur.
+    if zorla and (not zorla_gerekce or len(zorla_gerekce.strip()) < ZORLA_GEREKCE_MIN):
+        print(f"HATA: --zorla artık --zorla-gerekce (≥{ZORLA_GEREKCE_MIN} karakter) ile "
+              "birlikte kullanılmalı — 'bilerek geçtim' tek başına gerekçe değildir "
+              "(P0-4: gerekçesiz zorlama şerh dosyasında iz bırakmaz).", file=sys.stderr)
+        return 1
+
     durum = _durum_oku(kok) or {"gelismeler": []}
     kunye = _kunye_oku(kok)
     if kunye is None:
@@ -903,6 +1162,17 @@ def cmd_kaydet(kok, zorla=False):
         # temiz ama bilgilendirici bir mesaj var (ör. betik bulunamadı) — sessiz geçme.
         print(defter_cikti, file=sys.stderr)
 
+    # (iv-d) P0-5(e) — TESLİM/FINAL-desenli çıktı var ama teslim denemesi
+    # (makbuz/RED) yoksa ya da makbuzdaki taslak sonradan değiştirilmişse
+    # TAMAM damgalanamaz.
+    serh_teslim = None
+    teslim_sorun = _teslim_final_kontrol(kok, kalemler)
+    if teslim_sorun:
+        if not zorla:
+            print("HATA: " + teslim_sorun + " (Bilerek gecmek icin: --zorla)", file=sys.stderr)
+            return 1
+        serh_teslim = teslim_sorun
+
     bos_cikti_zorla = (not kalemler and zorla)
 
     durum["dosya"] = durum.get("dosya") or os.path.basename(os.path.abspath(kok))
@@ -921,6 +1191,8 @@ def cmd_kaydet(kok, zorla=False):
     # ŞERH — durum.json'da KALICI tarihçe (M3-0): md hiçbir bilginin TEK nüshasını
     # taşımaz; --zorla ile geçilen her uyarı burada kalır, senkron/kendi-onarma
     # sırasında da (md yeniden türetilse bile) bölüm 13'te GÖRÜNÜR kalmaya devam eder.
+    # P0-4 (v0.5.5): [:400] KESME KALDIRILDI — bastırılan engel/uyarı listesinin
+    # TAMAMI kayıpsız kalır (hem durum.json'da hem ayrı şerh dosyasında).
     aciklamalar = []
     if bos_cikti_zorla:
         aciklamalar.append("_oa/cikti boş olmasına rağmen zorla damgalandı "
@@ -932,12 +1204,29 @@ def cmd_kaydet(kok, zorla=False):
         aciklamalar.append("bayat künye üzerinden zorla damgalandı: "
                             + ", ".join(f"`{e}`" for e in serh_bayat))
     if serh_defter:
-        tek_satir = " ".join(serh_defter.split())[:400]
+        tam_satir = " ".join(serh_defter.split())  # KESME YOK — kayıpsız (P0-4)
         aciklamalar.append("Pipeline defteri TESLİM ENGELİ bildirmesine rağmen zorla "
-                            f"damgalandı: {tek_satir}")
+                            f"damgalandı: {tam_satir}")
+    if serh_teslim:
+        aciklamalar.append("P0-5(e) TESLİM/FINAL-desen kontrolüne rağmen zorla damgalandı: "
+                            + serh_teslim)
+    serh_dosya_goreli = None
     if aciklamalar:
+        serh_dizin = os.path.join(_defter_dizin(kok), "serh")
+        os.makedirs(serh_dizin, exist_ok=True)
+        serh_damga = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        serh_dosya_adi = f"{serh_damga}.md"
+        serh_dosya_tam = os.path.join(serh_dizin, serh_dosya_adi)
+        serh_dosya_goreli = os.path.join("_oa", "defter", "serh", serh_dosya_adi)
+        with open(serh_dosya_tam, "w", encoding="utf-8") as f:
+            f.write(f"# ŞERH — {_simdi()} (--zorla)\n\n")
+            f.write(f"## Gerekçe\n{(zorla_gerekce or '').strip()}\n\n")
+            f.write("## Bastırılan engel/uyarılar (KAYIPSIZ — kesilmemiş)\n\n")
+            for a in aciklamalar:
+                f.write(f"- {a}\n")
         durum.setdefault("serh_tarihcesi", []).append(
-            {"tarih": _simdi(), "aciklamalar": aciklamalar})
+            {"tarih": _simdi(), "aciklamalar": aciklamalar,
+             "gerekce": zorla_gerekce, "tam_dosya": serh_dosya_goreli})
 
     durum.setdefault("gelismeler", [])
     _durum_yaz(kok, durum)
@@ -1021,6 +1310,44 @@ def cmd_ekle(kok, ozet):
     return 0
 
 
+def cmd_tez(kok, yeni_tez, gerekce):
+    """M1 (Paket D) — DAVA TEZİ'ni durum.json'a yazar (YALNIZ durum.json; md
+    bölümü `--senkron`/`--kaydet`'te türetilir — `--ekle` ile aynı gecikmeli
+    desen, veri kaybı DEĞİL çünkü kaynak durum.json'da kalıcıdır).
+
+    Mevcut bir tez FARKLI bir metinle DEĞİŞTİRİLİYORSA `gerekce` ZORUNLU
+    (≥TEZ_GEREKCE_MIN karakter) — sessiz tez kayması (bir pasın diğerinin
+    kurduğu tezi fark ettirmeden değiştirmesi) engellenir. İlk belirlemede
+    (eski tez yok/boş) gerekçe gerekmez. Her GERÇEK değişiklik (eski != yeni)
+    `tez_gecmisi`ye KALICI olarak eklenir (append — geçmiş tez asla silinmez)."""
+    if not (yeni_tez or "").strip():
+        print("HATA: --tez boş olamaz.", file=sys.stderr)
+        return 1
+    yeni_tez = yeni_tez.strip()
+    durum = _durum_oku(kok) or {}
+    eski_tez = (durum.get("tez") or "").strip()
+    if eski_tez and eski_tez != yeni_tez:
+        if not gerekce or len(gerekce.strip()) < TEZ_GEREKCE_MIN:
+            print(f"RET: mevcut TEZ değiştiriliyor — --tez-gerekce ZORUNLU "
+                  f"(≥{TEZ_GEREKCE_MIN} karakter). Sessiz tez kayması engellenir.",
+                  file=sys.stderr)
+            return 1
+        durum.setdefault("tez_gecmisi", []).append({
+            "tarih": _simdi(), "eski": eski_tez, "yeni": yeni_tez,
+            "gerekce": gerekce.strip(),
+        })
+    elif not eski_tez:
+        durum.setdefault("tez_gecmisi", []).append({
+            "tarih": _simdi(), "eski": None, "yeni": yeni_tez,
+            "gerekce": (gerekce or "").strip() or None,
+        })
+    durum["tez"] = yeni_tez
+    _durum_yaz(kok, durum)
+    print(f"TEZ kaydedildi: {yeni_tez}")
+    print("Not: dosya-analiz.md'ye yansıtmak için `--senkron` (ya da `--kaydet`).")
+    return 0
+
+
 def cmd_durum(kok):
     # (i) Diski hızlı tara: künye bayatsa uyarıyı basar (körlük kapanır).
     bayat = _bayat_kontrol_yaz(kok)
@@ -1037,11 +1364,27 @@ def cmd_durum(kok):
         icerik = _md_render(kok, durum, tamam_tarih=None)
         _md_yaz_atomik(kok, icerik)
         print(_ONARIM_UYARISI, file=sys.stderr)
+    print(f"TEZ             : {durum.get('tez') or '(henüz belirlenmedi — `--tez \"...\"`)'}")
     print(f"Dosya           : {durum.get('dosya')}")
     print(f"Tam tur durumu  : {durum.get('tam_tur_durumu')}  ({durum.get('tam_tur_tarihi') or '—'})")
     snap = durum.get("kunye_snapshot", {})
     print(f"Snapshot evrak  : {snap.get('toplam_evrak', '—')}  (alındı: {snap.get('alindi', '—')})")
     print(f"Gelişme kaydı   : {len(durum.get('gelismeler', []))}")
+    # P1-9(b) KUCUK-DÜZELTME (sinav bulgusu) — sözleşme-dışı dizin (gölge hat)
+    # bekçisi yalnız `pipeline_kayit.py --denetle/--goster`'da DEĞİL, `tam_tur.py
+    # --durum`'da da GÖRÜNÜR olsun: aynı in-process import zaten defter kapısı
+    # (_defter_denetle) için kullanılıyor, çapraz-modül import riski gerçek
+    # DEĞİL (advisory; exit koduna etkisi yoktur).
+    pk_bl = _pipeline_kayit_modulu()
+    if pk_bl is not None:
+        try:
+            sozlesme_disi = pk_bl._sozlesme_disi_dizinler(kok)
+        except Exception:
+            sozlesme_disi = []
+        if sozlesme_disi:
+            print("⚠ SÖZLEŞME-DIŞI DİZİN(LER): "
+                  + ", ".join(f"_oa/{ad}" for ad in sozlesme_disi)
+                  + " — beklenmeyen konum (gölge hat/dağınık-çıktı adayı olabilir).")
     # Gate G+ — KALICILIK KAPISI (mekanik): dosya-analiz.md fiziksel kanıtı +
     # TAMAM işaretçisi, durum.json'daki öz-beyandan BAĞIMSIZ doğrulanır. "tamamlandi"
     # = SCRIPT ÇIKTISI, model beyanı değil (bkz. _analiz_kaydi_fiziksel_tamam).
@@ -1088,6 +1431,7 @@ def cmd_brif(kok):
     (künye okunamadı)."""
     bayat = _bayat_kontrol_yaz(kok)
     durum = _durum_oku(kok)
+    print(f"TEZ: {(durum or {}).get('tez') or '(henüz belirlenmedi — `tam_tur.py --tez \"...\"`)'}")
     if not durum or durum.get("tam_tur_durumu") != "TAMAM":
         print("ARTIMLI MOD: KAPALI — tam tur hiç yapılmamış/TAMAM değil.")
         print("TALİMAT: ZORUNLU TAM TUR işletilmeli (MANİFEST → ... → KONTROL), sonra --kaydet.")
@@ -1147,22 +1491,34 @@ def main():
     ap.add_argument("--delta", action="store_true")
     ap.add_argument("--ekle", metavar="OZET")
     ap.add_argument("--zorla", action="store_true",
-                    help="kaydet: boş-çıktı / işlenmemiş-delta engelini şerh düşerek geç")
+                    help="kaydet: boş-çıktı / işlenmemiş-delta engelini şerh düşerek geç "
+                         "(P0-4: --zorla-gerekce ile BİRLİKTE, tek başına yetmez)")
+    ap.add_argument("--zorla-gerekce", dest="zorla_gerekce", default=None,
+                    help=f"--zorla ZORUNLU eş bayrağı — ≥{ZORLA_GEREKCE_MIN} karakter; "
+                         "kayıpsız şerh dosyasına (_oa/defter/serh/) yazılır")
     ap.add_argument("--brif", action="store_true",
                     help="M1-4 Gate E: ARTIMLI MOD BRİFİ (--durum sinyaline dayanır; "
                          "ARAŞTIRMA/analiz adımının toplu-yeniden-okuma kararı için)")
+    ap.add_argument("--tez", metavar="METIN",
+                    help="M1 (Paket D) — DAVA TEZİni (tek paragraf) kaydeder; "
+                         "dosya-analiz.md'nin İLK bölümü olarak render edilir")
+    ap.add_argument("--tez-gerekce", dest="tez_gerekce", default=None,
+                    help=f"--tez mevcut bir tezi DEĞİŞTİRİYORSA ZORUNLU (≥{TEZ_GEREKCE_MIN} "
+                         "karakter) — sessiz tez kayması engellenir")
     a = ap.parse_args()
 
     kok = a.kok
     if not os.path.isdir(kok):
         sys.exit(f"HATA: klasör yok: {kok}")
 
+    if a.tez is not None:
+        sys.exit(cmd_tez(kok, a.tez, a.tez_gerekce))
     if a.baslat:
         sys.exit(cmd_baslat(kok, a.dosya))
     if a.senkron:
         sys.exit(cmd_senkron(kok))
     if a.kaydet:
-        sys.exit(cmd_kaydet(kok, a.zorla))
+        sys.exit(cmd_kaydet(kok, a.zorla, a.zorla_gerekce))
     if a.delta:
         sys.exit(cmd_delta(kok))
     if a.ekle is not None:

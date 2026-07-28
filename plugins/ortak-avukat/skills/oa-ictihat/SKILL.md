@@ -16,6 +16,8 @@ description: >-
 
 Sök-tak parça. Görevi: her hukuki argümanı **doğrulanmış, resmî kaynağa** bağlamak ve her oturumda yeniden keşfedilen sorgu bilgisini kalıcı kılmak. Künye resmî kaynaktan doğrulanmadıkça **iddia**dır.
 
+> **VECİZE (P1-11 doktrin senkronu):** Künyeyi bulmak yetmez; kararın müvekkilin işine yarayıp yaramadığının muhakemesi güç çarpanıdır — çıplak künye sıfırdır, damgalı ve davaya bağlı karar çarpandır.
+
 ## Araç envanteri ve rolleri
 **İçtihat sunucusu — `Yargı Pro` (tek ve varsayılan içtihat sunucusu).** Geniş arşiv, ek kurum kararları, semantik arama ve yüksek limit/tam metin sağlar; kurulum için **https://yargi.betaspacestudio.com/mcp** adresinden Claude Code connectors bölümünden bağlanır. İçsel dayanıklılık: semantik arama (`search_bedesten_semantic`) güncel kalmadığında canlı `search_bedesten_unified` uç noktasıyla teyit et.
 
@@ -90,10 +92,18 @@ Norm önce, içtihat sonra:
 Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işlevin Türkçe adlı araçları: `ictihat_ara`, `semantik_ictihat_ara`, `mevzuat_ara`, `mevzuat_getir`). Sorgudan önce oturumda MEVCUT araç listesine bak ve gerçekte var olan aracı kullan; adı tutmuyor diye işlevi atlamak da, var olmayan bir araca çağrı yapılmış gibi sonuç yazmak da yasaktır. **"Teyitli" etiketi yalnızca fiilen yapılmış bir çağrıya konur** ve üçlü kayıtla yazılır: araç + sorgu + dönen künye/metin. Araç gerçekten yoksa veya erişilemiyorsa: fallback zinciri + açık beyan ("şu araç kapalı; bu künye teyit edilemedi").
 
 ## Ham MCP dökümü diske yazılır — kunye_teyit'in ikinci kaynağı (kritik)
-`oa-kontrol/scripts/kunye_teyit.py` teyit edici kaynak evrenini SADECE ikisinden okur: `_oa/teyit/kunye-teyit.md` kütüğü + `_oa/teyit/dokum/` ham MCP dökümleri. `_oa/cikti/` (taslak/antitez/kıyas gibi model çıktıları) teyit kaynağı DEĞİLDİR — oraya yazılan bir izi kunye_teyit "teyitli" saymaz, yalnız [BİLGİ] şerhi verir. Bu ikinci kaynağı (döküm dizini) besleyen adım BURADADIR — atlanırsa teyit evreninin yarısı kalıcı boş kalır ve kunye_teyit sistematik olarak yanlış-pozitif TEYİTSİZ üretir. Bu yüzden **her MCP araştırma sonucunda**:
-1. Dönen ham çıktıyı (künye/metin/snippet) **`_oa/teyit/dokum/<tarih>-<arac>-<slug>.md`** olarak diske yaz (ör. `2026-07-19-search_bedesten_unified-tbk-m49.md`); dizin yoksa oluştur.
-2. Kütük satırını o dosyaya bağla: `python oa-pipeline/scripts/oa_hafiza.py teyit --arac <arac> --sorgu "<sorgu>" --sonuc "<künye/özet>" --dokum _oa/teyit/dokum/<dosya>`.
-3. Yalnızca kütüğe satır yazıp dökümü atlamak da olur (kütük tek başına yeterli teyit kaynağıdır), ama uzun/parçalı metinlerde (gerekçe, madde tam metni) ham dökümü de diske yazmak ileride merci/daire ayrıştırmasını ve içerik çaprazını güçlendirir — özellikle şüpheli/OCR'lı veya çok terimli künyelerde döküm atlanmaz.
+`oa-kontrol/scripts/kunye_teyit.py` teyit edici kaynak evrenini SADECE ikisinden okur: `_oa/teyit/kunye-teyit.md` kütüğü + `_oa/teyit/dokum/` ham MCP dökümleri. `_oa/cikti/` (taslak/antitez/kıyas gibi model çıktıları) teyit kaynağı DEĞİLDİR — oraya yazılan bir izi kunye_teyit "teyitli" saymaz, yalnız [BİLGİ] şerhi verir. Bu ikinci kaynağı (döküm dizini) besleyen adım BURADADIR — atlanırsa teyit evreninin yarısı kalıcı boş kalır ve kunye_teyit sistematik olarak yanlış-pozitif TEYİTSİZ üretir.
+
+`oa_hafiza.py teyit` **iki araç sınıfı** ayırır (P0-2, v0.5.5) — hangi komutu yazacağın `--arac` değerine göre değişir:
+
+- **ARAMA sınıfı** (`ictihat_ara`/`semantik_ictihat_ara`/`aym_ictihat_ara`/`aihm_ictihat_ara` — tam metin DÖNMEZ, yalnız aday künye/snippet): `--damga` YASAKTIR (metinsiz damga vurulamaz). Tek-komut:
+  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_ara --sorgu "<sorgu>" --sonuc "<aday künyeler/özet>" [--dokum-icerik "<ham snippet>"]`
+  — `--dokum-icerik` verilirse script kendi döküm dosyasını `_oa/teyit/dokum/`'a YAZAR (ayrıca dosyayı elle oluşturup `--dokum <yol>` ile bağlaman GEREKMEZ).
+- **GETİR sınıfı** (`ictihat_getir`/`kurum_karari_getir` — tam metin DÖNER): `--damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR` ZORUNLUDUR (damgasız içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ) — bu, İçtihat Muhakeme Zinciri'nin (MODÜL 2) tek-komut ritüelidir, MUHAKEME adımını (`oa-kiyas`/`oa-kontrol`) de aynı çağrıda tetikler:
+  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<Yargıtay 4. HD, E. 2023/1234, K. 2023/5678>" --damga LEHE --bag "<DAVAYA-BAĞ, ≥40 karakter>" --ilgili-kisim "<döküm içinde VERBATİM geçen alıntı>" --dokum-icerik "<ham tam metin>"`
+  `--sonuc` içinde ayrıştırılabilir bir `E./K. YYYY/NNNN` künyesi bulunmalıdır (yoksa RET — çıplak künye üretmez). Aynı künye için ikinci bir `teyit --damga` çağrısıyla FARKLI bir damga vermek (ör. ALEYHE→LEHE) sessizce kabul edilmez; bilinçli değişim `--damga-degistir "<gerekçe, ≥40 karakter>"` ister.
+
+Her iki sınıfta da dökümü **elle** yazıp yalnızca `--dokum <mevcut-dosya>` ile bağlamak da geçerlidir (ör. daha önce başka bir araçla üretilmiş bir ham metni yeniden kullanmak için); ama normal akışta `--dokum-icerik` tek adımda hem dosyayı yazar hem bağlar.
 
 ## Karar çekme (CEK) — ictihat_getir → ham md → muhakeme girdisi
 İçtihat Muhakeme Zinciri'nde bu parçanın rolü **yalnızca CEK**tir; MUHAKEME
@@ -110,6 +120,14 @@ aittir — bu iki adım **karıştırılmaz**. CEK adımı:
 Bir karar **çekilmiş olması** onun **muhakeme edilmiş** sayılması için
 yeterli değildir — damga atanmadan (NOTR = "muhakeme edilmemiş",
 fail-closed) hiçbir içtihat dilekçeye giremez.
+
+**İÇTİHAT PORTFÖYÜ (M6, Paket D — v0.5.5):** birden fazla LEHE/ALEYHE-AYIRT
+karar biriktiğinde HEPSİ gövdeye YAZILMAZ — v0.3.20 FINAL-MAX deseni gereği
+gövdeye en güçlü 3-5'i (HGK/İBK > daire, yeni > eski, ihtisas dairesi)
+girer, kalanı kütükte (`_oa/cikti/03-ictihat-muhakeme.md`) yedek durur (bkz.
+`oa-dilekce/SKILL.md` "İÇTİHAT PORTFÖYÜ"). CEK adımında bu sıralamayı
+kolaylaştırmak için her künyenin merci+daire+tarihi (HGK/İBK ayrımı dahil)
+KAYNAK-IZI'yla birlikte açıkça not edilir.
 
 ## Aktif çıkarım refleksi
 Edilgen "getir-koy" yapma. Bulduğun her teyitli kararı **müvekkil lehine bir argümana bağla**; aleyhe bir içtihat çıkarsa onu **ayırt etmenin (distinguishing)** yolunu ara; ve nötr aramanın yanı sıra müvekkilin konumunu **güçlendirecek** aramayı da kendiliğinden kur. İçtihat bir liste değil, lehe inşa edilecek malzemedir.

@@ -39,6 +39,18 @@ Meseleyi önceden seçilmiş birkaç dala (iş/ticaret/icra/idare...) **hapsetme
 ## Kompozisyon
 Alan tespit edilir → sorgu `oa-ictihat`, yazım `oa-dilekce`, süre `oa-sure`.
 
+## UNSUR ŞABLONLARI — dava türü konumlandıktan sonra devreye giren kısayol (M4, Paket D — v0.5.5)
+Dava türü konumlandıktan **hemen sonra** `references/unsur-sablonlari/` altındaki
+asgari sette (`tasarrufun-iptali.md`, `ise-iade.md`, `itirazin-iptali.md`,
+`kidem-ihbar.md` — **unsur | norm | delil-türü | yük** dört sütunlu) örtüşen bir
+şablon var mı bak. Varsa **işaret et** ve unsur listesini `oa-vakia`'ya devret:
+her **unsur** orada `vakia_matris.py`nin `iddialar[]` dizisine bir `id`
+(`U1`, `U2`, …) olarak taşınır (unsur metni = iddia metni), delilsiz kalan unsur
+`ispat_bosluklari`na düşüp `_oa/DURUM.md`de 🔴 kırmızı görünür. Şablondaki **norm**
+çıpaları başlangıç noktasıdır — kesin hüküm gibi sunulmaz; kullanım anında güncel
+metin/yürürlük Mevzuat MCP ile (bu parçanın kendi "Yasak bölgeler" ilkesi uyarınca)
+**teyit edilir**.
+
 ## Aktif çıkarım refleksi
 Alanı edilgen haritalamakla yetinme. Olgular ışığında **müvekkil için en verimli hukuki dayanağı kendiliğinden öne çıkar**: hangi karine (ör. İİK m.97/a mülkiyet karinesi), hangi ispat yükü kayması, hangi usul kaldıracı lehe işliyor? İstenmeyen ama dosyanın açtığı bir açıyı (ek talep, alternatif sebep) gör ve öner — sonra `oa-ictihat` ile doğrulat.
 

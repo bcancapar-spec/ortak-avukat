@@ -22,13 +22,24 @@ CEK ve MUHAKEME ayrı adımlardır: bir kararın **çekilmiş olması** onun
 (damgasız/eksik alanlı) kayıt fail-closed kuralı gereği **NOTR** sayılır ve
 kullanılamaz (aşağıya bkz.).
 
-## Dosya adı ve konum
+## Dosya adı ve konum — P1-11 doktrin: "bir karar = bir MUHAKEME KAYDI"
 
-`_oa/cikti/NN-ictihat-muhakeme.md` — `NN` dosyanın işlendiği sırayı gösteren
-iki haneli sıra no'dur (`01`, `02`, ...). Bir dosyada **bir** karar
-muhakeme edilir; birden çok karar birden çok dosyaya ayrılır (kimlik
-karışıklığını önler, `oa-pipeline/scripts/capraz_denetim.py` benzeri ileri
-çapraz denetime uygun tekil kimlik alanı sağlar).
+Ölçüt **kaydın varlığıdır, dosya sayısı DEĞİL.** İki eşdeğer form:
+
+- **STANDART YOL (çoğunluk hâli):** `oa_hafiza.py teyit --damga ...` TEK
+  komutu `_oa/cikti/03-ictihat-muhakeme.md`'ye **bölüm-append** olarak yazar
+  (`ictihat_muhakeme_denetim.py`'nin `kunye_ortak.bolumlere_ayir` ayrıştırıcısı
+  satır-başı `**KUNYE:**` ayracıyla her kaydı KENDİ bölümünde okur — komşu
+  kayda taşmaz, P0-3). Bir dosyada birden çok karar birikir; bu KİMLİK
+  KARIŞIKLIĞI değildir, her bölüm kendi KUNYE/DAMGA/İLGİLİ-KISIM alan
+  setini taşır.
+- **DERİN YOL:** kilit/karmaşık bir karar için ayrı `_oa/cikti/NN-ictihat-
+  muhakeme.md` dosyası (`NN` sıra no) açılabilir — alan şeması AYNIDIR.
+
+Her iki formda da denetim (`ictihat_muhakeme_denetim.py`) `_oa/cikti/
+*ictihat-muhakeme*.md` desenine uyan TÜM dosyaları tarar ve her birini
+bölümlerine ayırıp okur; hangi formun seçildiği denetim sonucunu
+DEĞİŞTİRMEZ.
 
 ## Alanlar
 
@@ -40,6 +51,20 @@ karışıklığını önler, `oa-pipeline/scripts/capraz_denetim.py` benzeri ile
 | **DAMGA** | Her zaman | Model muhakemesi (`oa-kiyas`/`oa-kontrol`) | **Kapalı enum — yalnız dört değer:** `LEHE` \| `ALEYHE` \| `ALEYHE-AYIRT` \| `NOTR`. Aşağıdaki "DAMGA enumu" bölümüne bkz. |
 | **DAVAYA-BAĞ** | Her zaman | Model muhakemesi | Bu karar **neden** somut olaya uygulanır — kararın hükmü ile davanın vakıası arasındaki bağ (norm-unsuru/vakıa eşleşmesi; `oa-kiyas` büyük önermesiyle ilişkilendirilir). **Alan adı bilinçli seçildi (R4):** bu bir **analoji/emsal-uygunluk** bağıdır, `oa-illiyet`'in modellediği fiil→netice **nedensellik** zinciriyle KARIŞTIRILMASIN diye eskiden "İLLİYET" olan bu alan **DAVAYA-BAĞ** olarak adlandırılmıştır (terim değişikliği; muhakeme içeriği aynıdır). Boş/yüzeysel DAVAYA-BAĞ = kayıt eksik sayılır. |
 | **AYIRT-ETME** | **Yalnız** `DAMGA: ALEYHE-AYIRT` olduğunda ZORUNLU; diğer üç damgada bu alan yazılmaz/boş kalır | Model muhakemesi | Kararın somut olaya **neden uymadığı** — ayırt etme (distinguishing) gerekçesi. Bu alan olmadan `ALEYHE-AYIRT` damgası geçersizdir (fail-closed: alan boşsa kayıt `ALEYHE` gibi işlem görür, dilekçeye giremez). |
+
+## KIYAS ŞEMASI — RATIO/ÖRTÜŞME/FARKLAR terminolojisi (M2, Paket D — v0.5.5)
+
+`oa-kiyas`'ın kendi muhakeme dilinde bu üç kavram yukarıdaki alanların **birebir karşılığıdır** — YENİ alan/başlık AÇILMAZ (tek-yazar kuralı: parser'a ikinci bir sözdizimi eklenmez, `**İLGİLİ-KISIM:**`/`**DAVAYA-BAĞ:**`/`**AYIRT-ETME:**` başlıkları AYNEN kullanılır); bu yalnız MUHAKEME ADIMLARINI isimlendiren kavramsal bir haritadır:
+
+| Kıyas terimi | Karşılığı (şemadaki alan) | `oa_hafiza.py teyit` bayrağı |
+|---|---|---|
+| **RATIO** (kararın hüküm gerekçesi) | İLGİLİ-KISIM | `--ilgili-kisim` (VERBATİM alıntı) |
+| **ÖRTÜŞME** (kararla somut olayın ortak unsurları) | DAVAYA-BAĞ | `--bag` |
+| **FARKLAR** (kararla somut olayın ayrıştığı noktalar) | AYIRT-ETME | `--ayirt` (yalnız `ALEYHE-AYIRT`'ta) |
+
+**Muhakeme sırası (DAMGA türetilir, beyan edilmez):** önce RATIO çıkarılır (kararın hükmünü taşıyan pasaj — VERBATİM), sonra bu RATIO somut olayla karşılaştırılıp ÖRTÜŞME noktaları sayılır, ardından FARKLAR (varsa) belirlenir; DAMGA bu üçünün **sonucu** olarak yazılır — RATIO okunmadan/ÖRTÜŞME kurulmadan doğrudan "LEHE"/"ALEYHE" damgası vurmak (gerekçesiz beyan) muhakeme değil, iddiadır ve G2/G3'ün alan-doluluk denetiminden geçse bile hukuken zayıf sayılır (yukarıdaki "Kritik doktrin" m.4).
+
+**ÖRTÜŞME zenginliği (advisory — ≥3 nokta):** ÖRTÜŞME/DAVAYA-BAĞ metninin **en az 3 somut ortak unsur** (ör. üç ayrı cümle/madde/kısa çizgili nokta) içermesi beklenir — tek cümlelik yüzeysel bir "bu karar uygulanır" beyanı ÖRTÜŞME'yi zayıflatır. Bu **bloklayıcı bir kapı DEĞİLDİR** (G2'nin "alan dolu mu" denetiminin semantiği DEĞİŞMEZ — DOKUNULMAZ); `ictihat_muhakeme_denetim.py`'nin `ortusme_zenginligi_uyarisi` fonksiyonu yalnız GÖRÜNÜR bir UYARI üretir (P0-6/v0.3.20 dersinin tekrarı: pahalı muhakemeyi ucuz bir kapıyla ZORUNLU kılmak 61→0 çöküşünü doğurur — bu yüzden uyarı düzeyinde kalır, avukat gözü nihai hakemdir).
 
 ## DAMGA enumu — kapalı, dört değer
 

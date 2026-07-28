@@ -115,6 +115,7 @@ import kunye_ortak as ko  # noqa: E402
 
 VARSAYILAN_MUHAKEME = os.path.join("_oa", "cikti")
 VARSAYILAN_DOKUM = os.path.join("_oa", "teyit", "dokum")
+VARSAYILAN_KUTUK = os.path.join("_oa", "teyit", "kunye-teyit.md")
 
 DAMGA_ENUM = {"LEHE", "ALEYHE", "ALEYHE-AYIRT", "NOTR"}
 
@@ -142,20 +143,34 @@ DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
 
 
 def _bolum_al(metin, baslik):
-    """'## <baslik>' bölümünün içeriğini (bir sonraki '## ' başlığa veya metin
-    sonuna kadar) döndürür; bölüm yoksa None."""
+    """'## <baslik>' bölümünün içeriğini (bir sonraki markdown başlığına —
+    HER seviyeden `#` — veya metin sonuna kadar) döndürür; bölüm yoksa None.
+
+    P0-3 DÜZELTME (v0.5.5): durdurucu ESKİDEN yalnız `^##\\s+` arıyordu; ama
+    çok-bölümlü dosyalarda her kayıt `# İçtihat Muhakeme Kaydı — <ts>` (TEK
+    `#`) başlığıyla başlar (bkz. `oa-kiyas/references/ictihat-muhakeme-
+    sablonu.md` örnek kayıtları: `# 01 — ...`). Tek-`#` durdurucu SAYILMAYINCA
+    bir SONRAKİ kaydın başlık satırı bu bölümün (ör. AYIRT-ETME) içeriğine
+    SIZIYORDU — boş AYIRT-ETME dolu görünüp G3'ün fail-closed ALEYHE-AYIRT
+    denetimini deliyordu. Artık HER `#`..`######` başlığı (satır başı) durdurucu
+    sayılır — `kunye_ortak.bolumlere_ayir`'ın `**KUNYE:**` ayracıyla ayrıştırdığı
+    her bölüm kendi alanlarını KENDİ içinde tutar, komşu kayda taşmaz."""
     m = re.search(r"^##\s*" + re.escape(baslik) + r"\s*$", metin, re.M)
     if not m:
         return None
     bas = m.end()
-    sonraki = re.search(r"^##\s+", metin[bas:], re.M)
+    sonraki = re.search(r"^#{1,6}\s+", metin[bas:], re.M)
     son = bas + sonraki.start() if sonraki else len(metin)
     return metin[bas:son].strip()
 
 
+GECERSIZ_KILINDI_RE = re.compile(r"^\*\*GEÇERSİZ-KILINDI:\*\*", re.M)
+
+
 class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
-                 "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme")
+                 "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
+                 "gecersiz")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -163,6 +178,14 @@ class MuhakemeKaydi:
         self.kunye_ham = m.group(1).strip() if m else None
         self.esas, self.karar = ko.kunye_normalize(self.kunye_ham or "")
         self.daire = ko.daire_key(self.kunye_ham or "")
+        # DÜZELTME (v0.5.5 düzeltme turu — GEÇERSİZ-KILINDI artık TÜKETİLİR):
+        # `oa_hafiza.py --damga-degistir` bu satırı eski bölüme SURGICAL olarak
+        # ekler (bkz. `_eski_bolumleri_gecersiz_kil`); eskiden hiçbir tüketici
+        # yoktu — hükümsüz kılınan bölüm tam yetkili bir aday olarak yaşamaya
+        # devam edip sahte ÇELİŞEN DAMGA / DAMGA-elle-değiştirilmiş engeli
+        # üretiyordu. Bu bayrak `muhakeme_kayitlarini_yukle`'de aday havuzundan
+        # DÜŞÜRMEK için kullanılır (sessizce değil — rapora sayaç basılır).
+        self.gecersiz = bool(GECERSIZ_KILINDI_RE.search(metin))
 
         m = KAYNAK_IZI_LINE_RE.search(metin)
         self.kaynak_izi = m.group(1).strip() if m else None
@@ -199,10 +222,21 @@ class MuhakemeKaydi:
 
 def muhakeme_kayitlarini_yukle(muhakeme_dizin):
     """`_oa/cikti/*ictihat-muhakeme*.md` desenindeki dosyaları MuhakemeKaydi
-    listesine çevirir (dosya-sırasıyla, sabit sıralı)."""
+    listesine çevirir (dosya-sırasıyla, sabit sıralı).
+
+    P0-3 (v0.5.5): bir dosya artık BİRDEN ÇOK karar barındırabilir (P0-2'nin
+    tek-komut `teyit --damga` ritüelinin bölüm-APPEND biçimi). Ayrıştırma
+    `kunye_ortak.bolumlere_ayir` ile yapılır (ayraç: satır-başı `**KUNYE:**`);
+    tek bölümlü (eski) dosyalarda `dosya` etiketi DEĞİŞMEDEN kalır (geriye
+    uyum — mevcut testler/raporlar bit-özdeş).
+
+    DÜZELTME (v0.5.5 düzeltme turu): `**GEÇERSİZ-KILINDI:**` işaretli bölümler
+    aday havuzuna GİRMEZ (döner: (kayitlar, gecersiz_sayisi) — sessiz atlama
+    yasağı gereği çağıran taraf bu sayıyı rapora basar)."""
     kayitlar = []
+    gecersiz_sayisi = 0
     if not muhakeme_dizin or not os.path.isdir(muhakeme_dizin):
-        return kayitlar
+        return kayitlar, gecersiz_sayisi
     desen = os.path.join(muhakeme_dizin, "*ictihat-muhakeme*.md")
     for yol in sorted(glob.glob(desen)):
         if not os.path.isfile(yol):
@@ -212,8 +246,15 @@ def muhakeme_kayitlarini_yukle(muhakeme_dizin):
                 metin = f.read()
         except OSError:
             continue
-        kayitlar.append(MuhakemeKaydi(yol, metin))
-    return kayitlar
+        bolumler = ko.bolumlere_ayir(metin)
+        for i, bolum in enumerate(bolumler):
+            etiket = yol if len(bolumler) == 1 else f"{yol}#{i + 1}"
+            kayit = MuhakemeKaydi(etiket, bolum)
+            if kayit.gecersiz:
+                gecersiz_sayisi += 1
+                continue
+            kayitlar.append(kayit)
+    return kayitlar, gecersiz_sayisi
 
 
 def _yol_coz(deger, kok):
@@ -270,6 +311,79 @@ def kaynak_izi_denetle(kayit, kok, dokum_dizin):
     return sorunlar
 
 
+def kutuk_son_damga_engeli(kayit, kutuk_yolu):
+    """P0-2 DÜZELTME (d) — DAMGA çapraz kontrolü: aynı künye için kütükteki
+    (append-only) SON teyit satırının `DAMGA=` tokenı ile muhakeme bölümündeki
+    DAMGA değeri FARKLIYSA ENGEL üretir — salt-ALEYHE'nin muhakeme dosyası elle
+    düzenlenerek LEHE'ye çevrilme yolu kapanır (bölüm-append tek dosyada
+    olduğundan bu düzenleme tek satırlık olabilir; kütük ise append-only'dir).
+
+    Kütük dosyası yoksa VEYA bu künye için kütükte hiç `DAMGA=` etiketli satır
+    yoksa denetim SESSİZCE ATLANIR (fail-OPEN) — kütüksüz/elle kurulmuş eski
+    kayıtları BOZMAZ (geriye uyum); kütük izi VARSA ve ÇELİŞİYORSA fail-CLOSED.
+
+    Kütük ayrıştırma mantığı `kunye_ortak.kutukten_son_damga`'da PAYLAŞIMLIDIR
+    (P0-2 DÜZELTME d) — `oa_hafiza.py` aynı fonksiyonu YAZMA-ÖNCESİ çapraz
+    kontrol için çağırır (tek-yazar kuralı)."""
+    son_damga = ko.kutukten_son_damga(kutuk_yolu, kayit.esas, kayit.karar, kayit.daire)
+    if son_damga is not None and kayit.damga is not None and son_damga != kayit.damga:
+        return [f"DAMGA elle değiştirilmiş — kütükteki (append-only) son teyit DAMGA'sı "
+                f"('{son_damga}') ile muhakeme kaydındaki DAMGA ('{kayit.damga}') "
+                "uyuşmuyor; damga değişimi ancak yeni bir `teyit --damga` satırıyla olur."]
+    return []
+
+
+def kutuk_dayanagi_denetle(kayit, kutuk_yolu):
+    """DÜZELTME (v0.5.5 şerh turu — Ş2, BLOKER, HAYALET MUHAKEME t3): bir
+    muhakeme kaydının KAYNAK-IZI dosyası diskte var olsa bile
+    (`kaynak_izi_denetle` yalnız BUNU denetler), bu dosyayı GERÇEKTEN üreten
+    bir `teyit` çağrısının künye teyit kütüğünde hiçbir izi yoksa kayıt
+    HAYALETTİR — künye/döküm ile hiçbir fiilî MCP çağrısı arasında bağ
+    kanıtlanmamıştır (`--arac` enjeksiyonuyla `oa_hafiza.py`'ye YAZDIRILAN bir
+    bölüm tam da bu izi bırakmaz).
+
+    Denetim yalnız kütük FİİLEN KULLANILIYORSA (`kutuk_gercek_veri_var_mi` —
+    en az bir gerçek 7-hücreli satır) etkindir; kütük hiç yoksa/hiç
+    kullanılmamışsa (elle kurulmuş test iskeleti / 'derin yol' — doğrudan
+    dosya yazımıyla muhakeme kaydı oluşturma, P1-11 playbook'u) mevcut SESSİZ
+    ATLAMA (geriye uyum, `kutuk_son_damga_engeli` ile SİMETRİK) KORUNUR — bu
+    invaryant `test_kutuk_yoksa_denetim_sessizce_atlanir_geriye_uyum` ile
+    kilitlidir, bit düzeyinde bozulmaz (bu atlamanın GÖRÜNÜRLÜĞÜ artık
+    `main()`/`rapor_yaz` seviyesinde ayrı bir [BİLGİ] satırıyla sağlanır —
+    bkz. `kutuk_gercek_veri_var_mi` çağrısının main()'deki kopyası).
+
+    DÜZELTME (v0.5.5 düzeltme turu — Ş2/t3-B, İKİNCİ KATMAN): 'esas/karar
+    kütükte HERHANGİ bir satırda geçiyor mu' (`kutukte_esas_karar_satiri_
+    var_mi`) tek başına YETERSİZDİR — damgasız/tam-metinsiz ucuz bir ARAMA
+    teyidi bu denetimi bedavaya geçiyordu (t3-B). Satır fiilen VARSA ama
+    bölümün DAMGA'sıyla eşleşen VE aynı KAYNAK-IZI dosyasını gösteren bir
+    satır YOKSA (`kutukte_damgali_dayanak_satiri_var_mi`), kayıt yine HAYALET
+    sayılır — farklı, daha isabetli bir gerekçeyle."""
+    if not ko.kutuk_gercek_veri_var_mi(kutuk_yolu):
+        return []
+    if not (kayit.esas or kayit.karar):
+        return []
+    if not ko.kutukte_esas_karar_satiri_var_mi(kutuk_yolu, kayit.esas, kayit.karar, kayit.daire):
+        return [
+            f"Bu muhakeme kaydının künyesi (E. {kayit.esas or '—'} / K. {kayit.karar or '—'}) "
+            "künye teyit kütüğünde HİÇ BİR SATIRDA geçmiyor — kütük bu kökte fiilen "
+            "kullanılıyor (başka teyit satırları var) ama BU kayda karşılık gelen bir "
+            "`teyit` çağrısı YOK (HAYALET MUHAKEME — fail-closed, anayasa m.6 ihtiyatı)"
+        ]
+    if kayit.damga and not ko.kutukte_damgali_dayanak_satiri_var_mi(
+            kutuk_yolu, kayit.esas, kayit.karar, kayit.damga,
+            kaynak_izi=kayit.kaynak_izi, daire=kayit.daire):
+        return [
+            f"Bu muhakeme kaydının künyesi (E. {kayit.esas or '—'} / K. {kayit.karar or '—'}) "
+            "kütükte GEÇİYOR ama bu bölümün DAMGA'sıyla "
+            f"('{kayit.damga_ham}') eşleşen VE aynı KAYNAK-IZI dosyasını ('{kayit.kaynak_izi}') "
+            "gösteren bir `teyit` satırı YOK — damgasız/tam-metinsiz bir ARAMA satırı (ya da "
+            "başka bir künyeye/dosyaya ait bir döküm) bir muhakeme bölümünü MEŞRULAŞTIRMAZ "
+            "(HAYALET MUHAKEME — fail-closed, anayasa m.6 ihtiyatı)"
+        ]
+    return []
+
+
 def alan_butunlugu_denetle(kayit):
     """G2 — İLGİLİ-KISIM / DAVAYA-BAĞ / DAMGA alanları DOLU mu (yalnız varlık;
     içerik isabeti muhakeme işidir, bu fonksiyon YARGILAMAZ)."""
@@ -320,6 +434,31 @@ def damga_denetle(kayit):
         )
     # LEHE → sorun yok
     return engeller, uyarilar
+
+
+ORTUSME_MIN_NOKTA = 3  # M2 (Paket D, v0.5.5) — advisory eşik, BLOKLAMAZ
+
+
+def ortusme_zenginligi_uyarisi(kayit):
+    """M2 (Paket D, v0.5.5) — KIYAS ŞEMASI: DAVAYA-BAĞ (ÖRTÜŞME) metni en az
+    ORTUSME_MIN_NOKTA somut ortak-unsur noktası içeriyor mu? Yalnız ADVISORY
+    (G2'nin 'alan dolu mu' semantiği DEĞİŞMEZ — bkz. `alan_butunlugu_denetle`,
+    DOKUNULMAZ) — tek cümlelik yüzeysel bir örtüşme beyanını GÖRÜNÜR kılar,
+    bloklamaz (pahalı muhakemeyi ucuz bir kapıyla zorunlu kılmak v0.3.20/
+    v0.5.3'teki 61→0 çöküşünü tekrarlardı). Nokta sayımı madde-imli satırlar
+    (-, *, 1.) VEYA cümle sayısı (hangisi büyükse) üzerinden yapılır — bu bir
+    doğruluk/isabet denetimi DEĞİLDİR, yalnız yapısal zenginlik göstergesidir."""
+    metin = (kayit.davaya_bag or "").strip()
+    if not metin:
+        return None
+    madde_sayisi = len(re.findall(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+\S", metin))
+    cumle_sayisi = len([s for s in re.split(r"(?<=[.!?])\s+", metin) if s.strip()])
+    nokta = max(madde_sayisi, cumle_sayisi)
+    if nokta < ORTUSME_MIN_NOKTA:
+        return (f"DAVAYA-BAĞ (ÖRTÜŞME) yalnız ~{nokta} somut nokta içeriyor gibi görünüyor "
+                f"(önerilen ≥{ORTUSME_MIN_NOKTA}) — yüzeysel/tek-cümlelik örtüşme beyanı "
+                "hukuken zayıf sayılabilir (bloklamaz; avukat gözü karar verir).")
+    return None
 
 
 def taslaktaki_atiflari_bul(metin):
@@ -384,7 +523,7 @@ def _celisen_damga_uyarisi(adaylar):
     )
 
 
-def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
+def _atif_denetle(atif, kayitlar, kok, dokum_dizin, kutuk_yolu=None):
     """Bir dilekçe atfı için tüm denetimi yürütür.
     Döndürür: (durum: 'OK'|'BLOK', engeller: [str], uyarilar: [str], kayit veya None)."""
     esas_karar_eslesen = _esas_karar_eslesenler(atif, kayitlar)
@@ -425,6 +564,29 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
     # gölgelenmez.
     celisen_uyari = _celisen_damga_uyarisi(adaylar)
 
+    # v0.5.5 SON SINAV DÜZELTMESİ (m.6 kaçağı): çelişki, damganın "girebilir"
+    # (LEHE / ALEYHE-AYIRT) ve "giremez" (ALEYHE / NOTR) SINIFLARI ARASINDAYSA
+    # yalnız UYARI yetmez — script aşağıdaki döngüde temiz olan (lehe) adayı
+    # seçip [OK] verir ve ALEYHE ikizi sessizce gölgelenir; salt-ALEYHE bir
+    # karar dilekçeye lehe kılığında girer. Bu, m.6'nın doğrudan ihlalidir →
+    # ENGEL. Çözüm yolu kapalı değil: yanlış kayıt --damga-degistir ile
+    # GEÇERSİZ-KILINDI damgası alınca aday havuzundan düşer ve engel kalkar.
+    # (Aynı sınıf içi çelişki — ör. LEHE ↔ ALEYHE-AYIRT — engel DEĞİL, uyarı
+    # kalır: ikisi de dış çıktıya girebilen damgalardır.)
+    _GIREMEZ = {"ALEYHE", "NOTR"}
+    _GIREBILIR = {"LEHE", "ALEYHE-AYIRT"}
+    _damgalar = {k.damga for k in adaylar if k.damga}
+    if celisen_uyari and (_damgalar & _GIREMEZ) and (_damgalar & _GIREBILIR):
+        return ("BLOK",
+                ["ÇELİŞEN DAMGA — aynı karara ait kayıtlardan biri dış çıktıya "
+                 "GİREMEZ sınıfında (" + ", ".join(sorted(_damgalar & _GIREMEZ)) +
+                 "), diğeri girebilir sınıfında (" +
+                 ", ".join(sorted(_damgalar & _GIREBILIR)) + "). Lehe olan "
+                 "sessizce seçilemez (anayasa m.6). Çelişkiyi çözün: isabetsiz "
+                 "kaydı `oa_hafiza.py teyit --damga-degistir <gerekçe>` ile "
+                 "GEÇERSİZ-KILINDI hâline getirin."],
+                [celisen_uyari], adaylar[0])
+
     # Birden çok aday varsa: TAM temiz (engelsiz) olan varsa onu kullan;
     # yoksa raporlama için İLK adayı esas al (deterministik).
     en_iyi = None
@@ -434,13 +596,21 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
         engeller += kaynak_izi_denetle(kayit, kok, dokum_dizin)
         damga_engel, damga_uyari = damga_denetle(kayit)
         engeller += damga_engel
+        engeller += kutuk_son_damga_engeli(kayit, kutuk_yolu)
+        engeller += kutuk_dayanagi_denetle(kayit, kutuk_yolu)
+        ortusme_uyari = ortusme_zenginligi_uyarisi(kayit)
         if not engeller:
             uyarilar = list(damga_uyari)
             if celisen_uyari:
                 uyarilar.append(celisen_uyari)
+            if ortusme_uyari:
+                uyarilar.append(ortusme_uyari)
             return ("OK", [], uyarilar, kayit)
         if en_iyi is None:
-            en_iyi, en_iyi_engeller, en_iyi_uyarilar = kayit, engeller, damga_uyari
+            en_iyi_uyarilar_ilk = list(damga_uyari)
+            if ortusme_uyari:
+                en_iyi_uyarilar_ilk.append(ortusme_uyari)
+            en_iyi, en_iyi_engeller, en_iyi_uyarilar = kayit, engeller, en_iyi_uyarilar_ilk
 
     en_iyi_uyarilar = list(en_iyi_uyarilar or [])
     if celisen_uyari:
@@ -449,7 +619,7 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin):
 
 
 def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk_bos_mu,
-              tip=None):
+              tip=None, gecersiz_sayisi=0, kutuk_kullanimda_mi=True):
     print("=" * 72)
     print("İÇTİHAT MUHAKEME DENETİMİ — oa-kontrol (deterministik, YAPISAL)")
     print("=" * 72)
@@ -460,6 +630,23 @@ def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk
         print(f"[BİLGİ] Muhakeme kayıtları dizini boş/yok ({muhakeme_dizin}) — "
               "hiçbir *ictihat-muhakeme*.md kaydı yüklenemedi; aşağıdaki atıflar "
               "bu yüzden 'çıplak' görünüyor olabilir.")
+    # DÜZELTME (v0.5.5 düzeltme turu — Ş2, ÖNEMLİ, SESSİZ FAIL-OPEN
+    # GÖRÜNÜRLÜĞÜ): `kutuk_dayanagi_denetle` (HAYALET MUHAKEME kütük dayanağı
+    # denetimi) kütük bu kökte fiilen kullanılmıyorsa (`kutuk_gercek_veri_
+    # var_mi` False — taze kök / kütüksüz 'derin yol') SESSİZCE atlanır
+    # (geriye uyum, bit düzeyinde korunur). Ama bu atlama artık GÖRÜNMEZ
+    # DEĞİL — 'sessiz atlama yasağı' invaryantı gereği avukat, bu koşuda en
+    # kritik hayalet-muhakeme denetiminin HİÇ ÇALIŞMADIĞINI burada görür
+    # (bloklamaz — yalnız görünürlük).
+    if not kutuk_kullanimda_mi:
+        print("[BİLGİ] Künye teyit kütüğü bu kökte fiilen kullanılmıyor — HAYALET "
+              "MUHAKEME denetimi (kütük dayanağı) bu koşuda ÇALIŞMADI; muhakeme "
+              "kayıtlarının teyit dayanağı MEKANİK olarak doğrulanmamıştır.")
+    if gecersiz_sayisi:
+        print(f"[BİLGİ] {gecersiz_sayisi} hükümsüz kılınmış (**GEÇERSİZ-KILINDI:**) "
+              "muhakeme kaydı aday havuzundan ATLANDI (gerekçe: `--damga-degistir` ile "
+              "bilinçli DAMGA değişiminde eski bölüm hükümsüz kılınmıştır — dosyada "
+              "SİLİNMEDEN durur ama artık bir atfı 'muhakeme edilmiş' saymaz).")
 
     print("\n" + "-" * 72)
     print("[G1] EMSAL İÇTİHAT TARAMASI" + (f" (tip: {tip})" if tip else ""))
@@ -528,6 +715,11 @@ def main():
                      help="Ham MCP döküm dizini — KAYNAK-IZI'nin doğrulandığı yer "
                           f"(varsayılan: --kok yoksa {VARSAYILAN_DOKUM}, "
                           f"varsa <KOK>/{VARSAYILAN_DOKUM})")
+    ap.add_argument("--kutuk-yol", default=None,
+                     help="Künye teyit kütüğü — P0-2 DAMGA çapraz kontrolü için "
+                          f"(varsayılan: --kok yoksa {VARSAYILAN_KUTUK}, "
+                          f"varsa <KOK>/{VARSAYILAN_KUTUK}); kütük yoksa/künye kütükte "
+                          "yoksa denetim SESSİZCE atlanır (fail-open — geriye uyum)")
     ap.add_argument("--tip", default=None,
                      help="(opsiyonel, M3-2/R6) dilekce_denetim.py --tip değeri; "
                           "yalnız G1 (emsal içtihat yokluğu) uyarısının 'esaslı' "
@@ -545,17 +737,21 @@ def main():
         os.path.join(args.kok, VARSAYILAN_MUHAKEME) if args.kok else VARSAYILAN_MUHAKEME)
     dokum_dizin = args.dokum_dizin if args.dokum_dizin is not None else (
         os.path.join(args.kok, VARSAYILAN_DOKUM) if args.kok else VARSAYILAN_DOKUM)
+    kutuk_yolu = args.kutuk_yol if args.kutuk_yol is not None else (
+        os.path.join(args.kok, VARSAYILAN_KUTUK) if args.kok else VARSAYILAN_KUTUK)
 
     with open(args.taslak, encoding="utf-8", errors="replace") as f:
         metin = f.read()
 
     atiflar = taslaktaki_atiflari_bul(metin)
-    kayitlar = muhakeme_kayitlarini_yukle(muhakeme_dizin)
+    kayitlar, gecersiz_sayisi = muhakeme_kayitlarini_yukle(muhakeme_dizin)
 
-    sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin) for a in atiflar]
+    sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin, kutuk_yolu) for a in atiflar]
 
     engel_var = rapor_yaz(args.taslak, atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
-                           kutuk_bos_mu=not kayitlar, tip=args.tip)
+                           kutuk_bos_mu=not kayitlar and not gecersiz_sayisi, tip=args.tip,
+                           gecersiz_sayisi=gecersiz_sayisi,
+                           kutuk_kullanimda_mi=ko.kutuk_gercek_veri_var_mi(kutuk_yolu))
 
     sys.exit(1 if engel_var else 0)
 

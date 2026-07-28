@@ -62,6 +62,12 @@ ZORUNLU TAM TUR **derinlik** kuralıdır (tümü incelenir, muhakeme doğru kuru
 - **"ARTIMLI MOD: KISMİ"** (bekleyen delta var, exit 3) → yalnız `--brif`'in listelediği yeni/değişen evrak tek tek işlenir; kalan evrak yine dosya-analiz.md'den devralınır; sonuç `--ekle` ile günlüğe, `--kaydet` ile snapshot'a işlenir.
 - **"ARTIMLI MOD: KAPALI"** (tam tur hiç yok/TAMAM değil/Gate G geçmedi/künye bayat, exit 3/1) → ZORUNLU TAM TUR normal işler; bu KAPI istisnasızlık kuralını GEVŞETMEZ.
 
+## DAVA TEZİ ve PAS PROTOKOLÜ (M1, Paket D — v0.5.5)
+
+**DAVA TEZİ:** `dosya-analiz.md`'nin İLK bölümü (bölüm 0-Künye'den ÖNCE, kendi `<!-- oa:bolum:TEZ -->` ayracıyla) müvekkilin bu dosyadaki hukuki tezinin **tek paragraflık** özetidir — `tam_tur.py --tez "<metin>" [--tez-gerekce "..."]` ile yazılır. Mevcut bir tez FARKLI bir metinle değiştiriliyorsa `--tez-gerekce` (≥20 karakter) **ZORUNLUDUR**; her gerçek değişiklik kalıcı bir günlükte (`tez_gecmisi`) tutulur ve md'de görünür kalır — sessiz tez kayması (bir pasın diğerinin kurduğu tezi fark ettirmeden değiştirmesi) bu şekilde engellenir. `tam_tur.py --durum` ve `--brif` çıktılarının İLK satırı güncel TEZ'i gösterir.
+
+**PAS PROTOKOLÜ:** Her adımın `_oa/cikti/NN-*.md` çıktısı bir **PAS** kabul edilir. Bir pas UYGULANDI işlenirken `pipeline_kayit.py --isle ... --pas-yolu "_oa/cikti/NN-..."` ile defterin `pas_yolu` alanına kaydedilir (`--goster` çıktısında `[PAS: ...]` olarak görünür). `oa_hafiza.py ajan-brif`, bir SONRAKİ parçaya bu brifi verirken: (1) güncel TEZ'i EN BAŞTA gösterir, (2) defterdeki EN SON `pas_yolu`nun TAM içeriğini (özetlenmeden, kayıpsız) "ÖNCEKİ PAS" olarak **1. sıradan** enjekte eder, (3) KURALLAR bloğunda bu pasın kendi çıktısının **İLK SATIRINDA** `TEZ: <güncel tez>` taşıması gerektiğini hatırlatır — her pasın başında TEZ referansı, dosyanın hangi tez etrafında ilerlediğinin her adımda görünür kalmasını sağlar.
+
 ## FİZİKSEL İŞLETİM PROTOKOLÜ — çağrı + kanıt + defter (kurucu kural)
 
 "İşletmek" bir niyet beyanı değildir; üç fiziksel eylemin toplamıdır. Bir parça yalnızca şu kanıtlardan en az biriyle "çalıştı" sayılır:
@@ -193,7 +199,20 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
                  tek ve yetkili ölçütü `teslim_paketi.py`'nin **exit kodudur**
                  (0 = TESLİM VAR, ≠0 = TESLİM YOK); alt kapılar (kunye_teyit +
                  ictihat_muhakeme_denetim + dilekce_denetim + defter --denetle)
-                 bu tek script'in içinde sabit sırada zaten koşar
+                 bu tek script'in içinde sabit sırada zaten koşar.
+                 **TESLİM MAKBUZU (P0-5, v0.5.5):** her koşu `_oa/defter/
+                 teslim-makbuz.json` (başarı) ya da `teslim-makbuz-RED.json`
+                 (başarısız deneme — İZLİDİR, kaybolmaz) ATOMİK yazar; kapı
+                 başına durum ENUM'u {OK,BLOK,ATLA,BILGI} — "script bulunamadı"
+                 artık FAIL-CLOSED'dır (BLOK ile EŞDEĞER, sessizce atlanmaz).
+                 `pipeline_kayit.py`'nin adım-9 önkoşul kapısı (P0-6) VE
+                 `--denetle`'nin makbuz bütünlük denetimi bu dosyayı okur
+                 (taslak sha256 eşleşmesi dahil — teslim sonrası dosya sessizce
+                 değişemez). Varsayılan çıktı UDF'dir; `--udf-yok` ile BİLİNÇLİ
+                 atlanabilir (tercih makbuza yazılır). `(a)` çağrısına BİLİNÇLİ
+                 olarak `--ictihat-muhakeme` GEÇİLMEZ — İçtihat Muhakeme
+                 Zinciri TEK yetkili yol olarak yalnız `(b2)`'de çalışır (çift-
+                 [F] tekilleştirme).
 10. KAPANIŞ    → oa-usta tetiği (aynı iş tipi ~3. kez tekrarlandıysa skill'e damıtma
                  önerisi) + KAPANIŞ RİTÜELİ (devir notu, süre flag'leri, bekleyen karar)
                  + `python scripts/oa_metrik.py --kok .` (token/verimlilik telemetrisi —
@@ -207,6 +226,15 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
                  Bu adım oa-usta'nın asıl öğrenme kaynağıdır: Başbakan akışını gözleyip
                  kimliksiz ders/örüntü damıtır (dosya sonuçlanınca: hangi argüman tuttu,
                  mahkeme neye takıldı, ne yapılsaydı daha iyi olurdu).
+                 **[7] REGRESYON SAYAÇLARI (P1-13, v0.5.5):** aynı çağrı adım-artefakt
+                 varlık matrisini (04/05/06/07), teyit kütüğü satırlarının araç-sınıfına
+                 göre dağılımını (ictihat-arama/ictihat-getir/mevzuat/diğer),
+                 `_oa/teyit/dokum/` dosya sayısını ve muhakeme kaydı sayısını basar —
+                 "regresyon kapandı" iddiası bu sayılarla ÖLÇÜLÜR, beyanla değil.
+                 `--baz-yaz <yol>` bu ölçümü BAZ ÇİZGİSİ olarak dondurur; `--baz <yol>`
+                 önceki bir baza karşı EŞİKSİZ (yalnız GÖZLENEN, engel olmayan) bir
+                 token/sayaç kıyas raporu üretir; ±%30 üzeri değişen alan(lar) yalnız
+                 v0.5.6 gündemine (backlog) girer notuyla işaretlenir.
 ```
 
 **CEZA DALI (kimlik katmanı — hat ceza dosyasıysa):** Dosya bir ceza soruşturması/kovuşturması/kanun yoluysa, hattın üzerine ceza kimliği biner ve ilgili parça baştan devrededir: sanık/şüpheli müdafiliğinde **`oa-mudafii`** (savunma duruşu: masumiyet karinesi, şüpheden sanık yararlanır, suç unsurları denetimi, delil yasakları, kanun yolu süresi), müşteki/mağdur vekilliğinde **`oa-musteki-vekili`** (iddia duruşu: suç unsuru inşası + delile eşleme, etkili soruşturma, şikâyet süresi/zamanaşımı, KYOK'a itiraz). Bu parça, MANİFEST→...→KAPANIŞ hattını ceza merceğiyle yürütür; oa-usul/oa-sure/oa-ictihat/oa-vakia/oa-dilekce'yi ceza usulü (CMK) ekseninde çağırır. Suç duyurusu/şikâyet dilekçesi `oa-musteki-vekili` + `oa-dilekce` ile yapılır.
@@ -230,6 +258,11 @@ ALIM'da graf doğarken usul düğümleri etiketlenir; oa-usul tespitleri grafı 
 (bulut MCP sorguları, Gemini'ye giden antitez metni, takvim/hatırlatıcıya yazılan
 süre kaydı, e-posta/Drive) **`oa-gizlilik`** süzgecinden geçer — müvekkil verisi,
 TC/esas no, sağlık/ceza verisi ve UYAP/e-imza desenleri dışarı çıkmadan taranır.
+`oa_hafiza.py teyit --sorgu`'daki ucuz desen taraması (TCKN/ad-soyad/mahkeme+esas/IBAN)
+bunun YERİNE geçmez: bu tarama **KAYIT-ZAMANLI** (MCP çağrısı ZATEN yapılmıştır) ve
+sezgiseldir (regex tabanlı — kurumsal/gündelik hukuk terimlerinde yanlış-pozitif,
+alışılmadık ad-soyad biçimlerinde yanlış-negatif verebilir); bir **tripwire**'dır,
+`oa-gizlilik`'in ÇAĞRI-ÖNCESİ mekanik garantörlüğünün yerine geçen bir kapı değildir.
 
 **Aktarım kuralı:** Her adımın çıktısı sonrakine girdi olur. Kritik: 3. adımda
 (araştırma) toplanan her künye, sonraki adımlarda kullanılan künyelerle aynı olmalı —
@@ -257,6 +290,45 @@ statüler yalnız kanıtla yazılabilir); insan-okur görünüm `_oa/defter/pipe
 (`references/pipeline-durum-sablonu.md`). Uzun/çok oturumlu dosyada her oturum `_oa/dosya.md`
 + son oturum notu + bu defterden devralınır: hangi adımlar bitti, hangi kanıt üretildi,
 hangi kavşakta avukat onayı bekleniyor. Script yokluğunda defter md olarak elden tutulur (ELDEN MOD) — bu durum işin başında VE teslim özetinde açıkça beyan edilir.
+
+## Önkoşul-artefakt kapısı (P0-6, v0.5.5)
+`pipeline_kayit.py --isle`, bir (adım,parça) UYGULANDI yazılmadan ÖNCE diskteki
+fiziksel artefaktı sorgular (GEREKSIZ/BILGI-EKSIK/YUKLENEMEDI gerekçeli
+serbesttir). **İNGEST-ÖNCE:** adım 1+ UYGULANDI, `_oa/metin/00-kunye.json`
+diskte yoksa yazılamaz. **BLOKLEYİCİ** (ucuz-artefaktlı): adım-5/oa-kiyas
+(`_oa/cikti/05-kiyas*` VE `*ictihat-muhakeme*` BİRLİKTE, min gövde eşiği —
+biri tek başına yetmez), adım-9/oa-kontrol (`teslim-makbuz.json`, bkz. yukarı).
+**UYARI** (bloklamaz, yalnız görünür satır): adım-3/oa-ictihat, adım-4/oa-vakia,
+adım-6/oa-strateji, adım-7/oa-antitez. **`--serh "<gerekçe ≥30 kr>"`** her
+blokta (İNGEST-ÖNCE dahil) GEREKÇELİ geçiş sağlar — olay `serh:true` ile
+İŞLENİR, `--goster`/`--denetle` bunu HER ZAMAN `⚠ ŞERHLİ UYGULANDI` ile basar
+(sessiz geçiş yok).
+
+**Önkoşul-artefakt tablosu (P1-11 doktrin senkronu — kod ile senkron tutulur,
+bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
+
+| Adım | Parça | Aranan artefakt | Kademe |
+|---|---|---|---|
+| 1+ (İNGEST-ÖNCE) | (tümü) | `_oa/metin/00-kunye.json` | **BLOKLEYICI** |
+| adım-3 | oa-ictihat | `_oa/teyit/kunye-teyit.md` (satır) VEYA `_oa/teyit/dokum/` (dolu) | UYARI |
+| adım-4 | oa-vakia | `_oa/cikti/04-vakia*` | UYARI |
+| adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE) | **BLOKLEYICI** |
+| adım-6 | oa-strateji | `_oa/cikti/06-strateji*` | UYARI |
+| adım-7 | oa-antitez | `_oa/cikti/07-antitez*` | UYARI |
+| adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** |
+
+## Model-bağımsız tetik (P0-7) + DURUM.md (P0-8, v0.5.5)
+Plugin `hooks/hooks.json`'daki Stop/SessionEnd hook'u oturum kapanışında
+`pipeline_kayit.py --hook-denetle` çalıştırır — zincirin ucu artık modelin
+gönüllü çağrısına bağlı değildir. `_oa/defter` yoksa sessizce `exit 0`; varsa
+denetim + `oa_metrik` özetini basar (in-process, subprocess YOK) ve ASLA
+bloklamaz. Aynı yazar (`pipeline_kayit.py`), HER olayda (`--baslat`/`--isle`/
+`--katman`/`--denetle`/hook) `_oa/DURUM.md`'yi ATOMİK türetir — "elle
+düzenlenmez" damgalı: adım tablosu, kapı durumu (Gate G + TESLİM MAKBUZU +
+araç hataları), kütük-vs-dilekçe künye sayacı, sözleşme-dışı dizin + bayat
+working-memory uyarıları, AVUKAT KARARI BEKLEYEN, SIRADAKİ.
+
+**AVUKAT KARARI — çözüm komutu (M7, Paket D — v0.5.5):** AVUKAT KARARI BEKLEYEN yalnız GÖSTERİR; bir çatalı KAPATMAK için `pipeline_kayit.py --avukat-karari "<seçilen seçenek/karar metni>" (--adim N --parca oa-x | --katman oa-x) --gerekce "<neden bu seçenek seçildi>"` kullanılır — gerekçesiz kayıt REDDEDİLİR (çatallar gerekçeli seçeneklerle listelenir doktrini: seçim keyfi değil, gerekçeli olmalı). Kayıt append-only'dir (eski BEKLEYEN izi kaybolmaz); DURUM.md'de ayrı bir "Avukat Kararları (Kayıtlı)" bölümünde kalıcı görünür, çözülen çatal artık BEKLEYEN listesinde GÖRÜNMEZ.
 
 ## Anayasal süzgeç
 Pipeline akışı yürütür; **her adımın çıktısı karar materyalidir, karar değildir.**

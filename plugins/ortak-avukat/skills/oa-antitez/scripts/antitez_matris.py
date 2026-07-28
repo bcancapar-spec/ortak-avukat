@@ -20,6 +20,15 @@ Hukuki muhakemeyi sen yaparsın; künyeyi oa-ictihat (Yargı/Mevzuat MCP) doğru
 Kullanım:
   python antitez_matris.py --iskelet                 # cepheler + boş şablon
   python antitez_matris.py --dogrula matris.json      # doldurulmuş matrisi denetle
+
+M3 (Paket D, v0.5.5) — DUYULMUŞ alanı: her cephe kaydı artık bir `duyulmus`
+(bool) taşır — karşı taraf bu antitezi FİİLEN ileri sürdü mü (cevap dilekçesi/
+karar gerekçesi/dosyadaki bir belgede)? `False` (varsayılan) = hipotetik/dahili
+antitez (dilekçeye GİRMEZ, cephanelikte kalır); `True` = duyulmuş antitez
+(dilekçede çürütmesiyle karşılanabilir — bkz. oa-dilekce "Çıplak künye yasağı"
+ile aynı dış/iç ayrımı). `oa-dilekce/scripts/dilekce_denetim.py`'nin [G] ANTİTEZ-
+CEVAP-ÇAPASI advisory kapısı `duyulmus_curutmeler()`'i çağırıp duyulmuş+çürütülmüş
+her cephenin dilekçede bir karşılığı (çapa) var mı diye BAKAR (bloklamaz).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -68,6 +77,7 @@ def iskelet():
                 "curutme_dayanak": "Çürütmenin içtihat/mevzuat künyesi veya boş",
                 "dayanak_durum": "teyitli|teyitsiz|yok",
                 "artik_risk": "Çürütülemeyen kalıntı risk (varsa) — dürüstçe yaz",
+                "duyulmus": False,
             }
             for k in STANDART_CEPHELER
         ],
@@ -158,6 +168,26 @@ def dogrula(path):
         print(">>> Matris bütünlüğü EKSİK: yukarıdaki kör noktalar/eksikler kapatılmadan")
         print("    dosya 'durum farkındalığı tam' sayılmaz. <<<")
     print("=" * 70)
+
+
+def duyulmus_curutmeler(m):
+    """M3 (Paket D, v0.5.5) — matristeki cephelerden `duyulmus: true` VE dolu
+    `curutme` taşıyanları döndürür: `[{"cephe": ..., "curutme": ...}, ...]`.
+    Bunlar dilekçede karşılanMASI beklenen (dış çıktıya girebilecek) tek
+    antitez sınıfıdır; `dilekce_denetim.py`'nin [G] advisory kapısı bunu
+    çağırır. Şema hatalı/`m` beklenmedik biçimliyse boş liste döner (fail-
+    safe — bu bir ADVISORY girdisidir, hiçbir zaman çökmez)."""
+    try:
+        cepheler = m.get("cepheler", []) if isinstance(m, dict) else []
+    except Exception:
+        return []
+    sonuc = []
+    for c in cepheler:
+        if not isinstance(c, dict):
+            continue
+        if c.get("duyulmus") and (c.get("curutme") or "").strip():
+            sonuc.append({"cephe": c.get("cephe"), "curutme": c["curutme"].strip()})
+    return sonuc
 
 
 def main():

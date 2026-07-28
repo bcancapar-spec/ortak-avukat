@@ -163,6 +163,25 @@ def test_durum_kaydet_sonrasi_mekanik_tamamlandi(tmp_path, capsys):
     assert "Analiz kaydı" in cikti and "tamamlandi" in cikti
 
 
+def test_durum_sozlesme_disi_dizin_gorunur(tmp_path, capsys):
+    """P1-9(b) KUCUK-DÜZELTME (sinav bulgusu) — `tam_tur.py --durum` da
+    `pipeline_kayit.py --denetle/--goster` ile AYNI sözleşme-dışı dizin
+    (gölge hat) bekçisini basar (advisory; exit kodunu değiştirmez)."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_kaydet(str(tmp_path)) == 0
+
+    (tmp_path / "_oa" / "hizli").mkdir()
+
+    capsys.readouterr()
+    kod = tt.cmd_durum(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 0
+    assert "SÖZLEŞME-DIŞI DİZİN" in cikti
+    assert "_oa/hizli" in cikti
+
+
 def test_durum_analiz_md_silinirse_mekanik_tamamlanmadi(tmp_path, capsys):
     """durum.json 'TAMAM' + delta temiz görünse bile dosya-analiz.md fiziken
     SİLİNMİŞSE, --durum bunu MODEL BEYANINA değil DİSKE bakarak yakalamalı.
@@ -249,7 +268,8 @@ def test_zorla_ile_yutma_serh_dusulerek_gecer(tmp_path):
     assert tt.cmd_kaydet(str(tmp_path)) == 0
 
     _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v2")}])
-    kod = tt.cmd_kaydet(str(tmp_path), zorla=True)
+    kod = tt.cmd_kaydet(str(tmp_path), zorla=True,
+                         zorla_gerekce="Test: bilinçli olarak yutma engeli zorlanıyor (>=30 kr).")
     assert kod == 0
     analiz_md = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
     assert "ŞERH" in analiz_md
@@ -496,7 +516,8 @@ def test_serh_tarihcesi_senkron_sonrasi_da_kaybolmaz(tmp_path):
     tt.cmd_baslat(str(tmp_path), "Test Dosyası")
     assert tt.cmd_kaydet(str(tmp_path)) == 0
     _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v2")}])
-    assert tt.cmd_kaydet(str(tmp_path), zorla=True) == 0
+    assert tt.cmd_kaydet(str(tmp_path), zorla=True,
+                          zorla_gerekce="Test: senkron-sonrası kalıcılık için bilinçli zorlama.") == 0
 
     assert tt.cmd_senkron(str(tmp_path)) == 0
     icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
@@ -532,3 +553,127 @@ def test_tamam_isaretci_yalniz_son_satirda_ve_notrleme(tmp_path):
     assert tt._tamam_isaretci_var_mi("iskelet\n") is False         # marker yok → değil
     notr = tt._marker_etkisizlestir(f"muhakeme\n{m}")
     assert tt._tamam_isaretci_var_mi(notr + "\n") is False and "muhakeme" in notr
+
+
+# ── P0-4 DÜZELTME — import çökerse istisna metni GÖRÜNÜR kalmalı ──────────
+# Eski subprocess yolu istisnayı `({e})` ile raporluyordu; in-process
+# sarmalayıcı `except Exception: return None` ile bunu YUTUYOR ve çağıran
+# yalnız 'pipeline_kayit.py import edilemedi — defter kapısı atlandı' basıyordu
+# (tanı gücü azaldı). Bu test `_pipeline_kayit_modulu()`'nun import HATASINI
+# kaybetmeden çıktıya bastığını doğrular (bkz. aynı desen: test_gate_g_dongu.py).
+
+def test_pipeline_kayit_modulu_import_hatasi_metni_kaybetmez(monkeypatch, capsys):
+    class _SahteHata(RuntimeError):
+        pass
+
+    def _patlayan_exec_module(mod):
+        raise _SahteHata("kasıtlı-test-çöküşü")
+
+    class _SahteLoader:
+        create_module = staticmethod(lambda spec: None)
+        exec_module = staticmethod(_patlayan_exec_module)
+
+    gercek_spec_from_file = tt.importlib.util.spec_from_file_location
+
+    def _sahte_spec(*a, **kw):
+        spec = gercek_spec_from_file(*a, **kw)
+        spec.loader = _SahteLoader()
+        return spec
+
+    monkeypatch.setattr(tt, "_PIPELINE_KAYIT_MOD", None)
+    monkeypatch.setattr(tt.importlib.util, "spec_from_file_location", _sahte_spec)
+
+    sonuc = tt._pipeline_kayit_modulu()
+    assert sonuc is None
+
+    cikti = capsys.readouterr().out
+    assert "kasıtlı-test-çöküşü" in cikti, (
+        "P0-4 REGRESYONU — import istisnasının metni ÇAĞIRANA taşınmıyor "
+        f"(sessizce yutuluyor):\n{cikti}"
+    )
+
+
+# ── M1 (Paket D, v0.5.5) — DAVA TEZİ ────────────────────────────────────────
+
+def test_tez_ilk_kez_kaydedilir_ve_render_edilir(tmp_path):
+    """`--tez` ile ilk kez tez yazılır (gerekçe gerekmez); `--senkron` sonrası
+    dosya-analiz.md'nin İLK bölümü (kendi TEZ marker'ı) bu metni taşır."""
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_tez(str(tmp_path), "Müvekkilin alacağı muaccel, ödeme yapılmadı.", None) == 0
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert tt._TEZ_MARKER in icerik
+    assert "Müvekkilin alacağı muaccel, ödeme yapılmadı." in icerik
+    # TEZ bölümü Künye bölümünden (bölüm 0) ÖNCE gelir.
+    assert icerik.index(tt._TEZ_MARKER) < icerik.index(tt._bolum_marker(0))
+
+
+def test_tez_bos_ise_reddedilir(tmp_path):
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_tez(str(tmp_path), "   ", None) == 1
+
+
+def test_tez_degisikligi_gerekcesiz_reddedilir(tmp_path):
+    """Mevcut bir TEZ farklı bir metinle DEĞİŞTİRİLİYORSA gerekçe ZORUNLUDUR —
+    sessiz tez kayması engellenir."""
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_tez(str(tmp_path), "İlk tez.", None) == 0
+    assert tt.cmd_tez(str(tmp_path), "Yepyeni farklı tez.", None) == 1
+    durum = tt._durum_oku(str(tmp_path))
+    assert durum["tez"] == "İlk tez.", "gerekçesiz değişiklik REDDEDİLMELİYDİ ama tez değişmiş"
+
+
+def test_tez_degisikligi_yeterli_gerekceyle_kabul_edilir_ve_loglanir(tmp_path):
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_tez(str(tmp_path), "İlk tez.", None) == 0
+    gerekce = "Yeni delil (banka dekontu) tezi kökten değiştirdi."
+    assert len(gerekce) >= tt.TEZ_GEREKCE_MIN
+    assert tt.cmd_tez(str(tmp_path), "İkinci ve nihai tez.", gerekce) == 0
+
+    durum = tt._durum_oku(str(tmp_path))
+    assert durum["tez"] == "İkinci ve nihai tez."
+    gecmis = durum.get("tez_gecmisi") or []
+    assert any(k.get("eski") == "İlk tez." and k.get("yeni") == "İkinci ve nihai tez."
+               and k.get("gerekce") == gerekce for k in gecmis)
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    icerik = (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").read_text(encoding="utf-8")
+    assert "İkinci ve nihai tez." in icerik
+    assert "tez değişikliği günlüğü".upper()[:1] in icerik or "günlüğü" in icerik.lower()
+    assert gerekce in icerik
+
+
+def test_tez_gorunmeyen_iskelet_kendini_onarirken_tez_marker_ekler(tmp_path, capsys):
+    """`_TEZ_MARKER` `_iskelet_saglam_mi`'nin bir parçasıdır — eski/bozuk bir
+    dosya-analiz.md (TEZ bölümü YOK) 'bozuk' sayılır ve kendini-onarma bunu
+    da içeren tam iskeleti yeniden kurar."""
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    analiz_md = tmp_path / "_oa" / "analiz" / "dosya-analiz.md"
+    icerik_eski = analiz_md.read_text(encoding="utf-8").replace(tt._TEZ_MARKER, "")
+    icerik_eski = icerik_eski.replace("## TEZ\n\n", "")
+    analiz_md.write_text(icerik_eski, encoding="utf-8")
+    assert not tt._iskelet_saglam_mi(icerik_eski)
+
+    kod = tt.cmd_senkron(str(tmp_path))
+    assert kod == 0
+    yeni_icerik = analiz_md.read_text(encoding="utf-8")
+    assert tt._TEZ_MARKER in yeni_icerik
+    assert tt._iskelet_saglam_mi(yeni_icerik)
+
+
+def test_durum_ve_brif_tez_satirini_gosterir(tmp_path, capsys):
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    assert tt.cmd_tez(str(tmp_path), "Davalı temerrüde düşürülmüştür.", None) == 0
+
+    capsys.readouterr()
+    tt.cmd_durum(str(tmp_path))
+    cikti_durum = capsys.readouterr().out
+    assert "TEZ" in cikti_durum and "Davalı temerrüde düşürülmüştür." in cikti_durum
+
+    capsys.readouterr()
+    tt.cmd_brif(str(tmp_path))
+    cikti_brif = capsys.readouterr().out
+    assert "TEZ" in cikti_brif and "Davalı temerrüde düşürülmüştür." in cikti_brif

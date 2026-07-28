@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle"
+          }
+        ]
+      }
+    ]
+  }
+}

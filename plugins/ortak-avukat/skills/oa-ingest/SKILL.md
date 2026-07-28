@@ -25,7 +25,10 @@ python scripts/oa_ingest.py                            # argümansız = BULUNDU�
 python scripts/oa_ingest.py "<klasor>" --ocr auto|zorla|kapali
 python scripts/oa_ingest.py "<klasor>" --yeniden       # önbelleği yok say, hepsini yeniden çıkar
 python scripts/oa_ingest.py "<klasor>" --isci 8        # açık paralellik (0=oto varsayılan, 1=seri)
+python scripts/oa_ingest.py "<klasor>" --onbakis 5      # P1-9(a): MEŞRU HIZLI KANAL, bkz. aşağı
 ```
+
+**`--onbakis N` (P1-9a — meşru hızlı kanal, AYRI artefakt):** yalnız ilk N evrağı (`--onbakis-secim REGEX` ile önceliklendirilebilir) işler ve **ana hatta HİÇ karışmayan** `_oa/metin-onbakis/` dizinine yazar (`00-kunye.onbakis.json` + `00-INDEX.onbakis.md`); ana `_oa/metin/00-kunye.json`/`00-INDEX.md`/önbelleğe **tek bayt dokunmaz** — bayraksız TAM koşu byte-özdeş kalır. Çıkış kodu **4** (kısmi-tamam — "ONBAKIS: N/M — TAM DEĞİL"). Bu artefakt pipeline'ı **hiçbir adımda** yetkilendirmez: `pipeline_kayit.py`'nin İNGEST-ÖNCE kapısı yalnız `_oa/metin/00-kunye.json`'a (TAM koşu) bakar, `--onbakis` çıktısı bu dosyayı üretmediği için adım 1+ hâlâ blokludur — "TAM DEĞİL" damgası ayrı dosya adının kendisinde içkindir. `--onbakis` yalnız hızlı bir ilk-bakış/triyaj aracıdır; gerçek analiz için **--onbakis'siz tam koşu şarttır**.
 
 Çıkarım yolları (model kurmaz, script çıkarır): metin PDF→**PyMuPDF** (bedava, kayıpsız) · taranmış PDF→render+**OCR** (⚠) · UDF→content.xml (bedava) · EYP/.zip→aç→içindeki PDF'i aynı hatta ver · TIFF/JPG/PNG→OCR (çok sayfa, ⚠) · DOCX→document.xml (bedava). Bir PDF'in "metin mi tarama mı" olduğu ELLE değil ÖLÇÜMLE (sayfa başına anlamlı karakter eşiği) belirlenir — "gördüm" beyanı değil, ölçüm.
 
@@ -33,16 +36,19 @@ Bağımlılık (Windows-dostu, binary'siz): `pip install pymupdf pillow`. OCR i�
 
 ## Çıktı sözleşmesi (`_oa/metin/`)
 ```
-00-INDEX.md          → parça ÖNCE bunu okur: evrak tablosu (no, ad, tarih, yöntem, ⚠, tür~, karakter, harita, dosya)
-00-kunye.json        → makine-okur künye: her evrak için yöntem + teyit_gerek + karakter + kaynak + buyuk + harita + tur_tahmini
+00-INDEX.md          → parça ÖNCE bunu okur: evrak tablosu (no, ad, tarih, yöntem, ⚠, 🔴, tür~, karakter, harita, dosya)
+00-kunye.json        → makine-okur künye: her evrak için yöntem + teyit_gerek + karakter + kaynak + buyuk + harita + tur_tahmini + ocr_durum
 NNN-<slug>.md        → belge-başına metin; başlıkta kaynak+sayfa+yöntem+tür~, gövdede içerik
 NNN-<slug>.harita.json → yalnız BÜYÜK evrakta (>--buyuk-esik, varsayılan 40.000 kar.): sayfa/bölüm haritası (Gate A)
+gorsel/<evrak>/pNN.png → yalnız OCR-BOŞ kalan sayfa(lar) için (Gate P0-9): görsel-inceleme
 ```
 Sonraki parçalar ham evrağı DEĞİL `00-INDEX.md`'yi okur, sonra yalnız gereken `NNN-*.md`'ye iner; tam pasaj için o `.md` içinde grep'lenir. Büyük evrakta önce `.harita.json`'a bakılır (offset+başlık+karakter/token ile hangi sayfa/bölümün arandığı bulunur), sonra `.md`'ye o offset'ten girilir — tüm gövdeyi baştan okumak GEREKMEZ. Orijinal PDF yalnızca imza/mühür/kroki gibi görüntünün esas olduğu ya da ⚠ künye teyidi gereken durumda açılır.
 
 **Gate A (sayfa/bölüm haritası):** karakter (anlamlı) eşiği aşan her evrak için md YANINA deterministik, KAYIPSIZ bir harita üretilir — özetleme DEĞİL, mevcut `<!-- --- sayfa N --- -->` ayracından (varsa) türetilen saf yapısal bölme (offset + ilk-satır-başlık + karakter/token). Ayraç yoksa (udf/docx/duz-metin gibi) tüm gövde tek 'bölüm' sayılır. `00-INDEX.md`'de 'büyük' özet sayacı + harita linki.
 
 **Gate C (mekanik tür~ tahmini):** dosya adından (İÇERİK OKUMADAN) tebligat/karar/dilekce/bilirkişi/sicil/bilanço vb. bir tür TAHMİN edilir; künyede `tur_tahmini`, INDEX'te daima "<tür> (tahmini)" damgasıyla — advisory, kesinlik DEĞİLDİR; eşleşme yoksa `null` (uydurulmuş varsayılan yasak).
+
+**OCR-NÖBETÇİSİ (P0-9 — saha kanıtı: sessizce boş kalan OCR evrakları, ikisi müvekkil delili):** her OCR sayfası ① boş-eşik (sayfa başına <50 anlamlı karakter) + çöp-skor (alfasayısal oran/tek-karakter kelime oranı) ile denetlenir → ② yetersizse DPI yükselt/PSM değiştir/yönelim çevir sırasıyla DETERMİNİSTİK yeniden denenir → ③ hâlâ çökükse **yalnız o sayfa(lar) için** (hedefli — tüm evrak/tüm evraklar DEĞİL) `_oa/metin/gorsel/<evrak>/pNN.png` görselleri yazılır; künyede `ocr_durum` "OCR-BOŞ → GÖRSEL İNCELEME GEREK" (YÜKLENEMEDİ DEĞİL, işlendi de DEĞİL — üçüncü bir sınıf), `ocr_bos_sayfalar`, `gorsel_klasor`. `00-INDEX.md`'de 🔴 sütunu + özet sayacı (`ocr_bos_evrak`) + ayrı bir "OCR-BOŞ" bölümü; `_oa/DURUM.md` de aynı kayıtları görünür kılar. Sağlıklı evrakta HİÇ görsel üretilmez (dünkü israfın tekrarı yasak).
 
 ## İş akışı (pipeline adım 0)
 1. `manifest_olustur.py <klasor>` → sayım + sınıflandırma (kaç evrak, kaç OCR).

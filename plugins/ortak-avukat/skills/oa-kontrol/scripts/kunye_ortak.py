@@ -35,6 +35,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
+import os
 import re
 
 _YN = r"\d{4}\s*/\s*\d{1,6}"
@@ -212,3 +213,262 @@ def sayi_var(segment, sayi):
     if not sayi:
         return False
     return re.search(r"(?<!\d)" + re.escape(sayi) + r"(?!\d)", segment) is not None
+
+
+# ── P0-3 (v0.5.5) — çok-bölümlü muhakeme dosyası ayrıştırıcı ────────────────
+# `oa_hafiza.py teyit --damga` artık `_oa/cikti/03-ictihat-muhakeme.md`'ye
+# bölüm APPEND eder (bir dosya = N kayıt); eski "bir dosya = bir karar"
+# varsayımı (`ictihat_muhakeme_denetim.py`) buna göre genişler. Ayraç, ALANIN
+# KENDİSİDİR (`**KUNYE:**` satır-başı bold alan) — parser'a YENİ bir sözdizimi
+# (ör. `## KUNYE:` başlığı) EKLENMEZ (tek-yazar kuralı: ikinci regex evreni
+# doğmaz). Eski tek-karar dosyaları (tek `**KUNYE:**`) DEĞİŞMEDEN, tek bölüm
+# olarak okunur (geriye uyum — bit düzeyinde davranış aynı).
+_KUNYE_BOLUM_RE = re.compile(r"^\*\*KUNYE:\*\*", re.M)
+
+
+def bolum_araliklari(metin):
+    """`bolumlere_ayir` ile AYNI ayracı (satır-başı `**KUNYE:**`) kullanarak
+    bölümlerin (başlangıç, bitiş) OFSET çiftlerini döndürür — 0/1 eşleşmede
+    TEK bölüm `[(0, len(metin))]` olarak döner.
+
+    P0-2 DÜZELTME (d, v0.5.5): bir bölümü SURGICAL olarak düzenlemek isteyen
+    çağıranlar (ör. `oa_hafiza.py`'nin DAMGA değişince eski bölüme
+    `**GEÇERSİZ-KILINDI:**` satırı eklemesi) tam metin yerine ofset ister —
+    içerik SİLİNMEZ/YENİDEN YAZILMAZ, yalnız doğru konuma satır eklenir. Ayraç
+    mantığı burada TEK yerde yaşar (tek-yazar kuralı); `bolumlere_ayir` bu
+    fonksiyonun üzerine kurulur, ikinci bir regex evreni açılmaz."""
+    eslesmeler = list(_KUNYE_BOLUM_RE.finditer(metin))
+    if len(eslesmeler) <= 1:
+        return [(0, len(metin))]
+    sinirlar = [m.start() for m in eslesmeler] + [len(metin)]
+    return [(sinirlar[i], sinirlar[i + 1]) for i in range(len(eslesmeler))]
+
+
+def bolumlere_ayir(metin):
+    """Metni (dosya içeriği) `**KUNYE:**` satır-başlarından bağımsız bölümlere
+    ayırır. 0 veya 1 eşleşme varsa TÜM metni TEK bölüm olarak döner (eski
+    tek-karar dosyaları ve gövde metninde geçen serbest 'KUNYE' kelimesi bölüm
+    başlatmaz — regex yalnız satır-başı `**KUNYE:**` ile eşleşir)."""
+    return [metin[a:b] for (a, b) in bolum_araliklari(metin)]
+
+
+_DAMGA_TOKEN_RE = re.compile(r"DAMGA=([A-ZÇĞİÖŞÜa-zçğıöşü-]+)")
+
+
+def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
+    """Künye teyit kütüğündeki (append-only, `| Zaman | Araç | Sorgu | Sonuç |
+    Döküm |` satırları) bir esas/karar (+ opsiyonel `daire`) için SON `DAMGA=`
+    tokenını döndürür; kütük yoksa/okunamazsa/eşleşme yoksa None.
+
+    PAYLAŞIMLI (P0-2 DÜZELTME d, v0.5.5): hem `ictihat_muhakeme_denetim.py`
+    (okuma-zamanı çapraz kontrol — muhakeme bölümü elle değiştirilmiş mi) HEM
+    `oa_hafiza.py` (YAZMA-ÖNCESİ çapraz kontrol — aynı künyeye ikinci bir
+    `teyit --damga` ile SESSİZCE farklı damga vurulması engellenir) bu
+    fonksiyonu çağırır; kütük satır biçimi tek yerde ayrıştırılır (tek-yazar
+    kuralı — iki script arasında sürüklenip ayrışmaz).
+
+    DÜZELTME (v0.5.5 düzeltme turu — DAİRE-KÖR + fail-open bug'ları):
+    - `daire` verilirse VE kütük satırının sonuç hücresinden bir daire
+      çıkarılabiliyorsa (`daire_key`), İKİSİ DE tanınıyorken FARKLIYSA satır
+      eşleşme SAYILMAZ — esas/karar no'ları her dairede yılda sıfırdan
+      başladığından, GERÇEKTEN FARKLI bir dairenin aynı numaralı kararı bu
+      künyenin 'son damgası' sanılmaz (eski daire-kör davranış, MuhakemeKaydi.
+      eslesir'in aynı ilkesiyle simetrik hâle getirilir).
+    - Satırın hücre sayısı beklenen 5-sütun biçimine (tam 6 `|`, split→7
+      eleman) uymuyorsa satır BOZUK sayılıp GÖRÜNÜR bir uyarıyla fail-CLOSED
+      atlanır (eski `len(hucreler) < 5` gevşekliği, kaçmamış bir `|` ile
+      kolon kaymasını SESSİZCE yutuyordu — sessiz atlama yasağı).
+    - `esas` VE `karar` her ikisi de biliniyorsa satırda İKİSİNİN DE dize
+      olarak geçmesi şart koşulur (`esas_var OR karar_var` gevşekliği, yalnız
+      TEK bir sayısı çakışan alakasız bir satırın damgasını 'son damga'
+      sanabiliyordu — fail-open bug)."""
+    if not (esas or karar) or not kutuk_yolu or not os.path.isfile(kutuk_yolu):
+        return None
+    try:
+        with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
+            satirlar = f.readlines()
+    except OSError:
+        return None
+    son_damga = None
+    for satir in satirlar:
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            _sys.stderr.write(
+                "UYARI (kunye_ortak.kutukten_son_damga): kütük satırı beklenen "
+                f"5-sütun biçiminde değil ({len(hucreler)} hücre, 7 beklenirdi) — "
+                "BOZUK sayılıp fail-CLOSED atlandı: " + satir.strip()[:160] + "\n")
+            continue
+        sonuc_hucresi = hucreler[4]
+        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
+        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
+        if esas and karar:
+            if not (esas_var and karar_var):
+                continue
+        elif esas:
+            if not esas_var:
+                continue
+        elif karar:
+            if not karar_var:
+                continue
+        else:
+            continue
+        if daire is not None:
+            satir_daire = daire_key(sonuc_hucresi)
+            if satir_daire is not None and satir_daire != daire:
+                continue
+        m = _DAMGA_TOKEN_RE.search(sonuc_hucresi)
+        if m:
+            son_damga = m.group(1).upper()
+    return son_damga
+
+
+def _kutuk_satirlarini_oku(kutuk_yolu):
+    """Ortak yardımcı — künye teyit kütüğünü satır satır okur; dosya yoksa/
+    okunamazsa boş liste döner (çağıranlar bunu fail-open/fail-closed olarak
+    kendileri yorumlar)."""
+    if not kutuk_yolu or not os.path.isfile(kutuk_yolu):
+        return []
+    try:
+        with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
+            return f.readlines()
+    except OSError:
+        return []
+
+
+def kutuk_gercek_veri_var_mi(kutuk_yolu):
+    """DÜZELTME (v0.5.5 şerh turu — Ş2, HAYALET MUHAKEME ikinci katman):
+    kütük dosyasının fiilen EN AZ BİR gerçek (7 hücreli, `kutukten_son_damga`
+    ile AYNI biçim şartı) veri satırı taşıyıp taşımadığını söyler. Dosya hiç
+    yoksa, boşsa ya da yalnız başlık/ayraç satırları içeriyorsa 'kütük fiilen
+    kullanılmıyor' sayılır — bu durumda `kutuk_son_damga_engeli` (mevcut,
+    DOKUNULMAZ) ve `kutukte_esas_karar_satiri_var_mi` (yeni) SESSİZCE
+    atlanır: elle kurulmuş test iskeletleri / 'derin yol' (doğrudan dosya
+    yazımıyla muhakeme kaydı oluşturma — P1-11 playbook'u) davranışı BOZULMAZ
+    (bkz. `test_kutuk_yoksa_denetim_sessizce_atlanir_geriye_uyum` — bit
+    düzeyinde korunan geriye-uyum invaryantı). Kütük FİİLEN kullanılıyorsa
+    (≥1 gerçek satır — yani bu kökte gerçek `teyit` çağrıları YAPILMIŞ),
+    'bu künyenin kütükte hiç izi yok' denetimi anlamlı ve fail-closed hâle
+    gelir.
+
+    DİKKAT: `oa_hafiza.py init`'in yazdığı BOŞ kütük şablonu da (başlık +
+    `|---|---|---|---|---|` ayraç satırı) tesadüfen 7-hücreye böler — bu
+    İKİ satır 'gerçek veri' SAYILMAZ (aksi hâlde hiç `teyit` çağrısı
+    yapılmamış TAZE bir `_oa` kökünde bile derin-yol/elle-yazım BLOKLANIRDI).
+    Ayırt edici: gerçek bir satırın ZAMAN hücresi `ts()`'ten gelir (ISO
+    tarih-saat), başlık hücresi 'Zaman' sabit metnidir, ayraç hücresi yalnız
+    `-` karakterlerinden oluşur."""
+    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        ilk_hucre = hucreler[1].strip()
+        if not ilk_hucre or ilk_hucre.casefold() == "zaman":
+            continue  # başlık satırı
+        if set(ilk_hucre) <= {"-"}:
+            continue  # markdown ayraç satırı (|---|---|...|)
+        return True
+    return False
+
+
+def kutukte_esas_karar_satiri_var_mi(kutuk_yolu, esas, karar, daire=None):
+    """DÜZELTME (v0.5.5 şerh turu — Ş2, t3 HAYALET MUHAKEME BLOKERİ): künye
+    teyit kütüğünde bu esas/karar (+ opsiyonel daire) için EN AZ BİR gerçek
+    satır (DAMGA'lı olsun olmasın) bulunup bulunmadığını söyler.
+    `kutukten_son_damga` ile AYNI 7-hücre/esas-karar-daire eşleşme mantığını
+    kullanır (tek-yazar kuralı) ama yalnız 'satır var mı' sorusuna cevap
+    verir — DAMGA tokenı ARANMAZ; bu fonksiyonun amacı damga çapraz kontrolü
+    DEĞİL, kaydın FİİLEN bir `teyit` çağrısına dayandığının doğrulanmasıdır.
+    Yalnız `kutuk_gercek_veri_var_mi` True dönerken (kütük fiilen
+    kullanılıyorken) çağrılması amaçlanır (bkz. `ictihat_muhakeme_denetim.
+    kutuk_dayanagi_denetle`)."""
+    if not (esas or karar):
+        return False
+    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        sonuc_hucresi = hucreler[4]
+        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
+        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
+        if esas and karar:
+            if not (esas_var and karar_var):
+                continue
+        elif esas:
+            if not esas_var:
+                continue
+        elif karar:
+            if not karar_var:
+                continue
+        else:
+            continue
+        if daire is not None:
+            satir_daire = daire_key(sonuc_hucresi)
+            if satir_daire is not None and satir_daire != daire:
+                continue
+        return True
+    return False
+
+
+def kutukte_damgali_dayanak_satiri_var_mi(kutuk_yolu, esas, karar, damga, kaynak_izi=None, daire=None):
+    """DÜZELTME (v0.5.5 düzeltme turu — Ş2/t3-B, HAYALET MUHAKEME İKİNCİ
+    KATMAN): `kutukte_esas_karar_satiri_var_mi` yalnız 'bu esas/karar no
+    kütükte HERHANGİ bir satırda geçiyor mu' sorusuna cevap verir — DAMGA
+    tokenı ARANMAZ. Bu, damgasız/tam-metinsiz UCUZ bir ARAMA teyidinin
+    (`teyit --arac ictihat_ara --sonuc "<uydurma künye>"`, döküm-icerik'siz,
+    --damga'sız, kod=0) bir HAYALET muhakeme bölümünü meşrulaştırmasına izin
+    veriyordu (canlı kanıt: sb6 — sıfır elle dosya düzenlemesi, yalnız 3 CLI
+    çağrısıyla uydurma bir karar `[OK]`/`DAMGA: LEHE` ile G2/G3'ten geçti).
+
+    Bu fonksiyon DAHA SIKI bir dayanak arar: kütükte bu esas/karar (+daire)
+    için (a) muhakeme bölümündeki DAMGA ile AYNI `DAMGA=` tokenını taşıyan
+    VE (b) `kaynak_izi` verildiyse döküm hücresinin bu KAYNAK-IZI dosyasını
+    (dize olarak) işaret ettiği EN AZ BİR satır bulunmalıdır. Damgasız bir
+    ARAMA satırı hiçbir zaman bu denetimi geçemez (ARAMA sınıfına `--damga`
+    zaten YASAK olduğundan `DAMGA=` tokenı hiç taşımaz) — damgalı bir
+    muhakeme bölümünün dayanağı da damgasız bir ARAMA satırı OLAMAZ (mevcut
+    ARAMA/GETİR ayrımıyla simetrik). `damga` None/boşsa (DAMGA alanı zaten
+    başka bir denetimde eksik sayılıp engellenir) False döner — çağıran
+    taraf bu durumda çağırmayı atlayabilir."""
+    if not (esas or karar) or not damga:
+        return False
+    damga_u = damga.strip().upper()
+    if not damga_u:
+        return False
+    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        sonuc_hucresi = hucreler[4]
+        dokum_hucresi = hucreler[5]
+        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
+        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
+        if esas and karar:
+            if not (esas_var and karar_var):
+                continue
+        elif esas:
+            if not esas_var:
+                continue
+        elif karar:
+            if not karar_var:
+                continue
+        else:
+            continue
+        if daire is not None:
+            satir_daire = daire_key(sonuc_hucresi)
+            if satir_daire is not None and satir_daire != daire:
+                continue
+        m = _DAMGA_TOKEN_RE.search(sonuc_hucresi)
+        if not m or m.group(1).upper() != damga_u:
+            continue
+        if kaynak_izi and kaynak_izi.strip() and kaynak_izi.strip() not in dokum_hucresi:
+            continue
+        return True
+    return False

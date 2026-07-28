@@ -37,6 +37,15 @@ Başarı olasılığı **sayı değildir.** "%72 kazanırsınız" demeyiz. Olas�
 ## Aktif çıkarım refleksi
 Sorulan tek yolu değerlendirip durma. **Sorulmayan daha iyi yolu** kendiliğinden öner: müvekkil "dava açalım" dese de, durdurma/sulh/idari başvuru daha az maliyetle hedefe ulaştırıyorsa bunu açıkça ortaya koy — ama kararı müvekkile bırak.
 
+## KUSUR→SONUÇ→TALEP ASİMETRİSİ (P1-11 ek kural — karar sınırı)
+Karşı tarafın kusuru **TESPİT** edilip doğurduğu **SONUÇ** stratejiye
+girdiyse (`oa-usul` A-cephesi), seçilen yol/talep bu SONUCU işletir —
+**GİDERİLMESİNE** yönelik bir ara karar/süre **TALEP**i **KURULMAZ.** Kararın
+hedefi kendi pozisyonumuzu güçlendirmektir; rakibin dosyasını onarmasına
+imkân tanıyan bir yol önerisi müvekkil-aleyhi bir stratejidir (Anayasa
+m.6'nın taktik yüzü) — maliyet-fayda tablosunda böyle bir seçenek "fayda"
+kolonuna asla yazılmaz.
+
 ## Gerçek dosya örüntüleri (çıpalar)
 - **SGK / icra:** kesinleşmiş takipte, hizmet kredisine ihtiyaç yoksa **durdurma**, yapılandırmaya (6183 m.48 tecil-taksit) göre daha ucuz/temiz olabilir — hedef "borcu kapatmak" değil "takibi durdurmak" ise.
 - **Taşeron/eser (taşeron/eser örüntüsü):** kendi ihtarname zaafı (teslim çelişkisi, ihtirazi kayıt yok, desteksiz rakam) varsa, zayıf pozisyonda **müzakere edilmiş sulh** davadan rasyonel olabilir; `oa-vakia` ispat boşluğu + `oa-antitez` zaafı bu kararı besler.

@@ -254,6 +254,149 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False):
     rapor.append(f">>> HESAPLANAN SON GÜN  : {son.isoformat()} ({_gun_adi(son)}) — mesai bitimi <<<")
     return son, rapor, uyarilar
 
+def _pencere_kontrol(json_yol, cikti_yol=None):
+    """M5 (Paket D, v0.5.5) — SÜRE PENCERE BİNDİRME KONTROLÜ: birden çok süre
+    kaydını (`{ad, teblig, kural | (sure+birim), [yargi, tur, adli_tatil_istisna]}`)
+    OKUYUP her birini `hesapla()` ile (TEK mantık — kod tekrarı yok) çözer, her
+    kaydın [teblig+1, son_gün] PENCERESİNİ çıkarır ve pencerelerin PAIRWISE
+    ÇAKIŞIP çakışmadığını (bindirme) raporlar. Amaç: illiyet/kronoloji
+    katmanındaki (oa-illiyet zaman katmanı) birden fazla süre AYNI ANDA
+    işlerken biri gözden kaçabilir — bu kontrol o körlüğü kapatır. Hukuki
+    öncelik/hangi sürenin daha kritik olduğu MUHAKEMEDİR; script yalnız
+    ÇAKIŞMAYI (tarih aritmetiği) tespit eder."""
+    try:
+        with open(json_yol, encoding="utf-8") as f:
+            kayitlar = json.load(f)
+    except Exception as e:
+        print(f"HATA: pencereler JSON okunamadı: {e}")
+        sys.exit(1)
+
+    # M5 düzeltmesi (Paket D sınav bulgusu, KUCUK) — kök nesne bir LİSTE
+    # olmalı (ör. {"kayitlar": [...]} gibi makul bir kullanıcı hatası
+    # KORUMASIZ TRACEBACK yerine nazik bir HATA mesajıyla durmalı; diğer tüm
+    # hata dalları zaten '⚠ … atlandı' ile nazikçe geçiyor — şema hatası da
+    # aynı disipline tabi olmalı).
+    if not isinstance(kayitlar, list):
+        print("HATA: --pencereler JSON kök nesnesi bir LİSTE olmalı "
+              '([{ad,teblig,...}, ...]) — bulunan: ' + type(kayitlar).__name__)
+        sys.exit(1)
+
+    pencereler = []
+    atlanan = []  # DÜZELTME (Ş13, v0.5.5 şerh turu): düşen HER kayıt burada iz bırakır
+    for k in kayitlar:
+        if not isinstance(k, dict):
+            sebep = f"liste öğesi sözlük değil ({type(k).__name__})"
+            print(f"  ⚠ {sebep} — atlandı")
+            atlanan.append({"ad": "(bilinmiyor)", "sebep": sebep})
+            continue
+        ad = k.get("ad") or "(adsız)"
+        teblig_str = k.get("teblig")
+        if not teblig_str:
+            sebep = "'teblig' alanı eksik"
+            print(f"  ⚠ '{ad}': {sebep} — atlandı")
+            atlanan.append({"ad": ad, "sebep": sebep})
+            continue
+        try:
+            teblig = date.fromisoformat(teblig_str)
+        except Exception:
+            sebep = f"geçersiz teblig tarihi '{teblig_str}'"
+            print(f"  ⚠ '{ad}': {sebep} — atlandı")
+            atlanan.append({"ad": ad, "sebep": sebep})
+            continue
+        yargi = k.get("yargi", "hukuk")
+        tur = k.get("tur", "usul")
+        adli_tatil_istisna = bool(k.get("adli_tatil_istisna"))
+        if k.get("kural"):
+            if k["kural"] not in KURALLAR:
+                sebep = f"bilinmeyen kural '{k['kural']}'"
+                print(f"  ⚠ '{ad}': {sebep} — atlandı")
+                atlanan.append({"ad": ad, "sebep": sebep})
+                continue
+            miktar, birim, _kaynak = KURALLAR[k["kural"]]
+        # DÜZELTME (Ş13, v0.5.5 şerh turu): eski `k.get("sure") and k.get("birim")`
+        # falsy kontrolü `sure: 0`ı 'alan eksik' sayıp SESSİZCE düşürüyordu (0
+        # sayısal olarak geçerli bir süre DEĞİLSE bile — ör. yanlışlıkla girilen
+        # bir 0 — en azından 'alan eksik' YALANINI SÖYLEMEMELİ). `is not None`
+        # ile yalnız GERÇEKTEN eksik/None alan 'eksik' sayılır.
+        elif k.get("sure") is not None and k.get("birim"):
+            miktar, birim = k["sure"], k["birim"]
+        else:
+            sebep = "'kural' VEYA 'sure'+'birim' eksik"
+            print(f"  ⚠ '{ad}': {sebep} — atlandı")
+            atlanan.append({"ad": ad, "sebep": sebep})
+            continue
+        try:
+            son, _rapor, _uyarilar = hesapla(teblig, miktar, birim, yargi, tur, adli_tatil_istisna)
+        except Exception as e:
+            sebep = f"hesaplama hatası ({e})"
+            print(f"  ⚠ '{ad}': {sebep} — atlandı")
+            atlanan.append({"ad": ad, "sebep": sebep})
+            continue
+        bas = teblig + timedelta(days=1)
+        pencereler.append({"ad": ad, "bas": bas.isoformat(), "son": son.isoformat()})
+
+    print("=" * 68)
+    print("  SÜRE PENCERE BİNDİRME KONTROLÜ (M5, Paket D — v0.5.5)")
+    print("=" * 68)
+    for pe in pencereler:
+        print(f"  {pe['ad']}: {pe['bas']} .. {pe['son']}")
+
+    bindirmeler = []
+    for i in range(len(pencereler)):
+        for j in range(i + 1, len(pencereler)):
+            a_, b_ = pencereler[i], pencereler[j]
+            bas_a, son_a = date.fromisoformat(a_["bas"]), date.fromisoformat(a_["son"])
+            bas_b, son_b = date.fromisoformat(b_["bas"]), date.fromisoformat(b_["son"])
+            if bas_a <= son_b and bas_b <= son_a:
+                bindirmeler.append((a_["ad"], b_["ad"]))
+
+    # DÜZELTME (Ş13, v0.5.5 şerh turu BLOKER — fail-open yanlış temiz-ışık):
+    # eskiden hayatta kalan pencere sayısına HİÇ BAKILMADAN `bindirmeler`
+    # boşsa '>>> Bindirme yok — pencereler ayrık. <<<' basılıyordu — bu,
+    # SIFIR kayıt çözülse (ör. tüm kayıtlar bozuk/eksikse) ya da yalnız TEK
+    # kayıt hayatta kalsa (bindirme yapısal olarak İMKÂNSIZ) bile AYNI 'temiz'
+    # OLGU BEYANINI üretiyordu — 'mekanik körlüğü olgu beyanına ÇEVİRME'
+    # doktrininin (bkz. dilekce_denetim.py) bu sürümdeki ihlaliydi. Üç ayrı
+    # hüküm: (a) 0 pencere → DENETLENEMEDİ + exit != 0 (girdi verilmişken
+    # sessiz 'başarı' YOK); (b) 1 pencere → yapısal olarak denetlenemez
+    # (bindirme TANIM GEREĞİ yoktur, ama bu bir 'ayrık' KANITI DEĞİLDİR);
+    # (c) ≥2 pencere → mevcut hükme (varsa) düşen-kayıt şerhi eklenir.
+    print()
+    if not pencereler:
+        print(f">>> BİNDİRME DENETLENEMEDİ — hiçbir kayıt çözülemedi "
+              f"({len(atlanan)} kayıt düştü); bu sonuç KANIT SAYILMAZ. <<<")
+        denetlenemedi = True
+    elif len(pencereler) == 1:
+        print(f">>> Tek pencere ('{pencereler[0]['ad']}') — bindirme yapısal olarak "
+              "denetlenemez (karşılaştırılacak ikinci bir pencere yok). <<<")
+        denetlenemedi = False
+    else:
+        denetlenemedi = False
+        if bindirmeler:
+            print("--- BİNDİRME (üst üste binen pencereler) ---")
+            for x, y in bindirmeler:
+                print(f"  ⚠ '{x}' ile '{y}' PENCERELERİ ÇAKIŞIYOR — aynı dönemde iki ayrı "
+                      "süre birden işliyor; önceliklendirme/çakışan iş yükü avukat "
+                      "gözüyle değerlendirilmeli.")
+        else:
+            ek = f" (NOT: {len(atlanan)} kayıt DÜŞTÜ — kapsam eksik, bu hüküm yalnız " \
+                 "hayatta kalan pencerelere dayanır.)" if atlanan else ""
+            print(">>> Bindirme yok — pencereler ayrık. <<<" + ek)
+    print("=" * 68)
+
+    if cikti_yol:
+        with open(cikti_yol, "w", encoding="utf-8") as f:
+            json.dump({"pencereler": pencereler,
+                      "bindirmeler": [{"a": x, "b": y} for x, y in bindirmeler],
+                      "atlanan": atlanan,
+                      "denetlenen_kayit": len(pencereler)},
+                     f, ensure_ascii=False, indent=2)
+        print(f"[JSON] {cikti_yol}")
+
+    if denetlenemedi:
+        sys.exit(1)
+
+
 def main():
     p = argparse.ArgumentParser(description="Deterministik Türk usul/maddi süre hesaplayıcı (v3)")
     p.add_argument("--teblig", help="Başlangıç tarihi: usulde tebliğ/öğrenme; maddi hukukta muacceliyet/öğrenme/fiil (YYYY-MM-DD)")
@@ -277,7 +420,17 @@ def main():
                    help="E-tebligat (UETS): 7201 m.7/a — elektronik adrese ulaştığı tarihi izleyen 5. günün sonunda "
                         "tebliğ edilmiş sayılır. İki senaryoyu (ulaşma/okunma günü esas VE ulaşma+5. gün karinesi) "
                         "çift hesaplar ve gösterir. --teblig = elektronik adrese ULAŞMA/okunma günüdür.")
+    p.add_argument("--pencereler", metavar="JSON",
+                   help="M5 (Paket D): SÜRE PENCERE BİNDİRME kontrolü — birden çok "
+                        "{ad,teblig,(kural|sure+birim),[yargi,tur,adli_tatil_istisna]} kaydı "
+                        "taşıyan bir JSON dosyasını okur, her birini hesapla() ile çözer ve "
+                        "[teblig+1, son_gün] pencerelerinin PAIRWISE çakışıp çakışmadığını raporlar.")
+    p.add_argument("--pencereler-json", dest="pencereler_json_cikti", metavar="YOL",
+                   help="--pencereler ile: sonucu makine-okur JSON olarak bu yola da yaz")
     a = p.parse_args()
+    if a.pencereler:
+        _pencere_kontrol(a.pencereler, a.pencereler_json_cikti)
+        return
     if a.bayram:
         print(f"TAHMİNİ dini bayram günleri — {a.bayram} (aritmetik hicri hesap; Diyanet rüyet takviminden ±1-2 gün sapabilir):")
         th = tahmini_bayramlar(a.bayram)

@@ -64,6 +64,17 @@ Bu eş zamanlılık **her pipeline katmanında** geçerlidir: ALIM'daki usul sor
 
 **Simetri uyarısı (sistemin dürüstlük sigortası):** A-4'te karşı taraf için öngördüğün her kapı, B-2'de müvekkil için araştırdığın kapıyla AYNI hukuktan gelir. Bir kapıyı müvekkil için "var" sayıp karşı taraf için "yok" sayamazsın — fark, *somut olayda şartların oluşup oluşmadığındadır*; o farkı vakıayla (oa-vakia) ve içtihatla gerekçelendir.
 
+**KUSUR→SONUÇ→TALEP ASİMETRİSİ (P1-11 ek kural — A-cephesinin taktik sınırı):**
+Karşı tarafın usul kusuru A-1..A-3'te **TESPİT** edilir, doğurduğu **SONUÇ**
+(ret/inkâr sayılma/dinlenmeme/kesinleşme) yazılır, ama **GİDERİLMESİNE**
+yönelik ara karar talebi **KURULMAZ.** Ör. karşı tarafın dava şartı
+eksikliği tespit edilmişse talep "ret" olur; "eksikliğin tamamlanması için
+süre verilsin" talebi **KURULMAZ** — rakibin dosyasını onarmasına yardım
+etmek müvekkil-aleyhi talep inşasıdır (Anayasa m.6'nın taktik yüzü).
+A-4'teki "kapıları kapat" adımı bunun İSTİSNASI değildir: orada kapatılan
+kapı KENDİ itirazımızın sağlamlaştırılmasıdır, karşı tarafa onarma imkânı
+sunulması DEĞİLDİR.
+
 **C) KAMU GÜCÜ — ÜÇÜNCÜ CEPHE (devlet de usul hatası yapar; bazen kasıtlı yapar):**
 Usul hatası yalnızca özel hukuk taraflarına özgü değildir. **İdare, yargı organı ve icra organı dahil her kamu gücü** usul hatası yapar — ve bu hatalar müvekkil lehine en güçlü kapılardandır, çünkü kamu gücü usule UYMAK ZORUNDADIR (AY m.123 kanunilik, m.40/2 başvuru yolu gösterme yükümü):
 1. **Tara — üç kamu aktörü ayrı ayrı:**

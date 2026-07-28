@@ -103,6 +103,26 @@ bildir (anayasa: zaafları rahatsız edici olsa da söyle).
 Her esaslı çıktıya `references/cikti-blogu.md`'deki standart bloğu ekle (taraflar+rol,
 ilişki kenarları, illiyet kenarları, boşluk denetimi, oa-antitez beslemesi).
 
+## ZAMAN KATMANI — kronoloji + süre pencere bindirme (M5, Paket D — v0.5.5)
+
+İlliyet grafının her düğümü/kenarı zaman içinde bir yere oturur; bu **ZAMAN
+KATMANI** grafa `references/cikti-blogu.md`'deki **tarih | olay | kaynak-evrak |
+sha** dört sütunlu bir tabloyla eklenir — her satır bir düğüm/kenarın hangi
+evraktan (`_oa/metin/<evrak>`) ve hangi sha16 imzayla geldiğini gösterir
+(kayıpsızlık: iddia hafızadan değil, izlenebilir bir evraktan gelir). Bu tablo
+`oa-vakia`'nın kronolojisiyle (`vakia_matris.py`) AYNI olguları taşır — ikinci
+bir kronoloji İCAT EDİLMEZ, yalnız illiyet açısından etiketlenir (sebep/sonuç/
+tetikleyici).
+
+**Süre pencere bindirme:** zaman katmanındaki tetikleyici olaylardan (tebliğ,
+öğrenme, muacceliyet) birden fazla süre doğuyorsa (ör. cevap süresi + karşı
+tarafın istinaf süresi aynı dönemde işliyor), her biri `oa-sure/scripts/
+hesapla_sure.py` ile AYRI hesaplanır; birden fazla süre varsa hepsi tek bir
+JSON'a (`{ad, teblig, kural|sure+birim}` listesi) toplanıp `hesapla_sure.py
+--pencereler <json>` ile **PENCERE BİNDİRME** (üst üste binen süre aralıkları)
+deterministik olarak taranır — script yalnız tarih aritmetiğiyle çakışmayı
+gösterir, hangi sürenin önceliklendirileceği avukat muhakemesidir.
+
 ## Diğer parçalara entegrasyon
 
 Bu kit tek başına da çalışır ama asıl gücü kuşatıcılığındadır. Çağrı haritası:

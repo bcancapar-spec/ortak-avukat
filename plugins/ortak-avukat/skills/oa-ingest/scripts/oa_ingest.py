@@ -3,7 +3,7 @@
 # © 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).
 # 'Ortak Avukat' metodoloji sistemi. İzinsiz çoğaltma/dağıtma/türev yasaktır.
 """
-oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.6)
+oa_ingest.py — 0. MANİFEST'in AI KATMANI: deterministik metin çıkarım motoru (v1.7)
 
 AMAÇ (illiyet): Model artık ham PDF/TIFF/JPG'yi GÖRÜNTÜ olarak açmasın.
 Her evraktan metni EN UCUZ doğru yoldan bir kez çıkar, _oa/metin/ altına
@@ -120,6 +120,25 @@ v1.5.2 değişiklikleri (2026-07) — EK-FİX (v0.5.2 risk#1):
     olarak servis ediliyordu — Tesseract sonradan kurulsa bile hiç yeniden denenmiyordu.
     Artık okuma tarafı da aynı kuralı uygular: seri==paralel ve idempotens KORUNUR.
 
+v1.7 değişiklikleri (2026-07) — P0-9 OCR-NÖBETÇİSİ (Denizli 307 saha kanıtı, 60
+  OCR evrağının 5'i sessizce boş/çöp kalmıştı — ikisi müvekkil delili):
+  ① KALİTE DENETİMİ: her OCR'lanan SAYFA, boş-eşik (sayfa başına
+    < OCR_BOS_ESIK_KARAKTER_SAYFA anlamlı karakter) VE çöp-skor (alfasayısal
+    karakter oranı düşük / tek-karakter 'kelime' oranı yüksek) ile denetlenir.
+  ② DETERMİNİSTİK RETRY: sayfa yetersizse OCR_RETRY_ADIMLARI sırasıyla dener
+    (DPI yükselt → PSM değişimi → 180° yönelim) — kazanç/kayıp şansa bırakılmaz.
+  ③ HÂLÂ ÇÖKÜKSE: yalnız o sayfa(lar) İÇİN (hedefli — tüm evrak/tüm evraklar
+    DEĞİL, dünkü 228-PNG israfı tekrarlanmaz) son denemenin PyMuPDF/Pillow
+    render'ı `_oa/metin/gorsel/<evrak>/pNN.png` olarak DİSKE YAZILIR (yazım
+    tek-yazar EBEVEYNDE — kaydet_evrak; işçiler yalnız PNG baytlarını
+    BELLEKTE taşır, disk hijyeni bozulmaz); künyeye `ocr_durum`
+    ("OCR-BOŞ → GÖRSEL İNCELEME GEREK"), `ocr_bos_sayfalar`, `gorsel_klasor`
+    alanları eklenir (YÜKLENEMEDİ değil, işlendi de değil — üçüncü bir sınıf).
+  Bu kapı yalnız PDF/görüntü OCR yolunda çalışır; metin-katmanlı PDF/UDF/DOCX
+  hattı BYTE-ÖZDEŞ kalır. Şema GENİŞLEDİ, geriye dönük UYUMLU (eski okuyucu
+  yeni anahtarı yok sayar); seri==paralel determinizmi ETKİLENMEZ (yalnız
+  ebeveyn tek-yazar aşamasında disk yazımı yapılır; işçi SAF kalır).
+
 v1.6 değişiklikleri (2026-07) — GATE A+C (M1-2, Denizli canlı testinden):
   (A) SAYFA/BÖLÜM HARİTASI: `karakter > --buyuk-esik` (varsayılan 40.000 anlamlı kar.)
       olan her evrak için md YANINA `<taban>.harita.json` üretilir — mevcut
@@ -195,11 +214,98 @@ KAR_PER_TOKEN = 3                 # Türkçe için kaba token tahmini (~3 karakt
 BUYUK_ESIK_KARAKTER = 40000        # Gate A: bu eşiği aşan evrak için sayfa/bölüm haritası üretilir
 TESSERACT = shutil.which("tesseract")
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabit içerik imzası
+# P1-9 DÜZELTME (sinav bulgusu, tek-kaynak) — --onbakis'ın yazdığı MEŞRU dizin
+# adı burada TEK yerde tanımlanır; pipeline_kayit.py bekçisi bunu İN-PROCESS
+# import ederek DIZIN_BEYAZ_LISTE'ye ekler (elle tekrarlanan ikinci bir sabit
+# YOKTUR — ikiz-liste yasağı).
+ONBAKIS_DIZIN = "metin-onbakis"
 # v1.5.1 (a): bu yöntemlerle biten kayıtlar önbelleğe YAZILMAZ — araç (Tesseract vb.)
 # sonradan kurulunca "imza aynı → önbellekten bas" yolu bayat 'YÜKLENEMEDİ' damgasını
 # tekrarlamasın. 'zaman-aşımı' kasıtlı olarak DIŞARIDA: OCR zaman-aşımı pahalıdır,
 # önbellekte kalması (--yeniden ile açıkça atlanabilir) kabul edilebilir bir ödünleşimdir.
 _ARIZA_ONBELLEKSIZ = {"hata", "atlandı"}
+
+# ═════════════════════════════════════════════════════════════════════════
+# P0-9 (v0.5.5) — OCR-NÖBETÇİSİ: OCR çıktısı kalite denetimi + deterministik
+# retry + hedefli görsel-inceleme damgası. Bkz. docstring v1.7.
+# ═════════════════════════════════════════════════════════════════════════
+OCR_BOS_ESIK_KARAKTER_SAYFA = 50   # bir OCR sayfası bunun altında anlamlı karakter içeriyorsa "boş" sayılır
+OCR_COP_ALFANUMERIK_ESIK = 0.5     # alfasayısal karakter oranı bu eşiğin ALTINDAYSA çöp sinyali
+OCR_COP_TEK_KARAKTER_ESIK = 0.4    # tek-karakter 'kelime' oranı bu eşiğin ÜSTÜNDEYSE çöp sinyali
+GORSEL_DIZIN = "gorsel"           # OCR-BOŞ sayfaların görsellerinin durduğu alt dizin (_oa/metin/gorsel/<evrak>/)
+OCR_BOS_DAMGA = "OCR-BOŞ → GÖRSEL İNCELEME GEREK"  # künyedeki üçüncü sınıf (YÜKLENEMEDİ/işlendi DEĞİL)
+# Deterministik retry planı — SIRALI, İLK eleman her zaman varsayılan ayarlardır
+# (rotate=0 iken _render_pixmap orijinal `dpi=` davranışıyla BİREBİR aynı sonucu üretir).
+OCR_RETRY_ADIMLARI = [
+    {"dpi_delta": 0,   "psm": "3", "rotate": 0},    # 1) ilk deneme — varsayılan ayarlar (değişiklik yok)
+    {"dpi_delta": 100, "psm": "3", "rotate": 0},    # 2) DPI yükselt
+    {"dpi_delta": 0,   "psm": "6", "rotate": 0},    # 3) PSM değişimi (tek düzgün metin bloğu varsayımı)
+    {"dpi_delta": 0,   "psm": "3", "rotate": 180},  # 4) yönelim (180° ters taramaları dener)
+]
+
+
+def _cop_skor(metin):
+    """P0-9 — OCR çıktısının 'çöp' olma sinyali (0.0 temiz .. 1.0 çöp). İki
+    BAĞIMSIZ sinyal: (1) alfasayısal karakter oranı düşükse, (2) tek-karakter
+    'kelime' oranı yüksekse çöp güçlenir; metin boşsa doğrudan 1.0 (çöp)."""
+    metin = metin or ""
+    kelimeler = metin.split()
+    if not kelimeler:
+        return 1.0
+    tek_karakter_oran = sum(1 for w in kelimeler if len(w) <= 1) / len(kelimeler)
+    toplam = len(metin) or 1
+    alfanumerik_oran = sum(1 for c in metin if c.isalnum()) / toplam
+    skor = 0.0
+    if alfanumerik_oran < OCR_COP_ALFANUMERIK_ESIK:
+        skor += 0.5
+    if tek_karakter_oran > OCR_COP_TEK_KARAKTER_ESIK:
+        skor += 0.5
+    return skor
+
+
+def _ocr_kalite_yeterli_mi(metin, birim_sayisi):
+    """P0-9 OCR-NÖBETÇİSİ ana kapı: birim (sayfa/kare) başına anlamlı karakter
+    OCR_BOS_ESIK_KARAKTER_SAYFA'nın ALTINDAYSA VEYA çöp-skoru TAVANA (1.0)
+    vardıysa OCR çıktısı YETERSİZ sayılır (deterministik retry/görsel tetiklenir)."""
+    n = max(birim_sayisi or 1, 1)
+    kar = anlamli(metin)
+    if kar / n < OCR_BOS_ESIK_KARAKTER_SAYFA:
+        return False
+    return _cop_skor(metin) < 1.0
+
+
+def _ocr_sayfalari_isle(n, limit, sayfa_render):
+    """P0-9 ORTAK sayfa/kare döngüsü (PDF/görüntü ARASI TUTARLI davranış):
+    her birim için ilk deneme + kalite yetersizse OCR_RETRY_ADIMLARI sırayla
+    denenir; hâlâ yetersizse birim 'OCR-BOŞ' sayılır ve son denemenin PNG
+    baytları saklanır (görsel-inceleme için — DİSKE YAZMA burada değil,
+    EBEVEYNDEKİ kaydet_evrak'tadır; bu fonksiyon SAF kalır).
+    `sayfa_render(i, ayar, deneme_i) -> (metin, png_bytes)`.
+    Dönüş: (birleşik_metin, [(sayfa_no, png_bytes), ...])."""
+    parcalar = []
+    bos_sayfalar = []
+    for i in range(min(n, limit)):
+        son_metin, son_png = "", None
+        for deneme_i, ayar in enumerate(OCR_RETRY_ADIMLARI):
+            son_metin, son_png = sayfa_render(i, ayar, deneme_i)
+            if _ocr_kalite_yeterli_mi(son_metin, 1):
+                break
+        else:
+            bos_sayfalar.append((i + 1, son_png))
+        parcalar.append(f"\n<!-- --- sayfa {i+1} --- -->\n" + son_metin)
+    return "".join(parcalar), bos_sayfalar
+
+
+def _render_pixmap(page, dpi, rotate=0):
+    """PyMuPDF pixmap üretir. rotate=0 iken `dpi=` kwarg'ıyla ORİJİNAL koddaki
+    davranışla BİREBİR aynıdır (regresyon riski yok); rotate!=0 iken PyMuPDF'in
+    'dpi verilirse matrix yok sayılır' kısıtı nedeniyle zoom matrisi elle
+    kurulup prerotate uygulanır (P0-9 'yönelim' retry adımı)."""
+    if not rotate:
+        return page.get_pixmap(dpi=dpi)
+    zoom = dpi / 72.0
+    mat = fitz.Matrix(zoom, zoom).prerotate(rotate)
+    return page.get_pixmap(matrix=mat)
 
 # ---- Gate C: dosya adı/anahtar-kelimeden MEKANİK tür TAHMİNİ (advisory, kesinlik DEĞİL) ----
 # Sıralı liste: İLK eşleşen kazanır (deterministik). Yalnız dosya adı/temiz ad üzerinde
@@ -307,11 +413,13 @@ def evrak_no_ad(dosya_adi):
     return no, geri.replace("_", " ").strip(), tarih
 
 
-def ocr_png(png_yol, dil):
-    """Tek PNG'yi OCR'la (Tesseract subprocess). Yoksa None."""
+def ocr_png(png_yol, dil, psm="3"):
+    """Tek PNG'yi OCR'la (Tesseract subprocess). Yoksa None. `psm` P0-9
+    deterministik retry zincirinin PSM-değişimi adımı için parametrikleştirildi
+    (varsayılan "3" = ORİJİNAL davranış, çağıran belirtmezse hiçbir fark yok)."""
     if not TESSERACT:
         return None
-    r = subprocess.run([TESSERACT, png_yol, "-", "-l", dil, "--psm", "3"],
+    r = subprocess.run([TESSERACT, png_yol, "-", "-l", dil, "--psm", str(psm)],
                        capture_output=True, text=True,
                        encoding="utf-8", errors="replace", timeout=600)
     return r.stdout or ""
@@ -319,13 +427,18 @@ def ocr_png(png_yol, dil):
 
 # ---------------- çıkarım (İÇERİK-AGNOSTİK, saf; işçide de ebeveynde de aynı) ----------------
 def pdf_isle(yol, opts, tmp):
-    """PyMuPDF ile metin; zayıfsa render+OCR. (metin, yontem, teyit, sayfa, hata)."""
+    """PyMuPDF ile metin; zayıfsa render+OCR. P0-9 OCR-NÖBETÇİSİ: her OCR
+    sayfası boş-eşik+çöp-skor ile denetlenir; yetersizse DPI/PSM/yönelim ile
+    deterministik yeniden denenir (OCR_RETRY_ADIMLARI); tüm denemelerden sonra
+    da yetersiz kalan sayfalar İÇİN (yalnız o sayfalar — hedefli) evrak
+    'OCR-BOŞ' damgalanır, son denemenin PNG baytları döner (yazım EBEVEYNDE).
+    Dönüş: (metin, yontem, teyit, sayfa, hata, ocr_bos_sayfalar)."""
     if not FITZ:
-        return "", "hata", True, None, "PyMuPDF yok (pip install pymupdf)"
+        return "", "hata", True, None, "PyMuPDF yok (pip install pymupdf)", []
     try:
         doc = fitz.open(yol)
     except Exception as e:
-        return "", "hata", True, None, f"PDF açılamadı ({e})"
+        return "", "hata", True, None, f"PDF açılamadı ({e})", []
     n = doc.page_count or 1
     sayfalar = [p.get_text("text") for p in doc]
     ham = "\n".join(sayfalar)
@@ -333,78 +446,105 @@ def pdf_isle(yol, opts, tmp):
     if opts["ocr"] != "zorla" and oran >= METIN_ESIK_KARAKTER_SAYFA:
         doc.close()
         metin = "".join(f"\n<!-- --- sayfa {i+1} --- -->\n" + s for i, s in enumerate(sayfalar))
-        return metin, "pdf-metin(PyMuPDF)", False, n, None
+        return metin, "pdf-metin(PyMuPDF)", False, n, None, []
     if opts["ocr"] == "kapali":
         doc.close()
-        return ham, "pdf-metin(zayıf)", True, n, f"taranmış görünüyor ({oran:.0f} kar/sayfa), OCR kapalı"
+        return ham, "pdf-metin(zayıf)", True, n, f"taranmış görünüyor ({oran:.0f} kar/sayfa), OCR kapalı", []
     if not TESSERACT:
         doc.close()
-        return ham, "pdf-metin(zayıf)", True, n, f"taranmış ({oran:.0f} kar/sayfa) ama Tesseract yok — YÜKLENEMEDİ"
+        return ham, "pdf-metin(zayıf)", True, n, f"taranmış ({oran:.0f} kar/sayfa) ama Tesseract yok — YÜKLENEMEDİ", []
     limit = opts["sayfa_limit"] or n
-    parcalar = []
-    for i in range(min(n, limit)):
-        pix = doc[i].get_pixmap(dpi=opts["dpi"])
-        p = os.path.join(tmp, f"p{i:03d}.png")
+
+    def _render(i, ayar, deneme_i):
+        dpi_i = opts["dpi"] + ayar["dpi_delta"]
+        pix = _render_pixmap(doc[i], dpi_i, ayar["rotate"])
+        p = os.path.join(tmp, f"p{i:03d}_d{deneme_i}.png")
         pix.save(p)
-        parcalar.append(f"\n<!-- --- sayfa {i+1} --- -->\n" + (ocr_png(p, opts["dil"]) or ""))
+        metin_sayfa = ocr_png(p, opts["dil"], ayar["psm"]) or ""
+        with open(p, "rb") as fh:
+            return metin_sayfa, fh.read()
+
+    metin, bos_sayfalar = _ocr_sayfalari_isle(n, limit, _render)
     doc.close()
-    return "".join(parcalar), "OCR(pdf-tarama)", True, n, None
+    if bos_sayfalar:
+        hata = (f"{len(bos_sayfalar)}/{min(n, limit)} sayfa {len(OCR_RETRY_ADIMLARI)} "
+                f"deterministik denemeden sonra da boş/çöp kaldı — GÖRSEL İNCELEME GEREK")
+        return metin, "OCR-BOS", True, n, hata, bos_sayfalar
+    return metin, "OCR(pdf-tarama)", True, n, None, []
 
 
 def goruntu_isle(yol, opts, tmp):
+    """P0-9 OCR-NÖBETÇİSİ pdf_isle ile AYNI ortak döngüyü (_ocr_sayfalari_isle)
+    kullanır — davranış PDF/görüntü arasında TUTARLI. Görüntülerde 'DPI
+    yükselt' adımı, sabit optik çözünürlüğü LANCZOS ile büyüterek taklit edilir."""
     if opts["ocr"] == "kapali":
-        return "", "atlandı", True, None, "görüntü ama OCR kapalı"
+        return "", "atlandı", True, None, "görüntü ama OCR kapalı", []
     if not PIL:
-        return "", "hata", True, None, "Pillow yok (pip install pillow)"
+        return "", "hata", True, None, "Pillow yok (pip install pillow)", []
     if not TESSERACT:
-        return "", "atlandı", True, None, "Tesseract yok — YÜKLENEMEDİ"
+        return "", "atlandı", True, None, "Tesseract yok — YÜKLENEMEDİ", []
     im = Image.open(yol)
     n = getattr(im, "n_frames", 1)
     limit = opts["sayfa_limit"] or n
-    parcalar = []
-    for i in range(min(n, limit)):
+
+    def _render(i, ayar, deneme_i):
         try:
             im.seek(i)
         except EOFError:
-            break
-        p = os.path.join(tmp, f"f{i:03d}.png")
-        im.convert("L").save(p)
-        parcalar.append(f"\n<!-- --- sayfa {i+1} --- -->\n" + (ocr_png(p, opts["dil"]) or ""))
-    return "".join(parcalar), "OCR(goruntu)", True, n, None
+            return "", b""
+        kare = im.convert("L")
+        if ayar["dpi_delta"]:
+            w, h = kare.size
+            olcek = 1.0 + (ayar["dpi_delta"] / 300.0)
+            kare = kare.resize((max(1, int(w * olcek)), max(1, int(h * olcek))), Image.LANCZOS)
+        if ayar["rotate"]:
+            kare = kare.rotate(-ayar["rotate"], expand=True)
+        p = os.path.join(tmp, f"f{i:03d}_d{deneme_i}.png")
+        kare.save(p)
+        metin_kare = ocr_png(p, opts["dil"], ayar["psm"]) or ""
+        with open(p, "rb") as fh:
+            return metin_kare, fh.read()
+
+    metin, bos_sayfalar = _ocr_sayfalari_isle(n, limit, _render)
+    if bos_sayfalar:
+        hata = (f"{len(bos_sayfalar)}/{min(n, limit)} kare {len(OCR_RETRY_ADIMLARI)} "
+                f"deterministik denemeden sonra da boş/çöp kaldı — GÖRSEL İNCELEME GEREK")
+        return metin, "OCR-BOS", True, n, hata, bos_sayfalar
+    return metin, "OCR(goruntu)", True, n, None, []
 
 
 def udf_isle(yol):
     try:
         zf = zipfile.ZipFile(yol)
     except Exception as e:
-        return "", "hata", True, None, f"UDF açılamadı ({e})"
+        return "", "hata", True, None, f"UDF açılamadı ({e})", []
     hedef = next((a for a in zf.namelist() if a.lower().endswith("content.xml")), None)
     if not hedef:
-        return "", "hata", True, None, "content.xml yok"
+        return "", "hata", True, None, "content.xml yok", []
     ham = zf.read(hedef).decode("utf-8", "replace")
     m = re.search(r"<content>\s*<!\[CDATA\[(.*?)\]\]>\s*</content>", ham, re.S)
     if m:
-        return m.group(1), "udf", False, None, None
+        return m.group(1), "udf", False, None, None, []
     try:
         kok = ET.fromstring(ham)
         p = [t.strip() for t in kok.itertext() if t and t.strip()]
         if p:
-            return "\n".join(p), "udf", False, None, None
+            return "\n".join(p), "udf", False, None, None, []
     except ET.ParseError:
         pass
     kaba = re.sub(r"\s{2,}", " ", re.sub(r"<[^>]+>", " ", ham)).strip()
     if kaba:
-        return "[UYARI: standart UDF çözülemedi — kaba metin]\n" + kaba, "udf(kaba)", True, None, None
-    return "", "hata", True, None, "metin yok"
+        return "[UYARI: standart UDF çözülemedi — kaba metin]\n" + kaba, "udf(kaba)", True, None, None, []
+    return "", "hata", True, None, "metin yok", []
 
 
 def docx_isle(yol):
     try:
         ham = zipfile.ZipFile(yol).read("word/document.xml").decode("utf-8", "replace")
     except Exception as e:
-        return "", "hata", True, None, f"DOCX açılamadı ({e})"
+        return "", "hata", True, None, f"DOCX açılamadı ({e})", []
     ham = ham.replace("</w:p>", "\n").replace("</w:tr>", "\n")
-    return re.sub(r"[ \t]{2,}", " ", re.sub(r"<[^>]+>", "", ham)).strip(), "docx", False, None, None
+    return re.sub(r"[ \t]{2,}", " ", re.sub(r"<[^>]+>", "", ham)).strip(), "docx", False, None, None, []
 
 
 def evrak_isle(yol, uz, opts, tmp_kok):
@@ -415,12 +555,13 @@ def evrak_isle(yol, uz, opts, tmp_kok):
             if uz in DOCX:     return docx_isle(yol)
             if uz in GORUNTU:  return goruntu_isle(yol, opts, t)
             if uz in DUZ:
-                return open(yol, encoding="utf-8", errors="replace").read(), "duz-metin", False, None, None
+                return (open(yol, encoding="utf-8", errors="replace").read(),
+                        "duz-metin", False, None, None, [])
         except subprocess.TimeoutExpired:
-            return "", "zaman-asimi", True, None, "OCR 600 sn aştı"
+            return "", "zaman-asimi", True, None, "OCR 600 sn aştı", []
         except Exception as e:
-            return "", "hata", True, None, str(e)
-    return "", "bilinmeyen", True, None, "desteklenmeyen tür"
+            return "", "hata", True, None, str(e), []
+    return "", "bilinmeyen", True, None, "desteklenmeyen tür", []
 
 
 # ---------------- v1.5: paralel çıkarım altyapısı (SAF İŞÇİ — durum değiştirmez) ----------------
@@ -445,9 +586,9 @@ def _cikar_tekil(yol, uz, opts):
         os._exit(137)
     t0 = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="oaing_w_") as t:   # with: çökmede %TEMP% sızmaz
-        metin, y, teyit, sf, hata = evrak_isle(yol, uz, opts, t)
+        metin, y, teyit, sf, hata, gorsel = evrak_isle(yol, uz, opts, t)
     return {"metin": metin, "yontem": y, "teyit": teyit, "sayfa": sf, "hata": hata,
-            "sure_ms": (time.perf_counter() - t0) * 1000.0}
+            "gorsel": gorsel, "sure_ms": (time.perf_counter() - t0) * 1000.0}
 
 
 def _cikar_arsiv(yol, opts):
@@ -473,9 +614,9 @@ def _cikar_arsiv(yol, opts):
             cikti = []
             for ic, ie, icad in icler:
                 t0 = time.perf_counter()
-                metin, y, teyit, sf, hata = evrak_isle(ic, ie, opts, t)
+                metin, y, teyit, sf, hata, gorsel = evrak_isle(ic, ie, opts, t)
                 cikti.append({"icad": icad, "ie": ie, "metin": metin, "yontem": y,
-                              "teyit": teyit, "sayfa": sf, "hata": hata,
+                              "teyit": teyit, "sayfa": sf, "hata": hata, "gorsel": gorsel,
                               "sure_ms": (time.perf_counter() - t0) * 1000.0})
             return {"bos": False, "icler": cikti, "hata": None}
     except Exception as e:
@@ -509,6 +650,12 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
     bas.append(f"- Karakter: {kayit['karakter']}")
     if kayit["teyit_gerek"]:
         bas.append("- ⚠ **OCR/zayıf çıkarım — künye ve sayısal veri için orijinalden TEYİT gerekir.**")
+    if kayit.get("ocr_durum"):
+        sayfalar = ", ".join(str(s) for s in (kayit.get("ocr_bos_sayfalar") or []))
+        bas.append(f"- 🔴 **{kayit['ocr_durum']}** (sayfa: {sayfalar or '—'}) — "
+                    f"görsel: `{kayit.get('gorsel_klasor') or '—'}` (P0-9 OCR-NÖBETÇİSİ: "
+                    f"{len(OCR_RETRY_ADIMLARI)} deterministik deneme de yetersiz kaldı, "
+                    f"orijinal sayfa görselinden ELLE oku).")
     if kayit.get("tur_tahmini"):
         bas.append(f"- Tür~: {kayit['tur_tahmini']} (dosya adından TAHMİNİ, kesinlik değildir)")
     if kayit.get("hata"):
@@ -525,15 +672,34 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
     return dosya, harita_dosya
 
 
-def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan, buyuk_esik):
+def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan,
+                 buyuk_esik, gorsel_sayfalar=None):
     karakter = anlamli(metin)
     kayit = {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
              "teyit_gerek": teyit, "karakter": karakter,
              "sha": hashlib.sha256((metin or "").encode("utf-8", "replace")).hexdigest()[:16],
              "sayfa": sayfa, "hata": hata,
              "tur_tahmini": tur_tahmin_et(ad, kaynak),
-             "buyuk": karakter > buyuk_esik}
+             "buyuk": karakter > buyuk_esik,
+             "ocr_durum": None, "ocr_bos_sayfalar": [], "gorsel_klasor": ""}
     kayit["md"], kayit["harita"] = md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik)
+    # ---- P0-9 OCR-NÖBETÇİSİ: hâlâ çökük kalan sayfalar İÇİN (hedefli) görsel-inceleme
+    # dosyaları — yazım burada (TEK-YAZAR EBEVEYN); işçi yalnız PNG baytlarını taşıdı. ----
+    taban = os.path.splitext(kayit["md"])[0] if kayit["md"] else None
+    if taban:
+        gklasor_abs = os.path.join(hedef, GORSEL_DIZIN, taban)
+        if os.path.isdir(gklasor_abs):        # önceki koşudan kalan STALE görselleri temizle
+            shutil.rmtree(gklasor_abs, ignore_errors=True)
+        if gorsel_sayfalar:
+            os.makedirs(gklasor_abs, exist_ok=True)
+            for sayfa_no, png_bytes in gorsel_sayfalar:
+                if not png_bytes:
+                    continue
+                with open(os.path.join(gklasor_abs, f"p{sayfa_no:03d}.png"), "wb") as f:
+                    f.write(png_bytes)
+            kayit["ocr_durum"] = OCR_BOS_DAMGA
+            kayit["ocr_bos_sayfalar"] = [s for s, _ in gorsel_sayfalar]
+            kayit["gorsel_klasor"] = f"{GORSEL_DIZIN}/{taban}"
     return kayit
 
 
@@ -605,11 +771,133 @@ def _hata_kaydi(no, ad, tarih, kaynak, yontem, hata):
     return {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
             "teyit_gerek": True, "karakter": 0, "sha": BOS_SHA, "sayfa": None,
             "hata": hata, "md": "", "tur_tahmini": tur_tahmin_et(ad, kaynak),
-            "buyuk": False, "harita": ""}
+            "buyuk": False, "harita": "",
+            "ocr_durum": None, "ocr_bos_sayfalar": [], "gorsel_klasor": ""}
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# P1-9(a) (v0.5.5) — ÖN-BAKIŞ (--onbakis N): MEŞRU HIZLI KANAL.
+#
+# DÜZELTME (sinav BLOKER giderimi — bağlayıcı plan): --onbakis, ana ingest
+# hattına HİÇ KARIŞMAZ. Ayrı, taze bir tarama (ana önbelleğe bakmaz/yazmaz)
+# yapar; yalnız ilk N kalemi (--onbakis-secim regex varsa önce onu önceler)
+# AYRI bir artefakta yazar: `_oa/metin-onbakis/` + içinde
+# `00-kunye.onbakis.json` + `00-INDEX.onbakis.md`. Ana `_oa/metin/00-kunye.
+# json`, `00-INDEX.md` ve `.ingest-onbellek.json`'a TEK BAYT dokunulmaz —
+# bayraksız tam koşu BYTE-ÖZDEŞ kalır (v1.5 determinizm testleri BOZULMAZ).
+#
+# AŞAĞI AKIŞ FAIL-CLOSED (ek kod GEREKMEZ — mimari sonucu): pipeline_kayit.
+# _ingest_once_saglam_mi YALNIZ `_oa/metin/00-kunye.json`'ın varlığına bakar;
+# bu dosya --onbakis ile YAZILMADIĞI için gerçek bir tam koşu tamamlanmadan
+# hiçbir pipeline adımı (1+) UYGULANDI yazamaz — "TAM DEĞİL" damgası dosya
+# adının kendisinde içkindir, ayrı bir bekçiye gerek yoktur.
+# ═════════════════════════════════════════════════════════════════════════
+
+def _onbakis_secim(items, n, secim_regex=None):
+    """İlk N kalemi seçer (orijinal sırayı KORUYARAK döndürür). --onbakis-
+    secim regex verilmişse eşleşenler ÖNCELİKLİDİR (yine de N'i aşmaz);
+    kalan yer sıradaki kalemlerle doldurulur."""
+    if n <= 0:
+        return []
+    if not secim_regex:
+        return items[:n]
+    try:
+        desen = re.compile(secim_regex, re.I)
+    except re.error:
+        return items[:n]
+    eslesen_idx = {it["index"] for it in items if desen.search(it["gorece"])}
+    secili_idx = set(list(eslesen_idx)[:n])
+    if len(secili_idx) < n:
+        for it in items:
+            if len(secili_idx) >= n:
+                break
+            secili_idx.add(it["index"])
+    return [it for it in items if it["index"] in secili_idx]
+
+
+def _onbakis_calistir(a, opts):
+    """--onbakis N: ayrı/hızlı ön-bakış kanalı. Döner: exit kodu (4 = kısmi-
+    tamam — 'ONBAKIS: N/M — TAM DEĞİL'; ana hattın exit 0/başarı semantiğiyle
+    KARIŞTIRILMASIN diye bilinçli olarak farklıdır)."""
+    klasor = a.klasor
+    hedef_ob = os.path.join(klasor, "_oa", ONBAKIS_DIZIN)
+    os.makedirs(hedef_ob, exist_ok=True)
+
+    # Taze tarama — ana önbelleğe (hedef=_oa/metin) HİÇ bakılmaz/yazılmaz.
+    items_tum = _tara(klasor, os.path.abspath(hedef_ob), {}, True)
+    secili = _onbakis_secim(items_tum, a.onbakis, getattr(a, "onbakis_secim", None))
+
+    kunye = []
+    kullanilan = set()
+    for it in secili:
+        gorece, no, temiz, tarih = it["gorece"], it["no"], it["temiz"], it["tarih"]
+        if it["sinif"] == "bilinmeyen":
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "bilinmeyen",
+                                      f"desteklenmeyen uzantı ({it['uz']}) — elle kontrol"))
+            continue
+        p = _cikar_is(it, opts)   # SERİ — küçük N için paralelleştirme gereksiz
+        if p is None:
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "hata",
+                                      "çıkarım işçisi çöktü — elle kontrol"))
+            continue
+        if it["sinif"] == "tekil":
+            k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
+                              gorece, no, temiz, tarih, hedef_ob, kullanilan, a.buyuk_esik,
+                              gorsel_sayfalar=p.get("gorsel"))
+            kunye.append(k)
+            continue
+        # arşiv
+        if p.get("icler") is None:
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "hata",
+                                      p.get("hata") or "EYP/ZIP açılamadı"))
+            continue
+        icler = p.get("icler") or []
+        if not icler and p.get("bos"):
+            kunye.append(_hata_kaydi(no, temiz, tarih, gorece, "arşiv-boş",
+                                      "EYP/ZIP içinde desteklenen evrak yok — elle kontrol"))
+        for j, ic in enumerate(icler):
+            son = "" if len(icler) == 1 else (chr(97 + j) if j < 26 else str(j))
+            ic_no = f"{no or '000'}{son}"
+            k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
+                              f"{gorece}::{ic['icad']}", ic_no,
+                              f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef_ob, kullanilan,
+                              a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"))
+            kunye.append(k)
+
+    kunye.sort(key=lambda k: (k.get("no") or "999", k.get("kaynak", "")))
+    toplam = sum(k.get("karakter") or 0 for k in kunye)
+    tahmini_token = toplam // KAR_PER_TOKEN
+
+    kunye_obj = {"klasor": os.path.abspath(klasor), "onbakis": True,
+                 "onbakis_n": a.onbakis, "onbakis_toplam_kaynak": len(items_tum),
+                 "toplam_evrak": len(kunye), "toplam_karakter": toplam,
+                 "tahmini_token": tahmini_token, "kayitlar": kunye}
+    _atomik_yaz(os.path.join(hedef_ob, "00-kunye.onbakis.json"),
+                json.dumps(kunye_obj, ensure_ascii=False, indent=2))
+
+    banner = (f"ONBAKIS: {len(secili)}/{len(items_tum)} — TAM DEĞİL (bu bir ÖN-BAKIŞ'tır, "
+              f"dosya TAM OKUNMADI; ana önbelleğe/00-kunye.json'a DOKUNULMADI — pipeline "
+              f"adımları --onbakis OLMADAN tam bir koşu tamamlanana kadar İNGEST-ÖNCE kapısıyla "
+              f"bloklu kalır).")
+    idx = [f"# ÖN-BAKIŞ İndeksi — {os.path.basename(os.path.abspath(klasor))}\n\n",
+           f"> {banner}\n\n",
+           f"Toplam kaynak: **{len(items_tum)}** · ön-bakışta işlenen: **{len(secili)}** · "
+           f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
+           "| # | Evrak | Yöntem | Karakter | Dosya |\n",
+           "|---|-------|--------|----------|-------|\n"]
+    for k in kunye:
+        idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('yontem','')} "
+                    f"| {k.get('karakter') or 0} | `{k.get('md','')}` |\n")
+    _atomik_yaz(os.path.join(hedef_ob, "00-INDEX.onbakis.md"), "".join(idx))
+
+    print(banner)
+    print(f"ÖN-BAKIŞ BİTTİ · {len(secili)}/{len(items_tum)} evrak · ~{toplam:,} karakter "
+          f"(~{tahmini_token:,} token) · Çıktı: {hedef_ob}")
+    return 4
 
 
 def main():
-    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.6 (PyMuPDF, paralel, Gate A+C)")
+    ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.7 (PyMuPDF, paralel, Gate A+C, OCR-Nöbetçisi)")
     ap.add_argument("klasor", nargs="?", default=".",
                     help="dava klasörü (verilmezse BULUNDUĞUN klasör işlenir)")
     ap.add_argument("--hedef")
@@ -623,6 +911,15 @@ def main():
     ap.add_argument("--buyuk-esik", type=int, default=BUYUK_ESIK_KARAKTER, dest="buyuk_esik",
                     help=f"Gate A: bu anlamlı karakter sayısını aşan evrak için md yanına "
                          f"sayfa/bölüm haritası (.harita.json) üretilir (varsayılan {BUYUK_ESIK_KARAKTER})")
+    ap.add_argument("--onbakis", type=int, default=0, metavar="N",
+                    help="(P1-9a) MEŞRU HIZLI KANAL: yalnız ilk N evrağı AYRI bir artefakta "
+                         "(_oa/metin-onbakis/ + 00-kunye.onbakis.json) işler — ana _oa/metin/ "
+                         "önbelleğine/00-kunye.json'a/00-INDEX.md'ye DOKUNMAZ (bayraksız tam "
+                         "koşu byte-özdeş kalır). Exit 4 (kısmi-tamam); pipeline adımları bu "
+                         "artefaktla İNGEST-ÖNCE kapısından GEÇEMEZ (yalnız tam koşu geçer).")
+    ap.add_argument("--onbakis-secim", default=None, metavar="REGEX",
+                    help="(--onbakis ile) hangi N evrağın öncelikli seçileceğini belirleyen "
+                         "regex (göreli yola uygulanır); verilmezse ilk N (sıralı) alınır.")
     a = ap.parse_args()
 
     if not os.path.isdir(a.klasor):
@@ -637,6 +934,10 @@ def main():
         print("BİLGİ: Tesseract PATH'te yok → taranmış evraklar OCR'lanamayacak "
               "(metin PDF/UDF/DOCX yine işlenir). Kur: UB-Mannheim (Win) / apt tesseract-ocr-tur (Linux).",
               file=sys.stderr)
+
+    if a.onbakis and a.onbakis > 0:
+        opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit}
+        sys.exit(_onbakis_calistir(a, opts))
 
     hedef = a.hedef or os.path.join(a.klasor, "_oa", "metin")
     os.makedirs(hedef, exist_ok=True)
@@ -771,7 +1072,8 @@ def main():
 
         if it["sinif"] == "tekil":
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
-                             gorece, no, temiz, tarih, hedef, kullanilan, a.buyuk_esik)
+                             gorece, no, temiz, tarih, hedef, kullanilan, a.buyuk_esik,
+                             gorsel_sayfalar=p.get("gorsel"))
             kunye.append(k); yeni += 1; temsil.add(it["index"])
             # v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ — sonraki koşuda
             # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
@@ -797,7 +1099,7 @@ def main():
             k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
                              f"{gorece}::{ic['icad']}", ic_no,
                              f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan,
-                             a.buyuk_esik)
+                             a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"))
             kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
         # v1.5.1 (a): arşiv içinde arıza {hata, atlandı} taşıyan EN AZ BİR iç kayıt varsa
         # bu arşiv de önbelleğe YAZILMAZ (imza aynı kalır → araç sonradan kurulunca
@@ -827,6 +1129,8 @@ def main():
     bilinmeyen = sum(1 for k in kunye if k.get("yontem") in _ADMIN)
     # Gate A özeti: kaç evrak eşiği aştı (>buyuk_esik anlamlı karakter).
     buyuk_sayisi = sum(1 for k in kunye if k.get("buyuk"))
+    # P0-9 özeti: kaç evrakta EN AZ BİR sayfa OCR-BOŞ damgası aldı (görsel-inceleme gerek).
+    ocr_bos_sayisi = sum(1 for k in kunye if k.get("ocr_durum"))
 
     # ---- MEKANİK KAPI (sessiz-atlama yasağı): HER kaynak ≥1 kayıtla temsil edilmeli ----
     # GERÇEK invaryant — 'append başına say' totolojisi DEĞİL: bozuk önbellekte "kayitlar":[]
@@ -845,9 +1149,10 @@ def main():
     idx = [f"# Evrak Metin İndeksi — {os.path.basename(os.path.abspath(a.klasor))}\n\n",
            f"Toplam evrak: **{len(kunye)}** · OCR/teyit gerek: **{ocr_sayisi}** · "
            f"bilinmeyen/elle: **{bilinmeyen}** · büyük (>{a.buyuk_esik:,} kar): **{buyuk_sayisi}** · "
+           f"🔴 OCR-BOŞ (görsel inceleme gerek): **{ocr_bos_sayisi}** · "
            f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
-           "| # | Evrak | Tarih | Yöntem | ⚠ | Tür~ | Karakter | Harita | Dosya |\n",
-           "|---|-------|-------|--------|---|------|----------|--------|-------|\n"]
+           "| # | Evrak | Tarih | Yöntem | ⚠ | 🔴 | Tür~ | Karakter | Harita | Dosya |\n",
+           "|---|-------|-------|--------|---|---|------|----------|--------|-------|\n"]
     for k in kunye:
         tur_hucre = f"{k['tur_tahmini']} (tahmini)" if k.get("tur_tahmini") else ""
         if k.get("harita"):
@@ -856,15 +1161,29 @@ def main():
             harita_hucre = "büyük"
         else:
             harita_hucre = ""
+        ocr_bos_hucre = f"🔴({len(k.get('ocr_bos_sayfalar') or [])})" if k.get("ocr_durum") else ""
         idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
                    f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
-                   f"| {tur_hucre} | {k.get('karakter') or 0} | {harita_hucre} | `{k.get('md','')}` |\n")
+                   f"| {ocr_bos_hucre} | {tur_hucre} | {k.get('karakter') or 0} | {harita_hucre} "
+                   f"| `{k.get('md','')}` |\n")
     idx.append("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
                "Orijinal evrak salt-okunur arşivde durur.\n")
     idx.append("> Tür~ = dosya adından MEKANİK tahmin (Gate C), kesinlik DEĞİLDİR — advisory.\n")
     idx.append(f"> Harita = büyük evrağın (>{a.buyuk_esik:,} anlamlı karakter) sayfa/bölüm "
                "haritası (`<dosya>.harita.json`, md yanında); DETERMİNİSTİK ve KAYIPSIZ "
                "yapısal bölme, özet DEĞİLDİR (Gate A).\n")
+    idx.append(f"> 🔴 = P0-9 OCR-NÖBETÇİSİ: {len(OCR_RETRY_ADIMLARI)} deterministik denemeden "
+               "(DPI/PSM/yönelim) sonra da o sayfa(lar) boş/çöp kaldı — 'YÜKLENEMEDİ' DEĞİL, "
+               "'işlendi' de DEĞİL; sayfa görseli `_oa/metin/gorsel/<evrak>/pNN.png` altında, "
+               "ELLE İNCELE. Parantez içi = etkilenen sayfa sayısı.\n")
+    if ocr_bos_sayisi:
+        idx.append("\n## 🔴 OCR-BOŞ — GÖRSEL İNCELEME GEREK\n\n")
+        for k in kunye:
+            if not k.get("ocr_durum"):
+                continue
+            sayfalar = ", ".join(str(s) for s in (k.get("ocr_bos_sayfalar") or []))
+            idx.append(f"- `{k.get('md','')}` (sayfa {sayfalar}) → "
+                       f"`{k.get('gorsel_klasor') or '—'}`\n")
 
     _atomik_yaz(os.path.join(hedef, "00-INDEX.md"), "".join(idx))
     # Önbellek sort_keys → tamamlanma/ekleme sırasından BAĞIMSIZ, byte-deterministik.
@@ -872,6 +1191,7 @@ def main():
     kunye_str = json.dumps({"klasor": os.path.abspath(a.klasor), "toplam_evrak": len(kunye),
                             "ocr_teyit_gerek": ocr_sayisi, "bilinmeyen": bilinmeyen,
                             "buyuk_evrak": buyuk_sayisi, "buyuk_esik": a.buyuk_esik,
+                            "ocr_bos_evrak": ocr_bos_sayisi,
                             "toplam_karakter": toplam, "tahmini_token": tahmini_token,
                             "kayitlar": kunye}, ensure_ascii=False, indent=2)
     _atomik_yaz(os.path.join(hedef, "00-kunye.json"), kunye_str)   # EN SON = commit işareti
@@ -880,6 +1200,10 @@ def main():
     top_sn = time.perf_counter() - t_bas
     print(f"BİTTİ · evrak: {len(kunye)} (yeni: {yeni}, önbellekten: {atlanan}, bilinmeyen: {bilinmeyen}) · "
           f"OCR/teyit: {ocr_sayisi} · ~{toplam:,} karakter (~{tahmini_token:,} token)")
+    if ocr_bos_sayisi:
+        print(f"UYARI (P0-9 OCR-NÖBETÇİSİ): {ocr_bos_sayisi} evrakta en az bir sayfa OCR-BOŞ "
+              f"kaldı — görsel-inceleme gerek (bkz. 00-INDEX.md, _oa/metin/{GORSEL_DIZIN}/).",
+              file=sys.stderr)
     print(f"Süre: {top_sn:.1f} sn (çıkarım {cik_sn:.1f} sn · işçi={isci}) · Çıktı: {hedef}")
     if profil:
         sirali = sorted(profil.items(), key=lambda x: -x[1])

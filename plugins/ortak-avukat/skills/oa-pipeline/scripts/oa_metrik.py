@@ -66,6 +66,7 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse
 import datetime
+import importlib.util
 import json
 import os
 import sys
@@ -327,6 +328,290 @@ def olc_defter(defter, defter_hata):
     }
 
 
+# ---------------- 6) OVERRIDE SAYACI (P2-14, v0.5.5) ----------------
+_PIPELINE_KAYIT_MOD = None
+
+
+def _pipeline_kayit_modulu():
+    """pipeline_kayit.py'yi (aynı dizin) İN-PROCESS import eder — sözleşme-dışı
+    dizin bekçisi/makbuzsuz-dilekçe uyarısı TEK KAYNAKTAN okunur (ikiz-liste
+    yasağı); bulunamaz/çökerse None (çağıran taraf bu alt-sayaçları 'olculemedi'
+    sayar, ANA override_orani hesabını ETKİLEMEZ)."""
+    global _PIPELINE_KAYIT_MOD
+    if _PIPELINE_KAYIT_MOD is not None:
+        return _PIPELINE_KAYIT_MOD
+    betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipeline_kayit.py")
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_oa_metrik_pipeline_kayit_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _PIPELINE_KAYIT_MOD = mod
+    return _PIPELINE_KAYIT_MOD
+
+
+# ---------------- 7) REGRESYON SAYAÇLARI (P1-13, v0.5.5) ----------------
+_OA_HAFIZA_MOD = None
+
+
+def _oa_hafiza_modulu():
+    """oa_hafiza.py'yi (aynı dizin) İN-PROCESS import eder — ARAMA_ARACLARI/
+    GETIR_ARACLARI (araç sınıflandırması) TEK KAYNAKTAN okunur (ikiz-liste
+    yasağı). Bulunamaz/çökerse None (çağıran taraf sınıflandırmayı 'diğer'e
+    düşürür, çökmez)."""
+    global _OA_HAFIZA_MOD
+    if _OA_HAFIZA_MOD is not None:
+        return _OA_HAFIZA_MOD
+    betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oa_hafiza.py")
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_oa_metrik_hafiza_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _OA_HAFIZA_MOD = mod
+    return _OA_HAFIZA_MOD
+
+
+def olc_regresyon(kok, analiz_token_raporu, override_sayaci):
+    """P1-13 (P2'den YÜKSELTİLDİ, sinav DÜZELTMESİ) — v0.5.5'in KENDİ
+    geçerlilik/regresyon aracı: bir canlı koşunun 'regresyon kapandı' iddiası
+    BEYANLA değil bu sayaçlarla doğrulanır. Salt ÖLÇER (aynı doktrin: kanıt
+    yoksa 0/None, UYDURMA yok). Kapsar: (b) adım-artefakt varlık matrisi
+    (04/05/06/07), (c) teyit kütüğü satırlarının araç-sınıfına göre dağılımı
+    (ictihat-arama/ictihat-getir/mevzuat/diğer — oa_hafiza'dan TEK KAYNAK),
+    (d) _oa/teyit/dokum/ dosya sayısı, (e) tam-yukleme.jsonl satır sayısı
+    (analiz_token_raporu'ndan devralınır — iki kez ayrıştırılmaz)."""
+    cikti_dizin = os.path.join(_oa_kok(kok), "cikti")
+    import glob as _glob
+    desen_map = {"04-vakia": "04-vakia*", "05-kiyas": "05-kiyas*",
+                 "06-strateji": "06-strateji*", "07-antitez": "07-antitez*"}
+    artefakt_matrisi = {}
+    for ad, desen in desen_map.items():
+        eslesen = _glob.glob(os.path.join(cikti_dizin, desen)) if os.path.isdir(cikti_dizin) else []
+        artefakt_matrisi[ad] = bool(eslesen)
+
+    # Muhakeme kaydı sayısı — P0-2 tek-komutunun bölüm-append ürettiği
+    # *ictihat-muhakeme* dosyalarındaki '**KUNYE:**' bölüm başlığı sayısı
+    # (her bölüm = bir muhakeme kaydı; parser'a bağlı KALMADAN ucuz sayım).
+    muhakeme_kayit_sayisi = 0
+    if os.path.isdir(cikti_dizin):
+        for yol_m in _glob.glob(os.path.join(cikti_dizin, "*ictihat-muhakeme*")):
+            try:
+                with open(yol_m, encoding="utf-8", errors="replace") as f:
+                    muhakeme_kayit_sayisi += f.read().count("**KUNYE:**")
+            except OSError:
+                pass
+
+    hafiza = _oa_hafiza_modulu()
+    arama_set = getattr(hafiza, "ARAMA_ARACLARI", set()) if hafiza is not None else set()
+    getir_set = getattr(hafiza, "GETIR_ARACLARI", set()) if hafiza is not None else set()
+    kutuk_yol = os.path.join(_oa_kok(kok), "teyit", "kunye-teyit.md")
+    sinif_dagilim = {"ictihat-arama": 0, "ictihat-getir": 0, "mevzuat": 0, "diger": 0}
+    if os.path.isfile(kutuk_yol):
+        try:
+            with open(kutuk_yol, encoding="utf-8", errors="replace") as f:
+                for satir in f:
+                    s = satir.strip()
+                    if not s.startswith("|"):
+                        continue
+                    hucreler = [h.strip() for h in s.strip("|").split("|")]
+                    if len(hucreler) < 2 or hucreler[0].lower() in ("zaman", "---"):
+                        continue
+                    arac = hucreler[1]
+                    if not arac or arac.strip("-") == "" or arac == "Araç":
+                        continue
+                    if arac in arama_set:
+                        sinif_dagilim["ictihat-arama"] += 1
+                    elif arac in getir_set:
+                        sinif_dagilim["ictihat-getir"] += 1
+                    elif arac.lower().startswith("mevzuat"):
+                        sinif_dagilim["mevzuat"] += 1
+                    else:
+                        sinif_dagilim["diger"] += 1
+        except OSError:
+            pass
+
+    dokum_dizin = os.path.join(_oa_kok(kok), "teyit", "dokum")
+    dokum_dosya_sayisi = 0
+    if os.path.isdir(dokum_dizin):
+        try:
+            dokum_dosya_sayisi = sum(1 for e in os.scandir(dokum_dizin) if e.is_file())
+        except OSError:
+            pass
+
+    tam_yukleme_satir_sayisi = 0
+    if isinstance(analiz_token_raporu, dict) and analiz_token_raporu.get("durum") == "olculdu":
+        tam_yukleme_satir_sayisi = analiz_token_raporu.get("olay_sayisi") or 0
+
+    golge_dizin_sayisi = None
+    if isinstance(override_sayaci, dict):
+        gk = override_sayaci.get("gorunmez_kacis_sayaclari") or {}
+        gd = gk.get("sozlesme_disi_dizin")
+        golge_dizin_sayisi = gd if isinstance(gd, int) else None
+
+    pk = _pipeline_kayit_modulu()
+    kutuk_n, dilekce_n = None, None
+    if pk is not None:
+        try:
+            kutuk_n, dilekce_n = pk._kutuk_dilekce_sayaci(kok)
+        except Exception:
+            pass
+
+    return {
+        "durum": "olculdu",
+        "artefakt_matrisi": artefakt_matrisi,
+        "muhakeme_kayit_sayisi": muhakeme_kayit_sayisi,
+        "teyit_kutuk_arac_sinif_dagilimi": sinif_dagilim,
+        "dokum_dosya_sayisi": dokum_dosya_sayisi,
+        "tam_yukleme_satir_sayisi": tam_yukleme_satir_sayisi,
+        "golge_dizin_sayisi": golge_dizin_sayisi,
+        "kutuk_dilekce_sayaci": {"kutuk": kutuk_n, "dilekce": dilekce_n},
+        "not": ("v0.5.5'in KENDİ regresyon/geçerlilik sayaçları — bir canlı koşunun "
+                "'regresyon kapandı' iddiası bunlarla ÖLÇÜLÜR, beyanla değil "
+                "(bkz. --baz-yaz/--baz için token/sayaç kıyas raporu)."),
+    }
+
+
+# ---------------- 7b) BAZ ÇİZGİSİ KIYASI (--baz-yaz / --baz) ----------------
+_BAZ_ALANLAR = [
+    ("kulliyat_tahmini_token",
+     lambda m: (m.get("kulliyat") or {}).get("tahmini_token")
+     if (m.get("kulliyat") or {}).get("durum") == "olculdu" else None),
+    ("analiz_toplam_token",
+     lambda m: (m.get("analiz_token_raporu") or {}).get("toplam_token")
+     if (m.get("analiz_token_raporu") or {}).get("durum") == "olculdu" else None),
+    ("muhakeme_kayit_sayisi",
+     lambda m: (m.get("regresyon_sayaclari") or {}).get("muhakeme_kayit_sayisi")),
+    ("dokum_dosya_sayisi",
+     lambda m: (m.get("regresyon_sayaclari") or {}).get("dokum_dosya_sayisi")),
+    ("tam_yukleme_satir_sayisi",
+     lambda m: (m.get("regresyon_sayaclari") or {}).get("tam_yukleme_satir_sayisi")),
+    ("golge_dizin_sayisi",
+     lambda m: (m.get("regresyon_sayaclari") or {}).get("golge_dizin_sayisi")),
+    ("override_orani",
+     lambda m: (m.get("override_sayaci") or {}).get("override_orani")),
+]
+BAZ_ESIK_YUZDE = 30  # yalnız GÖZLEM eşiği — GEÇİT değil (Goodhart notu, P1-13)
+
+
+def baz_kiyasla(guncel, baz):
+    """(guncel, baz) iki `hesapla()` çıktısı (ya da `--baz-yaz` ile dondurulmuş
+    aynı şekilli bir dosya) arasında EŞİKSİZ bir token/sayaç kıyas raporu
+    üretir. Hiçbir alan zorunlu/engel DEĞİLDİR — yalnız GÖZLENİR; `BAZ_ESIK_
+    YUZDE` aşan alan(lar) yalnız 'v0.5.6 gündemine girer' notuyla işaretlenir."""
+    alanlar = {}
+    esik_asan = []
+    for ad, alici in _BAZ_ALANLAR:
+        try:
+            b = alici(baz) if isinstance(baz, dict) else None
+        except Exception:
+            b = None
+        try:
+            g = alici(guncel) if isinstance(guncel, dict) else None
+        except Exception:
+            g = None
+        satir = {"baz": b, "guncel": g, "fark_yuzde": None}
+        if isinstance(b, (int, float)) and isinstance(g, (int, float)) and b:
+            fark = (g - b) / b
+            satir["fark_yuzde"] = round(fark * 100, 1)
+            if abs(fark) * 100 >= BAZ_ESIK_YUZDE:
+                esik_asan.append(ad)
+        alanlar[ad] = satir
+    return {
+        "alanlar": alanlar,
+        "esik_asan_alanlar": esik_asan,
+        "esik_yuzde": BAZ_ESIK_YUZDE,
+        "not": ("EŞİKSİZ ölçüm — bu bir GEÇİT/ENGEL değildir, yalnız GÖZLENİR "
+                f"(Goodhart notu). ±%{BAZ_ESIK_YUZDE}+ değişen alan(lar) v0.5.6 "
+                "gündemine (backlog) girer notu düşülür, teslim engellenmez."),
+    }
+
+
+def olc_override(kok, defter, analiz):
+    """P2-14 — --zorla/--serh/--serhle oranının model-bağımsız MEKANİK ölçümü.
+    SALT ÖLÇER, ENGELLEMEZ (mevcut ADVISORY doktrini aynen). Bu oran BAŞARI
+    ÖLÇÜTÜ DEĞİL, İNCELEME TETİKLEYİCİSİDİR (Goodhart notu — sinav DÜZELTME):
+    hedef ilan edilirse görünür kaçış (şerh) görünmez kaçışa (ad değiştirme/
+    hiç loglamama/gölge dizine yazma) iter; sağlık ölçüsü ikisinin BİRLİKTE
+    okunmasıdır. Bu yüzden 'gorunmez_kacis_sayaclari' AYNI çıktıda taşınır."""
+    if defter is None:
+        return {"durum": YOK, "not": "defter yok — override ölçülemedi."}
+    serhli_parca, toplam_uygulandi = 0, 0
+    try:
+        for _no, a in (defter.get("adimlar") or {}).items():
+            for _p, p in (a.get("parcalar") or {}).items():
+                if p.get("durum") == "UYGULANDI":
+                    toplam_uygulandi += 1
+                    if p.get("serh"):
+                        serhli_parca += 1
+    except Exception as e:
+        return {"durum": OLCULEMEDI, "not": f"defter 'adimlar' çözülemedi ({e})"}
+
+    serh_tarihcesi_n = len((analiz or {}).get("serh_tarihcesi") or [])
+
+    serhli_kapanis = 0
+    oturum_dizin = os.path.join(_oa_kok(kok), "oturum")
+    if os.path.isdir(oturum_dizin):
+        try:
+            for ad in os.listdir(oturum_dizin):
+                yol = os.path.join(oturum_dizin, ad)
+                if os.path.isfile(yol):
+                    with open(yol, encoding="utf-8", errors="replace") as f:
+                        serhli_kapanis += f.read().count("ŞERH (--serhle):")
+        except OSError:
+            pass
+
+    makbuz_red = 0
+    makbuz_yol = os.path.join(_oa_kok(kok), "defter", "teslim-makbuz.json")
+    if os.path.isfile(makbuz_yol):
+        try:
+            with open(makbuz_yol, encoding="utf-8") as f:
+                m = json.load(f)
+            if isinstance(m, dict) and m.get("exit_kodu") not in (0, None):
+                makbuz_red = 1
+        except Exception:
+            pass
+
+    oran = round(serhli_parca / toplam_uygulandi, 4) if toplam_uygulandi else None
+
+    # Görünmez-kaçış sayaçları — pipeline_kayit'in TEK KAYNAKLI (ikiz-liste
+    # yasağı) bekçi fonksiyonlarından okunur; modül yüklenemezse "olculemedi".
+    golge_dizin_n, makbuzsuz_dilekce_n = OLCULEMEDI, OLCULEMEDI
+    pk = _pipeline_kayit_modulu()
+    if pk is not None:
+        try:
+            golge_dizin_n = len(pk._sozlesme_disi_dizinler(kok))
+        except Exception:
+            golge_dizin_n = OLCULEMEDI
+        try:
+            makbuzsuz_dilekce_n = 1 if pk._dilekce_sekilli_makbuzsuz_uyarisi(kok) else 0
+        except Exception:
+            makbuzsuz_dilekce_n = OLCULEMEDI
+
+    return {
+        "durum": "olculdu",
+        "serhli_uygulandi_parca": serhli_parca,
+        "toplam_uygulandi_parca": toplam_uygulandi,
+        "override_orani": oran,
+        "serh_tarihcesi_uzunluk": serh_tarihcesi_n,
+        "serhli_kapanis_sayisi": serhli_kapanis,
+        "teslim_makbuz_red_sayisi": makbuz_red,
+        "gorunmez_kacis_sayaclari": {
+            "sozlesme_disi_dizin": golge_dizin_n,
+            "makbuzsuz_dilekce_adayi": makbuzsuz_dilekce_n,
+        },
+        "not": ("override_orani BAŞARI ÖLÇÜTÜ DEĞİL, İNCELEME TETİKLEYİCİSİDİR — "
+                "şerh GÖRÜNÜR bir kaçıştır, sağlık ölçüsü bu oranla "
+                "gorunmez_kacis_sayaclari'nın BİRLİKTE okunmasıdır (Goodhart notu)."),
+    }
+
+
 # ---------------- 5) ANALİZ TOKEN RAPORU (M1-4, Gate D) ----------------
 def _tam_yukleme_oku(yol):
     """(olaylar, hata) — tam-yukleme.jsonl'i satır satır oku. Bozuk satır
@@ -530,6 +815,55 @@ def ozet_yaz(metrik):
     else:
         o.append(f"    -> {r['durum'].upper()}: {r.get('not','')}")
 
+    ov = metrik.get("override_sayaci") or {}
+    o.append("[6] OVERRIDE SAYACI (--zorla/--serh/--serhle — İNCELEME TETİKLEYİCİSİ, HEDEF DEĞİL)")
+    if ov.get("durum") == "olculdu":
+        oran_str = f"%{ov['override_orani']*100:.1f}" if ov.get("override_orani") is not None else "-"
+        o.append(f"    -> şerhli UYGULANDI: {_s(ov['serhli_uygulandi_parca'])} / "
+                 f"{_s(ov['toplam_uygulandi_parca'])} (oran: {oran_str})")
+        o.append(f"    -> serh_tarihcesi (tam_tur --zorla): {_s(ov['serh_tarihcesi_uzunluk'])}")
+        o.append(f"    -> şerhli kapanış (oturum-kapat --serhle): {_s(ov['serhli_kapanis_sayisi'])}")
+        o.append(f"    -> teslim-makbuz RED: {_s(ov['teslim_makbuz_red_sayisi'])}")
+        gk = ov.get("gorunmez_kacis_sayaclari") or {}
+        o.append(f"    -> GÖRÜNMEZ-KAÇIŞ: sözleşme-dışı dizin {_s(gk.get('sozlesme_disi_dizin'))} · "
+                 f"makbuzsuz-taslak sayacı {_s(gk.get('makbuzsuz_dilekce_adayi'))}")
+        o.append(f"    -> {ov.get('not','')}")
+    else:
+        o.append(f"    -> {ov.get('durum', OLCULEMEDI).upper()}: {ov.get('not','')}")
+
+    reg = metrik.get("regresyon_sayaclari") or {}
+    o.append("[7] REGRESYON SAYAÇLARI (P1-13 — v0.5.5'in KENDİ geçerlilik aracı)")
+    if reg.get("durum") == "olculdu":
+        am = reg.get("artefakt_matrisi") or {}
+        am_str = " · ".join(f"{ad}:{'VAR' if v else 'YOK'}" for ad, v in am.items())
+        o.append(f"    -> adım-artefakt matrisi : {am_str}")
+        o.append(f"    -> muhakeme kaydı sayısı : {_s(reg.get('muhakeme_kayit_sayisi'))}")
+        sd = reg.get("teyit_kutuk_arac_sinif_dagilimi") or {}
+        sd_str = " · ".join(f"{k}:{v}" for k, v in sd.items())
+        o.append(f"    -> teyit kütük araç sınıfı: {sd_str}")
+        o.append(f"    -> döküm dosya sayısı    : {_s(reg.get('dokum_dosya_sayisi'))}")
+        o.append(f"    -> tam-yükleme satır sayısı: {_s(reg.get('tam_yukleme_satir_sayisi'))}")
+        o.append(f"    -> gölge-dizin sayısı    : {_s(reg.get('golge_dizin_sayisi'))}")
+        kd = reg.get("kutuk_dilekce_sayaci") or {}
+        o.append(f"    -> kütük/dilekçe künye   : {_s(kd.get('kutuk'))} / {_s(kd.get('dilekce'))}")
+    else:
+        o.append(f"    -> {reg.get('durum', OLCULEMEDI).upper()}: {reg.get('not','')}")
+
+    if metrik.get("baz_kiyas"):
+        bk = metrik["baz_kiyas"]
+        o.append("[BAZ KIYAS] önceki bir baz çizgisine karşı EŞİKSİZ gözlem (--baz)")
+        for ad, satir in (bk.get("alanlar") or {}).items():
+            fark = satir.get("fark_yuzde")
+            fark_str = f"%{fark:+.1f}" if fark is not None else "-"
+            isaret = " ⚠" if ad in (bk.get("esik_asan_alanlar") or []) else ""
+            o.append(f"    -> {ad:<26}: baz={_s(satir.get('baz'))}  güncel={_s(satir.get('guncel'))}"
+                     f"  fark={fark_str}{isaret}")
+        if bk.get("esik_asan_alanlar"):
+            o.append(f"    -> ⚠ %{bk.get('esik_yuzde')}+ değişen: "
+                     + ", ".join(bk["esik_asan_alanlar"]) + " (gözlem — v0.5.6 gündemine girer, ENGEL DEĞİL).")
+        else:
+            o.append(f"    -> %{bk.get('esik_yuzde')}+ değişen alan yok.")
+
     o.append("-" * 66)
     o.append(f"  metrik.json -> {metrik['cikti']}")
     o.append("  NOT: ölçer, yorumlamaz. 'yok/ölçülemedi' = kanıt yok; sayı UYDURULMADI.")
@@ -537,27 +871,23 @@ def ozet_yaz(metrik):
     return "\n".join(o)
 
 
-def main():
-    ap = argparse.ArgumentParser(
-        description="oa_metrik.py — token/verimlilik telemetrisi (deterministik ölçer)")
-    ap.add_argument("--kok", default=".", help="çalışma kökü (varsayılan: bulunulan klasör)")
-    ap.add_argument("--cikti", help="metrik.json yolu (varsayılan: <kok>/_oa/defter/metrik.json)")
-    ap.add_argument("--analiz-esik-token", type=int, default=None, dest="analiz_esik_token",
-                    help="ANALİZ TOKEN RAPORU eşiği (token); verilmezse külliyat tahmini "
-                         "token'ı (kunye yoksa sabit varsayılan) kullanılır")
-    a = ap.parse_args()
-
-    kok = a.kok
-    if not os.path.isdir(kok):
-        sys.exit(f"HATA: klasör yok: {kok}")
-
+def hesapla(kok, analiz_esik_token=None):
+    """P0-7/P0-8 (v0.5.5) — `main()`'in ÖLÇÜM mantığını (dosya yazımından AYRI)
+    İN-PROCESS yeniden-kullanılabilir hâle getirir: `pipeline_kayit.py --hook-
+    denetle` (model-bağımsız Stop/SessionEnd hook'u) subprocess AÇMADAN aynı
+    metrik sözlüğünü üretebilsin diye (P0-4/P0-5'teki 'kapı başka kapıyı
+    subprocess ile çağırmaz' tasarım kuralıyla simetrik). CLI davranışı
+    (main()) DEĞİŞMEDİ — yalnız gövdesi bu fonksiyona taşındı."""
     kunye, _kunye_ham, kunye_hata = _oku_json(_kunye_yolu(kok))
     analiz, _analiz_ham, analiz_hata = _oku_json(_analiz_yolu(kok))
     defter, defter_ham, defter_hata = _oku_json(_defter_yolu(kok))
 
-    metrik = {
+    override_sayaci = olc_override(kok, defter, analiz)
+    analiz_token_raporu = olc_analiz_token(kunye, kok, analiz_esik_token)
+
+    return {
         "arac": "oa_metrik",
-        "surum": "1.2",
+        "surum": "1.3",
         "olcum_zamani": _simdi(),
         "kok": os.path.abspath(kok),
         "kaynaklar": {
@@ -574,8 +904,43 @@ def main():
         "secicilik": olc_secicilik(kunye, defter_ham, _analiz_ham),
         "tam_tur": olc_tam_tur(analiz, analiz_hata, kunye),
         "defter": olc_defter(defter, defter_hata),
-        "analiz_token_raporu": olc_analiz_token(kunye, kok, a.analiz_esik_token),
+        "override_sayaci": override_sayaci,
+        "analiz_token_raporu": analiz_token_raporu,
+        "regresyon_sayaclari": olc_regresyon(kok, analiz_token_raporu, override_sayaci),
     }
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="oa_metrik.py — token/verimlilik telemetrisi (deterministik ölçer)")
+    ap.add_argument("--kok", default=".", help="çalışma kökü (varsayılan: bulunulan klasör)")
+    ap.add_argument("--cikti", help="metrik.json yolu (varsayılan: <kok>/_oa/defter/metrik.json)")
+    ap.add_argument("--analiz-esik-token", type=int, default=None, dest="analiz_esik_token",
+                    help="ANALİZ TOKEN RAPORU eşiği (token); verilmezse külliyat tahmini "
+                         "token'ı (kunye yoksa sabit varsayılan) kullanılır")
+    ap.add_argument("--baz-yaz", dest="baz_yaz", default=None, metavar="YOL",
+                    help="P1-13 — bu ölçümü BAZ ÇİZGİSİ olarak <YOL>'a da dondurur "
+                         "(ör. metrik-baz-v054.json); --cikti'den BAĞIMSIZ, ayrıca yazılır")
+    ap.add_argument("--baz", dest="baz", default=None, metavar="YOL",
+                    help="P1-13 — önceki bir baz dosyasına (<YOL>, --baz-yaz ile üretilmiş ya "
+                         "da eski bir metrik.json) karşı EŞİKSİZ token/sayaç kıyas raporu üretir "
+                         "(yalnız GÖZLEM — bir GEÇİT değildir, teslimi engellemez)")
+    a = ap.parse_args()
+
+    kok = a.kok
+    if not os.path.isdir(kok):
+        sys.exit(f"HATA: klasör yok: {kok}")
+
+    metrik = hesapla(kok, a.analiz_esik_token)
+
+    if a.baz:
+        baz_veri, _baz_ham, baz_hata = _oku_json(a.baz)
+        if baz_veri is None:
+            print(f"UYARI: baz dosyası okunamadı ({baz_hata}) — --baz kıyası ATLANDI: {a.baz}",
+                  file=sys.stderr)
+        else:
+            metrik["baz_kiyas"] = baz_kiyasla(metrik, baz_veri)
+            metrik["baz_kiyas"]["kaynak_dosya"] = os.path.abspath(a.baz)
 
     cikti = a.cikti or _metrik_yolu(kok)
     metrik["cikti"] = os.path.abspath(cikti)
@@ -587,6 +952,17 @@ def main():
             json.dump(metrik, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"UYARI: metrik.json yazılamadı ({e}) — özet yine de basılıyor.", file=sys.stderr)
+
+    if a.baz_yaz:
+        try:
+            ust_baz = os.path.dirname(a.baz_yaz)
+            if ust_baz:
+                os.makedirs(ust_baz, exist_ok=True)
+            with open(a.baz_yaz, "w", encoding="utf-8") as f:
+                json.dump(metrik, f, ensure_ascii=False, indent=2)
+            print(f"BAZ ÇİZGİSİ donduruldu: {os.path.abspath(a.baz_yaz)}")
+        except Exception as e:
+            print(f"UYARI: baz dosyası yazılamadı ({e})", file=sys.stderr)
 
     print(ozet_yaz(metrik))
     return 0

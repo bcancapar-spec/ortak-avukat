@@ -25,9 +25,22 @@ Teslim, bu üç script + `oa-antitez` çökertme matrisi + aşağıdaki A/B/C/D 
 
 **TEK KOMUT TESLİM ZİNCİRİ (orkestra script — fiilen ÇAĞRILIR, atlanmaz):** Yukarıdaki kapılar + Layer 0 + defter denetimini tek seferde, sabit sırada ve ilk engelde durarak koşan bir orkestra script'i vardır — teslim öncesi bu **tek komut** çalıştırılır:
 ```bash
-python scripts/teslim_paketi.py <taslak.md> --tip <tip> --taraf <taraf> [--dis-arac] --kok .
+python scripts/teslim_paketi.py <taslak.md> --tip <tip> --taraf <taraf> [--dis-arac] [--udf-yok] --kok .
 ```
-(`--tip`: dava|cevap|istinaf|temyiz|aym_bireysel|genel; `--taraf`: davaci|davali|sanik|katilan|mudahil — boş bırakılabilir; `--dis-arac`: çıktı dış araca gidecekse Privacy Layer 0 kapısını zincire ekler; `--kok`: çalışma kökü.) Zincir dilekce_denetim → kunye_teyit → ictihat_muhakeme_denetim → [gizlilik_tara] → defter `--denetle` → tam_tur `--durum` sırasıyla koşar, ilk kapanan kapıda durur ve tek raporda hangi kapının kapandığını basar; hepsi geçerse UDF üretir ve "TESLİME HAZIR" der (exit 0). Bu script çalıştırılmadan/çıktısı görülmeden "teslime hazır" sözle beyan edilemez (R2: tek ölçüt bu script'in exit kodudur) — fiziksel aktivasyon kuralı burada da geçerlidir.
+(`--tip`: dava|cevap|istinaf|temyiz|aym_bireysel|genel; `--taraf`: davaci|davali|sanik|katilan|mudahil — boş bırakılabilir; `--dis-arac`: çıktı dış araca gidecekse Privacy Layer 0 kapısını zincire ekler; `--udf-yok`: kurucu kural "varsayılan çıktı UDF"yü BİLİNÇLİ atla (tercih makbuza yazılır); `--kok`: çalışma kökü.) Zincir dilekce_denetim → kunye_teyit → ictihat_muhakeme_denetim → [gizlilik_tara] → defter boşluğu (in-process) → tam_tur `--durum` sırasıyla koşar, ilk kapanan kapıda durur ve tek raporda hangi kapının kapandığını basar; hepsi geçerse UDF üretir ve "TESLİME HAZIR" der (exit 0). Bu script çalıştırılmadan/çıktısı görülmeden "teslime hazır" sözle beyan edilemez (R2: tek ölçüt bu script'in exit kodudur) — fiziksel aktivasyon kuralı burada da geçerlidir.
+
+**TESLİM MAKBUZU + FAIL-CLOSED (P0-5, v0.5.5):** her koşu `_oa/defter/teslim-
+makbuz.json` (başarı) ya da `teslim-makbuz-RED.json` (başarısız deneme —
+İZLİDİR, kaybolmaz) ATOMİK yazar: {zaman, taslak_yol, taslak_sha256, tip,
+taraf, kapilar:[{ad,durum,exit}], exit_kodu, udf_yolu, udf_atlandi_istekle,
+ictihat_muhakeme_kanali, surum}. Kapı başına durum ENUM'u {OK,BLOK,ATLA,BILGI}
+— "script bulunamadı/çalıştırılamadı" artık FAIL-CLOSED'dır: bir ENGELLEYİCİ
+kapı için ATLA, BLOK ile EŞDEĞERDİR (zincir orada durur), yalnız BİLGİ kapıları
+(`(e)` tam_tur `--durum`) bu kuraldan muaftır. Alt scriptler önce `__file__`-
+göreli konumdan, bulunamazsa `OA_SKILLS_KOK` ortam değişkeni fallback'inden
+aranır; hiçbiri yoksa hata TÜM denenen TAM YOLLARI gösterir. `pipeline_kayit.
+py`'nin adım-9 önkoşul kapısı VE `--denetle`'nin makbuz bütünlük denetimi
+(taslak sha256 eşleşmesi dahil) bu dosyayı okur.
 
 ## A. Atıf denetimi (tavizsiz)
 Dilekçeye giren **her** içtihat/mevzuat atfı için:
@@ -64,6 +77,7 @@ sayılır.
 **Usul/şekil:** [ ] Süre hesaplandı, net satır var mı (`oa-sure`)? [ ] Doğru merci + hitap? [ ] Taraf bilgileri tam (ad/unvan, TCKN/VKN, adres, vekil+baro)? [ ] Esas no doğru? [ ] Harç/gider atlanmadı mı (HMK m.344)? [ ] Vekâletname (AYM m.47/4)? [ ] İmza bloğu + sıfat tutarlı?
 **Esas/içerik:** [ ] Vakıa→illiyet→norm/içtihat zinciri kopuksuz mu? [ ] Netice-i talep açık ve gerekçeyle birebir mi? [ ] Her iddia bir delile bağlı mı? [ ] Karşı tarafın en güçlü tezi **dahili** öngörülüp cephaneliğe hazırlandı mı (`oa-antitez`) — ama sunulan metne preemptive **konmadı** mı? [ ] **İfşa kontrolü:** sunulan metin, karşı tarafın henüz ileri sürmediği bir antitezi/zaafı ele veriyor mu? Veriyorsa **çıkar** — cephanelikte dahili kalsın. [ ] Zero fluff mu?
 **Tip-spesifik:** [ ] İlgili dilekçe tipinin zorunlu unsurları + sık atlanan alanları kontrol edildi mi (`oa-dilekce`)?
+**Üslup (P1-11 ek kural — ÖMERALP ÜSLUP BAĞLAMASI):** [ ] üslup playbook'a uygun mu? — `oa-dilekce/references/kanun-yolu-mimari-playbook.md` (B1-B7) üslubuyla (tez-omurgalı, akıcı, bütünsel bağlantılı) örülmüş mü; GÖRÜNMEZ İSKELET (İDDİA→NORM→İÇTİHAT→ÖRTÜŞME→SONUÇ) yüzeye ETİKET olarak sızmamış mı ([H] advisory), karşı-taraf-kusuru bağlamında GİDERİLMESİNE yönelik onarma-talebi kurulmamış mı ([I] advisory) — `dilekce_denetim.py`'nin [H]/[I] uyarıları gözden geçirildi mi?
 
 ## C. Müvekkil-aleyhi zaaf protokolü
 Sadakat körü körüne onaya değil ilkelere yöneliktir. **Her** esaslı dosyada, yazımdan önce çalıştır:

@@ -33,6 +33,17 @@ python scripts/vakia_matris.py --dogrula _oa/cikti/04-vakia.json   # kronoloji +
 4. **Yetim delilleri** değerlendir: ya bir iddiaya bağla ya da neden tutulduğunu not et (gereksizse çıkar).
 5. **Dosya tasnifi:** belgeleri kronoloji + iddia eşlemesine göre etiketle; UYAP arşivi/indirici çıktıları bu yapıya göre dizilebilir (Can'ın arşiv yol haritası ile birleşir).
 
+## UNSUR ŞABLONLARI — dava-türü bağlantısı (M4, Paket D — v0.5.5)
+`oa-alan` dava türünü tespit ettiğinde, `oa-alan/references/unsur-sablonlari/`
+altındaki asgari sette (tasarrufun-iptali.md, ise-iade.md, itirazin-iptali.md,
+kidem-ihbar.md — **unsur | norm | delil-türü | yük** dört sütunlu) örtüşen bir
+şablon varsa açılır: her **unsur** doğrudan `vakia_matris.py`nin `iddialar[]`
+dizisine bir `id` (U1, U2, …) olarak taşınır, unsur metni iddia metni olur.
+Delilsiz kalan bir unsur `--dogrula ... --json <yol>` ile `ispat_bosluklari`na
+düşer ve `_oa/DURUM.md`de **🔴 kırmızı** görünür (P0-8 renderer'ın ayrı alanı —
+bkz. `pipeline_kayit.py::_vakia_delilsiz_unsur_uyarisi`). Şablondaki norm
+atıfları başlangıç ÇIPASIDIR; kullanım anında Mevzuat MCP'den teyit edilir.
+
 ## ispat_durumu kategorileri
 `belgeli · tanik · bilirkisi · karine · ikrar · yemin · ispatsiz` — her olgunun ispat aracını işaretle; "ispatsiz" olanlar matriste otomatik boşluk sinyali üretir.
 

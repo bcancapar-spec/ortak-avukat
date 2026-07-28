@@ -14,6 +14,17 @@ standart bir görünüme indirgemek.
 - [tip] Ad — usul rolü (ilgili kanun/evre)
   (her gerçek kişi için rol zorunlu: borçlu/sanık/katılan/davacı/...)
 
+### Zaman Katmanı (M5, Paket D — v0.5.5)
+| tarih | olay | kaynak-evrak | sha |
+|---|---|---|---|
+| YYYY-MM-DD | kısa olgu açıklaması | `_oa/metin/<evrak-adı>` | ilk 16 hane (oa-ingest künyesindeki `sha`) |
+
+(Her satır `oa-vakia`nın kronolojisiyle AYNI olguyu taşır — ikinci bir
+kronoloji icat edilmez; yalnız illiyet açısından etiketlenir. Tetikleyici bir
+olaydan doğan süre varsa `hesapla_sure.py`ye taşınır; birden fazla süre aynı
+anda işliyorsa `--pencereler` ile bindirme kontrolü yapılır — bkz. oa-illiyet
+SKILL.md "ZAMAN KATMANI".)
+
 ### İlişki kenarları (statik bağ — kim kime nasıl bağlı)
 - Ad —[ilişki türü]→ Ad   [doğrulama: teyitli/iddia/karine]  (norm)
   ⚠ desteksiz ise işaretle → oa-vakia ile delil tespiti

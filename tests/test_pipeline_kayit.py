@@ -32,6 +32,32 @@ def _load():
 pk = _load()
 
 
+# ── P0-6 (v0.5.5) — önkoşul-artefakt kapısı fixture'ı ──────────────────────
+# İNGEST-ÖNCE (adım 1+ UYGULANDI, 00-kunye.json şart) + adım-5 (05-kiyas* AND
+# *ictihat-muhakeme*) + adım-9 (teslim-makbuz.json) blokleyici kümesini bu
+# testlerin "happy path" senaryosunda ÖNCEDEN karşılar — testlerin AMACI
+# (defter tamlığı/Gate G/araç-hatası davranışı) DEĞİŞMEZ, yalnız yeni fiziksel
+# önkoşullar disk üzerinde sağlanır.
+def _p06_onkosul_fixture_kur(tmp_path):
+    metin = tmp_path / "_oa" / "metin"
+    metin.mkdir(parents=True, exist_ok=True)
+    (metin / "00-kunye.json").write_text(
+        json.dumps({"toplam_evrak": 0, "kayitlar": []}), encoding="utf-8")
+    cikti = tmp_path / "_oa" / "cikti"
+    cikti.mkdir(parents=True, exist_ok=True)
+    (cikti / "05-kiyas-test.md").write_text(
+        "# Kıyas\n" + ("Somut olayla emsal karar arasında kıyas gövdesi. " * 6),
+        encoding="utf-8")
+    (cikti / "ornek-ictihat-muhakeme.md").write_text(
+        "# İçtihat Muhakeme Kaydı\n" + ("Muhakeme gövdesi test amaçlı doldurulmuştur. " * 6),
+        encoding="utf-8")
+    defter = tmp_path / "_oa" / "defter"
+    defter.mkdir(parents=True, exist_ok=True)
+    (defter / "teslim-makbuz.json").write_text(
+        json.dumps({"exit_kodu": 0, "taslak_yol": None, "taslak_sha256": None}),
+        encoding="utf-8")
+
+
 def _cli(args, cwd):
     cp = subprocess.run(
         [sys.executable, str(SCRIPT)] + args,
@@ -74,6 +100,7 @@ def test_jsonl_append_only_iki_olay_ikisi_de_kalir(tmp_path):
     """Append-only garanti: iki ayrı --isle çağrısı defterde İKİ AYRI satır
     olarak kalmalı (eski satır silinmez/üzerine yazılmaz)."""
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)  # P0-6 İNGEST-ÖNCE: adım 1+ için 00-kunye.json şart
     kanit_1 = "Skill çağrısı yapıldı; ictihat_ara 'istihkak muvazaa' 12.HD → 3 künye teyitli"
     kanit_2 = "oa-vakia scripti koşuldu; kronoloji + delil matrisi üretildi (12 kalem)"
     kod1, _c1 = _cli(
@@ -100,6 +127,7 @@ def test_tum_zorunlu_adimlar_uygulandi_ve_katmanlar_denetle_gecer(tmp_path):
     """Tüm adım/parça + tüm katmanlar UYGULANDI/GEREKSIZ statüsündeyse
     --denetle TEMİZ geçmeli (exit 0) — pozitif kontrast vaka."""
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
     uzun_kanit = "Fiilen script/MCP çağrısı yapıldı ve sonucu belgelendi (>=20 karakter)."
     for no, (_ad, parcalar) in pk.ADIMLAR.items():
         for parca in parcalar:
@@ -173,6 +201,7 @@ def test_arac_hata_kaydedilir_ve_goster_de_gorunur(tmp_path):
 # ── Gate G — KALICILIK KAPISI: --denetle, tam_tur'un mekanik --durum'unu sorar ──
 
 def _tum_adim_katmanlari_isle(tmp_path):
+    _p06_onkosul_fixture_kur(tmp_path)
     uzun_kanit = "Fiilen script/MCP çağrısı yapıldı ve sonucu belgelendi (>=20 karakter)."
     for no, (_ad, parcalar) in pk.ADIMLAR.items():
         for parca in parcalar:
@@ -267,6 +296,7 @@ def test_arac_hata_denetle_uyari_verir_ama_tek_basina_bloklamaz(tmp_path):
     ama diğer tüm adım/katmanlar temizse tek başına TESLİM ENGELİ (exit 1)
     üretmemeli — iş alternatif kaynak/yöntemle fiilen tamamlanmış olabilir."""
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
     uzun_kanit = "Fiilen script/MCP çağrısı yapıldı ve sonucu belgelendi (>=20 karakter)."
     mod = pk
     for no, (_ad, parcalar) in mod.ADIMLAR.items():
@@ -293,3 +323,93 @@ def test_arac_hata_denetle_uyari_verir_ama_tek_basina_bloklamaz(tmp_path):
     assert kod == 0, f"araç hatası TEK BAŞINA teslim engeli üretmemeli:\n{cikti}"
     assert "ARAÇ ÇÖKTÜ" in cikti
     assert "mevzuat_ara" in cikti
+
+
+# ── M1 (Paket D, v0.5.5) — PAS PROTOKOLÜ: defter `pas_yolu` alanı ──────────
+
+def test_isle_pas_yolu_deftere_islenir_ve_goster_gosterir(tmp_path):
+    """`--isle ... --pas-yolu <NN-*.md>` kaydedilir; `--goster` çıktısında
+    görünür ve `son_pas_yolu(d)` en son işlenen pası döndürür."""
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
+    kanit = "Skill fiilen çağrıldı; araştırma çıktısı üretildi (>=20 karakter)."
+    kod, _c = _cli(
+        ["--isle", "--adim", "3", "--parca", "oa-ictihat", "--durum", "UYGULANDI",
+         "--kanit", kanit, "--pas-yolu", "_oa/cikti/03-arastirma.md", "--kok", str(tmp_path)],
+        cwd=tmp_path,
+    )
+    assert kod == 0
+    kod, cikti = _cli(["--goster", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0
+    assert "[PAS: _oa/cikti/03-arastirma.md]" in cikti
+
+    olaylar_yol = tmp_path / "_oa" / "defter" / "pipeline-olaylar.jsonl"
+    d = pk.derle(str(olaylar_yol))
+    assert pk.son_pas_yolu(d) == "_oa/cikti/03-arastirma.md"
+
+
+# ── M1 düzeltmesi (Paket D sınav bulgusu, KUCUK) — --pas-yolu iki ucuz,
+# BLOKLAMAYAN mekanik kontrol: dosya var mı + ilk satır TEZ: ile mi başlıyor ──
+
+def test_pas_yolu_diskte_yoksa_uyarir_ama_bloklamaz(tmp_path):
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
+    kanit = "Skill fiilen çağrıldı; araştırma çıktısı üretildi (>=20 karakter)."
+    kod, cikti = _cli(
+        ["--isle", "--adim", "3", "--parca", "oa-ictihat", "--durum", "UYGULANDI",
+         "--kanit", kanit, "--pas-yolu", "_oa/cikti/YOK-BOYLE-BIR-DOSYA.md",
+         "--kok", str(tmp_path)],
+        cwd=tmp_path,
+    )
+    assert kod == 0, "dosya-yok uyarısı exit koduna dokunmamalı"
+    assert "UYARI" in cikti and "diskte bulunamadı" in cikti
+
+
+def test_pas_yolu_tez_satiri_yoksa_uyarir_ama_bloklamaz(tmp_path):
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
+    (tmp_path / "_oa" / "cikti" / "03-arastirma-tezsiz.md").write_text(
+        "Bu pasın ilk satırı TEZ: ile başlamıyor.\nİkinci satır.", encoding="utf-8")
+    kanit = "Skill fiilen çağrıldı; araştırma çıktısı üretildi (>=20 karakter)."
+    kod, cikti = _cli(
+        ["--isle", "--adim", "3", "--parca", "oa-ictihat", "--durum", "UYGULANDI",
+         "--kanit", kanit, "--pas-yolu", "_oa/cikti/03-arastirma-tezsiz.md",
+         "--kok", str(tmp_path)],
+        cwd=tmp_path,
+    )
+    assert kod == 0, "TEZ: uyarısı exit koduna dokunmamalı"
+    assert "UYARI" in cikti and "TEZ:" in cikti and "PAS PROTOKOLÜ" in cikti
+
+
+def test_pas_yolu_tez_satiriyla_baslarsa_uyarisiz(tmp_path):
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
+    (tmp_path / "_oa" / "cikti" / "03-arastirma-tezli.md").write_text(
+        "TEZ: müvekkilin alacağı zamanaşımına uğramamıştır.\nGövde.", encoding="utf-8")
+    kanit = "Skill fiilen çağrıldı; araştırma çıktısı üretildi (>=20 karakter)."
+    kod, cikti = _cli(
+        ["--isle", "--adim", "3", "--parca", "oa-ictihat", "--durum", "UYGULANDI",
+         "--kanit", kanit, "--pas-yolu", "_oa/cikti/03-arastirma-tezli.md",
+         "--kok", str(tmp_path)],
+        cwd=tmp_path,
+    )
+    assert kod == 0
+    assert "diskte bulunamadı" not in cikti
+    assert "TEZ: taşımıyor" not in cikti
+
+
+def test_son_pas_yolu_pas_yoluysuz_olaylari_atlar(tmp_path):
+    """`pas_yolu` verilmeyen (eski/geriye-uyum) `--isle` çağrıları `son_pas_yolu`
+    tarafından görmezden gelinir; yalnız pas taşıyan EN SON olay döner."""
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _p06_onkosul_fixture_kur(tmp_path)
+    kanit = "Skill fiilen çağrıldı; kanıt metni yeterli uzunlukta (>=20 kr)."
+    _cli(["--isle", "--adim", "3", "--parca", "oa-ictihat", "--durum", "UYGULANDI",
+          "--kanit", kanit, "--pas-yolu", "_oa/cikti/03-arastirma.md", "--kok", str(tmp_path)],
+         cwd=tmp_path)
+    _cli(["--isle", "--adim", "4", "--parca", "oa-vakia", "--durum", "UYGULANDI",
+          "--kanit", kanit, "--kok", str(tmp_path)],
+         cwd=tmp_path)  # pas_yolu YOK
+    olaylar_yol = tmp_path / "_oa" / "defter" / "pipeline-olaylar.jsonl"
+    d = pk.derle(str(olaylar_yol))
+    assert pk.son_pas_yolu(d) == "_oa/cikti/03-arastirma.md"
