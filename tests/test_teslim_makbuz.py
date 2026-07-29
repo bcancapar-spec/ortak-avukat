@@ -290,6 +290,81 @@ def test_yama_surumu_gecis_supabini_GEVSETMEZ(izole_kok):
     assert sorun is None and uyari is not None
 
 
+# ── (5b) YENİ-1 (düzeltme turu 2, saha bulgusu) — defter TAMAMEN damgasız
+#        (surum_gorulen boş, elle yazılmış) ama İKİNCİL KANIT çağ-içi
+#        gösteriyorsa kapı yine BLOKLEYICI olmalı; kanıtsızken eski davranış
+#        (yalnız uyarı) DEĞİŞMEMELİ.
+
+def test_damgasiz_defter_ilk_olay_cag_sonrasiysa_blokleyici(izole_kok):
+    """`surum_gorulen` boş ama defterin İLK olayı P0-5 çağı (2026-07-28)
+    başladıktan SONRAysa — defter elle yazılmış olsa bile — makbuz eksikliği
+    yine BLOKLEYICI olmalı (kapı FORMU değil İŞİ denetler)."""
+    pk = _pk_modulu()
+    d = {
+        "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+        "surum_gorulen": [],
+        "gunluk": [
+            {"zaman": "2026-07-29T01:46:00", "adim": "1", "parca": "oa-alan", "durum": "UYGULANDI"},
+            {"zaman": "2026-07-29T01:46:10", "adim": "9", "parca": "oa-kontrol", "durum": "UYGULANDI"},
+        ],
+    }
+    sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d)
+    assert sorun is not None, "çağ-içi ilk-olay zamanı damgasız defteri de blokleyici yapmalı"
+    assert uyari is None
+
+
+def test_damgasiz_defter_ilk_olay_cag_oncesiyse_yalniz_uyari(izole_kok):
+    """Aynı damgasızlık ama ilk olay P0-5 çağı BAŞLAMADAN önceyse (gerçekten
+    eski) davranış DEĞİŞMEMELİ — yalnız uyarı."""
+    pk = _pk_modulu()
+    d = {
+        "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+        "surum_gorulen": [],
+        "gunluk": [
+            {"zaman": "2026-06-15T09:00:00", "adim": "1", "parca": "oa-alan", "durum": "UYGULANDI"},
+        ],
+    }
+    sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d)
+    assert sorun is None
+    assert uyari is not None and "eski/önceki-sürüm" in uyari
+
+
+def test_damgasiz_defter_v055_artefaktiyla_blokleyici(izole_kok):
+    """`surum_gorulen` boş VE `gunluk` yok/zamansız ama kökte yalnız
+    v0.5.5-ailesinin üretebileceği bir artefakt (`_oa/defter/metrik.json`)
+    varsa — defterin FİİLEN v0.5.5+ pipeline'ı altında işlendiğinin
+    defterden BAĞIMSIZ kanıtı — kapı yine BLOKLEYICI olmalı."""
+    pk = _pk_modulu()
+    defter_dizin = izole_kok / "_oa" / "defter"
+    defter_dizin.mkdir(parents=True)
+    (defter_dizin / "metrik.json").write_text("{}", encoding="utf-8")
+    d = {
+        "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+        "surum_gorulen": [],
+    }
+    sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d)
+    assert sorun is not None, "v0.5.5 artefaktı (metrik.json) varken kapı gevşememeli"
+    assert uyari is None
+
+
+def test_damgasiz_defter_kanitsizken_uyari_metni_sebebi_soyluyor(izole_kok):
+    """Hiçbir ikincil kanıt yokken (bkz. üstteki 'cag_oncesiyse' testi ile
+    aynı vaka, `gunluk` de tamamen boş) uyarı metni artık dosyanın 'eski'
+    OLDUĞUNU değil, defterde HİÇ sürüm damgası bulunmadığını da söylemeli —
+    avukatı yanıltmasın (eski davranıştaki 'eski/önceki-sürüm' alt dizesi
+    geriye uyum için hâlâ mevcut)."""
+    pk = _pk_modulu()
+    d = {
+        "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+        "surum_gorulen": [],
+    }
+    sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d)
+    assert sorun is None
+    assert uyari is not None
+    assert "eski/önceki-sürüm" in uyari  # geriye uyum
+    assert "hiç sürüm damgası yok" in uyari  # YENİ-1: sebep artık açık
+
+
 # ── (6) desen-dışı ad ('taslak-v3.md' gibi) → pipeline_kayit adım-9 kapısı
 #        yine de makbuz arar (ad-bağımsız); teslim_paketi kendisi HER taslak
 #        adında da çalışır (ad-deseni teslim_paketi tarafında hiç kullanılmaz)

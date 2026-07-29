@@ -86,13 +86,22 @@ def utf16_uzunluk(s):
 
 
 # ───────────────── UDF GEÇERLİLİK KAPISI (mekanik denetim, hüküm YOK) ───────
-def udf_dogrula(yol):
+def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
     """Var olan bir `.udf` dosyasının UYAP okuyucusunun (udf_metin.py / oa_ingest
     udf_isle) beklediği yapıya uyup uymadığını MEKANİK olarak denetler. Bu
     denetim gerçek `udf-cli html2udf` çıktısı ÜZERİNDE çalışır — script artık
     kendi content.xml'ini üretmediğinden bu, "üretilen dosya bozuk mu" sorusuna
     yazımdan SONRA bağımsız bir ikinci kanıt sağlar (dosya sonradan tahrif
     edilmişse de yakalar).
+
+    `resmi_okuyucu=True` (varsayılan) 5. denetimi ekler: dosyayı ÜRETEN aracın
+    kendi okuyucusuyla (`udf-cli udf2md`) geri okuma — 2026/307 saha reçetesinin
+    3. adımı. İlk dört denetim BİZİM varsayımımızı sınar; sahada bizi yakan
+    hata sınıfı ise tam olarak "bizim round-trip'imizi geçen ama UYAP'ın
+    açmadığı dosya"ydı, yani kendi kendini doğrulamanın kör noktasıydı. Ağ/
+    oturum yoksa bu bacak GÖRÜNÜR biçimde "YAPILAMADI" der, "doğrulandı"
+    SAYILMAZ ve bloklamaz (ortam koşulu, dosyanın kusuru değil).
+    `okuyucu_fn` yalnız TEST enjeksiyonu içindir (ağsız koşu).
 
     Bu fonksiyon hukuki/biçimsel KALİTE hakkında hüküm VERMEZ ("iyi dilekçe"
     demez); yalnız dört somut denetimi "var/yok" ve "tutarlı/tutarsız" olarak
@@ -110,13 +119,18 @@ def udf_dogrula(yol):
       gecerli (bool), hatalar (list[str] — boşsa geçerli),
       content_xml_var (bool), xml_iyi_bicimli (bool), cdata_bulundu (bool),
       karakter_sayisi (int|None), paragraf_sayisi (int|None),
-      offsetler_tutarli (bool|None).
+      offsetler_tutarli (bool|None),
+      resmi_okuyucu ("OK"|"RET"|"YAPILAMADI"|None — None = hiç denenmedi),
+      resmi_okuyucu_not (str|None), resmi_okuyucu_karakter (int|None).
     """
     sonuc = {
         "gecerli": False, "hatalar": [],
         "content_xml_var": False, "xml_iyi_bicimli": False,
         "cdata_bulundu": False, "karakter_sayisi": None,
         "paragraf_sayisi": None, "offsetler_tutarli": None,
+        "resmi_okuyucu": None, "resmi_okuyucu_not": None,
+        "resmi_okuyucu_karakter": None,
+        "notlar": [], "kapsanmayan_bosluk": None, "imza_dosyasi": None,
     }
 
     # 1) zip açılır mı
@@ -133,6 +147,14 @@ def udf_dogrula(yol):
         sonuc["hatalar"].append("content.xml arşivde bulunamadı")
         return sonuc
     sonuc["content_xml_var"] = True
+    # E-İMZA TESPİTİ: UYAP editöründe imzalanmış UDF arşivinde `sign.sgn`
+    # (PKCS#7/CMS) bulunur. Bu bilgi teslim öncesi KRİTİKTİR: imzalı dosyanın
+    # içeriği sonradan değiştirilirse imza geçersiz kalır; bu yüzden imzalı
+    # dosya "düzenlenip yeniden kaydedilecek" bir taslak DEĞİL, teslim edilecek
+    # nüshadır. Script imzanın GEÇERLİLİĞİNİ doğrulamaz (kripto doğrulama UYAP/
+    # e-imza altyapısının işidir) — yalnız VARLIĞINI bildirir; sahte kesinlik yok.
+    sonuc["imza_dosyasi"] = next(
+        (a for a in zf.namelist() if a.lower().endswith((".sgn", ".p7s"))), None)
     ham = zf.read(hedef).decode("utf-8", errors="replace")
 
     # 3) XML iyi biçimli mi
@@ -173,22 +195,73 @@ def udf_dogrula(yol):
             "paragraph/content elemanı bulunamadı (offset/uzunluk denetlenemedi)")
         return sonuc
 
-    imlec, tutarli = 0, True
-    for el in paragraflar:
+    # DÜZELTME (v0.5.5.2 — YANLIŞ-BLOK, saha kanıtlı): süreklilik denetimi
+    # YALNIZ <content> elemanlarına bakıyordu. Gerçek `udf-cli html2udf`
+    # çıktısında CDATA gövdesindeki bazı karakterler <content> DIŞINDA, kendi
+    # etiketiyle temsil edilir — ölçülen dosyada `<tab startOffset=".." length="1"/>`
+    # (8 adet). Her biri imleci bir karakter kaydırdığından, avukatın UYAP'ta
+    # AÇILDIĞINI TEYİT ETTİĞİ 46.336 karakterlik gerçek dilekçe "offset süreksiz:
+    # beklenen 61, bulunan 62" diyerek GEÇERSİZ işaretleniyordu — yani kapı, tam
+    # da korumaya çalıştığı teslimi kesiyordu. Denetlenen invaryant "yalnız
+    # paragraflar ardışık" DEĞİL, "offset taşıyan TÜM elemanlar CDATA'yı
+    # boşluksuz ve örtüşmesiz döşer"dir. Etiket adı beyaz-listelenmez (yarın
+    # <space/> gelirse yine yanlış-BLOK olurdu): ölçüt attribute'un VARLIĞIdır.
+    ofsetli = []
+    hatali_attr = False
+    for el in kok.iter():
+        if "startOffset" not in el.attrib:
+            continue
         try:
-            start = int(el.attrib["startOffset"])
-            length = int(el.attrib["length"])
-        except (KeyError, ValueError):
-            tutarli = False
-            sonuc["hatalar"].append(
-                "paragraph/content içinde startOffset/length okunamadı")
+            ofsetli.append((int(el.attrib["startOffset"]),
+                            int(el.attrib.get("length", 0)), el.tag))
+        except (TypeError, ValueError):
+            hatali_attr = True
             break
-        if start != imlec:
-            tutarli = False
-            sonuc["hatalar"].append(
-                "offset süreksiz: beklenen %d, bulunan %d" % (imlec, start))
-            break
-        imlec += length
+
+    imlec, tutarli = 0, True
+    if hatali_attr:
+        tutarli = False
+        sonuc["hatalar"].append("startOffset/length sayıya çevrilemedi")
+    else:
+        # Belge sırası değil OFFSET sırası esas alınır — denetlenen şey sıralama
+        # değil, döşemenin örtüşmesiz ve METİN KAYBI'sız olmasıdır.
+        #
+        # DÜZELTME (v0.5.5.2, ikinci saha vakası — UYAP EDİTÖRÜNDE KAYDEDİLMİŞ
+        # dosya): editörün ürettiği `content.xml`'de BOŞ PARAGRAF'ın ayraç
+        # `\n`'i hiçbir offset'li elemanla kaplanmaz. Avukatın imzalayıp UYAP'a
+        # yükleyeceği 51.243 karakterlik gerçek dilekçe bu yüzden "boşluk"
+        # sayılıp GEÇERSİZ işaretlendi — resmî okuyucu ise dosyayı sorunsuz
+        # okuyordu. Yani "kaplanmayan her karakter kayıptır" varsayımı YANLIŞ.
+        # Doğru ölçüt İÇERİKtir: kaplanmayan aralık YALNIZ boşluk karakteri
+        # (paragraf ayracı) ise yapısaldır — görünür NOT düşülür, teslim
+        # kesilmez; içinde METİN varsa gerçek kayıptır ve BLOKLAR.
+        bosluk_notlari = []
+        for start, length, etiket in sorted(ofsetli):
+            if start < imlec:
+                tutarli = False
+                sonuc["hatalar"].append(
+                    "offset örtüşmesi: beklenen %d, bulunan %d (<%s>)"
+                    % (imlec, start, etiket))
+                break
+            if start > imlec:
+                kapsanmayan = tam[imlec:start]
+                if kapsanmayan.strip():
+                    tutarli = False
+                    sonuc["hatalar"].append(
+                        "offset boşluğu METİN İÇERİYOR (%d-%d, <%s> öncesi): %r — "
+                        "bu karakterler CDATA'da var ama hiçbir elemanla "
+                        "kaplanmıyor (metin kaybı)."
+                        % (imlec, start, etiket, kapsanmayan[:60]))
+                    break
+                bosluk_notlari.append((imlec, start))
+            imlec = start + length
+        if bosluk_notlari:
+            sonuc["kapsanmayan_bosluk"] = bosluk_notlari
+            sonuc["notlar"] = sonuc.get("notlar") or []
+            sonuc["notlar"].append(
+                "%d yerde offset'siz boşluk karakteri var (boş paragraf ayracı — "
+                "UYAP editöründe kaydedilmiş dosyalarda olağandır, metin kaybı DEĞİL)."
+                % len(bosluk_notlari))
     if tutarli and imlec != toplam_u16:
         tutarli = False
         sonuc["hatalar"].append(
@@ -196,9 +269,59 @@ def udf_dogrula(yol):
             % (imlec, toplam_u16))
     sonuc["offsetler_tutarli"] = tutarli
 
+    # 5) RESMİ OKUYUCU TANIĞI (dışarıdan kanıt) — bkz. `npx_ile_udf_oku` notu.
+    if resmi_okuyucu:
+        r = (okuyucu_fn or npx_ile_udf_oku)(yol)
+        if not r.get("calisti"):
+            sonuc["resmi_okuyucu"] = "YAPILAMADI"
+            sonuc["resmi_okuyucu_not"] = r.get("hata") or "sebep bildirilmedi"
+        elif not r.get("basarili"):
+            sonuc["resmi_okuyucu"] = "RET"
+            sonuc["resmi_okuyucu_not"] = r.get("hata") or "resmî okuyucu reddetti"
+            sonuc["hatalar"].append(
+                "RESMİ OKUYUCU REDDETTİ — %s. (Bizim ayrıştırıcımız dosyayı "
+                "okuyabiliyor olsa BİLE bu dosya UYAP tarafında açılmayabilir; "
+                "sahada bizi yakan hata sınıfı tam olarak budur.)" % sonuc["resmi_okuyucu_not"])
+        else:
+            resmi_metin = r.get("metin") or ""
+            sonuc["resmi_okuyucu_karakter"] = len(resmi_metin)
+            # "Açılıyor ama boş/kırpık" hâlini yakala: resmî okuyucunun döndürdüğü
+            # metin, CDATA gövdesinin yarısından kısaysa içerik kaybı vardır.
+            # (Uzun olması NORMALDİR — udf2md markdown imleri ekler.)
+            if len(resmi_metin.strip()) < _RESMI_OKUYUCU_ASGARI_ORAN * len(tam.strip()):
+                sonuc["resmi_okuyucu"] = "RET"
+                sonuc["resmi_okuyucu_not"] = (
+                    "resmî okuyucu %d karakter döndürdü, CDATA gövdesi %d karakter"
+                    % (len(resmi_metin.strip()), len(tam.strip())))
+                sonuc["hatalar"].append(
+                    "RESMİ OKUYUCU İÇERİK KAYBI — %s (dosya açılıyor ama gövdenin "
+                    "önemli kısmı okunamıyor)." % sonuc["resmi_okuyucu_not"])
+            else:
+                sonuc["resmi_okuyucu"] = "OK"
+
     if not sonuc["hatalar"]:
         sonuc["gecerli"] = True
     return sonuc
+
+
+def _resmi_okuyucu_bas(sonuc, akis=None):
+    """Resmî okuyucu bacağının durumunu GÖRÜNÜR biçimde basar. "YAPILAMADI"
+    hâli özellikle susturulmaz: doğrulanmamış bir dosyayı doğrulanmış sanmak,
+    hiç doğrulamamaktan daha tehlikelidir."""
+    durum = sonuc.get("resmi_okuyucu")
+    if durum is None:
+        return
+    akis = akis or sys.stdout
+    if durum == "OK":
+        print("  resmî okuyucu    : OK (udf2md geri okudu, %d karakter)"
+              % (sonuc.get("resmi_okuyucu_karakter") or 0), file=akis)
+    elif durum == "YAPILAMADI":
+        print("  resmî okuyucu    : YAPILAMADI — %s  ⚠ bu dosya UYAP tarafında "
+              "AÇILDIĞI DOĞRULANMADI (yalnız kendi ayrıştırıcımız onayladı)"
+              % (sonuc.get("resmi_okuyucu_not") or "sebep bildirilmedi"), file=akis)
+    else:
+        print("  resmî okuyucu    : RET — %s"
+              % (sonuc.get("resmi_okuyucu_not") or ""), file=akis)
 
 
 # ─────────────── ortak yardımcılar: yol çözme + atomik taşıma ──────────────
@@ -332,6 +455,66 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
 
     return {"basarili": True, "exit_kod": 0, "stdout": p.stdout or "",
             "stderr": p.stderr or "", "hata": None}
+
+
+# ── RESMİ OKUYUCU ile geri okuma (udf2md) — 2026/307 saha reçetesi, adım 3 ──
+# NEDEN AYRI BİR BACAK: `udf_dogrula` dosyayı BİZİM okuyucumuzun (udf_metin.py /
+# oa_ingest udf_isle) beklentisine göre denetler. Sahada bizi yakan hata sınıfı
+# TAM OLARAK buydu — eski hand-rolled zip çıktısı BİZİM round-trip'imizi
+# GEÇİYOR ama UYAP Doküman Editörü onu AÇMIYORDU. Kendi varsayımımızla kendimizi
+# doğrulamak kanıt değildir; bu yüzden geçerlilik kapısına DIŞARIDAN bir tanık
+# eklenir: dosyayı üreten aracın kendi okuyucusu (`udf-cli udf2md`).
+#
+# ÜÇ DURUM AYRI TUTULUR (sessiz atlama yasağı):
+#   çalıştı+okudu   → dosya hakkında OLUMLU dış kanıt
+#   çalıştı+REDDETTİ→ dosya hakkında OLUMSUZ dış kanıt (GEÇERSİZ — blokleyici)
+#   çalışamadı      → dosya hakkında HİÇBİR kanıt (ağ/oturum/Node yok) —
+#                     "doğrulandı" SAYILMAZ, görünür biçimde "YAPILAMADI" der.
+# Çalışamama blokleyici DEĞİLDİR: ortam koşuludur, dosyanın kusuru değil; aksi
+# hâlde çevrimdışı çalışma imkânsızlaşırdı. Ama makbuza/rapora bu hâliyle geçer.
+_RESMI_OKUYUCU_ASGARI_ORAN = 0.5   # resmî metin, CDATA metninin bu oranından kısaysa içerik kaybı
+
+
+def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
+    """`npx -y udf-cli@latest udf2md <udf>` — dosyayı ÜRETEN aracın kendi
+    okuyucusuyla geri okur. Döner: dict —
+      calisti (bool): dış süreç fiilen koştu ve bir hüküm verdi mi
+      basarili (bool): koştuysa dosyayı okuyabildi mi
+      metin (str): okunan markdown
+      hata (str|None): calisti=False ise SEBEP (ortam), True+basarisiz ise RET gerekçesi
+    """
+    yol = shutil.which(npx_yolu)
+    if yol is None:
+        return {"calisti": False, "basarili": False, "metin": "",
+                "hata": "npx bulunamadı (Node.js kurulu olmayabilir)"}
+    try:
+        # bkz. npx_kullanilabilir_mi — Windows PATHEXT için ÇÖZÜLMÜŞ yol.
+        p = subprocess.run([yol, "-y", "udf-cli@latest", "udf2md", udf_yolu],
+                           capture_output=True, text=True, timeout=zaman_asimi)
+    except subprocess.TimeoutExpired:
+        return {"calisti": False, "basarili": False, "metin": "",
+                "hata": "udf-cli udf2md zaman aşımına uğradı (%ds)" % zaman_asimi}
+    except Exception as e:
+        return {"calisti": False, "basarili": False, "metin": "",
+                "hata": "udf-cli udf2md çalıştırılamadı: %s" % e}
+
+    if p.returncode != 0:
+        # Oturum/ağ hatası bir ORTAM koşuludur (dosya hakkında hüküm DEĞİL);
+        # dosyanın gerçekten reddedilmesinden ayırt edilir — aksi hâlde
+        # login'i unutmuş bir avukatın geçerli dilekçesi "bozuk" ilan edilirdi.
+        birlesik = ((p.stderr or "") + (p.stdout or "")).lower()
+        ortamsal = any(im in birlesik for im in
+                       ("login", "giriş", "giris", "oturum", "unauthor", "quota",
+                        "kota", "network", "ağ", "econn", "etimedout", "fetch failed"))
+        if ortamsal:
+            return {"calisti": False, "basarili": False, "metin": "",
+                    "hata": "udf-cli udf2md ortam hatası (exit %s) — %s"
+                            % (p.returncode, _GIRIS_TALIMATI)}
+        return {"calisti": True, "basarili": False, "metin": "",
+                "hata": "resmî okuyucu dosyayı OKUYAMADI (udf2md exit %s): %s"
+                        % (p.returncode, ((p.stderr or "").strip()[:300] or "(çıktı yok)"))}
+
+    return {"calisti": True, "basarili": True, "metin": p.stdout or "", "hata": None}
 
 
 # ─────── BONUS YOL: elde hazır .docx/.pdf → UDF (`docx2udf`, rehber §5) ─────
@@ -621,6 +804,7 @@ def main():
         print("  offset/uzunluk   : %s" % (
             "TUTARLI" if sonuc["offsetler_tutarli"]
             else ("TUTARSIZ" if sonuc["offsetler_tutarli"] is False else "—")))
+        _resmi_okuyucu_bas(sonuc)
         for h in sonuc["hatalar"]:
             print("  [HATA] %s" % h, file=sys.stderr)
         print("SONUÇ: %s" % ("GEÇERLİ ✓" if sonuc["gecerli"] else "GEÇERSİZ ✗"))
@@ -702,6 +886,7 @@ def main():
             print("  paragraf sayısı  : %d" % dogrulama["paragraf_sayisi"])
         if dogrulama["karakter_sayisi"] is not None:
             print("  karakter (CDATA) : %d" % dogrulama["karakter_sayisi"])
+        _resmi_okuyucu_bas(dogrulama)
         print("  GEÇERLİLİK KAPISI: %s" % ("GEÇERLİ ✓" if dogrulama["gecerli"] else "GEÇERSİZ ✗"))
         if not dogrulama["gecerli"]:
             for h in dogrulama["hatalar"]:

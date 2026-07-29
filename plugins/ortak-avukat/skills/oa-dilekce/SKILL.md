@@ -94,6 +94,42 @@ karşı taraf (davalı) kusurluysa aynı asimetri simetrik biçimde işler.
 (advisory — ASLA bloklamaz) karşı-taraf-kusuru bağlamında "süre verilsin/
 tamamlan-/gideril-" kalıplarını arar ve bulursa bir uyarı basar.
 
+## AVUKAT REVİZESİNDEN DAMITILAN YEDİ KURAL (2026/307 saha vakası — v0.5.5.2)
+Modelin ürettiği taslak ile avukatın imzaladığı nüsha karşılaştırıldı (147↔147
+paragraf, 52.086→51.618 karakter). Avukat metni **kısaltırken iki esaslı vakıa
+EKLEDİ** — yani çıkarılanlar hacim, eklenenler isabetti. Damıtılan kurallar:
+
+1. **TESPİT ≠ İTİRAZ — dilekçe usulî işlemdir.** Taslak ihtiyati haczi
+   *anlatıyordu*; avukat "**Bu ihtiyati haciz kararına da itiraz ediyoruz**"
+   cümlesini ekledi. Aleyhe bir işlemi betimlemek ona itiraz etmek DEĞİLDİR:
+   korunmak istenen her hak için AÇIK BEYAN kurulur.
+2. **Terditli SAVUNMA kurulur, terditli TALEP kurulmaz.** Avukat bir yandan
+   "davayı kabul etmemekle birlikte" kaydını EKLEDİ, öte yandan netice-i
+   talepteki "aksi kanaatte sorumluluğun … sınırlı tutulmasına" fıkrasını
+   SİLDİ. Sınır nettir: esasa ilişkin savunma ihtiyaten kurulabilir, ama
+   mahkemeden **kendi yenilgini varsayan bir ara çözüm İSTENMEZ** — bu, hâkime
+   hazır bir orta yol sunmaktır. (Kusur→Sonuç→Talep asimetrisinin kendi-taraf
+   yüzü.)
+3. **Savunulmayan usulî noktayı savunma.** Avukat, cevabın süresinde olduğunu
+   ispatlayan koca bir "SÜRE" bölümünü tümüyle SİLDİ. Kimsenin itiraz etmediği
+   bir usulî durumu savunmak, olmayan bir tartışmayı açar.
+4. **"Sunacağız" değil, VAKIA kur ve sicile bağla.** Taslak "banka kayıtlarını
+   delil listemizde bildirmiş olup süresi içinde sunacaktır" diyordu; avukat
+   bunu karşılıklı devrin kendisiyle (aynı günler, ardışık yevmiye numaraları,
+   TTSG tarih/sayı) değiştirdi. Vaat savunmayı erteler; **sicile bağlı olgu
+   derhâl hüküm doğurur.**
+5. **Künye gövdede tekrarlanmaz.** Gövdede OLGU, delil listesinde KÜNYE:
+   avukat metne serpilmiş noter yevmiye künyelerini toplayıp gövdeden çıkardı,
+   delil listesini "celbi: ilgili noterliklerden" biçiminde sadeleştirdi.
+6. **İspat yükü AÇIKÇA tahsis edilir.** "Ticaret siciline işlenen resmi
+   belgenin aksine olan **ispat yükü davacıdadır. Bu ispat yükü
+   sağlanamamıştır.**" — taslak bunu ima ediyordu; hukukî sonuç ima edilmez,
+   kurulur.
+7. **Bölüm tek cümlelik net sonuçla kapanır.** "Özetle davalı müvekkilimizin
+   tasarrufun iptaline konu olacak hiçbir işlemi yoktur." Uzun tahlilin
+   sonucunu okurun çıkarmasına bırakma. (Bu, M8 SONUÇ ANATOMİSİ modülünün
+   saha kanıtıdır.)
+
 ## İÇTİHAT PORTFÖYÜ — gövde vs kütük ayrımı (M6, Paket D — v0.5.5)
 Muhakeme edilmiş (LEHE/ALEYHE-AYIRT) kararların SAYISI arttıkça hepsini gövdeye
 5 adımla işlemek dilekçeyi ŞİŞİRİR ve en güçlü argümanı gürültüye gömer.
@@ -158,7 +194,7 @@ sinyalidir (`pipeline_kayit.py`'nin ad-bağımsız uyarısı da her hâlükârda
 bu adı erken vermek makbuz kapısını yanlış zamanda tetikler.
 
 **Teslim öncesi MEKANİK KAPILAR (R2 — tek ölçüt `teslim_paketi.py` exit 0; aşağıdaki alt kapılar bu tek script'in içinde sabit sırada koşar, elle sayılmaz):**
-1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, paragraf `startOffset`/`length` UTF-16 code-unit biriminde ARDIŞIK ve CDATA metniyle toplamda tutarlı mı, metin round-trip ediyor mu. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
+1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, **offset taşıyan TÜM elemanlar** (yalnız `<content>` değil — gerçek çıktıda `<tab/>` de offset taşır) CDATA metnini UTF-16 code-unit biriminde **boşluksuz ve örtüşmesiz döşüyor** mu, ve **5. bacak: RESMİ OKUYUCU TANIĞI** — dosya, onu ÜRETEN aracın kendi okuyucusuyla (`npx -y udf-cli@latest udf2md`) geri okunabiliyor mu. Beşinci bacağın gerekçesi: ilk dördü dosyayı BİZİM ayrıştırıcımızın varsayımına göre sınar; sahada bizi yakan hata sınıfı ise tam olarak "bizim round-trip'imizi geçen ama UYAP'ın açmadığı dosya"ydı — kendi varsayımıyla kendini doğrulamak kanıt değildir. Ağ/oturum yoksa bu bacak **YAPILAMADI** der (görünür; "doğrulandı" SAYILMAZ) ve bloklamaz — ortam koşuludur, dosyanın kusuru değil. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
 2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur). **`--tip istinaf|temyiz` iken (M3-2):** [B] TERTİP-DÜZEN kapısı, `kanun-yolu-mimari-playbook.md`'nin B1/B2/B4/B6 mekanik izdüşümünü de denetler — künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu + dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması, her içtihat blok-alıntısının ardından açıklama paragrafı bulunması — yalnız VAR/YOK (uyarı, bloklamaz). `--ictihat-muhakeme` ile birlikte `--tip` değeri [F] kapısına da geçer: G1 "emsal içtihat yok" uyarısı yalnız "esaslı" tiplerde (dava/cevap/istinaf/temyiz/aym_bireysel) basılır, `yemin`/`idari-kanal` gibi hafif tiplerde [BİLGİ]'ye düşer (R6).
 3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
 4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri — B listesine eklenen **"üslup playbook'a uygun mu?"** maddesi dahil (aşağıya bkz.).

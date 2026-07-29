@@ -78,6 +78,13 @@ def test_md2udf_kodda_hic_gecmiyor():
 
 
 # ── udf_dogrula(): UDF GEÇERLİLİK KAPISI (mekanik, hüküm YOK) ───────────────
+#
+# NOT (v0.5.5.2): bu bölümdeki testler kapının YAPISAL bacağını (zip/XML/CDATA/
+# offset döşemesi) sınar ve bu yüzden `resmi_okuyucu=False` ile çağırır — 5.
+# bacak (`udf-cli udf2md` ile dışarıdan tanık) ağ+oturum ister ve KENDİ testleri
+# `tests/test_udf_resmi_okuyucu.py`de sahte okuyucu enjekte edilerek koşar.
+# Burada açık bırakmak, yapısal regresyon testlerini ağ durumuna bağımlı
+# kılardı (çevrimdışı koşuda yanlış kırmızı).
 # NOT: aşağıdaki yardımcı, script'in ürettiği bir UDF'i DEĞİL, testin kendi
 # kurduğu sentetik bir ZIP/content.xml'i kullanır — script artık UDF üretmiyor
 # (yalnız npx'e devrediyor), ama udf_dogrula() üretilen HERHANGİ bir UDF
@@ -118,7 +125,7 @@ def test_udf_dogrula_gecerli_dosyada_GECERLI_doner(tmp_path):
     """Doğru şekilde kurulmuş bir UDF (test fixture'ı — script'in kendisi
     değil) `udf_dogrula` ile GEÇERLİ dönmeli."""
     cikti = _sentetik_udf_yaz(tmp_path, "# Dava Dilekçesi\n\nSayın Mahkeme,\n\nArz ederiz.\n")
-    sonuc = uy.udf_dogrula(str(cikti))
+    sonuc = uy.udf_dogrula(str(cikti), resmi_okuyucu=False)
     assert sonuc["gecerli"] is True
     assert sonuc["hatalar"] == []
     assert sonuc["content_xml_var"] is True
@@ -132,7 +139,7 @@ def test_udf_dogrula_bozuk_zip_yakalar(tmp_path):
     """ZIP olmayan / bozuk bir dosya GEÇERSİZ dönmeli, exception fırlatmamalı."""
     sahte = tmp_path / "bozuk.udf"
     sahte.write_bytes(b"bu bir zip arsivi degil")
-    sonuc = uy.udf_dogrula(str(sahte))
+    sonuc = uy.udf_dogrula(str(sahte), resmi_okuyucu=False)
     assert sonuc["gecerli"] is False
     assert sonuc["hatalar"]
     assert sonuc["content_xml_var"] is False
@@ -140,7 +147,7 @@ def test_udf_dogrula_bozuk_zip_yakalar(tmp_path):
 
 def test_udf_dogrula_olmayan_dosya_yakalar(tmp_path):
     """Hiç var olmayan bir yol GEÇERSİZ dönmeli (FileNotFoundError yutulur)."""
-    sonuc = uy.udf_dogrula(str(tmp_path / "yok.udf"))
+    sonuc = uy.udf_dogrula(str(tmp_path / "yok.udf"), resmi_okuyucu=False)
     assert sonuc["gecerli"] is False
     assert sonuc["hatalar"]
 
@@ -150,7 +157,7 @@ def test_udf_dogrula_content_xml_eksik_zip_yakalar(tmp_path):
     sahte = tmp_path / "icersiz.udf"
     with zipfile.ZipFile(str(sahte), "w") as z:
         z.writestr("baska.txt", "ilgisiz içerik")
-    sonuc = uy.udf_dogrula(str(sahte))
+    sonuc = uy.udf_dogrula(str(sahte), resmi_okuyucu=False)
     assert sonuc["gecerli"] is False
     assert sonuc["content_xml_var"] is False
     assert any("content.xml" in h for h in sonuc["hatalar"])
@@ -161,7 +168,7 @@ def test_udf_dogrula_bozuk_xml_yakalar(tmp_path):
     sahte = tmp_path / "bozukxml.udf"
     with zipfile.ZipFile(str(sahte), "w") as z:
         z.writestr("content.xml", "<template><content><![CDATA[eksik kapanis")
-    sonuc = uy.udf_dogrula(str(sahte))
+    sonuc = uy.udf_dogrula(str(sahte), resmi_okuyucu=False)
     assert sonuc["gecerli"] is False
     assert sonuc["content_xml_var"] is True
     assert sonuc["xml_iyi_bicimli"] is False
@@ -181,7 +188,7 @@ def test_udf_dogrula_tahrif_edilmis_offset_yakalar(tmp_path):
     assert bozuk_xml != xml_ham, "test kurulumu: değiştirilecek startOffset=\"0\" bulunamadı"
     with zipfile.ZipFile(str(cikti), "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("content.xml", bozuk_xml.encode("utf-8"))
-    sonuc = uy.udf_dogrula(str(cikti))
+    sonuc = uy.udf_dogrula(str(cikti), resmi_okuyucu=False)
     assert sonuc["gecerli"] is False
     assert sonuc["offsetler_tutarli"] is False
     assert sonuc["hatalar"]
@@ -215,7 +222,7 @@ def test_udf_dogrula_ic_ice_tablo_hucreli_belgeyi_GECERLI_sayar():
     tmp = tempfile.mktemp(suffix=".udf")
     with zipfile.ZipFile(tmp, "w") as z:
         z.writestr("content.xml", xml_ham.encode("utf-8"))
-    sonuc = uy.udf_dogrula(tmp)
+    sonuc = uy.udf_dogrula(tmp, resmi_okuyucu=False)
     assert sonuc["paragraf_sayisi"] == 3, "üst paragraf + 2 tablo hücresi = 3 content elemanı"
     assert sonuc["offsetler_tutarli"] is True
     assert sonuc["gecerli"] is True, sonuc["hatalar"]
@@ -458,7 +465,7 @@ def test_cli_varsayilan_motor_sentetik_md_den_udf_uretir_ve_rehbere_gore_dogrula
     assert "<styles>" in xml_ham
 
     # mekanik geçerlilik kapısı da GEÇERLİ dönmeli (offset/CDATA tutarlılığı)
-    sonuc = uy.udf_dogrula(str(cikti))
+    sonuc = uy.udf_dogrula(str(cikti), resmi_okuyucu=False)
     assert sonuc["gecerli"] is True, sonuc["hatalar"]
     assert sonuc["paragraf_sayisi"] > 0
 
@@ -528,3 +535,125 @@ def test_cli_kok_ile_goreli_yollari_cozer(tmp_path):
         timeout=180)
     assert cp.returncode == 0, cp.stdout + cp.stderr
     assert (tmp_path / "cikti.udf").is_file()
+
+
+# ── udf_dogrula(): <tab/> gibi offset TAŞIYAN ama <content> OLMAYAN elemanlar ──
+
+def test_udf_dogrula_tab_elemanli_gercek_belgeyi_GECERLI_sayar():
+    """SAHA KANITLI YANLIŞ-BLOK (v0.5.5.2): süreklilik denetimi yalnız
+    <content> elemanlarına bakıyordu. Gerçek `udf-cli html2udf` çıktısında
+    CDATA'daki bazı karakterler <content> DIŞINDA kendi etiketiyle temsil
+    edilir — ölçülen gerçek dilekçede 8 adet `<tab startOffset=".." length="1"/>`.
+    Her biri imleci bir karakter kaydırdığından, avukatın UYAP'ta AÇILDIĞINI
+    TEYİT ETTİĞİ 46.336 karakterlik dilekçe "offset süreksiz: beklenen 61,
+    bulunan 62" ile GEÇERSİZ işaretleniyordu: kapı, korumaya çalıştığı teslimi
+    kesiyordu. Denetlenen invaryant 'paragraflar ardışık' değil, 'offset taşıyan
+    TÜM elemanlar CDATA'yı boşluksuz/örtüşmesiz döşer'dir."""
+    xml_ham = (
+        '<?xml version="1.0" encoding="UTF-8" ?>\n'
+        '<template format_id="1.8">\n'
+        '<content><![CDATA[DOSYA NO\t: 2026/307\n]]></content>'
+        '<elements resolver="hvl-default">\n'
+        '<paragraph>'
+        '<content startOffset="0" length="8"/>'
+        '<tab startOffset="8" length="1"/>'
+        '<content startOffset="9" length="11"/>'
+        '</paragraph>\n'
+        '</elements>\n'
+        '</template>\n'
+    )
+    import tempfile
+    tmp = tempfile.mktemp(suffix=".udf")
+    with zipfile.ZipFile(tmp, "w") as z:
+        z.writestr("content.xml", xml_ham.encode("utf-8"))
+
+    sonuc = uy.udf_dogrula(tmp, resmi_okuyucu=False)
+
+    assert sonuc["offsetler_tutarli"] is True, sonuc["hatalar"]
+    assert sonuc["gecerli"] is True, sonuc["hatalar"]
+
+
+def test_udf_dogrula_GERCEK_METIN_kaybini_hala_yakalar():
+    """Gevşetme DEĞİL keskinleştirme: kaplanmayan aralıkta METİN varsa hâlâ
+    BLOKLAR. Ölçüt "kaplanmayan karakter var mı" değil, "kaplanmayan aralıkta
+    METİN var mı"dır — CDATA'da duran ama hiçbir elemanla kaplanmayan metin,
+    UYAP'ta görünmeyecek metindir (gerçek kayıp)."""
+    xml_ham = (
+        '<?xml version="1.0" encoding="UTF-8" ?>\n'
+        '<template format_id="1.8">\n'
+        '<content><![CDATA[DOSYA NO GIZLI: 2026/307\n]]></content>'
+        '<elements resolver="hvl-default">\n'
+        '<paragraph>'
+        '<content startOffset="0" length="8"/>'
+        '<content startOffset="15" length="12"/>'   # 8-15 arası "GIZLI: " KAPLANMIYOR
+        '</paragraph>\n'
+        '</elements>\n'
+        '</template>\n'
+    )
+    import tempfile
+    tmp = tempfile.mktemp(suffix=".udf")
+    with zipfile.ZipFile(tmp, "w") as z:
+        z.writestr("content.xml", xml_ham.encode("utf-8"))
+
+    sonuc = uy.udf_dogrula(tmp, resmi_okuyucu=False)
+
+    assert sonuc["offsetler_tutarli"] is False
+    assert sonuc["gecerli"] is False
+    assert any("METİN İÇERİYOR" in h for h in sonuc["hatalar"])
+
+
+def test_udf_dogrula_editorde_kaydedilmis_bos_paragrafi_GECERLI_sayar():
+    """İKİNCİ SAHA VAKASI (v0.5.5.2): UYAP editöründe kaydedilen dosyada BOŞ
+    PARAGRAF'ın ayraç newline'ı hiçbir offset'li elemanla kaplanmaz. Avukatın
+    imzalayıp UYAP'a yükleyeceği 51.243 karakterlik gerçek dilekçe bu yüzden
+    GEÇERSİZ işaretlenmişti — resmî okuyucu ise dosyayı sorunsuz okuyordu.
+    Kaplanmayan aralık YALNIZ boşluksa yapısaldır: görünür NOT düşülür,
+    teslim KESİLMEZ."""
+    xml_ham = (
+        '<?xml version="1.0" encoding="UTF-8" ?>\n'
+        '<template format_id="1.8">\n'
+        '<content><![CDATA[e-imza\n\n  \n]]></content>'
+        '<elements resolver="hvl-default">\n'
+        '<paragraph><content startOffset="0" length="7"/></paragraph>\n'
+        '<paragraph/>\n'                        # boş paragraf: 7. karakter kaplanmaz
+        '<paragraph><content startOffset="8" length="3"/></paragraph>\n'
+        '</elements>\n'
+        '</template>\n'
+    )
+    import tempfile
+    tmp = tempfile.mktemp(suffix=".udf")
+    with zipfile.ZipFile(tmp, "w") as z:
+        z.writestr("content.xml", xml_ham.encode("utf-8"))
+
+    sonuc = uy.udf_dogrula(tmp, resmi_okuyucu=False)
+
+    assert sonuc["gecerli"] is True, sonuc["hatalar"]
+    assert sonuc["kapsanmayan_bosluk"], "boşluk sessizce yutulmamalı, NOT olarak kaydedilmeli"
+    assert any("boş paragraf ayracı" in n for n in sonuc["notlar"])
+
+
+def test_udf_dogrula_imza_dosyasini_bildirir():
+    """E-İMZALI nüsha ayırt edilir: arşivde `sign.sgn` varsa bildirilir. Teslim
+    öncesi kritiktir — imzalı dosyanın içeriği değişirse imza geçersiz kalır,
+    yani o dosya "düzenlenecek taslak" DEĞİL teslim nüshasıdır. Script imzanın
+    GEÇERLİLİĞİNİ doğrulamaz (kripto doğrulama UYAP/e-imza altyapısının işidir),
+    yalnız VARLIĞINI bildirir — sahte kesinlik yok."""
+    xml_ham = (
+        '<?xml version="1.0" encoding="UTF-8" ?>\n'
+        '<template format_id="1.8">\n'
+        '<content><![CDATA[Metin\n]]></content>'
+        '<elements resolver="hvl-default">'
+        '<paragraph><content startOffset="0" length="6"/></paragraph>'
+        '</elements>\n</template>\n'
+    )
+    import tempfile
+    imzali = tempfile.mktemp(suffix=".udf")
+    with zipfile.ZipFile(imzali, "w") as z:
+        z.writestr("content.xml", xml_ham.encode("utf-8"))
+        z.writestr("sign.sgn", b"\x30\x82\x0a\x40sahte-pkcs7-govdesi")
+    imzasiz = tempfile.mktemp(suffix=".udf")
+    with zipfile.ZipFile(imzasiz, "w") as z:
+        z.writestr("content.xml", xml_ham.encode("utf-8"))
+
+    assert uy.udf_dogrula(imzali, resmi_okuyucu=False)["imza_dosyasi"] == "sign.sgn"
+    assert uy.udf_dogrula(imzasiz, resmi_okuyucu=False)["imza_dosyasi"] is None

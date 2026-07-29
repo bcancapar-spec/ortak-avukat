@@ -747,6 +747,18 @@ def main():
             print(f"   [EKSİK] {a.udf} GEÇERSİZ UDF:")
             for h in udf_sonuc["hatalar"]:
                 print(f"      - {h}")
+        # RESMİ OKUYUCU TANIĞI — bu satır GEÇERLİ hâlde de basılır: "YAPILAMADI"
+        # durumu susturulursa avukat, yalnız kendi ayrıştırıcımızın onayladığı
+        # bir dosyayı UYAP'ta açılacak sanır (sahada bizi yakan hata sınıfı).
+        _ro = udf_sonuc.get("resmi_okuyucu")
+        if _ro == "OK":
+            print("   [OK] resmî okuyucu (udf-cli udf2md) dosyayı geri okudu — "
+                  f"{udf_sonuc.get('resmi_okuyucu_karakter') or 0} karakter")
+        elif _ro == "YAPILAMADI":
+            print("   [UYARI] resmî okuyucu doğrulaması YAPILAMADI — "
+                  f"{udf_sonuc.get('resmi_okuyucu_not')}. Bu dosyanın UYAP'ta AÇILDIĞI "
+                  "DOĞRULANMADI (yalnız kendi ayrıştırıcımız onayladı); teslimden önce "
+                  "UYAP Doküman Editöründe elle açıp teyit edin.")
 
     ictihat_muhakeme_engel = False
     if a.ictihat_muhakeme_yok:

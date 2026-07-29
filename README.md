@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5.1 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **759 test**
+**Sürüm:** 0.5.5.2 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **785 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -193,6 +193,15 @@ v0.5.5 gerçek bir dosyada (214 evrak, bakir klasör, metodoloji talimatı veril
 | **Defter-muhakeme denge uyarısı** | Kütükteki DAMGA'lı satır sayısı muhakeme kaydındaki bölüm sayısından fazlaysa uyarır. `teyit --damga` ikisini birlikte yazar; fark, satırın script dışında (elle) eklendiğini ve o künyelerin muhakemesinin hiç yapılmadığını gösterir |
 | **Kök dosya bekçisi** | Sözleşme-dışı bekçisi yalnız `_oa/` altındaki **dizinlere** bakıyordu; kökteki serbest **dosyalar** kör noktadaydı. Artık görünür uyarı üretir (bloklamaz) |
 
+### v0.5.5.2 — UDF geçerlilik kapısının iki kör noktası
+
+Saha oturumundan gelen çevrim reçetesi üzerine kapı gerçek bir dilekçede sınandı ve **iki kusur** çıktı:
+
+| Kusur | Düzeltme |
+|---|---|
+| **Yanlış-BLOK (ağır):** süreklilik denetimi yalnız `<content>` elemanlarına bakıyordu; gerçek `udf-cli` çıktısında `<tab/>` de offset taşır. Avukatın UYAP'ta **açıldığını teyit ettiği** 46.336 karakterlik dilekçe "offset süreksiz: beklenen 61, bulunan 62" ile **GEÇERSİZ** işaretleniyordu — kapı, korumaya çalıştığı teslimi kesiyordu | Denetlenen invaryant "paragraflar ardışık" değil **"offset taşıyan TÜM elemanlar CDATA'yı boşluksuz/örtüşmesiz döşer"** oldu. Etiket adı beyaz-listelenmedi (yarın `<space/>` gelirse yine yanlış-BLOK olurdu): ölçüt attribute'un **varlığı** |
+| **Kör nokta:** kapı dosyayı yalnız **kendi ayrıştırıcımızın** varsayımına göre sınıyordu — sahada bizi yakan hata sınıfı tam olarak "bizim round-trip'imizi geçen ama UYAP'ın açmadığı dosya"ydı | **5. bacak: resmî okuyucu tanığı** — dosya, onu üreten aracın kendi okuyucusuyla (`udf-cli udf2md`) geri okunur. Üç durum ayrı tutulur: **OK** / **RET** (blokleyici) / **YAPILAMADI** (ağ-oturum yok → görünür uyarı, bloklamaz; "doğrulandı" sayılmaz) |
+
 > Sahada şüphelenilen dört kusur (Gate A haritası, muhakeme dosyası yazımı, dava tezi, kayıpsız senkron) sentetik yeniden üretimle sınandı ve **dördü de sağlam çıktı** — bu yüzden kod değil tetik düzeltildi. Yeniden üretim testleri `tests/test_v0551_saha_tetikleri.py` içindedir.
 
 ---
@@ -248,7 +257,7 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (**759 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
+İlki deterministik denetçilerin regresyonunu (**785 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
 
 ---
 
@@ -267,7 +276,7 @@ ortak-avukat/
 │       ├── oa-kontrol/               #   teslim kapıları + içtihat muhakeme denetimi
 │       ├── oa-dilekce/               #   dilekçe yazımı + UDF hattı + UYAP format referansı
 │       └── …                         #   oa-alan, oa-vakia, oa-kiyas, oa-antitez, oa-usul, oa-sure, …
-├── tests/                            # 759 pytest
+├── tests/                            # 785 pytest
 ├── README.md · LICENSE · NOTICE
 ```
 

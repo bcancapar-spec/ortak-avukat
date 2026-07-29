@@ -3,8 +3,10 @@
 SessionEnd hook komutu) için testler.
 
 Sözleşme: _oa/defter bu kökte YOKSA sessizce exit 0 (çıktı yok); VARSA
-denetim + oa_metrik özetini basar; NE OLURSA OLSUN her zaman exit 0 (ASLA
-oturum kapanışını bloklamaz) — bozuk/eksik defterde bile.
+denetimi basar; NE OLURSA OLSUN her zaman exit 0 (ASLA oturum kapanışını
+bloklamaz) — bozuk/eksik defterde bile. DÜZELTME (turu 2, YENİ-2): oa_metrik
+tam telemetri tablosu ([1]-[7]) artık hook STDOUT'una BASILMAZ (metrik.json'a
+yan etki olarak yazılmaya devam eder) — bkz. alttaki YENİ-2 testleri.
 """
 import importlib.util
 import json
@@ -86,6 +88,43 @@ def test_hook_denetle_fonksiyonu_dogrudan_cagrilinca_hep_0_doner():
     her koşulda 0 döner — ASLA istisna fırlatıp çağıranı çökertmez."""
     sonuc = pk.hook_denetle(kok="/kesinlikle/var/olmayan/bir/yol/xyz123")
     assert sonuc == 0
+
+
+# ── YENİ-2 (düzeltme turu 2, saha ölçümü) — hook STDOUT'u artık tam
+#    oa_metrik telemetri tablosunu ([1]-[7]) BASMAZ (bağlam maliyeti); yan
+#    etki (metrik.json yazımı) KORUNUR; tam tablo yalnız avukatın kendi
+#    isteğiyle `--goster --telemetri` ile görünür.
+
+def test_hook_stdout_tam_telemetri_tablosunu_basmaz(tmp_path):
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    kod, cikti = _cli(["--hook-denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "OTOMATİK DENETİM" in cikti
+    assert "[1] KÜLLİYAT" not in cikti, (
+        f"hook STDOUT'u artık tam telemetri tablosunu içermemeli (bağlam maliyeti):\n{cikti}")
+    assert "[7] REGRESYON" not in cikti
+    # Ama yan etki (metrik.json) korunmalı VE hook bunu görünür biçimde işaret etmeli.
+    assert (tmp_path / "_oa" / "defter" / "metrik.json").is_file(), (
+        "hook artık tabloyu basmasa da metrik.json yan etkisini yazmaya devam etmeli")
+    assert "--telemetri" in cikti, "hook, tam tabloya nasıl ulaşılacağını GÖRÜNÜR biçimde işaret etmeli"
+
+
+def test_goster_telemetrisiz_varsayilan_ucuz_kalir(tmp_path):
+    """Varsayılan `--goster` (bayrak yok) UCUZ kalmalı — tam telemetri
+    tablosunu basmamalı (P1-9(b) notuyla aynı ilke: --goster sık/ucuz çağrı)."""
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    kod, cikti = _cli(["--goster", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[1] KÜLLİYAT" not in cikti
+
+
+def test_goster_telemetri_bayragiyla_tam_tabloyu_basar(tmp_path):
+    """`--goster --telemetri` AÇIKÇA istenince tam tabloyu basmalı — hook'un
+    kısalttığı içerik tamamen KAYBOLMADI, yalnız istem-üzerine taşındı."""
+    _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    kod, cikti = _cli(["--goster", "--telemetri", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[1] KÜLLİYAT" in cikti, f"--telemetri tam tabloyu basmalıydı:\n{cikti}"
 
 
 # ── P0-7 KUCUK-düzeltme (sinav-turu): 'Stop' HER asistan turunda tetiklenir

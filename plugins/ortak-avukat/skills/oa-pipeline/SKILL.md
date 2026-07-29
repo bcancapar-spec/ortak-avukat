@@ -323,12 +323,22 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 Plugin `hooks/hooks.json`'daki Stop/SessionEnd hook'u oturum kapanışında
 `pipeline_kayit.py --hook-denetle` çalıştırır — zincirin ucu artık modelin
 gönüllü çağrısına bağlı değildir. `_oa/defter` yoksa sessizce `exit 0`; varsa
-denetim + `oa_metrik` özetini basar (in-process, subprocess YOK) ve ASLA
-bloklamaz. Aynı yazar (`pipeline_kayit.py`), HER olayda (`--baslat`/`--isle`/
-`--katman`/`--denetle`/hook) `_oa/DURUM.md`'yi ATOMİK türetir — "elle
-düzenlenmez" damgalı: adım tablosu, kapı durumu (Gate G + TESLİM MAKBUZU +
-araç hataları), kütük-vs-dilekçe künye sayacı, sözleşme-dışı dizin + bayat
-working-memory uyarıları, AVUKAT KARARI BEKLEYEN, SIRADAKİ.
+denetimi basar (in-process, subprocess YOK) ve ASLA bloklamaz. Aynı yazar
+(`pipeline_kayit.py`), HER olayda (`--baslat`/`--isle`/`--katman`/`--denetle`/
+hook) `_oa/DURUM.md`'yi ATOMİK türetir — "elle düzenlenmez" damgalı: adım
+tablosu, kapı durumu (Gate G + TESLİM MAKBUZU + araç hataları), kütük-vs-dilekçe
+künye sayacı, sözleşme-dışı dizin + bayat working-memory uyarıları, AVUKAT
+KARARI BEKLEYEN, SIRADAKİ. **Telemetri kısıtlaması (YENİ-2, saha ölçümü —
+turu 2):** `oa_metrik` özeti (`[1]-[7]` tablosu) HER hook koşusunda
+`_oa/defter/metrik.json`'a yazılmaya devam eder ama artık hook STDOUT'una
+BASILMAZ (bir kökte ~5 KB'lik tablo, model bağlamına PostToolUse üzerinden
+istemsizce geri besleniyordu) — tam tablo yalnız avukatın kendi isteğiyle
+`pipeline_kayit.py --goster --telemetri` ile görünür. Denetim/uyarı satırları
+kısılmadı, yalnız telemetri. **Throttle:** aynı içerikli ardışık hook
+koşuları (`_hook_cikti_degisti_mi`) 2.-N. tetikte STDOUT'u 0 bayta indirir
+(sessiz kısa devre — DURUM.md/metrik.json yine tazelenir); bu GÜRÜLTÜ
+azaltmadır, görünürlük kaybı DEĞİLDİR — herhangi bir yeni sorun/uyarı metni
+ilk fırsatta yeniden basılır.
 
 **İKİNCİ AYAK (P0-B, v0.5.5 — GÖREV B):** Stop/SessionEnd yalnız OTURUM
 KAPANIRKEN koşar; bir taslak/UDF üretimi ile oturum kapanışı arasında model

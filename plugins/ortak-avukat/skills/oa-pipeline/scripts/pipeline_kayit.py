@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.5.1"
+OA_SURUM = "0.5.5.2"
 
 
 def _surum_tuple(s):
@@ -119,6 +119,47 @@ _OA_SURUM_TUPLE = _surum_tuple(OA_SURUM)
 # geçmiş mi" demek istiyordu; eşik o yüzden çağın açıldığı sürüme SABİTLENİR,
 # her sürüm artışıyla kaymaz.
 _MAKBUZ_CAG_ESIGI = (0, 5, 5)
+
+# İKİNCİL KANIT EŞİĞİ (Düzeltme turu 2, YENİ-1 — saha bulgusu): `surum_gorulen`
+# yalnız bu CLI'nin KENDİSİNDEN geçen olaylara eklenir (bkz. yukarıdaki not).
+# Defter TAMAMEN elle yazılmışsa (B1 kök sebebi — model JSONL'e doğrudan
+# satır düşürüyor) `surum_gorulen` HİÇ dolmaz; bu durum "defter v0.5.5
+# ÖNCESİ oluşturulmuş" (gerçekten eski) ile "defter v0.5.5 ÇAĞINDA ama
+# damgasız yazılmış" (elle düşürülmüş) arasında AYIRT EDİLEMEZ hâle gelir —
+# ikincisi yanlışlıkla birinciyle karıştırılıp makbuz kapısı SESSİZCE
+# gevşer (tam da defter bütünlüğünün en kırılgan olduğu vakada). Kapı FORMU
+# değil İŞİ denetlemeli: aşağıdaki iki bağımsız kanıttan biri varsa
+# (defterin ilk olayı bu tarihten SONRAysa, veya kökte yalnız v0.5.5-ailesi
+# kodun üretebileceği bir artefakt varsa) defter ÇAĞ-İÇİ sayılır — form
+# (imza/surum alanı) eksik olsa bile. Tarih P0-5'in fiilen yürürlüğe girdiği
+# gündür (bkz. değişiklik günlüğü: "2026-07-28 (v0.5.5 — Paket A/B/C/D...)").
+_MAKBUZ_CAG_TARIHI = "2026-07-28"
+
+
+def _ilk_olay_zamani(d):
+    """Defterin `gunluk`ündeki (append-only, zaman sıralı OLMAK ZORUNDA
+    değil — elle düşürülmüş satırlar sırayı bozabilir) EN ERKEN zaman
+    damgasını döndürür (ISO string karşılaştırmasıyla), yoksa None."""
+    zamanlar = [k.get("zaman") for k in (d or {}).get("gunluk") or [] if k.get("zaman")]
+    try:
+        return min(zamanlar) if zamanlar else None
+    except TypeError:
+        return None
+
+
+def _defter_v055_artefakti_var_mi(kok):
+    """Yalnız v0.5.5-ailesi KODUN üretebileceği artefaktlar — `oa_metrik.py`
+    çıktısı `metrik.json` ve bu script'in kendi `DURUM.md`si. Bunların
+    VARLIĞI, defterin KENDİSİ damgasız olsa bile (elle yazılmış/bozulmuş),
+    dosyanın fiilen v0.5.5+ pipeline'ı altında işlendiğinin defterden
+    BAĞIMSIZ bir kanıtıdır (ikinci bir denetim mantığı İCAT ETMEZ, yalnız
+    dosya sisteminde zaten duran fiziksel izi okur)."""
+    kok = kok or "."
+    if os.path.isfile(os.path.join(kok, "_oa", "defter", "metrik.json")):
+        return True
+    if os.path.isfile(os.path.join(kok, "_oa", "DURUM.md")):
+        return True
+    return False
 
 
 # ── ARAÇ İMZASI (Görev A, v0.5.5 devamı — B1 KÖK SEBEP kapanışı) ────────────
@@ -920,12 +961,26 @@ def son_pas_yolu(d):
     return None
 
 
-def _surum_v055_var_mi(d):
+def _surum_v055_var_mi(d, kok=None):
     """P0-5 geçiş supabı: bu defterde HİÇ v0.5.5+ olay VAR mı? (bkz. OA_SURUM
     modül-üstü not — makbuz denetimleri yalnız bu True iken blokleyicidir.)
-    Eşik `_MAKBUZ_CAG_ESIGI`dir, güncel sürüm DEĞİL — bkz. o sabitin notu."""
+    Eşik `_MAKBUZ_CAG_ESIGI`dir, güncel sürüm DEĞİL — bkz. o sabitin notu.
+
+    DÜZELTME (turu 2, YENİ-1): `surum_gorulen` TAMAMEN boşsa (defter hiç bu
+    CLI'den geçmemiş, tümüyle elle yazılmış olabilir) tek başına "eski
+    defter" sonucuna sıçramaz — iki bağımsız İKİNCİL KANIT dener (bkz.
+    `_MAKBUZ_CAG_TARIHI` üstündeki not): defterin ilk olayı çağ tarihinden
+    sonraysa, ya da kökte yalnız v0.5.5-ailesinin üretebileceği bir artefakt
+    varsa, defter yine ÇAĞ-İÇİ sayılır. `kok` verilmezse (bazı çağrı yerleri
+    yalnız `d` ile çalışır) yalnız zaman-damgası kanıtı denenir."""
     for s in (d or {}).get("surum_gorulen") or []:
         if _surum_tuple(s) >= _MAKBUZ_CAG_ESIGI:
+            return True
+    if not (d or {}).get("surum_gorulen"):
+        ilk_zaman = _ilk_olay_zamani(d)
+        if ilk_zaman and str(ilk_zaman) >= _MAKBUZ_CAG_TARIHI:
+            return True
+        if kok is not None and _defter_v055_artefakti_var_mi(kok):
             return True
     return False
 
@@ -1427,6 +1482,13 @@ def goster(args):
               + ", ".join(f"_oa/{ad}" for ad in sozlesme_disi)
               + " — beklenmeyen konum (gölge hat/dağınık-çıktı adayı olabilir).")
     _durum_md_yaz(getattr(args, "kok", None))
+    # YENİ-2 düzeltmesi (turu 2): tam oa_metrik telemetri tablosu ([1]-[7])
+    # yalnız AÇIKÇA istenirse (`--telemetri`) basılır — varsayılan `--goster`
+    # UCUZ/SIK çağrı olarak kalır (bkz. yukarıdaki P1-9(b) notu), hook yolu
+    # da artık bunu otomatik basmaz (bkz. `_hook_govde_calistir`); bu ikisinin
+    # TEK ortak çıkış noktası burasıdır.
+    if getattr(args, "telemetri", False):
+        print(_oa_metrik_ozet_al(kok_g or "."))
 
 
 # P0-4 (v0.5.5) — Gate G dairesel bağımlılık kırıcı, KÖKTEN çözüm: subprocess
@@ -1573,8 +1635,19 @@ def _makbuz_denetim_hesapla(kok, d):
                       "teslim_paketi.py koşusu veya yeni bir şerh gerektirir.]")
     if mesaj is None:
         return None, None
-    if not _surum_v055_var_mi(d):
-        return None, "TESLİM MAKBUZU (eski/önceki-sürüm defter — yalnız uyarı): " + mesaj
+    if not _surum_v055_var_mi(d, kok):
+        # DÜZELTME (turu 2, YENİ-1): "eski/önceki-sürüm defter" ifadesi
+        # `surum_gorulen` TAMAMEN boş olan (ör. elle yazılmış) defterler
+        # için yanıltıcıydı — dosya eski DEĞİL, defter yalnız damgasız.
+        # Sebep artık ayırt edilerek söylenir (mevcut "eski/önceki-sürüm"
+        # alt dizesi geriye dönük uyumluluk için korunur).
+        if (d or {}).get("surum_gorulen"):
+            sebep = "eski/önceki-sürüm defter"
+        else:
+            sebep = ("eski/önceki-sürüm defter — YA DA defterde hiç sürüm damgası "
+                     "yok (elle yazılmış/pipeline_kayit.py CLI'sinden geçmemiş olabilir; "
+                     "bkz. Defter Bütünlüğü: N model-beyanlı)")
+        return None, f"TESLİM MAKBUZU ({sebep} — yalnız uyarı): " + mesaj
     return "TESLİM MAKBUZU: " + mesaj, None
 
 
@@ -2682,7 +2755,19 @@ def _hook_govde_calistir(kok_aday, hook_adi):
     DEĞİŞMEDİYSE sessiz kısa devre olur (bkz. `_hook_cikti_degisti_mi`). Bu
     kökte `_oa/defter` YOKSA sessizce hiçbir şey yapmaz. ASLA istisna
     fırlatmaz dışarı — hata `_hook_basarisizlik_isaretle` ile İŞARETLENİR
-    (DURUM.md varsa) + stderr'e basılır."""
+    (DURUM.md varsa) + stderr'e basılır.
+
+    DÜZELTME (turu 2, YENİ-2 — saha ölçümü): PostToolUse stdout'u modele
+    DOĞRUDAN geri beslenir (bağlam maliyeti) — throttle (`_hook_cikti_degisti_mi`)
+    2.-N. tetikte bunu 0 bayta indiriyor ama İLK tetikte tam `oa_metrik`
+    telemetri tablosu ([1]-[7], ölçülen sahada tek kök için ~5,2 KB, çok
+    köklü kurulumda daha fazla) hook yoluyla basılıyordu. Telemetri BLOKAJ
+    DEĞİLDİR ve avukat onu talep etmediyse otomatik tetikte gerekmez — bu
+    yüzden metrik.json YİNE HER KOŞUDA yazılır (yan etki KORUNUR, `_oa_metrik_
+    ozet_al` çağrısı aynen kalır) ama tam tablo hook STDOUT'una BASILMAZ;
+    yalnız `--goster` (avukatın kendi isteğiyle çağırdığı, ucuz/sık komut)
+    tam tabloyu gösterir (bkz. `goster()`). Denetim/uyarı satırları (`cikti`)
+    HİÇ KISALMADAN aynen basılmaya devam eder — kısılan yalnız telemetridir."""
     try:
         defter = os.path.join(kok_aday, "_oa", "defter")
         if not os.path.isdir(defter):
@@ -2699,14 +2784,18 @@ def _hook_govde_calistir(kok_aday, hook_adi):
             # Onarım GÖRÜNÜR olmalı (sessiz atlama yasağının simetriği: sessiz
             # ONARIM da yasak) ve parmak izine girmeli ki kısa devre yutmasın.
             cikti = f"{cikti}\n{onarim_uyarisi}"
-        ozet = _oa_metrik_ozet_al(kok_aday)
+        # YENİ-2 düzeltmesi: yan etki (metrik.json yazımı) korunur, dönen tam
+        # metin hook STDOUT'una BASILMAZ (bkz. docstring) — yalnız varlığına
+        # işaret eden tek satır basılır.
+        _oa_metrik_ozet_al(kok_aday)
         if not _hook_cikti_degisti_mi(defter, cikti):
             return  # denetim ÇIKTISI son koşudan bu yana değişmedi — sessiz kısa devre
         print("═" * 66)
         print(f"OTOMATİK DENETİM ({hook_adi} hook — kök: {kok_aday})")
         print("═" * 66)
         print(cikti)
-        print(ozet)
+        print(f"(oa_metrik telemetrisi _oa/defter/metrik.json'a yazıldı — tam tablo: "
+              f"`pipeline_kayit.py --goster --telemetri --kok {kok_aday}`)")
     except Exception as e:
         try:
             print(f"UYARI: {hook_adi} hook ({kok_aday}) başarısız oldu ({e}) — "
@@ -2826,6 +2915,10 @@ def main():
                          "NN-*.md` PASının yolu (göreli veya mutlak). Kaydedilir; "
                          "`ajan-brif` bir SONRAKİ parçaya bu pası 1. sıradan enjekte eder.")
     ap.add_argument("--goster", action="store_true")
+    ap.add_argument("--telemetri", action="store_true",
+                     help="--goster ile birlikte: oa_metrik telemetri tablosunu ([1]-[7]) "
+                          "da basar (YENİ-2 düzeltmesi — varsayılan --goster/hook yolu "
+                          "artık bunu otomatik basmaz, bkz. değişiklik günlüğü).")
     ap.add_argument("--denetle", action="store_true")
     ap.add_argument("--serh",
                      help="P0-6: önkoşul-artefakt kapısı (adım-5/9) VEYA İNGEST-ÖNCE "
@@ -2838,7 +2931,8 @@ def main():
     ap.add_argument("--hata", help="--arac-hata: hata açıklaması (zorunlu)")
     ap.add_argument("--hook-denetle", action="store_true", dest="hook_denetle",
                      help="P0-7: model-bağımsız Stop/SessionEnd hook komutu — defter "
-                          "yoksa sessiz exit 0, varsa denetim+oa_metrik özetini basar; "
+                          "yoksa sessiz exit 0, varsa denetimi basar (oa_metrik metrik.json'a "
+                          "yazılır ama STDOUT'a basılmaz — bkz. --telemetri, YENİ-2); "
                           "ASLA bloklamaz (her zaman exit 0).")
     ap.add_argument("--hook-postwrite", action="store_true", dest="hook_postwrite",
                      help="GÖREV B/P0-B (v0.5.5): model-bağımsız PostToolUse(Write|Edit) "
