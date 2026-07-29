@@ -78,6 +78,8 @@ ZORUNLU TAM TUR **derinlik** kuralıdır (tümü incelenir, muhakeme doğru kuru
 
 **DEFTER (deterministik kayıt — Başbakan denetiminin motoru):** Hat başlarken `python scripts/pipeline_kayit.py --baslat "<dosya adı>"` ile `_oa/defter/pipeline-durum.json` açılır (yerel hafıza kökü — aşağıdaki ÇALIŞMA KÖKÜ bölümü). Her adımda statü kanıtla işlenir: `--isle --adim N --parca oa-x --durum UYGULANDI --kanit "..."`. Script deterministik reddeder: UYGULANDI **kanıtsız** yazılamaz; GEREKSİZ **gerekçesiz**, BİLGİ-EKSİK **eksik-tanımsız** yazılamaz. Teslimden önce `--denetle` koşar; boşluk/kanıtsız statü varsa hata koduyla döner — **boşluklu tur teslim edilemez.** Akış sonundaki katman kontrol listesi bu defterden ÜRETİLİR, ezberden yazılmaz.
 
+**Defter bütünlüğü — araç-imzalı / model-beyanlı ayrımı (Görev A, v0.5.5):** Defter append-only bir dosya olduğundan model, `pipeline_kayit.py` CLI'sini HİÇ çağırmadan `pipeline-olaylar.jsonl`e doğrudan bir satır ekleyebilir; bu satır BLOKLANMAZ (append-only invaryantı bozulmaz) ama görünmez de kalmaz — CLI'den geçen her olaya deterministik bir imza eklenir, elden düşürülen satırlar "model-beyanlı" olarak `_oa/DURUM.md`de sayılır ve etiketlenir. **Sınır:** imza algoritması anahtarsızdır ve kaynak kodda açıktır — kasıtlı taklidi engellemez; amacı ayırt etmektir, kanıt/delil üretmek değildir.
+
 **KADEMELİ YÜKLEME (bağlam disiplini):** Parçalar hepsi birden değil, **sırası geldiğinde** çağrılır. Amaç tasarruf değil (çaba standardı sabittir), dikkat bütünlüğüdür: şişkin bağlam, tam da önlenmek istenen kestirmeyi doğurur. Bir adım bitince **DEVİR PAKETİ** (ne yapıldı → ne bekleniyor → hangi kanıt) deftere/durum dosyasına yazılır; sonraki parça bağlamı oradan devralır. Parçadan parçaya doğrudan devir de (ör. `oa-ictihat` aleyhe kararı `oa-antitez`'e) aynı kurala tabidir: devralan parça fiilen çağrılır, devir paketi verilir.
 
 **SUBAGENT ORKESTRASYONU — tam turun AKTİF ve EŞGÜDÜMLÜ yürütülmesi (varsayılan — opsiyonel değil):** Agent/subagent aracı mevcutsa, Başbakan tam turu tek gövdede sırayla değil, **işin gerektirdiği ölçüde ALT-AJANLARLA paralel ve eşgüdümlü** yürütür — tek promptla tüm aile aynı anda dosyayı inceler. İlke: bağımsız cepheler eşzamanlı (fan-out), bağımlı adımlar zincirlenir.
@@ -241,7 +243,7 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
 
 **KALICI KATMANLAR (adım değil, her aşamayı sarar):** `oa-usul` (usulün esasa takaddümü), `oa-illiyet` (nedensellik grafı), `oa-gizlilik` (Layer 0 dış-araç süzgeci). Bunlar 0–10 adımlarının tümünde otomatik devrededir.
 
-**EVRAK ATLAMA YASAĞI (Başbakan — büyük dosya protokolü):** Çok büyük dosyalarda (UYAP klasörleri 300-500+ sayfa) model dikkat dağılması ve OCR yükü nedeniyle evrak atlamaya/yüzeysel geçmeye eğilimlidir. Başbakan bunu aktif bastırır: **sessiz atlama yasağı evrak düzeyinde de geçerlidir.** Manifest sayımı elle değil deterministik yapılır: `python scripts/manifest_olustur.py <klasör>` klasördeki her dosyayı numaralı döker (ad, uzantı, boyut, METİN/GÖRÜNTÜ-OCR tahmini) ve toplam sayımı verir; model bu iskeletin üzerine tür/içerik sütunlarını doldurur. Metin çıkarımı `python oa-ingest/scripts/oa_ingest.py <klasör>` ile yapılır; büyük külliyatta (300-500+ sayfa/çok OCR) çıkarım varsayılan olarak PARALEL koşar (`--isci` verilmezse otomatik `min(çekirdek,8)`) — bu yalnız duvar-saatini kısaltır, çıktı seri koşuyla (`--isci 1`) BYTE-ÖZDEŞTİR; "OCR yükü fazla, tek tek bekleteyim" diye elle seri işletmek GEREKSİZ YAVAŞLIKTIR, varsayılan paralellik korunur. UYAP UDF evrakı `python scripts/udf_metin.py <dosya.udf> --cikti _oa/cikti/...` ile metne dönüştürülerek okunur — "UDF okunamadı" ancak script fiilen başarısız olursa geçerlidir (o da manifeste açıkça yazılır). Görüntü/taranmış PDF ve TIFF'ler "okudum" diye varsayılamaz — gerçekten OCR'dan geçirilir veya geçirilemiyorsa açıkça "okunamadı, manuel inceleme gerekli" denir. Çok büyük klasör tek seferde güvenli taranamıyorsa, **mantıklı bloklara böl** (dilekçeler / kararlar / bilirkişi / tebligat / yazışmalar), her bloğu ayrı ve eksiksiz tara, sonra birleştir — her blok sonunda manifest sayımı tutturulur. Kullanıcının eksik yakalayıp elle eklemek zorunda kalması, bu protokolün ihlalidir.
+**EVRAK ATLAMA YASAĞI (Başbakan — büyük dosya protokolü):** Çok büyük dosyalarda (UYAP klasörleri 300-500+ sayfa) model dikkat dağılması ve OCR yükü nedeniyle evrak atlamaya/yüzeysel geçmeye eğilimlidir. Başbakan bunu aktif bastırır: **sessiz atlama yasağı evrak düzeyinde de geçerlidir.** Manifest sayımı elle değil deterministik yapılır: `python scripts/manifest_olustur.py <klasör>` klasördeki her dosyayı numaralı döker (ad, uzantı, boyut, METİN/GÖRÜNTÜ-OCR tahmini) ve toplam sayımı verir; model bu iskeletin üzerine tür/içerik sütunlarını doldurur. Metin çıkarımı `python oa-ingest/scripts/oa_ingest.py <klasör>` ile yapılır; büyük külliyatta (300-500+ sayfa/çok OCR) çıkarım varsayılan olarak PARALEL koşar (`--isci` verilmezse otomatik `min(çekirdek,8)`) — bu yalnız duvar-saatini kısaltır, çıktı seri koşuyla (`--isci 1`) BYTE-ÖZDEŞTİR; "OCR yükü fazla, tek tek bekleteyim" diye elle seri işletmek GEREKSİZ YAVAŞLIKTIR, varsayılan paralellik korunur. UYAP UDF evrakı klasör taramasında `oa_ingest.py`'nin kendi yerel/çevrimdışı/kayıpsız `udf_isle()` yoluyla (bedava, ana hat) okunur; tek bir `.udf` dosyasını elde hızlıca okumak istendiğinde veya bu yerel okuma şüpheliyse **ALTIN KURAL — UDF elle yazılmaz/çözülmez** ilkesiyle (bkz. `oa-dilekce/references/uyap-belge-formatlari.md`) `python scripts/udf_metin.py <dosya.udf> --cikti _oa/cikti/...` gerçek `npx -y udf-cli@latest udf2md` çağrısıyla metne dönüştürür (ağ+oturum gerektirir, FAIL-CLOSED) — "UDF okunamadı" ancak script fiilen başarısız olursa geçerlidir (o da manifeste açıkça yazılır). Görüntü/taranmış PDF ve TIFF'ler "okudum" diye varsayılamaz — gerçekten OCR'dan geçirilir veya geçirilemiyorsa açıkça "okunamadı, manuel inceleme gerekli" denir. Çok büyük klasör tek seferde güvenli taranamıyorsa, **mantıklı bloklara böl** (dilekçeler / kararlar / bilirkişi / tebligat / yazışmalar), her bloğu ayrı ve eksiksiz tara, sonra birleştir — her blok sonunda manifest sayımı tutturulur. Kullanıcının eksik yakalayıp elle eklemek zorunda kalması, bu protokolün ihlalidir.
 
 **Usul katmanı (anayasal düstur — adım değil):** `oa-usul`, hattın **her** adımını sarar:
 ALIM'da usul soruları önce; ARAŞTIRMA'da usul içtihadı önce; OLGU/DELİL'de tarihli her
@@ -317,7 +319,7 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 | adım-7 | oa-antitez | `_oa/cikti/07-antitez*` | UYARI |
 | adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** |
 
-## Model-bağımsız tetik (P0-7) + DURUM.md (P0-8, v0.5.5)
+## Model-bağımsız tetik (P0-7 + P0-B) + DURUM.md (P0-8, v0.5.5)
 Plugin `hooks/hooks.json`'daki Stop/SessionEnd hook'u oturum kapanışında
 `pipeline_kayit.py --hook-denetle` çalıştırır — zincirin ucu artık modelin
 gönüllü çağrısına bağlı değildir. `_oa/defter` yoksa sessizce `exit 0`; varsa
@@ -327,6 +329,19 @@ bloklamaz. Aynı yazar (`pipeline_kayit.py`), HER olayda (`--baslat`/`--isle`/
 düzenlenmez" damgalı: adım tablosu, kapı durumu (Gate G + TESLİM MAKBUZU +
 araç hataları), kütük-vs-dilekçe künye sayacı, sözleşme-dışı dizin + bayat
 working-memory uyarıları, AVUKAT KARARI BEKLEYEN, SIRADAKİ.
+
+**İKİNCİ AYAK (P0-B, v0.5.5 — GÖREV B):** Stop/SessionEnd yalnız OTURUM
+KAPANIRKEN koşar; bir taslak/UDF üretimi ile oturum kapanışı arasında model
+hiçbir şey çağırmadan uzun süre çalışabilir. `hooks/hooks.json`'daki
+`PostToolUse` (matcher `Write|Edit`) girdisi `pipeline_kayit.py
+--hook-postwrite` çalıştırır — HER Write/Edit çağrısından sonra tetiklenir
+ama ağır gövdeyi (Gate-G/makbuz/`oa_metrik` dahil) yalnız UCUZ bir
+ön-denetim (`_hook_postwrite_tetikle_mi` — `_oa/cikti` altında SON 60
+saniyede dilekçe-şekilli yeni bir dosya var mı) TRUE dönerse koşturur; aksi
+hâlde hızlı ve sessiz çıkar. `udf_yaz.py` da kendi üretim anında (`on_denetim_
+kostur`) İçtihat Muhakeme Zinciri + Atıf/Künye Teyit kapılarını İN-PROCESS
+çalıştırır — BLOK bulursa UDF üretimini ENGELLEMEZ (avukat egemen) ama
+`<udf-adi>.denetim.txt` raporu + `_oa/DURUM.md` notu diskte kalır.
 
 **AVUKAT KARARI — çözüm komutu (M7, Paket D — v0.5.5):** AVUKAT KARARI BEKLEYEN yalnız GÖSTERİR; bir çatalı KAPATMAK için `pipeline_kayit.py --avukat-karari "<seçilen seçenek/karar metni>" (--adim N --parca oa-x | --katman oa-x) --gerekce "<neden bu seçenek seçildi>"` kullanılır — gerekçesiz kayıt REDDEDİLİR (çatallar gerekçeli seçeneklerle listelenir doktrini: seçim keyfi değil, gerekçeli olmalı). Kayıt append-only'dir (eski BEKLEYEN izi kaybolmaz); DURUM.md'de ayrı bir "Avukat Kararları (Kayıtlı)" bölümünde kalıcı görünür, çözülen çatal artık BEKLEYEN listesinde GÖRÜNMEZ.
 

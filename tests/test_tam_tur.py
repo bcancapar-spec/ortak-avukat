@@ -146,6 +146,36 @@ def test_islenmis_delta_gelisme_ile_kaydete_gecer(tmp_path):
     assert kod == 0, "GELİŞME'de anılmış bekleyen delta ikinci kaydet'i engellememeli"
 
 
+# ── GÖREV C(3) — devir/ boşsa --kaydet GÖRÜNÜR uyarır (bloklamaz) ──────────
+
+def test_kaydet_devir_bossa_uyarir(tmp_path, capsys):
+    """_oa/devir hiç DEVİR PAKETİ içermiyorsa --kaydet GÖRÜNÜR bir uyarı
+    basmalı; TAMAM damgası (exit 0) bundan ETKİLENMEMELİ."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    kod = tt.cmd_kaydet(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 0, cikti
+    assert "UYARI" in cikti
+    assert "_oa/devir" in cikti
+
+
+def test_kaydet_devir_doluysa_uyarmaz(tmp_path, capsys):
+    """Kontrast: _oa/devir'de en az bir dosya varsa uyarı basılmamalı."""
+    _kunye_yaz(tmp_path, [{"kaynak": "dilekce.pdf", "sha": _sha("v1")}])
+    _cikti_birak(tmp_path)
+    devir_dizin = tmp_path / "_oa" / "devir"
+    devir_dizin.mkdir(parents=True, exist_ok=True)
+    (devir_dizin / "03-oa-ictihat-20260101.md").write_text("devir paketi", encoding="utf-8")
+
+    tt.cmd_baslat(str(tmp_path), "Test Dosyası")
+    kod = tt.cmd_kaydet(str(tmp_path))
+    cikti = capsys.readouterr().out
+    assert kod == 0, cikti
+    assert "UYARI: _oa/devir boş" not in cikti
+
+
 # ── Gate G — KALICILIK KAPISI: --durum mekanik "tamamlandi/tamamlanmadi" ────
 
 def test_durum_kaydet_sonrasi_mekanik_tamamlandi(tmp_path, capsys):

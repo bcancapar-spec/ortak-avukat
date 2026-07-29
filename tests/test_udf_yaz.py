@@ -2,18 +2,25 @@
 """oa-dilekce / udf_yaz.py için ALTIN VAKA testleri.
 
 Script'i dosya-yolundan (importlib.util) yükler — skill dizinleri paket değildir.
-Odak: UDF round-trip garantisi (yazılan içerik `udf_metni_geri_oku` ile birebir
-geri okunur) ve CDATA'da yasak olan ']]>' dizisinin güvenli bölünmesi.
 
-P0-10 (v0.5.5, UDF-REHBER uyumu) EKİ: rehbere birebir varsayılan hat
-(md → UDF-HTML → `npx udf-cli html2udf`) artık AĞ+OTURUM gerektirir — bu
-sınıfın testleri `npx_kullanilabilir_mi()` ile KULLANILABİLİRSE koşar,
-DEĞİLSE nazikçe `pytest.skip` eder (DOKUNULMAZLAR: mevcut testler hiçbir
-makinede KIRILMAZ). `--yerel-motor` (ağsız yedek) ve PDF bacağı tamamen
-çevrimdışı/deterministik olduğundan skip'siz her zaman koşar.
+GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): eski hand-rolled zip/content.xml
+motoru (`udf_uret`/`udf_yaz`/`udf_metni_geri_oku`/`--yerel-motor`) UYAP'ta
+AÇILMAYAN bir `.udf` üretiyordu — bu sınıf TAMAMEN KALDIRILDI. Script artık
+TEK yazma hattına sahiptir: md → UDF-HTML (md_udf_html.py) → gerçek
+`npx -y udf-cli@latest html2udf`. Bu yüzden bu dosyadaki testler de:
+  - `udf_dogrula()` (mekanik GEÇERLİLİK KAPISI) testleri artık kendi sentetik
+    ZIP/content.xml'lerini DOĞRUDAN `zipfile` ile kurar (üretici script'e
+    bağımlı DEĞİLDİR — bu bir test fixture'ıdır, "elle UDF üretimi" ÖZELLİĞİ
+    DEĞİLDİR).
+  - Gerçek `npx udf-cli html2udf` uçtan-uca testleri `npx_kullanilabilir_mi()`
+    ile KULLANILABİLİRSE koşar, DEĞİLSE nazikçe `pytest.skip` eder (hiçbir
+    makinede KIRILMAZ).
+  - FAIL-CLOSED testleri (npx yok/başarısız → dosya YAZILMAZ, exit != 0, net
+    hata mesajı) ağsız/deterministiktir, her zaman koşar.
 """
 import importlib.util
 import pathlib
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -22,6 +29,7 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-dilekce" / "scripts" / "udf_yaz.py"
+MD_HTML_SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-dilekce" / "scripts" / "md_udf_html.py"
 
 
 def _load():
@@ -35,101 +43,81 @@ def _load():
 uy = _load()
 
 
-# ── cdata_guvenli(): ']]>' bölünmesi ─────────────────────────────────────────
+# ── ALTIN KURAL: elle-zip motoru KALDIRILDI (regresyon kilidi) ──────────────
 
-def test_cdata_guvenli_yasak_diziyi_boler():
-    ham = "metin ]]> devamı"
-    guvenli = uy.cdata_guvenli(ham)
-    assert "]]>" not in guvenli.replace("]]]]><![CDATA[>", "")  # bölünmüş biçimde aranmaz
-    assert guvenli == "metin ]]]]><![CDATA[> devamı"
-
-
-# ── udf_uret() + round-trip: yazılan == geri okunan ─────────────────────────
-
-def test_round_trip_duz_metin(tmp_path):
-    """Basit çok satırlı metin → udf_uret + udf_yaz + udf_metni_geri_oku birebir korunmalı."""
-    metin = "# Dava Dilekçesi\n\nSayın Mahkeme,\n\nMüvekkilimiz adına arz ederiz.\n"
-    xml_str, tam, paragraflar = uy.udf_uret(metin)
-    cikti = tmp_path / "dilekce.udf"
-    uy.udf_yaz(str(cikti), xml_str)
-    geri = uy.udf_metni_geri_oku(str(cikti))
-    assert geri == tam, "round-trip FARK VAR: yazılan CDATA ile geri okunan birebir örtüşmüyor"
-    assert len(paragraflar) > 0
+def test_yerel_motor_fonksiyonlari_artik_yok():
+    """B5 düzeltmesi: hand-rolled zip/content.xml üreticisi (`udf_uret`,
+    `udf_yaz` yazıcı fonksiyonu, `udf_metni_geri_oku`, `cdata_guvenli`,
+    `md_satir_duzlestir`) script'ten TAMAMEN KALDIRILMIŞ olmalı — bunlardan
+    biri geri gelirse "sessizce eski yola düşme" riski de geri gelir."""
+    for ad in ("udf_uret", "udf_metni_geri_oku", "cdata_guvenli",
+               "md_satir_duzlestir"):
+        assert not hasattr(uy, ad), (
+            f"'{ad}' hâlâ mevcut — elle-zip motoru tam kaldırılmamış olabilir")
 
 
-def test_round_trip_icinde_cdata_kapanis_dizisi_olan_metin(tmp_path):
-    """ALTIN VAKA: metin içinde ']]>' geçse bile (CDATA'yı erken kapatacak
-    tehlikeli dizi) round-trip KORUNMALI — udf_uret bunu cdata_guvenli ile
-    böler, geri-okuma ']]]]><![CDATA[>' → orijinal ']]>' olarak toparlanmalı."""
-    metin = "Sözleşmede '<![CDATA[...]]>' ifadesi aynen şu şekilde geçmektedir: ]]> bak.\n"
-    xml_str, tam, paragraflar = uy.udf_uret(metin)
-    assert "]]]]><![CDATA[>" in xml_str, "CDATA güvenli bölme content.xml'e yansımamış"
-    cikti = tmp_path / "tehlikeli.udf"
-    uy.udf_yaz(str(cikti), xml_str)
-    geri = uy.udf_metni_geri_oku(str(cikti))
-    # udf_metin.py mantığı (tek CDATA bloğunu regex ile çeker) — bölünmüş CDATA
-    # ardışık iki blok üretir; okuyucu tek-blok regex kullandığından yalnız
-    # İLK bloğu döndürür. Script bunu content.xml içinde en azından GÜVENLİ
-    # biçimde (parse hatasız) üretmelidir — ana garanti budur.
-    assert geri is not None
-    assert "]]>" not in xml_str.split("<content><![CDATA[", 1)[1].split("]]></content>")[0].replace(
-        "]]]]><![CDATA[>", "")
+def test_yerel_motor_cli_bayragi_artik_yok():
+    """--yerel-motor / --format-id argparse'tan kaldırılmış olmalı."""
+    cp = subprocess.run([sys.executable, str(SCRIPT), "--help"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert "--yerel-motor" not in cp.stdout
+    assert "--format-id" not in cp.stdout
 
 
-def test_round_trip_turkce_karakterler(tmp_path):
-    """Türkçe özel karakterler (ç, ğ, ı, ö, ş, ü, İ) UTF-8/CDATA'da bozulmamalı."""
-    metin = "Şikâyetçi müvekkilimiz, güncel iddianameye göre öğrenmiştir.\n"
-    xml_str, tam, _ = uy.udf_uret(metin)
-    cikti = tmp_path / "turkce.udf"
-    uy.udf_yaz(str(cikti), xml_str)
-    geri = uy.udf_metni_geri_oku(str(cikti))
-    assert geri == tam
-    assert "ğ" in geri and "ş" in geri and "ç" in geri
-
-
-def test_paragraf_offsetleri_utf16_ve_ardisik():
-    """startOffset/length UTF-16 code-unit biriminde, paragraflar boşluksuz ve
-    ardışık bölünmeli (bir sonrakinin start'ı öncekinin start+length'i olmalı)."""
-    metin = "Birinci paragraf.\nİkinci paragraf.\nÜçüncü paragraf.\n"
-    _, tam, paragraflar = uy.udf_uret(metin)
-    assert len(paragraflar) == 3
-    imlec = 0
-    for start, length, _baslik in paragraflar:
-        assert start == imlec
-        imlec += length
-    assert imlec == uy.utf16_uzunluk(tam)
-
-
-def test_uretilen_xml_iyi_bicimli():
-    """udf_uret kendi içinde ET.fromstring ile doğruluyor; ekstra garanti
-    olarak burada da parse edilebildiğini teyit eder (regresyon kancası)."""
-    import xml.etree.ElementTree as ET
-    metin = "## Başlık\n\n- madde bir\n- madde iki\n\n**Netice-i Talep**\n"
-    xml_str, _, _ = uy.udf_uret(metin)
-    ET.fromstring(xml_str)  # ParseError fırlatmazsa geçer
-
-
-def test_ham_mod_markdown_yorumlamaz():
-    """--ham (ham_mod=True) markdown'ı düzleştirmemeli; '##' ve '**' birebir kalmalı."""
-    metin = "## Başlık\n**kalın** metin\n"
-    _, tam, _ = uy.udf_uret(metin, ham_mod=True)
-    assert "## Başlık" in tam
-    assert "**kalın**" in tam
+def test_md2udf_kodda_hic_gecmiyor():
+    """ALTIN VAKA (rehber kuralı): 'md2udf' hiçbir zaman bir komut/argüman
+    olarak çağrılmamalı — yalnız dokümantasyon amaçlı ('ASLA md2udf kullanma'
+    uyarısı) serbest metinde geçebilir; kod, bunu quoted bir CLI argümanı
+    olarak ASLA üretmemeli. html2udf ise gerçek yazıcı olarak MUTLAKA geçmeli."""
+    kaynak_udf_yaz = SCRIPT.read_text(encoding="utf-8")
+    kaynak_md_html = MD_HTML_SCRIPT.read_text(encoding="utf-8")
+    for kaynak, ad in ((kaynak_udf_yaz, "udf_yaz.py"), (kaynak_md_html, "md_udf_html.py")):
+        assert '"md2udf"' not in kaynak and "'md2udf'" not in kaynak, (
+            f"{ad} içinde 'md2udf' TIRNAKLI bir literal (muhtemel CLI argümanı) bulundu")
+    assert '"html2udf"' in kaynak_udf_yaz or "'html2udf'" in kaynak_udf_yaz
 
 
 # ── udf_dogrula(): UDF GEÇERLİLİK KAPISI (mekanik, hüküm YOK) ───────────────
+# NOT: aşağıdaki yardımcı, script'in ürettiği bir UDF'i DEĞİL, testin kendi
+# kurduğu sentetik bir ZIP/content.xml'i kullanır — script artık UDF üretmiyor
+# (yalnız npx'e devrediyor), ama udf_dogrula() üretilen HERHANGİ bir UDF
+# üzerinde (gerçek udf-cli çıktısı dâhil) bağımsız çalışabilmelidir.
 
-def _gecerli_udf_yaz(tmp_path, metin="# Dava Dilekçesi\n\nSayın Mahkeme,\n\nArz ederiz.\n"):
-    xml_str, _tam, _p = uy.udf_uret(metin)
-    cikti = tmp_path / "gecerli.udf"
-    uy.udf_yaz(str(cikti), xml_str)
+def _sentetik_udf_yaz(tmp_path, metin="Birinci satır.\nİkinci satır.\n", ad="gecerli.udf"):
+    satirlar = metin.split("\n")
+    if satirlar and satirlar[-1] == "":
+        satirlar = satirlar[:-1]
+    parcalar = [s + "\n" for s in satirlar]
+    tam = "".join(parcalar)
+
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<template format_id="1.8">',
+           '<content><![CDATA[' + tam.replace("]]>", "]]]]><![CDATA[>") + ']]></content>',
+           '<properties><pageFormat mediaSizeName="1" leftMargin="70.866" '
+           'rightMargin="70.866" topMargin="70.866" bottomMargin="70.866" '
+           'paperOrientation="1"/></properties>',
+           '<elements resolver="hvl-default">']
+    imlec = 0
+    for parca in parcalar:
+        u16 = uy.utf16_uzunluk(parca)
+        xml.append('<paragraph Alignment="3"><content startOffset="%d" length="%d"/></paragraph>'
+                    % (imlec, u16))
+        imlec += u16
+    xml.append('</elements>')
+    xml.append('<styles><style name="default" family="Times New Roman" size="12"/></styles>')
+    xml.append('</template>')
+    xml_str = "\n".join(xml) + "\n"
+
+    cikti = tmp_path / ad
+    with zipfile.ZipFile(str(cikti), "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("content.xml", xml_str.encode("utf-8"))
     return cikti
 
 
 def test_udf_dogrula_gecerli_dosyada_GECERLI_doner(tmp_path):
-    """udf_yaz.py'nin ürettiği düzgün bir UDF, udf_dogrula ile GEÇERLİ dönmeli
-    (denetim hattının 'üretilen UDF'in geçerli olduğunu doğrulayan kapı'sı)."""
-    cikti = _gecerli_udf_yaz(tmp_path)
+    """Doğru şekilde kurulmuş bir UDF (test fixture'ı — script'in kendisi
+    değil) `udf_dogrula` ile GEÇERLİ dönmeli."""
+    cikti = _sentetik_udf_yaz(tmp_path, "# Dava Dilekçesi\n\nSayın Mahkeme,\n\nArz ederiz.\n")
     sonuc = uy.udf_dogrula(str(cikti))
     assert sonuc["gecerli"] is True
     assert sonuc["hatalar"] == []
@@ -159,7 +147,6 @@ def test_udf_dogrula_olmayan_dosya_yakalar(tmp_path):
 
 def test_udf_dogrula_content_xml_eksik_zip_yakalar(tmp_path):
     """Geçerli bir ZIP ama içinde content.xml yoksa GEÇERSİZ olmalı."""
-    import zipfile
     sahte = tmp_path / "icersiz.udf"
     with zipfile.ZipFile(str(sahte), "w") as z:
         z.writestr("baska.txt", "ilgisiz içerik")
@@ -171,7 +158,6 @@ def test_udf_dogrula_content_xml_eksik_zip_yakalar(tmp_path):
 
 def test_udf_dogrula_bozuk_xml_yakalar(tmp_path):
     """content.xml var ama iyi biçimli XML değilse GEÇERSİZ olmalı."""
-    import zipfile
     sahte = tmp_path / "bozukxml.udf"
     with zipfile.ZipFile(str(sahte), "w") as z:
         z.writestr("content.xml", "<template><content><![CDATA[eksik kapanis")
@@ -186,15 +172,14 @@ def test_udf_dogrula_tahrif_edilmis_offset_yakalar(tmp_path):
     elle bozulmuşsa (ör. dosya sonradan tahrif edilmişse) offsetler_tutarli
     False dönmeli ve genel sonuç GEÇERSİZ olmalı — bu, yazımdan SONRA da
     tutarlılığı yakalayan bağımsız denetimdir."""
-    cikti = _gecerli_udf_yaz(tmp_path, metin="Birinci satır.\nİkinci satır.\n")
-    import zipfile as _zf
-    zf = _zf.ZipFile(str(cikti))
+    cikti = _sentetik_udf_yaz(tmp_path, "Birinci satır.\nİkinci satır.\n")
+    zf = zipfile.ZipFile(str(cikti))
     xml_ham = zf.read("content.xml").decode("utf-8")
     zf.close()
     # ilk paragrafın startOffset'ini bilerek bozuyoruz (0 → 5)
     bozuk_xml = xml_ham.replace('startOffset="0"', 'startOffset="5"', 1)
     assert bozuk_xml != xml_ham, "test kurulumu: değiştirilecek startOffset=\"0\" bulunamadı"
-    with _zf.ZipFile(str(cikti), "w", _zf.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(str(cikti), "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("content.xml", bozuk_xml.encode("utf-8"))
     sonuc = uy.udf_dogrula(str(cikti))
     assert sonuc["gecerli"] is False
@@ -202,15 +187,15 @@ def test_udf_dogrula_tahrif_edilmis_offset_yakalar(tmp_path):
     assert sonuc["hatalar"]
 
 
-# ── udf_dogrula(): P0-10 düzeltmesi — tablo hücreleri yanlış GEÇERSİZ sayılmamalı ──
+# ── udf_dogrula(): tablo hücreleri yanlış GEÇERSİZ sayılmamalı ──────────────
 
 def test_udf_dogrula_ic_ice_tablo_hucreli_belgeyi_GECERLI_sayar():
-    """ALTIN VAKA (P0-10): gerçek `udf-cli html2udf` çıktısında tablo
-    hücreleri (<table><row><cell><paragraph><content .../>) üst-seviye
-    <paragraph>'lardan AYRI bir dalda yaşar. Yalnız DİREKT paragraph/content
-    arayan eski XPath bunları KAÇIRIR ve tamamen geçerli, tablolu bir
-    belgeyi yanlışlıkla GEÇERSİZ işaretler — bu test o regresyonu kilitler
-    (gerçek saha örneğinden alınmış sadeleştirilmiş content.xml)."""
+    """ALTIN VAKA: gerçek `udf-cli html2udf` çıktısında tablo hücreleri
+    (<table><row><cell><paragraph><content .../>) üst-seviye <paragraph>'lardan
+    AYRI bir dalda yaşar. Yalnız DİREKT paragraph/content arayan eski XPath
+    bunları KAÇIRIR ve tamamen geçerli, tablolu bir belgeyi yanlışlıkla
+    GEÇERSİZ işaretler — bu test o regresyonu kilitler (gerçek saha
+    örneğinden alınmış sadeleştirilmiş content.xml)."""
     xml_ham = (
         '<?xml version="1.0" encoding="UTF-8" ?>\n'
         '<template format_id="1.8">\n'
@@ -266,6 +251,39 @@ def test_md_html_uret_ham_modu_iletir():
     assert "**kalın**" in html
 
 
+# ── UDF-uyumlu HTML şeması: pt birimi, kaçışsız <tab/>/<page-break/>, <br> ile
+#    paragraf ayrımı YOK (rehber A.3/A.4 — bkz. uyap-belge-formatlari.md §3.1) ─
+
+def test_html_uretiminde_br_ile_paragraf_ayrilmiyor():
+    """Rehber kuralı: '<br><br>' ile paragraf ayırmak YASAK; her paragraf
+    ayrı bir <p> bloğu olmalı."""
+    html = uy.md_html_uret("Birinci paragraf.\n\nİkinci paragraf.\n")
+    assert html.count("<p") >= 2
+    assert "<br><br>" not in html
+
+
+def test_html_uretiminde_pt_disinda_uzunluk_birimi_yok():
+    """Üretilen inline-CSS'te px/em/rem/cm/mm/in gibi UDF'in güvenmediği
+    birimler KULLANILMAMALI — yalnız pt (veya birimsiz sayı, html2udf'in
+    varsayılanı) olmalı."""
+    html = uy.md_html_uret("# Başlık\n\nGövde metni.\n")
+    for yasak_birim in ("px", "em;", "rem;", "cm;", "mm;", "in;"):
+        assert yasak_birim not in html, f"yasak birim '{yasak_birim}' HTML çıktısında bulundu"
+
+
+def test_html_uretiminde_kullanici_metnindeki_ozel_karakterler_kacislanir():
+    """md_udf_html.py şu an <tab/>/<page-break/> HİÇ ÜRETMİYOR (rehberin bu
+    kontrolleri opsiyoneldir, script bunları emmiyor) — bu yüzden avukat
+    taslağına düz metin olarak '<tab/>' yazarsa bu, işlevsel bir UDF tab-stop
+    kontrolüne DÖNÜŞMEMELİ; HTML'de düz metin olarak GÖRÜNMESİ için ESCAPE
+    edilmelidir (rehberin escape kuralı yalnız script'in KENDİSİ bir tab-stop/
+    page-break ÜRETTİĞİNDE, o üretimi kaçışlamaması anlamına gelir — kullanıcı
+    girdisindeki '<' / '>' genel HTML güvenliği için hep escape edilir)."""
+    html = uy.md_html_uret("Kalem<tab/>Değer\n", ham=True)
+    assert "&lt;tab/&gt;" in html
+    assert "<tab/>" not in html
+
+
 # ── npx yardımcıları: DETERMİNİST hata yolları (ağ gerekmez) ────────────────
 
 def test_npx_kullanilabilir_mi_olmayan_komutla_false_doner():
@@ -275,104 +293,130 @@ def test_npx_kullanilabilir_mi_olmayan_komutla_false_doner():
 
 
 def test_npx_ile_udf_uret_olmayan_komutla_temiz_hata_doner(tmp_path):
-    """npx bulunamadığında exception SIZDIRMAMALI — yapılandırılmış hata dönmeli."""
+    """npx bulunamadığında exception SIZDIRMAMALI — yapılandırılmış hata
+    dönmeli VE hiçbir .udf dosyası YAZILMAMALI (FAIL-CLOSED — eski elle-zip
+    yoluna SESSİZCE düşülmez)."""
     sonuc = uy.npx_ile_udf_uret(str(tmp_path / "x.html"), str(tmp_path / "x.udf"),
                                   npx_yolu="oa-hic-boyle-bir-komut-yok-xyz")
     assert sonuc["basarili"] is False
     assert sonuc["hata"]
+    assert "FAIL-CLOSED" in sonuc["hata"]
     assert not (tmp_path / "x.udf").exists()
 
 
-# ── --yerel-motor CLI ucundan uca (tamamen çevrimdışı) ──────────────────────
+# ── CLI FAIL-CLOSED uçtan uca (tamamen ağsız/deterministik) ─────────────────
 
-def test_cli_yerel_motor_udf_uretir_ve_uyari_basar(tmp_path):
+def test_cli_npx_yokken_udf_uretilmez_exit_farkli_sifir(tmp_path):
+    """ALTIN VAKA (B5 regresyon kilidi): npx bulunamayan bir ortamda script
+    --cikti dosyasını ASLA yazmamalı, exit kodu != 0 olmalı, ve stderr'de NET
+    bir talimat (login / issue_cli_login_code) bulunmalı."""
     girdi = tmp_path / "taslak.md"
     girdi.write_text("# Dava Dilekçesi\n\nSayın Mahkeme, arz ederiz.\n", encoding="utf-8")
     cikti = tmp_path / "dilekce.udf"
     cp = subprocess.run(
         [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
-         "--yerel-motor"],
+         "--npx", "oa-hic-boyle-bir-komut-yok-xyz"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert cp.returncode == 0, cp.stdout + cp.stderr
-    assert cikti.is_file()
-    assert "GARANTİ ETMEZ" in cp.stderr, "yerel-motor uyarısı görünür basılmalı"
-    sonuc = uy.udf_dogrula(str(cikti))
-    assert sonuc["gecerli"] is True
+    assert cp.returncode != 0
+    assert not cikti.exists(), "npx yokken .udf dosyası YAZILMAMALIYDI (fail-closed ihlali)"
+    assert "FAIL-CLOSED" in cp.stderr
+    assert "login" in cp.stderr.lower()
 
 
-def test_cli_yerel_motor_pdf_de_uretir_sayfa_sayisi_pozitif(tmp_path):
-    """PDF bacağı UDF motorundan BAĞIMSIZDIR (aynı UDF-HTML'den üretilir) —
-    bu yüzden --yerel-motor ile bile ağsız test edilebilir (P0-10 kabul
-    ölçütü: 'PDF üretimi sayfa sayısı>0')."""
+def test_cli_npx_yokken_pdf_yine_de_denenir(tmp_path):
+    """PDF önizlemesi UDF motorundan BAĞIMSIZDIR — npx/ağ olmasa bile
+    (best-effort) üretilmeye çalışılmalı; UDF FAIL-CLOSED olsa da PDF
+    bacağı ayrı bir artefakttır ve avukata en azından önizleme sağlar."""
     pytest.importorskip("fitz", reason="PyMuPDF kurulu değil")
     girdi = tmp_path / "taslak.md"
-    girdi.write_text("# Dilekçe\n\nBirinci paragraf.\n\nİkinci paragraf.\n", encoding="utf-8")
+    girdi.write_text("# Dilekçe\n\nBirinci paragraf.\n", encoding="utf-8")
     cikti = tmp_path / "dilekce.udf"
     pdf = tmp_path / "dilekce.pdf"
     cp = subprocess.run(
         [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
-         "--yerel-motor", "--pdf", str(pdf), "--baslik", "Test Dilekçesi"],
+         "--pdf", str(pdf), "--npx", "oa-hic-boyle-bir-komut-yok-xyz"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert cp.returncode == 0, cp.stdout + cp.stderr
+    assert cp.returncode != 0
+    assert not cikti.exists()
     assert pdf.is_file() and pdf.stat().st_size > 0
-    fitz = sys.modules["fitz"]
-    doc = fitz.open(str(pdf))
-    try:
-        assert doc.page_count > 0
-    finally:
-        doc.close()
 
 
-def test_cli_yerel_motor_gecici_html_cikti_klasorune_dosya_birakmaz(tmp_path):
-    """ALTIN VAKA (P0-10 regresyon kilidi): --html AÇIKÇA verilmediğinde ara
-    UDF-HTML SİSTEM TEMP'e yazılıp SİLİNMELİ — `--cikti` ile aynı klasöre
-    (ör. `_oa/cikti`) bir kopya bırakmak `pipeline_kayit._dilekce_sekilli_
-    makbuzsuz_uyarisi`nı YANLIŞLIKLA tetikler (dosya içeriği dilekçe-şekilli
-    desenler taşıdığından, taslaktan DAHA YENİ bir 'makbuzsuz aday' gibi
-    okunur — canlı saha regresyonu, bkz. degisiklik-gunlugu.md P0-10)."""
-    girdi = tmp_path / "taslak.md"
-    girdi.write_text("Sayın Mahkeme,\n\nNetice-i talep: kabulünü arz ederiz.\n",
-                      encoding="utf-8")
-    cikti = tmp_path / "taslak.md.udf"
-    cp = subprocess.run(
-        [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
-         "--yerel-motor"],
-        capture_output=True, text=True, encoding="utf-8", errors="replace")
+def test_cli_dogrula_modu_yazmadan_denetler(tmp_path):
+    cikti = _sentetik_udf_yaz(tmp_path, "Metin.\n")
+    cp = subprocess.run([sys.executable, str(SCRIPT), "--dogrula", str(cikti)],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert cp.returncode == 0, cp.stdout + cp.stderr
-    kalanlar = sorted(p.name for p in tmp_path.iterdir())
-    assert kalanlar == ["taslak.md", "taslak.md.udf"], (
-        f"cikti klasöründe beklenmedik artefakt kaldı: {kalanlar}")
+    assert "GEÇERLİ" in cp.stdout
 
 
-def test_cli_html_acikca_verilirse_silinmez(tmp_path):
-    """--html AÇIKÇA verildiğinde bu kullanıcının bilinçli tercihidir —
-    dosya KORUNUR (yalnız --html verilmediğinde geçici/silinir)."""
-    girdi = tmp_path / "taslak.md"
-    girdi.write_text("Metin.\n", encoding="utf-8")
+# ── BONUS YOL: docx2udf (rehber §5, elde hazır .docx/.pdf → UDF) ────────────
+
+def test_docx2udf_cikis_kodu_tablosu_rehbere_uyuyor():
+    assert uy.DOCX2UDF_CIKIS_KODU[0] == "Başarı"
+    assert uy.DOCX2UDF_CIKIS_KODU[2].startswith("Giriş gerekli")
+    assert uy.DOCX2UDF_CIKIS_KODU[3] == "Hesap yasaklı"
+    assert uy.DOCX2UDF_CIKIS_KODU[5] == "Aylık kota bitti"
+
+
+def test_docx2udf_ile_uret_npx_yokken_basarisiz_ve_dosya_yazilmaz(tmp_path):
+    sahte_docx = tmp_path / "taslak.docx"
+    sahte_docx.write_bytes(b"sahte docx icerigi")
     cikti = tmp_path / "cikti.udf"
-    html = tmp_path / "kalici.html"
-    cp = subprocess.run(
-        [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
-         "--yerel-motor", "--html", str(html)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert cp.returncode == 0, cp.stdout + cp.stderr
-    assert html.is_file(), "--html AÇIKÇA verildiğinde dosya korunmalıydı"
+    sonuc = uy.docx2udf_ile_uret(str(sahte_docx), str(cikti),
+                                  npx_yolu="oa-hic-boyle-bir-komut-yok-xyz")
+    assert sonuc["basarili"] is False
+    assert sonuc["exit_kod"] is None
+    assert not cikti.exists()
 
 
-def test_cli_kok_ile_goreli_yollari_cozer(tmp_path):
-    (tmp_path / "girdi.md").write_text("Metin.\n", encoding="utf-8")
+def test_cli_kaynak_docx_npx_yokken_exit_farkli_sifir(tmp_path):
+    sahte_docx = tmp_path / "taslak.docx"
+    sahte_docx.write_bytes(b"sahte docx icerigi")
+    cikti = tmp_path / "cikti.udf"
     cp = subprocess.run(
-        [sys.executable, str(SCRIPT), "--kok", str(tmp_path),
-         "--girdi", "girdi.md", "--cikti", "cikti.udf", "--yerel-motor"],
+        [sys.executable, str(SCRIPT), "--kaynak-docx", str(sahte_docx),
+         "--cikti", str(cikti), "--npx", "oa-hic-boyle-bir-komut-yok-xyz"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert cp.returncode != 0
+    assert not cikti.exists()
+
+
+def _docx2udf_hazir_mi():
+    try:
+        yol = shutil.which("npx")
+        if yol is None:
+            return False
+        p = subprocess.run([yol, "-y", "docx2udf@latest", "whoami"],
+                            capture_output=True, text=True, timeout=20)
+        return p.returncode == 0
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _docx2udf_hazir_mi(), reason="npx/docx2udf oturumu bu makinede kullanılamıyor")
+def test_cli_kaynak_docx_gercek_donusum_ile_udf_uretir(tmp_path):
+    pytest.importorskip("docx", reason="python-docx kurulu değil (test fixture için)")
+    from docx import Document
+    girdi = tmp_path / "taslak.docx"
+    d = Document()
+    d.add_heading("Dava Dilekcesi", level=1)
+    d.add_paragraph("Sayin Mahkeme, arz ederiz.")
+    d.save(str(girdi))
+
+    cikti = tmp_path / "dilekce.udf"
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--kaynak-docx", str(girdi), "--cikti", str(cikti)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180)
     assert cp.returncode == 0, cp.stdout + cp.stderr
-    assert (tmp_path / "cikti.udf").is_file()
+    assert cikti.is_file()
+    zf = zipfile.ZipFile(str(cikti))
+    assert "content.xml" in zf.namelist()
 
 
 # ── varsayılan (npx udf-cli html2udf) hat — GERÇEK ağ/oturum gerektirir ─────
 # `npx_kullanilabilir_mi()` YOKSA nazikçe atlanır (DOKUNULMAZLAR: testler
-# hiçbir makinede KIRILMAZ); VARSA (bu geliştirme ortamında olduğu gibi)
-# gerçek `udf-cli` çıktısını rehbere göre mekanik olarak doğrular.
+# hiçbir makinede KIRILMAZ); VARSA gerçek `udf-cli` çıktısını rehbere göre
+# mekanik olarak doğrular.
 
 def _npx_hazir_mi():
     try:
@@ -384,8 +428,8 @@ def _npx_hazir_mi():
 
 @pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")
 def test_cli_varsayilan_motor_sentetik_md_den_udf_uretir_ve_rehbere_gore_dogrular(tmp_path):
-    """Kabul ölçütü (P0-10): sentetik md → udf üret → zipfile ile aç,
-    content.xml/properties şemasını rehbere göre doğrula."""
+    """Kabul ölçütü: sentetik md → udf üret → zipfile ile aç, content.xml/
+    properties şemasını rehbere göre doğrula."""
     girdi = tmp_path / "taslak.md"
     girdi.write_text(
         "# Dava Dilekçesi\n\nSayın Mahkeme,\n\n"
@@ -433,3 +477,54 @@ def test_cli_varsayilan_motor_pdf_ile_birlikte_calisir(tmp_path):
         timeout=180)
     assert cp.returncode == 0, cp.stdout + cp.stderr
     assert pdf.is_file() and pdf.stat().st_size > 0
+
+
+@pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")
+def test_cli_gecici_html_cikti_klasorune_dosya_birakmaz(tmp_path):
+    """ALTIN VAKA (regresyon kilidi): --html AÇIKÇA verilmediğinde ara
+    UDF-HTML SİSTEM TEMP'e yazılıp SİLİNMELİ — `--cikti` ile aynı klasöre
+    (ör. `_oa/cikti`) bir kopya bırakmak `pipeline_kayit._dilekce_sekilli_
+    makbuzsuz_uyarisi`nı YANLIŞLIKLA tetikler (dosya içeriği dilekçe-şekilli
+    desenler taşıdığından, taslaktan DAHA YENİ bir 'makbuzsuz aday' gibi
+    okunur — canlı saha regresyonu)."""
+    girdi = tmp_path / "taslak.md"
+    girdi.write_text("Sayın Mahkeme,\n\nNetice-i talep: kabulünü arz ederiz.\n",
+                      encoding="utf-8")
+    cikti = tmp_path / "taslak.md.udf"
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180)
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    kalanlar = sorted(p.name for p in tmp_path.iterdir())
+    assert kalanlar == ["taslak.md", "taslak.md.udf"], (
+        f"cikti klasöründe beklenmedik artefakt kaldı: {kalanlar}")
+
+
+@pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")
+def test_cli_html_acikca_verilirse_silinmez(tmp_path):
+    """--html AÇIKÇA verildiğinde bu kullanıcının bilinçli tercihidir —
+    dosya KORUNUR (yalnız --html verilmediğinde geçici/silinir)."""
+    girdi = tmp_path / "taslak.md"
+    girdi.write_text("Metin.\n", encoding="utf-8")
+    cikti = tmp_path / "cikti.udf"
+    html = tmp_path / "kalici.html"
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
+         "--html", str(html)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180)
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    assert html.is_file(), "--html AÇIKÇA verildiğinde dosya korunmalıydı"
+
+
+@pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")
+def test_cli_kok_ile_goreli_yollari_cozer(tmp_path):
+    (tmp_path / "girdi.md").write_text("Metin.\n", encoding="utf-8")
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--kok", str(tmp_path),
+         "--girdi", "girdi.md", "--cikti", "cikti.udf"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=180)
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    assert (tmp_path / "cikti.udf").is_file()

@@ -32,6 +32,8 @@ python scripts/oa_ingest.py "<klasor>" --onbakis 5      # P1-9(a): MEŞRU HIZLI 
 
 Çıkarım yolları (model kurmaz, script çıkarır): metin PDF→**PyMuPDF** (bedava, kayıpsız) · taranmış PDF→render+**OCR** (⚠) · UDF→content.xml (bedava) · EYP/.zip→aç→içindeki PDF'i aynı hatta ver · TIFF/JPG/PNG→OCR (çok sayfa, ⚠) · DOCX→document.xml (bedava). Bir PDF'in "metin mi tarama mı" olduğu ELLE değil ÖLÇÜMLE (sayfa başına anlamlı karakter eşiği) belirlenir — "gördüm" beyanı değil, ölçüm.
 
+**UDF OKUMA — bu ANA HAT ile ELLE YAZMA'yı KARIŞTIRMA:** yukarıdaki "UDF→content.xml" yalnız **OKUMA**dır — `oa_ingest.py`'nin kendi yerel/çevrimdışı/kayıpsız `udf_isle()` fonksiyonu (214 evraklık gerçek külliyatta 0 kayıpla doğrulanmıştır); bu ana hatta Görev D kapsamında DOKUNULMADI. **ALTIN KURAL (bağlayıcı, tüm aile için): UDF ELLE YAZILMAZ** — `.udf` üretimi yalnız `udf-cli` (`npx -y udf-cli@latest html2udf`) ile yapılır, zip/`content.xml` elle kurulmaz, `md2udf` ASLA kullanılmaz (bkz. `oa-dilekce/references/uyap-belge-formatlari.md` — Yargı Pro `udf_tiff_pdf_guide` rehberinin ailedeki operasyonel klonu). Bu ana hattın yerel okuması şüpheliyse (OCR-BOŞ damgalı evrak, şüpheli çok-sayfalı TIFF kaynaklı UDF) rehberin `udf2md` hattı (`oa-pipeline/scripts/udf_metin.py`) İKİNCİL/YEDEK bir doğrulama olarak kullanılabilir — sessiz atlama yasağı burada da geçerlidir.
+
 Bağımlılık (Windows-dostu, binary'siz): `pip install pymupdf pillow`. OCR için ayrıca Tesseract + `tur` dil paketi; yoksa metin PDF/UDF/DOCX yine işlenir, taranmışlar "YÜKLENEMEDİ ⚠" damgasıyla künyeye yazılır (sessiz atlama yok).
 
 ## Çıktı sözleşmesi (`_oa/metin/`)

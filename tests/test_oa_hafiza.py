@@ -57,6 +57,40 @@ def test_oturum_kapat_cikti_doluysa_uyarmaz(tmp_path):
     assert "UYARI: _oa/cikti boş" not in cikti
 
 
+# ── GÖREV C(3) — devir/ boşsa oturum-kapat GÖRÜNÜR uyarır (bloklamaz) ──────
+
+def test_oturum_kapat_devir_bossa_uyarir(tmp_path):
+    """_oa/devir hiç DEVİR PAKETİ içermiyorsa oturum-kapat GÖRÜNÜR bir uyarı
+    basmalı (KAPANIŞ bloklanmaz)."""
+    _cli(["init", "--dosya", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _cli(["oturum-ac", "--kok", str(tmp_path)], cwd=tmp_path)
+
+    kod, cikti = _cli(["oturum-kapat", "--not", UZUN_NOT, "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, f"boş devir kapanışı BLOKLAMAMALI, yalnız uyarmalı:\n{cikti}"
+    assert "UYARI" in cikti
+    assert "_oa/devir" in cikti
+
+
+def test_oturum_kapat_devir_doluysa_uyarmaz(tmp_path):
+    """_oa/devir'de en az bir DEVİR PAKETİ varsa bu uyarı basılmamalı
+    (pozitif kontrast vaka)."""
+    _cli(["init", "--dosya", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
+    _cli(["oturum-ac", "--kok", str(tmp_path)], cwd=tmp_path)
+
+    kod_d, cikti_d = _cli(
+        ["devir", "--adim", "3", "--parca", "oa-ictihat",
+         "--yapilan", "içtihat araştırması tamamlandı",
+         "--beklenen", "kıyas için içtihat sonuçları devralınacak",
+         "--kanit", "ictihat_ara ile 3 künye teyitli", "--kok", str(tmp_path)],
+        cwd=tmp_path,
+    )
+    assert kod_d == 0, cikti_d
+
+    kod, cikti = _cli(["oturum-kapat", "--not", UZUN_NOT, "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0
+    assert "UYARI: _oa/devir boş" not in cikti
+
+
 # ── GATE B — ajan-brif OKUMA DİSİPLİNİ maddesi ─────────────────────────────
 
 def test_ajan_brif_okuma_disiplini_blogu_var(tmp_path):

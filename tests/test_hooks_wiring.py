@@ -49,6 +49,29 @@ def test_hooks_json_stop_ve_sessionend_hook_denetle_cagirir():
         assert "pipeline_kayit.py" in komutlar
 
 
+def test_hooks_json_posttooluse_hook_postwrite_cagirir():
+    """GÖREV B (P0-B, v0.5.5) — üretim-anı tetiğin ikinci ayağı: Write/Edit
+    sonrası --hook-postwrite tetiklenmeli (yalnız Stop/SessionEnd'e kadar
+    beklemek yerine)."""
+    with open(HOOKS_JSON, encoding="utf-8") as f:
+        veri = json.load(f)
+    hooks = veri.get("hooks", {})
+    assert "PostToolUse" in hooks, "hooks.json'da 'PostToolUse' girdisi yok"
+    girdiler = hooks["PostToolUse"]
+    assert any("Write" in (g.get("matcher") or "") and "Edit" in (g.get("matcher") or "")
+               for g in girdiler), "PostToolUse matcher'ı Write|Edit'i kapsamıyor"
+    komutlar = json.dumps(girdiler, ensure_ascii=False)
+    assert "--hook-postwrite" in komutlar
+    assert "pipeline_kayit.py" in komutlar
+
+
+def test_hook_postwrite_bayragi_pipeline_kayit_scriptinde_tanimli():
+    assert PIPELINE_KAYIT.is_file()
+    metin = PIPELINE_KAYIT.read_text(encoding="utf-8")
+    assert "--hook-postwrite" in metin
+    assert "def hook_postwrite(" in metin
+
+
 def test_plugin_json_var_ve_gecerli_json():
     assert PLUGIN_JSON.is_file(), f"plugin.json bulunamadı: {PLUGIN_JSON}"
     with open(PLUGIN_JSON, encoding="utf-8") as f:

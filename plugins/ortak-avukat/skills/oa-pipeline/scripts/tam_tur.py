@@ -333,6 +333,21 @@ def _defter_denetle(kok):
     return temiz, cikti
 
 
+def _durum_md_tazele(kok):
+    """Görev A (B2 kapanışı, v0.5.5 devamı) — _oa/DURUM.md üretimi artık YALNIZ
+    pipeline_kayit.py'nin --isle/--katman çağrısına bağlı DEĞİLDİR: tam_tur.py
+    KENDİ komutlarının (--baslat/--senkron/--kaydet/--durum) sonunda da TEK
+    KAYNAKTAN (pipeline_kayit._durum_md_yaz) DURUM.md'yi tazeler. Defter bu
+    kökte hiç açılmamışsa (`_oa/defter` yok) `_durum_md_yaz` sessizce no-op
+    döner — bu fonksiyon da ASLA çökmez/bloklamaz (best-effort)."""
+    pk = _pipeline_kayit_modulu()
+    if pk is not None and hasattr(pk, "_durum_md_yaz"):
+        try:
+            pk._durum_md_yaz(kok)
+        except Exception:
+            pass
+
+
 def _simdi():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -644,6 +659,17 @@ def _cikti_topla(kok):
     return kalemler
 
 
+def _devir_bos_mu(kok):
+    """GÖREV C(3) — PAS PROTOKOLÜ ucuzlatmasının GÖRÜNÜRLÜK ayağı: `_oa/devir`
+    içinde hiç DEVİR PAKETİ (`oa_hafiza.py devir ...`) YOKSA True. `oa_hafiza.
+    _cikti_bos_mu` ile SİMETRİK — yeni bir zorunluluk EKLEMEZ (TAMAM damgasını
+    ETKİLEMEZ), yalnız `--kaydet` sonunda GÖRÜNÜR bir uyarı basar."""
+    ddir = os.path.join(_oa_kok(kok), "devir")
+    if not os.path.isdir(ddir):
+        return True
+    return not any(os.path.isfile(os.path.join(ddir, ad)) for ad in os.listdir(ddir))
+
+
 def _cikti_govde(kok, kalem):
     """Bir `_oa/cikti/*` dosyasının md gövdesi: OKUNABİLİR (metin, utf-8 çözülebilir)
     ise BOYUTTAN BAĞIMSIZ HER ZAMAN TAM gömülür — M3-0 düzeltmesi (Gate G+): eşiğe
@@ -909,6 +935,7 @@ def cmd_baslat(kok, dosya):
     print("Tur bitince: python tam_tur.py --kaydet  (ara güncelleme için: --senkron — "
           "DİKKAT: --senkron TAMAM damgası YAZMAZ; --kaydet sonrası çağrılırsa damga "
           "düşer, geri kazanmak için tekrar --kaydet gerekir).")
+    _durum_md_tazele(kok)
     return 0
 
 
@@ -947,6 +974,7 @@ def cmd_senkron(kok):
               "DÜŞTÜ (veri kaybı yok: durum.json'daki gerçek kayıtlar korunur, Gate G+ "
               "şimdi 'tamamlanmadi' der). Damgayı geri kazanmak için: `python tam_tur.py "
               "--kaydet`.", file=sys.stderr)
+    _durum_md_tazele(kok)
     return 0
 
 
@@ -1069,6 +1097,7 @@ def cmd_kaydet(kok, zorla=False, zorla_gerekce=None):
     if kunye is None:
         print("HATA: _oa/metin/00-kunye.json yok — önce oa-ingest koşmalı (0. adım).",
               file=sys.stderr)
+        _durum_md_tazele(kok)
         return 1
 
     # (iv-0) Bayat-künye kapısı: diske atılmış ama HİÇ ingest edilmemiş (ya da
@@ -1243,6 +1272,11 @@ def cmd_kaydet(kok, zorla=False, zorla_gerekce=None):
           + ("  [--zorla ile ŞERHLİ]" if serhli else ""))
     print(f"Kayıt belgesi: {_analiz_md(kok)}")
     print("Bundan sonra yeni evrakta: python tam_tur.py --delta  (tam tur TEKRAR YOK)")
+    if _devir_bos_mu(kok):
+        print("UYARI: _oa/devir boş — GÖREV C(3): parçalar arası hiç DEVİR PAKETİ "
+              "(`oa_hafiza.py devir ...`) bırakılmamış olabilir (mekanik uyarı — "
+              "TAMAM damgasını etkilemez).")
+    _durum_md_tazele(kok)
     return 0
 
 
@@ -1349,6 +1383,9 @@ def cmd_tez(kok, yeni_tez, gerekce):
 
 
 def cmd_durum(kok):
+    # Görev A (B2 kapanışı) — DURUM.md, --isle/--katman çağrısı hiç olmasa
+    # bile burada da tazelenir (TEK KAYNAK: pipeline_kayit._durum_md_yaz).
+    _durum_md_tazele(kok)
     # (i) Diski hızlı tara: künye bayatsa uyarıyı basar (körlük kapanır).
     bayat = _bayat_kontrol_yaz(kok)
     durum = _durum_oku(kok)

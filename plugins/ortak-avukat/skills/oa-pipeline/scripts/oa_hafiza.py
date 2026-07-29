@@ -188,6 +188,18 @@ def _cikti_bos_mu():
     return not any(os.path.isfile(os.path.join(cdir, ad)) for ad in os.listdir(cdir))
 
 
+def _devir_bos_mu():
+    """GÖREV C(3) — PAS PROTOKOLÜ ucuzlatmasının GÖRÜNÜRLÜK ayağı: `_oa/devir`
+    içinde hiç DEVİR PAKETİ (`oa_hafiza.py devir ...`) YOKSA True. `_cikti_bos_mu`
+    ile SİMETRİK — yeni bir zorunluluk EKLEMEZ, yalnız parçalar arası hiç
+    fiziksel devir bırakılmadan (yalnız defter statüsüyle) ilerleyen bir turu
+    KAPANIŞ ritüelinde GÖRÜNÜR kılar (bloklamaz)."""
+    ddir = yol("devir")
+    if not os.path.isdir(ddir):
+        return True
+    return not any(os.path.isfile(os.path.join(ddir, ad)) for ad in os.listdir(ddir))
+
+
 _PIPELINE_KAYIT_MOD = None
 
 
@@ -260,6 +272,11 @@ def cmd_oturum_kapat(args):
         print("UYARI: _oa/cikti boş — ajan-brif kural #4 ('her üretim _oa/cikti'ya "
               "çalışma evrakı adıyla yazılır') karşılanmamış görünüyor; KAPANIŞ'a kadar "
               "hiçbir alt-ajan çalışma evrakı bırakmamış olabilir (mekanik uyarı — engel değil).")
+    if _devir_bos_mu():
+        print("UYARI: _oa/devir boş — GÖREV C(3): parçalar arası hiç DEVİR PAKETİ "
+              "(`oa_hafiza.py devir ...`) bırakılmamış olabilir; statüler deftere işlenmiş "
+              "olsa bile ara bağlam yalnız sözle/beyanla kalmış olabilir "
+              "(mekanik uyarı — engel değil).")
 
     denetim_metni, denetim_calisti = _kapanis_denetim_calistir(getattr(args, "kok", None))
     serhle = getattr(args, "serhle", None)

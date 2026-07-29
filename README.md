@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.5.1 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **759 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -14,81 +14,241 @@ Dilekçe / temyiz / istinaf / cevap dilekçesi yazımı, dava-dosya-uyuşmazlık
 
 Aile, 20 ayrı araç değil **yetenek sahibi tek bir eş-avukat** gibi çalışır: dosyanın analizini kalıcı bir *working memory*'ye (`_oa/analiz/dosya-analiz.md`) yazar; sonraki her çalışmada ham evrakı baştan okumak yerine bu kaydı kullanır (token-verimli, kayıpsız).
 
+### Temel ilkeler (anayasa)
+
+| İlke | Anlamı |
+|---|---|
+| **Kayıpsızlık** | Hiçbir aşamada veri kaybı yok; özetleme/digest **yasak** — büyük evrak küçültülmez, ilgili sayfası okunur |
+| **Muhakeme kaybı yok** | Token tasarrufu **yalnız mekanik katmanda**; analiz derinliği asla kısılmaz |
+| **Teyit ≠ muhakeme** | Künyenin var olduğunu doğrulamak yetmez: tam metin çekilmiş + davaya bağı kurulmuş + **damgalanmış** olmalı |
+| **Müvekkil-aleyhi çıktı yasağı** | Salt `ALEYHE` içtihat dilekçeye giremez (iç antitezde işlenir); yalnız `LEHE` ve ayırt edilmiş `ALEYHE-AYIRT` girer |
+| **Layer 0 gizlilik** | Müvekkil verisi/TCKN/sağlık-ceza verisi filtresiz dış araca çıkamaz (fail-closed); UYAP login/e-imza/PIN **münhasıran avukata** aittir, sistem bunlar için kod yazmaz |
+| **Sessiz atlama yok** | Okunamayan evrak "yok" sayılmaz; damgayla künyeye girer |
+
 ---
 
 ## Gereksinimler ve Kurulum
 
-Sistem üç katmandır: **(1) Claude Code** (ana ortam) · **(2) yerel programlar** (evrak metin çıkarımı + deterministik denetim scriptleri için Python + Tesseract) · **(3) Yargı Pro MCP** (içtihat/mevzuat doğrulaması). Hepsi aşağıda.
+Sistem dört katmandır: **(1) Claude Code** · **(2) Python + Tesseract** (evrak çıkarımı, deterministik denetim) · **(3) Node.js/npx** (UDF üretimi — UYAP dilekçe formatı) · **(4) Yargı Pro MCP** (içtihat/mevzuat doğrulaması).
 
 ### A) Claude Code
 Claude Code (CLI, Desktop veya web) kurulu ve oturum açık olmalı. Eklenti/skill ve MCP desteği bu ortamdan gelir.
 
-### B) Python + kütüphaneler — evrak çıkarımı & denetim scriptleri
-`oa-ingest` (0. adım: evrak → ucuz metin) ve tüm deterministik denetim scriptleri **Python** ile çalışır.
-- **Python 3.10+** kurulu; `python` komutu PATH'te erişilebilir olmalı — doğrula: `python --version`
-- Gerekli kütüphaneler (saf wheel, ek binary gerektirmez):
-  ```bash
-  pip install pymupdf pillow
-  ```
-  `pymupdf` → PDF metin/görüntü çıkarımı · `pillow` → TIFF/JPG/PNG işleme.
-- Bunlar olmadan PDF/görüntü evrak (metin PDF dahil) işlenemez.
+### B) Python 3.10+ — evrak çıkarımı & denetim scriptleri
+`oa-ingest` (0. adım: evrak → ucuz metin) ve tüm deterministik denetim scriptleri Python ile çalışır.
 
-### C) Tesseract OCR — taranmış evrak için (önerilir)
-Taranmış/fontsuz PDF ve görüntü (TIFF/JPG) evrakların OCR'ı için **Tesseract** gerekir.
-- **Windows:** [UB-Mannheim Tesseract kurucusu](https://github.com/UB-Mannheim/tesseract/wiki) — kurulumda **Turkish (`tur`)** dil paketini seç **ve** "Add Tesseract to PATH" işaretle.
+```bash
+python --version
+```
+
+```bash
+pip install pymupdf pillow
+```
+
+`pymupdf` PDF metin/görüntü çıkarımı, `pillow` TIFF/JPG/PNG işleme içindir. Bunlar olmadan PDF/görüntü evrak (metin PDF dahil) işlenemez.
+
+### C) Tesseract OCR — taranmış evrak (önerilir)
+Taranmış/fontsuz PDF ve görüntü (TIFF/JPG) evrakların OCR'ı için:
+
+- **Windows:** [UB-Mannheim kurucusu](https://github.com/UB-Mannheim/tesseract/wiki) — kurulumda **Turkish (`tur`)** dil paketini seç **ve** "Add Tesseract to PATH" işaretle
 - **Linux:** `sudo apt-get install tesseract-ocr tesseract-ocr-tur`
 - **macOS:** `brew install tesseract tesseract-lang`
-- Doğrula: `tesseract --version`
-- Tesseract yoksa metin PDF/UDF/DOCX yine **bedava** işlenir; yalnız taranmış evraklar "YÜKLENEMEDİ (OCR yok)" damgasıyla künyeye girer — **sessiz atlama yoktur** (kayıpsızlık korunur).
 
-### D) Yargı Pro MCP — içtihat/mevzuat doğrulaması (**zorunlu**)
-Ailenin içtihat/mevzuat/kurum-kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır (Yargıtay, Danıştay, AYM, Bedesten, Mevzuat, YÖK Tez). Claude Code **connectors** bölümünden ekleyin:
+Doğrula:
+
+```bash
+tesseract --version
+```
+
+Tesseract yoksa metin PDF/UDF/DOCX yine işlenir; taranmış evraklar **"YÜKLENEMEDİ (OCR yok)"** damgasıyla künyeye girer — sessiz atlama yoktur.
+
+### D) Node.js + `udf-cli` — UDF üretimi (dilekçe teslimi için ZORUNLU)
+UYAP'a sunulacak `.udf` dosyası **yalnız** Yargı Pro'nun `udf-cli` paketiyle üretilebilir. **UDF elle yazılamaz** — elle üretilen zip/XML dosyaları UYAP Doküman Editöründe açılmaz (sahada doğrulandı: editör `resolver="hvl-default"` iskeletini arar, bulamazsa belgeyi açmaz).
+
+```bash
+node --version
+```
+
+```bash
+npx -y udf-cli@latest login
+```
+
+```bash
+npx -y udf-cli@latest whoami
+```
+
+- Giriş **tek seferlik**tir; token `~/.config/yargi/token.json`'da tutulur ve `udf-cli`, `uyap-tiff-cli`, `uyap-pdf-cli` arasında **paylaşılır**.
+- Başsız/otomasyon ortamında tarayıcı akışı beklemede kalır: `issue_cli_login_code` MCP aracıyla tek kullanımlık kod alıp `udf-cli login --token <kod>` kullanılır.
+- Giriş yapılmamışsa sistem **fail-closed** davranır: bozuk UDF üretmez, size giriş talimatı verir.
+- Ayrıntı: [`skills/oa-dilekce/references/uyap-belge-formatlari.md`](plugins/ortak-avukat/skills/oa-dilekce/references/uyap-belge-formatlari.md)
+
+### E) Yargı Pro MCP — içtihat/mevzuat doğrulaması (ZORUNLU)
+İçtihat/mevzuat/kurum-kararı doğrulaması Yargı Pro MCP sunucusuna dayanır (Yargıtay, Danıştay, AYM, AİHM, Bedesten, Mevzuat, Resmî Gazete, YÖK Tez). Claude Code **connectors** bölümünden şu adresi ekleyin:
+
 ```
 https://yargi.betaspacestudio.com/mcp
 ```
-veya komut satırından:
-```bash
-claude mcp add --transport http "yargipro" https://yargi.betaspacestudio.com/mcp
-```
-OAuth akışını tamamlayın. **Bu bağlantı olmadan** yetenekler künye doğrulaması yapamaz; anayasa gereği içtihat "teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" olarak giremez (halüsinasyon yapısal olarak dışlanır).
 
-### E) Eklentiyi kurun
+veya komut satırından:
+
+```bash
+claude mcp add --transport http yargipro https://yargi.betaspacestudio.com/mcp
+```
+
+OAuth akışını tamamlayın. **Bu bağlantı olmadan** künye doğrulaması yapılamaz; anayasa gereği içtihat "teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
+
+### F) Eklentiyi kurun
+
 ```
 /plugin marketplace add bcancapar-spec/ortak-avukat
+```
+
+```
 /plugin install ortak-avukat@ortak-avukat
 ```
-Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (20 skill) görünmeli; mükerrer/eski kopya olmamalı. (Alternatif: `releases` altındaki `.plugin` dosyasını sohbete bırakıp onaylayın.)
 
-### F) Claude Code'da açık/etkin olması gerekenler — özet kontrol listesi
-- ✅ **Plugins / Skills** etkin (eklenti kurulu + skill'ler yüklü)
-- ✅ **Yargı Pro MCP** bağlı, OAuth tamam (içtihat/mevzuat için varsayılan kaynak)
-- ✅ **Python + `pymupdf` + `pillow`** PATH'te (evrak çıkarımı)
-- ✅ **Tesseract** (`tur` dil paketiyle) PATH'te (taranmış evrak OCR'ı — önerilir)
-- ℹ️ **Çok çekirdekli CPU** — `oa-ingest` paralel çalışır (`--isci` otomatik = `min(çekirdek, 8)`); çok çekirdek = daha hızlı ingest (yüzlerce evraklık dosyada belirgin hızlanma)
+Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (20 skill) görünmeli.
+
+> **Güncelleme takılırsa:** eklentiyi ve marketplace'i kaldırın, Claude Code'u kapatın,
+> `~/.claude/plugins/cache/ortak-avukat` ile `~/.claude/plugins/marketplaces/ortak-avukat` dizinlerini silin,
+> yeniden ekleyip kurun. Sürüm etiketi değil **dosya kanıtı** ile doğrulayın (aşağıdaki "Doğrulama").
+
+### G) Kontrol listesi
+- ✅ **Plugins / Skills** etkin, 20 skill yüklü
+- ✅ **Yargı Pro MCP** bağlı (OAuth tamam)
+- ✅ **Python + pymupdf + pillow** PATH'te
+- ✅ **Tesseract** (`tur` dil paketiyle) PATH'te
+- ✅ **Node.js/npx + `udf-cli login`** yapılmış (UDF üretimi için)
+- ℹ️ **Çok çekirdekli CPU** — `oa-ingest` paralel çalışır (`--isci` otomatik = `min(çekirdek, 8)`)
+
+---
+
+## v0.5.5 — Bu sürümde ne var
+
+v0.5.5'in tek cümlelik tezi: **"advisory kapı = olmayan kapı"** — talimat modeli bağlamaz, mekanik zincir bağlar. Aşağıdakiler bu tezin uygulamasıdır.
+
+### Aktivasyon çekirdeği
+| Madde | Ne yapar |
+|---|---|
+| **Brif restorasyonu** | Alt-ajan brifinde sert kurallar en görünür sıraya alındı; "advisory/serbesttir" tonu kaldırıldı |
+| **Tek-komut muhakeme ritüeli** | `oa_hafiza.py teyit --damga --bag --ayirt --ilgili-kisim --dokum-icerik` → **tek çağrı** ile ham dökümü diske yazar, kütüğe işler, muhakeme kaydını üretir. (v0.5.3'ün "bir karar = bir dosya" pahalı ritüeli terk edildi — pahalı ritüel yapılmaz, ucuz ritüel yapılır) |
+| **ARAMA / GETİR ayrımı** | Arama araçları damgasız serbest kütüklenir; tam metin çeken araçlarda damga + davaya-bağ + döküm **zorunlu** |
+| **DAMGA çapraz kontrolü** | Kütükteki (append-only) son damga ile muhakeme kaydındaki damga farklıysa **engel** — aleyhe kararın sessizce lehe gösterilmesi kapanır |
+| **Çok-bölümlü muhakeme kaydı** | Tek dosyada birden çok karar bölümü desteklenir (G1/G2/G3 semantiği değişmeden) |
+| **Gate G döngü kırıcı** | `pipeline_kayit` ↔ `tam_tur` karşılıklı çağrısı in-process import ile çözüldü |
+
+### Zorlama zinciri
+| Madde | Ne yapar |
+|---|---|
+| **Teslim makbuzu** | `teslim_paketi.py` her koşuda `_oa/defter/teslim-makbuz.json` yazar (taslak sha256 + kapı-başına exit); makbuzsuz teslim koşan kapılarca kesilir |
+| **Önkoşul-artefakt kapısı** | Adım kaydı, o adımın fiziksel artefaktı diskte yoksa yazılamaz (adım 5 kıyas ve adım 9 kontrol blokleyici; 3/4/6/7 uyarı) |
+| **İngest-önce kapısı** | `00-kunye.json` mutabakatı diskte yokken adım 1+ "UYGULANDI" yazılamaz — **analiz, ingest bitmeden başlayamaz** |
+| **Model-bağımsız tetik** | Plugin `Stop`/`SessionEnd`/`PostToolUse` hook'ları: oturum kapanırken ve dilekçe-şekilli çıktı yazıldığında defter denetimi + metrik otomatik koşar |
+| **`_oa/DURUM.md`** | Pipeline defterinden **türetilen** canlı durum raporu: adım tablosu, kapı çıkışları, künye sayaçları, uyarılar, "avukat kararı bekleyen", "sıradaki" |
+
+### Denetim ve ekonomi
+| Madde | Ne yapar |
+|---|---|
+| **[F] içtihat-muhakeme kapısı varsayılan AÇIK** | `dilekce_denetim.py` artık her koşuda içtihat zincirini denetler |
+| **Kapanış denetimi** | `oturum-kapat` defter denetimini fiilen koşar; çıktı kesmesiz devir notuna yazılır |
+| **`oa_ingest --onbakis N`** | Meşru "hızlı ön bakış" kanalı — ayrı artefakta yazar, ana ingest hattına dokunmaz (gölge/uydurma çıkarım hattı ihtiyacını ortadan kaldırır) |
+| **Sözleşme-dışı dizin bekçisi** | `_oa/` altında tanımsız dizin = görünür uyarı (tek-yazar tablosu) |
+| **Canlı senkron kapısı** | Bayat working memory üstüne "UYGULANDI" yazılamaz |
+| **Ölçüm** | `oa_metrik.py`: analiz token raporu, override/şerh oranı, görünmez-kaçış sayaçları |
+
+### Muhakeme katmanı
+| Madde | Ne yapar |
+|---|---|
+| **Dava tezi (M1)** | Tek paragraflık tez working memory'nin başında; her pas ve brifin ilk satırında |
+| **Kıyas şeması (M2)** | Muhakeme kaydı: RATIO (taşıyıcı ilke, verbatim) + ÖRTÜŞME (en az 3 somut nokta) + FARKLAR → **damga bunlardan türetilir**, beyan edilmez |
+| **Antitez pası (M3)** | `oa-antitez` çıktısı `oa-dilekce`'nin girdisi; aleyhe tarama iç dosyaya, dilekçeye yalnız duyulmuşsa |
+| **Unsur şablonları (M4)** | Dava türü başına unsur listesi (tasarrufun iptali, işe iade, itirazın iptali, kıdem-ihbar); delilsiz unsur görünür |
+| **Kronoloji + süre penceresi (M5)** | İlliyet grafına zaman katmanı; `hesapla_sure` pencereleri bindirilir |
+| **İçtihat portföyü (M6)** | Dilekçe gövdesine en güçlü 3-5 karar (HGK/İBK > ihtisas dairesi > diğer; yeni > eski); kalanı kütükte yedek |
+| **Avukat kararı bekleyen (M7)** | Stratejik çatallar `DURUM.md`'de ayrı bölüm — model sessizce karar vermez |
+
+### Evrak ve teslim
+| Madde | Ne yapar |
+|---|---|
+| **OCR nöbetçisi** | OCR boş/çöp dönerse deterministik yeniden deneme (DPI/yönelim/psm), hâlâ boşsa **sayfa görselleri** üretilir + `OCR-BOŞ → GÖRSEL İNCELEME GEREK` damgası (sessiz körlük biter) |
+| **Gate A — sayfa haritası** | 40.000 karakteri aşan evrak için md yanında `<dosya>.harita.json`: deterministik, **kayıpsız** yapısal bölme (özet DEĞİL) — büyük evrak tam yüklenmeden ilgili sayfası okunur |
+| **UDF hattı** | `md → inline-CSS HTML → udf-cli html2udf → .udf`. Elle zip/XML üretimi **kaldırıldı**; araç yoksa fail-closed |
+| **UYAP format referansı** | UDF/TIFF/PDF okuma-yazma kuralları, HTML yazım şeması, dilekçe kalıpları eklentiye klonlandı |
+
+### Yazım doktrini
+- **"Künyeyi bulmak yetmez; kararın müvekkilin işine yarayıp yaramadığının muhakemesi güç çarpanıdır — çıplak künye sıfırdır."**
+- **Görünmez iskelet:** İDDİA→NORM→İÇTİHAT→ÖRTÜŞME→SONUÇ paragrafın **iç mantığıdır**, yüzeye etiket olarak sızmaz
+- **Üslup:** kanun-yolu playbook'una bağlı, tez-omurgalı, akıcı
+- **Kusur→Sonuç→Talep asimetrisi:** karşı tarafın kusuru tespit edilir, sonucu yazılır, **giderilmesine yönelik talep kurulmaz**
+
+---
+
+## v0.5.5.1 — Saha testi düzeltmeleri
+
+v0.5.5 gerçek bir dosyada (214 evrak, bakir klasör, metodoloji talimatı verilmeden) test edildi. Ekonomi hedefleri tuttu; ama üç **tetik** boşluğu görüldü: mekanizmalar sağlamdı, **çağrılmıyorlardı**. Bu sürümün dersi tek cümle: *kapının gücü kodunda değil tetiğindedir.*
+
+| Düzeltme | Ne yapar |
+|---|---|
+| **Working memory tetiği** | `dosya-analiz.md` bizim biçimimizde değilse (elle yazılmış/bozulmuş), hook gövdesi `--senkron`'u **kendiliğinden** koşturur ve çalışma evraklarını kayıpsız geri gömer. Ritüelin çağrılmasını beklemez. Onarım **görünürdür** ve TAMAM üretmez — Gate G+ fail-closed kalır |
+| **Defter-muhakeme denge uyarısı** | Kütükteki DAMGA'lı satır sayısı muhakeme kaydındaki bölüm sayısından fazlaysa uyarır. `teyit --damga` ikisini birlikte yazar; fark, satırın script dışında (elle) eklendiğini ve o künyelerin muhakemesinin hiç yapılmadığını gösterir |
+| **Kök dosya bekçisi** | Sözleşme-dışı bekçisi yalnız `_oa/` altındaki **dizinlere** bakıyordu; kökteki serbest **dosyalar** kör noktadaydı. Artık görünür uyarı üretir (bloklamaz) |
+
+> Sahada şüphelenilen dört kusur (Gate A haritası, muhakeme dosyası yazımı, dava tezi, kayıpsız senkron) sentetik yeniden üretimle sınandı ve **dördü de sağlam çıktı** — bu yüzden kod değil tetik düzeltildi. Yeniden üretim testleri `tests/test_v0551_saha_tetikleri.py` içindedir.
 
 ---
 
 ## Kullanım / iş akışı
 
-1. **Evrakı indir:** UYAP dava/icra dosyasındaki evrakları (PDF/TIFF/UDF/EYP/DOCX) bir klasöre indir (ör. bir "UYAP evrak indirici" tarayıcı eklentisiyle).
-2. **O klasörde Claude Code başlat.**
-3. **Prompt ver:** "davayı analiz et", "temyiz/istinaf/cevap dilekçesi yaz", "içtihat ara", "süreyi hesapla", "bu olaya hangi madde nasıl uygulanır" gibi.
-4. **Sistem ne yapar:** önce evrakı en ucuz doğru yoldan metne çevirir (`oa-ingest`), dosya analizini working memory'ye yazar, içtihat/mevzuatı Yargı Pro'dan doğrular, teslim öncesi mekanik kapılardan (süre, usul, atıf teyidi, müvekkil-aleyhi tarama, tertip/düzen) geçirir.
-5. **Çıktı:** aksi istenmedikçe **UDF** (UYAP'a uygun) formatında; istenirse `md`/`docx`.
+1. **Evrakı indir:** UYAP dosyasındaki evrakları (PDF/TIFF/UDF/EYP/DOCX) bir klasöre indir
+2. **O klasörde Claude Code başlat**
+3. **Prompt ver:** *"Bu davada davalı X vekiliyim, dosyayı analiz et ve cevap dilekçesi hazırla"* gibi — metodoloji talimatı vermene gerek yok, sistem kendi disiplinini işletir
+4. **Sistem ne yapar:** evrakı en ucuz doğru yoldan metne çevirir → working memory kurar → içtihat/mevzuatı Yargı Pro'dan doğrular ve **damgalar** → kıyas/antitez/strateji üretir → dilekçeyi yazar → teslim öncesi mekanik kapılardan geçirir → UDF üretir
+5. **Sen ne yaparsın:** `_oa/DURUM.md`'ye bak (nerede kalındı, ne bekliyor), üretilen UDF'i UYAP editöründe **aç ve teyit et**, hukuki isabeti değerlendir
 
 Tüm üretim çalışılan klasörün `_oa/` yerel hafıza kökünde kalır. **Müvekkil evrakı salt-okunurdur, değiştirilmez.**
 
+### `_oa/` yapısı
+```
+_oa/
+├── metin/          # ingest çıktısı: 00-INDEX.md, 00-kunye.json, NNN-*.md, *.harita.json
+├── analiz/         # dosya-analiz.md (working memory) + .json
+├── cikti/          # çalışma evrakları: NN-parça-içerik.md, dilekçe, UDF
+├── teyit/          # kunye-teyit.md (künye kütüğü) + dokum/ (ham MCP dökümleri)
+├── defter/         # pipeline-olaylar.jsonl, pipeline-durum.json, teslim-makbuz.json
+├── devir/          # oturumlar arası devir paketleri
+├── araclar/        # eklentiden kopyalanan deterministik scriptler
+└── DURUM.md        # türetilmiş canlı durum raporu
+```
+
 ---
 
-## Öne çıkanlar
+## Doğrulama
 
-- **Tek eş-avukat / working memory** — aile 20 organlı tek bir kıdemli eş-avukat gibi; dosya anlayışı `dosya-analiz.md`'de kalıcı, devirde ham evrak baştan okunmaz.
-- **Lego mimarisi** — 20 bağımsız parça; `oa-pipeline` uçtan uca orkestrasyon (MANİFEST → … → KAPANIŞ).
-- **Kesişen katmanlar** — `oa-usul` (usulün esasa takaddümü), `oa-illiyet` (nedensellik grafı), `oa-gizlilik` (meslek sırrı / Privacy Layer 0).
-- **Deterministik denetim** — Python scriptleri model muhakemesini denetler: süre/zamanaşımı, illiyet grafı, açık kıyas, antitez, usul, **atıf/künye teyidi**, **içtihat muhakeme zinciri** (çekilir + davaya bağı kurulur + lehe/aleyhe damgalanır), **okuma ekonomisi** (token-verimli seçici okuma), **kalıcılık kapısı** (analiz kaydı daima üretilir).
-- **Kayıpsızlık + muhakeme invaryantı** — her aşamada veri kaybı yok, muhakeme kaybı yok; token tasarrufu yalnız mekanik katmanda (özetleme yasak).
-- **Ceza dalı** — `oa-mudafii` (savunma) ve `oa-musteki-vekili` (iddia) aynı unsur-inşasının iki yüzü.
-- **Doğrulanmış kaynak** — içtihat/mevzuat daima Yargı Pro + Mevzuat MCP'den; doktrin Literatür/YÖK Tez'den.
+### Kurulumun doğru olduğunu **dosya kanıtıyla** teyit et
+Sürüm etiketi yetmez — kurulu cache'te sürümün kodunun fiilen bulunduğunu doğrula:
+
+```bash
+ls ~/.claude/plugins/cache/ortak-avukat/ortak-avukat/
+```
+
+```bash
+grep -l teslim-makbuz ~/.claude/plugins/cache/ortak-avukat/ortak-avukat/*/skills/oa-kontrol/scripts/teslim_paketi.py
+```
+
+İlk komut yalnız güncel sürüm klasörünü göstermeli — eski sürüm klasörleri silinmiş olmalı, yoksa hangi kodun koştuğu belirsizdir.
+
+### Geliştirici doğrulaması
+Depo kökünde:
+
+```bash
+python -m pytest tests -q
+```
+
+```bash
+python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
+```
+
+İlki deterministik denetçilerin regresyonunu (**759 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
 
 ---
 
@@ -96,41 +256,28 @@ Tüm üretim çalışılan klasörün `_oa/` yerel hafıza kökünde kalır. **M
 
 ```
 ortak-avukat/
-├── .claude-plugin/
-│   └── marketplace.json          # marketplace kataloğu
-├── plugins/
-│   └── ortak-avukat/             # eklentinin kendisi
-│       ├── .claude-plugin/
-│       │   └── plugin.json
-│       ├── skills/               # 20 skill (çekirdek + 19 oa-*)
-│       │   ├── ortak-avukat/     #   çekirdek kimlik + references/anayasa.md
-│       │   ├── oa-pipeline/      #   orkestrasyon + tam_tur (working memory) + scriptler
-│       │   └── …
-│       └── README.md             # eklenti dokümanı + parça kataloğu
-├── tests/                        # 300+ pytest (script denetçilerinin regresyonu)
-├── README.md                     # bu dosya
-├── LICENSE
-└── .gitignore
+├── .claude-plugin/marketplace.json
+├── plugins/ortak-avukat/
+│   ├── .claude-plugin/plugin.json
+│   ├── hooks/hooks.json              # model-bağımsız tetik
+│   └── skills/                       # 20 skill
+│       ├── ortak-avukat/             #   çekirdek kimlik + references/anayasa.md
+│       ├── oa-pipeline/              #   orkestrasyon + tam_tur + pipeline_kayit + oa_hafiza + oa_metrik
+│       ├── oa-ingest/                #   0. adım evrak çıkarımı (paralel, OCR nöbetçili)
+│       ├── oa-kontrol/               #   teslim kapıları + içtihat muhakeme denetimi
+│       ├── oa-dilekce/               #   dilekçe yazımı + UDF hattı + UYAP format referansı
+│       └── …                         #   oa-alan, oa-vakia, oa-kiyas, oa-antitez, oa-usul, oa-sure, …
+├── tests/                            # 759 pytest
+├── README.md · LICENSE · NOTICE
 ```
 
-Parçaların tam kataloğu, mimari ve anayasal ilkeler için: **[plugins/ortak-avukat/README.md](plugins/ortak-avukat/README.md)**.
-
----
-
-## Doğrulama (geliştirici)
-
-Depo kökünde:
-```bash
-python -m pytest tests -q
-python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
-```
-İlki script denetçilerinin (300+ test) regresyonunu, ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
+Parçaların tam kataloğu ve anayasal ilkeler: **[plugins/ortak-avukat/README.md](plugins/ortak-avukat/README.md)**
 
 ---
 
 ## Gizlilik
 
-Bu depo **hiçbir müvekkil verisi veya MCP kimlik bilgisi içermez**. Çalışma evrakı (`_oa/`) `.gitignore` ile dışlanmıştır ve asla depoya girmez. Dış araca (bulut MCP/web/e-posta) veri çıkışı, `oa-gizlilik` **Layer 0** süzgecine tabidir (müvekkil verisi, TCKN, sağlık/ceza verisi, UYAP login/e-imza/PIN taranır; fail-closed). UYAP login ve e-imza/PIN adımları münhasıran avukata aittir; sistem bunlar için kod yazmaz.
+Bu depo **hiçbir müvekkil verisi veya MCP kimlik bilgisi içermez**. Çalışma evrakı (`_oa/`) `.gitignore` ile dışlanmıştır. Dış araca (bulut MCP/web) veri çıkışı `oa-gizlilik` **Layer 0** süzgecine tabidir (müvekkil verisi, TCKN, IBAN, telefon, e-posta, plaka, sağlık/ceza verisi taranır; fail-closed). UYAP login ve e-imza/PIN adımları münhasıran avukata aittir; sistem bunlar için kod yazmaz.
 
 ---
 

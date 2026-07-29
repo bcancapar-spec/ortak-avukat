@@ -27,6 +27,17 @@ TT_SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline"
              / "scripts" / "tam_tur.py")
 SKILLS_KOK = REPO / "plugins" / "ortak-avukat" / "skills"
 
+
+def _teslim_paketi_modulu():
+    """teslim_paketi.py'yi in-process yükler — makbuza yazılan sürüm damgasının
+    TEK KAYNAĞI (testte sabit sürüm yazmak ikiz-liste yaratırdı)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("_test_makbuz_teslim_paketi", TP_SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["_test_makbuz_teslim_paketi"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
 TAM_TEMIZ_TASLAK = """İSTANBUL 4. ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİ'NE
 
 DAVACI: Ayşe Yılmaz (T.C. Kimlik No: 12345678901)
@@ -105,7 +116,11 @@ def test_basarili_zincir_makbuz_yazar_sema_ve_sha_dogru(izole_kok):
     assert m["exit_kodu"] == 0
     assert m["taslak_yol"] == str(taslak)
     assert m["taslak_sha256"] and len(m["taslak_sha256"]) == 64
-    assert m["surum"] == "0.5.5"
+    # Sürümü testte SABİTLEMEK ikiz-liste yaratır (her yama sürümünde test
+    # kırılır ve "0.5.5" beklentisi sessizce bayatlar); damganın tek kaynağı
+    # teslim_paketi.OA_SURUM'dur — dört-damga eşzamanlılığını zaten
+    # test_hooks_wiring kilitler.
+    assert m["surum"] == _teslim_paketi_modulu().OA_SURUM
     assert m["ictihat_muhakeme_kanali"] == "b2-tekil"
     assert isinstance(m["kapilar"], list) and len(m["kapilar"]) >= 4
     for k in m["kapilar"]:
@@ -244,6 +259,35 @@ def test_v055_defterde_makbuz_eksikligi_blokleyici(izole_kok):
     sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d_yeni)
     assert sorun is not None, "v0.5.5+ olay varken makbuz eksikliği BLOKLEYICI olmalıydı"
     assert uyari is None
+
+
+def test_yama_surumu_gecis_supabini_GEVSETMEZ(izole_kok):
+    """REGRESYON (v0.5.5.1): supap eşiği bir zamanlar `_OA_SURUM_TUPLE`ye
+    bağlıydı — 0.5.5 → 0.5.5.1 yaması çıktığı anda SAHADAKİ TÜM v0.5.5
+    defterleri "eski defter" sayılıp makbuz kapısı SESSİZCE gevşiyordu.
+    Supabın sorusu "bu defter tam güncel sürümde mi" DEĞİL, "bu defter P0-5
+    çağına geçmiş mi"dir; eşik bu yüzden çağın açıldığı sürüme sabittir ve
+    sürüm artışıyla kaymaz."""
+    pk = _pk_modulu()
+    assert pk._MAKBUZ_CAG_ESIGI == (0, 5, 5), "çağ eşiği kaymamalı"
+    assert pk._surum_tuple(pk.OA_SURUM) >= pk._MAKBUZ_CAG_ESIGI
+
+    # Güncel sürümden ESKİ ama çağ-içi her defter blokleyici kalmalı.
+    for gorulen in ("0.5.5", "0.5.5.1", "0.6.0"):
+        d = {
+            "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+            "surum_gorulen": [gorulen],
+        }
+        sorun, _uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d)
+        assert sorun is not None, f"surum_gorulen={gorulen!r} çağ içinde — kapı gevşememeli"
+
+    # Çağ ÖNCESİ defter hâlâ yalnız uyarı üretir (geçiş supabı korunur).
+    d_onceki = {
+        "adimlar": {"9": {"parcalar": {"oa-kontrol": {"durum": "UYGULANDI"}}}},
+        "surum_gorulen": ["0.5.4"],
+    }
+    sorun, uyari = pk._makbuz_denetim_hesapla(str(izole_kok), d_onceki)
+    assert sorun is None and uyari is not None
 
 
 # ── (6) desen-dışı ad ('taslak-v3.md' gibi) → pipeline_kayit adım-9 kapısı

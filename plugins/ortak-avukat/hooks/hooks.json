@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

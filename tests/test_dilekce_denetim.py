@@ -9,6 +9,7 @@ cevap kalıbı "... kabul anlamına gelmemek kaydıyla" gibi ifadeler SAHTE ALAR
 import importlib.util
 import pathlib
 import sys
+import zipfile
 
 import pytest
 
@@ -34,6 +35,39 @@ def _load_udf_yaz():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _sentetik_udf_yaz(uy, tmp_path, metin, ad="gecerli.udf"):
+    """GÖREV D (v0.5.5, B5): udf_yaz.py artık kendi UDF'ini YAZMIYOR (yalnız
+    gerçek `npx udf-cli html2udf`'e devrediyor) — bu yüzden `udf_kapisi()`nin
+    (yalnız `udf_dogrula()`yı çağıran ince bir sarmalayıcı) doğru çalıştığını
+    test etmek için burada DOĞRUDAN `zipfile` ile sentetik/geçerli-şekilli bir
+    UDF kuruyoruz (bu bir test fixture'ıdır — "elle UDF üretimi" ÖZELLİĞİ
+    DEĞİLDİR, üretim koduna asla taşınmaz)."""
+    satirlar = [s for s in metin.split("\n")]
+    if satirlar and satirlar[-1] == "":
+        satirlar = satirlar[:-1]
+    parcalar = [s + "\n" for s in satirlar]
+    tam = "".join(parcalar)
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<template format_id="1.8">',
+           '<content><![CDATA[' + tam.replace("]]>", "]]]]><![CDATA[>") + ']]></content>',
+           '<properties><pageFormat mediaSizeName="1"/></properties>',
+           '<elements resolver="hvl-default">']
+    imlec = 0
+    for parca in parcalar:
+        u16 = uy.utf16_uzunluk(parca)
+        xml.append('<paragraph Alignment="3"><content startOffset="%d" length="%d"/></paragraph>'
+                    % (imlec, u16))
+        imlec += u16
+    xml.append('</elements>')
+    xml.append('<styles><style name="default" family="Times New Roman" size="12"/></styles>')
+    xml.append('</template>')
+    xml_str = "\n".join(xml) + "\n"
+    cikti = tmp_path / ad
+    with zipfile.ZipFile(str(cikti), "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("content.xml", xml_str.encode("utf-8"))
+    return cikti
 
 
 # ── (D) müvekkil-aleyhi ifade taraması — olumsuzlama koruması ──────────────
@@ -379,9 +413,7 @@ def test_udf_kapisi_gecerli_udf_icin_gecerli_doner(tmp_path):
     """udf_kapisi, kardeş script udf_yaz.py'yi yükleyip udf_dogrula'yı çağırır;
     düzgün üretilmiş bir UDF için GEÇERLİ dönmeli (denetim hattı bağlantısı)."""
     uy = _load_udf_yaz()
-    xml_str, _tam, _p = uy.udf_uret("# Dava Dilekçesi\n\nArz ederiz.\n")
-    cikti = tmp_path / "gecerli.udf"
-    uy.udf_yaz(str(cikti), xml_str)
+    cikti = _sentetik_udf_yaz(uy, tmp_path, "Dava Dilekcesi\n\nArz ederiz.\n")
 
     sonuc = dd.udf_kapisi(str(cikti))
     assert sonuc["gecerli"] is True

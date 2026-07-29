@@ -5,53 +5,48 @@
 """
 udf_yaz.py — markdown → UYAP UDF TESLİM HATTI (oa-dilekce yardımcısı)
 
-P0-10 (Yargı Pro UDF rehberi uyumu, v0.5.5): Denizli 307 dosyasında bu
-script'in eski (yalnız yerel) motoru UYAP-geçerli bir `.udf` ÜRETEMEDİ.
-Rehber (`udf_tiff_pdf_guide` MCP aracı / `yargi-udf-tiff-pdf-guide` skill,
-sürüm 2026-06-22) açıkça şunu söyler: **"UDF opak bir UYAP biçimidir — yalnız
-`udf-cli` üretebilir/okuyabilir; ASLA elle yazma/düzenleme; her zaman
-`html2udf`, ASLA `md2udf`."** Bu yüzden VARSAYILAN hat artık rehbere birebir
-uyar:
+GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): Denizli 307 dosyasında bu script'in
+ESKİ elle (zip + content.xml, `--yerel-motor`) motoru bir `.udf` ürettiği hâlde
+o dosya **UYAP editöründe AÇILMADI**. Zip bütünlüğünün "OK" görünmesi format
+GEÇERLİLİĞİ demek DEĞİLDİR. Yargı Pro rehberi (`udf_tiff_pdf_guide` MCP aracı /
+`yargi-udf-tiff-pdf-guide` skill, sürüm 2026-06-22) açıkça şunu söyler: **"UDF
+opak bir UYAP biçimidir — yalnız `udf-cli` üretebilir/okuyabilir; ASLA elle
+yazma/düzenleme; her zaman `html2udf`, ASLA `md2udf`."**
 
-    md taslak → UDF-HTML (md_udf_html.py, inline-CSS) → `npx udf-cli
-    html2udf` (GERÇEK UYAP yazıcısı) → [+opsiyonel] UDF-HTML → PDF
-    (udf_html2pdf.py, PyMuPDF Story)
+Bu yüzden elle zip/content.xml ÜRETİMİ bu script'ten TAMAMEN KALDIRILMIŞTIR
+(`--yerel-motor` bayrağı ve onu destekleyen `udf_uret`/`udf_yaz`/
+`udf_metni_geri_oku` fonksiyonları artık YOKTUR). TEK geçerli yazma hattı:
 
-`--yerel-motor` verilirse eski (2026 öncesi) hand-rolled ZIP/XML motoru
-kullanılır — bu YEDEKTİR, ağ/oturum olmadığında (ör. teslim_paketi.py'nin
-otomatik ön-kapı zincirinde) hızlı yapısal denetim için tutulur; **UYAP
-uyumu rehber gereği GARANTİ DEĞİLDİR** ve script bunu her koşuda açıkça basar.
-`--dogrula` HER İKİ motorun çıktısını da aynı mekanik kapıdan geçirir (zip
-açılır mı / content.xml var mı / XML iyi biçimli mi / CDATA+offset tutarlı
-mı) — bu denetim gerçek `udf-cli` çıktısında da doğrulanmıştır (bkz.
-`references/degisiklik-gunlugu.md`).
+    md taslak → UDF-HTML (md_udf_html.py, inline-CSS, rehber şemasına birebir)
+             → `npx -y udf-cli@latest html2udf` (GERÇEK UYAP yazıcısı)
+             → [+opsiyonel] aynı UDF-HTML'den PDF önizleme (udf_html2pdf.py)
 
-Yerel motorun `content.xml` şeması (yalnız `--yerel-motor` ile üretilir,
-UYAP editör / Swing tabanlı okuyucunun BEKLEDİĞİ asgari alt küme):
-  - kök  : <template format_id="...">
-  - metin: <content><![CDATA[...]]></content>   (ATTRIBUTESİZ — okuyucu bunu arar)
-  - düzen: <properties><pageFormat .../></properties>
-  - blok : <elements resolver="hvl-default"> altında her paragraf için
-           <paragraph Alignment="N"><content startOffset="S" length="L"/></paragraph>
-           startOffset/length CDATA metniyle BİREBİR tutar; paragraflar metni
-           boşluksuz böler (her paragraf sonundaki '\n' dahildir).
-  - stil : <styles><style name="default" .../></styles>
-`udf_metin.py` (oa-pipeline, ingest okuyucusu) bu CDATA yapısını arar; hem
-yerel motorun hem gerçek `udf-cli`'nin çıktısı bu okuyucuyla round-trip eder.
+`npx`/`udf-cli` bulunamazsa VEYA oturum (login) gerekiyorsa: script FAIL-CLOSED
+davranır — çıkış kodu != 0, stderr'e NET talimat (`npx -y udf-cli@latest
+login` İNSAN varsa; başsız/otomasyon ortamda `issue_cli_login_code` MCP aracı
+çağrılıp dönen tek-kullanımlık kodla `udf-cli login --token <kod>`), ve HİÇBİR
+`.udf` dosyası YAZILMAZ. Eski elle-zip yoluna SESSİZCE düşmek YASAKTIR — bozuk
+ama "üretildi" görünen bir UDF, hiç üretilmemiş bir UDF'den DAHA KÖTÜDÜR
+(sessiz-yanlış > açık-eksik).
+
+`--dogrula` var olan HERHANGİ bir `.udf` dosyasını (gerçek `udf-cli` çıktısı
+dâhil) mekanik GEÇERLİLİK KAPISI'ndan geçirir (zip açılır mı / content.xml var
+mı / XML iyi biçimli mi / CDATA+offset tutarlı mı) — bu bir hukuki/biçimsel
+KALİTE hükmü DEĞİLDİR, yalnız yapısal "var/yok" ve "tutarlı/tutarsız" denetimi.
 
 DETERMİNİST MOTOR: bu script hukuki değerlendirme YAPMAZ; yalnız biçim üretir.
 
 Kullanım (Windows/PowerShell — 'python', 'python3' DEĞİL):
-  python udf_yaz.py --girdi taslak.md --cikti dilekce.udf              # varsayılan: npx udf-cli html2udf
+  python udf_yaz.py --girdi taslak.md --cikti dilekce.udf              # npx udf-cli html2udf
   python udf_yaz.py --girdi taslak.md --cikti dilekce.udf --pdf dilekce.pdf
-  python udf_yaz.py --girdi taslak.md --cikti dilekce.udf --yerel-motor  # ağsız yedek motor
   Get-Content taslak.md -Raw | python udf_yaz.py --cikti dilekce.udf
   python udf_yaz.py --girdi taslak.txt --cikti dilekce.udf --ham       # md yorumlama yok
   python udf_yaz.py --dogrula dilekce.udf                              # yazmadan mekanik denetim
 
-Varsayılan motor `npx` (Node.js) + `udf-cli` (login-gated, ağ gerektirir —
-rehberin Kimlik Doğrulama bölümü) çağırır; `--yerel-motor` yalnız standart
-kütüphane (zipfile, xml, argparse) kullanır, ek bağımlılık yoktur.
+Bu script yalnızca standart kütüphane (argparse, subprocess, zipfile, xml)
+kullanır; gerçek yazıcı `npx` (Node.js) + `udf-cli` çağrılarak dış süreç
+olarak çalıştırılır (login-gated, ağ gerektirir — rehberin Kimlik Doğrulama
+bölümü).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -62,7 +57,10 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import contextlib
+import datetime
 import importlib.util
+import io
 import os
 import pathlib
 import re
@@ -74,13 +72,6 @@ import time
 import zipfile
 import xml.etree.ElementTree as ET
 
-# UYAP editörünün yazdığı güncel şablon sürümü. Uyum sorununda düşürülebilir
-# (bilinen değerler: 1.6 / 1.7 / 1.8). Gerçek cihaz testinde ilk denenecek yer burası.
-FORMAT_ID = "1.8"
-
-# UYAP Alignment (java Swing StyleConstants): 0=SOL 1=ORTA 2=SAG 3=İKİ_YANA_YASLI
-HIZA_SOL, HIZA_ORTA, HIZA_SAG, HIZA_YASLI = 0, 1, 2, 3
-
 
 def utf16_uzunluk(s):
     """UYAP editörü (Java/Swing) offset'leri UTF-16 CODE UNIT sayar; Python str ise
@@ -88,140 +79,20 @@ def utf16_uzunluk(s):
     ama UTF-16'da İKİ code unit'tir (surrogate çifti). Offset'leri Swing ile aynı
     birime çekmek için UTF-16 code unit sayısını döndür; aksi halde tek bir emoji
     o paragraftan sonraki TÜM offset'leri 1 kaydırır ve UYAP'ta biçim/aralık bozulur.
-    """
+    Yalnız `udf_dogrula`'nın (mekanik geçerlilik kapısı) offset tutarlılık
+    denetiminde kullanılır — bu script artık kendi offset'ini ÜRETMEZ
+    (gerçek yazıcı `udf-cli`'dir)."""
     return len(s.encode("utf-16-le")) // 2
-
-
-# ───────────────────────────── markdown → düz metin ─────────────────────────
-def md_satir_duzlestir(satir):
-    """Bir markdown satırını düz metne indir. (metin, baslik_mi) döndürür.
-
-    UDF zengin metindir; ama önce DOĞRU düz-metin + paragraf yapısı garanti
-    edilir. İşaretler (##, **, *, `, [..](..)) makul biçimde temizlenir.
-    """
-    s = satir.rstrip("\r")
-    baslik = False
-
-    # ATX başlık:  '# ...' / '###   ...'  → baslik; sondaki süs '#'leri at
-    m = re.match(r"^(#{1,6})\s*(.*?)\s*#*\s*$", s)
-    if m:
-        baslik = True
-        s = m.group(2)
-
-    # liste imi:  '- ' / '* ' / '+ '  → '• ' (girinti korunur)
-    m = re.match(r"^(\s*)[-*+]\s+(.*)$", s)
-    if m:
-        s = m.group(1) + "• " + m.group(2)
-
-    # kalın **..** / __..__  → içerik
-    s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
-    s = re.sub(r"__(.+?)__", r"\1", s)
-    # italik *..* / _.._  → içerik (tek yıldız/alt çizgi)
-    s = re.sub(r"(?<!\*)\*(?!\*)([^*]+?)\*(?!\*)", r"\1", s)
-    s = re.sub(r"(?<!_)_(?!_)([^_]+?)_(?!_)", r"\1", s)
-    # satır içi kod `..`  → içerik
-    s = re.sub(r"`([^`]+)`", r"\1", s)
-    # bağlantı [metin](url)  → 'metin (url)'
-    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", s)
-
-    return s, baslik
-
-
-def cdata_guvenli(metin):
-    """CDATA içinde yasak olan `]]>` dizisini böler (tek yer bu olabilir)."""
-    return metin.replace("]]>", "]]]]><![CDATA[>")
-
-
-# ───────────────────────────── UDF üretimi ─────────────────────────────────
-def udf_uret(ham_metin, ham_mod=False, format_id=FORMAT_ID):
-    """Metinden content.xml (str), tam-metin (str) ve paragraf listesi üretir.
-
-    paragraflar: [(startOffset, length, baslik_mi), ...]
-    length her paragrafın SONUNDAKİ '\n' karakterini de içerir; böylece
-    offset'ler CDATA metnini boşluksuz ve birebir böler.
-
-    startOffset/length UTF-16 CODE UNIT olarak hesaplanır (UYAP/Swing birimi);
-    BMP-dışı karakterde Python code-point sayımı Swing'le kayardı — bkz. utf16_uzunluk.
-    """
-    ham = ham_metin.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
-    satirlar = ham.split("\n") if ham != "" else [""]
-
-    parcalar, paragraflar, imlec = [], [], 0
-    for satir in satirlar:
-        if ham_mod:
-            duz, baslik = satir, False
-        else:
-            duz, baslik = md_satir_duzlestir(satir)
-        parca = duz + "\n"                      # paragraf + ayraç newline
-        u16 = utf16_uzunluk(parca)              # UYAP/Swing offset birimi
-        paragraflar.append((imlec, u16, baslik))
-        parcalar.append(parca)
-        imlec += u16                            # UTF-16 code unit offset
-    tam = "".join(parcalar)
-
-    x = []
-    x.append('<?xml version="1.0" encoding="UTF-8"?>')
-    x.append('<template format_id="%s">' % format_id)
-    x.append('<content><![CDATA[' + cdata_guvenli(tam) + ']]></content>')
-    x.append('<properties>')
-    x.append('<pageFormat mediaSizeName="1" leftMargin="70.866" '
-             'rightMargin="70.866" topMargin="70.866" bottomMargin="70.866" '
-             'paperOrientation="1" headerFOffset="20.0" footerFOffset="20.0"/>')
-    x.append('</properties>')
-    x.append('<elements resolver="hvl-default">')
-    for start, length, baslik in paragraflar:
-        hiza = HIZA_ORTA if baslik else HIZA_YASLI
-        x.append('<paragraph Alignment="%d">' % hiza)
-        if baslik:
-            x.append('<content startOffset="%d" length="%d" bold="true"/>'
-                     % (start, length))
-        else:
-            x.append('<content startOffset="%d" length="%d"/>' % (start, length))
-        x.append('</paragraph>')
-    x.append('</elements>')
-    x.append('<styles>')
-    x.append('<style name="default" description="Govde" '
-             'family="Times New Roman" size="12" bold="false" italic="false" '
-             'foreground="-16777216"/>')
-    x.append('</styles>')
-    x.append('</template>')
-    xml_str = "\n".join(x) + "\n"
-
-    # üretilen XML gerçekten iyi biçimli mi? (okuyucunun ET fallback'i için de şart)
-    try:
-        ET.fromstring(xml_str)
-    except ET.ParseError as e:
-        sys.exit("HATA: üretilen content.xml iyi biçimli değil: %s" % e)
-
-    return xml_str, tam, paragraflar
-
-
-def udf_yaz(cikti_yolu, xml_str):
-    """content.xml'i UDF (ZIP) arşivine ATOMİK yazar (tmp + os.replace) —
-    yarım yazılmış/kesintiye uğramış bir .udf asla nihai adda görünmez."""
-    tmp = cikti_yolu + ".tmp-%d" % os.getpid()
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("content.xml", xml_str.encode("utf-8"))
-    _atomik_tasi(tmp, cikti_yolu)
-
-
-# ─────────────────── round-trip doğrulama (udf_metin.py mantığı) ────────────
-def udf_metni_geri_oku(cikti_yolu):
-    """udf_metin.py / udf_isle() ile AYNI regex mantığıyla metni geri okur."""
-    zf = zipfile.ZipFile(cikti_yolu)
-    hedef = next((a for a in zf.namelist()
-                  if a.lower().endswith("content.xml")), None)
-    if hedef is None:
-        return None
-    ham = zf.read(hedef).decode("utf-8", errors="replace")
-    m = re.search(r"<content>\s*<!\[CDATA\[(.*?)\]\]>\s*</content>", ham, re.S)
-    return m.group(1) if m else None
 
 
 # ───────────────── UDF GEÇERLİLİK KAPISI (mekanik denetim, hüküm YOK) ───────
 def udf_dogrula(yol):
-    """Var olan bir `.udf` dosyasının UYAP okuyucusunun (udf_metin.py) beklediği
-    yapıya uyup uymadığını MEKANİK olarak denetler.
+    """Var olan bir `.udf` dosyasının UYAP okuyucusunun (udf_metin.py / oa_ingest
+    udf_isle) beklediği yapıya uyup uymadığını MEKANİK olarak denetler. Bu
+    denetim gerçek `udf-cli html2udf` çıktısı ÜZERİNDE çalışır — script artık
+    kendi content.xml'ini üretmediğinden bu, "üretilen dosya bozuk mu" sorusuna
+    yazımdan SONRA bağımsız bir ikinci kanıt sağlar (dosya sonradan tahrif
+    edilmişse de yakalar).
 
     Bu fonksiyon hukuki/biçimsel KALİTE hakkında hüküm VERMEZ ("iyi dilekçe"
     demez); yalnız dört somut denetimi "var/yok" ve "tutarlı/tutarsız" olarak
@@ -233,8 +104,7 @@ def udf_dogrula(yol):
          kaynağı) ve paragraph/content startOffset+length değerleri UTF-16
          code-unit biriminde ARDIŞIK mı, toplamları CDATA metninin UTF-16
          uzunluğuyla birebir tutuyor mu (offset kayması → UYAP'ta biçim/aralık
-         bozulur; bu denetim onu yazımdan SONRA da yakalayabilir, ör. dosya
-         elle düzenlenmiş/bozulmuşsa).
+         bozulur).
 
     Döner: dict —
       gecerli (bool), hatalar (list[str] — boşsa geçerli),
@@ -283,7 +153,7 @@ def udf_dogrula(yol):
     sonuc["karakter_sayisi"] = len(tam)
     toplam_u16 = utf16_uzunluk(tam)
 
-    # NOT (P0-10 düzeltme): gerçek `udf-cli` çıktısında tablo hücreleri
+    # NOT: gerçek `udf-cli` çıktısında tablo hücreleri
     # (<table><row><cell><paragraph><content .../></paragraph></cell>...)
     # üst-seviye <paragraph>'lardan AYRI, iç içe bir dalda yaşar — yalnız
     # DİREKT paragraph/content arayan bir XPath bu hücreleri KAÇIRIR ve
@@ -383,6 +253,14 @@ def md_html_uret(metin, ham=False):
 
 
 # ───────────────── gerçek yazıcı: `npx udf-cli html2udf` ────────────────────
+_GIRIS_TALIMATI = (
+    "Giriş gerekli: İNSAN varsa 'npx -y udf-cli@latest login' (tarayıcıda "
+    "onaylayana kadar bekler). Başsız/otomasyon ortamda `issue_cli_login_code` "
+    "MCP aracını çağırıp dönen tek-kullanımlık kodla "
+    "'npx -y udf-cli@latest login --token <kod>' çalıştırın."
+)
+
+
 def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
     """npx + udf-cli oturum durumunu hızlıca sınar (ağ + login gerektirir).
     Yalnız TANI/TEST amaçlı — üretim akışı bunu önden çağırmaz, doğrudan
@@ -400,23 +278,24 @@ def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
     except Exception as e:
         return False, "udf-cli whoami çalıştırılamadı: %s" % e
     if p.returncode != 0:
-        return False, "udf-cli oturumu yok — 'npx -y udf-cli@latest login' gerekir"
+        return False, "udf-cli oturumu yok — %s" % _GIRIS_TALIMATI
     return True, (p.stdout or "").strip()
 
 
 def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
-    """Rehberin ZORUNLU kıldığı gerçek yazıcıyı çağırır: `npx -y udf-cli@latest
+    """Rehberin ZORUNLU kıldığı TEK yazıcıyı çağırır: `npx -y udf-cli@latest
     html2udf <html> <udf>`. UDF içeriğini ASLA elle kurmaz (rehber A.2/D.1) —
-    yalnız dış süreci çağırır, sonucu ATOMİK taşır.
+    yalnız dış süreci çağırır, sonucu ATOMİK taşır. FAIL-CLOSED: başarısızlık
+    durumunda hiçbir dosya `cikti_yolu`'na yazılmaz (geçici dosya, üretilmişse
+    bile, nihai konuma taşınmaz) — eski elle-zip yoluna SESSİZCE düşülmez.
 
     Döner: dict — basarili(bool), exit_kod(int|None), stdout(str), stderr(str),
     hata(str|None — yalnız basarisiz ise)."""
     yol = shutil.which(npx_yolu)
     if yol is None:
         return {"basarili": False, "exit_kod": None, "stdout": "", "stderr": "",
-                "hata": ("npx bulunamadı (Node.js kurulu olmayabilir). Kurulum: "
-                         "https://nodejs.org — ardından "
-                         "'npx -y udf-cli@latest login' ile giriş yapın.")}
+                "hata": ("FAIL-CLOSED: npx bulunamadı (Node.js kurulu olmayabilir). "
+                         "Kurulum: https://nodejs.org — ardından " + _GIRIS_TALIMATI)}
 
     tmp_udf = cikti_yolu + ".tmp-%d" % os.getpid()
     try:
@@ -426,33 +305,253 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
             capture_output=True, text=True, timeout=zaman_asimi)
     except subprocess.TimeoutExpired:
         return {"basarili": False, "exit_kod": None, "stdout": "", "stderr": "",
-                "hata": "udf-cli html2udf zaman aşımına uğradı (%ds)" % zaman_asimi}
+                "hata": "FAIL-CLOSED: udf-cli html2udf zaman aşımına uğradı (%ds)" % zaman_asimi}
     except Exception as e:
         return {"basarili": False, "exit_kod": None, "stdout": "", "stderr": "",
-                "hata": "udf-cli html2udf çalıştırılamadı: %s" % e}
+                "hata": "FAIL-CLOSED: udf-cli html2udf çalıştırılamadı: %s" % e}
 
     if p.returncode != 0 or not os.path.isfile(tmp_udf):
+        # yarım/bozuk geçici dosya kalmışsa temizle — nihai konuma ASLA taşınmaz.
+        try:
+            if os.path.isfile(tmp_udf):
+                os.remove(tmp_udf)
+        except OSError:
+            pass
         return {"basarili": False, "exit_kod": p.returncode,
                 "stdout": p.stdout or "", "stderr": p.stderr or "",
-                "hata": ("udf-cli html2udf başarısız (exit %s). Oturum "
-                          "gerekebilir: 'npx -y udf-cli@latest login'."
-                          % p.returncode)}
+                "hata": ("FAIL-CLOSED: udf-cli html2udf başarısız (exit %s) — "
+                          "HİÇBİR .udf yazılmadı (eski elle-zip yoluna düşülmedi). %s"
+                          % (p.returncode, _GIRIS_TALIMATI))}
 
     try:
         _atomik_tasi(tmp_udf, cikti_yolu)
     except Exception as e:
         return {"basarili": False, "exit_kod": p.returncode,
                 "stdout": p.stdout or "", "stderr": p.stderr or "",
-                "hata": "atomik taşıma başarısız: %s" % e}
+                "hata": "FAIL-CLOSED: atomik taşıma başarısız: %s" % e}
 
     return {"basarili": True, "exit_kod": 0, "stdout": p.stdout or "",
             "stderr": p.stderr or "", "hata": None}
 
 
+# ─────── BONUS YOL: elde hazır .docx/.pdf → UDF (`docx2udf`, rehber §5) ─────
+# Bu, md → UDF-HTML → html2udf akışının dışındadır: avukatın Word'de HAZIR
+# yazdığı bir taslak varsa (ör. `dilekce.docx`) doğrudan `.udf`'e çevirir.
+# `docx2udf` `udf-cli`'den AYRI bir npm paketidir; login-gated (aynı paylaşılan
+# ~/.config/yargi/token.json), ağ gerektirir, FAIL-CLOSED (sunucuya
+# ulaşılamazsa/hesap yasaklıysa dosya YAZILMAZ).
+DOCX2UDF_CIKIS_KODU = {
+    0: "Başarı",
+    1: "Dönüştürme/girdi hatası (desteklenmeyen biçim, dosya eksik, beklenmedik sunucu yanıtı)",
+    2: "Giriş gerekli",
+    3: "Hesap yasaklı",
+    4: "Sunucuya erişilemiyor (ağ/5xx — geçici, sonra tekrar dene)",
+    5: "Aylık kota bitti",
+}
+
+
+def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=180):
+    """`npx -y docx2udf@latest -input <girdi> [-output <cikti>]` çağırır.
+    Başarı ölçütü REHBERE GÖRE: çıkış kodu + `-output` (veya türetilen) dosyanın
+    VARLIĞI — stdout/stderr metni ayrıştırılmaz (rehber §5 kuralı). `-y` her
+    zaman geçilir (npx'in etkileşimli sorusu bloklamasın).
+
+    Döner: dict — basarili(bool), exit_kod(int|None), aciklama(str — çıkış
+    kodu tablosundan), cikti_yolu(str|None — başarılıysa gerçek dosya yolu),
+    stdout(str), stderr(str)."""
+    yol = shutil.which(npx_yolu)
+    if yol is None:
+        return {"basarili": False, "exit_kod": None,
+                "aciklama": "npx bulunamadı (Node.js kurulu olmayabilir).",
+                "cikti_yolu": None, "stdout": "", "stderr": ""}
+
+    args = [yol, "-y", "docx2udf@latest", "-input", girdi_yolu]
+    if cikti_yolu:
+        args += ["-output", cikti_yolu]
+    try:
+        p = subprocess.run(args, capture_output=True, text=True, timeout=zaman_asimi)
+    except subprocess.TimeoutExpired:
+        return {"basarili": False, "exit_kod": None,
+                "aciklama": "docx2udf zaman aşımına uğradı (%ds)" % zaman_asimi,
+                "cikti_yolu": None, "stdout": "", "stderr": ""}
+    except Exception as e:
+        return {"basarili": False, "exit_kod": None,
+                "aciklama": "docx2udf çalıştırılamadı: %s" % e,
+                "cikti_yolu": None, "stdout": "", "stderr": ""}
+
+    aciklama = DOCX2UDF_CIKIS_KODU.get(p.returncode, "bilinmeyen çıkış kodu")
+    beklenen_cikti = cikti_yolu or (os.path.splitext(girdi_yolu)[0] + ".udf")
+    basarili = (p.returncode == 0 and os.path.isfile(beklenen_cikti))
+    if p.returncode == 2:
+        aciklama += " — " + _GIRIS_TALIMATI
+    return {"basarili": basarili, "exit_kod": p.returncode, "aciklama": aciklama,
+            "cikti_yolu": beklenen_cikti if basarili else None,
+            "stdout": p.stdout or "", "stderr": p.stderr or ""}
+
+
+# ═════════════ GÖREV B (P0-B, v0.5.5) — ÜRETİM-ANI ÖN-DENETİM ═══════════════
+# Saha bulgusu (B3): teslim kapısı (İçtihat Muhakeme Zinciri + Atıf/Künye
+# Teyit) yalnız `dilekce_denetim.py`/`teslim_paketi.py` MODEL TARAFINDAN
+# çağrılırsa çalışıyordu — bir .udf üretimi bu zincire hiç uğramadan (model
+# doğrudan `udf_yaz.py`yi çağırıp) TESLİM ADAYI üretebiliyordu, dökümde/
+# denetimde HİÇBİR iz bırakmadan. Kullanıcı ilkesi (amaç-çizgisi KABUL
+# KURALI): kapı İŞİ değil FORMU denetler; burada da AYNI ilke — bu bir
+# TESLİM ENGELİ DEĞİLDİR (avukat egemen, UDF yine üretilir), yalnız BLOK
+# varsa GÖRÜNÜRLÜK garanti edilir (rapor dosyası + stdout uyarısı + DURUM.md
+# notu) — model bir sonraki adımı (`pipeline_kayit.py --isle`/`--denetle`)
+# hiç çağırmasa BİLE.
+def _capraz_skill_yukle(dosya_adi, modul_adi):
+    """Kardeş skill oa-kontrol'ün scriptini (…/oa-dilekce/scripts/ →
+    …/oa-kontrol/scripts/) İN-PROCESS import eder — `dilekce_denetim.py`'nin
+    `_ictihat_muhakeme_yolu`/`_kunye_ortak_modulu` ile AYNI desen. Bulunamaz/
+    çökerse None (fail-safe; bu bir güvenlik sınırı DEĞİL — kardeş skill
+    kurulu değilse veya beklenmedik bir hata varsa ön-denetim SESSİZCE
+    atlanır, UDF üretimini ASLA engellemez)."""
+    yol = (pathlib.Path(__file__).resolve().parent.parent.parent
+           / "oa-kontrol" / "scripts" / dosya_adi)
+    if not yol.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(modul_adi, str(yol))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception:
+        return None
+
+
+_ICTIHAT_MUHAKEME_MOD = None
+_KUNYE_TEYIT_MOD = None
+
+
+def _ictihat_muhakeme_modulu():
+    global _ICTIHAT_MUHAKEME_MOD
+    if _ICTIHAT_MUHAKEME_MOD is None:
+        _ICTIHAT_MUHAKEME_MOD = _capraz_skill_yukle(
+            "ictihat_muhakeme_denetim.py", "_oa_udf_yaz_ictihat_muhakeme_inproc")
+    return _ICTIHAT_MUHAKEME_MOD
+
+
+def _kunye_teyit_modulu():
+    global _KUNYE_TEYIT_MOD
+    if _KUNYE_TEYIT_MOD is None:
+        _KUNYE_TEYIT_MOD = _capraz_skill_yukle(
+            "kunye_teyit.py", "_oa_udf_yaz_kunye_teyit_inproc")
+    return _KUNYE_TEYIT_MOD
+
+
+def on_denetim_kostur(metin, kok=None):
+    """UDF ÜRETİLMEDEN ÖNCE hafif bir ön-denetim: kardeş skill oa-kontrol'ün
+    iki mekanik kapısını — İçtihat Muhakeme Zinciri (`ictihat_muhakeme_denetim.py`)
+    ve Atıf/Künye Teyit (`kunye_teyit.py`) — İN-PROCESS (subprocess YOK,
+    fonksiyonlar doğrudan çağrılır) çalıştırır. TESLİM ENGELİ ÜRETMEZ (bu
+    fonksiyonun dönüşü UDF üretimini ASLA durdurmaz — çağıran taraf `main()`
+    yalnız BLOK sayısı > 0 ise görünür rapor/uyarı üretir).
+
+    Döner: dict — calisti(bool), blok_sayisi(int), rapor(str), not(str|None).
+    Kardeş skill (oa-kontrol) kurulu değilse veya her iki modül de
+    yüklenemezse `calisti=False` ile SESSİZCE atlanır."""
+    sonuc = {"calisti": False, "blok_sayisi": 0, "rapor": "", "not": None}
+    imd = _ictihat_muhakeme_modulu()
+    kt = _kunye_teyit_modulu()
+    if imd is None and kt is None:
+        sonuc["not"] = ("oa-kontrol ön-denetim modülleri (ictihat_muhakeme_denetim.py / "
+                         "kunye_teyit.py) bulunamadı/yüklenemedi — ön-denetim atlandı.")
+        return sonuc
+
+    taban = kok or "."
+    rapor_parcalar = []
+    blok_toplam = 0
+
+    if imd is not None:
+        try:
+            muhakeme_dizin = os.path.join(taban, "_oa", "cikti")
+            dokum_dizin = os.path.join(taban, "_oa", "teyit", "dokum")
+            kutuk_yolu = os.path.join(taban, "_oa", "teyit", "kunye-teyit.md")
+            atiflar = imd.taslaktaki_atiflari_bul(metin)
+            kayitlar, gecersiz_sayisi = imd.muhakeme_kayitlarini_yukle(muhakeme_dizin)
+            sonuclar = [imd._atif_denetle(a, kayitlar, taban, dokum_dizin, kutuk_yolu)
+                        for a in atiflar]
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                imd.rapor_yaz(
+                    "<UDF taslağı>", atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
+                    kutuk_bos_mu=(not kayitlar and not gecersiz_sayisi), tip=None,
+                    gecersiz_sayisi=gecersiz_sayisi,
+                    kutuk_kullanimda_mi=imd.ko.kutuk_gercek_veri_var_mi(kutuk_yolu))
+            blok_f = sum(1 for (d, *_r) in sonuclar if d == "BLOK")
+            blok_toplam += blok_f
+            rapor_parcalar.append("── [F] İÇTİHAT MUHAKEME ZİNCİRİ ──\n" + buf.getvalue())
+        except Exception as e:
+            rapor_parcalar.append(f"── [F] İÇTİHAT MUHAKEME ZİNCİRİ — ön-denetim çöktü: {e}")
+
+    if kt is not None:
+        try:
+            kutuk = os.path.join(taban, "_oa", "teyit", "kunye-teyit.md")
+            dokum_dizin = os.path.join(taban, "_oa", "teyit", "dokum")
+            cikti_dizin = os.path.join(taban, "_oa", "cikti")
+            atiflar_kt = kt.atiflari_cikar(metin)
+            teyit_kaynaklar, bilgi_kaynaklar, kutuk_var = kt.kaynaklari_yukle(
+                kutuk, dokum_dizin, cikti_dizin)
+            if kutuk_var:
+                for a in atiflar_kt:
+                    kt.teyit_et(a, teyit_kaynaklar, bilgi_kaynaklar)
+            buf2 = io.StringIO()
+            with contextlib.redirect_stdout(buf2):
+                kt.rapor_yaz(atiflar_kt, kutuk_var, kutuk)
+            teyitsiz = sum(1 for a in atiflar_kt if a.durum == "TEYİTSİZ")
+            if not atiflar_kt:
+                blok_g = 0
+            elif not kutuk_var:
+                blok_g = len(atiflar_kt)
+            else:
+                blok_g = teyitsiz
+            blok_toplam += blok_g
+            rapor_parcalar.append("── [KÜNYE TEYİT] ATIF/KÜNYE DOĞRULAMA ──\n" + buf2.getvalue())
+        except Exception as e:
+            rapor_parcalar.append(f"── [KÜNYE TEYİT] ön-denetim çöktü: {e}")
+
+    sonuc["calisti"] = True
+    sonuc["blok_sayisi"] = blok_toplam
+    sonuc["rapor"] = "\n\n".join(rapor_parcalar)
+    return sonuc
+
+
+def _durum_md_uyari_ekle(kok, satir):
+    """B3 (v0.5.5 GÖREV B) — ön-denetim BLOK bulduğunda `_oa/DURUM.md`'ye EN
+    İYİ ÇABA ile GÖRÜNÜR bir uyarı satırı ekler; teslim kapısının görünürlüğü
+    modelin `pipeline_kayit.py`yi ÇAĞIRMASINA bağlı KALMASIN diye burada
+    BAĞIMSIZ ve UCUZ (yalnız dosyaya ekleme) çalışır — `pipeline_kayit.py`yi
+    İN-PROCESS ÇAĞIRMAZ (o modülün kademeli import zinciri ağırdır; bu
+    ön-denetim HAFİF kalmalıdır — amaç-çizgisi: 'araç yolunu ucuzlat').
+    `_oa/DURUM.md` normalde `pipeline_kayit.py._durum_md_yaz` tarafından
+    TAMAMEN türetilir/üzerine yazılır (bkz. o dosyanın başlığı); bu fonksiyon
+    onu ASLA üzerine yazmaz, yalnız SONUNA ekler — dosya hiç yoksa (defter
+    hiç açılmamış/pipeline_kayit hiç çalışmamış) minimal bir başlıkla
+    oluşturulur ki bu uyarı pipeline kullanılıp kullanılmadığından BAĞIMSIZ
+    görünür kalsın. ASLA istisna fırlatmaz (best-effort; ana UDF üretim
+    akışını etkilemez)."""
+    try:
+        hedef = os.path.join(kok or ".", "_oa", "DURUM.md")
+        ust = os.path.dirname(hedef)
+        if ust:
+            os.makedirs(ust, exist_ok=True)
+        yeni = not os.path.isfile(hedef)
+        with open(hedef, "a", encoding="utf-8") as f:
+            if yeni:
+                f.write("<!-- pipeline_kayit.py çalıştığında bu dosya TAMAMEN "
+                         "türetilir/üzerine yazılır — bu satır ondan ÖNCE, "
+                         "udf_yaz.py ön-denetiminden düşmüştür. -->\n")
+            zaman = datetime.datetime.now().isoformat(timespec="seconds")
+            f.write(f"\n⚠ [{zaman}] {satir}\n")
+    except Exception:
+        pass
+
+
 # ───────────────────────────────── main ────────────────────────────────────
 def main():
     ap = argparse.ArgumentParser(
-        description="Markdown → UYAP UDF teslim hattı (md → UDF-HTML → .udf [+ opsiyonel PDF]).")
+        description="Markdown → UYAP UDF teslim hattı (md → UDF-HTML → npx udf-cli html2udf [+ opsiyonel PDF]).")
     ap.add_argument("--girdi", "-g", metavar="YOL",
                     help="Girdi dosyası (.md veya .txt). Verilmezse stdin okunur.")
     ap.add_argument("--cikti", "-c", metavar="YOL",
@@ -470,18 +569,44 @@ def main():
                          "aynı ad, '.udf.html' uzantılı; her koşuda üretilir/kalır — "
                          "hem html2udf girdisi hem PDF kaynağıdır).")
     ap.add_argument("--pdf", metavar="YOL", default=None,
-                    help="Verilirse aynı UDF-HTML'den A4 PDF de üretilir (udf_html2pdf.py, PyMuPDF).")
+                    help="Verilirse aynı UDF-HTML'den A4 PDF de üretilir (udf_html2pdf.py, "
+                         "PyMuPDF) — PDF üretimi UDF motorundan BAĞIMSIZDIR, npx/ağ "
+                         "gerektirmez ve UDF üretimi başarısız olsa BİLE denenir.")
     ap.add_argument("--baslik", default="Dilekçe", help="PDF meta başlığı (yalnız --pdf ile).")
     ap.add_argument("--font-dizini", default=None,
                     help="PDF için Times New Roman TTF dizini (yalnız --pdf ile).")
-    ap.add_argument("--yerel-motor", action="store_true",
-                    help="RESMİ REHBERE UYUMLU DEĞİL — ağsız yedek: eski hand-rolled "
-                         "ZIP/XML motoru (yalnız hızlı yapısal denetim / npx yokken).")
     ap.add_argument("--npx", default="npx", metavar="KOMUT",
                     help="npx çalıştırılabilir yolu/adı (varsayılan: %(default)s).")
-    ap.add_argument("--format-id", default=FORMAT_ID,
-                    help="template format_id — yalnız --yerel-motor (varsayılan: %(default)s).")
+    ap.add_argument("--kaynak-docx", metavar="YOL", default=None,
+                    help="BONUS YOL (rehber §5): md/HTML akışını ATLAYIP hazır bir "
+                         ".docx/.pdf dosyasını doğrudan `docx2udf` ile --cikti'ye "
+                         "çevirir (login-gated, ayrı npm paketi; --girdi/--ham/--html "
+                         "yok sayılır). Çıkış kodu tablosu (0 Başarı, 1 Dönüştürme/"
+                         "girdi hatası, 2 Giriş gerekli, 3 Hesap yasaklı, 4 Sunucuya "
+                         "erişilemiyor, 5 Kota bitti) stderr'e basılır.")
     a = ap.parse_args()
+
+    if a.kaynak_docx:
+        kaynak = _kok_coz(a.kaynak_docx, a.kok)
+        cikti_docx = _kok_coz(a.cikti, a.kok) if a.cikti else None
+        sonuc = docx2udf_ile_uret(kaynak, cikti_docx, npx_yolu=a.npx)
+        print("docx2udf: %s (exit %s)" % (sonuc["aciklama"], sonuc["exit_kod"]))
+        if sonuc["stderr"]:
+            print("  --- docx2udf stderr ---\n%s" % sonuc["stderr"], file=sys.stderr)
+        if not sonuc["basarili"]:
+            sys.exit(sonuc["exit_kod"] if sonuc["exit_kod"] else 1)
+        print("UDF yazıldı (docx2udf): %s" % sonuc["cikti_yolu"])
+        # NOT: rehber §5 başarı ölçütü AÇIKÇA "çıkış kodu + -output dosyasının
+        # varlığı"dır — stdout/stderr AYRIŞTIRILMAZ. `udf_dogrula()`nın offset-
+        # bitişiklik varsayımı (paragraf uzunluğu = CDATA'nın TAMAMINI TİLER)
+        # `html2udf` çıktısına göre reverse-engineer edilmiştir; gerçek
+        # `docx2udf` çıktısı paragraflar ARASI ayraçları (newline) HİÇBİR
+        # elemente saymaz (offsetler arasında BOŞLUK bırakır) — bu YAPISAL
+        # bir FARKTIR, bozukluk değildir. Bu yüzden burada o kapı ÇAĞRILMAZ;
+        # docx2udf'in KENDİ resmî ölçütü (yukarıdaki exit+dosya kontrolü)
+        # yeterlidir — yanlış-BLOK (false negative) üretmek amaç-çizgisi
+        # ihlalidir (kapı FORMU değil İŞİ denetler).
+        sys.exit(0)
 
     if a.dogrula:
         sonuc = udf_dogrula(a.dogrula)
@@ -508,15 +633,14 @@ def main():
     cikti = _kok_coz(a.cikti, a.kok)
     pdf_yolu = _kok_coz(a.pdf, a.kok) if a.pdf else None
 
-    # NOT (P0-10 regresyon düzeltmesi): --html AÇIKÇA verilmediyse ara HTML
-    # SİSTEM TEMP dizinine yazılır, --cikti'nin yanına DEĞİL. `_oa/cikti`
-    # içine (dilekçeyle AYNI klasöre) bırakılan bir kopya, pipeline_kayit.py
-    # `_dilekce_sekilli_makbuzsuz_uyarisi` taramasını YANLIŞLIKLA tetikler
-    # (dosya İÇERİĞİ "Sayın Mahkeme"/"netice-i talep" gibi dilekçe-şekilli
-    # desenleri taşıdığından, üst dizindeki taslaktan DAHA YENİ görünen bir
-    # "makbuzsuz aday" gibi okunur). Ara dosya işini bitirince (finally)
-    # SİLİNİR — kullanıcı --html ile AÇIKÇA bir yol verdiyse bu onun bilinçli
-    # tercihidir, dokunulmaz/silinmez.
+    # NOT: --html AÇIKÇA verilmediyse ara HTML SİSTEM TEMP dizinine yazılır,
+    # --cikti'nin yanına DEĞİL. `_oa/cikti` içine (dilekçeyle AYNI klasöre)
+    # bırakılan bir kopya, pipeline_kayit.py `_dilekce_sekilli_makbuzsuz_
+    # uyarisi` taramasını YANLIŞLIKLA tetikler (dosya İÇERİĞİ "Sayın
+    # Mahkeme"/"netice-i talep" gibi dilekçe-şekilli desenleri taşıdığından,
+    # üst dizindeki taslaktan DAHA YENİ görünen bir "makbuzsuz aday" gibi
+    # okunur). Ara dosya işini bitirince (finally) SİLİNİR — kullanıcı --html
+    # ile AÇIKÇA bir yol verdiyse bu onun bilinçli tercihidir, dokunulmaz/silinmez.
     html_gecici = a.html is None
     if html_gecici:
         _fd, html_yolu = tempfile.mkstemp(prefix="oa-udf-ara-", suffix=".html")
@@ -533,7 +657,7 @@ def main():
                 sys.exit("HATA: --girdi verilmedi ve stdin yok.")
             metin = _sys.stdin.read()
 
-        # BMP-dışı karakter (emoji vb.) tespiti — her iki motorda da geçerli bir uyarı.
+        # BMP-dışı karakter (emoji vb.) tespiti — genel bir uyarı.
         bmp_disi = sum(1 for ch in metin if ord(ch) > 0xFFFF)
         if bmp_disi:
             print("UYARI: metinde %d adet BMP-dışı karakter (emoji vb.) var; bu "
@@ -541,76 +665,76 @@ def main():
                   % bmp_disi, file=sys.stderr)
 
         # UDF-HTML HER ZAMAN üretilir/yazılır — hem `npx html2udf` girdisi hem
-        # PDF kaynağıdır (--yerel-motor seçilse BİLE PDF bacağı bundan üretilir;
-        # PDF, UDF motorundan BAĞIMSIZDIR).
+        # PDF kaynağıdır.
         html = md_html_uret(metin, ham=a.ham)
         with open(html_yolu, "w", encoding="utf-8", newline="\n") as f:
             f.write(html)
         print("UDF-HTML yazıldı: %s%s (%d karakter)"
               % (html_yolu, " (geçici)" if html_gecici else "", len(html)))
 
-        if a.yerel_motor:
-            # ── YEDEK MOTOR: ağsız, hand-rolled — rehber uyumu GARANTİ DEĞİL ──
-            print("UYARI: --yerel-motor kullanılıyor — bu motorun ürettiği .udf, "
-                  "Yargı Pro UDF rehberinin ('UDF yalnız udf-cli ile yazılır') "
-                  "gerçek UYAP editör uyumunu GARANTİ ETMEZ; yalnız hızlı yapısal "
-                  "ön-denetim / ağsız ortam için tutulur. Gerçek teslim için "
-                  "--yerel-motor OLMADAN (varsayılan npx motoru) yeniden üretin.",
-                  file=sys.stderr)
-            if "]]>" in metin:
-                print("UYARI: metinde ']]>' dizisi var; CDATA'da bölünerek yazılıyor. "
-                      "udf_metin.py tek-CDATA okuyucusu bu noktada metni kısaltabilir.",
-                      file=sys.stderr)
+        # ── TEK GEÇERLİ MOTOR: npx udf-cli html2udf (rehbere birebir) ────────
+        sonuc = npx_ile_udf_uret(html_yolu, cikti, npx_yolu=a.npx)
 
-            xml_str, tam, paragraflar = udf_uret(metin, ham_mod=a.ham, format_id=a.format_id)
-            udf_yaz(cikti, xml_str)
-
-            geri = udf_metni_geri_oku(cikti)
-            if geri is None:
-                sys.exit("HATA: round-trip — geri okumada content.xml/CDATA bulunamadı.")
-            korundu = (geri == tam)
-
-            print("UDF yazıldı (yerel motor): %s" % cikti)
-            print("  paragraf : %d" % len(paragraflar))
-            print("  karakter : %d (CDATA)" % len(tam))
-            print("  format_id: %s" % a.format_id)
-            print("  round-trip (udf_metin.py mantığı): %s"
-                  % ("KORUNDU ✓" if korundu else "FARK VAR ✗"))
-            if not korundu:
-                i = next((k for k in range(min(len(geri), len(tam)))
-                          if geri[k] != tam[k]), min(len(geri), len(tam)))
-                print("  ! ilk sapma indeksi: %d  (yazılan=%d, okunan=%d karakter)"
-                      % (i, len(tam), len(geri)), file=sys.stderr)
-                sys.exit(2)
-        else:
-            # ── VARSAYILAN: rehbere birebir — UDF-HTML (yukarıda üretildi) → npx udf-cli html2udf ──
-            sonuc = npx_ile_udf_uret(html_yolu, cikti, npx_yolu=a.npx)
-            if not sonuc["basarili"]:
-                print("HATA: %s" % sonuc["hata"], file=sys.stderr)
-                if sonuc["stderr"]:
-                    print("  --- npx stderr ---\n%s" % sonuc["stderr"], file=sys.stderr)
-                sys.exit(sonuc["exit_kod"] or 1)
-
-            dogrulama = udf_dogrula(cikti)
-            print("UDF yazıldı (npx udf-cli html2udf): %s" % cikti)
-            if dogrulama["paragraf_sayisi"] is not None:
-                print("  paragraf sayısı  : %d" % dogrulama["paragraf_sayisi"])
-            if dogrulama["karakter_sayisi"] is not None:
-                print("  karakter (CDATA) : %d" % dogrulama["karakter_sayisi"])
-            print("  GEÇERLİLİK KAPISI: %s" % ("GEÇERLİ ✓" if dogrulama["gecerli"] else "GEÇERSİZ ✗"))
-            if not dogrulama["gecerli"]:
-                for h in dogrulama["hatalar"]:
-                    print("  [HATA] %s" % h, file=sys.stderr)
-                sys.exit(1)
-
+        # PDF önizlemesi UDF motorundan BAĞIMSIZDIR (aynı UDF-HTML'den,
+        # ağsız/PyMuPDF ile üretilir) — UDF üretimi başarısız olsa BİLE
+        # (ör. ağ/oturum yoksa) avukatın en azından biçim önizlemesi elinde
+        # olsun diye YİNE denenir.
         if pdf_yolu:
             mod = _sibling_yukle("udf_html2pdf.py", "_oa_udf_yaz_html2pdf")
             if mod is None:
-                sys.exit("HATA: udf_html2pdf.py (kardeş script) bulunamadı — PDF üretilemedi.")
-            sayfa, font_gomuldu = mod.pdf_uret(html_yolu, pdf_yolu, baslik=a.baslik,
-                                                font_dizini=a.font_dizini)
-            print("PDF yazıldı: %s (%d sayfa, font gömüldü: %s)"
-                  % (pdf_yolu, sayfa, "EVET" if font_gomuldu else "HAYIR"))
+                print("UYARI: udf_html2pdf.py (kardeş script) bulunamadı — PDF üretilemedi.",
+                      file=sys.stderr)
+            else:
+                sayfa, font_gomuldu = mod.pdf_uret(html_yolu, pdf_yolu, baslik=a.baslik,
+                                                    font_dizini=a.font_dizini)
+                print("PDF yazıldı: %s (%d sayfa, font gömüldü: %s)"
+                      % (pdf_yolu, sayfa, "EVET" if font_gomuldu else "HAYIR"))
+
+        if not sonuc["basarili"]:
+            print("HATA: %s" % sonuc["hata"], file=sys.stderr)
+            if sonuc["stderr"]:
+                print("  --- npx stderr ---\n%s" % sonuc["stderr"], file=sys.stderr)
+            sys.exit(sonuc["exit_kod"] or 1)
+
+        dogrulama = udf_dogrula(cikti)
+        print("UDF yazıldı (npx udf-cli html2udf): %s" % cikti)
+        if dogrulama["paragraf_sayisi"] is not None:
+            print("  paragraf sayısı  : %d" % dogrulama["paragraf_sayisi"])
+        if dogrulama["karakter_sayisi"] is not None:
+            print("  karakter (CDATA) : %d" % dogrulama["karakter_sayisi"])
+        print("  GEÇERLİLİK KAPISI: %s" % ("GEÇERLİ ✓" if dogrulama["gecerli"] else "GEÇERSİZ ✗"))
+        if not dogrulama["gecerli"]:
+            for h in dogrulama["hatalar"]:
+                print("  [HATA] %s" % h, file=sys.stderr)
+            sys.exit(1)
+
+        # GÖREV B (P0-B, v0.5.5) — ÜRETİM-ANI ÖN-DENETİM: UDF fiilen üretildi
+        # (avukat egemen, ENGEL YOK — bu bir teslim kapısı DEĞİLDİR). BLOK
+        # varsa GÖRÜNÜRLÜK garanti edilir; model bir sonraki adımı hiç
+        # çağırmasa bile rapor + stdout uyarısı + DURUM.md notu diskte kalır.
+        on_denetim = on_denetim_kostur(metin, kok=a.kok)
+        if on_denetim["calisti"] and on_denetim["blok_sayisi"] > 0:
+            denetim_yolu = cikti + ".denetim.txt"
+            try:
+                with open(denetim_yolu, "w", encoding="utf-8") as f:
+                    f.write(on_denetim["rapor"])
+            except OSError as e:
+                denetim_yolu = None
+                print("UYARI: ön-denetim raporu yazılamadı: %s" % e, file=sys.stderr)
+            print("")
+            print("!" * 66)
+            print("UYARI: UDF ÖN-DENETİM %d BLOK buldu (İçtihat Muhakeme Zinciri "
+                  "+ Atıf/Künye Teyit) — bu bir TESLİM ENGELİ DEĞİLDİR, UDF "
+                  "üretildi; ama teslimden ÖNCE avukat gözü ŞARTTIR."
+                  % on_denetim["blok_sayisi"])
+            if denetim_yolu:
+                print("  Ön-denetim raporu: %s" % denetim_yolu)
+            print("!" * 66)
+            not_satiri = ("%s: teslim adayı üretildi, denetim: BLOK %d"
+                          % (os.path.basename(cikti), on_denetim["blok_sayisi"]))
+            if denetim_yolu:
+                not_satiri += " (bkz. %s)" % os.path.basename(denetim_yolu)
+            _durum_md_uyari_ekle(a.kok, not_satiri)
     finally:
         # Geçici ara HTML'i temizle (--html AÇIKÇA verilmediyse) — kalıcı
         # çıktı klasörlerini (_oa/cikti dâhil) kirletmemek için EN İYİ ÇABA

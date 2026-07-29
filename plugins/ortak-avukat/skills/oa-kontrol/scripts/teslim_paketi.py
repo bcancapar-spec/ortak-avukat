@@ -33,14 +33,21 @@ Zincir (ilk exit != 0'da DURUR — kalan kapılar çalıştırılmaz):
        boş-değil VEYA pipeline-durum.json mevcut — kapılar arası tutarlılık için)
   (e)  tam_tur.py --durum          → tam tur / delta durumu (BİLGİ; engel SAYILMAZ)
 Hepsi geçerse:
-  udf_yaz.py --girdi <taslak> --cikti <taslak>.udf --yerel-motor  → UDF üret
-  (--udf-yok ile BİLİNÇLİ atlanabilir — kurucu kural 'varsayılan çıktı UDF' bu
-  bayraksız her zaman geçerlidir), "TESLİME HAZIR". NOT (P0-10, v0.5.5): bu
-  otomatik ön-kapı BİLEREK `--yerel-motor` (ağsız, hızlı yapısal denetim)
-  kullanır — GERÇEK UYAP-uyumlu teslim dosyası, rehbere birebir varsayılan
-  motorla (`udf_yaz.py --girdi <taslak> --cikti <taslak>.udf`, npx udf-cli
-  html2udf; ağ/oturum ister) AYRICA üretilir; bu kapı yalnız "biçim bozuk mu"
-  sorusuna hızlı/ağsız yanıt verir, UYAP editör uyumunu garanti ETMEZ.
+  udf_yaz.py --girdi <taslak> --cikti <taslak>.udf  → UDF üret (GERÇEK ve TEK
+  yazıcı: npx udf-cli html2udf; rehbere birebir — bkz. GÖREV D, v0.5.5 saha
+  bulgusu B5). (--udf-yok ile BİLİNÇLİ atlanabilir — kurucu kural 'varsayılan
+  çıktı UDF' bu bayraksız her zaman geçerlidir), "TESLİME HAZIR".
+
+  DÜZELTME (GÖREV D, B5 — KRİTİK): eski `--yerel-motor` (ağsız, hand-rolled
+  zip/content.xml) "hızlı yapısal ön-kapı" TAMAMEN KALDIRILDI — Denizli 307
+  sahasında bu motorun ürettiği .udf UYAP editöründe AÇILMADI, ama zincir
+  yine de "TESLİME HAZIR" basıyordu (sessiz-yanlış). udf_yaz.py artık BAŞKA
+  bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@latest
+  login`) GEREKTİRİR. npx/udf-cli yoksa veya oturum gerekiyorsa udf_yaz.py
+  FAIL-CLOSED döner (hiçbir .udf yazılmaz) ve bu adım mevcut (rc != 0 → BLOK)
+  dalından TESLİMİ DURDURUR — bu KASITLIDIR: bozuk-ama-"üretildi" görünen bir
+  UDF, dürüst bir "ağ/oturum eksik" engelinden DAHA KÖTÜDÜR. Avukat
+  `--udf-yok` ile bilinçli atlayabilir ya da login yapıp yeniden koşar.
 
 TESLİM MAKBUZU (P0-5, v0.5.5): her koşu `_oa/defter/teslim-makbuz.json` (başarı)
 ya da `teslim-makbuz-RED.json` (başarısız deneme — İZLİDİR, kaybolmaz) ATOMİK
@@ -274,7 +281,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.5"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.5.1"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -290,6 +297,17 @@ def _makbuz_yaz(kok, veri, basarili):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(veri, f, ensure_ascii=False, indent=2)
     os.replace(tmp, hedef)
+    # Görev A (B2 kapanışı, v0.5.5 devamı) — DURUM.md üretimi artık YALNIZ
+    # pipeline_kayit.py'nin --isle/--katman çağrısına bağlı DEĞİLDİR:
+    # teslim_paketi.py de HER makbuz (başarılı/RED) yazımından sonra TEK
+    # KAYNAKTAN (pipeline_kayit._durum_md_yaz) DURUM.md'yi tazeler. Defter bu
+    # kökte hiç açılmamışsa sessizce no-op — best-effort, ASLA çökmez/bloklamaz.
+    pk = _pipeline_kayit_modulu()
+    if pk is not None and hasattr(pk, "_durum_md_yaz"):
+        try:
+            pk._durum_md_yaz(kok)
+        except Exception:
+            pass
     return hedef
 
 
@@ -494,12 +512,14 @@ def main():
               "(kurucu kural 'varsayılan çıktı UDF' bilinçli olarak devre dışı — makbuza yazıldı).")
         kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "BILGI", "exit": None})
     else:
-        _bolum("[+] UDF ÜRETİMİ — udf_yaz.py --girdi <taslak> --cikti <taslak>.udf --yerel-motor")
-        print("    [BILGI] hızlı/ağsız yapısal ön-kapı (--yerel-motor); GERÇEK UYAP "
-              "teslimi için --yerel-motor OLMADAN (npx udf-cli html2udf, rehbere "
-              "birebir) ayrıca üretin — bkz. oa-dilekce/scripts/udf_yaz.py.")
+        _bolum("[+] UDF ÜRETİMİ — udf_yaz.py --girdi <taslak> --cikti <taslak>.udf")
+        print("    [BILGI] GERÇEK UYAP yazıcısı çağrılıyor (npx udf-cli html2udf, "
+              "rehbere birebir) — ağ + oturum gerektirir. `--yerel-motor` KALDIRILDI "
+              "(B5 saha bulgusu: o motorun ürettiği .udf UYAP'ta açılmıyordu); "
+              "npx/oturum yoksa bu adım FAIL-CLOSED BLOK olur (bkz. oa-dilekce/"
+              "scripts/udf_yaz.py, 'npx -y udf-cli@latest login').")
         bulundu, rc, cikti = _kos(
-            S_UDF, ["--girdi", taslak, "--cikti", udf_cikti, "--yerel-motor"], kok)
+            S_UDF, ["--girdi", taslak, "--cikti", udf_cikti], kok)
         if not bulundu:
             _alt_cikti_yaz(cikti)
             print("    [ATLA→BLOK] script bulunamadı — FAIL-CLOSED: UDF üretilemedi "
