@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5.2 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **785 test**
+**Sürüm:** 0.5.5.3 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **801 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -206,6 +206,15 @@ Saha oturumundan gelen çevrim reçetesi üzerine kapı gerçek bir dilekçede s
 
 ---
 
+### v0.5.5.3 — içerik hakemi, sicil desenleri, içtihat bağlantıları
+
+| Ekleme | Ne yapar |
+|---|---|
+| **Bağımsız içerik hakemi (zorunlu adım)** | Mekanik kapıların hepsi yeşilken bile içerik yanlış olabilir: sahada, dilekçenin nakden tazmin savunması **kendi başka bölümüyle aritmetik olarak çelişiyordu**. Teslimden önce ayrı bir denetçi "çürütmeye çalış" brifiyle koşar — aritmetik tutarlılık, alıntı sadakati, dayanaksız olgu, niteleme doğruluğu, genelleme denetimi |
+| **[J] Sayı/tarih haritası** (advisory) | Aynı sayının geçtiği tüm yerleri satır no + bağlamıyla yan yana koyar. Kapı çelişkiyi **söylemez, görünür kılar** — hüküm hakemin. Künye/madde numaraları haritaya girmez (gürültü), binlik ayracı normalize edilir (`1.100` = `1100`), kırpma yapılırsa kaç kalemin dışarıda kaldığı **sayıyla** bildirilir |
+| **Ticaret sicili desenleri** | TTSG'yi delil olarak okuma rehberi: noter künyesi madeni, ardışık yevmiye = tek karşılıklı anlaşma göstergesi, TTK m.36/3 aleniyet bağı, takas/ivaz savunma kalıbı — ve kalıbın **dürüst sınırı** (birebir emsal bulunamadı; kalıp norm üzerinde durur). **Kritik niteleme:** TTSG'deki yevmiye genel kurul kararının TASDİK yevmiyesidir, pay devir sözleşmesinin yevmiyesi değildir |
+| **İçtihat kaynak bağlantısı** | Dilekçede künyenin ardından **parantez içinde** kararın resmî bağlantısı yayımlanır. Bağlantı yalnız teyit anında `teyit --kaynak-url` ile kaydedilmiş olandır; **kayıt yoksa parantez hiç açılmaz** — uydurma bağlantı çıplak künyeden daha kötüdür (çıplak künye "teyit edilmedi" der, sahte bağlantı "teyit edildi" der) |
+
 ## Kullanım / iş akışı
 
 1. **Evrakı indir:** UYAP dosyasındaki evrakları (PDF/TIFF/UDF/EYP/DOCX) bir klasöre indir
@@ -257,7 +266,7 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (**785 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
+İlki deterministik denetçilerin regresyonunu (**801 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
 
 ---
 
@@ -276,7 +285,7 @@ ortak-avukat/
 │       ├── oa-kontrol/               #   teslim kapıları + içtihat muhakeme denetimi
 │       ├── oa-dilekce/               #   dilekçe yazımı + UDF hattı + UYAP format referansı
 │       └── …                         #   oa-alan, oa-vakia, oa-kiyas, oa-antitez, oa-usul, oa-sure, …
-├── tests/                            # 785 pytest
+├── tests/                            # 801 pytest
 ├── README.md · LICENSE · NOTICE
 ```
 

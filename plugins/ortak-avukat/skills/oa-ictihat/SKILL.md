@@ -117,6 +117,17 @@ aittir — bu iki adım **karıştırılmaz**. CEK adımı:
 4. Bu dosya adını `oa-kiyas`/`oa-kontrol`'e **KAYNAK-IZI** olarak devret —
    MUHAKEME adımı bu izi kullanarak `_oa/cikti/NN-ictihat-muhakeme.md`
    kaydını üretir (alan şeması: `oa-kiyas/references/ictihat-muhakeme-sablonu.md`).
+5. **KAYNAK BAĞLANTISINI AYNI ANDA YAKALA (v0.5.5.3 — avukat talimatı).**
+   Aracın döndürdüğü resmî karar bağlantısı (URL) **o anda** kütüğe geçirilir:
+   `oa_hafiza.py teyit … --kaynak-url "https://…"`. Bu bağlantı, dilekçede
+   künyenin hemen ardından **parantez içinde** yayımlanır.
+   **Neden tam bu anda:** bağlantıyı yakalayabileceğin tek an, kararı fiilen
+   çektiğin andır. Yazım aşamasında model bir URL *hatırlayamaz*, ancak
+   *uydurabilir* — ve uydurma bağlantı çıplak künyeden DAHA KÖTÜDÜR: çıplak
+   künye "teyit edilmedi" der, sahte bağlantı "teyit edildi" der. Bu yüzden
+   kural tek yönlüdür: **URL teyit anında kaydedilmediyse, dilekçede parantez
+   hiç açılmaz.** Araç bir bağlantı döndürmüyorsa bu bir eksiklik değildir —
+   künye bağlantısız yazılır, uydurulmaz.
 Bir karar **çekilmiş olması** onun **muhakeme edilmiş** sayılması için
 yeterli değildir — damga atanmadan (NOTR = "muhakeme edilmemiş",
 fail-closed) hiçbir içtihat dilekçeye giremez.

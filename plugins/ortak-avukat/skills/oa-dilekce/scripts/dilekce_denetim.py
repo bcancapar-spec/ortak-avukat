@@ -607,6 +607,63 @@ def _kusur_sonuc_talep_asimetri_uyarilari(metin):
     return uyarilar
 
 
+# ── [J] SAYI/TARİH HARİTASI (v0.5.5.2 — BAĞIMSIZ İÇERİK HAKEMİ'nin mekanik gözü)
+# 2026/307 saha vakası: mekanik kapıların TÜMÜ yeşilken, dilekçenin nakden tazmin
+# savunması KENDİ başka bölümüyle aritmetik olarak çelişiyordu (karşı tarafın 836
+# rakamı zaten 1100−264 idi; taslak "264, 836'nın içinde" diyordu). Böyle bir
+# çelişkiyi bir script "yanlış" diye ADLANDIRAMAZ — bunun için davanın anlamını
+# bilmek gerekir ve sahte kesinlik yasağı bunu men eder. Ama script çelişkinin
+# GÖRÜNMESİNİ sağlayabilir: aynı sayının geçtiği tüm yerleri yan yana koyar.
+# Kapı hüküm VERMEZ, GÖRÜNÜR KILAR — muhakeme hakemin/avukatındır. Advisory.
+_SAYI_RE = re.compile(r"(?<![\w./,-])(\d{1,3}(?:\.\d{3})+|\d{2,})(?![\w/.,-])")
+# Künye/mevzuat/tarih gürültüsü haritayı boğmasın: bu bağlamlardaki sayı atlanır.
+_SAYI_GURULTU_RE = re.compile(
+    r"(?:\bE\.|\bK\.|\bEsas\b|\bKarar\b|\bm\.|\bmadde\b|\bMADDE\b|\bsayılı\b|"
+    r"\bTL\b|\byevmiye\b|\bsicil\b)", re.I)
+_SAYI_ASGARI_TEKRAR = 2      # yalnız BİRDEN ÇOK yerde geçen sayılar haritaya girer
+_SAYI_AZAMI_KALEM = 12       # rapor şişmesin — aşan sayı GÖRÜNÜR biçimde bildirilir
+
+
+def _sayi_haritasi(metin):
+    """Metinde ≥2 basamaklı ve BİRDEN ÇOK yerde geçen sayıları, satır no +
+    kısa bağlamlarıyla gruplayarak döndürür. Döner: (kalemler, atlanan_sayi).
+    Sıralama: geçiş sayısı ÇOK olandan aza, eşitlikte sayısal değere göre —
+    deterministik (aynı metin → aynı rapor)."""
+    metin = metin or ""
+    satir_baslari = [0]
+    for i, ch in enumerate(metin):
+        if ch == "\n":
+            satir_baslari.append(i + 1)
+
+    def _satir(k):
+        alt, ust = 0, len(satir_baslari) - 1
+        while alt < ust:
+            orta = (alt + ust + 1) // 2
+            if satir_baslari[orta] <= k:
+                alt = orta
+            else:
+                ust = orta - 1
+        return alt + 1
+
+    gruplar = {}
+    for m in _SAYI_RE.finditer(metin):
+        ham = m.group(1)
+        once = metin[max(0, m.start() - 30): m.start()]
+        sonra = metin[m.end(): m.end() + 12]
+        if _SAYI_GURULTU_RE.search(once) or _SAYI_GURULTU_RE.search(sonra):
+            continue
+        deger = ham.replace(".", "")
+        bag = metin[max(0, m.start() - 45): m.end() + 45].replace("\n", " ")
+        bag = re.sub(r"\s{2,}", " ", bag).strip()
+        gruplar.setdefault(deger, []).append((_satir(m.start()), bag))
+
+    kalemler = [(d, yerler) for d, yerler in gruplar.items()
+                if len(yerler) >= _SAYI_ASGARI_TEKRAR]
+    kalemler.sort(key=lambda t: (-len(t[1]), int(t[0])))
+    atlanan = max(0, len(kalemler) - _SAYI_AZAMI_KALEM)
+    return kalemler[:_SAYI_AZAMI_KALEM], atlanan
+
+
 def denetle(metin, tip, taraf):
     eksik, uyari = [], []
     unsurlar = TIPLER.get(tip, TIPLER["genel"])
@@ -829,6 +886,24 @@ def main():
             print(f"   [UYARI] {u}")
     else:
         print("   [OK] karşı-taraf-kusuru bağlamında onarma-talebi sinyali bulunamadı (heuristik)")
+
+    print("\n[J] SAYI/TARİH HARİTASI (advisory — BAĞIMSIZ İÇERİK HAKEMİ'nin gözü, ASLA bloklamaz)")
+    j_kalemler, j_atlanan = _sayi_haritasi(metin)
+    if j_kalemler:
+        print("   Aynı sayının geçtiği yerler yan yana — script çelişkiyi SÖYLEMEZ, GÖRÜNÜR KILAR;")
+        print("   her rakamın taslağın KENDİ diğer bölümüyle aynı hesabı verdiğini AVUKAT doğrular.")
+        for deger, yerler in j_kalemler:
+            print(f"   • {deger} ({len(yerler)} yerde)")
+            for satir, bag in yerler[:4]:
+                print(f"       satır {satir}: …{bag}…")
+            if len(yerler) > 4:
+                print(f"       (+{len(yerler) - 4} geçiş daha)")
+        if j_atlanan:
+            # Sessiz kırpma yasağı: kırpıldıysa KAÇ TANE olduğu söylenir.
+            print(f"   NOT: {j_atlanan} sayı daha birden çok yerde geçiyor (rapor {_SAYI_AZAMI_KALEM} "
+                  f"kalemle sınırlı) — tamamı için taslağı elle tarayın.")
+    else:
+        print("   [OK] birden çok yerde geçen sayı bulunmadı (çapraz-hesap riski düşük)")
 
     print("\n" + cizgi)
     engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel)

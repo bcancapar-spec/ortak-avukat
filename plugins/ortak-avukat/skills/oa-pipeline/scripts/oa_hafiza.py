@@ -897,6 +897,17 @@ def cmd_teyit(args):
 
     # --- --damga "ucuz" (IO'suz) alan denetimleri ÖNCE — bir RET'in dokum
     # dosyası gibi bir yan etki BIRAKMAMASI için dosya yazımından ÖNCE gelir.
+    # KAYNAK-URL biçim denetimi (v0.5.5.3) — --damga'dan BAĞIMSIZ, çünkü URL
+    # verildiği her çağrıda geçerli olmalıdır. Dilekçede künye yanına parantez
+    # içinde YALNIZ buradan geçen bir bağlantı yazılabildiğinden, biçimi bozuk
+    # bir değeri sessizce kabul etmek "teyitli link" görüntüsü üretirdi.
+    if getattr(args, "kaynak_url", None):
+        u = args.kaynak_url.strip()
+        if not re.match(r"^https?://[^\s<>\"]+$", u):
+            sys.exit("RET: --kaynak-url yalnız tek parça bir http(s) adresi olabilir "
+                     f"(boşluk/satır sonu içeremez). Verilen: {args.kaynak_url!r}")
+        args.kaynak_url = u
+
     if args.damga:
         if args.damga not in DAMGA_ENUM:
             sys.exit(f"RET: --damga geçersiz enum ('{args.damga}') — LEHE|ALEYHE|"
@@ -1149,6 +1160,18 @@ def cmd_teyit(args):
                 # geçirilir — TAM BÖLÜM enjeksiyonunun `--arac` üzerinden
                 # atlattığı tek alan kapatılır.
                 f.write(f"_(kütük satırı: {ts()} | {_muhakeme_kacis(args.arac)})_\n")
+                # KAYNAK-URL (v0.5.5.3): dilekçede künye yanına parantez içinde
+                # yazılacak RESMİ bağlantı. Yalnız TEYİT ANINDA kaydedilmiş bir
+                # URL yazılabilir — yazım aşamasında model bağlantı ÜRETEMEZ.
+                # Uydurma link, çıplak künyeden DAHA KÖTÜDÜR: çıplak künye
+                # "teyit edilmedi" der, sahte link "teyit edildi" der. Satır
+                # yalnız URL VARSA basılır (yokluk = dilekçeye yazılmayacak).
+                # `getattr` — bu fonksiyon CLI dışında, elle kurulmuş Namespace
+                # ile de İN-PROCESS çağrılır (testler ve kardeş scriptler);
+                # yeni bir alanın yokluğu çağıranı ÇÖKERTMEMELİDİR.
+                _kurl = getattr(args, "kaynak_url", None)
+                if _kurl:
+                    f.write(f"**KAYNAK-URL:** {_muhakeme_kacis(_kurl)}\n")
                 f.write(f"**DAMGA:** {args.damga}\n\n")
                 f.write("## İLGİLİ-KISIM\n" + _muhakeme_kacis(args.ilgili_kisim.strip()) + "\n\n")
                 f.write("## DAVAYA-BAĞ\n" + _muhakeme_kacis(args.bag.strip()) + "\n\n")
@@ -1518,6 +1541,10 @@ def main():
     s.add_argument("--ilgili-kisim", dest="ilgili_kisim", default=None,
                     help="İLGİLİ-KISIM — VERBATİM alıntı (--damga verildiğinde ZORUNLU; "
                          "döküm içeriğinde dize olarak geçtiği doğrulanır)")
+    s.add_argument("--kaynak-url", dest="kaynak_url", default=None,
+                    help="Kararın RESMİ KAYNAK BAĞLANTISI (http/https). Dilekçede künye "
+                         "yanına parantez içinde bu bağlantı yazılır; kaydedilmemişse "
+                         "YAZILMAZ (uydurma link, çıplak künyeden daha kötüdür)")
     s.add_argument("--sorgu-onayli", dest="sorgu_onayli", action="store_true",
                     help="Layer-0 ucuz sorgu taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN) "
                          "bilinçli biçimde geçer")

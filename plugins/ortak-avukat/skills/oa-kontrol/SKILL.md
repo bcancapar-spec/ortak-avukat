@@ -87,6 +87,36 @@ Sadakat körü körüne onaya değil ilkelere yöneliktir. **Her** esaslı dosya
 - [ ] İspat yükü kimde; müvekkil karşılayabiliyor mu? Değilse strateji (yemin/isticvap/bilirkişi) buna göre mi?
 - [ ] **En kötü senaryo** müvekkile açıkça söylendi mi? Sulh/uzlaşma daha rasyonel mi? (bu sorudan çoğu kez müzakere önerisi doğar.)
 
+## C2. BAĞIMSIZ İÇERİK HAKEMİ — zorunlu adım (v0.5.5.2, saha kanıtlı)
+**Mekanik kapıların hepsi yeşilken bile içerik yanlış olabilir.** 2026/307
+dosyasında künye/şablon/defter kapılarının tümü yeşildi; ayrı bir denetçi
+**dosya evrakına karşı "çürütmeye çalış" brifiyle** koşturulduğunda **1 KRİTİK**
+hata çıktı: nakden tazmin savunmasındaki mükerrerlik kurgusu **aritmetik olarak
+çelişikti** — karşı tarafın 836 rakamı zaten `1100 − 264` idi, yani 264 o
+hesabın DIŞINDAYDI; taslak ise "836'nın içinde, düşülmeli" diyordu. Dilekçe
+**kendi başka bölümüyle** çelişiyordu. Yanına 6 küçük bulgu: alıntı sadakati
+(kip uyarlaması tırnak İÇİNDE yapılamaz), "baştan beri/hep" tarzı
+genellemelerin sicil kronolojisiyle çapraz kontrolü, dosyada dayanağı olmayan
+olgusal cümle, noter işlemi NİTELEME hatası, yer tutucu artığı.
+
+Bu yüzden teslimden önce **ayrı bir denetçi** koşar (mekanik kapıların yerine
+DEĞİL, onlara EK):
+- Brif: *"Bu dilekçeyi çürütmeye çalış. Dosya evrakı tek gerçek kaynaktır."*
+- [ ] **Aritmetik tutarlılık:** sayı/tarih içeren HER savunma, taslağın **kendi
+      diğer bölümleriyle** aynı hesabı veriyor mu? (Bir rakamın nasıl
+      türetildiği bir yerde açıklanıp başka yerde farklı türetilmişse KRİTİK.)
+- [ ] **Alıntı sadakati:** tırnak içi metin kaynakla BİREBİR mi? Kip/çekim
+      uyarlaması tırnağın DIŞINDA yapılır.
+- [ ] **Dayanaksız olgu:** dosyada karşılığı olmayan olgusal cümle var mı?
+- [ ] **Niteleme doğruluğu:** belge/işlem, gerçekte olduğu şey olarak mı
+      adlandırılıyor? (bkz. `oa-dilekce/references/ticaret-sicili-desenleri.md`
+      — TTSG yevmiyesi GK TASDİK yevmiyesidir, devir sözleşmesi yevmiyesi değil.)
+- [ ] **Genelleme denetimi:** "baştan beri / hep / hiç" gibi mutlak ifadeler
+      kronolojiyle sınandı mı?
+`dilekce_denetim.py`'nin **[J] SAYI/TARİH HARİTASI** kapısı (advisory — ASLA
+bloklamaz) aynı sayının birden çok yerde geçtiği noktaları bir arada listeler;
+kapı çelişkiyi SÖYLEMEZ, **görünür kılar** — muhakeme hakemindir.
+
 ## D. Aktif fırsat taraması (zaafın ikizi)
 Kontrol yalnızca zaaf avı değildir. Zaafı tararken **kullanılmamış lehe açıları** da ara: olguların desteklediği eksik bir talep, devreye sokulmamış bir karine/usul kaldıracı, güçlendirilebilecek bir argüman. Her "hayır" için bir **düzeltme + iyileştirme** öner — sadece sorunu işaretleme, müvekkilin konumunu yükselten çıkışı da göster.
 

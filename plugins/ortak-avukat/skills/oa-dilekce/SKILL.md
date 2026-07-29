@@ -52,7 +52,15 @@ sayılır; bu açık uç olarak `oa-kontrol` çıktısında görünür kalır.
 
 ## İçtihat kullanımı — 5 adım (İçtihat Muhakeme Zinciri'nin düzyazı izdüşümü)
 Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli **ve yukarıdaki çıplak künye yasağı uyarınca muhakeme edilmiş**), dilekçede beş adım sırayla yürür (tam mimari — örüntüler + a fortiori/sınırlama tekniği: `references/kanun-yolu-mimari-playbook.md` B4):
-1. **Tam künye:** merci + daire + esas no + karar no + tarih eksiksiz yazılır.
+1. **Tam künye + KAYNAK BAĞLANTISI:** merci + daire + esas no + karar no + tarih
+   eksiksiz yazılır; hemen ardından **parantez içinde kararın resmî kaynak
+   bağlantısı** verilir — ör. *Yargıtay 17. HD, 17.01.2013, 2012/2516 E.,
+   2013/224 K. (https://…)*. Bağlantı **yalnız** muhakeme kaydındaki
+   `**KAYNAK-URL:**` alanından gelir (teyit anında `oa_hafiza.py teyit
+   --kaynak-url …` ile kaydedilmiştir). **Kayıtlı URL yoksa parantez HİÇ
+   AÇILMAZ** — yazım aşamasında bağlantı üretilmez, tahmin edilmez,
+   hatırlanmaz. Uydurma bağlantı çıplak künyeden DAHA KÖTÜDÜR: çıplak künye
+   "teyit edilmedi" der, sahte bağlantı "teyit edildi" der.
 2. **İlgili kısmın aynen (birebir blok-)alıntısı:** kararın yalnızca uyuşmazlıkla **ilgili pasajı** (gerekçenin ilgili yeri) **birebir** alıntılanır — tüm karar değil, davayla bağlantılı kısım. Alıntı, MCP'den çekilen **karar metninden** (muhakeme kaydının İLGİLİ-KISIM alanı) gelir; **hafızadan/yeniden kurarak alıntı yapılmaz** (atıf denetimi → `oa-kontrol` A). **OCR kontrolü:** metin OCR/markdown dönüşümünden geldiği için bozuk olabilir; alıntıda kusur sezilirse **çalışmada "OCR şüphesi" diye bildir** ve kanonik kaynakla teyit et (`oa-ictihat`) — OCR hatasını "birebir" diye dilekçeye taşıma.
 3. **Damıtma cümlesi:** alıntıdan hemen sonra, kararın koyduğu kuralı **soyutlayan** tek/birkaç cümle yazılır ("Bu karar ... hâllerde ... ortaya koymaktadır") — alıntıyı tekrar etmez, kuralı çıkarır.
 4. **Somut tatbik:** damıtılan kural dosyanın olgu desenine **eşlenir** — olgular arasındaki benzerlik açıkça kurulur, mümkünse **a fortiori** ("emsaldeki olguda dahi kabul edilmişken, dosyamızdaki daha güçlü olguda evleviyetle kabul edilmelidir").
@@ -157,6 +165,18 @@ VEYA kütükteki) aynen uygulanır.
 **Temyiz dilekçesi** — Zorunlu: BAM künyesi; **hukuka aykırılık** sebepleri; talep. Süre iki hafta (m.361); temyiz edilebilirlik (parasal sınır/kategori) önce kontrol. Maddi vakıa değil, hukuka aykırılık ekseninde yaz.
 
 **AYM bireysel başvuru** — Zorunlu (6216 m.47/3): kimlik-adres; ihlal edilen hak; **dayanılan Anayasa hükümleri**; ihlal gerekçeleri; **başvuru yolları tüketme aşamaları**; tüketme/öğrenme tarihi; zarar; deliller + karar aslı/örneği + harç belgesi; vekilse **vekâletname** (m.47/4). Süre 30 gün (m.47/5 → `oa-sure`). İhlal eksenleri: gerekçeli karar hakkı, silahların eşitliği/sürpriz karar yasağı, mülkiyet, özel hayat/meslek hayatı; her eksen AYM-teyitli kararla. Sık atlanan: tam tüketme; kişisel/güncel/doğrudan etkilenme (m.46); süre başlangıcı (en sık açık uç: tebliğ/öğrenme tarihi).
+
+**Tasarrufun iptali — davalı cevabı (takas/ivaz kalıbı)** — Davalı borçludan
+mal/pay devralmış ve karşılığında kendi malvarlığından bir şey vermişse:
+karşı-yönlü devri **sicilden** kur (TTSG tarih/sayı/sayfa/ilan no) → aleniyeti
+**TTK m.36/3** ile karşı tarafa bağla → iptale tabi tasarrufun **aktifi azaltan**
+işlem olduğu ve bunun **dava şartı** sayıldığı ilkesini kur → karşılığın nakit
+değil **sicile tescilli, hacze açık** malvarlığı olduğunu vurgula → bölümü tek
+cümleyle kapat. Ayrıntı, güvenli künye formülü, TTSG'nin noter-künyesi olarak
+okunması ve **kalıbın dürüst sınırı** (birebir emsal bulunamadı; kalıp norm
+üzerinde durur): `references/ticaret-sicili-desenleri.md`. **Kritik niteleme:**
+TTSG'deki yevmiye, genel kurul kararının TASDİK yevmiyesidir — pay devir
+sözleşmesinin yevmiyesi DEĞİLDİR.
 
 **Yemin teklif dilekçesi + metni** — Dayanak HMK m.225 vd.; iade m.228. Vakıa **kesin, tek tek, net** formüle edilir. Yalnızca kesin delil bulunmayan, çekişmeli, yeminle ispatı caiz vakıada; yeminin iadesi ihtimali müvekkile anlatılır. (bono uyuşmazlığı örüntüsü: teklif dilekçesi + yemin metni + m.228 birlikte hazırlanır.)
 
