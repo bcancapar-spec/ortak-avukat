@@ -281,7 +281,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.5.4"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.5.5"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):

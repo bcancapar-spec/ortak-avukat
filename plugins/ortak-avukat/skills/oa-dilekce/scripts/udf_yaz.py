@@ -397,7 +397,8 @@ def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
         # ile çözülür — CreateProcess çıplak "npx" adını PATHEXT'e göre
         # KENDİLİĞİNDEN bulmaz (WinError 2). Her zaman ÇÖZÜLMÜŞ yolu çağır.
         p = subprocess.run([yol, "-y", "udf-cli@latest", "whoami"],
-                            capture_output=True, text=True, timeout=zaman_asimi)
+                            capture_output=True, text=True, timeout=zaman_asimi,
+                            encoding="utf-8", errors="replace")
     except Exception as e:
         return False, "udf-cli whoami çalıştırılamadı: %s" % e
     if p.returncode != 0:
@@ -425,7 +426,8 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
         # bkz. npx_kullanilabilir_mi — çıplak "npx" değil, ÇÖZÜLMÜŞ yol çağrılır.
         p = subprocess.run(
             [yol, "-y", "udf-cli@latest", "html2udf", html_yolu, tmp_udf],
-            capture_output=True, text=True, timeout=zaman_asimi)
+            capture_output=True, text=True, timeout=zaman_asimi,
+            encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
         return {"basarili": False, "exit_kod": None, "stdout": "", "stderr": "",
                 "hata": "FAIL-CLOSED: udf-cli html2udf zaman aşımına uğradı (%ds)" % zaman_asimi}
@@ -490,7 +492,8 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
     try:
         # bkz. npx_kullanilabilir_mi — Windows PATHEXT için ÇÖZÜLMÜŞ yol.
         p = subprocess.run([yol, "-y", "udf-cli@latest", "udf2md", udf_yolu],
-                           capture_output=True, text=True, timeout=zaman_asimi)
+                           capture_output=True, text=True, timeout=zaman_asimi,
+            encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
         return {"calisti": False, "basarili": False, "metin": "",
                 "hata": "udf-cli udf2md zaman aşımına uğradı (%ds)" % zaman_asimi}
@@ -552,7 +555,8 @@ def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=1
     if cikti_yolu:
         args += ["-output", cikti_yolu]
     try:
-        p = subprocess.run(args, capture_output=True, text=True, timeout=zaman_asimi)
+        p = subprocess.run(args, capture_output=True, text=True, timeout=zaman_asimi,
+                           encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
         return {"basarili": False, "exit_kod": None,
                 "aciklama": "docx2udf zaman aşımına uğradı (%ds)" % zaman_asimi,

@@ -65,7 +65,8 @@ def udf2md_ile_metin_cikar(udf_yolu, npx_yolu="npx", zaman_asimi=60):
                        "https://nodejs.org — ardından " + _GIRIS_TALIMATI)
     try:
         p = subprocess.run([yol, "-y", "udf-cli@latest", "udf2md", udf_yolu],
-                            capture_output=True, text=True, timeout=zaman_asimi)
+                            capture_output=True, text=True, timeout=zaman_asimi,
+                            encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
         return None, "udf-cli udf2md zaman aşımına uğradı (%ds)" % zaman_asimi
     except Exception as e:

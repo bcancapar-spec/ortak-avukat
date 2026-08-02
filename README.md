@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5.4 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **801 test**
+**Sürüm:** 0.5.5.5 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **806 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -568,7 +568,7 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (**801 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
+İlki deterministik denetçilerin regresyonunu (**806 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
 
 ---
 
@@ -587,7 +587,7 @@ ortak-avukat/
 │       ├── oa-kontrol/               #   teslim kapıları + içtihat muhakeme denetimi
 │       ├── oa-dilekce/               #   dilekçe yazımı + UDF hattı + UYAP format referansı
 │       └── …                         #   oa-alan, oa-vakia, oa-kiyas, oa-antitez, oa-usul, oa-sure, …
-├── tests/                            # 801 pytest
+├── tests/                            # 806 pytest
 ├── README.md · LICENSE · NOTICE
 ```
 
