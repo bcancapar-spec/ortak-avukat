@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.5.3"
+OA_SURUM = "0.5.5.4"
 
 
 def _surum_tuple(s):

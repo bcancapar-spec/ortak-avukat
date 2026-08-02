@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5.3 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **801 test**
+**Sürüm:** 0.5.5.4 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **801 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -10,20 +10,322 @@
 
 ## Ne işe yarar
 
-Dilekçe / temyiz / istinaf / cevap dilekçesi yazımı, dava-dosya-uyuşmazlık analizi, hukuki mütalaa, içtihat & mevzuat araştırması, AYM bireysel başvuru, sözleşme inceleme ve tahriri — Türk hukukunun **herhangi bir dalında**. Sistem kişilere değil **yönteme** bağlıdır; her olgusal unsuru (künye, madde, tarih, içtihat) resmî kaynaktan **doğrular**, halüsinasyonu yapısal olarak dışlar.
+**Bu bir "dilekçe yazan yapay zekâ" değildir; bir METODOLOJİ SİSTEMİDİR.**
+Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
+önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
+müvekkile karşı değil müvekkil için kullanma ayrımını — yazıya döker ve **her
+adımını makineyle denetler.**
 
-Aile, 20 ayrı araç değil **yetenek sahibi tek bir eş-avukat** gibi çalışır: dosyanın analizini kalıcı bir *working memory*'ye (`_oa/analiz/dosya-analiz.md`) yazar; sonraki her çalışmada ham evrakı baştan okumak yerine bu kaydı kullanır (token-verimli, kayıpsız).
+Ayırt edici yanı şudur: bir işin yapıldığını **modelin beyanına bırakmaz.**
+"İçtihadı doğruladım" demek yetmez — kararın tam metni diske inmiş, davaya bağı
+yazılmış ve lehe/aleyhe olarak damgalanmış olmalıdır. "Dilekçe hazır" demek
+yetmez — teslim öncesi kapılar fiilen koşmuş olmalıdır. Bu yüzden aile, muhakemeyi
+yapan katman ile onu denetleyen katmanı bilinçli olarak ayırır: **model kurar,
+script denetler.**
 
-### Temel ilkeler (anayasa)
+Kullanım alanı Türk hukukunun **herhangi bir dalıdır**: dilekçe (dava, cevap,
+istinaf, temyiz), dava-dosya-uyuşmazlık analizi, hukuki mütalaa, içtihat ve mevzuat
+araştırması, AYM bireysel başvuru, sözleşme inceleme ve tahriri. Sistem kişilere
+değil **yönteme** bağlıdır; her olgusal unsuru (künye, madde, tarih, içtihat) resmî
+kaynaktan doğrular ve halüsinasyonu yapısal olarak dışlar.
 
-| İlke | Anlamı |
-|---|---|
-| **Kayıpsızlık** | Hiçbir aşamada veri kaybı yok; özetleme/digest **yasak** — büyük evrak küçültülmez, ilgili sayfası okunur |
-| **Muhakeme kaybı yok** | Token tasarrufu **yalnız mekanik katmanda**; analiz derinliği asla kısılmaz |
-| **Teyit ≠ muhakeme** | Künyenin var olduğunu doğrulamak yetmez: tam metin çekilmiş + davaya bağı kurulmuş + **damgalanmış** olmalı |
-| **Müvekkil-aleyhi çıktı yasağı** | Salt `ALEYHE` içtihat dilekçeye giremez (iç antitezde işlenir); yalnız `LEHE` ve ayırt edilmiş `ALEYHE-AYIRT` girer |
-| **Layer 0 gizlilik** | Müvekkil verisi/TCKN/sağlık-ceza verisi filtresiz dış araca çıkamaz (fail-closed); UYAP login/e-imza/PIN **münhasıran avukata** aittir, sistem bunlar için kod yazmaz |
-| **Sessiz atlama yok** | Okunamayan evrak "yok" sayılmaz; damgayla künyeye girer |
+Aile, 20 ayrı araç değil **yetenek sahibi tek bir eş-avukat** gibi çalışır: dosyanın
+analizini kalıcı bir çalışma hafızasına yazar; sonraki her oturumda ham evrakı
+baştan okumak yerine bu kaydı kullanır — token-verimli ve kayıpsız.
+
+### DÜSTUR — ailenin anayasası
+
+Ailenin yirmi parçasının tamamı tek bir anayasaya tabidir
+([`anayasa.md`](plugins/ortak-avukat/skills/ortak-avukat/references/anayasa.md)).
+Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder — yani
+bir kural yirmi yerde farklı sürümlerle yaşayamaz. On madde:
+
+| # | İlke | Meslektaş için ne demek |
+|---|---|---|
+| **1** | **Çaba ve kalite standardı** | Tasarruf yalnız **israftan** kesilir: aynı evrağı her adımda yeniden okumak, metni görüntü olarak açmak, bütünü yükleyip parçayı kullanmak. Muhakemeden, araştırmadan, unsur denetiminden **asla** kısılmaz. |
+| **2** | **Usul esasa üstündür** | Usul denetimi esastan **önce** ve en az onun kadar ciddi yapılır. Süre, dosyadaki telafisi olmayan tek hatadır. Düstur çift yönlüdür: kendi usul zaafınız sıfırlanır, karşı tarafın kaçırdığı süre gizlenmez — derhâl ileri sürülür. |
+| **3** | **Örnekleme ilkesi** | Metinlerdeki kanun/dava tipi listeleri kapsamı **daraltmaz**, yalnız metodu gösterir. Listede olmayan konu aynı metotla, kıyasen işlenir. Kapsam istisnasız tüm Türk hukukudur. |
+| **4** | **Doğaçlama meşruiyeti** | Yöntemde serbestlik: muhakeme kurgusu, argüman dizilimi, üslup, strateji özgürce doğaçlanır. Sınır tek ve keskindir — **olguda asla**: künye, madde, tarih, tutar üretilemez. |
+| **5** | **Doğrulama mimarisi** | **Teyit ≠ muhakeme.** Künyenin var olduğunu doğrulamak yetmez; tam metin çekilmiş, davaya bağı kurulmuş ve damgalanmış olmalıdır. Damgasız atıf, çıplak künyeden farksızdır. İki modelin hemfikir olması doğrulama **değildir**. |
+| **6** | **Müvekkil-aleyhi çıktı yasağı** | Zaaf dış belgeye yazılmaz, ama iç analizde **saklanmaz**. Salt aleyhe içtihat dilekçeye giremez; cephanelikte durur ve ancak karşı taraf onu fiilen ileri sürerse çıkar. |
+| **7** | **Anonimleştirme** | Sistem metinlerinde hiçbir müvekkil, karşı taraf veya dosya **ismen anılamaz**; tecrübe yalnız soyut örüntü olarak işlenir (Av.K. m.36 · KVKK). |
+| **8** | **Simülasyon yasağı** | Bir parça, tarifinden taklit edilerek "çalıştırılmış" sayılmaz; fiilen çağrılmış olmalıdır. Yüklenemiyorsa çıktıya "fiziken yüklenemedi" diye **açıkça yazılır**. |
+| **9** | **Başbakan denetimi** | `oa-pipeline` anayasayı icra ve denetim organıdır. Parça atlayarak, muhakeme kısarak maliyet düşürmek yasaktır. Karar materyali üretir; kararı avukat verir. |
+| **10** | **Layer 0 — gizlilik** | Dış araca çıkan her içerik önce süzgeçten geçer. **UYAP girişi ve e-imza/PIN münhasıran avukata aittir**; sistem bunlar için kod yazmaz, yalnızca engeller. |
+
+---
+
+## Bir dosya önünüze geldiğinde ne oluyor
+
+1. **Evrak metne iner.** UYAP'tan indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir kez
+   ve en ucuz doğru yoldan metne çevrilir; taranmış olanlar OCR'dan geçer ve
+   "⚠ teyit gerek" damgası alır. Sayım tutmuyorsa analiz **başlamaz**.
+2. **Sorular sorulur.** Uzun analize girmeden önce talep, roller, aşama, **tebliğ
+   tarihi**, eldeki ve eksik belgeler, karşı tarafın en güçlü kozu toplanır.
+3. **Usul ve süre nöbete girer.** Bunlar bir "adım" değil, her aşamayı saran
+   katmandır: dolan bir süre varsa diğer her işin önüne geçer.
+4. **Olgu ve hukuk ayrı ayrı kurulur.** Kronoloji ve iddia↔delil matrisi bir yanda;
+   norm, teyitli içtihat ve açık kıyas öbür yanda.
+5. **Karşı taraf simüle edilir.** Sekiz cephede size gelebilecek her saldırı
+   çıkarılır ve çürütülür; çürütülemeyen dürüstçe "artık risk" diye işaretlenir.
+   Bu çıktı **size** gelir, dilekçeye girmez.
+6. **Taslak yazılır, kapılardan geçer, UDF üretilir.** Zorunlu unsurlar, künye izi,
+   içtihat muhakeme zinciri ve gizlilik denetlenir; sonuç tek bir "teslime hazır /
+   değil" hükmüne bağlanır.
+7. **Karar sizindir.** Sistem karar *materyali* üretir; nihai kararı avukat verir.
+
+Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır.
+**Müvekkil evrakı salt-okunurdur, değiştirilmez.**
+
+---
+
+## Aile — yirmi parça, tek tek
+
+Parçaların bir kısmı **saf muhakeme parçasıdır** (yöntem disiplini), bir kısmı ise
+yanında **deterministik denetim motoru** taşır. Bu ayrımı bilerek okuyun: makineyle
+denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yöntem.
+
+### Çekirdek ve orkestra
+
+#### [`ortak-avukat`](plugins/ortak-avukat/skills/ortak-avukat/) — çekirdek kimlik
+Türk hukuku işi geldiğinde devreye giren varsayılan çalışma kimliğidir; kıdemli bir
+eş-avukat duruşunu ve on maddelik anayasayı bağlama yükler. Tetiklenir tetiklenmez
+işi `oa-pipeline`'a devreder — sizin elle parça çağırmanız beklenmez. Ailenin
+anayasası fiziken bu parçanın altında durur ve diğer 19 parça oraya işaret eder;
+yani bir ilke tek yerden değişir, yirmi yerde çelişmez. Ayırt edici kuralı şudur:
+**devir sözle değil çağrıyla olur** — bir parçaya "devrettim" demek onu çalıştırmak
+değildir, ve tarifinden taklit etmek halüsinasyonun ana kapısıdır.
+
+#### [`oa-pipeline`](plugins/ortak-avukat/skills/oa-pipeline/) — Başbakan · 8 denetim scripti
+Dosyayı 0. MANİFEST'ten 10. KAPANIŞ'a kadar sırayla yürüten ve her adımı denetleyen
+icra organıdır. Bir adımın "yapıldı" iddiası yalnız beyanla kaydedilemez: kanıt
+alanı boş bırakılamaz, gereksiz sayılan adım gerekçesiz geçilemez, ve o adımın
+fiziksel çıktısı diskte yoksa kayıt yazılamaz. Analiz, evrak dökümü tamamlanmadan
+başlayamaz; kıyas adımı içtihat muhakeme kaydı olmadan, kontrol adımı teslim
+makbuzu olmadan kapanamaz. Turun sonunda tek bir soru sorulur — "boşluk var mı" —
+ve boşluklu tur teslim edilemez; dosyanın canlı durumu (`_oa/DURUM.md`) defterden
+**türetilir**, elle yazılmaz.
+
+### Dosyayı ele alma
+
+#### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 1 script
+UYAP klasöründeki her evrağın metnini **bir kez** ve en ucuz doğru yoldan çıkarır:
+metin PDF'ten doğrudan, taranmış olandan OCR ile, UDF/EYP/DOCX'ten açarak. Her
+belge için ayrı bir metin dosyası, bir künye kaydı ve bir indeks üretir; böylece
+sonraki parçalar külliyatı görüntü olarak değil, ucuz metin ve indeks üzerinden
+seçici okur. İndirilen evrak adedi künyedeki sayımla tutmuyorsa **analiz başlamaz**
+— eksik evrak sessizce yok sayılamaz. OCR boş dönerse pes etmez: farklı çözünürlük
+ve yönelimlerle yeniden dener, hâlâ boşsa o sayfanın görselini üretip "görsel
+inceleme gerek" damgası basar.
+
+#### [`oa-interview`](plugins/ortak-avukat/skills/oa-interview/) — ilk inceleme
+Akışın en başındadır ve tek bir yönetici ilkesi vardır: önce sor, sonra analiz et.
+Talep, roller, aşama ve merci, **tebliğ tarihi**, eldeki ve eksik belgeler, karşı
+tarafın en güçlü kozu — bunlar toplanmadan uzun analize girilmez. Usul soruları
+esas anlatımından önce sorulur, çünkü esasın en güçlü hâli bile dolan bir süreyi
+kurtarmaz. Sorular tek tek değil, numaralı bir liste hâlinde toplu sorulur; böylece
+yirmi mesajlık bir soru-cevap trafiği yerine tek turda tamamlanır. Toplananla
+müvekkil lehine bir **ön dava teorisi** kurar ve size geri anlatır. Bu geri anlatım
+bilinçlidir: yanlış bir varsayım varsa daha ilk dakikada düzeltilir, saatlerce
+yanlış eksende çalışılmaz.
+
+#### [`oa-alan`](plugins/ortak-avukat/skills/oa-alan/) — konumlama
+Uyuşmazlığın hangi norma bağlandığını ve hangi yargı kolunda, HSK iş bölümü
+ışığında hangi ihtisas dairesinin baktığını belirler. Bunu araştırma başlamadan
+yapar; doğru daireye kilitlenmiş bir arama, geniş taramadan hem daha ucuz hem daha
+isabetlidir. Dava türü başına unsur şablonları taşır (tasarrufun iptali, işe iade,
+itirazın iptali, kıdem-ihbar gibi) ve bu unsurlar olgu matrisine taşınarak delilsiz
+kalan unsur görünür kılınır. Ayırt edici kuralı bir **yasak bölgeler** listesidir:
+geçmişte halüsinasyona yol açmış alanlarda künye, daire numarası veya parasal sınır
+**ezberden yazılamaz** — doğrulanana kadar iddiadır.
+
+### Her işi saran katmanlar
+
+#### [`oa-usul`](plugins/ortak-avukat/skills/oa-usul/) — usulün esasa takaddümü · 1 script
+"Usul esasa üstündür" düsturunun aile çapındaki uygulayıcısıdır ve bir adım değil,
+her aşamayı saran katmandır. Dava şartı, görev/yetki, tebligat, harç, ehliyet ve
+temsil, ıslah, eski hâle getirme ve kanun yolu şartlarını **üç ayrı cepheden**
+denetler: karşı tarafın hatası (taarruz), müvekkilin hatası (savunma) ve kamu
+gücünün hatası. Denetimde boşluk kalırsa analiz teslim edilemez. En sert kuralı bir
+dil kilididir: tebliğ tarihi belgeli değilken "süresinden sonradır, usulden reddi
+gerekir" gibi **kesin dil kurulamaz** — teyit kaydıyla yazılır ve açık uç bırakılır.
+
+#### [`oa-sure`](plugins/ortak-avukat/skills/oa-sure/) — nöbetçi · 2 script
+Dosyanın telafisi olmayan tek hatasını hesaplar: süre. Hem usul süreleri hem maddi
+hukuk süreleri (zamanaşımı, hak düşürücü) aynı disipline tabidir. Hesap kara kutu
+değildir; tebliğ gününün sayılmaması, araya giren tatilin süreyi uzatmaması ama son
+gün tatile denk gelirse kayması gibi kurallar gerekçesiyle birlikte gösterilir.
+Karşı tarafın fiilî işlem tarihi hesaplanan son güne karşı denenerek "kaçırılmış mı,
+süresinde mi" sorusu da yanıtlanır. Geçmiş, bugün veya yaklaşan bir süre bulunursa
+**diğer her işin önüne geçer** — sessiz kaçış yoktur.
+
+#### [`oa-gizlilik`](plugins/ortak-avukat/skills/oa-gizlilik/) — Layer 0 · 1 script
+Dış araca (bulut MCP, web, e-posta, üçüncü parti bağlayıcı) çıkacak her içeriği,
+gönderilmeden **önce** tarar ve üç karardan birini verir: geçir, sor, engelle.
+Müvekkil verisi, TC kimlik, dosya/esas no, sağlık ve ceza verisi, hesap/kart
+bilgisi taranır; kimlik numarası ve kart numarası algoritmik olarak da sınanır.
+Mutlak yasak listesi her modda geçerlidir: **UYAP giriş akışı, e-imza/e-mühür, PIN
+ve parola, API anahtarı, IBAN** — bunlar için sistem kod yazmaz, doldurmaz,
+göndermez. Tarama çökerse veya dosya okunamazsa karar otomatik olarak **engelle**
+olur; şüphede daima daha kısıtlayıcı olan seçilir.
+
+#### [`oa-illiyet`](plugins/ortak-avukat/skills/oa-illiyet/) — nedensellik grafı · 1 script
+Dosyadaki kişileri, şirketleri, kamu kurumlarını, nesneleri ve delilleri düğüm;
+aralarındaki ilişkileri ve neden-sonuç bağlarını kenar sayarak yönlü bir graf kurar.
+İki kenar türünü bilinçli ayırır: durağan ilişki (ortaklık, temsil, işçi-işveren,
+alacaklı-borçlu) ile dinamik illiyet (fiil → netice → zarar). Gözün kaçıracağı
+yapısal boşlukları mekanik olarak açığa çıkarır: hiçbir yere bağlanmamış düğüm,
+kopuk zincir, iki grubu tek başına bağlayan **köprü düğüm** (muvazaa sinyali) ve
+illiyeti kesme adayları (mücbir sebep, mağdur veya üçüncü kişi kusuru). Her kenar
+"teyitli / iddia / karine" olarak etiketlenir; **doğrulanmamış illiyet yok
+sayılır** ve uydurma bir karar üzerine zincir kurulamaz.
+
+### Olgu ve hukuk
+
+#### [`oa-vakia`](plugins/ortak-avukat/skills/oa-vakia/) — olgu ve delil · 1 script
+Dosyanın olgu yarısını disipline eder: olayları kronolojiye dizer, her iddiayı
+dayandığı delile eşler. İki tür boşluğu mekanik olarak yakalar — **delilsiz iddia**
+(ispat boşluğu) ve hiçbir iddiaya bağlanmamış **yetim delil**. İspat durumu kapalı
+bir kümedir (belgeli, tanık, bilirkişi, karine, ikrar, yemin, ispatsız); "ispatsız"
+işaretlenen olgu otomatik boşluk sinyali üretir. Görüntü veya taranmış evrak
+"okudum" diye varsayılamaz: ya OCR'dan geçer ya da "okunamadı, elle inceleme
+gerekli" denir.
+
+#### [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) — teyit
+Her argümanın normunu ve künyesini resmî kaynaktan (Yargı Pro, AYM, Mevzuat MCP)
+**fiilen** çeker. Kararın tam metnini diske ham döküm olarak yazar; böylece daha
+sonra dilekçeye giren her alıntı, hafızadan değil o dosyadan gelir. İki araç
+sınıfını ayırır: arama araçları tam metin döndürmediği için onlardan damga çıkmaz,
+tam metin çeken araçlarda ise damga, davaya bağ ve döküm zorunludur. Bu parça
+**teyit eder, damgayı atamaz** — muhakeme başka parçanın işidir ve bu ayrım
+sistemin belkemiğidir. "Teyitli" etiketi yalnız fiilen yapılmış bir çağrıya konur;
+kararın kaynak bağlantısı da tam o anda kaydedilir. Gerekçesi basittir: yazım
+aşamasında bir bağlantı *hatırlanamaz*, ancak uydurulabilir — bu yüzden kayıt
+yoksa dilekçede parantez hiç açılmaz.
+
+#### [`oa-kiyas`](plugins/ortak-avukat/skills/oa-kiyas/) — açık kıyas · 1 script
+Hukuki sonucu örtük sezgiden çıkarıp denetlenebilir üçlüye oturtur: büyük önerme
+(norm + teyitli içtihat) → küçük önerme (vakıa ve illiyet grafı) → sonuç. Normun
+her unsurunun bir vakıaya eşlenip eşlenmediği tek tek denetlenir; eşleşmeyen unsur
+ispat boşluğu veya hukuk boşluğu olarak görünür kalır. Teyitli bir kararı
+"muhakeme edilmiş" hâle getiren yer burasıdır: kararın taşıyıcı ilkesi verbatim
+alınır, dosyayla örtüşen somut noktalar kurulur, farklar yazılır ve damga
+**bunlardan türetilir** — beyan edilmez. Damga dört değerlidir (lehe, aleyhe,
+aleyhe-ayırt, nötr) ve **damga atanmazsa kayıt nötr sayılır**, yani kullanılamaz.
+
+### Karar ve savunma
+
+#### [`oa-strateji`](plugins/ortak-avukat/skills/oa-strateji/) — yol seçimi
+Analizi bir karara dönüştürür: en az iki gerçek alternatif kurar (dava, sulh, icra,
+idari başvuru, bekleme) ve her birini maliyet, fayda, aşağı yön ve **tahsil
+edilebilirlik** boyutuyla tartar. "Haklı olmak ≠ tahsil etmek" kuralı gereği, karşı
+tarafta malvarlığı yoksa bu tespit kararın önüne konur — kazanılan ama tahsil
+edilemeyen bir karar müvekkile fayda değil masraf getirir. Başarı olasılığı **sayı
+değildir**: "%72 kazanırsınız" denmez, çünkü böyle bir sayının arkasında hiçbir
+ölçüm yoktur. Onun yerine nitel bir bant (güçlü, dengeli, zayıf, belirsiz) ve o
+bandın gerekçesi verilir: hangi delil, hangi içtihat eğilimi, hangi usul riski.
+Ayrıca "şu olursa şu yola geç" tetikleri kurulur, böylece karar tek seferlik değil
+izlenebilir olur.
+
+#### [`oa-antitez`](plugins/ortak-avukat/skills/oa-antitez/) — gizli cephanelik · 1 script
+Müvekkilin tezine gelebilecek saldırıları sekiz sabit cephede eksiksiz çıkarır ve
+her birini çürütür; çürütülemeyeni dürüstçe **artık risk** diye işaretler. Cephe
+gücü ve dayanak durumu serbest metin olarak yazılamaz, kapalı değerlerle
+işaretlenir; değerlendirilmemiş bir cephe "kör nokta" olarak yakalanır. Bu parçanın
+çıktısı **karşı tarafa değil yalnız size** gelir. En sert kuralı sunum
+disiplinidir: karşı taraf bir tezi fiilen ileri sürmeden ona karşı dilekçeye
+önleyici çürütme konmaz — konursa karşı tarafı silahlandırırsınız. Hazırlanan
+çürütme cephaneliktir; mühimmat ateş değildir.
+
+### Üretim
+
+#### [`oa-dilekce`](plugins/ortak-avukat/skills/oa-dilekce/) — yazım ve teslim biçimi · 4 script
+Dava, cevap, istinaf, temyiz, AYM bireysel başvuru, yemin teklifi ve idari kanal
+dilekçelerinin zorunlu unsurlarını playbook olarak uygular ve taslağı yazar.
+Paragrafın iç mantığı (iddia → norm → içtihat → örtüşme → sonuç) **görünmez
+iskelettir**: yüzeye etiket olarak sızmaz, metin akıcı ve tez-omurgalı örülür.
+Çıplak künye yasağı burada fiilen kapanır: dilekçeye yalnız lehe veya ayırt edilmiş
+aleyhe damgalı, künyesi, kaynak izi, ilgili kısmı ve davaya bağı tam olan kararlar
+girer. Nihai teslim biçimi olan UDF dosyasını üretir ve bunu **elle kurmaz** —
+resmî araçla üretir; araç yoksa veya oturum gerekiyorsa bozuk dosya yazmak yerine
+durur ve size ne yapmanız gerektiğini söyler.
+
+#### [`oa-sozlesme`](plugins/ortak-avukat/skills/oa-sozlesme/) — akdî metin · 1 script
+Sözleşmeyi iki modda ele alır: **tahrir**de müvekkil lehine ama geçerlilik
+sınırının içinde kloz kurar, **inceleme**de karşı taslaktaki tuzağı imzadan önce
+yakalar. Sıralama bilinçlidir — şekil şartı, imza yetkisi ve temsil, ehliyet ve
+emredici hukuk denetimi kloz içeriği tartışmasından **önce** gelir, çünkü şekli
+sakat bir sözleşme en parlak klozu bile taşıyamaz. Zorunlu kloz kategorileri
+sayılıdır ve bir kategorinin sessizce atlanması engellenir; "gereksiz" denen
+kategori gerekçesiz bırakılamaz. Risk nitel bantlarla verilir; uydurma bir sayısal
+skor üretmek mümkün değildir.
+
+### Teslim
+
+#### [`oa-kontrol`](plugins/ortak-avukat/skills/oa-kontrol/) — son kapı · 4 script
+Doğrulama mimarisinin son halkasıdır: teslim öncesi künye izini, zorunlu unsurları,
+içtihat muhakeme zincirini, gizliliği ve defter bütünlüğünü sabit sırada koşturur.
+Ayırt edici kuralı bir **tek ölçüt** kuralıdır: kapıları teker teker sayıp "kaçı
+yeşil" diye elle toplamak yasaktır; teslime hazır olup olmadığını yalnız orkestra
+script'inin çıkış kodu söyler. Her koşuda bir **teslim makbuzu** yazılır — başarılı
+da olsa başarısız da olsa iz kalır, taslağın özeti kaydedilir, sonradan değişirse
+fark edilir. Bir engelleyici kapının script'i çalıştırılamıyorsa bu "atlandı"
+sayılmaz, engellenmiş sayılır: belirsizlik teslimin lehine yorumlanmaz.
+
+### Ceza dalı — aynanın iki yüzü
+
+#### [`oa-mudafii`](plugins/ortak-avukat/skills/oa-mudafii/) — sanık/şüpheli savunması
+Ceza dosyasında müdafilik üstlenildiğinde omurgaya savunma merceğini takar.
+Aksiyomu nettir: **suçsuzluğu biz ispatlamayız** — iddia makamının ispatındaki
+boşluğu, kuşkuyu ve hukuka aykırılığı gösteririz. Suçun maddi ve manevi unsurlarını
+tek tek vakıaya eşler; eşleşmeyen unsur beraat sebebidir. Delil cephesini madde
+adresleriyle tarar (doğrudan doğruyalık, hukuka aykırı delil yasağı, eksik
+inceleme, atfı cürüm beyanı, dijital ve ses kaydı aidiyeti) ve kanun yolu
+sürelerini ayrı bir nöbet tablosunda tutar. Sunum disiplini burada da geçerlidir:
+iddia makamının henüz ileri sürmediği bir teze önleyici cevap vermek, kendi zayıf
+noktanızı işaret etmektir.
+
+#### [`oa-musteki-vekili`](plugins/ortak-avukat/skills/oa-musteki-vekili/) — müşteki/mağdur vekilliği
+Müdafiliğin ayna kutbudur ve tam tersini yapar: unsur yokluğunu aramak yerine her
+unsuru **kurar** ve delile eşler. İspat boşluğunu somut delille kapatır, eksik
+soruşturmayı tamamlatır, delil karartma veya kaçış riski somutsa koruma
+tedbirlerini gündeme getirir. Şikâyet süresi ve zamanaşımı burada da nöbettedir.
+Anayasal süzgeci şudur: kuşkulu bir atfa dayanan güçlü görünümlü iddia, zayıf ama
+sağlam olandan **daha tehlikelidir** — desteksiz her isnat açıkça etiketlenir ve
+şüphelinin masumiyet karinesini ihlal eden aşırı dil kullanılmaz.
+
+### Öğrenme
+
+#### [`oa-usta`](plugins/ortak-avukat/skills/oa-usta/) — çırak · 1 script
+Ailenin öğrenen ucudur: işlenen dosyalardan ders damıtır ve tekrar eden bir işi
+yeni bir parça taslağına çevirir. Aynı iş üçüncü kez elle yapıldığında, siz
+istemeseniz de "bunu kalıba dökelim mi" sorusunu gündeme getirir. İkinci ve daha
+sert görevi ailenin yapısal sağlığını denetlemektir: her parçanın tanımı, adı,
+klasörüyle uyumu, anılan scriptlerin gerçekten var olup olmadığı ve sürüm
+işaretlerinin tutarlılığı makineyle sınanır. Bu denetim her paketlemeden önce
+koşar ve **hata varken paketleme yapılmaz** — yani bozuk bir aile dağıtıma çıkamaz.
+Damıtılan her ders anonimleştirme süzgecinden geçer: hiçbir dosya, müvekkil veya
+karşı taraf ismen anılamaz, geriye yalnız soyut örüntü kalır.
+
+---
+
+## Sistemin **yapmadıkları** (dürüst sınırlar)
+
+Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir:
+
+- **Hukuki sonucu garanti etmez.** Karar materyali üretir; kararı avukat verir.
+- **"İyi dilekçe" demez.** Yalnız "unsur var/yok", "künye teyitli/teyitsiz",
+  "biçim geçerli/geçersiz" der. Hukuki isabet hükmü avukata aittir.
+- **Sayı uydurmaz.** Başarı olasılığı yüzde olarak verilmez; risk skoru
+  üretilmez — nitel bantlar ve gerekçeleri verilir.
+- **Çelişkiyi "yanlış" diye adlandırmaz.** Dilekçedeki rakamların birbiriyle
+  tutarlılığını *görünür kılar*; hükmü siz verirsiniz.
+- **E-imzanın geçerliliğini doğrulamaz.** İmzalı bir nüshayı tanır ve bildirir,
+  ama kriptografik doğrulama UYAP'ın işidir.
+- **UYAP'a girmez, e-imza atmaz.** Bu adımlar münhasıran avukata aittir; sistem
+  onlar için kod dahi yazmaz.
+- **Resmî kaynak bağlı değilse künye doğrulayamaz** — ve bunu gizlemez, "teyit
+  edilemedi" damgası basar.
 
 ---
 
