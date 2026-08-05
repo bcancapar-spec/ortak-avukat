@@ -33,7 +33,7 @@ Alternatif: `releases` altındaki `.plugin` dosyasını sohbete bırakıp onayla
 - **Mükerrer `anthropic-skills:oa-*` ailesi:** skill listesinde ikinci bir kopya olarak görünüyor — `/plugin` yönetiminden kaldır ki iki farklı (biri bayat) aile aynı anda tetiklenmesin.
 
 ### 5. Doğrula
-Reinstall sonrası skill listesinde: **tek** `ortak-avukat` ailesi · **`oa-arsiv` YOK** · 20 skill · v0.5.0. `oa-arsiv` hâlâ görünüyorsa bayat kopya kalmıştır.
+Reinstall sonrası skill listesinde: **tek** `ortak-avukat` ailesi · **`oa-arsiv` YOK** · 22 skill · v0.5.6. `oa-arsiv` hâlâ görünüyorsa bayat kopya kalmıştır.
 
 ## Neden önemli
 `aile_dogrula`/`pytest` **depoyu** denetler; ama Claude **kurulu kopyayı** çalıştırır.

@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.5.5 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **806 test**
+**Sürüm:** 0.5.6 · **Yazar:** Av. Bayram Can Çapar · **22 skill** (çekirdek + 19 `oa-*` parça + 2 işlem rehberi) · **806 test**
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
@@ -409,14 +409,14 @@ OAuth akışını tamamlayın. **Bu bağlantı olmadan** künye doğrulaması ya
 /plugin install ortak-avukat@ortak-avukat
 ```
 
-Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (20 skill) görünmeli.
+Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (22 skill) görünmeli.
 
 > **Güncelleme takılırsa:** eklentiyi ve marketplace'i kaldırın, Claude Code'u kapatın,
 > `~/.claude/plugins/cache/ortak-avukat` ile `~/.claude/plugins/marketplaces/ortak-avukat` dizinlerini silin,
 > yeniden ekleyip kurun. Sürüm etiketi değil **dosya kanıtı** ile doğrulayın (aşağıdaki "Doğrulama").
 
 ### G) Kontrol listesi
-- ✅ **Plugins / Skills** etkin, 20 skill yüklü
+- ✅ **Plugins / Skills** etkin, 22 skill yüklü
 - ✅ **Yargı Pro MCP** bağlı (OAuth tamam)
 - ✅ **Python + pymupdf + pillow** PATH'te
 - ✅ **Tesseract** (`tur` dil paketiyle) PATH'te
@@ -580,7 +580,7 @@ ortak-avukat/
 ├── plugins/ortak-avukat/
 │   ├── .claude-plugin/plugin.json
 │   ├── hooks/hooks.json              # model-bağımsız tetik
-│   └── skills/                       # 20 skill
+│   └── skills/                       # 22 skill
 │       ├── ortak-avukat/             #   çekirdek kimlik + references/anayasa.md
 │       ├── oa-pipeline/              #   orkestrasyon + tam_tur + pipeline_kayit + oa_hafiza + oa_metrik
 │       ├── oa-ingest/                #   0. adım evrak çıkarımı (paralel, OCR nöbetçili)
