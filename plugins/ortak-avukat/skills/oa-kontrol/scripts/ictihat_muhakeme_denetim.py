@@ -140,6 +140,11 @@ def esasli_mi(tip):
 KUNYE_LINE_RE = re.compile(r"^\*\*KUNYE:\*\*\s*(.+)$", re.M)
 KAYNAK_IZI_LINE_RE = re.compile(r"^\*\*KAYNAK-IZI:\*\*\s*(.+)$", re.M)
 DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
+# v0.5.7 — teyit anında kaydedilen resmî bağlantı (bkz. oa-ictihat v0.5.5.3:
+# `oa_hafiza.py teyit --kaynak-url`). Dilekçe-link tutarlılığı [G4] bunu okur.
+KAYNAK_URL_LINE_RE = re.compile(r"^\*\*KAYNAK-URL:\*\*\s*(\S+)\s*$", re.M)
+# Dilekçe metnindeki http(s) bağlantıları — [G4] uydurma-link taraması.
+HTTP_URL_RE = re.compile(r"https?://[^\s\)\]\>»\"']+")
 
 
 def _bolum_al(metin, baslik):
@@ -170,7 +175,7 @@ GECERSIZ_KILINDI_RE = re.compile(r"^\*\*GEÇERSİZ-KILINDI:\*\*", re.M)
 class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
-                 "gecersiz")
+                 "gecersiz", "kaynak_url")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -193,6 +198,9 @@ class MuhakemeKaydi:
         m = DAMGA_LINE_RE.search(metin)
         self.damga_ham = m.group(1).strip() if m else None
         self.damga = self.damga_ham.upper() if self.damga_ham else None
+
+        m = KAYNAK_URL_LINE_RE.search(metin)
+        self.kaynak_url = m.group(1).strip() if m else None
 
         self.ilgili_kisim = _bolum_al(metin, "İLGİLİ-KISIM")
         # R4: eski "İLLİYET" alanı DAVAYA-BAĞ oldu (oa-illiyet nedensellik
@@ -698,6 +706,55 @@ def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk
     return genel_engel
 
 
+# ── [G4] KAYNAK-URL TUTARLILIĞI (v0.5.7 — Denizli 754 saha bulgusu) ─────────
+# Kural zinciri v0.5.5.3'ten beri var: bağlantı YALNIZ teyit anında yakalanır
+# (`--kaynak-url`), yazım aşamasında model URL HATIRLAYAMAZ ama UYDURABİLİR;
+# bu yüzden "kayıt yoksa parantez HİÇ AÇILMAZ". Bu kapı zincirin dilekçe
+# ucunu mekanikleştirir:
+#   (a) UYDURMA-LINK → BLOK: künye satırının ±1 satır penceresinde görünen
+#       bir http(s) bağlantısı HİÇBİR muhakeme kaydının KAYNAK-URL'iyle
+#       örtüşmüyorsa teslim ENGELİDİR — sahte bağlantı "teyit edildi" der,
+#       çıplak künyeden DAHA KÖTÜDÜR.
+#   (b) KAYITLI-LINK-KULLANILMAMIŞ → UYARI (bloklamaz): teyit anında
+#       kaydedilmiş bağlantı dilekçeye işlenmemişse görünür kılınır
+#       (kullanıcı kuralı: karardan bahsedilince linki de dilekçede olmalı).
+def kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar):
+    """Döndürür: (bloklar, uyarilar) — her ikisi de [str]."""
+    bloklar, uyarilar = [], []
+    kayitli_urller = [k.kaynak_url for k in kayitlar if getattr(k, "kaynak_url", None)]
+
+    def _kayitli_mi(url):
+        u = url.rstrip(".,;")
+        for ku in kayitli_urller:
+            if u == ku or u.startswith(ku) or ku.startswith(u):
+                return True
+        return False
+
+    satirlar = metin.splitlines()
+    atif_satirlari = {a.get("satir_no") for a in atiflar if a.get("satir_no")}
+    for sno in sorted(atif_satirlari):
+        pencere = "\n".join(satirlar[max(0, sno - 2): sno + 1])
+        for url in HTTP_URL_RE.findall(pencere):
+            if not _kayitli_mi(url):
+                bloklar.append(
+                    f"(satır ~{sno}) künye yanındaki bağlantı HİÇBİR muhakeme "
+                    f"kaydının KAYNAK-URL'inde yok: {url[:90]} — UYDURMA BAĞLANTI "
+                    "riski (sahte bağlantı 'teyit edildi' der; çıplak künyeden "
+                    "DAHA KÖTÜDÜR). Ya teyit anında `--kaynak-url` ile kaydedin "
+                    "ya da bağlantıyı dilekçeden çıkarın.")
+
+    for atif, (durum, _e, _u, kayit) in zip(atiflar, sonuclar):
+        if durum != "OK" or kayit is None:
+            continue
+        ku = getattr(kayit, "kaynak_url", None)
+        if ku and ku not in metin:
+            uyarilar.append(
+                f"E. {atif['esas'] or '—'} / K. {atif['karar'] or '—'}: teyit "
+                f"anında kaydedilen bağlantı dilekçeye İŞLENMEMİŞ ({ku[:90]}) — "
+                "5-adım/1 kuralı: künyenin ardından parantez içinde verilmeli.")
+    return bloklar, uyarilar
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="oa-kontrol içtihat muhakeme zinciri mekanik kapısı — "
@@ -752,6 +809,20 @@ def main():
                            kutuk_bos_mu=not kayitlar and not gecersiz_sayisi, tip=args.tip,
                            gecersiz_sayisi=gecersiz_sayisi,
                            kutuk_kullanimda_mi=ko.kutuk_gercek_veri_var_mi(kutuk_yolu))
+
+    url_bloklar, url_uyarilar = kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar)
+    if url_bloklar or url_uyarilar:
+        print("\n" + "-" * 72)
+        print("[G4] KAYNAK-URL TUTARLILIĞI (v0.5.7 — bağlantı, teyit anının izidir)")
+        print("-" * 72)
+        for b in url_bloklar:
+            print(f"  ✗ {b}")
+        for u in url_uyarilar:
+            print(f"  ⚠ {u}")
+        if url_bloklar:
+            engel_var = True
+            print("SONUÇ-EK: TESLİM ENGELİ — kütükte izi olmayan bağlantı dilekçede "
+                  "kalamaz (uydurma-bağlantı yasağı).")
 
     sys.exit(1 if engel_var else 0)
 

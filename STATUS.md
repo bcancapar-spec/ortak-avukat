@@ -1,7 +1,13 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-08-06 · **Sürüm:** 0.5.6.1 · **Etiket:** `v0.5.6.1`
-*(önceki kayıt: 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-08-07 · **Sürüm:** 0.5.7
+*(önceki kayıtlar: 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+
+> **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
+> [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
+> teslim edilebilir ek beyan + geçerli UDF. v0.5.7 o koşunun bulgularından
+> doğdu (bayat-tohum aşısı · [G4] bağlantı kapısı · yerel motor v2 ·
+> anayasa m.0 · hook doktoru).
 
 Bu dosya deponun **o anki gerçek** durumunu tutar: neyin ölçüldüğü, neyin
 açık kaldığı, sıradaki sürümün neden değiştiği. Beyan değil **ölçüm** yazılır;
@@ -39,7 +45,7 @@ testidir; `OA_SAHA_REFERANS` tanımlanınca o da koşar (§6c).
 | `v0.5.5.3` | Bağımsız içerik hakemi + sicil desenleri + içtihat bağlantıları | dilekçe kendi bölümüyle aritmetik çelişiyordu |
 | `v0.5.5.4` | GitHub açılış sayfası aile tanıtımı (yalnız anlatım) | 20 parçanın hiçbiri açılış sayfasında görünmüyordu |
 | `v0.5.5.5` | **P0 — teslim hattı avukatın kendi ortamında çöküyordu** | §6 |
-| `v0.5.6` | Yükleme hatası düzeltmesi + Yargı MCP işlem rehberleri | 22→20 parça sayımı ve yükleme kırığı |
+| `v0.5.6` | Yükleme hatası düzeltmesi + Yargı Pro MCP işlem rehberleri | 22→20 parça sayımı ve yükleme kırığı |
 | `v0.5.6.1` | **P0 — `hooks` kaydı geri kondu** + devir zorlayıcı + iki rehber sadeleştirildi | v0.5.6 `plugin.json`'dan `hooks` satırını düşürmüştü: dört hook olayı da ölüydü |
 | *(sürümsüz)* | **CI onarımı — release kapısı 11 koşudur ölüydü** | §6b |
 

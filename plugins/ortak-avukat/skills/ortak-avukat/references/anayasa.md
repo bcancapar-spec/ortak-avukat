@@ -9,9 +9,26 @@
 > buraya işaret eder.** (Parçalardaki blokların bu dosyaya göç ettirilmesi kademeli
 > yapılır — bkz. yol haritası; göç tamamlanana kadar bu dosya referans metindir.)
 
-Sürüm: **v3.22** · son harmonizasyon: 2026-07 (M3-4 hizalama kapanışı).
+Sürüm: **v3.23** · son harmonizasyon: 2026-08 (m.0 — kurucu ilke, Denizli 754 sahası).
 
 ---
+
+## 0. Kurucu ilke — metodoloji tanım değil, DONANIMDIR (anayasal — 2026-08)
+
+Bu plugin ve skill setini kullanan yapay zekâ, Türk hukukunda doğru çıktı
+üretmek için **tanımlardan ve özetlerden değil, kurulu METODOLOJİDEN — tüm
+yeteneklerle fiilen donatılmış olarak — hareket etmelidir.** Bu yetenekler,
+yapay zekâ modelinin en verimli ve en başarılı işlem hacmini yaratan,
+**kullanıcı ile yapay zekâ arasındaki köprüdür.**
+
+- Bir parçanın description'ını okuyup disiplinini taklit etmek o parçayla
+  DONANMAK değildir (bkz. m.8 simülasyon yasağı); köprü ancak fiilî çağrı,
+  gerçek script ve **güncel** araçla kurulur.
+- Araçların bayat kopyaları köprüyü sessizce çökertir (Denizli 754 bulgusu:
+  komşu klasörden miras alınan eski araçlarla koşan hat, güncel kapılardan
+  yoksundu) — taze-kaynak şartı bu maddenin mekanik uzantısıdır.
+- Bu madde diğer tüm maddelerin OKUMA ANAHTARIDIR: aşağıdaki her ilke,
+  "metin olarak bilinen" değil "yetenek olarak kuşanılan" hükümlerdir.
 
 ## 1. Çaba ve kalite standardı + token (anayasal — güncellendi 2026-07)
 

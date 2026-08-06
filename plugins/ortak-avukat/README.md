@@ -1,6 +1,6 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.5.6.1 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.5.7 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -60,10 +60,11 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 
 Ailenin tüm parçaları tek bir anayasaya tabidir
 ([`skills/ortak-avukat/references/anayasa.md`](skills/ortak-avukat/references/anayasa.md)).
-Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder. On madde:
+Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder. Kurucu ilke (m.0) + on madde:
 
 | # | İlke | Meslektaş için ne demek |
 |---|---|---|
+| **0** | **Kurucu ilke — metodoloji tanım değil, DONANIMDIR** | Bu sistemi kullanan yapay zekâ, Türk hukukunda doğru çıktı için tanımlardan/özetlerden değil kurulu METODOLOJİDEN — tüm yeteneklerle fiilen donatılmış olarak — hareket eder. Bu yetenekler, modelin en verimli ve en başarılı işlem hacmini yaratan, kullanıcı ile yapay zekâ arasındaki KÖPRÜDÜR. |
 | **1** | **Çaba ve kalite standardı** | Tasarruf yalnız **israftan** kesilir: aynı evrağı her adımda yeniden okumak, metni görüntü olarak açmak, bütünü yükleyip parçayı kullanmak. Muhakemeden, araştırmadan, unsur denetiminden **asla** kısılmaz. |
 | **2** | **Usul esasa üstündür** | Usul denetimi esastan **önce** ve en az onun kadar ciddi yapılır. Süre, dosyadaki telafisi olmayan tek hatadır. Düstur çift yönlüdür: kendi usul zaafınız sıfırlanır, karşı tarafın kaçırdığı süre gizlenmez — derhâl ileri sürülür. |
 | **3** | **Örnekleme ilkesi** | Metinlerdeki kanun/dava tipi listeleri kapsamı **daraltmaz**, yalnız metodu gösterir. Listede olmayan konu aynı metotla, kıyasen işlenir. Kapsam istisnasız tüm Türk hukukudur. |

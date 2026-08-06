@@ -45,25 +45,70 @@ def _load():
 uy = _load()
 
 
-# ── ALTIN KURAL: elle-zip motoru KALDIRILDI (regresyon kilidi) ──────────────
+# ── ALTIN KURAL: eski (B5) elle-zip motoru geri GELEMEZ; yerel motor v2 ─────
+# yalnız YENİ sözleşmesiyle var olabilir (v0.5.7 bilinçli geri dönüşü).
 
-def test_yerel_motor_fonksiyonlari_artik_yok():
-    """B5 düzeltmesi: hand-rolled zip/content.xml üreticisi (`udf_uret`,
-    `udf_yaz` yazıcı fonksiyonu, `udf_metni_geri_oku`, `cdata_guvenli`,
-    `md_satir_duzlestir`) script'ten TAMAMEN KALDIRILMIŞ olmalı — bunlardan
-    biri geri gelirse "sessizce eski yola düşme" riski de geri gelir."""
+def test_eski_b5_motor_fonksiyonlari_hala_yok():
+    """B5 kilidi ANLAMINI KORUR: eski motorun adları (`udf_uret`,
+    `udf_metni_geri_oku`, `cdata_guvenli`, `md_satir_duzlestir`) geri
+    gelmemeli. v0.5.7 yerel motoru BİLEREK farklı adlar taşır (`_ym_*`,
+    `yerel_motor_ile_uret`) — eski adın dirilmesi, sözleşmesiz eski kodun
+    dirilmesi demektir."""
     for ad in ("udf_uret", "udf_metni_geri_oku", "cdata_guvenli",
                "md_satir_duzlestir"):
         assert not hasattr(uy, ad), (
-            f"'{ad}' hâlâ mevcut — elle-zip motoru tam kaldırılmamış olabilir")
+            f"'{ad}' geri gelmiş — B5 dönemi motoru sözleşmesiz dirilmiş olabilir")
 
 
-def test_yerel_motor_cli_bayragi_artik_yok():
-    """--yerel-motor / --format-id argparse'tan kaldırılmış olmalı."""
+def test_yerel_motor_v2_sozlesmesi():
+    """v0.5.7 sözleşmesi (B5'in sessiz-yanlışını yapısal engeller):
+    (1) bayrak --help'te VAR ve UYARI dili taşıyor; (2) --format-id diye
+    serbest bir şablon kapısı YOK; (3) varsayılan hat değişmedi — bayraksız
+    çağrı hâlâ html2udf hattına gider (yardım metni bunu söylemeye devam
+    eder)."""
     cp = subprocess.run([sys.executable, str(SCRIPT), "--help"],
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
-    assert "--yerel-motor" not in cp.stdout
+    assert "--yerel-motor" in cp.stdout
+    assert "GARANTİ DEĞİL" in cp.stdout      # uyarı dili yardımda görünür
     assert "--format-id" not in cp.stdout
+    assert "html2udf" in cp.stdout            # varsayılan hat anlatımı duruyor
+
+
+def test_yerel_motor_v2_uretir_ve_mekanik_kapidan_gecer(tmp_path):
+    """Uçtan uca (AĞSIZ): --yerel-motor ile üretilen .udf, gerçek
+    udf_dogrula() kapısından GEÇERLİ çıkmalı ve CDATA metni korunmalı."""
+    girdi = tmp_path / "taslak.md"
+    girdi.write_text("# BAŞLIK\n\nSayın Mahkeme, arz ederiz.\n- madde bir\n",
+                     encoding="utf-8")
+    cikti = tmp_path / "taslak.udf"
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--girdi", str(girdi),
+         "--cikti", str(cikti), "--yerel-motor"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    assert cikti.is_file() and cikti.stat().st_size > 0
+    assert "GARANTİ DEĞİL" in cp.stderr       # görünür uyarı basıldı
+    sonuc = uy.udf_dogrula(str(cikti), resmi_okuyucu=False)
+    assert sonuc["gecerli"], sonuc["hatalar"]
+    with zipfile.ZipFile(str(cikti)) as z:
+        ic = z.read("content.xml").decode("utf-8")
+    assert "Sayın Mahkeme, arz ederiz." in ic
+    assert 'resolver="hvl-default"' in ic and 'name="hvl-default"' in ic
+    assert "pageFormat" in ic
+
+
+def test_yerel_motor_v2_bayraksiz_calismaz(tmp_path):
+    """Sessiz düşüş YOK: bayraksız çağrı yerel motora GİTMEZ — npx yolu
+    bozuk verildiğinde fail-closed davranış (dosya yazılmaz) korunur."""
+    girdi = tmp_path / "taslak.md"
+    girdi.write_text("# B\n\nMetin.\n", encoding="utf-8")
+    cikti = tmp_path / "t.udf"
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT), "--girdi", str(girdi), "--cikti", str(cikti),
+         "--npx", "oa-boyle-bir-komut-yok-xyz"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert cp.returncode != 0
+    assert not cikti.exists(), "bayraksız çağrı sessizce yerel motora düşmüş olabilir!"
 
 
 def test_md2udf_kodda_hic_gecmiyor():

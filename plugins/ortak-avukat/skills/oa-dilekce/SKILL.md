@@ -60,7 +60,11 @@ Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden t
    --kaynak-url …` ile kaydedilmiştir). **Kayıtlı URL yoksa parantez HİÇ
    AÇILMAZ** — yazım aşamasında bağlantı üretilmez, tahmin edilmez,
    hatırlanmaz. Uydurma bağlantı çıplak künyeden DAHA KÖTÜDÜR: çıplak künye
-   "teyit edilmedi" der, sahte bağlantı "teyit edildi" der.
+   "teyit edilmedi" der, sahte bağlantı "teyit edildi" der. **[G4] mekanik
+   kapı (v0.5.7):** bu kural artık `ictihat_muhakeme_denetim.py`'de denetlenir
+   — künye yanında kütükte izi olmayan bağlantı TESLİM ENGELİDİR; kayıtlı
+   bağlantının dilekçeye işlenmemesi görünür UYARIDIR (kullanıcı kuralı:
+   karardan bahsedilince linki de dilekçede olmalı).
 2. **İlgili kısmın aynen (birebir blok-)alıntısı:** kararın yalnızca uyuşmazlıkla **ilgili pasajı** (gerekçenin ilgili yeri) **birebir** alıntılanır — tüm karar değil, davayla bağlantılı kısım. Alıntı, MCP'den çekilen **karar metninden** (muhakeme kaydının İLGİLİ-KISIM alanı) gelir; **hafızadan/yeniden kurarak alıntı yapılmaz** (atıf denetimi → `oa-kontrol` A). **OCR kontrolü:** metin OCR/markdown dönüşümünden geldiği için bozuk olabilir; alıntıda kusur sezilirse **çalışmada "OCR şüphesi" diye bildir** ve kanonik kaynakla teyit et (`oa-ictihat`) — OCR hatasını "birebir" diye dilekçeye taşıma.
 3. **Damıtma cümlesi:** alıntıdan hemen sonra, kararın koyduğu kuralı **soyutlayan** tek/birkaç cümle yazılır ("Bu karar ... hâllerde ... ortaya koymaktadır") — alıntıyı tekrar etmez, kuralı çıkarır.
 4. **Somut tatbik:** damıtılan kural dosyanın olgu desenine **eşlenir** — olgular arasındaki benzerlik açıkça kurulur, mümkünse **a fortiori** ("emsaldeki olguda dahi kabul edilmişken, dosyamızdaki daha güçlü olguda evleviyetle kabul edilmelidir").

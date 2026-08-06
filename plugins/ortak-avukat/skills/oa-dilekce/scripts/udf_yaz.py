@@ -736,6 +736,133 @@ def _durum_md_uyari_ekle(kok, satir):
 
 
 # ───────────────────────────────── main ────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════
+# YEREL MOTOR v2 (v0.5.7 — BİLİNÇLİ GERİ DÖNÜŞ, sıkı kapılı)
+#
+# TARİHÇE: v0.5.5.1'de eski yerel motor B5 saha bulgusuyla (ürettiği .udf
+# UYAP'ta açılmıyordu ama zincir "TESLİME HAZIR" basıyordu — sessiz-yanlış)
+# TAMAMEN kaldırılmıştı. Denizli 754 koşusunda ise 307 sahasında TAMİR
+# GÖRMÜŞ nesil (CDATA + template 1.8 + resolver/pageFormat + UTF-16 offset)
+# gerçek mekanik kapıdan SIFIR sorunla ve resmî okuyucu (npx udf2md)
+# round-trip'inden 13/13 çapayla geçti. Kullanıcı talebi: md→UDF çevrimi
+# barındırılan hesaba (npx udf-cli oturumu) MAHKÛM olmasın.
+#
+# YENİ SÖZLEŞME (B5'in sessiz-yanlışını yapısal olarak engeller):
+#   1. YALNIZ AÇIK BAYRAKLA (--yerel-motor) koşar — varsayılan hat DEĞİŞMEDİ
+#      (md → UDF-HTML → npx html2udf, fail-closed). Sessiz düşüş YOKTUR.
+#   2. Ürettiği dosya udf_dogrula() mekanik kapısından GEÇMEK ZORUNDADIR;
+#      geçmezse dosya SİLİNİR ve exit != 0 (fail-closed).
+#   3. Her koşuda GÖRÜNÜR uyarı: resmî yazıcı değildir; e-imza öncesi UYAP
+#      Doküman Editörü'nde görsel teyit ZORUNLUDUR.
+# Eski motorun fonksiyon adları (udf_uret/udf_yaz/udf_metni_geri_oku) BİLEREK
+# geri getirilmedi — o adları yasaklayan regresyon kilidi anlamını korur.
+# ═════════════════════════════════════════════════════════════════════════
+
+_YM_FORMAT_ID = "1.8"   # UYAP editör şablonu (bilinen değerler: 1.6/1.7/1.8)
+_YM_HIZA_ORTA, _YM_HIZA_YASLI = 1, 3   # Swing StyleConstants hizaları
+
+
+def _ym_utf16_uzunluk(s):
+    """UYAP editörü (Java/Swing) offset'leri UTF-16 CODE UNIT sayar; Python
+    code-point sayar. BMP-dışı karakterde (emoji) tek code-point iki code
+    unit'tir — offset'i Swing birimine çekmezsek sonraki TÜM hizalar kayar."""
+    return len(s.encode("utf-16-le")) // 2
+
+
+def _ym_md_satir_duzlestir(satir):
+    """Bir markdown satırını düz metne indir; (metin, baslik_mi) döndür."""
+    s = satir.rstrip("\r")
+    baslik = False
+    m = re.match(r"^(#{1,6})\s*(.*?)\s*#*\s*$", s)
+    if m:
+        baslik = True
+        s = m.group(2)
+    m = re.match(r"^(\s*)[-*+]\s+(.*)$", s)
+    if m:
+        s = m.group(1) + "• " + m.group(2)
+    s = re.sub(r"\*\*(.+?)\*\*", r"\1", s)
+    s = re.sub(r"__(.+?)__", r"\1", s)
+    s = re.sub(r"(?<!\*)\*(?!\*)([^*]+?)\*(?!\*)", r"\1", s)
+    s = re.sub(r"(?<!_)_(?!_)([^_]+?)_(?!_)", r"\1", s)
+    s = re.sub(r"`([^`]+)`", r"\1", s)
+    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", s)
+    return s, baslik
+
+
+def _ym_cdata_guvenli(metin):
+    """CDATA içinde yasak `]]>` dizisini böler."""
+    return metin.replace("]]>", "]]]]><![CDATA[>")
+
+
+def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
+    """Metinden content.xml üretir (307-tamirli saha nesli, alan-kanıtlı yapı):
+    <template format_id> · <content><![CDATA[..]]></content> ·
+    <properties><pageFormat/></properties> · <elements resolver="hvl-default"
+    name="hvl-default"> paragraf offset'leri (UTF-16 code unit, bitişik) ·
+    <styles>. Döner: (xml_str, tam_metin, paragraf_sayisi)."""
+    ham = ham_metin.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
+    satirlar = ham.split("\n") if ham != "" else [""]
+    parcalar, paragraflar, imlec = [], [], 0
+    for satir in satirlar:
+        duz, baslik = (satir, False) if ham_mod else _ym_md_satir_duzlestir(satir)
+        parca = duz + "\n"
+        u16 = _ym_utf16_uzunluk(parca)
+        paragraflar.append((imlec, u16, baslik))
+        parcalar.append(parca)
+        imlec += u16
+    tam = "".join(parcalar)
+
+    x = ['<?xml version="1.0" encoding="UTF-8"?>',
+         '<template format_id="%s">' % format_id,
+         '<content><![CDATA[' + _ym_cdata_guvenli(tam) + ']]></content>',
+         '<properties>',
+         '<pageFormat mediaSizeName="1" leftMargin="70.866" '
+         'rightMargin="70.866" topMargin="70.866" bottomMargin="70.866" '
+         'paperOrientation="1" headerFOffset="20.0" footerFOffset="20.0"/>',
+         '</properties>',
+         '<elements resolver="hvl-default" name="hvl-default">']
+    for start, length, baslik in paragraflar:
+        hiza = _YM_HIZA_ORTA if baslik else _YM_HIZA_YASLI
+        x.append('<paragraph Alignment="%d">' % hiza)
+        if baslik:
+            x.append('<content startOffset="%d" length="%d" bold="true"/>' % (start, length))
+        else:
+            x.append('<content startOffset="%d" length="%d"/>' % (start, length))
+        x.append('</paragraph>')
+    x += ['</elements>', '<styles>',
+          '<style name="default" description="Govde" '
+          'family="Times New Roman" size="12" bold="false" italic="false" '
+          'foreground="-16777216"/>',
+          '</styles>', '</template>']
+    xml_str = "\n".join(x) + "\n"
+    ET.fromstring(xml_str)          # iyi biçimlilik — bozuksa burada patlar
+    return xml_str, tam, len(paragraflar)
+
+
+def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False):
+    """--yerel-motor gövdesi: üret → ATOMİK yaz → udf_dogrula MEKANİK KAPISI.
+    Kapıdan geçemezse dosyayı SİLER ve dict'te basarili=False döner
+    (fail-closed; B5 sessiz-yanlışı yapısal olarak imkânsız)."""
+    xml_str, tam, paragraf = _ym_icerik_xml(metin, ham_mod=ham_mod)
+    tmp = cikti_yolu + ".tmp-%d" % os.getpid()
+    try:
+        with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr("content.xml", xml_str.encode("utf-8"))
+        sonuc = udf_dogrula(tmp, resmi_okuyucu=False)
+        if not sonuc.get("gecerli"):
+            return {"basarili": False, "paragraf": paragraf,
+                    "hatalar": sonuc.get("hatalar", ["mekanik kapı GEÇERSİZ dedi"])}
+        os.replace(tmp, cikti_yolu)
+        return {"basarili": True, "paragraf": paragraf,
+                "karakter": len(tam), "hatalar": []}
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Markdown → UYAP UDF teslim hattı (md → UDF-HTML → npx udf-cli html2udf [+ opsiyonel PDF]).")
@@ -764,6 +891,14 @@ def main():
                     help="PDF için Times New Roman TTF dizini (yalnız --pdf ile).")
     ap.add_argument("--npx", default="npx", metavar="KOMUT",
                     help="npx çalıştırılabilir yolu/adı (varsayılan: %(default)s).")
+    ap.add_argument("--yerel-motor", action="store_true",
+                    help="ÇEVRİMDIŞI YEDEK YOL (v0.5.7, açık istekle): UDF'i npx/"
+                         "oturum OLMADAN, 307-tamirli yerel motorla üretir. Çıktı "
+                         "mekanik GEÇERLİLİK KAPISINDAN geçmek zorundadır (geçmezse "
+                         "dosya silinir, exit != 0). UYAP uyumu GARANTİ DEĞİLDİR — "
+                         "resmî yazıcı html2udf'tir; e-imza öncesi UYAP Doküman "
+                         "Editörü'nde görsel teyit ZORUNLUDUR. Varsayılan hattı "
+                         "DEĞİŞTİRMEZ; sessiz düşüş yolu YOKTUR.")
     ap.add_argument("--kaynak-docx", metavar="YOL", default=None,
                     help="BONUS YOL (rehber §5): md/HTML akışını ATLAYIP hazır bir "
                          ".docx/.pdf dosyasını doğrudan `docx2udf` ile --cikti'ye "
@@ -820,6 +955,33 @@ def main():
     girdi = _kok_coz(a.girdi, a.kok)
     cikti = _kok_coz(a.cikti, a.kok)
     pdf_yolu = _kok_coz(a.pdf, a.kok) if a.pdf else None
+
+    if a.yerel_motor:
+        # ÇEVRİMDIŞI YEDEK YOL — yalnız açık istekle (bkz. YEREL MOTOR v2 blok
+        # yorumu). Ağ/npx/oturum GEREKMEZ; mekanik kapı zorunlu; uyarı görünür.
+        if girdi:
+            with open(girdi, "r", encoding="utf-8", errors="replace") as f:
+                metin = f.read()
+        else:
+            if _sys.stdin is None:
+                sys.exit("HATA: --girdi verilmedi ve stdin yok.")
+            metin = _sys.stdin.read()
+        print("⚠ YEREL MOTOR (çevrimdışı yedek yol, açık istekle):", file=sys.stderr)
+        print("  Bu çıktı RESMÎ yazıcıdan (npx udf-cli html2udf) ÇIKMADI.", file=sys.stderr)
+        print("  UYAP uyumu GARANTİ DEĞİLDİR — e-imza öncesi UYAP Doküman", file=sys.stderr)
+        print("  Editörü'nde açıp görsel teyit ZORUNLUDUR (B5 dersi).", file=sys.stderr)
+        sonuc = yerel_motor_ile_uret(metin, cikti, ham_mod=a.ham)
+        if not sonuc["basarili"]:
+            for h in sonuc["hatalar"]:
+                print("  [HATA] %s" % h, file=sys.stderr)
+            sys.exit("FAIL-CLOSED: yerel motor çıktısı mekanik GEÇERLİLİK "
+                     "KAPISINDAN geçemedi — HİÇBİR .udf yazılmadı.")
+        print("UDF yazıldı (YEREL MOTOR): %s" % cikti)
+        print("  paragraf         : %d" % sonuc["paragraf"])
+        print("  karakter (CDATA) : %d" % sonuc["karakter"])
+        print("  mekanik kapı     : GEÇERLİ ✓ (udf_dogrula, çevrimdışı)")
+        print("  UYAP editör teyidi: AVUKATA AİT — mekanik doğrulama yerine geçmez.")
+        sys.exit(0)
 
     # NOT: --html AÇIKÇA verilmediyse ara HTML SİSTEM TEMP dizinine yazılır,
     # --cikti'nin yanına DEĞİL. `_oa/cikti` içine (dilekçeyle AYNI klasöre)

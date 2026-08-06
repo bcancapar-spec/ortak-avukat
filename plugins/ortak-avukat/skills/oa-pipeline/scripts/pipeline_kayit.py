@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.6.1"
+OA_SURUM = "0.5.7"
 
 
 def _surum_tuple(s):
@@ -2886,6 +2886,64 @@ def _hat_atlandi_uyarisi(kok):
         return None
 
 
+# ── BAYAT-TOHUM AŞISI (v0.5.7 — Denizli 754 saha bulgusu) ──────────────────
+# Saha gerçeği: model, `_oa/araclar/` kopyalarını yüklü eklentiden değil
+# KOMŞU dava klasöründen almıştı — 20/20 script eski nesildi (ingest v1.1
+# vs v1.7). Sonuç: Gate A/C, OCR nöbetçisi, makbuz/sha kapıları, DAMGA ve
+# KAYNAK-URL disiplini o koşuda FİİLEN yoktu. Eski koşuların doğaçlama
+# kopyaları kendi kendini çoğaltıyordu: her yeni dosya, komşusundan
+# Temmuz-başı kod miras alıyordu.
+#
+# AŞI: bu fonksiyon `_oa/araclar/*.py` kopyalarını YÜKLÜ eklentinin kendi
+# scriptleriyle BAYT-karşılaştırır. Fark = BAYAT. Uyarı ÜRETİR, BLOKLAMAZ
+# (amaç çizgisi) — ama hook katmanı sayesinde her turda görünür ve tek
+# kalıcı susturucusu kopyaları tazelemektir. Kendi konumunu `__file__`dan
+# çözer: hook, eklenti kökünden koştuğu için karşılaştırma her zaman
+# GÜNCEL sürüme karşıdır. ASLA istisna fırlatmaz.
+
+def _bayat_arac_uyarisi(kok):
+    """`_oa/araclar/` kopyaları yüklü eklentiyle bayt-özdeş mi? Bayat kopya
+    listesi varsa görünür uyarı metni, yoksa None döndürür."""
+    try:
+        araclar = os.path.join(kok, "_oa", "araclar")
+        if not os.path.isdir(araclar):
+            return None
+        skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+        indeks = {}
+        for parca in os.listdir(skills_kok):
+            sdir = os.path.join(skills_kok, parca, "scripts")
+            if not os.path.isdir(sdir):
+                continue
+            for ad in os.listdir(sdir):
+                if ad.endswith(".py") and ad not in indeks:
+                    indeks[ad] = os.path.join(sdir, ad)
+        bayat = []
+        for ad in sorted(os.listdir(araclar)):
+            if not ad.endswith(".py") or ad not in indeks:
+                continue
+            kopya = os.path.join(araclar, ad)
+            try:
+                with open(kopya, "rb") as f1, open(indeks[ad], "rb") as f2:
+                    if f1.read() != f2.read():
+                        bayat.append(ad)
+            except OSError:
+                continue
+        if not bayat:
+            return None
+        return (
+            "⚠ BAYAT ARAÇ UYARISI — `_oa/araclar/` kopyaları yüklü eklentiden ESKİ:\n"
+            "  " + ", ".join(bayat[:12])
+            + (" … (+%d)" % (len(bayat) - 12) if len(bayat) > 12 else "") + "\n"
+            "  Bu kopyalarla koşan adımlar güncel kapılardan (makbuz/sha, OCR\n"
+            "  nöbetçisi, DAMGA, KAYNAK-URL) YOKSUN olabilir. Tazele: kopyaları\n"
+            "  YÜKLÜ eklentinin `skills/*/scripts/` kökünden YENİDEN al — komşu\n"
+            "  dava klasöründen ASLA kopyalama (bayat-tohum bulaşması,\n"
+            "  Denizli 754 saha bulgusu). Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+    except Exception:
+        return None
+
+
 # ── DEVİR HATIRLATICISI (v0.5.6.1 — UserPromptSubmit) ──────────────────────
 # DÜRÜST SINIR, ÖNCE BU: hiçbir hook modeli bir skill'i çağırmaya ZORLAYAMAZ.
 # `PreToolUse` yalnız model ZATEN bir araç çağırdığında ateşler — atlama
@@ -2929,7 +2987,16 @@ def hook_prompt(kok=None):
         if not _dosya_klasoru_mu(k):
             return 0                                     # dava klasörü değil — sessiz
         if os.path.isdir(os.path.join(k, "_oa", "defter")):
-            return 0                                     # hat zaten açık — sessiz
+            # Hat açık — devir hatırlatması GEREKSİZ (gürültü disiplini).
+            # Ama BAYAT ARAÇ varsa o AYRICA söylenir: hat açıkken bayat
+            # kopyayla koşmak, kapıları sessizce kaybetmektir (v0.5.7 aşısı).
+            bayat = _bayat_arac_uyarisi(k)
+            if bayat:
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": bayat,
+                }}, ensure_ascii=False))
+            return 0
         metin = (
             "ORTAK AVUKAT — DEVİR YÜKÜMLÜLÜĞÜ (mekanik hatırlatma, bu turda geçerli):\n"
             "Bu klasör bir dava dosyası klasörü ve `_oa/defter` YOK — yani pipeline "
@@ -2968,6 +3035,11 @@ def hook_denetle(kok=None):
         if atlandi:
             print("═" * 66)
             print(atlandi)
+            print("═" * 66)
+        bayat = _bayat_arac_uyarisi(kok_aday)
+        if bayat:
+            print("═" * 66)
+            print(bayat)
             print("═" * 66)
         _hook_govde_calistir(kok_aday, "Stop/SessionEnd")
     return 0

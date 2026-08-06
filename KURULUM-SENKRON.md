@@ -42,3 +42,21 @@ m.6 genişletmesi, kunye_teyit deliği, İYUK m.8/3 fix...) masandaki araçta **
 
 ---
 © 2026 Av. Bayram Can Çapar — FSEK. İzinsiz çoğaltma/dağıtma/türev yasaktır.
+
+## Hook katmanı — güncelleme sonrası ZORUNLU adım (Denizli 754 dersi)
+
+Eklenti güncellemesinden sonra Claude Code masaüstü uygulaması **TAM kapatılıp
+açılmalıdır** (ya da oturum içinde `/reload-plugins`). Aksi hâlde çalışan
+süreç hook kaydını ESKİ sürümden miras alır ve dört hook olayı
+(`UserPromptSubmit`, `PostToolUse`, `Stop`, `SessionEnd`) hiç ateşlemez —
+sahada katman sağlamken 50 dakikalık bir koşu tam bu yüzden hook'suz geçti.
+
+Doğrulama (ağsız, deterministik):
+
+```bash
+python tools/hook_doktor.py --kurulu
+```
+
+Canlı doğrulama: bir dava klasöründe yeni oturum açın; ilk mesajdan sonra
+model kendiliğinden `oa-pipeline`'a devrediyorsa `UserPromptSubmit`
+enjeksiyonu canlıdır. Şüphede oturumda `/hooks` yazın.
