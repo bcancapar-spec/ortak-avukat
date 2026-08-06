@@ -504,7 +504,7 @@ def test_layer0_ilk_derece_mahkeme_esas_ile_engellenir(tmp_path):
     _init(tmp_path)
     kod, cikti = _cli(
         ["teyit", "--arac", "kurum_karari_ara",
-         "--sorgu", "Denizli 3. İş Mahkemesi E. 2025/354 dosyası",
+         "--sorgu", "Örnek 1. İş Mahkemesi E. 2099/1 dosyası",
          "--sonuc", "sonuç", "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
@@ -537,8 +537,8 @@ def test_layer0_yargitay_daire_genel_arama_hala_serbest(tmp_path):
 
 
 # ── DÜZELTME (v0.5.5 düzeltme turu, ÖNEMLİ) — Layer 0 ad-soyad isabeti ─────
-# UYAP evrakının standart biçimi TAM BÜYÜK HARFLİ soyaddır (bkz. kullanıcının
-# kendi çalışma dizini "2025_354_Denizli_3._Is_Mahkemesi") — eski desen bunu
+# UYAP evrakının standart biçimi TAM BÜYÜK HARFLİ soyaddır (saha dizin adı
+# örüntüsü: "<yıl>_<esas>_<Şehir>_<N>._<Tür>_Mahkemesi") — eski desen bunu
 # hiç yakalamıyordu (yanlış-negatif, gerçek PII biçiminde en büyük körlük).
 
 @pytest.mark.parametrize("sorgu", [
@@ -593,7 +593,7 @@ def test_layer0_kurumsal_terimler_artik_yanlis_pozitif_uretmez(tmp_path, sorgu):
     "İstanbul 4. Fikri ve Sınai Haklar Hukuk Mahkemesi 2024/321 esas",
     "Antalya 1. Çocuk Mahkemesi 2024/17 esas",
     "Samsun 2. Kadastro Mahkemesi 2024/3 esas",
-    "Denizli 3. IS Mahkemesi 2025/354 esas",  # ASCII harf-çevrimli "İş"
+    "Eskişehir 3. IS Mahkemesi 2024/77 esas",  # ASCII harf-çevrimli "İş"
 ])
 def test_layer0_genellenmis_ilk_derece_mahkeme_deseni_artik_yakalar(tmp_path, sorgu):
     _init(tmp_path)

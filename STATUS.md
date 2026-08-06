@@ -13,8 +13,9 @@ bir satır ölçülmeden buraya girmez.
 
 | Ne | Değer | Nasıl doğrulanır |
 |---|---|---|
-| Test — avukatın ortamı (yazıcı VAR, cp1254) | **821 toplandı · 819 yeşil · 2 atlandı · 0 kırmızı** | `python -m pytest tests -q -rs` |
-| Test — CI ortamı (yazıcı YOK, taklit) | **809 yeşil · 12 atlandı · 0 kırmızı** | `OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs` |
+| Test — avukatın ortamı (yazıcı VAR, cp1254) | **820 toplandı · 819 yeşil · 1 atlandı · 0 kırmızı** | `python -m pytest tests -q -rs` |
+| Test — saha referansı verilince | atlanan test de koşar: **9 yeşil · 0 atlandı** | `OA_SAHA_REFERANS=<dava>/_oa/metin python -m pytest tests/test_oa_ingest_ocr_nobetci.py -rs` |
+| Test — CI ortamı (yazıcı YOK, taklit) | **0 kırmızı** (yazıcı gerektiren 4 test görünür gerekçeyle atlanır) | `OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs` |
 | Aile yapı denetimi | **temiz**, 20 parça | `python plugins/.../aile_dogrula.py plugins/ortak-avukat/skills` |
 | Sürüm damgaları | dört damga eşzamanlı (`0.5.6.1`) | `test_hooks_wiring.py` |
 
@@ -22,9 +23,9 @@ bir satır ölçülmeden buraya girmez.
 taklidi (yazıcısız) · gerçek CI. Yazıcısız ortam v0.5.5.1'den beri
 ölçülmüyordu — §6b.
 
-Avukatın ortamındaki **2 atlama, onarımdan ÖNCE de aynı 2 atlamaydı** (saha
-referans klasörü bu makinede yok). Yani onarım, çalışan ortamda **tek bir
-yeni atlama üretmedi** — kapsam aynen duruyor.
+Onarım, çalışan ortamda **tek bir yeni atlama üretmedi** — kapsam aynen
+duruyor. Kalan tek atlama, saha referansı verilmediğinde ortaya çıkan OCR
+testidir; `OA_SAHA_REFERANS` tanımlanınca o da koşar (§6c).
 
 ---
 
@@ -252,6 +253,43 @@ push ≈ 20 dönüşüm demekti; aylık kota tükenince **avukat gerçek dilekç
 UDF'e çeviremezdi**. Test altyapısı müvekkil işini bloklayamaz. (Ayrıca jeton
 kendini yalnız tutulduğu makinede tazeler; kopya bayatlar, CI yine kırmızıya
 dönerdi.)
+
+---
+
+## 6c. Anonimleştirme sızıntısı (2026-08-06, aynı turda)
+
+CI onarımının "2 atlanan test nedir" sorusundan çıktı.
+
+`tests/test_oa_ingest_ocr_nobetci.py` v0.5.5'ten (`852fd3c`) beri depoda ve
+depo **herkese açık**. İçinde bir müvekkil dosyasının **tam yolu sabit
+yazılıydı**: kişisel Windows kullanıcı adı + `<yıl>_<esas>_<şehir>_<mahkeme>`
+klasör adı; yanında iki gerçek evrak adı.
+
+Anayasa m.7: *"hiçbir müvekkil, karşı taraf veya **dosya** ismen anılamaz"*
+(Av.K. m.36 · KVKK). Esas numarası + mahkeme o dosyayı **tekilleştirir**.
+`_saha/` klasörünü ve `SAHA-PB.md`'yi depo dışında tutmamızın gerekçesi tam
+olarak buydu — ama bu, deponun **içindeydi** ve aylardır yayındaydı.
+
+**İkinci bulgu, aynı satırda:** yol sabit yazılı olduğu için klasör yeniden
+adlandırılınca test **sessizce atlanmaya** başladı. İki test bir süredir hiç
+koşmuyordu ve kimse fark etmemişti — yine "ateşlemeyen kapı" sınıfı.
+
+**Yapılan:** sabit yol kaldırıldı; referans `OA_SAHA_REFERANS` ortam
+değişkeniyle verilir, beklenti listesi dava klasörünün kendi `_oa`'sında
+(depo **dışında**) durur. Testlerdeki gerçek dosya kimlikleri kurgu ile
+değiştirildi (`Örnek 1. İş Mahkemesi E. 2099/1` vb.); testlerin **amacı
+korundu** — mahkeme deseni şehir adına değil `N. <tür> Mahkemesi` yapısına
+bakar. Eklenti içindeki esas numarası 8 dosyada `saha dosyası A` ile
+değiştirildi (yalnız açıklama satırları; **davranış değişmedi**).
+Ve test **yeniden ateşler hâle geldi**.
+
+**Dokunulmadı:** `Yargıtay 4. HD, E. 2023/1234` (uydurma test künyesi),
+`E.2025/190` (Resmî Gazete'de yayımlanmış AYM kararı), sayı içermeyen şehir
+anmaları (bir şehir bir dosyayı tekilleştirmez).
+
+**Açık kalan — kullanıcı kararı:** bu içerik **geçmiş commit'lerde** duruyor.
+Yalnız tepe temizlendi. Geçmişi silmek `git filter-repo` + force-push ister;
+tüm SHA'lar değişir, etiketler ve mevcut klonlar kırılır.
 
 ---
 

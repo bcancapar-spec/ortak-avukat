@@ -5,7 +5,7 @@
 """
 udf_yaz.py — markdown → UYAP UDF TESLİM HATTI (oa-dilekce yardımcısı)
 
-GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): Denizli 307 dosyasında bu script'in
+GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): saha dosyası A dosyasında bu script'in
 ESKİ elle (zip + content.xml, `--yerel-motor`) motoru bir `.udf` ürettiği hâlde
 o dosya **UYAP editöründe AÇILMADI**. Zip bütünlüğünün "OK" görünmesi format
 GEÇERLİLİĞİ demek DEĞİLDİR. Yargı Pro rehberi (`udf_tiff_pdf_guide` MCP aracı /

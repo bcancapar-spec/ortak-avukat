@@ -16,7 +16,7 @@ olabileceğinden, sistemde bulunan gerçek Times New Roman TTF ailesi gömülür
 (Windows: `C:\\Windows\\Fonts`). Font bulunamazsa PDF yine üretilir ama
 UYARI basılır — Türkçe glif eksikliği riski o durumda vardır.
 
-Saha kökeni: Denizli 307 dosyasındaki `_oa/araclar/html2pdf.py` tohum
+Saha kökeni: saha dosyası A dosyasındaki `_oa/araclar/html2pdf.py` tohum
 aracının aile-standardına uyarlanmış hâli (algoritma korunmuştur).
 
 Kullanım:

@@ -208,7 +208,7 @@ def test_duzen_tip_ozel_listede_olmayan_unsur_ayrica_yakalanir():
 def test_duzen_tam_dilekcede_temiz_gecis():
     """Sekiz zorunlu unsurun tamamı mevcutsa [B] TERTİP-DÜZEN temiz geçmeli."""
     metin = (
-        "# Denizli 3. İş Mahkemesi Başkanlığına\n\n"
+        "# Örnek 1. İş Mahkemesi Başkanlığına\n\n"
         "## Taraflar\n"
         "Davacı: Ahmet Yılmaz, Adres: ...\n"
         "Davalı: XYZ A.Ş., Adres: ...\n"

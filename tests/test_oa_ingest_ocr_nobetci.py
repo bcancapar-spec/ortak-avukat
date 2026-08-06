@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """oa-ingest — P0-9 OCR-NÖBETÇİSİ testleri.
 
-Saha kanıtı (Denizli 307, _oa/metin — okuma amaçlı referans, DEĞİŞTİRİLMEDİ):
-60 OCR evrağının 5'i sessizce boş/çöp kalmıştı (008, 000a, 000c, 143, 144 —
-ikisi müvekkil delili). Zincir: ① OCR çıktısı kalite denetimi (boş-eşik:
+Saha kanıtı (saha dosyası A, `_oa/metin` — okuma amaçlı referans,
+DEĞİŞTİRİLMEDİ): 60 OCR evrağının 5'i sessizce boş/çöp kalmıştı, ikisi
+müvekkil delili. Zincir: ① OCR çıktısı kalite denetimi (boş-eşik:
 sayfa başına < OCR_BOS_ESIK_KARAKTER_SAYFA anlamlı karakter + çöp-skor:
 alfasayısal oran/tek-karakter kelime oranı) → ② deterministik retry
 (DPI yükselt / PSM değişimi / yönelim) → ③ hâlâ çökükse PyMuPDF/Pillow ile
@@ -15,8 +15,9 @@ GÖRSEL İNCELEME GEREK" damgası (YÜKLENEMEDİ DEĞİL, işlendi de DEĞİL) +
 Bu dosya iki katman test eder:
   (A) Birim testleri (Tesseract/PyMuPDF GEREKMEZ) — saf kalite-kapısı
       fonksiyonları (_cop_skor, _ocr_kalite_yeterli_mi) doğrudan içe
-      aktarılıp denetlenir; ayrıca saha referansındaki GERÇEK OCR çıktısı
-      (008/143/000a) üzerinde kapının doğru sayfaları yakaladığı kanıtlanır.
+      aktarılıp denetlenir; ayrıca — YALNIZ `OA_SAHA_REFERANS` tanımlıysa —
+      gerçek bir saha OCR çıktısı üzerinde kapının doğru sayfaları yakaladığı
+      kanıtlanır (aşağıya bakınız: dosya adı/esas no DEPOYA GİRMEZ).
   (B) Uçtan uca testler (gerçek Tesseract + PyMuPDF GEREKİR — bu makinede
       kuruludur; yoksa skip edilir): sentetik BOŞ taranan PDF → damga+görsel
       üretilir; sentetik SAĞLIKLI taranan PDF → hiçbir görsel/damga üretilmez;
@@ -24,6 +25,7 @@ Bu dosya iki katman test eder:
 """
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -35,9 +37,43 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-ingest" / "scripts" / "oa_ingest.py"
-SAHA_REFERANS = pathlib.Path(
-    r"C:\Users\pc\Downloads\uyap-evraklar\2026_307_Denizli_8._Asliye_Hukuk_Mahkemesi\_oa\metin"
-)
+# ── SAHA REFERANSI — anayasa m.7 (Av.K. m.36 · KVKK) ──────────────────────
+# Gerçek dosya adı, ESAS NUMARASI, mahkeme adı ve kişisel mutlak yol DEPOYA
+# GİRMEZ. (Bu satırda bir zamanlar gerçek bir dosyanın tam yolu sabit yazılıydı
+# ve depo herkese açık olduğu için o dosya tekilleştirilebiliyordu.) Referans
+# artık avukatın makinesinde ortam değişkeniyle verilir; hangi evrağın hangi
+# sayfalarının boş olduğu beklentisi de o klasörün YANINDA, depo DIŞINDA durur:
+#
+#   OA_SAHA_REFERANS = <dava klasörü>/_oa/metin
+#   <dava klasörü>/_oa/oa-saha-beklenti.json:
+#       [{"dosya": "<md dosya adı>", "bos_sayfalar": [1, 2, 3]}, ...]
+#
+# Değişken/dosya yoksa bu testler GÖRÜNÜR gerekçeyle atlanır (sessiz değil).
+SAHA_REFERANS_ORTAM = "OA_SAHA_REFERANS"
+
+
+def _saha_referans():
+    yol = os.environ.get(SAHA_REFERANS_ORTAM, "").strip()
+    return pathlib.Path(yol) if yol else None
+
+
+def _saha_vakalari():
+    """[(dosya adı, beklenen boş sayfa kümesi)] — yoksa boş liste."""
+    kok = _saha_referans()
+    if kok is None or not kok.is_dir():
+        return []
+    beklenti = kok.parent / "oa-saha-beklenti.json"
+    if not beklenti.is_file():
+        return []
+    try:
+        kayitlar = json.loads(beklenti.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return [(k["dosya"], set(k["bos_sayfalar"])) for k in kayitlar
+            if k.get("dosya") and k.get("bos_sayfalar")]
+
+
+SAHA_VAKALARI = _saha_vakalari()
 
 TESSERACT_YOK = shutil.which("tesseract") is None
 
@@ -119,20 +155,21 @@ def test_ocr_kalite_yeterli_mi_cop_skor_yakalar():
     assert oi._ocr_kalite_yeterli_mi(cop_metin, 1) is False
 
 
-@pytest.mark.skipif(not SAHA_REFERANS.is_dir(), reason="saha referans klasörü bu makinede yok")
-@pytest.mark.parametrize("dosya, boyle_sayfalar", [
-    ("000a-nilfratgrhandelilleri_henuz_sunulmayan_EYP_ici_CamScanner_07.07.2026_12.26.pdf.md",
-     {1, 2, 3}),
-    ("143-Dosyaya_Eklenecek_Evrak.md", {53, 54, 55, 56, 57, 58, 59, 60}),
-])
+@pytest.mark.skipif(
+    not SAHA_VAKALARI,
+    reason=("saha referansı tanımsız — `%s=<dava klasörü>/_oa/metin` verilmemiş "
+            "ya da yanındaki `oa-saha-beklenti.json` yok. Dosya adı/esas no "
+            "bilerek depoya YAZILMAZ (anayasa m.7)." % SAHA_REFERANS_ORTAM),
+)
+@pytest.mark.parametrize("dosya, boyle_sayfalar", SAHA_VAKALARI or [("", set())])
 def test_kalite_kapisi_saha_referansindaki_bos_sayfalari_yakalar(dosya, boyle_sayfalar):
-    """P0-9 kalite kapısı, saha referansındaki (Denizli 307, salt-okunur) GERÇEK
-    OCR çıktısında elle tespit edilmiş boş sayfaları YAKALAR — kapının kendisi
-    bu dosyayı DEĞİŞTİRMEZ, yalnız içeriğini okur."""
+    """P0-9 kalite kapısı, gerçek bir saha OCR çıktısında (salt-okunur) elle
+    tespit edilmiş boş sayfaları YAKALAR — kapının kendisi bu dosyayı
+    DEĞİŞTİRMEZ, yalnız içeriğini okur."""
     oi = _oi()
-    md_yol = SAHA_REFERANS / dosya
+    md_yol = _saha_referans() / dosya
     if not md_yol.is_file():
-        pytest.skip(f"saha referans dosyası yok: {dosya}")
+        pytest.skip("saha referans dosyası yok (beklenti listesinde adı geçiyor)")
     sayfalar = _sayfalari_ayikla(md_yol.read_text(encoding="utf-8"))
     yetersiz = {i + 1 for i, s in enumerate(sayfalar) if not oi._ocr_kalite_yeterli_mi(s, 1)}
     assert boyle_sayfalar.issubset(yetersiz), (

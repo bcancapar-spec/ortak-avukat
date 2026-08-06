@@ -137,7 +137,7 @@ def test_dosya_md_yokken_klasor_adindan_mahkeme_ipucu_dal_tahmin_eder(tmp_path):
     dosya.md`'deki dal satırı hiç yazılmamışken (sahadaki gerçek durum) dava
     kökü klasör adındaki mahkeme adı (saha örneğine sadık, alt çizgili:
     '..._Is_Mahkemesi') dal tahminini CANLANDIRMALI."""
-    dava_koku = tmp_path / "2025_354_Denizli_3._Is_Mahkemesi"
+    dava_koku = tmp_path / "2099_1_Ornek_1._Is_Mahkemesi"
     dava_koku.mkdir(parents=True, exist_ok=True)
     _baslat(dava_koku)  # dosya.md YOK — dal satırı ipucu yok
     kod, cikti = _cli(

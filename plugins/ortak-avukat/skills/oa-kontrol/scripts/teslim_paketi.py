@@ -39,7 +39,7 @@ Hepsi geçerse:
   çıktı UDF' bu bayraksız her zaman geçerlidir), "TESLİME HAZIR".
 
   DÜZELTME (GÖREV D, B5 — KRİTİK): eski `--yerel-motor` (ağsız, hand-rolled
-  zip/content.xml) "hızlı yapısal ön-kapı" TAMAMEN KALDIRILDI — Denizli 307
+  zip/content.xml) "hızlı yapısal ön-kapı" TAMAMEN KALDIRILDI — saha dosyası A
   sahasında bu motorun ürettiği .udf UYAP editöründe AÇILMADI, ama zincir
   yine de "TESLİME HAZIR" basıyordu (sessiz-yanlış). udf_yaz.py artık BAŞKA
   bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@latest

@@ -120,7 +120,7 @@ v1.5.2 değişiklikleri (2026-07) — EK-FİX (v0.5.2 risk#1):
     olarak servis ediliyordu — Tesseract sonradan kurulsa bile hiç yeniden denenmiyordu.
     Artık okuma tarafı da aynı kuralı uygular: seri==paralel ve idempotens KORUNUR.
 
-v1.7 değişiklikleri (2026-07) — P0-9 OCR-NÖBETÇİSİ (Denizli 307 saha kanıtı, 60
+v1.7 değişiklikleri (2026-07) — P0-9 OCR-NÖBETÇİSİ (saha dosyası A saha kanıtı, 60
   OCR evrağının 5'i sessizce boş/çöp kalmıştı — ikisi müvekkil delili):
   ① KALİTE DENETİMİ: her OCR'lanan SAYFA, boş-eşik (sayfa başına
     < OCR_BOS_ESIK_KARAKTER_SAYFA anlamlı karakter) VE çöp-skor (alfasayısal

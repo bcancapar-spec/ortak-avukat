@@ -20,7 +20,7 @@ Rehber kuralları (A.3/A.4 — bu script bunlara birebir uyar):
 - `<tab/>` / `<page-break/>` escape edilmez (bu script hiçbirini üretmiyor)
 - sayfa sonu YOK (açıkça istenmedikçe — bu script hiç üretmiyor)
 
-Saha kökeni: bu dönüştürücü Denizli 307 dosyasında elle yazılan `md2udfhtml.py`
+Saha kökeni: bu dönüştürücü saha dosyası A dosyasında elle yazılan `md2udfhtml.py`
 tohum aracının (`_oa/araclar/`) aile-standardına uyarlanmış hâlidir — o araç
 canlı UYAP teslimini fiilen ÇÖZDÜ; algoritma korunmuştur.
 

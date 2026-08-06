@@ -446,7 +446,7 @@ _PLAKA_RE = re.compile(r"(?<![\w])(0[1-9]|[1-7]\d|8[01])\s?[A-ZÇĞİÖŞÜ]{1,3
 
 # İlk derece/yerel mahkeme adı (Yargıtay/Danıştay/BAM gibi genel emsal-arama
 # mercilerinden BİLİNÇLİ AYRI TUTULUR — "Yargıtay 4. HD" gibi genel daire
-# referansları meşru içtihat aramasıdır; "Denizli 3. İş Mahkemesi" gibi
+# referansları meşru içtihat aramasıdır; "<Şehir> N. İş Mahkemesi" gibi
 # şehir+ilk-derece-mahkeme adı, esas no ile eş-geçtiğinde somut bir DOSYAYI
 # işaret eder — anonimlik ihlali).
 # DÜZELTME (v0.5.5 şerh turu — Ş5a çürütücü bulgusu): eski desen SABİT bir
