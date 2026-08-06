@@ -326,10 +326,17 @@ TUR_TAHMIN_ANAHTAR = [
 ]
 
 try:
-    import fitz  # PyMuPDF
+    # PyMuPDF — kanonik ad `pymupdf` (v0.5.7.1): eski `import fitz` yolu yeni
+    # sürümlerde STDOUT'a deprecation uyarısı basıyor; bu modülü süreç-içi
+    # yükleyen hook'ların sessizlik/JSON sözleşmesini kirletiyordu (CI bulgusu).
+    import pymupdf as fitz
     FITZ = True
 except ImportError:
-    FITZ = False
+    try:
+        import fitz  # eski kurulumlar (`pymupdf` modül adı 1.24 öncesi yok)
+        FITZ = True
+    except ImportError:
+        FITZ = False
 try:
     from PIL import Image
     PIL = True

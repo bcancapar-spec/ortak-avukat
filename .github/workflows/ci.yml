@@ -45,9 +45,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest
 
-      # -rs: atlanan her test GEREKÇESİYLE listelenir (sessiz atlama yasağı).
+      # -rsfE: atlanan her test GEREKÇESİYLE + düşen her test ADIYLA listelenir.
+      # (Ders: yalın `-rs`, pytest'in varsayılan başarısızlık özetini SUSTURUR —
+      # v0.5.7 koşusunda 10 kırmızının adları özetten kaybolmuştu.)
       - name: Run tests
-        run: pytest -rs
+        run: pytest -rsfE
 
   yapi:
     name: aile yapı denetimi

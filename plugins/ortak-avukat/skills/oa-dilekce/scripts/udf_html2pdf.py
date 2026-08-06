@@ -76,11 +76,14 @@ def _font_dizini_bul(aday_dizin=None):
 def pdf_uret(html_yolu, pdf_yolu, baslik="Dilekçe", font_dizini=None):
     """HTML dosyasını A4 PDF'e döker. Döner: (sayfa_sayisi, font_gomuldu_mu)."""
     try:
-        import fitz  # PyMuPDF
-    except ImportError:
-        sys.exit("HATA: PyMuPDF (fitz) kurulu değil — 'pip install pymupdf' "
-                  "gerekir. PDF üretimi sessizce ATLANMAZ; UDF/HTML çıktısı "
-                  "PDF olmadan zaten tamamdır, --pdf verilmeyebilir.")
+        import pymupdf as fitz  # kanonik ad — `import fitz` yeni sürümlerde
+    except ImportError:         # stdout'a uyarı basıyor (hook kirliliği)
+        try:
+            import fitz  # eski kurulumlar (pymupdf adı 1.24 öncesi yok)
+        except ImportError:
+            sys.exit("HATA: PyMuPDF (fitz) kurulu değil — 'pip install pymupdf' "
+                     "gerekir. PDF üretimi sessizce ATLANMAZ; UDF/HTML çıktısı "
+                     "PDF olmadan zaten tamamdır, --pdf verilmeyebilir.")
 
     frag = io.open(html_yolu, encoding="utf-8").read()
 
