@@ -27,6 +27,8 @@ import zipfile
 
 import pytest
 
+import oa_udf_ortam
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-dilekce" / "scripts" / "udf_yaz.py"
 MD_HTML_SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-dilekce" / "scripts" / "md_udf_html.py"
@@ -426,11 +428,11 @@ def test_cli_kaynak_docx_gercek_donusum_ile_udf_uretir(tmp_path):
 # mekanik olarak doğrular.
 
 def _npx_hazir_mi():
-    try:
-        uygun, _ = uy.npx_kullanilabilir_mi()
-        return uygun
-    except Exception:
-        return False
+    """TEK KAYNAK: yoklama `tests/oa_udf_ortam.py` üzerinden yapılır; o da
+    üretimdeki `uy.npx_kullanilabilir_mi()`yi çağırır ve sonucu OTURUM BOYUNCA
+    ÖNBELLEKLER. (Eskiden bu fonksiyon aşağıdaki 5 skipif'te AYRI AYRI çağrılıp
+    her seferinde yeni bir `npx ... whoami` ağ turu başlatıyordu.)"""
+    return oa_udf_ortam.gercek_udf_yazici_var()
 
 
 @pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")

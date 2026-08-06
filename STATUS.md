@@ -1,6 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-07-29 · **Sürüm:** 0.5.5.5 · **Commit:** `a1b9d18` · **Etiket:** `v0.5.5.5`
+**Tarih:** 2026-08-06 · **Sürüm:** 0.5.6.1 · **Etiket:** `v0.5.6.1`
+*(önceki kayıt: 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 Bu dosya deponun **o anki gerçek** durumunu tutar: neyin ölçüldüğü, neyin
 açık kaldığı, sıradaki sürümün neden değiştiği. Beyan değil **ölçüm** yazılır;
@@ -12,18 +13,22 @@ bir satır ölçülmeden buraya girmez.
 
 | Ne | Değer | Nasıl doğrulanır |
 |---|---|---|
-| Test | **808 toplandı · 806 yeşil · 2 atlandı** | `python -m pytest tests -q` |
-| Test — avukatın ortamı | aynı sonuç (**cp1254**, `PYTHONUTF8` ayarsız) | `unset PYTHONUTF8` ile aynı komut |
-| Aile yapı denetimi | **temiz**, 20 parça | `python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills` |
-| Sürüm damgaları | dört damga eşzamanlı (`0.5.5.5`) | `test_hooks_wiring.py` |
-| Yerel ↔ uzak | eşit, bekleyen commit 0 | `git status -sb` |
+| Test — avukatın ortamı (yazıcı VAR, cp1254) | **821 toplandı · 819 yeşil · 2 atlandı · 0 kırmızı** | `python -m pytest tests -q -rs` |
+| Test — CI ortamı (yazıcı YOK, taklit) | **809 yeşil · 12 atlandı · 0 kırmızı** | `OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs` |
+| Aile yapı denetimi | **temiz**, 20 parça | `python plugins/.../aile_dogrula.py plugins/ortak-avukat/skills` |
+| Sürüm damgaları | dört damga eşzamanlı (`0.5.6.1`) | `test_hooks_wiring.py` |
 
-**İki ortamda da koşuluyor artık.** Bu satır v0.5.5.5'in tek sebebidir —
-aşağıya bakınız.
+**Üç ortamda da koşuluyor artık:** avukatın makinesi (oturum açık) · CI
+taklidi (yazıcısız) · gerçek CI. Yazıcısız ortam v0.5.5.1'den beri
+ölçülmüyordu — §6b.
+
+Avukatın ortamındaki **2 atlama, onarımdan ÖNCE de aynı 2 atlamaydı** (saha
+referans klasörü bu makinede yok). Yani onarım, çalışan ortamda **tek bir
+yeni atlama üretmedi** — kapsam aynen duruyor.
 
 ---
 
-## 2. Bugün kapatılanlar
+## 2. Kapatılanlar (sürüm sürüm)
 
 | Sürüm | Ne | Neden |
 |---|---|---|
@@ -32,7 +37,10 @@ aşağıya bakınız.
 | `v0.5.5.2` | UDF geçerlilik kapısı: iki yanlış-BLOK + resmî okuyucu tanığı | kapı, koruduğu teslimi kesiyordu |
 | `v0.5.5.3` | Bağımsız içerik hakemi + sicil desenleri + içtihat bağlantıları | dilekçe kendi bölümüyle aritmetik çelişiyordu |
 | `v0.5.5.4` | GitHub açılış sayfası aile tanıtımı (yalnız anlatım) | 20 parçanın hiçbiri açılış sayfasında görünmüyordu |
-| `v0.5.5.5` | **P0 — teslim hattı avukatın kendi ortamında çöküyordu** | aşağıda |
+| `v0.5.5.5` | **P0 — teslim hattı avukatın kendi ortamında çöküyordu** | §6 |
+| `v0.5.6` | Yükleme hatası düzeltmesi + Yargı MCP işlem rehberleri | 22→20 parça sayımı ve yükleme kırığı |
+| `v0.5.6.1` | **P0 — `hooks` kaydı geri kondu** + devir zorlayıcı + iki rehber sadeleştirildi | v0.5.6 `plugin.json`'dan `hooks` satırını düşürmüştü: dört hook olayı da ölüydü |
+| *(sürümsüz)* | **CI onarımı — release kapısı 11 koşudur ölüydü** | §6b |
 
 ---
 
@@ -186,14 +194,78 @@ sormak.*
 
 ---
 
+## 6b. Aynı ders, aynadan (2026-08-06) — CI
+
+**Bu kez yerel yeşildi, CI kırmızıydı.** Aynı kanun, ters yön.
+
+`v0.5.5.1`'de UDF hattı bilerek `npx udf-cli html2udf` tek yoluna kilitlendi
+ve yerel motor kaldırıldı (B5: ürettiği `.udf` UYAP'ta açılmıyordu). `udf_yaz.py`
+o günden beri **fail-closed**: oturum yoksa hiçbir `.udf` yazmaz. GitHub
+koşucularında `npx` **var**, `udf-cli` **oturumu yok**. Zinciri sonuna kadar
+koşturan **15 test** bu yüzden kırmızıya döndü — kod hatası değil, ortam.
+
+Görülmemesinin sebebi: bildirimler okunmadı ve yerel koşu hep yeşildi.
+
+**Bedeli, kırmızı testlerden büyüktü.** `ci.yml` şöyle diyordu: *"Release
+kapısı: aile yapı denetimi + testler. İkisi de geçmeden yeşil olmaz."* Ama
+`aile_dogrula` pytest'in **arkasında bir adımdı**; pytest patlayınca hiç
+çalışmadı. Yani:
+
+| | |
+|---|---|
+| Son yeşil koşu | `v0.5.5` — 28 Temmuz |
+| Kırmızı koşu | **11** (v0.5.5.1 → v0.5.6.1) |
+| Bu sürede çalışan yapı denetimi | **0 kez** |
+
+Beş sürüm, var olmayan bir kapıdan geçti.
+
+**Kanun:** *sürekli kırmızı bir kapı, olmayan kapıdır.* "Advisory kapı =
+olmayan kapı" ile aynı hastalık — insan bakmayı bırakır. Ve: **bir kapı, başka
+bir kapının arkasına saklanmamalı.**
+
+**Onarım (yalnız `tests/` + `.github/`; `plugins/` altında tek satır değişmedi):**
+
+1. `tests/oa_udf_ortam.py` — "gerçek yazıcı bu ortamda var mı" sorusunun **tek
+   kaynağı**. Yoklamayı yeniden yazmaz; üretimdeki
+   `udf_yaz.npx_kullanilabilir_mi()`yi çağırır ve **koşu başına bir kez**
+   önbelleğe alır. (Aynı soru eskiden `test_udf_yaz.py`'de 5, `test_udf_metin.py`'de
+   1 kez soruluyordu — her biri ayrı bir `npx … whoami` ağ turu. İkiz kaldırıldı;
+   hem yerel hem CI koşusu hızlandı.)
+2. **İki katman, "hepsini sustur" değil.** 15 testin 11'i aslında zincir
+   *mantığını* sınıyordu, UDF'i tesadüfen istiyordu; bunlar `udf_arglari`
+   fixture'ı ile koşar. Yazıcı **varsa fixture boştur** — avukatın makinesinde
+   test bugünkünün aynısıdır, tam zinciri koşar. Yazıcı yoksa `--udf-yok`
+   geçer; bu bayrak uydurma değildir, makbuza `udf_atlandi_istekle: true` diye
+   yazılır. Gerçekten `.udf` artefaktı iddia eden 4 test görünür gerekçeyle
+   atlanır; her birinin **ortamdan bağımsız ikizi** eklendi (818 → 821 test).
+3. `aile_dogrula` **ayrı bir işe** alındı — bir daha testlerin arkasına
+   saklanamaz. `pytest -rs`: atlanan her test gerekçesiyle listelenir.
+4. Her koşunun başlık satırı durumu **basar**; sessiz atlama yok.
+
+**Yeşil CI artık ne demek:** *"aile yapısı sağlam + teslim zincirinin mantığı
+dört platformda ayakta."* **"UDF hattı çalışıyor" DEMEZ.** UDF hattı yalnız
+avukatın kendi makinesinde (oturum açık) ve sahada doğrulanır. Bu ayrım
+`ci.yml` başlığına da yazıldı — altı ay sonra rozet yanlış okunmasın.
+
+**Reddedilen yol:** oturum jetonunu GitHub secret'a koymak. Dört iş × her
+push ≈ 20 dönüşüm demekti; aylık kota tükenince **avukat gerçek dilekçesini
+UDF'e çeviremezdi**. Test altyapısı müvekkil işini bloklayamaz. (Ayrıca jeton
+kendini yalnız tutulduğu makinede tazeler; kopya bayatlar, CI yine kırmızıya
+dönerdi.)
+
+---
+
 ## 7. Ölçüm
 
-| Katman | Satır |
-|---|---|
-| Doktrin (SKILL.md + references + README'ler) | 5.925 |
-| Üretim kodu (`skills/*/scripts/*.py`) | 16.347 |
-| Test | 15.736 |
-| **Oran (kod+test)/doktrin** | **5,41×** (28 Tem tabanı: 5,26×) |
+| Katman | Satır | 29 Tem (v0.5.5.5) |
+|---|---|---|
+| Doktrin (SKILL.md + references + README'ler) | 6.109 | 5.925 |
+| Üretim kodu (`skills/*/scripts/*.py`) | 16.512 | 16.347 |
+| Test | 16.142 | 15.736 |
+| **Oran (kod+test)/doktrin** | **5,35×** | 5,41× (28 Tem tabanı: 5,26×) |
+
+*(6 Ağu ölçümü; aradaki fark v0.5.6 + v0.5.6.1 + bu CI onarımının toplamıdır.
+Oran **küçüldü** — doktrin, koddan ve testten hızlı büyüdü.)*
 
 En büyük üç script tek başına 6.128 satır: `pipeline_kayit.py` (2.977),
 `oa_hafiza.py` (1.581), `tam_tur.py` (1.570).
@@ -251,6 +323,20 @@ python -m pytest tests -q
 
 ```bash
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
+```
+
+**CI'ı YAZICISIZ ortamda taklit et** (avukatın gerçek oturumuna dokunmadan —
+GitHub koşucusunun gördüğünü yerelde görmek için):
+
+```bash
+OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs
+```
+
+**Sürüm etiketlemeden ÖNCE CI'a bak** (§6b dersi — sürekli kırmızı bir kapı,
+olmayan kapıdır):
+
+```bash
+gh run list --limit 5
 ```
 
 Avukatın gerçek ortamını sınamak için `PYTHONUTF8` **ayarlanmadan** koşulmalıdır

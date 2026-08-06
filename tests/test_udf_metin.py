@@ -15,11 +15,12 @@ DOKUNULMADI (bkz. udf_metin.py docstring'i, 'ÖNEMLİ SINIR').
 """
 import importlib.util
 import pathlib
-import shutil
 import subprocess
 import sys
 
 import pytest
+
+import oa_udf_ortam
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts" / "udf_metin.py"
@@ -92,15 +93,11 @@ def test_cli_npx_yokken_cikti_dosyasi_yazilmaz(tmp_path):
 # ── gerçek udf-cli round-trip: npx/oturum kullanılabilirse ──────────────────
 
 def _npx_hazir_mi():
-    yol = shutil.which("npx")
-    if yol is None:
-        return False
-    try:
-        p = subprocess.run([yol, "-y", "udf-cli@latest", "whoami"],
-                            capture_output=True, text=True, timeout=20)
-        return p.returncode == 0
-    except Exception:
-        return False
+    """TEK KAYNAK: bu yoklamanın KENDİ kopyası vardı (üretimdeki
+    `udf_yaz.npx_kullanilabilir_mi()`nin ikizi — aynı komut, ayrı kod).
+    İkiz kaldırıldı; soru artık `tests/oa_udf_ortam.py` üzerinden bir kez
+    sorulur ve oturum boyunca önbelleklenir."""
+    return oa_udf_ortam.gercek_udf_yazici_var()
 
 
 @pytest.mark.skipif(not _npx_hazir_mi(), reason="npx/udf-cli oturumu bu makinede kullanılamıyor")

@@ -1,6 +1,24 @@
 name: CI
 
-# Release kapısı: aile yapı denetimi + testler. İkisi de geçmeden yeşil olmaz.
+# ── RELEASE KAPISI — yeşil ne demek, ne DEMEZ ────────────────────────────────
+#
+# YEŞİL = "aile yapısı sağlam + teslim zincirinin MANTIĞI dört platformda
+#          (Ubuntu/Windows × py3.12/3.13) ayakta."
+#
+# YEŞİL ≠ "UDF hattı çalışıyor." Koşucularda `npx` VAR ama `udf-cli` OTURUMU
+# YOKTUR (`~/.config/yargi/token.json`); udf_yaz.py ise v0.5.5.1'den beri
+# bilinçli FAIL-CLOSED'dur (yerel motor KALDIRILDI — ürettiği .udf UYAP'ta
+# açılmıyordu). Bu yüzden GERÇEK .udf üretimini iddia eden testler burada
+# GÖRÜNÜR gerekçeyle atlanır ve zincir testleri `--udf-yok` kipinde koşar.
+# Ayrıntı ve disiplin gerekçesi: tests/oa_udf_ortam.py.
+# UDF hattı YALNIZ avukatın kendi makinesinde (oturum açık) ve sahada
+# doğrulanır. `-rs` bayrağı atlananları her koşuda listeler — sessiz atlama YOK.
+#
+# İki iş AYRI tutulur: `yapi` işi `test` işine bağlı DEĞİLDİR. (2026-08-06
+# bulgusu: yapı denetimi pytest'in ARKASINDA bir ADIM olduğu için, testler
+# kırmızıya döndüğü 11 koşu boyunca HİÇ çalışamadı — bir kapı, başka bir
+# kapının arkasına saklanmamalı.)
+
 on:
   push:
     branches: [main, master]
@@ -27,8 +45,20 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest
 
+      # -rs: atlanan her test GEREKÇESİYLE listelenir (sessiz atlama yasağı).
       - name: Run tests
-        run: pytest
+        run: pytest -rs
+
+  yapi:
+    name: aile yapı denetimi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
 
       - name: Family structure gate (aile yapı denetimi)
         run: python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills

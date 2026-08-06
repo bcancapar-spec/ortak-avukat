@@ -23,6 +23,8 @@ import tempfile
 
 import pytest
 
+from oa_udf_ortam import gercek_udf_yazici_gerekli
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-kontrol"
           / "scripts" / "teslim_paketi.py")
@@ -114,7 +116,12 @@ def test_eksik_unsurlu_taslakta_sonraki_kapilar_calistirilmaz(izole_kok):
 
 # ── (2) tam/temiz (atıfsız) taslak → zincir geçer ───────────────────────────
 
+@gercek_udf_yazici_gerekli
 def test_tam_temiz_taslak_zincir_gecer_udf_uretilir(izole_kok):
+    """TAM zincir + GERÇEK yazıcı: `npx udf-cli html2udf` fiilen çağrılır ve
+    diske bir .udf düşer. udf_yaz.py FAIL-CLOSED olduğu için bu test yalnız
+    oturumu açık ortamlarda koşabilir (bkz. tests/oa_udf_ortam.py); zincirin
+    UDF'siz mantığı aşağıdaki ikizinde her ortamda denetlenir."""
     taslak = izole_kok / "temiz.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
 
@@ -125,6 +132,21 @@ def test_tam_temiz_taslak_zincir_gecer_udf_uretilir(izole_kok):
     udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
     assert udf_yolu.exists(), "temiz taslak için UDF üretilmeliydi"
     assert udf_yolu.stat().st_size > 0
+
+
+def test_tam_temiz_taslak_zincir_gecer_udf_yok_kipinde_de(izole_kok):
+    """Üsttekinin ORTAMDAN BAĞIMSIZ ikizi: son adım `--udf-yok` ile bilinçli
+    atlanır, ama ondan önceki TÜM engelleyici kapılar (a/b/b2/c/d) gerçekten
+    koşar ve zincir TESLİME HAZIR ile kapanır. Atlama makbuza yazılır."""
+    taslak = izole_kok / "temiz.md"
+    taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
+
+    kod, cikti = _cli(taslak, izole_kok, extra=["--udf-yok"])
+
+    assert kod == 0, f"tam/temiz taslak zinciri geçmeliydi; çıktı:\n{cikti}"
+    assert "TESLİME HAZIR" in cikti
+    assert "--udf-yok BİLİNÇLİ istekle" in cikti
+    assert not taslak.with_suffix(taslak.suffix + ".udf").exists()
 
 
 def test_tam_temiz_taslakta_dilekce_ve_kunye_kapilari_acik(izole_kok):
@@ -241,10 +263,11 @@ def test_ictihatli_taslak_aleyhe_damgali_kayitla_b2_kapisi_engeller(izole_kok):
     assert "ALEYHE" in cikti
 
 
+@gercek_udf_yazici_gerekli
 def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(izole_kok):
     """Muhakeme kaydı VAR, DAMGA=LEHE, KAYNAK-İZİ dosyası döküm dizininde
     gerçekten var ve künye orada dize olarak geçiyor → (b) VE (b2) açık,
-    zincirin tamamı geçer, UDF üretilir."""
+    zincirin tamamı geçer, UDF üretilir (GERÇEK yazıcı gerekir)."""
     taslak = _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE")
 
     kod, cikti = _cli(taslak, izole_kok)
@@ -257,6 +280,19 @@ def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(
     assert udf_yolu.stat().st_size > 0
 
 
+def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_b2_kapisi_acilir(izole_kok):
+    """Üsttekinin ORTAMDAN BAĞIMSIZ ikizi — asıl konu (b2) kapısının LEHE
+    damgalı, KAYNAK-İZİ'li muhakeme kaydıyla AÇILMASIDIR; UDF üretimi bu
+    testin konusu değil, `--udf-yok` ile bilinçli atlanır."""
+    taslak = _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE")
+
+    kod, cikti = _cli(taslak, izole_kok, extra=["--udf-yok"])
+
+    assert kod == 0, f"LEHE damgalı, tam alanlı muhakeme kaydıyla zincir geçmeliydi; çıktı:\n{cikti}"
+    assert "TESLİME HAZIR" in cikti
+    assert "(b2) içtihat muhakeme zinciri" in cikti
+
+
 # ── YENİ-2 (Paket D DÜZELTME) — [G] ANTİTEZ-CEVAP-ÇAPASI kanonik teslim
 # hattında ÖLÜ değil: teslim_paketi.py artık (a) çağrısına AÇIKÇA `--kok`
 # geçiyor (eskiden `arglar_a`da yoktu → dilekce_denetim.py `a.kok is None`
@@ -264,7 +300,7 @@ def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(
 # bile [G] her zaman [BİLGİ] 'koşulmamış olabilir' basıyordu — matris FİİLEN
 # duran ve DUYULMUŞ+çürütülmemiş bir cephe taşırken bile).
 
-def test_ictihatli_taslakta_antitez_matrisi_teslim_hattinda_gorulur(izole_kok):
+def test_ictihatli_taslakta_antitez_matrisi_teslim_hattinda_gorulur(izole_kok, udf_arglari):
     """DOLU bir `_oa/cikti/07-antitez-matris.json` (DUYULMUŞ=true, çürütme
     taslakta YOK) varken teslim_paketi.py'nin (a) DİLEKÇE DENETİMİ bölümü
     [UYARI] cephe DUYULMUŞ … çapa bulunamadı sinyalini GÖSTERMELİ — kanonik
@@ -283,7 +319,7 @@ def test_ictihatli_taslakta_antitez_matrisi_teslim_hattinda_gorulur(izole_kok):
         ]}, ensure_ascii=False),
         encoding="utf-8")
 
-    kod, cikti = _cli(taslak, izole_kok)
+    kod, cikti = _cli(taslak, izole_kok, extra=udf_arglari)
 
     a_bolumu = cikti.split("[a] DİLEKÇE DENETİMİ")[1].split("[b]")[0]
     assert "[UYARI]" in a_bolumu and "zamanasimi" in a_bolumu and "DUYULMUŞ" in a_bolumu, (

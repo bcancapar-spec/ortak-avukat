@@ -18,6 +18,8 @@ import tempfile
 
 import pytest
 
+from oa_udf_ortam import gercek_udf_yazici_gerekli
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 TP_SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-kontrol"
              / "scripts" / "teslim_paketi.py")
@@ -103,16 +105,8 @@ def izole_kok():
 
 # ── (1) başarılı zincir → makbuz şema/sha doğru ─────────────────────────
 
-def test_basarili_zincir_makbuz_yazar_sema_ve_sha_dogru(izole_kok):
-    taslak = izole_kok / "temiz.md"
-    taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
-
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
-    assert kod == 0, cikti
-
-    makbuz_yol = izole_kok / "_oa" / "defter" / "teslim-makbuz.json"
-    assert makbuz_yol.is_file()
-    m = json.loads(makbuz_yol.read_text(encoding="utf-8"))
+def _makbuz_sema_dogrula(m, taslak):
+    """Makbuzun UDF'ten BAĞIMSIZ şema/sha iddiaları — iki ikizin ortak gövdesi."""
     assert m["exit_kodu"] == 0
     assert m["taslak_yol"] == str(taslak)
     assert m["taslak_sha256"] and len(m["taslak_sha256"]) == 64
@@ -125,8 +119,43 @@ def test_basarili_zincir_makbuz_yazar_sema_ve_sha_dogru(izole_kok):
     assert isinstance(m["kapilar"], list) and len(m["kapilar"]) >= 4
     for k in m["kapilar"]:
         assert k["durum"] in ("OK", "BLOK", "ATLA", "BILGI")
+
+
+@gercek_udf_yazici_gerekli
+def test_basarili_zincir_makbuz_yazar_sema_ve_sha_dogru(izole_kok):
+    """TAM zincir (GERÇEK yazıcı): makbuz şeması + `udf_yolu` diskteki gerçek
+    dosyayı gösterir. Şemanın UDF'ten bağımsız kısmı aşağıdaki ikizde her
+    ortamda denetlenir (bkz. tests/oa_udf_ortam.py)."""
+    taslak = izole_kok / "temiz.md"
+    taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
+
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    assert kod == 0, cikti
+
+    makbuz_yol = izole_kok / "_oa" / "defter" / "teslim-makbuz.json"
+    assert makbuz_yol.is_file()
+    m = json.loads(makbuz_yol.read_text(encoding="utf-8"))
+    _makbuz_sema_dogrula(m, taslak)
     assert m["udf_yolu"]
     assert pathlib.Path(m["udf_yolu"]).is_file()
+
+
+def test_basarili_zincir_makbuz_semasi_udf_yok_kipinde_de_dogru(izole_kok):
+    """Üsttekinin ORTAMDAN BAĞIMSIZ ikizi: son adım `--udf-yok` ile bilinçli
+    atlansa bile makbuz YAZILIR ve şema/sha/sürüm alanları AYNI kalır; atlama
+    makbuzda `udf_atlandi_istekle` ile İZLİDİR (sessiz değil)."""
+    taslak = izole_kok / "temiz.md"
+    taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
+
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok), "--udf-yok"])
+    assert kod == 0, cikti
+
+    makbuz_yol = izole_kok / "_oa" / "defter" / "teslim-makbuz.json"
+    assert makbuz_yol.is_file()
+    m = json.loads(makbuz_yol.read_text(encoding="utf-8"))
+    _makbuz_sema_dogrula(m, taslak)
+    assert m["udf_atlandi_istekle"] is True
+    assert m["udf_yolu"] is None
 
 
 # ── (2) kapı kapanınca RED makbuzu var, başarı makbuzu yok/bayat ────────
@@ -179,10 +208,10 @@ def test_makbuzsuz_adim9_ile_denetle_teslim_engeli(izole_kok):
 
 # ── (4) TESLİM sonrası dosya değişti → sha uyumsuz → exit 1 ─────────────
 
-def test_teslim_sonrasi_taslak_degisince_sha_uyumsuz_denetle_engeller(izole_kok):
+def test_teslim_sonrasi_taslak_degisince_sha_uyumsuz_denetle_engeller(izole_kok, udf_arglari):
     taslak = izole_kok / "temiz.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod == 0, cikti
 
     # Taslağı SESSİZCE değiştir — makbuz "önce" hâlini taşıyor.
@@ -369,19 +398,24 @@ def test_damgasiz_defter_kanitsizken_uyari_metni_sebebi_soyluyor(izole_kok):
 #        yine de makbuz arar (ad-bağımsız); teslim_paketi kendisi HER taslak
 #        adında da çalışır (ad-deseni teslim_paketi tarafında hiç kullanılmaz)
 
-def test_desen_disi_ad_teslim_paketini_engellemez(izole_kok):
+def test_desen_disi_ad_teslim_paketini_engellemez(izole_kok, udf_arglari):
     taslak = izole_kok / "taslak-v3.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod == 0, cikti
     assert (izole_kok / "_oa" / "defter" / "teslim-makbuz.json").is_file()
 
 
 # ── (7) OA_SKILLS_KOK ile farklı cwd'den script çözümü ──────────────────
 
-def test_oa_skills_kok_fallback_ile_script_bulunur(izole_kok):
+def test_oa_skills_kok_fallback_ile_script_bulunur(izole_kok, udf_arglari):
     """Alt scriptleri GEÇİCİ bir dizine kopyalayıp `OA_SKILLS_KOK` ile
-    işaret ederek path-fix fallback'inin çalıştığını doğrular."""
+    işaret ederek path-fix fallback'inin çalıştığını doğrular.
+
+    NOT: GERÇEK yazıcının bulunduğu ortamda (avukatın makinesi) `udf_arglari`
+    BOŞtur — yani udf_yaz.py'nin de fallback'ten çözüldüğü fiilen sınanır.
+    Yazıcısız ortamda (CI) son adım atlanır; kalan dört scriptin çözümü yine
+    denetlenir."""
     import os
     fallback_kok = tempfile.mkdtemp()
     for skill in ("oa-dilekce", "oa-kontrol", "oa-gizlilik", "oa-pipeline"):
@@ -396,7 +430,8 @@ def test_oa_skills_kok_fallback_ile_script_bulunur(izole_kok):
 
     env = dict(os.environ)
     env["OA_SKILLS_KOK"] = fallback_kok
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)], env=env)
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari,
+                     env=env)
     assert kod == 0, cikti
 
 
@@ -431,7 +466,7 @@ _ADIM_PARCALARI_TEST = {
 _GEREKCE_TEST = "Test amaçlı: bu senaryoda bu adım/katman gereksiz kabul edildi."
 
 
-def test_dairesel_bagimlilik_yok_teslim_pattern_dosya_ile_zorlasiz_tamamlanir(izole_kok):
+def test_dairesel_bagimlilik_yok_teslim_pattern_dosya_ile_zorlasiz_tamamlanir(izole_kok, udf_arglari):
     """P0-5×P0-6 dairesel-KİLİT BLOKER regresyonu (Paket B sinav bulgusu):
     GERÇEK bir pipeline_kayit defterinde (0-8 adım/katmanlar işlenmiş, 9/10
     hâlâ BEKLIYOR) teslim_paketi'nin (d) kapısı --serh'SİZ/--zorla'SIZ
@@ -470,7 +505,7 @@ def test_dairesel_bagimlilik_yok_teslim_pattern_dosya_ile_zorlasiz_tamamlanir(iz
 
     # teslim_paketi --serh'SİZ/--zorla'SIZ tamamlanabiliyor mu? (adım 9/10 hâlâ
     # BEKLIYOR — (d) kapısı bunu TESLİM-ÖNCESİ kipte artık sorun SAYMAMALI.)
-    kod_tp, cikti_tp = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    kod_tp, cikti_tp = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod_tp == 0, f"gerçek defterli kökte teslim_paketi tamamlanamadı:\n{cikti_tp}"
     assert "--serh" not in cikti_tp
     assert "--zorla" not in cikti_tp
@@ -491,7 +526,7 @@ def test_dairesel_bagimlilik_yok_teslim_pattern_dosya_ile_zorlasiz_tamamlanir(iz
 # ── (10) makbuz↔taslak bağı — BAŞKA bir dosya için üretilmiş makbuz BU
 #         dosyayı teslime yetkilendirmez (P0-5 DÜZELTME(a) sinav-turu) ──────
 
-def test_makbuz_baska_dosya_icin_yeniyken_yeni_dilekce_adim9u_yetkilendirmez(izole_kok):
+def test_makbuz_baska_dosya_icin_yeniyken_yeni_dilekce_adim9u_yetkilendirmez(izole_kok, udf_arglari):
     """A dosyası için BAŞARILI bir teslim (makbuz exit0) üretildikten SONRA
     tamamen FARKLI, hiç teslim edilmemiş bir B dosyası (`08-dilekce-son.md`)
     yazılırsa: (1) --denetle 'makbuzsuz dilekçe adayı' uyarısı ÜRETMELİ,
@@ -504,7 +539,7 @@ def test_makbuz_baska_dosya_icin_yeniyken_yeni_dilekce_adim9u_yetkilendirmez(izo
     taslak_a = cikti_dizin / "taslak-A.md"
     taslak_a.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
 
-    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)])
+    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod_tp == 0, cikti_tp
 
     # A tamamen farklı, HİÇ teslim edilmemiş bir B dosyası yazılıyor.
@@ -545,13 +580,13 @@ def test_makbuz_baska_dosya_icin_yeniyken_yeni_dilekce_adim9u_yetkilendirmez(izo
 #          `tam_tur --kaydet`'i TEMİZ geçiyordu (tam yeşil tabloyla kapanan
 #          hiç teslim edilmemiş bir revize).
 
-def test_dogal_sira_teslim_sonrasi_revize_hem_denetle_hem_kaydet_engeller(izole_kok):
+def test_dogal_sira_teslim_sonrasi_revize_hem_denetle_hem_kaydet_engeller(izole_kok, udf_arglari):
     cikti_dizin = izole_kok / "_oa" / "cikti"
     cikti_dizin.mkdir(parents=True, exist_ok=True)
     taslak_a = cikti_dizin / "taslak-A.md"
     taslak_a.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
 
-    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)])
+    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod_tp == 0, cikti_tp
 
     metin = izole_kok / "_oa" / "metin"
@@ -631,7 +666,7 @@ def test_cikti_alt_klasordeki_dilekce_makbuzsuz_uyariyi_tetikler(izole_kok):
         f"TAMAM damgalanmamalıydı:\n{cikti_kaydet}")
 
 
-def test_deftersiz_akiste_doga_sira_bypass_kaydet_engeller(izole_kok):
+def test_deftersiz_akiste_doga_sira_bypass_kaydet_engeller(izole_kok, udf_arglari):
     """Ş8 (v0.5.5 şerh turu, BLOKER) — P0-5(e) kabul ölçütü ayrışması: canlı
     sömürü kanıtı (Probe 2/D) — `_oa/defter` HİÇ AÇILMAMIŞ (pipeline_kayit
     --baslat/--isle HİÇ ÇAĞRILMAMIŞ; (iv-c) defter kapısı bu yüzden devreye
@@ -649,7 +684,7 @@ def test_deftersiz_akiste_doga_sira_bypass_kaydet_engeller(izole_kok):
     taslak_v1 = cikti_dizin / "08-dilekce-v1.md"
     taslak_v1.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
 
-    kod_tp, cikti_tp = _tp([str(taslak_v1), "--tip", "genel", "--kok", str(izole_kok)])
+    kod_tp, cikti_tp = _tp([str(taslak_v1), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod_tp == 0, cikti_tp
 
     metin = izole_kok / "_oa" / "metin"
@@ -675,7 +710,7 @@ def test_deftersiz_akiste_doga_sira_bypass_kaydet_engeller(izole_kok):
     assert "makbuzsuz dilekçe adayı" in cikti_kaydet or "teslim" in cikti_kaydet.lower()
 
 
-def test_makbuzsuz_dilekce_uyarisi_cift_basilmaz(izole_kok):
+def test_makbuzsuz_dilekce_uyarisi_cift_basilmaz(izole_kok, udf_arglari):
     """Ş10 (v0.5.5 şerh turu, KUCUK) — `_makbuz_denetim_hesapla` (adım-9
     uyum kolu) ile bağımsız `_dilekce_sekilli_makbuzsuz_uyarisi` çağrısı AYNI
     metni İKİ KEZ (biri '✗ sorun', biri '⚠ uyarı' olarak) BASMAMALI. Aynı
@@ -686,7 +721,7 @@ def test_makbuzsuz_dilekce_uyarisi_cift_basilmaz(izole_kok):
     taslak_a = cikti_dizin / "taslak-A.md"
     taslak_a.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
 
-    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)])
+    kod_tp, cikti_tp = _tp([str(taslak_a), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod_tp == 0, cikti_tp
 
     metin = izole_kok / "_oa" / "metin"
@@ -739,10 +774,10 @@ def test_dilekce_sonrasi_not_dosyasi_uyariyi_susturmaz(izole_kok):
 
 # ── (12) [F] tam olarak BİR KEZ koşar (P0-5 DÜZELTME(c) çift-[F] tekilleştirme)
 
-def test_ictihat_muhakeme_denetim_bir_kez_calisir(izole_kok):
+def test_ictihat_muhakeme_denetim_bir_kez_calisir(izole_kok, udf_arglari):
     taslak = izole_kok / "temiz.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod == 0, cikti
     imza = "İÇTİHAT MUHAKEME DENETİMİ — oa-kontrol (deterministik, YAPISAL)"
     assert cikti.count(imza) == 1, (
@@ -752,10 +787,10 @@ def test_ictihat_muhakeme_denetim_bir_kez_calisir(izole_kok):
 
 # ── (13) 'udf_yaz üretimi = TESLİM olayı' — makbuzsuz UDF advisory uyarısı ──
 
-def test_makbuzsuz_udf_uretimi_uyarisi(izole_kok):
+def test_makbuzsuz_udf_uretimi_uyarisi(izole_kok, udf_arglari):
     taslak = izole_kok / "temiz.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
-    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
+    kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)] + udf_arglari)
     assert kod == 0, cikti
 
     import time
@@ -772,9 +807,14 @@ def test_makbuzsuz_udf_uretimi_uyarisi(izole_kok):
     assert "elden-uretilmis.md.udf" in cikti_d
 
 
+@gercek_udf_yazici_gerekli
 def test_normal_zincir_udf_uretimi_uyari_uretmez(izole_kok):
     """teslim_paketi'nin KENDİ ürettiği .udf (makbuzun `udf_yolu` alanındaki
-    dosya) 'makbuzsuz UDF üretimi' uyarısını YANLIŞLIKLA TETİKLEMEMELİ."""
+    dosya) 'makbuzsuz UDF üretimi' uyarısını YANLIŞLIKLA TETİKLEMEMELİ.
+
+    Bu testin konusu GERÇEK bir .udf'in yanlış-pozitif üretmemesidir; `--udf-yok`
+    ile koşulursa ortada hiç .udf olmayacağından test BOŞA döner (vacuous). Bu
+    yüzden ikizi yoktur ve yazıcısız ortamda atlanır — bkz. tests/oa_udf_ortam.py."""
     taslak = izole_kok / "temiz.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
     kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
