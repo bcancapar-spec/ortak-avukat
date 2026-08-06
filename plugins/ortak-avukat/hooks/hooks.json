@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",

@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.5.5"
+OA_SURUM = "0.5.6.1"
 
 
 def _surum_tuple(s):
@@ -2805,6 +2805,154 @@ def _hook_govde_calistir(kok_aday, hook_adi):
         _hook_basarisizlik_isaretle(kok_aday, str(e))
 
 
+# ── ATLANMIŞ HAT NÖBETÇİSİ (v0.5.6.1 — P0, saha kanıtlı) ───────────────────
+# SAHA VAKASI: model çekirdek skill'i çağırdı, iki dilekçe + UDF + PDF üretti,
+# ama `oa-pipeline`'a HİÇ devretmedi — parçaların yalnız description'larını
+# okuyup disiplini kendi muhakemesiyle yürüttü. Çıktı iyiydi; ama süre hesabı,
+# antitez matrisi ve teslim kapıları HİÇ koşmadı. Avukat "plugin'i kullandın
+# mı?" diye sormasa fark edilmeyecekti.
+#
+# NEDEN HİÇBİR HOOK KONUŞMADI: hem `_hook_postwrite_tetikle_mi` hem
+# `_hook_govde_calistir` işe `_oa/defter` VAR MI diye başlıyordu; hat hiç
+# açılmadıysa defter de yoktur, dolayısıyla tetik SESSİZCE geri dönüyordu.
+# Yani nöbetçi, tam da nöbet tutması gereken vakada uyuyordu.
+#
+# DÜZELTME: "çıktı var + defter yok" ayrı ve ÖNCELİKLİ bir sinyaldir. Bu,
+# ZORLAMA değil GÖRÜNÜRLÜK'tür (amaç çizgisi): iş engellenmez, avukat
+# hangi kapıların hiç koşmadığını ÖĞRENİR. Modelin kestirmesi meşru olabilir
+# — ama sessiz kalması olamaz.
+_HAT_ATLANDI_BASLIK = "⚠ HAT ATLANDI — pipeline defteri YOK ama çalışma ürünü VAR"
+
+
+def _calisma_urunu_var_mi(kok, azami_tarama=400):
+    """Kökte dilekçe-şekilli bir çalışma ürünü var mı? `_oa/cikti` ZORUNLU
+    DEĞİL — saha vakasında model çıktıyı kök altındaki `cikti/`ye yazmıştı,
+    yani nöbetçi sözleşmeli dizine bakarak arasa yine kör kalırdı. Bu yüzden
+    kökün ilk iki katmanı taranır. Döner: bulunan dosya adları (en çok 5).
+    ASLA istisna fırlatmaz."""
+    bulunan = []
+    try:
+        sayac = 0
+        for dizin, altlar, adlar in os.walk(kok):
+            # `.git`, `evraklar` gibi ağır/ilgisiz ağaçlara girme; derinlik 2.
+            altlar[:] = [a for a in altlar
+                         if not a.startswith(".") and a not in ("__pycache__", "node_modules")]
+            if dizin.count(os.sep) - kok.count(os.sep) >= 2:
+                altlar[:] = []
+            for ad in adlar:
+                if sayac >= azami_tarama:
+                    return bulunan
+                if not ad.lower().endswith((".md", ".txt", ".html", ".udf")):
+                    continue
+                sayac += 1
+                yol = os.path.join(dizin, ad)
+                try:
+                    with open(yol, encoding="utf-8", errors="replace") as f:
+                        if _DILEKCE_DESEN.search(f.read(20000)):
+                            bulunan.append(os.path.relpath(yol, kok))
+                            if len(bulunan) >= 5:
+                                return bulunan
+                except OSError:
+                    continue
+    except Exception:
+        return bulunan
+    return bulunan
+
+
+def _hat_atlandi_uyarisi(kok):
+    """`_oa/defter` YOK ama çalışma ürünü VAR ise görünür uyarı metni, aksi
+    hâlde None. ASLA istisna fırlatmaz, ASLA bloklamaz."""
+    try:
+        if os.path.isdir(os.path.join(kok, "_oa", "defter")):
+            return None                      # hat açılmış — bu nöbetçinin işi değil
+        urunler = _calisma_urunu_var_mi(kok)
+        if not urunler:
+            return None                      # ürün de yok — söylenecek bir şey yok
+        return (
+            f"{_HAT_ATLANDI_BASLIK}\n"
+            f"  Bulunan çalışma ürünü: {', '.join(urunler)}\n"
+            "  Bu klasörde `_oa/defter` yok; yani `oa-pipeline` hattı HİÇ açılmadı.\n"
+            "  Aşağıdakilerin hiçbiri koşmamış olabilir — çıktı doğru olsa BİLE\n"
+            "  denetlenmemiştir:\n"
+            "    · oa-sure      — süre/zamanaşımı deterministik hesabı\n"
+            "    · oa-vakia     — iddia↔delil matrisi, ispat boşluğu\n"
+            "    · oa-antitez   — sekiz cephe, çürütülmemiş antitez\n"
+            "    · oa-kontrol   — teslim öncesi künye/atıf denetimi + makbuz\n"
+            "    · oa-gizlilik  — Layer 0 dış çıktı süzgeci\n"
+            "  Hattı açmak için: `python pipeline_kayit.py --baslat \"<dosya adı>\"`\n"
+            "  (Bu bir ENGEL DEĞİLDİR — yalnız görünürlüktür. Kestirme meşru\n"
+            "   olabilir; sessiz kalması olamaz.)")
+    except Exception:
+        return None
+
+
+# ── DEVİR HATIRLATICISI (v0.5.6.1 — UserPromptSubmit) ──────────────────────
+# DÜRÜST SINIR, ÖNCE BU: hiçbir hook modeli bir skill'i çağırmaya ZORLAYAMAZ.
+# `PreToolUse` yalnız model ZATEN bir araç çağırdığında ateşler — atlama
+# vakasında hiç çağırmadığı için ateşlemez. Elimizdeki en güçlü mekanizma
+# `UserPromptSubmit`tir: çıktısı modelin BAĞLAMINA, üstelik model prompt'u
+# işlemeden ÖNCE girer.
+#
+# NEDEN SKILL.md'DEN GÜÇLÜ: SKILL.md ancak model o skill'i ÇAĞIRIRSA yüklenir
+# — yani atlama vakasında hiç okunmaz. Bu hook ise çağrıdan bağımsız, HER
+# turda koşar. §0.5 "atlanamaz" talimatı böylece metinden bağlama taşınır.
+#
+# NEDEN YİNE DE GARANTİ DEĞİL: bağlama giren bir cümle bir TALİMATTIR, kapı
+# değil. Model yine atlayabilir. Bu yüzden ikinci ayak `_hat_atlandi_uyarisi`
+# (Stop hook) TESPİT eder. Zorlama+tespit birlikte çalışır; tek başına ikisi
+# de yetmez.
+#
+# GÜRÜLTÜ DİSİPLİNİ: hat açıksa (defter var) ÇIKTI YOKTUR. Her turda tekrar
+# eden bir uyarı, okunmayan bir uyarıya dönüşür (uyum maliyeti = uyum).
+def _dosya_klasoru_mu(kok):
+    """Bu klasör bir DAVA DOSYASI klasörü mü? Ucuz sezgi: UYAP evrak deseni
+    (`NNN_...` adlandırması) ya da `_oa` kökü var mı. ASLA istisna fırlatmaz."""
+    try:
+        if os.path.isdir(os.path.join(kok, "_oa")):
+            return True
+        sayac = 0
+        for girdi in os.scandir(kok):
+            if girdi.is_file() and re.match(r"^\d{3}[_-]", girdi.name):
+                sayac += 1
+                if sayac >= 3:      # üç numaralı evrak = UYAP indirmesi
+                    return True
+        return False
+    except Exception:
+        return False
+
+
+def hook_prompt(kok=None):
+    """UserPromptSubmit — devir yükümlülüğünü modelin bağlamına enjekte eder.
+    Döner: her zaman 0 (ASLA bloklamaz). Hat açıksa hiçbir şey basmaz."""
+    try:
+        k = os.path.abspath(kok or ".")
+        if not _dosya_klasoru_mu(k):
+            return 0                                     # dava klasörü değil — sessiz
+        if os.path.isdir(os.path.join(k, "_oa", "defter")):
+            return 0                                     # hat zaten açık — sessiz
+        metin = (
+            "ORTAK AVUKAT — DEVİR YÜKÜMLÜLÜĞÜ (mekanik hatırlatma, bu turda geçerli):\n"
+            "Bu klasör bir dava dosyası klasörü ve `_oa/defter` YOK — yani pipeline "
+            "hattı henüz açılmamış. Hukuki bir iş (analiz, dilekçe, mütalaa, araştırma) "
+            "yapılacaksa çekirdek `ortak-avukat` §0.5 uyarınca ilk hamle `oa-pipeline`'a "
+            "DEVİRDİR ve devir SÖZLE değil ÇAĞRIYLA olur — parçaların description'larını "
+            "okuyup disiplini taklit etmek o parçayı çalıştırmak DEĞİLDİR.\n"
+            "Atlanırsa şunlar hiç koşmaz: oa-sure (süre/zamanaşımı aritmetiği) · "
+            "oa-vakia (iddia↔delil matrisi) · oa-antitez (sekiz cephe) · "
+            "oa-kontrol (teslim öncesi künye/atıf denetimi + makbuz) · "
+            "oa-gizlilik (Layer 0). Çıktı doğru görünse bile DENETLENMEMİŞ olur.\n"
+            "Bu bir ENGEL DEĞİLDİR: tek ve izole bir soru soruluyorsa tam hattı açma; "
+            "tereddütte aç."
+        )
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
+            "additionalContext": metin,
+        }}, ensure_ascii=False))
+        return 0
+    except Exception:
+        return 0                                          # sessiz başarısızlık — asla bloklamaz
+
+
 def hook_denetle(kok=None):
     """P0-7 — Stop/SessionEnd hook komutu. Döner: her zaman 0 (ASLA
     bloklamaz)."""
@@ -2813,6 +2961,14 @@ def hook_denetle(kok=None):
     except Exception:
         kokler = [os.path.abspath(kok or ".")]
     for kok_aday in kokler:
+        # ATLANMIŞ HAT NÖBETÇİSİ — defter denetiminden ÖNCE. `_hook_govde_calistir`
+        # defter yoksa sessizce döner; oysa "defter YOK + ürün VAR" hâli tam da
+        # görünmesi gereken hâldir (bkz. `_hat_atlandi_uyarisi` notu).
+        atlandi = _hat_atlandi_uyarisi(kok_aday)
+        if atlandi:
+            print("═" * 66)
+            print(atlandi)
+            print("═" * 66)
         _hook_govde_calistir(kok_aday, "Stop/SessionEnd")
     return 0
 
@@ -2939,11 +3095,20 @@ def main():
                           "hook komutu — yalnız _oa/cikti altında SON 60sn içinde "
                           "dilekçe-şekilli yeni bir dosya varsa tam denetim koşar "
                           "(hızlı erken çıkış); ASLA bloklamaz (her zaman exit 0).")
+    ap.add_argument("--hook-prompt", action="store_true", dest="hook_prompt",
+                     help="P0 (v0.5.6.1): model-bağımsız UserPromptSubmit hook komutu — "
+                          "dosya klasöründe hat AÇILMAMIŞSA devir yükümlülüğünü modelin "
+                          "BAĞLAMINA enjekte eder (SKILL.md'den yapısal olarak güçlüdür: "
+                          "SKILL.md ancak çağrılırsa yüklenir, bu HER turda koşar). "
+                          "Hat açıksa SESSİZDİR; ASLA bloklamaz (her zaman exit 0).")
     ap.add_argument("--avukat-karari", dest="avukat_karari", default=None,
                      help="M7 (Paket D): AVUKAT KARARI BEKLEYEN'deki bir çatalı "
                           "((--adim+--parca) VEYA --katman ile hedeflenir) NİHAİ "
                           "karar metniyle kaydeder — --gerekce ZORUNLU.")
     args = ap.parse_args()
+
+    if args.hook_prompt:
+        sys.exit(hook_prompt(args.kok))
 
     if args.hook_denetle:
         sys.exit(hook_denetle(args.kok))

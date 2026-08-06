@@ -59,6 +59,45 @@ Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstina
 - **`search_within_mevzuat.query` (tek kanun, yerel boolean):** AND/OR/NOT (BÜYÜK HARF) **gerçekten** çalışır, `( )` gruplama, `"tam ifade"`.
 Tüm dialect'lerde Türkçe diakritikleri koru (ç ş ğ ı İ ö ü).
 
+## Kurum kararları ve TEK BELGE İÇİNDE arama (v0.5.6.1 — rehber sadeleştirmesi)
+Bu bölüm, ayrı bir "işlem rehberi" skill'i olarak taşınan operasyonel özün
+aileye alınmış hâlidir. Ayrı skill SİLİNDİ: araştırma disiplini iki yerde
+yaşayamaz (ikiz-liste yasağı) — rehberi okuyup "araştırmayı öğrendim" sanmak,
+bu ailenin bilinen halüsinasyon kapısıdır.
+
+- **`kurum_karari_ara`** — `kurum` parametresiyle **11 kurumda** birleşik arama:
+  `gib` (özelge) · `btk` · `rekabet` · `uyusmazlik` · `kik` · `sayistay` ·
+  `bddk` · `kvkk` · `sigorta` (Sigorta Tahkim) · `reklam` (Reklam Kurulu) ·
+  `kdk` (Kamu Denetçiliği). Filtreler kuruma özeldir; yabancı filtre
+  `invalid_params` döndürür. `btk`/`rekabet`/`uyusmazlik` sonuçları belge
+  içeriği TAŞIMAZ (PDF) — tam metni yalnız gerçekten gereken karar için
+  `kurum_karari_getir` ile al (OCR maliyetli). Sayfalama: `page` +
+  `results_per_page` (1–50).
+- **⚠️ LAYER 0 — BU SATIR ANAYASALDIR (m.10):** `bddk` · `kvkk` · `sigorta` ·
+  `reklam` sorguları **ÜÇÜNCÜ TARAF bir web servisine** (Tavily) gider; Yargı
+  Pro'nun kendi indeksinde değildir. Bu dört kuruma yapılan aramalara
+  **müvekkil adı, TCKN, esas no veya herhangi bir kişi-tanımlayıcı ayrıntı
+  ASLA yazılmaz** — yalnız hukuki kavram yazılır. (`not_configured` dönebilir;
+  sonuçlar tek sayfadır.)
+- **`mevzuat_icinde_ara`** — tek bir mevzuat belgesi *İÇİNDE* yerel Boole
+  araması. 50.000 kelimelik kanunu getirip sayfalamak yerine üç maddeyi anında
+  yalıtır: anayasa m.1'in ("israftan kes, muhakemeden kesme") saf uygulaması.
+  Operatörler **BÜYÜK HARF** ZORUNLU: `"açık rıza" AND sağlık` ·
+  `(ihracat OR ithalat) AND NOT istisna`.
+- **Kimlik kökeni:** resmî kanun numarası (`6698`) = `mevzuat_no`; ama
+  `mevzuat_getir`/`mevzuat_icinde_ara` `mevzuat_ara`'nın döndürdüğü
+  `mevzuat_id`'yi ister (`mevzuatgov:kanun:5:6698`). `unsupported_legacy_id`
+  alırsan `mevzuat_ara` ile yeniden ara.
+- **Sayfalama asimetrisi (sessiz hata kaynağı):** `ictihat_ara` **`pageNumber`**
+  (camelCase) ister; mevzuat araçları **`page`**. `ictihat_ara`'ya `page`
+  göndermek **sessizce yok sayılır** — ikinci sayfayı aldığını sanırsın, birinci
+  sayfayı alırsın.
+- **Maddesiz türler:** `TEBLIGLER` · `CB_KARAR` · `CB_GENELGE` maddeye
+  bölünmez; `id_type: "outline"|"madde"` bunlarda `outline_desteklenmiyor`
+  döner — tam metni getir ya da `mevzuat_icinde_ara` kullan.
+- Tek bir Sigorta Tahkim dergisi sayısı içinde: `sigorta_dergi_icinde_ara`;
+  tek bir Reklam Kurulu bülteni içinde: `reklam_bulten_icinde_ara`.
+
 ## Sunucu çağrı sırası (varsayılan — kolay akış)
 Norm önce, içtihat sonra:
 1. **Mevzuat** taraması (Mevzuat MCP / `search_mevzuat`) — norm katmanı.
