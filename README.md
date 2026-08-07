@@ -65,6 +65,57 @@ bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on ma
 
 ---
 
+## Maliyet ekonomisi — dakika dakika ölçülmüş gerçek koşu
+
+Aşağıdaki zaman çizelgesi tahmin değildir: gerçek, derdest bir istinaf
+dosyasının (~200 evrak, 45 MB, 17'si OCR) **Claude Fable 5 (max efor)**
+üzerinde tek prompt'la işlendiği koşuda, dakika dakika canlı kaydedilmiştir
+(tam rapor: [SAHA-SONUCU.md](SAHA-SONUCU.md)):
+
+| Dakika | Token | O anda ne oluyordu |
+|---|---|---|
+| 0 | 0 | Tek doğal-dil prompt girildi; başka hiçbir talimat verilmedi |
+| ~1 | ~0 | Sistem kendiliğinden devraldı, `_oa/` çalışma kökü doğdu |
+| 8 | 5,7k | **İngest çalışıyor** — 200+ evrak Python scriptiyle metne iniyor; model beklemede |
+| 15 | 12,5k | İngest bitti: 202 birim, künye + indeks üretildi |
+| 22 | 18k | İçtihat araştırması: Yargı Pro MCP'de isabetli sorgular |
+| 30 | 25k | 11 karar + 3 norm teyitli; kütük ve ham döküm diskte |
+| 35 | 29,1k | Analiz tamam, dilekçe taslağı yazılıyor |
+| **49** | **45,6k** | **36 KB'lık ek beyan + geçerli .udf teslim edildi** |
+
+Aynı sınıf iş, evrakı modele görüntü olarak yükleyen eski usulde **1M+ token**
+yiyordu; yalnız analiz aşaması için 1,2M+ gözlenmişti. Fark **~26×** — ve
+muhakemeden tek satır kısılmadan (dilekçe 11 bölümlü çıktı, her olgusal çapa
+kaynağa izlendi, iki aleyhe içtihat iç cephanelikte tutuldu).
+
+### Bu ucuzluk nereden geliyor — kodlama yapısı
+
+Sır, anayasanın 1. maddesindedir: **tasarruf yalnız israftan kesilir,
+muhakemeden asla.** Bunu mümkün kılan, ailenin iki katmanlı mimarisidir —
+**model kurar, Python denetler:**
+
+1. **Deterministik çıkarım (`oa_ingest.py`):** PDF/TIFF/UDF/EYP/DOCX evrak,
+   modele hiç gösterilmeden Python'la metne iner (metin PDF → doğrudan,
+   taranmış → OCR + kalite merdiveni). Token maliyeti: **sıfır** — bu iş
+   CPU'da olur, bağlamda değil.
+2. **Künye + indeks (`00-kunye.json`, `00-INDEX.md`):** model külliyatı
+   toptan yüklemez; ucuz indeksten **seçici okur**. 45 MB görüntü yerine
+   birkaç yüz KB hedefli metin.
+3. **Denetim kapıları (script):** zorunlu unsur denetimi, künye teyidi,
+   damga zinciri, teslim makbuzu, UDF geçerlilik kapısı — hepsi Python
+   scriptidir; model "yaptım" der, script **kanıtlar**. Beyan token'ı yerine
+   exit kodu.
+4. **Muhakeme katmanı (model):** kıyas, strateji, antitez, kaleme alma —
+   token buraya harcanır, yalnız buraya. 45,6k'nın büyük kısmı fiilen
+   düşünmeye gitti; taşımaya değil.
+
+Sonuç: pahalı olan katman (model muhakemesi) korunur, ucuzlatılabilen her
+şey (okuma, doğrulama, biçim) koda iner. **Verim kaybı ve muhakeme kaybı
+ölçülebilir düzeyde küçüktür; çıktı profesyonel sayılır düzeydedir** — dürüst
+kayıp listesi dâhil tüm ölçüm SAHA-SONUCU.md'dedir.
+
+---
+
 ## Bir dosya önünüze geldiğinde ne oluyor
 
 1. **Evrak metne iner.** UYAP'tan indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir kez
