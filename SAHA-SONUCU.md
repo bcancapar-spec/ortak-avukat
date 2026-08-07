@@ -1,11 +1,22 @@
 # SAHA SONUCU — Tek Prompt, Gerçek İstinaf Dosyası (2026-08-07)
 
 > © 2026 Av. Bayram Can Çapar. Dosya kimliği anayasa m.7 (Av.K. m.36 · KVKK)
-> gereği anonimdir: gerçek, derdest bir hukuk istinaf dosyası — burada
-> yalnız ölçüm yaşar. Ölçüm ortamı: **Claude Fable 5 (max efor)**, Claude
-> Code masaüstü, Windows 11, eklenti v0.5.6.1, **müdahalesiz koşu** —
-> avukat tek bir doğal-dil prompt yazdı, akışa bir daha dokunmadı; sistem
-> soru da sormadı (tek prompt → teslim edilebilir çıktı).
+> gereği anonimdir: **bu sentetik bir demo değil, GERÇEK ve DERDEST bir hukuk
+> istinaf dosyasıdır** — burada yalnız ölçüm yaşar. Ölçüm ortamı: **Claude
+> Fable 5 (max efor)**, Claude Code masaüstü, Windows 11, eklenti v0.5.6.1,
+> **müdahalesiz koşu** — avukat tek bir doğal-dil prompt yazdı, akışa bir
+> daha dokunmadı; sistem soru da sormadı (tek prompt → teslim edilebilir çıktı).
+
+## Uçtan uca zincir — evrak nereden geldi
+
+Külliyat, UYAP Avukat Portalı'ndan aynı yazarın açık kaynak Chrome uzantısı
+**[avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici)**
+ile toplu ve filtreli indirildi (197/201 evrak; indirilemeyen 4 evrak
+uzantının kendi raporuyla belgelendi — sistem bu raporu kendiliğinden fark
+edip avukata bildirdi). Yani ölçülen zincir bütünüyle gerçek pratiktir:
+
+**UYAP → avukat-dosya-indirici → yerel klasör → tek prompt → Ortak Avukat
+ailesi → teslim edilebilir ek beyan + geçerli .udf**
 
 ## Ölçülen sayılar
 
