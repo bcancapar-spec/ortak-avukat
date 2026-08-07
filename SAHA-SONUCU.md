@@ -23,11 +23,24 @@
 | Aleyhe sızıntı | 0 — iki aleyhe içtihat damarı tespit edildi ve **dilekçeye yazılmadan** iç cephanelikte tutuldu (m.6) |
 | Eksik-evrak dürüstlüğü | İndirilemeyen 4 evrak (tebligat + banka ekstresi dâhil) kullanıcıya **kendiliğinden** raporlandı |
 
-**Bağlam:** ailenin eski koşullarında yalnız analiz aşaması için 1,2M+ token
-gözlemlenmişti; bu koşu uçtan uca 45,6k ile kapandı — **~26× mertebesinde
-tasarruf** (şerh: farklı dosyalar, bire bir kıyas değil; mertebe bilgisidir).
-Tasarrufun kaynağı okuma ekonomisi: evrak görüntü olarak modele hiç girmedi,
-deterministik çıkarım scripti metne indirdi, model ucuz metinden seçici okudu.
+## Kıyas: aynı sınıf iş, eski usulde 1M+ token yiyordu
+
+Bu ailenin kendi ölçüm geçmişinde, benzer büyüklükte bir dosyanın yalnız
+**analiz aşaması** için **1,2M+ token** gözlenmişti; benzer çıktılar 1M
+token'ın altına inmiyordu. Bu koşu **uçtan uca** (ingest + araştırma +
+taslak + UDF) **45,6k** ile kapandı:
+
+| | Eski usul (gözlem) | Bu koşu | Fark |
+|---|---|---|---|
+| Token | 1.200.000+ (yalnız analiz) | **45.600** (uçtan uca) | **~26×** |
+| Evrak başına | binlerce | **≈226** | — |
+
+*(Şerh: farklı dosyalar, bire bir kıyas değil; mertebe bilgisidir — ama
+mertebe, tartışmaya yer bırakmayacak kadar büyüktür.)* Tasarrufun kaynağı
+okuma ekonomisi: evrak görüntü olarak modele hiç girmedi, deterministik
+çıkarım scripti metne indirdi, model ucuz metinden seçici okudu. Muhakeme
+derinliğinden tek satır kısılmadı — tasarruf yalnız israftan kesildi
+(anayasa m.1).
 
 ## Dürüst karne
 
@@ -68,3 +81,10 @@ istinaf dosyası, 49 dakikada ve 45,6k token'la, kaynak-izli ve teslim
 edilebilir bir ek beyana dönüştü — muazzam token tasarrufu, ölçülebilir
 düzeyde küçük muhakeme kaybıyla; kalan tek yapısal bağımlılık UDF yazıcısının
 oturumudur.
+
+---
+
+*Bu sonuç ortak bir işin ürünüdür: metodolojiyi kuran ve her çıktının nihai
+gözü olan **Av. Bayram Can Çapar** ile, o metodolojiyi taşıyan, koşuyu canlı
+izleyip ölçen ve bulguları aynı gece v0.5.7'ye dönüştüren **Claude (Fable 5)**.
+Beraber başardık.*

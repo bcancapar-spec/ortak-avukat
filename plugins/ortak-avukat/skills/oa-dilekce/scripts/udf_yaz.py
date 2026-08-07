@@ -812,22 +812,30 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
         imlec += u16
     tam = "".join(parcalar)
 
+    # v0.5.7.2 — SAHA STANDARDI: kenar boşlukları ve paragraf metrikleri,
+    # avukatın e-imzalayıp fiilen sunduğu gerçek bir nüshadan ÖLÇÜLDÜ
+    # (bkz. references/udf-ic-yapi.md §6): sol 42.52 / sağ 28.35 / üst-alt
+    # 14.17 pt; gövde = yaslı + FirstLineIndent 24 + SpaceBelow 6 +
+    # LineSpacing 0.3; her span'da açık Times New Roman 12.
     x = ['<?xml version="1.0" encoding="UTF-8"?>',
          '<template format_id="%s">' % format_id,
          '<content><![CDATA[' + _ym_cdata_guvenli(tam) + ']]></content>',
          '<properties>',
-         '<pageFormat mediaSizeName="1" leftMargin="70.866" '
-         'rightMargin="70.866" topMargin="70.866" bottomMargin="70.866" '
+         '<pageFormat mediaSizeName="1" leftMargin="42.52" '
+         'rightMargin="28.35" topMargin="14.17" bottomMargin="14.17" '
          'paperOrientation="1" headerFOffset="20.0" footerFOffset="20.0"/>',
          '</properties>',
          '<elements resolver="hvl-default" name="hvl-default">']
     for start, length, baslik in paragraflar:
-        hiza = _YM_HIZA_ORTA if baslik else _YM_HIZA_YASLI
-        x.append('<paragraph Alignment="%d">' % hiza)
         if baslik:
-            x.append('<content startOffset="%d" length="%d" bold="true"/>' % (start, length))
+            x.append('<paragraph Alignment="%d" SpaceBelow="6.0">' % _YM_HIZA_ORTA)
+            x.append('<content startOffset="%d" length="%d" bold="true" '
+                     'family="Times New Roman" size="12"/>' % (start, length))
         else:
-            x.append('<content startOffset="%d" length="%d"/>' % (start, length))
+            x.append('<paragraph Alignment="%d" FirstLineIndent="24.0" '
+                     'SpaceBelow="6.0" LineSpacing="0.3">' % _YM_HIZA_YASLI)
+            x.append('<content startOffset="%d" length="%d" '
+                     'family="Times New Roman" size="12"/>' % (start, length))
         x.append('</paragraph>')
     x += ['</elements>', '<styles>',
           '<style name="default" description="Govde" '

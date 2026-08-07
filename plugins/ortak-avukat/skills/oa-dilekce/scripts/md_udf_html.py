@@ -44,7 +44,10 @@ import os
 import re
 import sys
 
-JUST = "text-align:justify; line-height:1.4; margin-top:0pt; margin-bottom:6pt"
+# v0.5.7.2 — SAHA STANDARDI (e-imzalı gerçek nüshadan ölçüldü, bkz.
+# references/udf-ic-yapi.md §6): gövde iki yana yaslı + İLK SATIR 24pt
+# girintili + altında 6pt boşluk + 1.3 satır aralığı.
+JUST = "text-align:justify; text-indent:24pt; line-height:1.3; margin-top:0pt; margin-bottom:6pt"
 QUOTE = "text-align:justify; line-height:1.3; margin-left:36pt; margin-right:18pt; margin-top:6pt; margin-bottom:6pt"
 
 

@@ -68,3 +68,24 @@ kusursuz — nihai göz avukatındır.
 `.udf` ASLA ham okunmaz: `npx -y udf-cli@latest udf2md`. Ağsız iç hat için
 `udf_metin.py` yalnız CDATA metnini çeker (biçim bilgisi vermez). Çok
 sayfalı TIFF ve taranmış PDF tuzakları için rehberin B/C bölümleri geçerlidir.
+
+## 6. SAHA STANDARDI — e-imzalı gerçek nüshadan ölçülen yazım metrikleri (v0.5.7.2)
+
+Avukatın UYAP editöründe hazırlayıp e-imzalayarak FİİLEN SUNDUĞU bir dilekçe
+nüshası bayt düzeyinde ölçüldü (kimlik m.7 gereği anonim; `sign.sgn` mevcuttu
+ve mekanik kapımız dosyayı GEÇERLİ saydı — gerçek-dünya çapraz doğrulaması).
+Ölçülen standart, iki motorun da varsayılanıdır:
+
+| Öğe | Değer |
+|---|---|
+| Kenar boşlukları (pt) | sol **42.52** (1,5cm) · sağ **28.35** (1cm) · üst/alt **14.17** (0,5cm) |
+| Gövde paragrafı | iki yana yaslı · `FirstLineIndent=24` · `SpaceBelow=6` · `LineSpacing=0.3` |
+| Yazı | Times New Roman 12 — her content span'ında AÇIKÇA (yalnız styles'a bırakılmaz) |
+| Etiket blokları (DAVACI/VEKİLİ…) | asılı girinti: `LeftIndent=110 + FirstLineIndent=-110 + TabSet=110` + gerçek TAB |
+| Başlık | ortalı + bold; alt listeler `LeftIndent=24/36` |
+| Footer | sayfa numarası (Arial 11) — editör ekler; motorlarımız üretmez |
+| Vurgu | bold ~%35 span, italik alıntılarda |
+
+Kanonik HTML karşılığı (md_udf_html `JUST`):
+`text-align:justify; text-indent:24pt; line-height:1.3; margin-bottom:6pt`.
+Etiket blokları için HTML deseni: `tab-stops:110pt` + `<tab/>` (rehber A.3).
