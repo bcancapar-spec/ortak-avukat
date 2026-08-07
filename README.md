@@ -2,7 +2,16 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.6 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) 
+**Sürüm:** 0.5.7.2 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+
+> ⚖️ **Gerçek davalarda test edildi.** Bu sistem sentetik örneklerle değil,
+> derdest gerçek dosyalarla sahada sınanıyor. Son ölçüm: ~200 evraklık gerçek
+> bir istinaf dosyası, **tek bir doğal-dil prompt'la**, 49 dakikada ve 45,6k
+> token'la teslim edilebilir ek beyana + geçerli UDF'e dönüştü (Claude Fable 5,
+> max efor; evrak [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici)
+> ile UYAP'tan indirildi). Sayılar, dürüst kayıp listesiyle birlikte:
+> **[SAHA-SONUCU.md](SAHA-SONUCU.md)**. Dosya kimlikleri anayasa m.7 gereği
+> daima anonimdir.
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
