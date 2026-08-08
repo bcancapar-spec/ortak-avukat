@@ -117,7 +117,7 @@ DEĞİŞTİRMEZ.
 # 01 — İçtihat Muhakeme Kaydı
 
 **KUNYE:** Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023
-**KAYNAK-IZI:** _oa/teyit/dokum/2026-07-19-search_bedesten_unified-tbk-m49.md
+**KAYNAK-IZI:** _oa/teyit/dokum/2026-07-19-ictihat_ara-tbk-m49.md
 **DAMGA:** LEHE
 
 ## İLGİLİ-KISIM
@@ -140,7 +140,7 @@ içeriyor; TBK m.49'un büyük önermesini somutlaştıran doğrudan emsaldir.
 # 02 — İçtihat Muhakeme Kaydı
 
 **KUNYE:** Yargıtay 4. HD, E. 2022/900, K. 2022/4400, T. 03.05.2022
-**KAYNAK-IZI:** _oa/teyit/dokum/2026-07-19-search_bedesten_unified-tbk-m49-aleyhe.md
+**KAYNAK-IZI:** _oa/teyit/dokum/2026-07-19-ictihat_ara-tbk-m49-aleyhe.md
 **DAMGA:** ALEYHE-AYIRT
 
 ## İLGİLİ-KISIM

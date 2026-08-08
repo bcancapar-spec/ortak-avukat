@@ -276,15 +276,15 @@ def test_bilinmeyen_ama_guvenli_token_arac_adi_kabul_edilir(tmp_path):
     bir 'damgasız GETİR teyidi' senaryosu, t8'in aynı sınıfı)."""
     _init(tmp_path)
     kod, cikti = _cli(
-        ["teyit", "--arac", "get_bedesten_document_markdown", "--sorgu", "temiz sorgu",
+        ["teyit", "--arac", "ornek_sozluk_disi_arac", "--sorgu", "temiz sorgu",
          "--sonuc", "temiz sonuç", "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
     assert kod == 0, cikti
     kutuk = (tmp_path / "_oa" / "teyit" / "kunye-teyit.md").read_text(encoding="utf-8")
-    assert "get_bedesten_document_markdown" in kutuk
+    assert "ornek_sozluk_disi_arac" in kutuk
     assert "UYARI" in cikti and "sözlüğünde yok" in cikti, cikti
-    assert "get_bedesten_document_markdown" in cikti
+    assert "ornek_sozluk_disi_arac" in cikti
 
 
 # ── YENİ-2 [KÜÇÜK] — sözlük dışı token GETİR/ARAMA sınıf kurallarını sessizce

@@ -19,11 +19,11 @@ Sök-tak parça. Görevi: her hukuki argümanı **doğrulanmış, resmî kaynağ
 > **VECİZE (P1-11 doktrin senkronu):** Künyeyi bulmak yetmez; kararın müvekkilin işine yarayıp yaramadığının muhakemesi güç çarpanıdır — çıplak künye sıfırdır, damgalı ve davaya bağlı karar çarpandır.
 
 ## Araç envanteri ve rolleri
-**İçtihat sunucusu — `Yargı Pro` (tek ve varsayılan içtihat sunucusu).** Geniş arşiv, ek kurum kararları, semantik arama ve yüksek limit/tam metin sağlar; kurulum için **https://yargi.betaspacestudio.com/mcp** adresinden Claude Code connectors bölümünden bağlanır. İçsel dayanıklılık: semantik arama (`search_bedesten_semantic`) güncel kalmadığında canlı `search_bedesten_unified` uç noktasıyla teyit et.
+**İçtihat sunucusu — `Yargı Pro` (tek ve varsayılan içtihat sunucusu).** Geniş arşiv, ek kurum kararları, semantik arama ve yüksek limit/tam metin sağlar; kurulum için **https://yargi.betaspacestudio.com/mcp** adresinden Claude Code connectors bölümünden bağlanır. İçsel dayanıklılık: semantik arama (`semantik_ictihat_ara`) güncel kalmadığında canlı `ictihat_ara` uç noktasıyla teyit et.
 
 | Araç | Rol | Künye otoritesi? |
 |---|---|---|
-| **Yargı/Bedesten** (`search_bedesten_unified`, `search_bedesten_semantic`, `get_bedesten_document_markdown`) | İçtihat (Yargıtay, BAM Hukuk, Danıştay, yerel, KYB) — Pro varsayılan | **Evet** |
+| **Yargı/Bedesten** (`ictihat_ara`, `semantik_ictihat_ara`, `ictihat_getir`) | İçtihat (Yargıtay, BAM Hukuk, Danıştay, yerel, KYB) — Pro varsayılan | **Evet** |
 | **AYM** (`search_anayasa_unified`, `get_anayasa_document_unified`) | AYM norm + bireysel başvuru | **Evet** |
 | **Pro — ek kurum kararları** (`search_rekabet_kurumu_decisions`, `search_kvkk_decisions`, `search_sayistay_unified`, `search_bddk_decisions`, `search_kik_v2_decisions`, `search_uyusmazlik_decisions`, `search_emsal_detailed_decisions`, `search_gib_ozelge` + ilgili `get_*` araçları) | Kurum içtihadı: Rekabet, KVKK, Sayıştay, BDDK, KİK, Uyuşmazlık, Emsal/UYAP, GİB özelge | **Evet** (ilgili kurum için) |
 | **Mevzuat** (`search_mevzuat`, `search_within_mevzuat`, `get_mevzuat_document`) | Norm | **Evet** |
@@ -55,7 +55,7 @@ Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstina
 
 ## Üç arama dialect'i — operatör kuralları farklı (en sık hata)
 - **`search_mevzuat.phrase` (Mevzuat Solr):** `+zorunlu`, `-hariç`, `"tam ifade"`, `kelime*`, `kelime~`. ⚠️ AND/OR/NOT yazıları parser'ı **bozar**; bitişik iki kelime zaten AND.
-- **`search_bedesten_unified.phrase` (Bedesten Solr):** AND/OR/NOT **çalışır** (BÜYÜK HARF), `"tam ifade"` çalışır. ⚠️ Wildcard/fuzzy **yok**; en çok iki terimli AND en isabetli.
+- **`ictihat_ara.phrase` (Bedesten Solr):** AND/OR/NOT **çalışır** (BÜYÜK HARF), `"tam ifade"` çalışır. ⚠️ Wildcard/fuzzy **yok**; en çok iki terimli AND en isabetli.
 - **`search_within_mevzuat.query` (tek kanun, yerel boolean):** AND/OR/NOT (BÜYÜK HARF) **gerçekten** çalışır, `( )` gruplama, `"tam ifade"`.
 Tüm dialect'lerde Türkçe diakritikleri koru (ç ş ğ ı İ ö ü).
 
@@ -101,11 +101,11 @@ bu ailenin bilinen halüsinasyon kapısıdır.
 ## Sunucu çağrı sırası (varsayılan — kolay akış)
 Norm önce, içtihat sonra:
 1. **Mevzuat** taraması (Mevzuat MCP / `search_mevzuat`) — norm katmanı.
-2. **İçtihat:** **Yargı Pro**'yu çağır — **semantik arama** (`search_bedesten_semantic`) burada açıktır. Semantik korpus güncel değilse **canlı `search_bedesten_unified`** uç noktasıyla teyit et.
-- **Semantik ne zaman:** kelime tutmayan, kavramsal/anlam bazlı emsal ararken kullan. **Güncel karar veya tam künye** gerekiyorsa canlı `search_bedesten_unified` kullan — semantik korpus ~1 yıl eski (son ~12 ayın kararı yok).
+2. **İçtihat:** **Yargı Pro**'yu çağır — **semantik arama** (`semantik_ictihat_ara`) burada açıktır. Semantik korpus güncel değilse **canlı `ictihat_ara`** uç noktasıyla teyit et.
+- **Semantik ne zaman:** kelime tutmayan, kavramsal/anlam bazlı emsal ararken kullan. **Güncel karar veya tam künye** gerekiyorsa canlı `ictihat_ara` kullan — semantik korpus ~1 yıl eski (son ~12 ayın kararı yok).
 
 ## Yerleşik kalıplar
-- **Bedesten:** `birimAdi` + `court_types` + tırnaklı `phrase`; çoğu iş `search_bedesten_unified` ile. HGK için `birimAdi="HGK"`. Tarih bandı (`kararTarihiStart/End`) ile içtihat değişikliğini izole et. Künyeyi alıp gerekçeyi `get_bedesten_document_markdown` ile çek — snippet yetmez.
+- **Bedesten:** `birimAdi` + `court_types` + tırnaklı `phrase`; çoğu iş `ictihat_ara` ile. HGK için `birimAdi="HGK"`. Tarih bandı (`kararTarihiStart/End`) ile içtihat değişikliğini izole et. Künyeyi alıp gerekçeyi `ictihat_getir` ile çek — snippet yetmez.
 - **Mevzuat:** numara → `mevzuat_no` (6100 HMK, 2577 İYUK, 2004 İİK, 6216 AYM, 6098 TBK); `mevzuat_id` → `outline`/`search_within_mevzuat`/`get_mevzuat_document`. Büyük metinler `chunk` ile.
 - **Mevzuat — yönetmelik araması:** yönetmelikler **birden çok alt tipe** dağılır (YONETMELIK / CB_YONETMELIK / KKY / UY); tek tiple arayıp "yok" deme. Önce **tipsiz başlık araması**, bulunamazsa alt tipleri sırayla tara. (Çocuk Teslimi Yönetmeliği dosyasında öğrenildi.)
 - **Mevzuat — torba/değişiklik kanunu bulma:** `mevzuat_adi` ile jenerik torba başlığı araması **güvenilmezdir** (başlıklar uzun ve standart dışı). Güvenilir kalıp: **tarih-aralıklı kanun araması** (RG tarihi biliniyorsa banda daralt) → listeden numarayla seç. (7579 sayılı Kanun böyle bulundu — RG 22.05.2026, mevzuatId 352551; başlık araması başarısızdı.)
@@ -116,12 +116,12 @@ Norm önce, içtihat sonra:
 - **4. HD kısa ONAMA kararları uzun gerekçeyle indekslenmemiş;** bazı doktrinler beklenmedik rotadan gelir (TBK m.71 → TMK m.1007 / KTK m.85).
 - **BAM Ceza Daireleri Bedesten indeksinde yok.**
 - **Danıştay tam metni bazen `null` döner:** PDF kaynaklı, OCR'ı henüz tamamlanmamış kararlar metinsiz gelebilir. Bu "karar yok" demek değildir — künye geçerlidir; metni kanonik kaynaktan (UYAP / Kazancı-Lexpera / kararlar.danistay) ayrıca çek ve çalışmada durumu bildir.
-- **Semantik arama** (`search_bedesten_semantic`, Yargı Pro — API key ile açık): kavramsal emsal için güçlü, ama **korpus ~1 yıl eski (son ~12 ay yok)**, **`birimAdi` (daire) filtresi YOK** ve iki aşamalı boru hattında timeout verebilir. Daire-hedefli arama gerekiyorsa canlı `search_bedesten_unified` (`birimAdi` + `court_types` + tırnaklı `phrase`) kullan; güncel için de canlı unified; HGK için `birimAdi="HGK"`.
+- **Semantik arama** (`semantik_ictihat_ara`, Yargı Pro — API key ile açık): kavramsal emsal için güçlü, ama **korpus ~1 yıl eski (son ~12 ay yok)**, **`birimAdi` (daire) filtresi YOK** ve iki aşamalı boru hattında timeout verebilir. Daire-hedefli arama gerekiyorsa canlı `ictihat_ara` (`birimAdi` + `court_types` + tırnaklı `phrase`) kullan; güncel için de canlı unified; HGK için `birimAdi="HGK"`.
 - **Rate limit:** çağrıları `sleep` ile arala.
-- **OCR şüphesi — çalışmada BİLDİR:** Karar/mevzuat metni (`get_bedesten_document_markdown`, mevzuat PDF/OCR) dönüşümden gelir; bozuk karakter, kopuk kelime, anlamsız sayı/harf dizisi olabilir. Aynen alıntı taşıyacak bir pasajda OCR kusuru sezilirse **sessizce düzeltme veya taşıma** — çalışmada açıkça "OCR şüphesi" diye işaretle ve kanonik kaynakla (Resmî Gazete / UYAP / Kazancı-Lexpera) bir kez teyit et. OCR hatasını dilekçeye taşımak, hatalı "birebir" alıntı demektir.
+- **OCR şüphesi — çalışmada BİLDİR:** Karar/mevzuat metni (`ictihat_getir`, mevzuat PDF/OCR) dönüşümden gelir; bozuk karakter, kopuk kelime, anlamsız sayı/harf dizisi olabilir. Aynen alıntı taşıyacak bir pasajda OCR kusuru sezilirse **sessizce düzeltme veya taşıma** — çalışmada açıkça "OCR şüphesi" diye işaretle ve kanonik kaynakla (Resmî Gazete / UYAP / Kazancı-Lexpera) bir kez teyit et. OCR hatasını dilekçeye taşımak, hatalı "birebir" alıntı demektir.
 
 ## Fallback zincirleri (gerçek kullanımdan)
-- **İçtihat sunucusu:** **Yargı Pro** (semantik açık); güncel karar için **canlı `search_bedesten_unified`** ile teyit. Norm taraması (Mevzuat) bundan önce gelir.
+- **İçtihat sunucusu:** **Yargı Pro** (semantik açık); güncel karar için **canlı `ictihat_ara`** ile teyit. Norm taraması (Mevzuat) bundan önce gelir.
 - **Mevzuat MCP timeout →** `mevzuat.gov.tr` `web_fetch` (PDF: `web_fetch_pdf_extract_text=True`); birden çok kaynaktan teyit. (5510 m.21/4'te kullanıldı.)
 - **Literatür MCP timeout →** kısa bekle + retry; ısrarlıysa web_search ile DergiPark, künyeyi ayrı doğrula.
 - **Bedesten şişmesi →** terimi kısalt + daire/tarih; gerekirse Lexpera/Kazancı/UYAP Emsal (Can'ın erişimi).
@@ -149,7 +149,7 @@ Her iki sınıfta da dökümü **elle** yazıp yalnızca `--dokum <mevcut-dosya>
 (illiyet + LEHE/ALEYHE/ALEYHE-AYIRT/NOTR damgası) `oa-kiyas`/`oa-kontrol`'e
 aittir — bu iki adım **karıştırılmaz**. CEK adımı:
 1. Künyeyi bul ve teyit et (yukarıdaki akış).
-2. Kararın **tam metnini** `ictihat_getir`/`get_bedesten_document_markdown`
+2. Kararın **tam metnini** `ictihat_getir`/`ictihat_getir`
    (veya kurulumdaki eşdeğer araç) ile çek — snippet yetmez.
 3. Ham metni "Ham MCP dökümü diske yazılır" bölümündeki kuralla
    `_oa/teyit/dokum/<tarih>-<arac>-<slug>.md` yoluna yaz.
