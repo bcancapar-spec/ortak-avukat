@@ -50,6 +50,23 @@ işlenmesi **ZORUNLU**dur ama dış çıktıya yazılmaz — dış çıktı daim
 LEHİNEdir. Esaslı bir sonuç Yargıtay/BAM atfı içermiyorsa muhakeme "zayıf"
 sayılır; bu açık uç olarak `oa-kontrol` çıktısında görünür kalır.
 
+**DAVADAN GELEN ATIFLAR DA ZİNCİRE TABİDİR (v0.5.7.5 — kullanıcı kuralı).**
+Dilekçede tartışılan bir yargı kararının kaynağı KİM olursa olsun — bizim
+araştırmamız, KARŞI TARAFIN dilekçesi, GEREKÇELİ KARAR ya da bilirkişi
+raporu — aynı zincir işler: karar `oa-ictihat`'tan fiilen ÇEKİLİR, teyit
+edilir, damgalanır ve **erişim linki dilekçede künyenin yanında parantez
+içinde verilir** (5-adım/1 + [G4] kapısı; link yalnız teyit anındaki
+`**KAYNAK-URL:**` kaydından gelir — davadan gelen atıf için de uydurma
+bağlantı yazılamaz, kayıt yoksa parantez açılmaz). İkili kazanç: (a) mahkeme,
+tartışılan HER kararın kaynağına tek tıkla ulaşır; (b) karşı tarafın künyesi
+körlemesine devralınmaz — çekilen tam metin künyeyle ya da karşı tarafın
+alıntısıyla ÖRTÜŞMÜYORSA (yanlış künye, çarpıtılmış pasaj, bağlamından
+koparılmış cümle) bu, dilekçede AÇIKÇA ileri sürülür: karşı atfın çürümesi
+başlı başına savunma kozudur. Karşı tarafın dayandığı karar salt-ALEYHE
+çıkarsa m.6 aynen uygulanır: karar zaten karşı tarafça İLERİ SÜRÜLMÜŞ
+olduğundan cephanelik istisnası devrededir — ayırt etme/çürütme dilekçede
+yapılır, kaçınılmaz.
+
 ## İçtihat kullanımı — 5 adım (İçtihat Muhakeme Zinciri'nin düzyazı izdüşümü)
 Uyuşmazlığa uygun içtihat bulunduğunda (her zaman `oa-ictihat` üzerinden teyitli **ve yukarıdaki çıplak künye yasağı uyarınca muhakeme edilmiş**), dilekçede beş adım sırayla yürür (tam mimari — örüntüler + a fortiori/sınırlama tekniği: `references/kanun-yolu-mimari-playbook.md` B4):
 1. **Tam künye + KAYNAK BAĞLANTISI:** merci + daire + esas no + karar no + tarih
