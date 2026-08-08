@@ -1,6 +1,6 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.5.7.3 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.5.7.4 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -320,6 +320,14 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
 
 ### 1) Yargı Pro bağlantısı — önce bunu yapın
 İçtihat, mevzuat ve kurum kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır.
+
+> **v0.5.7.4'ten itibaren eklenti iki sunucuyu KENDİSİ ilan eder** — kurulumda
+> `yargi-pro` (birincil) ve `yargi-mcp-yedek` (MIT, hesapsız) bağlantıları
+> otomatik teklif edilir; onaylamanız yeterlidir. Katman kuralı tek yönlüdür:
+> Pro çalışıyorsa yedek hiç kullanılmaz; Pro düşerse içtihat araması yedekten
+> sürer (yedekte **mevzuat/AİHM yoktur** — aile bunu çıktıya dürüstçe yazar).
+> Aşağıdaki elle kurulum yalnız otomatik teklifi atlamışsanız gereklidir.
+
 Claude Code → **connectors** bölümünden yeni bir MCP sunucusu ekleyin ve adres
 olarak şunu girin:
 

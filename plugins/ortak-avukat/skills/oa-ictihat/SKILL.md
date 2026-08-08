@@ -19,7 +19,20 @@ Sök-tak parça. Görevi: her hukuki argümanı **doğrulanmış, resmî kaynağ
 > **VECİZE (P1-11 doktrin senkronu):** Künyeyi bulmak yetmez; kararın müvekkilin işine yarayıp yaramadığının muhakemesi güç çarpanıdır — çıplak künye sıfırdır, damgalı ve davaya bağlı karar çarpandır.
 
 ## Araç envanteri ve rolleri
-**İçtihat sunucusu — `Yargı Pro` (tek ve varsayılan içtihat sunucusu).** Geniş arşiv, ek kurum kararları, semantik arama ve yüksek limit/tam metin sağlar; kurulum için **https://yargi.betaspacestudio.com/mcp** adresinden Claude Code connectors bölümünden bağlanır. İçsel dayanıklılık: semantik arama (`semantik_ictihat_ara`) güncel kalmadığında canlı `ictihat_ara` uç noktasıyla teyit et.
+**İçtihat sunucusu — `Yargı Pro` (birincil ve varsayılan).** Geniş arşiv, ek kurum kararları, mevzuat, AİHM, semantik arama ve yüksek limit/tam metin sağlar; eklenti bu sunucuyu `plugin.json`'da kendisi İLAN EDER (kurulumda bağlantı teklif edilir; elle kurulum: **https://yargi.betaspacestudio.com/mcp** → Claude connectors). İçsel dayanıklılık: semantik arama (`semantik_ictihat_ara`) güncel kalmadığında canlı `ictihat_ara` uç noktasıyla teyit et.
+
+**BAĞLANTI KATMANI — Pro düşerse yedek (v0.5.7.4).** Sıra kesindir ve tek yönlüdür:
+1. **Önce Yargı Pro araçları** (`ictihat_ara`, `semantik_ictihat_ara`, `ictihat_getir`, `mevzuat_*`, `aym_ictihat_ara`, `kurum_karari_*`). Bunlar bağlamda VARSA yedek HİÇ kullanılmaz.
+2. **Pro araçları bağlamda yoksa ya da çağrıları bağlantı/oturum hatasıyla düşüyorsa** → açık kaynak `yargi-mcp-yedek` sunucusuna geç (eklenti bunu da ilan eder; MIT, hesap gerektirmez). Araç eşlemesi:
+
+| İş | Yargı Pro (birincil) | yargi-mcp (yedek) |
+|---|---|---|
+| İçtihat arama | `ictihat_ara` | `search_bedesten_unified` |
+| Tam metin çekme | `ictihat_getir` | `get_bedesten_document_markdown` |
+| AYM | `aym_ictihat_ara` | `search_anayasa_unified` / `get_anayasa_document_unified` |
+| Semantik arama | `semantik_ictihat_ara` | (yedekte anahtar teslim YOK — kavramsal aramayı `search_bedesten_unified` + eşanlamlı denemelerle telafi et) |
+
+**Yedeğin DÜRÜST SINIRLARI (uydurma ile doldurulamaz):** yedekte **mevzuat araçları YOKTUR** (`mevzuat_ara/getir/icinde_ara` yalnız Pro'da — norm teyidi yapılamıyorsa çıktıya "mevzuat teyidi YAPILAMADI (yedek kip)" açıkça yazılır, madde metni hafızadan doğrulanmış gibi sunulmaz); AİHM araması yoktur; UDF yazım ekosistemi (`udf-cli` oturumu) yedekten bağımsız olarak yine Pro hesabına bağlıdır. Yedek kipte yapılan her teyit, kütüğe normal disiplinle işlenir (`--arac` yedek araç adıyla) — teyit kültürü sunucuya göre değişmez.
 
 | Araç | Rol | Künye otoritesi? |
 |---|---|---|
