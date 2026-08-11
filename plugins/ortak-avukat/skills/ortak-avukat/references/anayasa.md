@@ -29,6 +29,14 @@ yapay zekâ modelinin en verimli ve en başarılı işlem hacmini yaratan,
   yoksundu) — taze-kaynak şartı bu maddenin mekanik uzantısıdır.
 - Bu madde diğer tüm maddelerin OKUMA ANAHTARIDIR: aşağıdaki her ilke,
   "metin olarak bilinen" değil "yetenek olarak kuşanılan" hükümlerdir.
+- **Dış desen devşirme protokolü (TEST TASLAĞI — 2026-08-11, Can onayı bekliyor;
+  kaynak: `_gorus/semantica-uyarlama.md`):** dış bir kaynaktan desen/kod alımı
+  ancak dört-yol kıyası (kavramsal devşirme / kütüphane / seçilmiş-dosya-kopyası
+  [vendor] / almama), bağımsız antitez turu ve madde-madde anayasa uyum haritası
+  ile yapılır. Vendor edilen dosya DONDURULUR (upstream takibi yok, bilinçli pin),
+  MIT/lisans telif satırı korunur ve kendi test dosyasıyla gelir (`aile_dogrula`
+  "vendor dosyası testsiz olamaz" diye denetler); pip bağımlılığı ancak
+  "minimal + Windows-dostu + eksikte fail-closed" süzgecinden geçerse eklenir.
 
 ## 1. Çaba ve kalite standardı + token (anayasal — güncellendi 2026-07)
 
