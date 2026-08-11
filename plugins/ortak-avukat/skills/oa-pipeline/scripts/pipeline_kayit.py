@@ -2026,6 +2026,21 @@ def _vakia_delilsiz_unsur_uyarisi(kok):
 # SESSİZCE boş döner (advisory renderer alanı — asla çökmez, asla bloklamaz).
 # ═════════════════════════════════════════════════════════════════════════
 
+_ADVISORY_TAVAN = 20  # 3-4k evraklık dosyada DURUM.md şişmesin (ölçek sertleştirmesi)
+
+
+def _advisory_tavanla(uyarilar):
+    """GÖRÜŞ 2026-08 ölçek sertleştirmesi — advisory liste tavanı. Kırpma
+    SESSİZ DEĞİLDİR: düşen kayıt sayısı ve tam listenin adresi yazılır
+    ("no silent caps"). Tavan yalnız DURUM.md görünümünü korur; tam veri
+    daima _oa/cikti/*.json kaynağında durur."""
+    if len(uyarilar) <= _ADVISORY_TAVAN:
+        return uyarilar
+    fazla = len(uyarilar) - _ADVISORY_TAVAN
+    return uyarilar[:_ADVISORY_TAVAN] + [
+        f"… +{fazla} uyarı daha (tam liste ilgili _oa/cikti/*.json dosyasında)"]
+
+
 def _graf_yapisal_bosluk_uyarisi(kok):
     """oa-illiyet/scripts/grafik_denetim.py `--json <yol>` çıktısındaki yapısal
     boşluklar (`sema_hatalari`, `desteksiz_kenarlar`, `cevrimler`)
@@ -2055,7 +2070,7 @@ def _graf_yapisal_bosluk_uyarisi(kok):
             if isinstance(c, list) and c:
                 uyarilar.append(f"{ad}: dairesel illiyet — "
                                 + " → ".join(str(x) for x in c))
-    return uyarilar
+    return _advisory_tavanla(uyarilar)
 
 
 def _kiyas_bosluk_uyarisi(kok):
@@ -2088,7 +2103,7 @@ def _kiyas_bosluk_uyarisi(kok):
             bulundu = True
         if m.get("kritik_bosluk") and not bulundu:
             uyarilar.append(f"{ad}: kritik boşluk işaretli (eksik bileşen — norm/vakıa)")
-    return uyarilar
+    return _advisory_tavanla(uyarilar)
 
 
 def _usul_bosluk_uyarisi(kok):
@@ -2110,7 +2125,7 @@ def _usul_bosluk_uyarisi(kok):
         ad = os.path.relpath(yol, kok)
         for b in (m.get("bosluklar") or []):
             uyarilar.append(f"{ad}: {b}")
-    return uyarilar
+    return _advisory_tavanla(uyarilar)
 
 
 def _defter_nobetci_uyarisi(kok, olaylar_yol):

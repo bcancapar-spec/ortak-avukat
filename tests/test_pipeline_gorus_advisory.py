@@ -90,6 +90,20 @@ def test_graf_bekcisi_cikti_dizini_yoksa_bos(pk):
     assert pk._graf_yapisal_bosluk_uyarisi(tempfile.mkdtemp()) == []
 
 
+def test_advisory_tavani_sessiz_kirpmaz(pk, kok):
+    """Ölçek sertleştirmesi (3-4k evrak provası öncesi): 20 kayıt tavanı +
+    düşen sayıyı AÇIKÇA yazan özet satırı — sessiz kırpma yok."""
+    _cikti_yaz(kok, "01-illiyet-graf.json", {
+        "arac": "grafik_denetim",
+        "desteksiz_kenarlar": [
+            {"kaynak": f"A{i}", "hedef": f"B{i}", "tur": "t"} for i in range(30)],
+    })
+    uyarilar = pk._graf_yapisal_bosluk_uyarisi(str(kok))
+    assert len(uyarilar) == 21  # 20 kayıt + 1 özet satırı
+    assert "+10 uyarı daha" in uyarilar[-1]
+    assert "_oa/cikti" in uyarilar[-1]
+
+
 # ── 2. kıyas bekçisi ────────────────────────────────────────────────────────
 
 def test_kiyas_bekcisi_karsilanmamis_unsur_ve_teyitsiz_ictihat(pk, kok):
