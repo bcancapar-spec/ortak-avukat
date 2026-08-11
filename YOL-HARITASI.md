@@ -9,6 +9,38 @@
 - **Fable sign-off: KOŞULLU ONAY.** Kapatıldı → **K2** (marketplace bayatlığı + aile_dogrula manifest sürüm denetimi), **K3** (gizlilik m.6 sözlüğü genişletildi — HIV/hastane/kanser/hükümlü/uyuşturucu artık DENY), **description ≤800** (oa-kiyas/oa-sure/oa-usta tıraşlandı), **kapı pytest'leri** (aile_dogrula/teslim_paketi/sure_nobetci/oa_metrik/capraz_denetim).
 - **Açık koşullar (bkz. Fable sign-off):** **K1** — kurulu kopyalar bayat/mükerrer (repo `.claude/plug-in/...` ≠ çalışan araç `.claude/plugins/cache/...0.3.20`; git init + reinstall gerekli); **K4** — gerçek dosyada uçtan uca prova + UDF gerçek UYAP testi.
 
+## MUTABAKAT — 2026-08-11 (test fork provası; kod↔kutu eşleştirmesi)
+
+> Semantica uyarlama analizi (bkz. `_gorus/semantica-uyarlama.md`) bu belgenin
+> DURUM bloğunun v0.5.0 döneminde kaldığını, birçok ⬜ kutunun kodda fiilen
+> bitmiş olduğunu satır kanıtıyla gösterdi. Aşağıdaki işaretler koda karşı
+> MEKANİK doğrulanarak güncellendi (kanıt satırları not düşüldü). Paket bugün
+> **v0.5.7.5** (plugin.json = marketplace.json).
+
+**Koda karşı doğrulanan durum (2026-08-11):**
+- ✅ **§6-B delta körlüğü — 4/4 kalem yapılmış:** KÜNYE BAYAT uyarısı (tam_tur.py:43,77,92),
+  silinen raporu (tam_tur.py:387-400), sha imzası (tam_tur.py:121,372), delta-yutma engeli.
+- 🔶 **§6-C — (i) append-only JSONL ✅ (pipeline_kayit.py:6,14) + (ii) `--kok` ✅
+  (pipeline_kayit.py:27-39); (iii) "alt-ajan oturum-ac ÇAĞIRMAZ" doktrin cümlesi
+  SKILL.md'de BULUNAMADI → AÇIK.**
+- ✅ **§6-F kendi-kendini-teyit deliği:** `_oa/cikti` teyit kaynağı değil + MERCİ katmanı
+  (kunye_teyit.py:38-49,123).
+- 🔶 **§6-K description tıraşı:** kaba ölçümde yalnız çekirdek `ortak-avukat` ~800-819
+  sınırında; kalan parçalar ≤800 → büyük ölçüde yapılmış, çekirdek ayrıca ölçülmeli.
+- ✅ **§7 Fikir 1 (MCP döküm diski):** `_oa/teyit/dokum/` + oa_hafiza.py cmd_teyit.
+- ✅ **§7 Fikir 2 (teslim paketi):** `oa-kontrol/scripts/teslim_paketi.py` mevcut + testli.
+- ✅ **§7 Fikir 3 (süre nöbetçisi):** `oa-sure/scripts/sure_nobetci.py` mevcut + testli.
+- ✅ **P1 dilekce_denetim.py / sureler.json çıpası / kunye_teyit+tam_tur bağlama /
+  ajan-brif enjeksiyonu:** hepsi kodda (dilekce_denetim.py mevcut; oa_hafiza.py
+  cmd_sure_flag:1205; teslim_paketi zinciri + Gate-G; §5'te zaten ✅).
+
+**Güncellenmiş öncelik sırası (bayat "Fable öncelik sırası"nın yerine):**
+1. **K4 — gerçek dosyada uçtan uca prova + UDF gerçek UYAP `format_id` testi** (tek büyük açık).
+2. §6-C(iii) doktrin cümlesi (SKILL.md'ye tek paragraf) + K1 canlı ölçüm (kurulu kopya senkronu).
+3. `hesapla_sure.py` v3+ (HMK m.103/104 adli tatil istisnası — bilinen tek somut hukuki-hata riski).
+4. P2: ortak kimlik uzayı (el-ID + FK denetçisi — `--json` ayağı 4 motorda tamam, bu fork'ta
+   usul_matris'e de eklendi).
+
 ## 0. Onaylanan tasarım kararları (kurucu direktifler)
 
 | # | Karar | Sonuç |
