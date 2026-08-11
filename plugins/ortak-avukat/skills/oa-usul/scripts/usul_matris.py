@@ -159,6 +159,10 @@ def denetle(v):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--girdi"); p.add_argument("--ornek", action="store_true")
+    p.add_argument("--json", dest="json_yol", metavar="YOL",
+                   help="denetim sonucunu makine-okur JSON olarak bu yola yaz "
+                        "(opsiyonel; graf/vakia/kiyas motorlarıyla simetri — "
+                        "YOL-HARITASI P2 '--json' maddesinin oa-usul ayağı)")
     a = p.parse_args()
     if a.ornek:
         print(json.dumps(ORNEK, ensure_ascii=False, indent=2)); return
@@ -171,6 +175,15 @@ def main():
     print("=" * 70)
     for b in bulgular: print("  " + b)
     print("-" * 70)
+    if a.json_yol:
+        # exit'ten ÖNCE yazılır: boşluklu denetimin sonucu da makine-okur kalmalı
+        # (DURUM.md advisory bekçisi boşlukları ancak buradan görebilir).
+        sonuc = {"arac": "usul_matris", "girdi": a.girdi,
+                 "dosya": v.get("dosya"), "bulgular": bulgular,
+                 "bosluklar": bosluklar, "saglikli": not bosluklar}
+        with open(a.json_yol, "w", encoding="utf-8") as f:
+            json.dump(sonuc, f, ensure_ascii=False, indent=2, sort_keys=True)
+        print(f"[JSON] Makine-okur sonuc yazildi: {a.json_yol}")
     if bosluklar:
         print("  BOŞLUKLAR — kapatılmadan analiz TESLİM EDİLEMEZ:")
         for b in bosluklar: print("  ! " + b)

@@ -2017,6 +2017,142 @@ def _vakia_delilsiz_unsur_uyarisi(kok):
     return uyarilar
 
 
+# ═════════════════════════════════════════════════════════════════════════
+# GÖRÜŞ 2026-08 (semantica uyarlama analizi, antitez turu sonucu — bkz.
+# _gorus/semantica-uyarlama.md §4): üç deterministik motorun --json çıktısı
+# ilk kez GERÇEK bir tüketiciye bağlanır. Desen _vakia_delilsiz_unsur_uyarisi
+# ile BİREBİR aynıdır: DURUM.md salt-okur, aracın KENDİ ürettiği JSON'u okur,
+# ikinci bir denetim mantığı İCAT ETMEZ; dosya yok/okunamaz/yabancı şemalıysa
+# SESSİZCE boş döner (advisory renderer alanı — asla çökmez, asla bloklamaz).
+# ═════════════════════════════════════════════════════════════════════════
+
+def _graf_yapisal_bosluk_uyarisi(kok):
+    """oa-illiyet/scripts/grafik_denetim.py `--json <yol>` çıktısındaki yapısal
+    boşluklar (`sema_hatalari`, `desteksiz_kenarlar`, `cevrimler`)
+    `_oa/cikti/*graf*.json` dosyalarından toplanır. Hukuki değerlendirme
+    DEĞİLDİR — köprü düğüm/kesme adayı gibi STRATEJİ sinyalleri bilerek
+    alınmaz (onlar uyarı değil karar-malzemesidir, oa-strateji/oa-antitez okur)."""
+    cdiz = os.path.join(kok, "_oa", "cikti")
+    if not os.path.isdir(cdiz):
+        return []
+    uyarilar = []
+    for yol in sorted(glob.glob(os.path.join(cdiz, "*graf*.json"))):
+        try:
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                m = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(m, dict) or m.get("arac") != "grafik_denetim":
+            continue
+        ad = os.path.relpath(yol, kok)
+        for h in (m.get("sema_hatalari") or []):
+            uyarilar.append(f"{ad}: şema hatası — {h}")
+        for k in (m.get("desteksiz_kenarlar") or []):
+            if isinstance(k, dict):
+                uyarilar.append(f"{ad}: desteksiz kenar {k.get('kaynak')}→"
+                                f"{k.get('hedef')} ({k.get('tur')}) — iddia delilsiz")
+        for c in (m.get("cevrimler") or []):
+            if isinstance(c, list) and c:
+                uyarilar.append(f"{ad}: dairesel illiyet — "
+                                + " → ".join(str(x) for x in c))
+    return uyarilar
+
+
+def _kiyas_bosluk_uyarisi(kok):
+    """oa-kiyas/scripts/kiyas_denetim.py `--json <yol>` çıktısındaki subsumtion
+    boşlukları `_oa/cikti/*kiyas*.json` dosyalarından toplanır: karşılanmamış
+    unsur, teyitsiz içtihat, kritik_bosluk bayrağı. kiyas_denetim bilinçli
+    olarak exit 0 döner ("kapı değil karar-malzemesi") — bu bekçi o tasarımı
+    DEĞİŞTİRMEZ, yalnız DURUM.md'de görünür kılar."""
+    cdiz = os.path.join(kok, "_oa", "cikti")
+    if not os.path.isdir(cdiz):
+        return []
+    uyarilar = []
+    for yol in sorted(glob.glob(os.path.join(cdiz, "*kiyas*.json"))):
+        try:
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                m = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(m, dict) or m.get("arac") != "kiyas_denetim":
+            continue
+        ad = os.path.relpath(yol, kok)
+        bulundu = False
+        for u in (m.get("unsur_vakia_eslesme") or []):
+            if isinstance(u, dict) and u.get("durum") == "karsilanmamis":
+                uyarilar.append(f"{ad}: unsur '{u.get('unsur_ad') or u.get('unsur_id')}' "
+                                f"KARŞILANMAMIŞ (subsumtion boşluğu)")
+                bulundu = True
+        for kunye in (m.get("teyitsiz_ictihat") or []):
+            uyarilar.append(f"{ad}: teyitsiz içtihat — {kunye}")
+            bulundu = True
+        if m.get("kritik_bosluk") and not bulundu:
+            uyarilar.append(f"{ad}: kritik boşluk işaretli (eksik bileşen — norm/vakıa)")
+    return uyarilar
+
+
+def _usul_bosluk_uyarisi(kok):
+    """oa-usul/scripts/usul_matris.py `--json <yol>` çıktısındaki G1-G8
+    boşlukları `_oa/cikti/*usul*.json` dosyalarından toplanır (usul_matris
+    boşlukta zaten exit 1 döner; burası yalnız DURUM.md kalıcı görünürlüğü)."""
+    cdiz = os.path.join(kok, "_oa", "cikti")
+    if not os.path.isdir(cdiz):
+        return []
+    uyarilar = []
+    for yol in sorted(glob.glob(os.path.join(cdiz, "*usul*.json"))):
+        try:
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                m = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(m, dict) or m.get("arac") != "usul_matris":
+            continue
+        ad = os.path.relpath(yol, kok)
+        for b in (m.get("bosluklar") or []):
+            uyarilar.append(f"{ad}: {b}")
+    return uyarilar
+
+
+def _defter_nobetci_uyarisi(kok, olaylar_yol):
+    """GÖRÜŞ 2026-08 — DEFTER KÜÇÜLME NÖBETÇİSİ: append-only defterin satır
+    sayısı bir önceki türetime göre AZALMIŞSA görünür uyarı (bütün-dosya
+    kaybı / kırpılma tespiti). Satır-bazlı hash-ZİNCİRİ BİLEREK kurulmadı:
+    paralel fan-out append'i zinciri çatallar ve sahte alarm üretir (antitez
+    turu bulgusu — bkz. _gorus/semantica-uyarlama.md §2-K5). Durum dosyası:
+    _oa/defter/defter-nobetci.json {satir, sha, zaman}. Advisory — asla
+    çökmez; eşzamanlı iki türetimde son-yazan-kazanır (atomik os.replace)."""
+    try:
+        if not olaylar_yol or not os.path.isfile(olaylar_yol):
+            return []
+        with open(olaylar_yol, "rb") as f:
+            veri = f.read()
+        satir = veri.count(b"\n") + (1 if veri and not veri.endswith(b"\n") else 0)
+        sha = hashlib.sha256(veri).hexdigest()[:16]
+        durum_yol = os.path.join(os.path.dirname(olaylar_yol), "defter-nobetci.json")
+        onceki = None
+        if os.path.isfile(durum_yol):
+            try:
+                with open(durum_yol, encoding="utf-8") as f:
+                    onceki = json.load(f)
+            except Exception:
+                onceki = None
+        uyarilar = []
+        if (isinstance(onceki, dict) and isinstance(onceki.get("satir"), int)
+                and satir < onceki["satir"]):
+            uyarilar.append(
+                f"DEFTER KÜÇÜLDÜ: {onceki['satir']} → {satir} satır — append-only "
+                f"defterde satır kaybı (kırpılma/üzerine yazma incelenmeli; "
+                f"önceki sha {onceki.get('sha')}, şimdiki {sha}).")
+        tmp = f"{durum_yol}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"satir": satir, "sha": sha, "zaman": simdi()}, f,
+                      ensure_ascii=False)
+        os.replace(tmp, durum_yol)
+        return uyarilar
+    except Exception:
+        return []
+
+
 def _sozlesme_disi_dizinler(kok):
     """_oa/ altında DIZIN_BEYAZ_LISTE dışı klasörler — gölge-hat/dağınık-
     çıktı adayı (advisory; asla blokleyici değil)."""
@@ -2498,6 +2634,32 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
         if delilsiz_unsur:
             satirlar.append("## 🔴 Delilsiz Unsur Uyarısı (Vakıa — M4, Paket D)")
             for u in delilsiz_unsur:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        # GÖRÜŞ 2026-08 — üç motorun --json çıktısı + defter nöbetçisi
+        # (advisory; _vakia_delilsiz_unsur_uyarisi ile aynı desen ve statü).
+        graf_bosluk = _graf_yapisal_bosluk_uyarisi(kok)
+        if graf_bosluk:
+            satirlar.append("## 🔴 Graf Yapısal Boşluk Uyarısı (İlliyet — GÖRÜŞ 2026-08)")
+            for u in graf_bosluk:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        kiyas_bosluk = _kiyas_bosluk_uyarisi(kok)
+        if kiyas_bosluk:
+            satirlar.append("## 🔴 Kıyas Boşluk Uyarısı (Silojizm — GÖRÜŞ 2026-08)")
+            for u in kiyas_bosluk:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        usul_bosluk = _usul_bosluk_uyarisi(kok)
+        if usul_bosluk:
+            satirlar.append("## 🔴 Usul Boşluk Uyarısı (G1-G8 — GÖRÜŞ 2026-08)")
+            for u in usul_bosluk:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        nobetci = _defter_nobetci_uyarisi(kok, olaylar_yol)
+        if nobetci:
+            satirlar.append("## 🔴 Defter Nöbetçisi Uyarısı (GÖRÜŞ 2026-08)")
+            for u in nobetci:
                 satirlar.append(f"- 🔴 {u}")
             satirlar.append("")
         akb = _avukat_karari_bekleyen(d)
