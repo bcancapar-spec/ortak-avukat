@@ -35,16 +35,22 @@ def _hooks_veri():
 
 
 def _ilk_python_alternatifi(komut):
-    """`python X || py -3 X || python3 X` zincirinden İLK alternatifi alır ve
-    'python'u bu testin yorumlayıcısıyla değiştirir — zincirin kendisi kabuk
-    işidir (belge: Windows'ta Git Bash/PowerShell'de çalışır), script
-    SÖZLEŞMESİ ise buradan deterministik doğrulanır."""
-    ilk = komut.split("||")[0].strip()
-    ilk = ilk.replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN_KOK).replace("\\", "/"))
+    """v0.5.8.2 SÖZLEŞME (447 yapısal-arıza onarımı): hooks.json artık `||`
+    zinciri DEĞİL, tek tırnaklı sarmalayıcı çağırır —
+    `"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" <mod>`. Kabuksuz yürütmede
+    `||` python'a argüman gidip sessizce ölüyordu (üç sahada sıfır ateşleme);
+    fallback mantığı sarmalayıcının İÇİNE taşındı. Bu yardımcı, sarmalayıcı
+    semantiğini deterministik doğrulama için doğrudan python çağrısına çevirir:
+    run-hook.cmd <mod>  ≡  python pipeline_kayit.py --<mod>."""
+    assert "||" not in komut, "|| zinciri yasak (v0.5.8.2 yapısal onarım)"
+    ilk = komut.replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN_KOK).replace("\\", "/"))
     parcalar = ilk.split()
-    assert parcalar[0] in ("python", "py", "python3"), ilk
-    argv = [sys.executable] + [p.strip('"') for p in parcalar[1:]]
-    return argv
+    assert parcalar[0].strip('"').endswith("hooks/run-hook.cmd"), ilk
+    assert len(parcalar) == 2, ilk
+    mod = parcalar[1]
+    assert mod in ("hook-prompt", "hook-postwrite", "hook-denetle"), mod
+    script = PLUGIN_KOK / "skills" / "oa-pipeline" / "scripts" / "pipeline_kayit.py"
+    return [sys.executable, str(script), "--" + mod]
 
 
 def _kos(argv, cwd):

@@ -81,7 +81,11 @@ def test_dort_hook_olayi_da_kayitli():
     for olay in ("UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd"):
         assert olay in veri, f"{olay} hook'u kayıtlı değil"
     komut = json.dumps(veri["UserPromptSubmit"], ensure_ascii=False)
-    assert "--hook-prompt" in komut
+    # v0.5.8.2 sözleşme: sarmalayıcı 'hook-prompt' argümanıyla çağrılır
+    # (çift tire pipeline_kayit'e sarmalayıcının İÇİNDE eklenir); || yasak.
+    assert "hook-prompt" in komut
+    assert "||" not in komut
+    assert "run-hook.cmd" in komut
 
 
 # ── (2) DEVİR ZORLAYICISI — bağlama enjeksiyon ─────────────────────────────
