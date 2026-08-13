@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.8"
+OA_SURUM = "0.5.8.1"
 
 
 def _surum_tuple(s):
@@ -3186,7 +3186,20 @@ def hook_prompt(kok=None):
             "oa-kontrol (teslim öncesi künye/atıf denetimi + makbuz) · "
             "oa-gizlilik (Layer 0). Çıktı doğru görünse bile DENETLENMEMİŞ olur.\n"
             "Bu bir ENGEL DEĞİLDİR: tek ve izole bir soru soruluyorsa tam hattı açma; "
-            "tereddütte aç."
+            "tereddütte aç.\n"
+            "TESLİM DİSİPLİNİ (v0.5.8.1 — pipeline kurulu OLMASA BİLE geçerli; 447 "
+            "provası dersi: aile çağrılmadan inline koşulursa bu beşli kaybolur): bu "
+            "koşuda bir TESLİM ÜRÜNÜ (dilekçe/mütalaa md-html-pdf-udf) üretilecekse — "
+            "(1) her içtihat teyidinde 'bu karar sonradan AŞILMIŞ olabilir mi?' sorusu "
+            "sorulur; aşılmışsa kayda **AŞAN-KAYNAK:** işlenir; (2) dilekçedeki her "
+            "künyenin YANINA kütükteki KAYNAK-URL erişim linki yazılır (linksiz künye "
+            "EKSİK atıftır); (3) karşı tarafın MUHTEMEL savunmalarının analizi "
+            "DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/07-antitez-cephanelik.md` iç "
+            "dosyasına yazılır (m.6: savunma hattı karşı tarafa hediye edilmez); "
+            "(4) her ürünün İLK satırlarına KAYNAK-BLOĞU yazılır "
+            "(`<!-- kaynaklar: yol@sha8 -->`); (5) üretimden sonra "
+            "`oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdi>` ve "
+            "`oa-kontrol/scripts/ictihat_muhakeme_denetim.py <taslak.md> --kok .` koşulur."
         )
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
@@ -3195,6 +3208,35 @@ def hook_prompt(kok=None):
         return 0
     except Exception:
         return 0                                          # sessiz başarısızlık — asla bloklamaz
+
+
+def _muhursuz_teslim_uyarisi(kok):
+    """v0.5.8.1 (447 provası dersi) — TESLİM-SINIFI ürün (cikti/teslim'de
+    .udf/.pdf) VAR ama yanında `.prov.json` mührü YOK ise görünür uyarı metni
+    döndürür; yoksa None. Model-bağımsız, deterministik; ASLA fırlatmaz."""
+    try:
+        muhursuz = []
+        for alt in ("cikti", "teslim"):
+            d = os.path.join(kok, "_oa", alt)
+            if not os.path.isdir(d):
+                continue
+            for ad in sorted(os.listdir(d)):
+                if not ad.lower().endswith((".udf", ".pdf")):
+                    continue
+                if ad.startswith(("TEST", "_")):
+                    continue                       # prova/gecici urunler haric
+                if not os.path.isfile(os.path.join(d, ad + ".prov.json")):
+                    muhursuz.append(f"{alt}/{ad}")
+        if not muhursuz:
+            return None
+        liste = "\n".join(f"  ✗ {u}" for u in muhursuz[:8])
+        return ("MÜHÜRSÜZ TESLİM UYARISI (v0.5.8.1 — oa-mühür/P1): aşağıdaki "
+                "teslim-sınıfı ürünlerin `.prov.json` doğum belgesi YOK — hangi "
+                "girdiden üretildikleri kriptografik olarak kanıtlanamaz; UYAP'a "
+                "yüklemeden önce `oa-kontrol/scripts/muhur_yaz.py --kok . --urun "
+                "<yol>` koşulmalı ve `--dogrula` ile teyit edilmelidir:\n" + liste)
+    except Exception:
+        return None
 
 
 def hook_denetle(kok=None):
@@ -3217,6 +3259,11 @@ def hook_denetle(kok=None):
         if bayat:
             print("═" * 66)
             print(bayat)
+            print("═" * 66)
+        muhursuz = _muhursuz_teslim_uyarisi(kok_aday)
+        if muhursuz:
+            print("═" * 66)
+            print(muhursuz)
             print("═" * 66)
         _hook_govde_calistir(kok_aday, "Stop/SessionEnd")
     return 0

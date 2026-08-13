@@ -62,6 +62,12 @@ karşılık bulur: her karar `oa-kiyas`/`oa-kontrol`'de **DAMGA** alanıyla
 `_oa/cikti/NN-ictihat-muhakeme.md` kaydına yazılır (şema:
 `oa-kiyas/references/ictihat-muhakeme-sablonu.md`). Bu parça künyeyi CEK
 eder; damgayı **atamaz**.
+**ZORUNLU SON SORU (v0.5.8.1 — şablon kullanılsın kullanılmasın, HER teyitte):**
+"Bu karar sonradan AŞILMIŞ olabilir mi?" (İBK, içtihat/kanun değişikliği,
+daire kayması). Şüphe varsa kararın tarihinden SONRAKİ aynı-konu kararlarına
+kısa bakış; aşılmışsa kayda/kütüğe `**AŞAN-KAYNAK:**` + `**AŞILMA-TARİHİ:**`
+işlenir — [G5]: aşılmış karar LEHE dayanak olarak dilekçeye giremez. Kütük
+hangi biçimde tutulursa tutulsun bu iki alan atlanamaz.
 
 ## Kapsam — İstinaf + Yargıtay + Danıştay
 Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstinaf (BAM hukuk/ceza, BİM idare/vergi)**, **Yargıtay**, **Danıştay**. İstinaf içtihadı özellikle güncel eğilim ve henüz Yargıtay/Danıştay'a taşınmamış meselelerde değerlidir; üçünü birden tara, ihtisas dairesini `oa-alan` ile hedefle.

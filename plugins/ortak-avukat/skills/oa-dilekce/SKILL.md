@@ -270,3 +270,26 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8.1 — KOMPAKT-KAPANIŞ KURALI (447 provası dersleri; pipeline ŞART DEĞİL)
+
+Bu parça bir teslim ürünü (dilekçe/mütalaa — md/html/pdf/udf) ürettiği AN,
+pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
+
+1. **Link:** her künyenin YANINA kütükteki `KAYNAK-URL` erişim linki yazılır —
+   linksiz künye EKSİK atıftır ([G4]; kural v0.5.7.5'ten beri yürürlükte).
+2. **m.6 CEPHANELİK:** karşı tarafın MUHTEMEL savunmalarının analizi ve
+   cevapları DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/07-antitez-cephanelik.md`
+   iç dosyasına yazılır (farkındalık içindir; dilekçede kurulması savunma
+   hattını karşı tarafa HEDİYE etmek ve zayıf noktayı İFŞA etmektir).
+   Bilinçli ön-karşılama (praeoccupatio) yalnız avukat onayıyla kalır.
+   Mekanik gözü: `dilekce_denetim.py` [K] taraması (advisory).
+3. **KAYNAK-BLOĞU:** ürünün İLK satırları `<!-- kaynaklar: yol@sha8 · ... -->`
+   `<!-- besledigi: ... -->` `<!-- uretim: <zaman> · <parça> -->` (graft
+   deseni; `tazelik_denetim.py` bunu okur — bayatlama görünür olur).
+4. **MÜHÜR:** üretimden hemen sonra
+   `oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdiler>`
+   koşulur (ürün başına `.prov.json` doğum belgesi; UYAP öncesi `--dogrula`).
+5. **DENETİM:** `oa-dilekce/scripts/dilekce_denetim.py <taslak> --kok .`
+   (içinde [F] içtihat-muhakeme + [G4]/[G5] + [K] m.6 taraması birleşiktir)
+   koşulmadan hiçbir ürün avukata "hazır" diye sunulamaz.

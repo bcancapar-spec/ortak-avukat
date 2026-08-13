@@ -582,6 +582,33 @@ _TALEP_ONARMA_RE = re.compile(
     r"gideril(sin|mesi|melidir)", re.I)
 
 
+CEPHANELIK_IFSA_RE = re.compile(
+    r"(?:davalı|karşı\s*taraf|idare(?:nin)?|hasım)[^.\n]{0,80}"
+    r"(?:savunabil|ileri\s*sürebil|itiraz\s*edebil|iddia\s*edebil|"
+    r"muhtemel\s*savunma|olası\s*savunma|savunması(?:na|nda)?\s*karşı|"
+    r"karşı\s*çıkabil|dayanabil)", re.IGNORECASE)
+
+
+def cephanelik_ifsa_uyarilari(metin):
+    """v0.5.8.1 [K] — m.6 CEPHANELİK BEKÇİSİ (447 provası bulgusu-A):
+    karşı tarafın MUHTEMEL savunmalarının analizi dilekçeye yazılmışsa yakala.
+    Bu analiz İÇ CEPHANELİKTİR (_oa/cikti/07-antitez-cephanelik.md) — dilekçede
+    kurulması, karşı tarafa savunma hattını HEDİYE etmek ve kendi zayıf
+    noktalarını İFŞA etmektir. ADVISORY: bilinçli ön-karşılama (praeoccupatio)
+    nadiren meşru bir retorik tercihtir — karar avukatta, script BLOKLAMAZ."""
+    uyarilar = []
+    for m in CEPHANELIK_IFSA_RE.finditer(metin):
+        bas = max(0, m.start() - 30)
+        parca = " ".join(metin[bas:m.end() + 50].split())
+        uyarilar.append(
+            f"muhtemel-savunma analizi dilekçede: \"…{parca[:140]}…\" — m.6: "
+            "bu analiz CEPHANELİĞE yazılır (07-antitez), dilekçeye DEĞİL; "
+            "bilinçli ön-karşılama ise avukat onayıyla kalabilir")
+        if len(uyarilar) >= 6:
+            break
+    return uyarilar
+
+
 def _kusur_sonuc_talep_asimetri_uyarilari(metin):
     """Karşı-taraf-kusuru bağlamında ('karşı taraf', 'davalının', 'kusur',
     'eksiklik', 'dava şartı eksik' vb.) bir 'süre verilsin/tamamlan-/
@@ -878,6 +905,14 @@ def main():
             print(f"   [UYARI] {u}")
     else:
         print("   [OK] görünür kalıp-etiket sinyali bulunamadı (heuristik)")
+
+    print("\n[K] m.6 CEPHANELİK BEKÇİSİ (v0.5.8.1 — advisory, ASLA bloklamaz)")
+    k_uyarilar = cephanelik_ifsa_uyarilari(metin)
+    if k_uyarilar:
+        for u in k_uyarilar:
+            print(f"   [UYARI] {u}")
+    else:
+        print("   [OK] dilekçede muhtemel-savunma analizi kalıbı bulunamadı (heuristik)")
 
     print("\n[I] KUSUR→SONUÇ→TALEP ASİMETRİSİ TARAMASI (advisory — P1-11 ek kural, ASLA bloklamaz)")
     i_uyarilar = _kusur_sonuc_talep_asimetri_uyarilari(metin)
