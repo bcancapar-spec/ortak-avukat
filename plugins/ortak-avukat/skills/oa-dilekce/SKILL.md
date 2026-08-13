@@ -293,3 +293,12 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
 5. **DENETİM:** `oa-dilekce/scripts/dilekce_denetim.py <taslak> --kok .`
    (içinde [F] içtihat-muhakeme + [G4]/[G5] + [K] m.6 taraması birleşiktir)
    koşulmadan hiçbir ürün avukata "hazır" diye sunulamaz.
+
+### Şekil standardı v2 (v0.5.8.3 — kompakt-kapanış beşlisine ek biçim kuralları)
+
+- **Link biçimi:** dilekçedeki her karar/emsal erişim linki PARANTEZ içinde ve
+  gövdeden 1 punto küçük (11 pt) yazılır — md'de düz `(https://...)` yazmak
+  yeter, `md_udf_html` 11 pt stile kendisi çeker.
+- **Satır aralığı 1,5** ve **dört kenar 1,5 cm (42.52 pt)** — Resmî Yazışma
+  Yönetmeliği (No. 2646) m.7/m.8'e uyarlanmış üretim standardı; UDF hattı
+  bunu otomatik uygular (`udf_yaz` kenar yaması), elle müdahale gerekmez.

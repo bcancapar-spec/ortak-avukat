@@ -89,3 +89,22 @@ ve mekanik kapımız dosyayı GEÇERLİ saydı — gerçek-dünya çapraz doğru
 Kanonik HTML karşılığı (md_udf_html `JUST`):
 `text-align:justify; text-indent:24pt; line-height:1.3; margin-bottom:6pt`.
 Etiket blokları için HTML deseni: `tab-stops:110pt` + `<tab/>` (rehber A.3).
+
+## §6-v2 — ŞEKİL STANDARDI v2 (v0.5.8.3; Can emri + Yönetmelik No. 2646)
+
+Dayanak: **Resmî Yazışmalarda Uygulanacak Usul ve Esaslar Hakkında Yönetmelik**
+(CB Yönetmeliği No. 2646, RG 10.06.2020) — m.7 (TNR 12 punto esas; gerekli
+hâllerde küçültme) ve m.8 (yazı alanı: kenarlardan 1,5 cm boşluk).
+
+| Öğe | Değer | Kaynak |
+|---|---|---|
+| Sayfa kenarları (4 yön) | **42.52 pt = 1,5 cm** | Yönetmelik m.8 (alt kenar simetriyle) |
+| Gövde | Times New Roman **12 pt**, yaslı, FirstLineIndent 24 | Yönetmelik m.7 + saha nüshası |
+| **Satır aralığı** | **1,5** (HTML `line-height:1.5`; yerel motor `LineSpacing="0.5"`) | Can emri (dilekçe geleneği) |
+| **Karar/emsal linkleri** | Parantez içinde, **11 pt** (gövdeden 1 punto küçük) | Can emri; m.7 küçültme cevazı |
+| Üretim yolu | md → md_udf_html → html2udf → `_sayfa_kenari_yonetmelik` yaması → çift kapı | — |
+
+Not: html2udf importer'ının varsayılan kenarları dardır; kenar yaması içerik
+değil BİÇİM düzeltmesidir ve ardından udf_dogrula + resmî okuyucu yeniden koşar.
+Eski §6 ölçümü (sol 42.52 / sağ 28.35 / üst-alt 14.17 / LineSpacing 0.3) tarihi
+kayıt olarak durur; üretim standardı artık §6-v2'dir.

@@ -47,8 +47,8 @@ import sys
 # v0.5.7.2 — SAHA STANDARDI (e-imzalı gerçek nüshadan ölçüldü, bkz.
 # references/udf-ic-yapi.md §6): gövde iki yana yaslı + İLK SATIR 24pt
 # girintili + altında 6pt boşluk + 1.3 satır aralığı.
-JUST = "text-align:justify; text-indent:24pt; line-height:1.3; margin-top:0pt; margin-bottom:6pt"
-QUOTE = "text-align:justify; line-height:1.3; margin-left:36pt; margin-right:18pt; margin-top:6pt; margin-bottom:6pt"
+JUST = "text-align:justify; text-indent:24pt; line-height:1.5; margin-top:0pt; margin-bottom:6pt"
+QUOTE = "text-align:justify; line-height:1.5; margin-left:36pt; margin-right:18pt; margin-top:6pt; margin-bottom:6pt"
 
 
 def kacis(t):
@@ -59,8 +59,17 @@ def kacis(t):
 def satir_ici(t):
     """Satır içi markdown → HTML. Önce escape, sonra işaretleme (kaçış çakışmasını önler)."""
     t = kacis(t)
-    # [metin](url) -> okunabilir düz metin (UDF'de tıklanabilir bağlantı beklenmez)
-    t = re.sub(r"\[([^\]]+)\]\(https?://([^\)]+)\)", lambda m: m.group(1) + " - " + m.group(2), t)
+    # v0.5.8.3 ŞEKİL STANDARDI (Can emri + Yönetmelik No. 2646 m.7: gövde 12pt,
+    # gerekli hâlde küçültme serbest): karar/emsal bağlantıları PARANTEZ içinde
+    # ve gövdeden 1 punto KÜÇÜK (11pt) yazılır — dilekçe akışını boğmadan
+    # mahkemeye tek-tık erişim ([G4] zincirinin görsel ucu).
+    # [metin](url) -> metin (url@11pt)
+    t = re.sub(r"\[([^\]]+)\]\((https?://[^\)]+)\)",
+               lambda m: m.group(1) +
+               ' <span style="font-size:11pt">(' + m.group(2) + ')</span>', t)
+    # düz yazılmış (https://...) parantezli bağlantılar da aynı stile çekilir
+    t = re.sub(r"\((https?://[^\s\)]+)\)",
+               r'<span style="font-size:11pt">(\1)</span>', t)
     t = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)

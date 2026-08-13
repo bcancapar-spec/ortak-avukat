@@ -375,6 +375,51 @@ def md_html_uret(metin, ham=False):
     return mod.donustur(metin, ham=ham)
 
 
+_KENAR_PT = "42.52"  # 1,5 cm — Resmî Yazışma Yönetmeliği No. 2646 m.8
+
+
+def _sayfa_kenari_yonetmelik(udf_yolu):
+    """v0.5.8.3 — üretilmiş UDF'in pageFormat kenarlarını dört yönden 42.52 pt
+    (1,5 cm; Yönetmelik No. 2646 m.8) yapar. İçeriğe DOKUNMAZ; yalnız
+    pageFormat özniteliklerini yeniden yazar. Döner: kısa not metni
+    (başarı/atlama) — ASLA fırlatmaz, üretimi asla kırmaz."""
+    import zipfile as _zf
+    import re as _re
+    try:
+        with _zf.ZipFile(udf_yolu) as z:
+            adlar = z.namelist()
+            icerikler = {ad: z.read(ad) for ad in adlar}
+        x = icerikler.get("content.xml")
+        if x is None:
+            return "kenar: content.xml yok — atlandı"
+        metin = x.decode("utf-8")
+
+        def _oznitelik(m):
+            etiket = m.group(0)
+            for ad in ("leftMargin", "rightMargin", "topMargin", "bottomMargin"):
+                if ad + '="' in etiket:
+                    etiket = _re.sub(ad + r'="[0-9.]+"',
+                                     '%s="%s"' % (ad, _KENAR_PT), etiket)
+                else:
+                    etiket = etiket.replace(
+                        "<pageFormat",
+                        '<pageFormat %s="%s"' % (ad, _KENAR_PT), 1)
+            return etiket
+
+        yeni, n = _re.subn(r"<pageFormat[^>]*/?>", _oznitelik, metin, count=1)
+        if not n:
+            return "kenar: pageFormat bulunamadı — atlandı"
+        icerikler["content.xml"] = yeni.encode("utf-8")
+        tmp = udf_yolu + ".kenar"
+        with _zf.ZipFile(tmp, "w", _zf.ZIP_DEFLATED) as z:
+            for ad in adlar:
+                z.writestr(ad, icerikler[ad])
+        os.replace(tmp, udf_yolu)
+        return "kenar: 4x%s pt (Yönetmelik 2646 m.8) uygulandı" % _KENAR_PT
+    except Exception as e:
+        return "kenar: uygulanamadı (%s) — varsayılan kenarlarla sürüldü" % e
+
+
 # ───────────────── gerçek yazıcı: `npx udf-cli html2udf` ────────────────────
 _GIRIS_TALIMATI = (
     "Giriş gerekli: İNSAN varsa 'npx -y udf-cli@latest login' (tarayıcıda "
@@ -448,6 +493,14 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
                           "HİÇBİR .udf yazılmadı (eski elle-zip yoluna düşülmedi). %s"
                           % (p.returncode, _GIRIS_TALIMATI))}
 
+    # v0.5.8.3 ŞEKİL STANDARDI v2 — html2udf importer'ının varsayılan sayfa
+    # kenarları dar (sahada "metin kenara çok yakın" bulgusu). Yönetmelik
+    # No. 2646 m.8 (yazı alanı kenarlardan 1,5 cm) uyarınca pageFormat dört
+    # kenarı 42.52 pt'ye çekilir. Bu içerik DEĞİL biçim yamasıdır; ardından
+    # dosya yine udf_dogrula + resmî okuyucu kapılarından geçer. Başarısızlık
+    # ÜRETİMİ KIRMAZ (kenar kozmetiktir) — sonuçta görünür not düşülür.
+    kenar_notu = _sayfa_kenari_yonetmelik(tmp_udf)
+
     try:
         _atomik_tasi(tmp_udf, cikti_yolu)
     except Exception as e:
@@ -456,7 +509,7 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
                 "hata": "FAIL-CLOSED: atomik taşıma başarısız: %s" % e}
 
     return {"basarili": True, "exit_kod": 0, "stdout": p.stdout or "",
-            "stderr": p.stderr or "", "hata": None}
+            "stderr": p.stderr or "", "hata": None, "kenar_notu": kenar_notu}
 
 
 # ── RESMİ OKUYUCU ile geri okuma (udf2md) — 2026/307 saha reçetesi, adım 3 ──
@@ -814,15 +867,17 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
 
     # v0.5.7.2 — SAHA STANDARDI: kenar boşlukları ve paragraf metrikleri,
     # avukatın e-imzalayıp fiilen sunduğu gerçek bir nüshadan ÖLÇÜLDÜ
-    # (bkz. references/udf-ic-yapi.md §6): sol 42.52 / sağ 28.35 / üst-alt
-    # 14.17 pt; gövde = yaslı + FirstLineIndent 24 + SpaceBelow 6 +
-    # LineSpacing 0.3; her span'da açık Times New Roman 12.
+    # ŞEKİL STANDARDI v2 (v0.5.8.3 — Can emri + Resmî Yazışma Yönetmeliği
+    # No. 2646 m.8: yazı alanı kenarlardan 1,5 cm): DÖRT kenar 42.52 pt;
+    # gövde = yaslı + FirstLineIndent 24 + SpaceBelow 6 + LineSpacing 0.5
+    # (~1,5 satır aralığı; eski ölçüm 0.3 tek-aralığa yakındı); her span'da
+    # açık Times New Roman 12. (bkz. references/udf-ic-yapi.md §6-v2)
     x = ['<?xml version="1.0" encoding="UTF-8"?>',
          '<template format_id="%s">' % format_id,
          '<content><![CDATA[' + _ym_cdata_guvenli(tam) + ']]></content>',
          '<properties>',
          '<pageFormat mediaSizeName="1" leftMargin="42.52" '
-         'rightMargin="28.35" topMargin="14.17" bottomMargin="14.17" '
+         'rightMargin="42.52" topMargin="42.52" bottomMargin="42.52" '
          'paperOrientation="1" headerFOffset="20.0" footerFOffset="20.0"/>',
          '</properties>',
          '<elements resolver="hvl-default" name="hvl-default">']
@@ -833,7 +888,7 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
                      'family="Times New Roman" size="12"/>' % (start, length))
         else:
             x.append('<paragraph Alignment="%d" FirstLineIndent="24.0" '
-                     'SpaceBelow="6.0" LineSpacing="0.3">' % _YM_HIZA_YASLI)
+                     'SpaceBelow="6.0" LineSpacing="0.5">' % _YM_HIZA_YASLI)
             x.append('<content startOffset="%d" length="%d" '
                      'family="Times New Roman" size="12"/>' % (start, length))
         x.append('</paragraph>')
