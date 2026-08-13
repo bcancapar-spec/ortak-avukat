@@ -220,6 +220,64 @@ def _kenar_ref(dugumler, i, k):
     }
 
 
+GUC_AGIRLIK = {"dispozitif": 1.0, "guclu": 0.9, "zayif": 0.6, "tartismali": 0.4}
+GUC_VARSAYILAN = 0.8  # guc alanı boşsa (beyan edilmemiş) temkinli orta değer
+
+
+def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
+    """v0.5.8 P3 — İLLİYET ZİNCİRİ GÜVEN ANALİZİ (semantica confidence_decay +
+    weakest_link deseninin devşirmesi; anayasa m.0 devşirme protokolü, Can
+    kararı 2026-08-12). Her maksimal illiyet yolunda kenar ağırlıklarının
+    ÇARPIMI = zincir güveni ("zincir uzadıkça iddia gücü düşer"); en düşük
+    ağırlıklı sıçrama = EN ZAYIF HALKA (karşı tarafın saldıracağı yer —
+    oa-antitez beslemesi). Ağırlık `guc` alanından türetilir; hukuki niteleme
+    değildir, YAPISAL kırılganlık sinyalidir. ADVISORY — hiçbir şeyi bloklamaz."""
+    ill = [k for k in kenarlar if k.get("kategori") == "illiyet"]
+    giden, gelen_var = {}, set()
+    for k in ill:
+        giden.setdefault(k.get("kaynak"), []).append(k)
+        gelen_var.add(k.get("hedef"))
+    kokler = [d for d in giden if d not in gelen_var]
+    zincirler = []
+
+    def dfs(dugum, yol, gorulen):
+        if len(zincirler) >= en_cok * 5:
+            return
+        devam = False
+        if len(yol) < derinlik:
+            for k in giden.get(dugum, []):
+                if k.get("hedef") in gorulen:
+                    continue
+                devam = True
+                dfs(k.get("hedef"), yol + [k], gorulen | {k.get("hedef")})
+        if not devam and yol:
+            zincirler.append(yol)
+
+    for kok in kokler:
+        dfs(kok, [], {kok})
+
+    sonuc = []
+    for yol in zincirler:
+        guven, zayif, zayif_w = 1.0, None, None
+        for k in yol:
+            w = GUC_AGIRLIK.get(k.get("guc"), GUC_VARSAYILAN)
+            guven *= w
+            if zayif_w is None or w < zayif_w:
+                zayif, zayif_w = k, w
+        sonuc.append({
+            "yol": [yol[0].get("kaynak")] + [k.get("hedef") for k in yol],
+            "halka": len(yol),
+            "guven": round(guven, 3),
+            "en_zayif": {"kaynak": zayif.get("kaynak"),
+                         "hedef": zayif.get("hedef"),
+                         "tur": zayif.get("tur"),
+                         "guc": zayif.get("guc") or "beyan-yok",
+                         "agirlik": zayif_w} if zayif else None,
+        })
+    sonuc.sort(key=lambda z: (z["guven"], -z["halka"]))  # en kırılgan önce
+    return sonuc[:en_cok]
+
+
 def json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru, cevrimler, kesme, yuk):
     """Denetim sonucunu makine-okur sözlük olarak topla (çapraz-denetçi bunu okur)."""
     return {
@@ -241,7 +299,7 @@ def json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru, cevrimler, kesme, 
     }
 
 
-def rapor(yol, json_yol=None):
+def rapor(yol, json_yol=None, zincir=False):
     dugumler, kenarlar = yukle(yol)
     cizgi = "=" * 60
     print(cizgi)
@@ -320,6 +378,24 @@ def rapor(yol, json_yol=None):
         print("  — Belirgin tek yük taşıyan kenar yok (zincir paralel/dağıtık).")
     print()
 
+    zincirler = None
+    if zincir:
+        print("### 8. ZİNCİR GÜVEN ANALİZİ (v0.5.8 P3 — → oa-antitez/oa-strateji)")
+        zincirler = zincir_analizi(dugumler, kenarlar)
+        if zincirler:
+            for z in zincirler:
+                adlar = " → ".join(_ad(dugumler, x) for x in z["yol"])
+                print(f"  ◆ [{z['guven']}] {adlar}  ({z['halka']} halka)")
+                ez = z["en_zayif"]
+                if ez:
+                    print(f"      en zayıf halka: {_ad(dugumler, ez['kaynak'])} "
+                          f"—[{ez['tur']}]→ {_ad(dugumler, ez['hedef'])} "
+                          f"(güç: {ez['guc']}, ağırlık {ez['agirlik']}) "
+                          f"→ karşı taraf buraya saldırır; önce burayı sağlamlaştır")
+        else:
+            print("  — İlliyet zinciri bulunamadı (illiyet kategorili kenar yok).")
+        print()
+
     print(cizgi)
     print("NOT: Bu rapor YAPISAL boşlukları gösterir. İlliyetin hukuki niteliği "
           "(uygun illiyet / objektif isnadiyet / kesilme) ve nihai karar avukata aittir.")
@@ -329,6 +405,8 @@ def rapor(yol, json_yol=None):
         sonuc = json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru,
                            cevrimler, kesme, yuk)
         sonuc["girdi"] = yol
+        if zincirler is not None:
+            sonuc["zincirler"] = zincirler
         with open(json_yol, "w", encoding="utf-8") as f:
             json.dump(sonuc, f, ensure_ascii=False, indent=2, sort_keys=True)
         print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
@@ -340,8 +418,11 @@ if __name__ == "__main__":
     p.add_argument("graf", nargs="?", help="graf.json yolu")
     p.add_argument("--json", dest="json_yol", metavar="YOL",
                    help="denetim sonucunu makine-okur JSON olarak bu yola yaz (opsiyonel)")
+    p.add_argument("--zincir", action="store_true",
+                   help="v0.5.8 P3: illiyet zinciri güven analizi (confidence_decay "
+                        "+ en zayıf halka; advisory — oa-antitez beslemesi)")
     a = p.parse_args()
     if not a.graf:
-        print("Kullanım: python grafik_denetim.py graf.json [--json out.json]")
+        print("Kullanım: python grafik_denetim.py graf.json [--json out.json] [--zincir]")
         sys.exit(1)
-    rapor(a.graf, json_yol=a.json_yol)
+    rapor(a.graf, json_yol=a.json_yol, zincir=a.zincir)

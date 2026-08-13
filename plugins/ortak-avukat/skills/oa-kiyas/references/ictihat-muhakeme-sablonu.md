@@ -182,3 +182,20 @@ veya hiç doğrulanmış içtihat atfı olmaması yalnız **uyarı** üretir (bl
   muhakeme kaydı tamam kararları dilekçeye işler.
 - **`oa-antitez`** → `ALEYHE` (ayırt edilmemiş) kayıtların dahili
   cephaneliğidir.
+
+## AŞILMIŞLIK alanları (v0.5.8 — [G5] kapısı; semantica superseded deseni, m.0 devşirme protokolü)
+
+Üç OPSİYONEL alan; herhangi biri doluysa karar AŞILMIŞ sayılır. Teyit/damga
+anında model şu soruyu SORMAK zorundadır: "bu karar sonradan İBK, kanun
+değişikliği veya daire kaymasıyla aşılmış olabilir mi?" — biliniyorsa işlenir:
+
+| Alan | Biçim | Anlam |
+|---|---|---|
+| `**AŞAN-KAYNAK:**` | künye/norm (ör. `Yargıtay İBK, E. 2025/2, K. 2026/1` veya `7499 sK. m.12 değişikliği`) | Kararı aşan kaynak |
+| `**AŞILMA-TARİHİ:**` | GG.AA.YYYY | Aşan kaynağın tarihi |
+| `**GEÇERLİLİK-BİTİŞ:**` | GG.AA.YYYY | Kararın iyi-hukuk olmaktan çıktığı tarih (çoğu zaman aşılma tarihiyle aynı) |
+
+Kural ([G5], Can kararı 2026-08-12): **DAMGA=LEHE + aşılmış + dilekçede atıf →
+TESLİM ENGELİ.** ALEYHE+aşılmış ise cephanelik bilgisidir (karşı taraf ileri
+sürerse aşan kaynak kozdur) — bloklamaz. Otomatik aşan-kaynak taraması v2'ye
+ertelendi; alanlar elle/teyit-anında doldurulur.

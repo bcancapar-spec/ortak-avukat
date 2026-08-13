@@ -223,3 +223,13 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8 — AŞILMIŞLIK SORUSU (zorunlu teyit adımı)
+
+Her künye teyidi + DAMGA yazımında tek soru daha sorulur: **"Bu karar sonradan
+aşılmış olabilir mi?"** (İBK, içtihat değişikliği, kanun değişikliği, daire
+kayması). Şüphe varsa Yargı Pro'da kararın tarihinden SONRAKİ aynı-konu
+kararlarına kısa bakış atılır; aşılmışlık tespit edilirse muhakeme kaydına
+`**AŞAN-KAYNAK:**` / `**AŞILMA-TARİHİ:**` işlenir (şablon: oa-kiyas
+ictihat-muhakeme-sablonu.md). [G5] kapısı DAMGA=LEHE + aşılmış + dilekçede
+atıf birleşimini TESLİM ENGELİ sayar — aşılmış karar lehte dayanak olamaz.

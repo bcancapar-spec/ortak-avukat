@@ -377,3 +377,18 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8 — KAYNAK-BLOĞU KONVANSİYONU (P6+P7, graft deseni)
+
+Her `_oa/cikti` ürününün İLK satırları kaynak-bloğudur (üretim anında yazılır):
+
+    <!-- kaynaklar: metin/00-kunye.json@a1b2c3d4 · cikti/01-illiyet-graf.json@e5f6a7b8 -->
+    <!-- besledigi: 08-CBS-dilekce -->
+    <!-- uretim: 2026-08-12T10:00Z · oa-strateji -->
+
+sha8 = kaynağın SHA-256 ilk 8 hanesi (`tazelik_denetim.py` üretir/denetler).
+Amaç ikili: (a) taze oturum ürün ağını BAĞLARDAN gezer, dosyaları yeniden
+okumaz (devir ekonomisi); (b) `oa-kontrol/scripts/tazelik_denetim.py --kok .`
+kaynağı sonradan değişen ürünü BAYAT ilan eder — "delta geçişi gerek"
+(advisory, bloklamaz; Çal-1079 dersinin otomasyonu). Kapanış adımında ve her
+DURUM.md türetiminde bir kez koşturulur.

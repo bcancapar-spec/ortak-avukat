@@ -145,6 +145,15 @@ DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
 KAYNAK_URL_LINE_RE = re.compile(r"^\*\*KAYNAK-URL:\*\*\s*(\S+)\s*$", re.M)
 # Dilekçe metnindeki http(s) bağlantıları — [G4] uydurma-link taraması.
 HTTP_URL_RE = re.compile(r"https?://[^\s\)\]\>»\"']+")
+# v0.5.8 [G5] AŞILMIŞ-İÇTİHAT (semantica superseded deseninin devşirmesi —
+# bkz. anayasa m.0 dış desen devşirme protokolü): bir içtihadın sonradan
+# İBK / kanun değişikliği / daire kaymasıyla AŞILDIĞI kütüğe işlenirse,
+# o karar LEHE dayanak olarak dilekçeye GİREMEZ. Alanlar teyit/damga anında
+# elle doldurulur (otomatik aşan-kaynak taraması bilinçli olarak v2'ye
+# ertelendi — kaş-göz ilkesi).
+ASAN_KAYNAK_LINE_RE = re.compile(r"^\*\*AŞAN-KAYNAK:\*\*\s*(.+)$", re.M)
+ASILMA_TARIHI_LINE_RE = re.compile(r"^\*\*AŞILMA-TARİHİ:\*\*\s*(.+)$", re.M)
+GECERLILIK_BITIS_LINE_RE = re.compile(r"^\*\*GEÇERLİLİK-BİTİŞ:\*\*\s*(.+)$", re.M)
 
 
 def _bolum_al(metin, baslik):
@@ -175,7 +184,8 @@ GECERSIZ_KILINDI_RE = re.compile(r"^\*\*GEÇERSİZ-KILINDI:\*\*", re.M)
 class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
-                 "gecersiz", "kaynak_url")
+                 "gecersiz", "kaynak_url", "asan_kaynak", "asilma_tarihi",
+                 "gecerlilik_bitis")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -201,6 +211,15 @@ class MuhakemeKaydi:
 
         m = KAYNAK_URL_LINE_RE.search(metin)
         self.kaynak_url = m.group(1).strip() if m else None
+
+        # v0.5.8 [G5] — aşılmışlık alanları (üçü de opsiyonel; herhangi biri
+        # doluysa karar AŞILMIŞ sayılır).
+        m = ASAN_KAYNAK_LINE_RE.search(metin)
+        self.asan_kaynak = m.group(1).strip() if m else None
+        m = ASILMA_TARIHI_LINE_RE.search(metin)
+        self.asilma_tarihi = m.group(1).strip() if m else None
+        m = GECERLILIK_BITIS_LINE_RE.search(metin)
+        self.gecerlilik_bitis = m.group(1).strip() if m else None
 
         self.ilgili_kisim = _bolum_al(metin, "İLGİLİ-KISIM")
         # R4: eski "İLLİYET" alanı DAVAYA-BAĞ oldu (oa-illiyet nedensellik
@@ -755,6 +774,44 @@ def kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar):
     return bloklar, uyarilar
 
 
+def asilmis_ictihat_denetimi(atiflar, kayitlar):
+    """v0.5.8 [G5] AŞILMIŞ-İÇTİHAT kapısı (semantica superseded deseni).
+
+    Kural (Can kararı 2026-08-12): DAMGA=LEHE ∧ aşılmışlık alanı dolu ∧ künye
+    dilekçede atıf olarak GEÇİYORSA → TESLİM ENGELİ (aşılmış içtihat lehte
+    dayanak olamaz — İBK/kanun değişikliği/daire kayması onu öldürmüştür).
+    LEHE ama dilekçede geçmiyorsa → UYARI (kütük hijyeni: damga güncellenmeli).
+    ALEYHE/ALEYHE-AYIRT/NOTR + aşılmış → UYARI (bilgi — aşılmış ALEYHE karar
+    cephanelikte İŞE YARAR: karşı taraf ileri sürerse aşan kaynak koz olur).
+    Alanlar boşsa kayıt bu kapıya hiç girmez (geriye dönük uyum, fail-open)."""
+    bloklar, uyarilar = [], []
+    for k in kayitlar:
+        asilmis = k.asan_kaynak or k.asilma_tarihi or k.gecerlilik_bitis
+        if not asilmis:
+            continue
+        asan = k.asan_kaynak or "aşan kaynak belirtilmemiş"
+        tarih = k.asilma_tarihi or k.gecerlilik_bitis or "?"
+        atifta_var = any(k.eslesir(a["esas"], a["karar"], a.get("daire_key"))
+                         for a in atiflar)
+        if k.damga == "LEHE":
+            if atifta_var:
+                bloklar.append(
+                    f"{k.kunye_ham or k.dosya}: DAMGA=LEHE ama içtihat AŞILMIŞ "
+                    f"(aşan: {asan}; tarih: {tarih}) — aşılmış karar lehte "
+                    f"dayanak olarak dilekçede KALAMAZ.")
+            else:
+                uyarilar.append(
+                    f"{k.kunye_ham or k.dosya}: kütükte LEHE damgalı ama AŞILMIŞ "
+                    f"(aşan: {asan}) — dilekçede kullanılmamış; damga gözden "
+                    f"geçirilmeli (--damga-degistir).")
+        else:
+            uyarilar.append(
+                f"{k.kunye_ham or k.dosya}: AŞILMIŞ içtihat (damga: "
+                f"{k.damga or 'yok'}; aşan: {asan}) — bilgi: karşı tarafça "
+                f"ileri sürülürse aşan kaynak cephanelik kozudur.")
+    return bloklar, uyarilar
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="oa-kontrol içtihat muhakeme zinciri mekanik kapısı — "
@@ -823,6 +880,20 @@ def main():
             engel_var = True
             print("SONUÇ-EK: TESLİM ENGELİ — kütükte izi olmayan bağlantı dilekçede "
                   "kalamaz (uydurma-bağlantı yasağı).")
+
+    g5_bloklar, g5_uyarilar = asilmis_ictihat_denetimi(atiflar, kayitlar)
+    if g5_bloklar or g5_uyarilar:
+        print("\n" + "-" * 72)
+        print("[G5] AŞILMIŞ-İÇTİHAT (v0.5.8 — aşılmış karar lehte dayanak olamaz)")
+        print("-" * 72)
+        for b in g5_bloklar:
+            print(f"  ✗ {b}")
+        for u in g5_uyarilar:
+            print(f"  ⚠ {u}")
+        if g5_bloklar:
+            engel_var = True
+            print("SONUÇ-EK: TESLİM ENGELİ — İBK/kanun değişikliği/daire "
+                  "kaymasıyla aşılmış içtihat LEHE dayanak olarak kullanılamaz.")
 
     sys.exit(1 if engel_var else 0)
 

@@ -12,6 +12,14 @@ Unsurun hukuken gerçekten oluşup oluşmadığı avukatın muhakemesidir.
 
 Girdi:  kiyas.json  (şema references/kiyas-rehberi.md)
 Kullanım: python kiyas_denetim.py kiyas.json
+
+ÇIKIŞ KODU KARARI (2026-08-12, Av. Bayram Can Çapar — semantica-uyarlama karar
+sorusu #1): kritik boşlukta dahi exit 0 BİLİNÇLİ TASARIMDIR ve öyle kalır.
+Gerekçe: kıyas boşluğu bazen stratejik tercihtir (terditli/alternatif savunma
+meşru avukat taktiğidir); bu script İÇERİK muhakemesi denetler, kütük disiplini
+değil — kapılar yalnız kütük/olgu disiplinini bloklar (yanlış-BLOK yasağı,
+v0.5.5 "yanlış katmanı sertleştirdik" dersi). Görünürlük DURUM.md advisory
+hattıyla sağlanır; bu kararı değiştirmek yeni bir Can kararı gerektirir.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys

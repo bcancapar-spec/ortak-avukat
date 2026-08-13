@@ -123,6 +123,52 @@ def main():
                 hatalar.append(f"{p}: var olmayan parçaya atıf '{ref}' "
                                "(hayalet — kaldırılmış/yanlış yazılmış skill adı)")
 
+        # YASAK-NÖBETÇİSİ (v0.5.8 P5 — anayasa m.0 devşirme protokolünün icra
+        # aracı; Can kararı 2026-08-12): çekirdek scriptler AĞ kütüphanesi
+        # import EDEMEZ (Layer 0'ın mekanik teminatı — müvekkil verisi python
+        # katmanından dışarı çıkamaz; npx/subprocess hattına dokunmaz, o ayrı
+        # ve bilinçli bir kanaldır). Semantica'da bu sınırın SALT KONVANSİYONLA
+        # durduğunu ölçtük — bizde sürüm kapısına bağlıdır. Satır-başı desen:
+        # fonksiyon-içi lazy importlar da yakalanır; docstring prose'u eşleşmez.
+        script_dizin = os.path.join(kok, p, "scripts")
+        if os.path.isdir(script_dizin):
+            yasak_re = re.compile(
+                r"^\s*(?:from|import)\s+(requests|httpx|aiohttp|urllib3|socket|"
+                r"openai|anthropic|groq|litellm|http\.client|urllib\.request)\b")
+            for sad in sorted(os.listdir(script_dizin)):
+                if not sad.endswith(".py"):
+                    continue
+                syol = os.path.join(script_dizin, sad)
+                with open(syol, encoding="utf-8", errors="replace") as sf:
+                    siçerik = sf.read()
+                for i, satir in enumerate(siçerik.splitlines(), 1):
+                    m2 = yasak_re.match(satir)
+                    if m2:
+                        hatalar.append(
+                            f"{p}/scripts/{sad}:{i}: YASAK ağ-import "
+                            f"'{m2.group(1)}' (m.0 devşirme protokolü / Layer 0 "
+                            "— çekirdek script ağ kütüphanesi taşıyamaz)")
+                # VENDOR denetimi (m.0: "vendor dosyası testsiz olamaz"):
+                # '# VENDOR:' başlık satırı taşıyan scriptin tests/test_<ad>.py
+                # eşi depoda bulunmalı. tests/ dizini yakın köklerde ARANIR;
+                # hiç yoksa (aile depo DIŞINA kopyalanmış — test fixture'ları
+                # gibi) denetim ATLANIR: kural depoyu bağlar, kopyayı değil.
+                if re.search(r"^#\s*VENDOR:", siçerik, re.M):
+                    tests_dizin = None
+                    for yukari in ("..", os.path.join("..", ".."),
+                                   os.path.join("..", "..", "..")):
+                        aday = os.path.normpath(
+                            os.path.join(kok, yukari, "tests"))
+                        if os.path.isdir(aday):
+                            tests_dizin = aday
+                            break
+                    if tests_dizin and not os.path.isfile(
+                            os.path.join(tests_dizin, f"test_{sad[:-3]}.py")):
+                        hatalar.append(
+                            f"{p}/scripts/{sad}: VENDOR dosyası ama "
+                            f"tests/test_{sad[:-3]}.py yok (m.0: vendor "
+                            "testsiz olamaz)")
+
     # Tek kaynak anayasa dosyası mevcut olmalı (dedup'ın hedefi)
     if not os.path.isfile(os.path.join(kok, "ortak-avukat", "references", "anayasa.md")):
         hatalar.append("ortak-avukat/references/anayasa.md (TEK KAYNAK anayasa) yok — "
