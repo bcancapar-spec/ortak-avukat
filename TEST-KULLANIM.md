@@ -15,8 +15,14 @@ YAN YANA kurulursa iki aile aynı prompta birden tetiklenir (KURULUM-SENKRON
 ```
 claude plugin marketplace add bcancapar-spec/test-ortak-avukat
 claude plugin uninstall ortak-avukat@ortak-avukat
-claude plugin install ortak-avukat@test-ortak-avukat
+claude plugin install ortak-avukat@ortak-avukat
 ```
+
+> DİKKAT (2026-08-13 saha dersi): marketplace ADI fork'ta da `ortak-avukat`tır
+> (marketplace.json'dan gelir, repo adından DEĞİL) — `add` komutu yeni kayıt
+> açmaz, MEVCUT `ortak-avukat` marketplace'inin kaynağını fork'a çevirir.
+> Install bu yüzden `@ortak-avukat` ile yazılır. Hangi repoya baktığınızın
+> kanıtı: `git -C ~/.claude/plugins/marketplaces/ortak-avukat remote -v`
 
 Sonra Claude Code'u **TAM kapat-aç** (hook'lar yalnız süreç başında yüklenir —
 754 koşusunun kanıtladığı ders; "Restart to apply" yetmez, süreç ölmeli).
@@ -24,9 +30,11 @@ Sonra Claude Code'u **TAM kapat-aç** (hook'lar yalnız süreç başında yükle
 ## Ana sürüme dönüş
 
 ```
-claude plugin uninstall ortak-avukat@test-ortak-avukat
+claude plugin uninstall ortak-avukat@ortak-avukat
+claude plugin marketplace add bcancapar-spec/ortak-avukat
 claude plugin install ortak-avukat@ortak-avukat
 ```
+(`marketplace add` mevcut kaydın kaynağını ana depoya GERİ çevirir.)
 + yine TAM kapat-aç.
 
 ## "Şu an hangisi kurulu?" — mekanik teyit
