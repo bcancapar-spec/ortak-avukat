@@ -42,7 +42,8 @@ claude plugin install ortak-avukat@ortak-avukat
 ```
 ls ~/.claude/plugins/cache
 ```
-`test-ortak-avukat/` klasörü görünüyorsa test sürümündesiniz. İkinci kanıt:
+Test sürümünün kanıtı: `cache/ortak-avukat/ortak-avukat/0.5.8/` klasörü
+(sürüm damgası 0.5.8 = fork-prova; ana en çok 0.5.7.5'tir). İkinci kanıt:
 test sürümünde şu dosya vardır, ana sürümde YOKTUR:
 `.../skills/oa-kontrol/scripts/muhur_yaz.py`
 
