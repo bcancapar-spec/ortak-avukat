@@ -16,6 +16,21 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 WRAP = (REPO / "plugins" / "ortak-avukat" / "hooks" / "run-hook.cmd")
 
 
+def _gercek_bash():
+    """PATH'teki `bash` Windows'ta WSL stub'ına (System32) çözülebilir ve WSL
+    kurulu değilse patlar — 447 sonrası bu testin ilk sürümünün düştüğü tuzak.
+    Git Bash'i açık yoldan ara; yoksa None (test o yürütücüyü atlar)."""
+    for aday in (r"C:\Program Files\Git\bin\bash.exe",
+                 r"C:\Program Files (x86)\Git\bin\bash.exe"):
+        if pathlib.Path(aday).is_file():
+            return aday
+    import shutil
+    b = shutil.which("bash")
+    if b and "system32" not in b.lower():
+        return b
+    return None
+
+
 def _dava_klasoru():
     t = pathlib.Path(tempfile.mkdtemp())
     for i in ("001", "002", "003"):
@@ -24,7 +39,10 @@ def _dava_klasoru():
 
 
 def _bash(kok, mod="hook-prompt"):
-    p = subprocess.run(["bash", str(WRAP), mod], cwd=str(kok),
+    b = _gercek_bash()
+    if b is None:
+        return None, None                      # bash yok — çağıran atlar
+    p = subprocess.run([b, str(WRAP), mod], cwd=str(kok),
                        capture_output=True, text=True, encoding="utf-8",
                        errors="replace")
     return p.returncode, p.stdout or ""
@@ -32,14 +50,17 @@ def _bash(kok, mod="hook-prompt"):
 
 def test_bash_yolu_enjeksiyon_basar():
     kod, out = _bash(_dava_klasoru())
+    if kod is None:
+        return                                  # ortamda gerçek bash yok
     assert kod == 0
     assert "hookSpecificOutput" in out and "DEVİR YÜKÜMLÜLÜĞÜ" in out
     assert "TESLİM DİSİPLİNİ" in out          # v0.5.8.1 beşlisi taşınıyor
 
 
 def test_dava_disi_klasorde_sessiz():
-    bos = pathlib.Path(tempfile.mkdtemp())
-    kod, out = _bash(bos)
+    kod, out = _bash(pathlib.Path(tempfile.mkdtemp()))
+    if kod is None:
+        return
     assert kod == 0 and out.strip() == ""      # sessiz — asla gürültü/blok yok
 
 
