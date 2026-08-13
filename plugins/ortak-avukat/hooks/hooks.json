@@ -5,7 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-prompt"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" hook-prompt",
+            "shell": "bash",
+            "async": false
           }
         ]
       }
@@ -16,7 +18,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-postwrite"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" hook-postwrite",
+            "shell": "bash",
+            "async": false
           }
         ]
       }
@@ -26,7 +30,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" hook-denetle",
+            "shell": "bash",
+            "async": false
           }
         ]
       }
@@ -36,7 +42,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || py -3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle || python3 \"${CLAUDE_PLUGIN_ROOT}/skills/oa-pipeline/scripts/pipeline_kayit.py\" --hook-denetle"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" hook-denetle",
+            "shell": "bash",
+            "async": false
           }
         ]
       }
