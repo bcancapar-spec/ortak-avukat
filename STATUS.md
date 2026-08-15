@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-08-07 · **Sürüm:** 0.5.7
-*(önceki kayıtlar: 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-08-15 · **Sürüm:** 0.5.8.4 · **Commit:** `fc9cb31`
+*(önceki kayıtlar: 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -15,15 +15,35 @@ bir satır ölçülmeden buraya girmez.
 
 ---
 
+## 0. Durum özeti (2026-08-15 · v0.5.8.4)
+
+v0.5.7.5'ten bu yana **iki saha koşusu** yapıldı: **447 vergi sahası**
+(prova — tetik boşlukları ve hook sessiz-ölümü bulundu → v0.5.8.1/v0.5.8.2)
+ve **372 Torbalı sahası** (hook katmanı ilk kez uçtan uca canlı ateşledi;
+koşunun **5 kollu adli analizi** — transkript + artefakt + kod yolu + şekil
+zinciri + desen karnesi — v0.5.8.4 reçetesini üretti). Reçete infaz edildi:
+elle-UDF engeli (3 katman) · makbuz fiziksel garantisi · mühür otomasyonu
+(23 uyarı / 0 uygulama ölçümünün cevabı) · şekil kapısı · desen onarımları ·
+Gate A dirilişi. Ayrıntı: README sürüm bölümleri v0.5.8 – v0.5.8.4.
+
+- **CI:** `fc9cb31` **yeşil** — bu zincirin ilk yeşil CI koşusu (§6b dersinin kapanışı).
+- **Release:** v0.5.8.4 yayında (plugin.json = marketplace.json = 0.5.8.4).
+- **Sırada:** v0.5.8.4'ün kendi **saha provası** — reçete koddan geçti,
+  gerçek dosyada henüz sınanmadı; sınanmamış kapı beyandır.
+
+---
+
 ## 1. Yeşil olanlar (ölçüldü)
 
 | Ne | Değer | Nasıl doğrulanır |
 |---|---|---|
-| Test — avukatın ortamı (yazıcı VAR, cp1254) | **820 toplandı · 819 yeşil · 1 atlandı · 0 kırmızı** | `python -m pytest tests -q -rs` |
-| Test — saha referansı verilince | atlanan test de koşar: **9 yeşil · 0 atlandı** | `OA_SAHA_REFERANS=<dava>/_oa/metin python -m pytest tests/test_oa_ingest_ocr_nobetci.py -rs` |
-| Test — CI ortamı (yazıcı YOK, taklit) | **0 kırmızı** (yazıcı gerektiren 4 test görünür gerekçeyle atlanır) | `OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs` |
+| Test — avukatın ortamı (yazıcı VAR, cp1254) | **1049 toplandı · 1048 yeşil · 1 tasarımsal atlama · 0 kırmızı** | `python -m pytest tests -q -rs` |
+| Test — saha referansı verilince | atlanan test de koşar | `OA_SAHA_REFERANS=<dava>/_oa/metin python -m pytest tests/test_oa_ingest_ocr_nobetci.py -rs` |
+| Test — CI ortamı (yazıcı YOK, taklit) | **0 kırmızı** (yazıcı gerektiren testler görünür gerekçeyle atlanır) | `OA_TEST_UDF_YAZICI=0 python -m pytest tests -q -rs` |
+| CI — gerçek | `fc9cb31` **yeşil** (zincirin ilk yeşil koşusu) | `gh run list --limit 5` |
 | Aile yapı denetimi | **temiz**, 20 parça | `python plugins/.../aile_dogrula.py plugins/ortak-avukat/skills` |
-| Sürüm damgaları | dört damga eşzamanlı (`0.5.6.1`) | `test_hooks_wiring.py` |
+| Sürüm damgaları | dört damga eşzamanlı (`0.5.8.4`) | `test_hooks_wiring.py` |
+| Hook katmanı — sahada | 372 sahasında **ilk kez uçtan uca canlı** ateşledi (v0.5.8.2 sonrası) | koşu artefaktları + defter `{"tip":"hook"}` satırları |
 
 **Üç ortamda da koşuluyor artık:** avukatın makinesi (oturum açık) · CI
 taklidi (yazıcısız) · gerçek CI. Yazıcısız ortam v0.5.5.1'den beri
@@ -48,6 +68,12 @@ testidir; `OA_SAHA_REFERANS` tanımlanınca o da koşar (§6c).
 | `v0.5.6` | Yükleme hatası düzeltmesi + Yargı Pro MCP işlem rehberleri | 22→20 parça sayımı ve yükleme kırığı |
 | `v0.5.6.1` | **P0 — `hooks` kaydı geri kondu** + devir zorlayıcı + iki rehber sadeleştirildi | v0.5.6 `plugin.json`'dan `hooks` satırını düşürmüştü: dört hook olayı da ölüydü |
 | *(sürümsüz)* | **CI onarımı — release kapısı 11 koşudur ölüydü** | §6b |
+| `v0.5.7`–`v0.5.7.5` | Bayat-tohum aşısı · [G4] link kapısı · yerel motor v2 · anayasa m.0 · araç-adı hizalaması · bağlantı katmanı (Pro birincil + `yargi-mcp` yedek) · davadan gelen atıflar da link zinciri | Denizli saha koşusunun bulguları + kullanıcı kuralları |
+| `v0.5.8` | Semantica+Graft **desen** devşirmesi: [G5] · KAYNAK-BLOĞU · oa-mühür (PROV-O) · özne eşleştirici · `--zincir` · yasak-nöbetçisi | kod alınmadı, desen alındı (m.0 protokolü) |
+| `v0.5.8.1` | Tetik paketi: kompakt-kapanış kuralı + [K] cephanelik bekçisi + Stop mühür nöbetçisi | 447 provası: 22 parçadan 1'i çağrılmıştı — desenler ateşleyemedi |
+| `v0.5.8.2` | **Hook yapısal onarımı:** polyglot `run-hook.cmd`, `\|\|` zinciri yasak | masaüstü hook'u kabuksuz koşturuyor; üç sahada sıfır-ateşlemenin kökü |
+| `v0.5.8.3` | Şekil standardı v2 (Yönetmelik No. 2646): 4 kenar 42.52pt · 1,5 satır · linkler 11pt parantezde | Can emri + mevzuat teyidi |
+| `v0.5.8.4` | **372 karnesinin infazı:** elle-UDF engeli (3 katman) · makbuz garantisi · mühür otomasyonu · şekil kapısı · desen onarımları · Gate A dirilişi | 5 kollu adli analiz; 93 yeni test; CI ilk yeşil |
 
 ---
 

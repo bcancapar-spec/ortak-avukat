@@ -3,7 +3,11 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (Fable↔Sonnet döngüsü + sign-off)
+## DURUM — son (2026-08-15 · v0.5.8.4)
+- **Paket v0.5.8.4** (`fc9cb31`) — zincirin **ilk yeşil CI** koşusu; iki saha koşusu (447 vergi + 372 Torbalı) ve 5 kollu adli analiz v0.5.8.4 infazıyla kapandı; tam süit 1048 yeşil / 1 tasarımsal atlama; sırada v0.5.8.4'ün kendi saha provası.
+- **K4 KAPANDI:** gerçek dosyada uçtan uca prova + UDF gerçek UYAP editör teyidi yapıldı (Denizli tek-prompt koşusu, e-imzalı nüsha ölçümü v0.5.7.2, 372'de kenar-yaması A/B testi).
+
+### (arşiv — v0.5.0 sign-off dönemi)
 - **Fable↔Sonnet ultracode döngüsü: 4 tur, YAKINSADI.** Bulunan+düzeltilen kritik/yüksek: İYUK m.8/3 tarih hatası, kunye_teyit karar-no çıkaramama, oa_ingest önbellek sessiz külliyat bozulması, süre çıpası uyumsuzluğu, SKILL placeholder çökmesi.
 - **Doğrulanmış:** aile_dogrula exit 0 · pytest 57+ · 22 script derleniyor · paket **v0.5.0** (plugin.json = marketplace.json, mekanik denetimli).
 - **Fable sign-off: KOŞULLU ONAY.** Kapatıldı → **K2** (marketplace bayatlığı + aile_dogrula manifest sürüm denetimi), **K3** (gizlilik m.6 sözlüğü genişletildi — HIV/hastane/kanser/hükümlü/uyuşturucu artık DENY), **description ≤800** (oa-kiyas/oa-sure/oa-usta tıraşlandı), **kapı pytest'leri** (aile_dogrula/teslim_paketi/sure_nobetci/oa_metrik/capraz_denetim).
@@ -35,7 +39,7 @@
   cmd_sure_flag:1205; teslim_paketi zinciri + Gate-G; §5'te zaten ✅).
 
 **Güncellenmiş öncelik sırası (bayat "Fable öncelik sırası"nın yerine):**
-1. **K4 — gerçek dosyada uçtan uca prova + UDF gerçek UYAP `format_id` testi** (tek büyük açık).
+1. ✅ **K4 — gerçek dosyada uçtan uca prova + UDF gerçek UYAP `format_id` testi** — KAPANDI (Denizli tek-prompt koşusu + gerçek e-imzalı nüsha ölçümü + 372 UYAP editör A/B testi).
 2. §6-C(iii) doktrin cümlesi (SKILL.md'ye tek paragraf) + K1 canlı ölçüm (kurulu kopya senkronu).
 3. `hesapla_sure.py` v3+ (HMK m.103/104 adli tatil istisnası — bilinen tek somut hukuki-hata riski).
 4. P2: ortak kimlik uzayı (el-ID + FK denetçisi — `--json` ayağı 4 motorda tamam, bu fork'ta
@@ -84,19 +88,19 @@
 
 ## 2. P1 — sıradaki öncelikler (kısa vadeli)
 
-- ⬜ **UDF çıktısını pipeline'a bağla** — `oa-dilekce` YAZIM adımı, aksi istenmedikçe `udf_yaz.py` ile `.udf` üretsin; teslim paketine ekle. Gerçek UYAP editöründe `format_id` (1.8/1.7/1.6) testi.
-- ⬜ **`dilekce_denetim.py`** — çıktı şablon kapısı: tip başına zorunlu unsurlar (HMK m.119/129/342/361, 6216 m.47: merci, taraf+TCKN, netice-i talep, süre satırı, imza, harç), "avukata yakışan tertip-düzen" lint'i, ⚠-OCR alıntıda teyit şerhi, **müvekkil-aleyhi ifade taraması** (davalıda "kabul", davacıda aleyhe ikrar → uyarı). exit 1 ile teslim engeli.
+- ✅ **UDF çıktısını pipeline'a bağla** — UDF hattı teslim paketinde (`md → UDF-HTML → npx html2udf`, fail-closed, v0.5.5); gerçek UYAP editör teyidi yapıldı (v0.5.7.2 e-imzalı nüsha + 372 A/B testi). v0.5.8.4: elle-UDF engeli 3 katman + üretim makbuzu.
+- ✅ **`dilekce_denetim.py`** — kodda + testli; [F]/[G4]/[G5]/[H]/[I]/[J]/[K] kapıları sürüm sürüm eklendi.
 - ⬜ **`hesapla_sure.py` v3+** — HMK m.103/104 **adli tatil istisnası** (nafaka/işçi vb. tatilde görülen işlerde uzatma YOK → şu an koşulsuz uzatıyor, tek somut hukuki-hata riski); CMK/İİK/6183 süre kuralları JSON'a; `--uets` e-tebligat +5; altın-vaka pytest genişletme.
-- ⬜ **`sureler.json` mekanik çıpası** — hesaplanan son gün deterministik yazılır; oturum açılışında bekleyen süreler okunur (dış takvim eşgüdümü elle; `event_create` yok).
-- ⬜ **kunye_teyit + tam_tur'u pipeline defterine bağla** — teslim öncesi `kunye_teyit.py` zorunlu kapı; iş başında `tam_tur.py --durum` refleks.
-- ⬜ **`ajan-brif` anayasa enjeksiyonu** — `oa_hafiza.py ajan-brif` çıktısı anayasa.md özetini taşısın (dedup'lı parça subagent'ta standalone koşarken anayasa gelsin).
+- ✅ **`sureler.json` mekanik çıpası** — `oa_hafiza.py sure-flag` yazar; oturum açılışında `sure_nobetci.py` refleksi zorunlu (GEÇMİŞ/BUGÜN/D-7 → exit 3).
+- ✅ **kunye_teyit + tam_tur'u pipeline defterine bağla** — `teslim_paketi.py` zinciri + Gate-G (bkz. MUTABAKAT).
+- ✅ **`ajan-brif` anayasa enjeksiyonu** — yapıldı (bkz. §5).
 
 ## 3. P2 — olgunlaştırma (orta vadeli)
 
 - ⬜ **`_oa/` KVKK yaşam döngüsü** — dosya kapanınca **saklama** (retention) ritüeli; şifreli konteyner opsiyonu (dizüstü kaybı senaryosu — `_oa` düz metin müvekkil verisidir).
 - ⬜ **Arşiv anonimleştirme mekanik kapısı** — `arsiv-yerel → genel` terfisinde gizlilik kütüphanesiyle isim/TCKN taraması; dosya adında esas-no KABUL. (oa-arsiv düşük öncelik; kapı hafif tutulur.)
-- ⬜ **graf/vakia/kiyas şema birleşimi + `--json`** — ortak kimlik uzayı (ingest evrak #no'suna referans) + çapraz-referans denetçisi; denetim scriptlerine makine-okur çıktı.
-- ⬜ **`oa_metrik.py`** — token/seçicilik telemetrisi (tam tur vs delta kazancını ölçer).
+- ✅ **graf/vakia/kiyas şema birleşimi + `--json`** — `--json` dört motorda + `usul_matris`'te; ilk gerçek tüketici `DURUM.md` advisory bağlantısı (v0.5.8 öncesi, `216e343`); ortak kimlik tarafında **özne eşleştirici M9 motoru** (`ozne_eslestirici.py`, v0.5.8) `oa-vakia` tetiğine bağlandı (v0.5.8.4).
+- ✅ **`oa_metrik.py`** — kodda (v0.5.5'ten beri); analiz token raporu + override/şerh oranı + görünmez-kaçış sayaçları.
 - ⬜ **Katman-2 özet indeksi** — ingest sonrası `00-OZET.md` (her md 3-5 satır); büyük klasörde ana bağlam onda bire.
 
 ## 4. Kararlar (çözüldü)
@@ -114,11 +118,11 @@
 
 ## 6. FABLE 5 — 2. tur: BACKLOG (öncelik sıralı, dosya→değişiklik)
 
-- ⬜ **B — tam_tur delta körlüğü:** (i) `--durum/--delta` başında klasörü tara → künyede olmayan dosya varsa "KÜNYE BAYAT — önce oa_ingest koş" (ingest elle tetikli olduğu için delta yarım ölçüyor); (ii) `silinen` evrak raporu; (iii) künyeye `sha256` imzası (rename + eş-karakter değişikliği yakalanır); (iv) `--kaydet` işlenmemiş deltayı yutmasın + defter `--denetle` geçmeden TAMAM damgalamasın.
-- ⬜ **C — subagent orkestrasyon güvenliği:** (i) `pipeline_kayit.py` append-only JSONL'e çevir (fan-out'ta defter yarış koşulu = veri kaybı); (ii) `oa_hafiza.py`/`pipeline_kayit.py`'ye `--kok` (cwd sıfırlanınca hayalet `_oa`); (iii) doktrin: "oturum kilidi ana hatta; alt-ajan oturum-ac ÇAĞIRMAZ".
-- ⬜ **F — kunye_teyit kendi-kendini-teyit deliği:** teyit kaynağından `_oa/cikti/*` (model çıktısı) çıkar, yalnız kütük + ham MCP dökümü (`_oa/teyit/dokum/`, Fikir-1) kalsın; içtihat eşleşmesine MERCİ katmanı ekle (aynı esas/karar farklı dairede eşleşmesin).
-- ⬜ **K — description tıraşı:** 7 parçayı ≤800'e indir (takım-oynar/anayasa-özeti/script-adı çıkar; ayırt edici tetik + olumsuz kapsam + oto-tetik kalsın); `aile_dogrula` eşiğini >850 HATA'ya çek; `tetik-vakalari.md` regresyon listesi.
-- ⬜ **G/H/I — küçük sağlamlaştırmalar:** gizlilik balanced "raporla-engelleme" + "varsayılan strict" politika notu; udf_yaz UTF-16 offset (non-BMP karakter); oa_ingest EYP dalını önbelleğe bağla (delta döngüsünde her koşuda yeniden OCR).
+- ✅ **B — tam_tur delta körlüğü:** 4/4 kalem kodda (koda karşı doğrulandı — bkz. MUTABAKAT).
+- 🔶 **C — subagent orkestrasyon güvenliği:** (i) append-only JSONL ✅ + (ii) `--kok` ✅; (iii) "alt-ajan oturum-ac ÇAĞIRMAZ" doktrin cümlesi SKILL.md'de hâlâ YOK → açık.
+- ✅ **F — kunye_teyit kendi-kendini-teyit deliği:** `_oa/cikti` teyit kaynağı değil + MERCİ katmanı (koda karşı doğrulandı — bkz. MUTABAKAT).
+- 🔶 **K — description tıraşı:** 7 parçayı ≤800'e indir (takım-oynar/anayasa-özeti/script-adı çıkar; ayırt edici tetik + olumsuz kapsam + oto-tetik kalsın); `aile_dogrula` eşiğini >850 HATA'ya çek; `tetik-vakalari.md` regresyon listesi.
+- 🔶 **G/H/I — küçük sağlamlaştırmalar:** udf_yaz UTF-16 offset ✅ (v0.5.7 yerel motor v2; motor v0.5.8.4'te emekli, offset bilgisi udf-ic-yapi.md'de); gizlilik politika notu + oa_ingest EYP-önbellek kalemleri ölçülmedi → açık.
 
 ## 7. FABLE 5 — geliştirme fikirleri (öncelik önerisiyle)
 

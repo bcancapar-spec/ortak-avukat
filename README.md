@@ -2,7 +2,7 @@
 
 > Kıdemli bir **Ortak Avukat (Co-Counsel)** kimliğiyle çalışan, İlk İlkeler ve **illiyet bağı** odaklı derin muhakeme yürüten Türk hukuku metodoloji sistemi. Bir Claude Code / Cowork **plugin marketplace** deposu.
 
-**Sürüm:** 0.5.7.5 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.8.4 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor. Son ölçüm: ~200 evraklık gerçek
@@ -471,14 +471,24 @@ OAuth akışını tamamlayın. **Bu bağlantı olmadan** künye doğrulaması ya
 /plugin install ortak-avukat@ortak-avukat
 ```
 
-Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (22 skill) görünmeli.
+Kurulumdan sonra Claude Code'u **yeniden başlatın**. Skill listesinde tek bir `ortak-avukat` ailesi (20 skill) görünmeli.
+
+**Güncelleme (normal yol):**
+
+```bash
+claude plugin marketplace update ortak-avukat && claude plugin update ortak-avukat@ortak-avukat
+```
+
+Ardından Claude Code'u **TAM kapatıp açın** — bayat süreç eski hook setini
+taşımaya devam eder (v0.5.7 saha dersi: sıfır-ateşlemenin köklerinden biri
+güncelleme sonrası kapat-aç yapılmamasıydı).
 
 > **Güncelleme takılırsa:** eklentiyi ve marketplace'i kaldırın, Claude Code'u kapatın,
 > `~/.claude/plugins/cache/ortak-avukat` ile `~/.claude/plugins/marketplaces/ortak-avukat` dizinlerini silin,
 > yeniden ekleyip kurun. Sürüm etiketi değil **dosya kanıtı** ile doğrulayın (aşağıdaki "Doğrulama").
 
 ### G) Kontrol listesi
-- ✅ **Plugins / Skills** etkin, 22 skill yüklü
+- ✅ **Plugins / Skills** etkin, 20 skill yüklü
 - ✅ **Yargı Pro MCP** bağlı (OAuth tamam)
 - ✅ **Python + pymupdf + pillow** PATH'te
 - ✅ **Tesseract** (`tur` dil paketiyle) PATH'te
@@ -579,6 +589,92 @@ Saha oturumundan gelen çevrim reçetesi üzerine kapı gerçek bir dilekçede s
 | **Ticaret sicili desenleri** | TTSG'yi delil olarak okuma rehberi: noter künyesi madeni, ardışık yevmiye = tek karşılıklı anlaşma göstergesi, TTK m.36/3 aleniyet bağı, takas/ivaz savunma kalıbı — ve kalıbın **dürüst sınırı** (birebir emsal bulunamadı; kalıp norm üzerinde durur). **Kritik niteleme:** TTSG'deki yevmiye genel kurul kararının TASDİK yevmiyesidir, pay devir sözleşmesinin yevmiyesi değildir |
 | **İçtihat kaynak bağlantısı** | Dilekçede künyenin ardından **parantez içinde** kararın resmî bağlantısı yayımlanır. Bağlantı yalnız teyit anında `teyit --kaynak-url` ile kaydedilmiş olandır; **kayıt yoksa parantez hiç açılmaz** — uydurma bağlantı çıplak künyeden daha kötüdür (çıplak künye "teyit edilmedi" der, sahte bağlantı "teyit edildi" der) |
 
+---
+
+## v0.5.6 – v0.5.7.5 — sadeleştirme ve saha donanımı (özet)
+
+v0.5.5'in saha dersi tek cümleydi: *kapının gücü kodunda değil tetiğindedir* —
+bu dönem zırh eklemedi, tetikleri onardı. Kaynak: gerçek istinaf dosyası
+koşusunun bulguları (SAHA-SONUCU.md).
+
+| Sürüm | Ne değişti |
+|---|---|
+| **v0.5.6 / v0.5.6.1** | Yükleme kırığı onarımı + skill sayımı düzeltmesi; **P0:** `plugin.json`'dan düşen `hooks` kaydı geri kondu (dört hook olayı ölüydü) + devir zorlayıcı; iki rehber sadeleştirildi |
+| **v0.5.7** | **Bayat-tohum aşısı** (ana saha bulgusu): `_oa/araclar` kopyaları eklentiyle bayt-karşılaştırılır — komşu dava klasöründen eski araç kopyası alınırsa görünür uyarıdır, sessiz geçmez. Ek: `hook_doktor.py` (hook katmanının canlı teşhisi, `--kurulu` ile cache dahil) + yerel motor v2 + anayasa m.0 (kurucu ilke) |
+| **v0.5.7** | **[G4] kaynak bağlantı kapısı:** künyenin yanında kütükte izi olmayan bağlantı = **teslim engeli** — uydurma link "teyit edildi" der, çıplak künyeden kötüdür |
+| **v0.5.7.4** | **Bağlantı katmanı:** Yargı Pro birincil; Pro bağlantısı yoksa/düşerse açık kaynak `yargi-mcp` **otomatik yedek**. Dürüst sınır: yedek kipte mevzuat + AİHM yok — çıktıya "teyit YAPILAMADI (yedek kip)" yazılır, hafızadan doldurulmaz |
+| **v0.5.7.5** | **Davadan gelen atıflar da link zincirine tabi:** karşı taraf dilekçesindeki, gerekçeli karardaki veya bilirkişi raporundaki künye de aynı zincirden geçer — çek, teyit et, damgala, linkle. Karşı tarafın künyesi körlemesine devralınmaz |
+
+---
+
+## v0.5.8 — Semantica + Graft desen devşirmesi
+
+İki dış projeden **kod alınmadı, desen alındı** (anayasa m.0 devşirme
+protokolü; her desen kendi testiyle geldi). v0.5.8.1 tetik paketi (447
+vergi sahası provasının dersleri) bu desenleri tetiklere ve kompakt-kapanış
+kuralına bağladı.
+
+| Desen | Ne yapar |
+|---|---|
+| **[G5] aşılmış-içtihat kapısı** | LEHE damgalı ama aşılmış karar dilekçede atıflıysa **teslim engeli**; ALEYHE + aşılmış = cephanelik uyarısı |
+| **KAYNAK-BLOĞU@sha8 + tazelik** | Ürünün dayandığı kaynaklar hash'iyle bloklanır; kaynağı değişen ürün **BAYAT** ilan edilir (advisory) |
+| **oa-mühür (PROV-O)** | Teslim edilebilir ürüne `.prov.json` provenance kaydı: ham-bayt sha256; `--dogrula` sert — UYAP öncesi kapı |
+| **Özne eşleştirici** | Jaro-Winkler ile TR-normalize ad eşleme: ≥0,92 BAĞLA / 0,80–0,92 AVUKATA-SOR; karar vermez, damga basar |
+| **`--zincir` güven-çürümesi** | İlliyet grafında zincir boyu güven çürümesi + en-zayıf-halka raporu |
+| **Yasak-nöbetçisi** | `aile_dogrula`'ya ağ-import taraması — Layer 0 gizlilik teminatının mekanik ayağı |
+| **[K] cephanelik bekçisi** | m.6 taraması: muhtemel-savunma analizi dilekçeye sızarsa görünür uyarı (mühimmat ateş değildir) |
+
+---
+
+## v0.5.8.2 — Hook yapısal onarımı
+
+Üç sahada gözlenen "sıfır ateşleme"nin kök nedeni bulundu: masaüstü
+uygulaması hook komutunu **kabuksuz** çalıştırıyor; `python X || py -3 X`
+zincirindeki `||` kabuk operatörü değil python argümanı oluyordu — sessiz
+ölüm. CLI kabuktan geçirdiği için eski test yanıltıcı yeşildi.
+
+| Onarım | Ne yapar |
+|---|---|
+| **`run-hook.cmd` polyglot sarmalayıcı** | cmd batch + bash aynı dosyada; python bulma fallback zinciri sarmalayıcının **içinde**, hook satırı tek komut |
+| **`\|\|` zinciri yasak** | Dört hook olayı tek-komut; yasak regresyon testiyle kilitli |
+| **Canlı kanıt** | Hook katmanı 372 Torbalı sahasında **ilk kez uçtan uca canlı** ateşledi |
+
+---
+
+## v0.5.8.3 — Şekil standardı v2
+
+Resmî Yazışma Yönetmeliği (No. 2646) uyarlaması — Yargı Pro mevzuat
+teyidiyle (m.7 TNR 12pt esas + küçültme cevazı; m.8 yazı alanı):
+
+| Kural | Uygulama |
+|---|---|
+| **Yazı alanı: dört kenar 42.52pt (1,5 cm)** | Yerel motor `pageFormat` + `html2udf` sonrası kenar yaması (içeriğe dokunmaz; kozmetik hata üretimi kırmaz, görünür not düşer) |
+| **Satır aralığı 1,5** | Gövde + alıntı stillerinde |
+| **Emsal karar linkleri parantez içinde, 11pt** | Gövdeden 1 punto küçük — künyenin yanındaki kaynak bağlantısı biçim olarak da ayrışır |
+
+---
+
+## v0.5.8.4 — 372 saha karnesinin infazı
+
+Gerçek bir dava koşusunun (372 Torbalı sahası) **5 kollu adli analizinden**
+(transkript + artefakt + kod yolu + şekil zinciri + desen karnesi) çıkan
+reçetenin tamamı uygulandı. Bu zincirin **ilk yeşil CI koşusu** da bu commit'tir.
+
+| Alan | Ne yapıldı |
+|---|---|
+| **ELLE-UDF ENGELİ (3 katman)** | Sahada model UDF'i elle kurmaya yeltendi; artık: PreToolUse **'ask' kapısı** (zipfile+content.xml deseni yakalanır) + `udf_dogrula`'ya `hvl-default` **stil-tanımı imza denetimi** + yerel motor **emekli** (`--yerel-motor-riskli` + resmî okuyucu zorunlu + `.DOGRULANMADI` işareti) |
+| **MAKBUZ FİZİKSEL GARANTİSİ** | `udf_yaz` her üretimde makbuz yazar (`udf-uretim-makbuz.jsonl`) + `teslim_paketi` try/finally ile **RED makbuzu bile** düşer + mevcut-UDF devralma — **çift-UDF tuzağı kapandı**, geçersiz aday karantinaya alınır |
+| **MÜHÜR OTOMASYONU** | Ölçüm acımasızdı: 23 mühür uyarısı / 0 uygulama. Uyarı çalışmıyorsa kapı yok demektir — artık Stop/SessionEnd kancası mühürsüz ürünü **kendisi mühürler**; PROV-tazelik + yerel-damga teslim kapıları eklendi |
+| **ŞEKİL KAPISI** | Teslimde kenarlar yönetmelik profiline (4×42.52pt) **otomatik yamalanır** — UYAP editöründe A/B testiyle açılabilirliği kanıtlı (suçlu kenar yaması değil, yerel motor content.xml'iydi); başlık/tablo 1,5 satır aralığı, hayalet-paragraf ve çift-11pt-span kusurları giderildi |
+| **Desen onarımları** | v0.5.8 desenlerinin saha karnesi işlendi: **[G5] üretici komutu bağlandı** (`--asan-kaynak/--asilma-tarihi`, round-trip garantili) · `kaynak_blogu.py` üretici script · `--zincir` artık **varsayılan** (372'de 2 koşu / 0 bayrak ölçülmüştü) · özne eşleştirici `oa-vakia` tetiğine bağlandı · [K] her koşuda iz satırı |
+| **GATE A DİRİLİŞİ** | Büyük-evrak sayfa haritaları önbellek-HIT yolunda üretilmiyordu (kök neden: HIT kayıtları verbatim basılıyordu); normalizasyon geçidiyle **eski korpus kendini onarır** |
+| **Ölçek** | 93 yeni test; tam süit **1048 yeşil / 1 tasarımsal atlama**; aile denetimi temiz (20 parça); dört sürüm damgası birlikte 0.5.8.4; **CI yeşil** |
+
+Sıradaki adım dürüstçe açık: v0.5.8.4'ün kendisi henüz **yeni bir saha
+koşusuyla** sınanmadı — reçete koddan geçti, provası sırada.
+
+---
+
 ## Kullanım / iş akışı
 
 1. **Evrakı indir:** UYAP dosyasındaki evrakları (PDF/TIFF/UDF/EYP/DOCX) bir klasöre indir
@@ -630,7 +726,7 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (**806 test**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
+İlki deterministik denetçilerin regresyonunu (**1048 test yeşil · 1 tasarımsal atlama**), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm tutarlılığı, anılan scriptlerin varlığı) denetler.
 
 ---
 
@@ -642,14 +738,14 @@ ortak-avukat/
 ├── plugins/ortak-avukat/
 │   ├── .claude-plugin/plugin.json
 │   ├── hooks/hooks.json              # model-bağımsız tetik
-│   └── skills/                       # 22 skill
+│   └── skills/                       # 20 skill
 │       ├── ortak-avukat/             #   çekirdek kimlik + references/anayasa.md
 │       ├── oa-pipeline/              #   orkestrasyon + tam_tur + pipeline_kayit + oa_hafiza + oa_metrik
 │       ├── oa-ingest/                #   0. adım evrak çıkarımı (paralel, OCR nöbetçili)
 │       ├── oa-kontrol/               #   teslim kapıları + içtihat muhakeme denetimi
 │       ├── oa-dilekce/               #   dilekçe yazımı + UDF hattı + UYAP format referansı
 │       └── …                         #   oa-alan, oa-vakia, oa-kiyas, oa-antitez, oa-usul, oa-sure, …
-├── tests/                            # 806 pytest
+├── tests/                            # 1048 pytest
 ├── README.md · LICENSE · NOTICE
 ```
 
