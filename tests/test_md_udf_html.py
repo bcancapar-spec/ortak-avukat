@@ -74,8 +74,9 @@ def test_tablo_baslik_satiri_kalin_ve_arka_planli():
     assert 'background-color:#EEEEEE' in html
     assert "<strong>Kalem</strong>" in html
     assert "<strong>Tutar</strong>" in html
-    # veri satırı kalınlaştırılmamalı
-    assert "<td>Vekalet</td>" in html
+    # veri satırı kalınlaştırılmamalı; v0.5.8.4: her hücre 1,5 satır aralığı
+    # taşıyan hücre-içi stille yazılır (stilsiz <td> kalmaz).
+    assert '<td style="line-height:1.5">Vekalet</td>' in html
 
 
 def test_numarali_liste_ol_madde_listesi_ul():

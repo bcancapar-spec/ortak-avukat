@@ -299,7 +299,12 @@ def json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru, cevrimler, kesme, 
     }
 
 
-def rapor(yol, json_yol=None, zincir=False):
+def rapor(yol, json_yol=None, zincir=True):
+    """v0.5.8.4 SÖZLEŞME DEĞİŞİKLİĞİ (bilinçli): `zincir` varsayılanı artık
+    True — 372 Torbalı sahasında grafik_denetim 2 kez koştu ama --zincir
+    bayrağı 0 kez verildi, zincir analizi HİÇ üretilmedi (opsiyonel kapı =
+    ateşlemeyen kapı; tetik>sertlik dersi). Kapatmak isteyen `--zincirsiz`
+    verir; eski `--zincir` bayrağı geriye uyum için kabul edilen NO-OP'tur."""
     dugumler, kenarlar = yukle(yol)
     cizgi = "=" * 60
     print(cizgi)
@@ -419,10 +424,15 @@ if __name__ == "__main__":
     p.add_argument("--json", dest="json_yol", metavar="YOL",
                    help="denetim sonucunu makine-okur JSON olarak bu yola yaz (opsiyonel)")
     p.add_argument("--zincir", action="store_true",
-                   help="v0.5.8 P3: illiyet zinciri güven analizi (confidence_decay "
-                        "+ en zayıf halka; advisory — oa-antitez beslemesi)")
+                   help="(geriye uyum — NO-OP) illiyet zinciri güven analizi "
+                        "v0.5.8.4'ten beri VARSAYILANDIR (372 sahası: bayrak 0 kez "
+                        "verildi, analiz hiç üretilmedi); kapatmak için --zincirsiz")
+    p.add_argument("--zincirsiz", action="store_true",
+                   help="v0.5.8.4: zincir güven analizini (bölüm 8 + json "
+                        "'zincirler' alanı) bilinçli olarak KAPATIR")
     a = p.parse_args()
     if not a.graf:
-        print("Kullanım: python grafik_denetim.py graf.json [--json out.json] [--zincir]")
+        print("Kullanım: python grafik_denetim.py graf.json [--json out.json] [--zincirsiz]")
         sys.exit(1)
-    rapor(a.graf, json_yol=a.json_yol, zincir=a.zincir)
+    # --zincir kabul edilir ama okunmaz (no-op) — tek etkili bayrak --zincirsiz.
+    rapor(a.graf, json_yol=a.json_yol, zincir=not a.zincirsiz)

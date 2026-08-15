@@ -99,7 +99,7 @@ MIN_KANIT = 20  # karakter — "yaptım" tek kelimesi kanıt değildir
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.8.3"
+OA_SURUM = "0.5.8.4"
 
 
 def _surum_tuple(s):
@@ -2973,6 +2973,10 @@ def _hook_govde_calistir(kok_aday, hook_adi):
         print(cikti)
         print(f"(oa_metrik telemetrisi _oa/defter/metrik.json'a yazıldı — tam tablo: "
               f"`pipeline_kayit.py --goster --telemetri --kok {kok_aday}`)")
+        # HOOK OLAY İZİ (v0.5.8.4): gövde fiilen çıktı bastı → deftere iz düş.
+        _hook_olay_yaz(kok_aday,
+                       "postwrite" if hook_adi == "PostToolUse" else "denetle",
+                       "denetim çıktısı basıldı (gövde ateşledi)")
     except Exception as e:
         try:
             print(f"UYARI: {hook_adi} hook ({kok_aday}) başarısız oldu ({e}) — "
@@ -3121,6 +3125,75 @@ def _bayat_arac_uyarisi(kok):
         return None
 
 
+# ── AĞ-İMPORT SAHA TARAMASI (v0.5.8.4 — bayat-tohum aşısının kardeşi) ──────
+# YASAK-NÖBETÇİSİ (aile_dogrula.py, v0.5.8 P5) çekirdek scriptleri sürüm
+# kapısında denetler — ama `_oa/araclar/` KOPYALARI o kapıdan hiç geçmez:
+# sahada elle düzenlenmiş/komşudan miras bir kopyaya ağ importu eklenirse
+# Layer 0 (müvekkil verisi python katmanından dışarı çıkamaz) o koşuda
+# FİİLEN delinir ve hiçbir kapı görmez. Bu tarama aynı satır-başı deseni
+# (aile_dogrula.py:135-137'deki listeyle BİREBİR — tek kaynak orasıdır,
+# liste değişirse buraya da taşınır) saha kopyalarına uygular.
+_AG_IMPORT_RE = re.compile(
+    r"^\s*(?:from|import)\s+(requests|httpx|aiohttp|urllib3|socket|"
+    r"openai|anthropic|groq|litellm|http\.client|urllib\.request)\b")
+
+
+def _arac_ag_import_uyarisi(kok):
+    """`_oa/araclar/*.py` kopyalarında satır-başı ağ-import var mı? Bulgu
+    listesi varsa görünür uyarı metni, yoksa None. ASLA istisna fırlatmaz."""
+    try:
+        araclar = os.path.join(kok, "_oa", "araclar")
+        if not os.path.isdir(araclar):
+            return None
+        bulgular = []
+        for ad in sorted(os.listdir(araclar)):
+            if not ad.endswith(".py"):
+                continue
+            try:
+                with open(os.path.join(araclar, ad),
+                          encoding="utf-8", errors="replace") as f:
+                    icerik = f.read()
+            except OSError:
+                continue
+            for i, satir in enumerate(icerik.splitlines(), 1):
+                m = _AG_IMPORT_RE.match(satir)
+                if m:
+                    bulgular.append(f"{ad}:{i} ({m.group(1)})")
+        if not bulgular:
+            return None
+        return (
+            "⚠ AĞ-İMPORT UYARISI — `_oa/araclar/` kopyalarında ağ kütüphanesi importu:\n"
+            "  " + ", ".join(bulgular[:12])
+            + (" … (+%d)" % (len(bulgular) - 12) if len(bulgular) > 12 else "") + "\n"
+            "  Çekirdek script ağ kütüphanesi TAŞIYAMAZ (Layer 0 / m.0 devşirme\n"
+            "  protokolü — müvekkil verisi python katmanından dışarı çıkamaz).\n"
+            "  Kopyayı YÜKLÜ eklentinin `skills/*/scripts/` kökünden yeniden al;\n"
+            "  elle eklenmiş importsa KALDIR. Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+    except Exception:
+        return None
+
+
+# ── HOOK OLAY İZİ (v0.5.8.4 — 372 kanıtı: defterde hook tipli olay 0'dı) ───
+# Hook gövdeleri fiilen iş yaptığında (enjeksiyon bastı / uyarı üretti / ask
+# kararı verdi) izleri yan dosyalarda (.hook-son-iz.json, stderr) kayboluyordu
+# — defter, oturumun TEK gerçeklik kaynağıyken hook nöbetinin hiç izi yoktu.
+# Bu yardımcı, defter VARSA pipeline-olaylar.jsonl'e tek satırlık bir "hook"
+# olayı APPEND eder (araç-imzalı — elle düşürülmüş satırdan ayırt edilir).
+# `derle` bilinmeyen tipleri zaten yok sayar → durum derlemesi bozulmaz.
+# Sessiz-başarısız: hiçbir hata dışarı sızmaz, hook ASLA bloklanmaz.
+def _hook_olay_yaz(kok, olay_adi, not_metni):
+    try:
+        defter = os.path.join(kok, "_oa", "defter")
+        if not os.path.isdir(defter):
+            return
+        olay = {"zaman": simdi(), "tip": "hook", "olay": olay_adi,
+                "not": str(not_metni or "")[:200]}
+        olay["imza"] = _imza_hesapla(olay)
+        olay_ekle(os.path.join(defter, OLAYLAR_ADI), olay)
+    except Exception:
+        pass
+
+
 # ── DEVİR HATIRLATICISI (v0.5.6.1 — UserPromptSubmit) ──────────────────────
 # DÜRÜST SINIR, ÖNCE BU: hiçbir hook modeli bir skill'i çağırmaya ZORLAYAMAZ.
 # `PreToolUse` yalnız model ZATEN bir araç çağırdığında ateşler — atlama
@@ -3165,14 +3238,40 @@ def hook_prompt(kok=None):
             return 0                                     # dava klasörü değil — sessiz
         if os.path.isdir(os.path.join(k, "_oa", "defter")):
             # Hat açık — devir hatırlatması GEREKSİZ (gürültü disiplini).
-            # Ama BAYAT ARAÇ varsa o AYRICA söylenir: hat açıkken bayat
-            # kopyayla koşmak, kapıları sessizce kaybetmektir (v0.5.7 aşısı).
+            # Ama üç şey AYRICA söylenir (temiz durumda ÜÇÜ DE None → SESSİZ):
+            # (a) BAYAT ARAÇ (v0.5.7 aşısı) — hat açıkken bayat kopyayla
+            #     koşmak kapıları sessizce kaybetmektir;
+            # (b) AĞ-İMPORT (v0.5.8.4) — kopyaya sızan ağ importu Layer 0'ı
+            #     görünmez delmesin;
+            # (c) TESLİM-DİSİPLİNİ (v0.5.8.4 — 372 dersi 23/0): mühürsüz
+            #     teslim-sınıfı ürün varken defterin açık olması yetmez —
+            #     mühür zinciri her turda hatırlatılır.
+            parcalar = []
             bayat = _bayat_arac_uyarisi(k)
             if bayat:
+                parcalar.append(bayat)
+            ag = _arac_ag_import_uyarisi(k)
+            if ag:
+                parcalar.append(ag)
+            muhursuz = _muhursuz_teslim_uyarisi(k)
+            if muhursuz:
+                parcalar.append(
+                    "TESLİM-DİSİPLİNİ HATIRLATMASI (v0.5.8.4 — hat açık ama mühürsüz "
+                    "teslim ürünü var; 372 dersi: 23 uyarı / 0 uygulama):\n"
+                    + muhursuz + "\n"
+                    "  Zincir: ürünü resmî hattan üret (udf_yaz.py / npx udf-cli "
+                    "html2udf) → `oa-kontrol/scripts/muhur_yaz.py --kok . --urun "
+                    "<yol> --girdi <girdi>` → makbuz için `teslim_paketi.py`. "
+                    "Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+            if parcalar:
                 print(json.dumps({"hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
-                    "additionalContext": bayat,
+                    "additionalContext": "\n\n".join(parcalar),
                 }}, ensure_ascii=False))
+                _hook_olay_yaz(k, "prompt",
+                               "enjeksiyon: " + "+".join(
+                                   e for e, v in (("bayat", bayat), ("ağ-import", ag),
+                                                  ("teslim-disiplini", muhursuz)) if v))
             return 0
         metin = (
             "ORTAK AVUKAT — DEVİR YÜKÜMLÜLÜĞÜ (mekanik hatırlatma, bu turda geçerli):\n"
@@ -3201,6 +3300,12 @@ def hook_prompt(kok=None):
             "`oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdi>` ve "
             "`oa-kontrol/scripts/ictihat_muhakeme_denetim.py <taslak.md> --kok .` koşulur."
         )
+        # AĞ-İMPORT (v0.5.8.4): defter yokken de `_oa/araclar` kopyası
+        # bulunabilir (_oa kökü klasörü dava klasörü sayar) — bulgu varsa
+        # devir metnine EKLENİR (ayrı kanal açılmaz, tek enjeksiyon).
+        ag = _arac_ag_import_uyarisi(k)
+        if ag:
+            metin = f"{metin}\n\n{ag}"
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
             "additionalContext": metin,
@@ -3210,12 +3315,13 @@ def hook_prompt(kok=None):
         return 0                                          # sessiz başarısızlık — asla bloklamaz
 
 
-def _muhursuz_teslim_uyarisi(kok):
-    """v0.5.8.1 (447 provası dersi) — TESLİM-SINIFI ürün (cikti/teslim'de
-    .udf/.pdf) VAR ama yanında `.prov.json` mührü YOK ise görünür uyarı metni
-    döndürür; yoksa None. Model-bağımsız, deterministik; ASLA fırlatmaz."""
+def _muhursuz_teslim_listesi(kok):
+    """v0.5.8.4 — TESLİM-SINIFI mühürsüz ürünlerin `_oa`ya göreli yolları
+    (`cikti/x.udf` biçiminde, sıralı). Uyarı metni (`_muhursuz_teslim_uyarisi`)
+    ve otomatik mühür (`_otomatik_muhurle`) AYNI listeden beslenir — iki ayrı
+    tarama mantığı sapamaz. ASLA fırlatmaz (hata → boş liste)."""
+    muhursuz = []
     try:
-        muhursuz = []
         for alt in ("cikti", "teslim"):
             d = os.path.join(kok, "_oa", alt)
             if not os.path.isdir(d):
@@ -3227,6 +3333,17 @@ def _muhursuz_teslim_uyarisi(kok):
                     continue                       # prova/gecici urunler haric
                 if not os.path.isfile(os.path.join(d, ad + ".prov.json")):
                     muhursuz.append(f"{alt}/{ad}")
+    except Exception:
+        pass
+    return muhursuz
+
+
+def _muhursuz_teslim_uyarisi(kok):
+    """v0.5.8.1 (447 provası dersi) — TESLİM-SINIFI ürün (cikti/teslim'de
+    .udf/.pdf) VAR ama yanında `.prov.json` mührü YOK ise görünür uyarı metni
+    döndürür; yoksa None. Model-bağımsız, deterministik; ASLA fırlatmaz."""
+    try:
+        muhursuz = _muhursuz_teslim_listesi(kok)
         if not muhursuz:
             return None
         liste = "\n".join(f"  ✗ {u}" for u in muhursuz[:8])
@@ -3237,6 +3354,47 @@ def _muhursuz_teslim_uyarisi(kok):
                 "<yol>` koşulmalı ve `--dogrula` ile teyit edilmelidir:\n" + liste)
     except Exception:
         return None
+
+
+def _otomatik_muhurle(kok, urunler):
+    """v0.5.8.4 — OTOMATİK MÜHÜR (372 kanıtı: Stop hook 23 kez MÜHÜRSÜZ
+    uyardı, model 0 kez uyguladı — uyarı işlemiyor, otomasyon gerek).
+    Her mühürsüz teslim-sınıfı ürün için `oa-kontrol/scripts/muhur_yaz.py`
+    İN-PROCESS (importlib) çağrılır — subprocess YASAK: P0-4 Gate G dairesel
+    bağımlılık kırıcısı bu modülden subprocess sınıfını kökten kaldırmıştır
+    ve test_gate_g_dongu bunu kilitler. PROV DÜRÜSTLÜĞÜ: sonradan (post-hoc)
+    basılan mühür üretim yolunu İDDİA EDEMEZ — was_generated_by bunu açıkça
+    beyan eder. Döner: fiilen mühürlenen ürün sayısı. Hata olursa o ürün
+    atlanır (uyarı davranışına geri düşülür); ASLA fırlatmaz, ASLA bloklamaz."""
+    sayi = 0
+    try:
+        import importlib.util
+        skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+        muhur = os.path.join(skills_kok, "oa-kontrol", "scripts", "muhur_yaz.py")
+        if not os.path.isfile(muhur):
+            return 0
+        spec = importlib.util.spec_from_file_location("_oa_muhur_hook", muhur)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        for u in urunler:
+            try:
+                yol = os.path.join(kok, "_oa", *u.split("/"))
+                if not os.path.isfile(yol):
+                    continue
+                kayit = mod.muhur_uret(
+                    kok, yol, tip="teslim_urunu",
+                    kimlik="hook-otomatik:" + u, girdiler=[],
+                    arac="hook-otomatik (post-hoc); üretim yolu beyan edilmedi",
+                    llm="beyan edilmedi (hook-otomatik post-hoc mühür)")
+                mod.muhur_yaz(kok, yol, kayit)
+                if os.path.isfile(yol + ".prov.json"):
+                    sayi += 1
+            except Exception:
+                continue
+    except Exception:
+        return sayi
+    return sayi
 
 
 def hook_denetle(kok=None):
@@ -3260,11 +3418,30 @@ def hook_denetle(kok=None):
             print("═" * 66)
             print(bayat)
             print("═" * 66)
-        muhursuz = _muhursuz_teslim_uyarisi(kok_aday)
-        if muhursuz:
+        ag = _arac_ag_import_uyarisi(kok_aday)
+        if ag:
             print("═" * 66)
-            print(muhursuz)
+            print(ag)
             print("═" * 66)
+        muhursuz_liste = _muhursuz_teslim_listesi(kok_aday)
+        muhur_sayi = 0
+        if muhursuz_liste:
+            muhursuz = _muhursuz_teslim_uyarisi(kok_aday)
+            if muhursuz:
+                print("═" * 66)
+                print(muhursuz)
+                print("═" * 66)
+            # v0.5.8.4 — uyarıyla KALMA: mührü kendin bas (23/0 dersi).
+            muhur_sayi = _otomatik_muhurle(kok_aday, muhursuz_liste)
+            if muhur_sayi:
+                print(f"OTOMATİK MÜHÜR: {muhur_sayi} ürün — post-hoc `.prov.json` "
+                      "basıldı (üretim yolu beyan edilmedi; `--dogrula` ile teyit et).")
+        if bayat or ag or muhursuz_liste:
+            _hook_olay_yaz(kok_aday, "denetle",
+                           "uyarı: " + "+".join(
+                               e for e, v in (("bayat", bayat), ("ağ-import", ag),
+                                              ("mühürsüz", muhursuz_liste)) if v)
+                           + (f"; otomatik mühür {muhur_sayi}" if muhur_sayi else ""))
         _hook_govde_calistir(kok_aday, "Stop/SessionEnd")
     return 0
 
@@ -3347,6 +3524,66 @@ def hook_postwrite(kok=None):
     return 0
 
 
+# ── PreToolUse ELLE-UDF KAPISI (v0.5.8.4 — 372 dersi 10-D) ─────────────────
+# SAHA ÖLÇÜMÜ (372 Torbalı, A/B testli): elle kurulan content.xml'li UDF'ler
+# UYAP editöründe AÇILMIYOR; html2udf ürünleri açılıyor. A/B, python re-zip'i
+# ve pageFormat kenar yamasını AKLADI — fark yalnız content.xml içeriği
+# (yerel motor `<elements resolver="hvl-default">` yazıyor ama styles
+# bloğunda o adda STİL TANIMI yok). Bu kapı elle-zip girişimini "ask"
+# kararıyla AVUKATA görünür kılar — BLOKLAMAZ (permissionDecision=ask;
+# devam etmek avukatın kararıdır). Diğer TÜM hâllerde (dava-dışı klasör,
+# desensiz girdi, bozuk stdin, her istisna) ÇIKTI YOK + exit 0.
+
+def _pretool_elle_udf_deseni_mi(metin):
+    """Elle-UDF kurulum deseni: ('zipfile' VE 'content.xml') VEYA
+    ('ZipFile(' VE '.udf'). Ucuz alt-dizi denetimi — regex gerekmez."""
+    return (("zipfile" in metin and "content.xml" in metin)
+            or ("ZipFile(" in metin and ".udf" in metin))
+
+
+def hook_pretool(kok=None):
+    """PreToolUse(Write|Edit|Bash|PowerShell) hook komutu — stdin'deki
+    payload'ın tool_input metnini (content + new_string + command) tarar.
+    YALNIZ dava klasöründe ve desen varsa 'ask' kararı basar; her durumda
+    exit 0 (ASLA bloklamaz — 'ask' bir karar devri, engel değildir)."""
+    try:
+        if sys.stdin.isatty():
+            return 0                    # elle interaktif çağrı — asla okuma-bekleme
+        veri = json.loads(sys.stdin.read())
+        ti = (veri or {}).get("tool_input")
+        if not isinstance(ti, dict):
+            return 0
+        metin = "\n".join(str(ti.get(a) or "")
+                          for a in ("content", "new_string", "command"))
+        # Kök çözümü: açık --kok > payload cwd > süreç CWD'si. Kapı yalnız
+        # DAVA klasöründe nöbet tutar — kod deposunda zipfile meşru iştir.
+        adaylar = []
+        if kok and kok != ".":
+            adaylar.append(kok)
+        if (veri or {}).get("cwd"):
+            adaylar.append(veri["cwd"])
+        adaylar.append(".")
+        k = next((os.path.abspath(a) for a in adaylar
+                  if _dosya_klasoru_mu(os.path.abspath(a))), None)
+        if k is None:
+            return 0
+        if not _pretool_elle_udf_deseni_mi(metin):
+            return 0
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "ask",
+            "permissionDecisionReason": (
+                "ELLE-UDF ENGELİ (372 dersi 10-D): elle kurulan content.xml "
+                "UYAP editöründe AÇILMIYOR. Geçerli tek yol resmî hat: "
+                "udf_yaz.py veya npx udf-cli html2udf. Yine de devam etmek "
+                "avukatın kararıdır."),
+        }}, ensure_ascii=False))
+        _hook_olay_yaz(k, "pretool-ask", "elle-UDF deseni yakalandı (ask basıldı)")
+        return 0
+    except Exception:
+        return 0                        # sessiz başarısızlık — asla bloklamaz
+
+
 def main():
     ap = argparse.ArgumentParser(description="oa-pipeline defteri — statü ancak kanıtla yazılır (append-only jsonl)")
     ap.add_argument("--kok", default=".",
@@ -3397,11 +3634,20 @@ def main():
                           "BAĞLAMINA enjekte eder (SKILL.md'den yapısal olarak güçlüdür: "
                           "SKILL.md ancak çağrılırsa yüklenir, bu HER turda koşar). "
                           "Hat açıksa SESSİZDİR; ASLA bloklamaz (her zaman exit 0).")
+    ap.add_argument("--hook-pretool", action="store_true", dest="hook_pretool",
+                     help="v0.5.8.4 (372 dersi 10-D): model-bağımsız PreToolUse "
+                          "hook komutu — stdin payload'ında elle-UDF kurulum "
+                          "deseni (zipfile+content.xml / ZipFile(+.udf) varsa ve "
+                          "kök bir DAVA klasörüyse 'ask' kararı basar; diğer tüm "
+                          "hâllerde sessiz. ASLA bloklamaz (her zaman exit 0).")
     ap.add_argument("--avukat-karari", dest="avukat_karari", default=None,
                      help="M7 (Paket D): AVUKAT KARARI BEKLEYEN'deki bir çatalı "
                           "((--adim+--parca) VEYA --katman ile hedeflenir) NİHAİ "
                           "karar metniyle kaydeder — --gerekce ZORUNLU.")
     args = ap.parse_args()
+
+    if args.hook_pretool:
+        sys.exit(hook_pretool(args.kok))
 
     if args.hook_prompt:
         sys.exit(hook_prompt(args.kok))

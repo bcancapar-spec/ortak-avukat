@@ -49,10 +49,14 @@ def _gecerli_udf_yaz(yol, govde=GOVDE):
         parcalar.append('<paragraph><content startOffset="%d" length="%d"/></paragraph>'
                         % (imlec, u))
         imlec += u
+    # v0.5.8.4: hvl-default STİL TANIMI eklendi — udf_dogrula artık tanımsız
+    # dosyayı 'elle-üretim imzası' ile geçersiz sayar; bu fixture'ın amacı
+    # resmî-okuyucu bacağını YALITMAK olduğundan ilk denetimlerden geçmelidir.
     xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
            '<template format_id="1.8">'
            '<content><![CDATA[%s]]></content>'
            '<elements resolver="hvl-default">%s</elements>'
+           '<styles><style name="hvl-default" family="Times New Roman" size="12"/></styles>'
            '</template>' % (tam, "".join(parcalar)))
     with zipfile.ZipFile(yol, "w") as zf:
         zf.writestr("content.xml", xml)

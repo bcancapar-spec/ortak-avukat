@@ -61,7 +61,9 @@ def _sentetik_udf_yaz(uy, tmp_path, metin, ad="gecerli.udf"):
                     % (imlec, u16))
         imlec += u16
     xml.append('</elements>')
-    xml.append('<styles><style name="default" family="Times New Roman" size="12"/></styles>')
+    # v0.5.8.4: hvl-default STİL TANIMI — udf_dogrula tanımsız dosyayı
+    # 'elle-üretim imzası' sayar; geçerli-şekilli fixture bu tanımı taşımalı.
+    xml.append('<styles><style name="hvl-default" family="Times New Roman" size="12"/></styles>')
     xml.append('</template>')
     xml_str = "\n".join(xml) + "\n"
     cikti = tmp_path / ad

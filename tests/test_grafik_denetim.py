@@ -39,10 +39,14 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-illiyet"
           / "scripts" / "grafik_denetim.py")
 
+# v0.5.8.4: zincir analizi VARSAYILAN çalıştığından "zincirler" anahtarı da
+# bayraksız --json çıktısının parçasıdır (bilinçli sözleşme değişikliği —
+# 372 sahasında --zincir 0 kez verildi, analiz hiç üretilmedi; --zincirsiz
+# verilirse anahtar düşer, bkz. test_zincir_analizi.py).
 JSON_ANAHTARLARI = {
     "arac", "ozet", "sema_hatalari", "yetim_dugumler", "desteksiz_kenarlar",
     "kopru_dugumler", "cevrimler", "kesme_adaylari", "yuk_tasiyan_kenarlar",
-    "dugumler", "kenarlar", "girdi",
+    "dugumler", "kenarlar", "girdi", "zincirler",
 }
 KENAR_REF_ANAHTARLARI = {
     "index", "kaynak", "hedef", "kategori", "tur", "dayanak_delil", "dogrulama",

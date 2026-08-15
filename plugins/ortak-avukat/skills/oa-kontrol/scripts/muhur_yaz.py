@@ -21,7 +21,16 @@ PROVENANCE MÜHRÜ: her teslim ürününe PROV-O adlarıyla hizalı doğum belge
   was_generated_by   : üreten araç + sürüm (prov:wasGeneratedBy)
   used               : girdi listesi [{file, sha256}] (prov:used)
   was_derived_from   : önceki sürümün artifact_sha256'ı | null (prov:wasDerivedFrom)
-  llm_kullanimi      : serbest tanıklık metni (Layer 0 beyanı)
+  llm_kullanimi      : serbest tanıklık metni (Layer 0 beyanı). v0.5.8.4: çağrıda
+                       verilmezse 'beyan edilmedi' DEĞİL, otomatik olarak
+                       'mekanik üretim; içerik oturum LLM koşusundan' yazılır
+                       (mühür hep script'ten üretilir; içerik oturumdan gelir —
+                       dürüst varsayılan budur, boş beyan değil).
+
+--tasi ESKI YENI (v0.5.8.4): ürün dosyası arşive taşınınca mührü de taşır —
+dosya YENI konumda değilse önce dosyayı taşır, `artifact_file` yolunu günceller,
+sha'nın AYNI kaldığını ŞART koşar (değiştiyse exit 1 — taşıma içerik değiştirmez),
+defter satırı düşer ve eski `.prov.json`u kaldırır.
 
 FELSEFE (amaç çizgisi + semantica'nın zarif-bozulma deseni): mühür yazımı
 teslim akışını ASLA kırmaz — hata görünür uyarıyla raporlanır, üretim sürer.
@@ -51,7 +60,12 @@ import datetime
 import hashlib
 import json
 import os
+import shutil
 import sys
+
+# v0.5.8.4 — llm_kullanimi verilmediğinde 'beyan edilmedi' yerine dürüst
+# otomatik beyan (üretim mekaniği script, içerik oturumun LLM koşusudur).
+LLM_VARSAYILAN = "mekanik üretim; içerik oturum LLM koşusundan"
 
 
 def sha256_dosya(yol):
@@ -84,7 +98,7 @@ def muhur_uret(kok, urun, tip, kimlik, girdiler, onceki=None,
         "used": [{"file": _goreli(kok, g), "sha256": sha256_dosya(g)}
                  for g in girdiler if os.path.isfile(g)],
         "was_derived_from": onceki,
-        "llm_kullanimi": llm or "beyan edilmedi",
+        "llm_kullanimi": llm or LLM_VARSAYILAN,
     }
     return kayit
 
@@ -103,6 +117,49 @@ def muhur_yaz(kok, urun, kayit):
         return prov_yolu, None
     except OSError as e:
         return None, str(e)
+
+
+def tasi(kok, eski, yeni):
+    """v0.5.8.4 — `--tasi ESKI YENI`: ürün arşive taşınınca mührü taşır.
+    Kurallar: (1) ESKI yanında mühür ŞART; (2) YENI konumda dosya yoksa ve
+    ESKI duruyorsa dosyayı da taşır (mühür-dosya çifti ayrılmaz); (3) sha
+    AYNI kalmalı — YENI dosyanın sha'sı mühürdekiyle uyuşmazsa exit 1
+    (taşıma içerik değiştirmez; değiştiyse bu taşıma değil tahriftir);
+    (4) `artifact_file` yeni göreli yola güncellenir, eski `.prov.json`
+    kaldırılır, defterde iz satırı düşer. exit-kodu döndürür."""
+    eski_prov = eski + ".prov.json"
+    if not os.path.isfile(eski_prov):
+        print(f"✗ taşınacak mühür yok: {eski_prov}")
+        return 1
+    with open(eski_prov, encoding="utf-8") as f:
+        kayit = json.load(f)
+    if not os.path.isfile(yeni):
+        if not os.path.isfile(eski):
+            print(f"✗ ürün ne eski ({eski}) ne yeni ({yeni}) konumda mevcut — "
+                  "taşınacak dosya yok.")
+            return 1
+        hedef_dizin = os.path.dirname(os.path.abspath(yeni))
+        if hedef_dizin:
+            os.makedirs(hedef_dizin, exist_ok=True)
+        shutil.move(eski, yeni)
+    simdiki = sha256_dosya(yeni)
+    if simdiki != kayit.get("artifact_sha256"):
+        print(f"✗ TAŞIMA REDDEDİLDİ: sha AYNI kalmalı — mühür "
+              f"{str(kayit.get('artifact_sha256', '?'))[:12]}… ≠ şimdiki "
+              f"{simdiki[:12]}… (taşıma içerik değiştirmez).")
+        return 1
+    kayit["artifact_file"] = _goreli(kok, yeni)
+    yeni_prov = yeni + ".prov.json"
+    with open(yeni_prov, "w", encoding="utf-8") as f:
+        json.dump(kayit, f, ensure_ascii=False, indent=1, sort_keys=True)
+    os.remove(eski_prov)
+    defter = os.path.join(kok, "_oa", "provenance.jsonl")
+    os.makedirs(os.path.dirname(defter), exist_ok=True)
+    with open(defter, "a", encoding="utf-8") as f:
+        f.write(json.dumps(kayit, ensure_ascii=False, sort_keys=True) + "\n")
+    print(f"✓ mühür taşındı: {os.path.basename(eski)} → {kayit['artifact_file']} "
+          f"(sha aynı: {simdiki[:12]}…)")
+    return 0
 
 
 def dogrula(urun):
@@ -138,7 +195,13 @@ def main():
     ap.add_argument("--llm", default=None)
     ap.add_argument("--dogrula", default=None,
                     help="mevcut mührü doğrula (sert: uyuşmazlık=exit 1)")
+    ap.add_argument("--tasi", nargs=2, metavar=("ESKI", "YENI"), default=None,
+                    help="v0.5.8.4: ürün arşive taşınınca mührü taşı — "
+                         "artifact_file güncellenir, sha AYNI kalmalı (sert)")
     args = ap.parse_args()
+
+    if args.tasi:
+        sys.exit(tasi(args.kok, args.tasi[0], args.tasi[1]))
 
     if args.dogrula:
         sys.exit(dogrula(args.dogrula))

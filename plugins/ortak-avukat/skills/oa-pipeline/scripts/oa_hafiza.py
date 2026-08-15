@@ -914,6 +914,28 @@ def cmd_teyit(args):
                      f"(boşluk/satır sonu içeremez). Verilen: {args.kaynak_url!r}")
         args.kaynak_url = u
 
+    # v0.5.8.4 [G5] AŞILMIŞLIK alanları — aşılmış-içtihat kapısının ÜRETİCİ ucu
+    # (372 karnesi: `ictihat_muhakeme_denetim.py` [G5] kapısı kuruluydu ama
+    # kütükte gecerlilik-bitis/asan-kaynak/asilma-tarihi alanlarını DOLDURAN
+    # üretici adım YOKTU → 2 sahada %0 ateşleme; oysa risk gerçek — koşu elle
+    # yakaladı: mülga HMK m.107, onamayla aşılan karar. Desen SİLİNMEZ,
+    # BAĞLANIR). Üç alan da muhakeme kaydında yaşar; değer `_ws_norm` ile TEK
+    # satıra indirgenir ki `ictihat_muhakeme_denetim.py`'nin satır-bazlı
+    # `^**AŞAN-KAYNAK:** (.+)$` (ASAN_KAYNAK_LINE_RE vd.) regexleriyle
+    # BİREBİR round-trip parse edilsin. Bir karar "aşıldı" işaretlenirken üç
+    # alan TEK komutla yazılabilir (lehe-denetim iş akışı uygunluğu).
+    # `getattr` — CLI dışında elle kurulmuş Namespace ile İN-PROCESS çağrı
+    # (testler/kardeş scriptler) yeni alanın yokluğunda ÇÖKMEMELİDİR.
+    _g5_asan = _ws_norm(getattr(args, "asan_kaynak", None))
+    _g5_asilma = _ws_norm(getattr(args, "asilma_tarihi", None))
+    _g5_bitis = _ws_norm(getattr(args, "gecerlilik_bitis", None))
+    if (_g5_asan or _g5_asilma or _g5_bitis) and not args.damga:
+        sys.exit("RET: --asan-kaynak/--asilma-tarihi/--gecerlilik-bitis yalnız "
+                 "--damga ile birlikte yazılabilir — aşılmışlık alanları muhakeme "
+                 "kaydında yaşar, kayıt yalnız --damga ile üretilir; damgasız "
+                 "çağrıda alanların SESSİZCE düşmesi yasaktır (fail-closed, "
+                 "sessiz atlama yasağı).")
+
     if args.damga:
         if args.damga not in DAMGA_ENUM:
             sys.exit(f"RET: --damga geçersiz enum ('{args.damga}') — LEHE|ALEYHE|"
@@ -1130,6 +1152,14 @@ def cmd_teyit(args):
                 print("UYARI: ALEYHE damgalı karar dış çıktıya GİREMEZ (anayasa m.6 — "
                       "müvekkil-aleyhi dış çıktı yasağı); yalnız iç analiz/oa-antitez "
                       "cephaneliğinde tutulur.")
+            # v0.5.8.4 [G5] — LEHE + aşılmışlık ÇELİŞKİLİDİR (aşılmış karar
+            # lehte dayanak olamaz). Üretici yine de yazar (kütük hijyeni ve
+            # damga kararı avukatındır — bloklamaz) ama SESSİZ geçmez.
+            if args.damga == "LEHE" and (_g5_asan or _g5_asilma or _g5_bitis):
+                print("UYARI: DAMGA=LEHE ama AŞILMIŞLIK alanı dolu — AŞILMIŞ içtihat "
+                      "lehte dayanak olamaz; dilekçede atfı varsa ictihat_muhakeme_"
+                      "denetim [G5] kapısı TESLİM ENGELİ üretir (damga gözden "
+                      "geçirilmeli: --damga-degistir).")
             if (ko_mod is not None and args.damga_degistir and son_damga_kutukte is not None
                     and son_damga_kutukte != args.damga):
                 degisen = _eski_bolumleri_gecersiz_kil(
@@ -1178,7 +1208,19 @@ def cmd_teyit(args):
                 _kurl = getattr(args, "kaynak_url", None)
                 if _kurl:
                     f.write(f"**KAYNAK-URL:** {_muhakeme_kacis(_kurl)}\n")
-                f.write(f"**DAMGA:** {args.damga}\n\n")
+                f.write(f"**DAMGA:** {args.damga}\n")
+                # v0.5.8.4 [G5] — aşılmışlık satırları: biçim
+                # `ictihat_muhakeme_denetim.py`'nin ASAN_KAYNAK_LINE_RE /
+                # ASILMA_TARIHI_LINE_RE / GECERLILIK_BITIS_LINE_RE regexleriyle
+                # BİREBİR uyumludur (round-trip); komşu alanlar gibi
+                # `_muhakeme_kacis`'ten geçer (tek istisna BIRAKILMAZ).
+                if _g5_asan:
+                    f.write(f"**AŞAN-KAYNAK:** {_muhakeme_kacis(_g5_asan)}\n")
+                if _g5_asilma:
+                    f.write(f"**AŞILMA-TARİHİ:** {_muhakeme_kacis(_g5_asilma)}\n")
+                if _g5_bitis:
+                    f.write(f"**GEÇERLİLİK-BİTİŞ:** {_muhakeme_kacis(_g5_bitis)}\n")
+                f.write("\n")
                 f.write("## İLGİLİ-KISIM\n" + _muhakeme_kacis(args.ilgili_kisim.strip()) + "\n\n")
                 f.write("## DAVAYA-BAĞ\n" + _muhakeme_kacis(args.bag.strip()) + "\n\n")
                 f.write("## AYIRT-ETME\n" +
@@ -1551,6 +1593,18 @@ def main():
                     help="Kararın RESMİ KAYNAK BAĞLANTISI (http/https). Dilekçede künye "
                          "yanına parantez içinde bu bağlantı yazılır; kaydedilmemişse "
                          "YAZILMAZ (uydurma link, çıplak künyeden daha kötüdür)")
+    s.add_argument("--asan-kaynak", dest="asan_kaynak", default=None,
+                    help="v0.5.8.4 [G5] bu kararı AŞAN kaynağın künyesi (İBK / kanun "
+                         "değişikliği / daire kayması) — muhakeme kaydına "
+                         "**AŞAN-KAYNAK:** satırı yazılır; ictihat_muhakeme_denetim "
+                         "[G5] kapısı okur (yalnız --damga ile birlikte)")
+    s.add_argument("--asilma-tarihi", dest="asilma_tarihi", default=None,
+                    help="v0.5.8.4 [G5] aşılma tarihi — muhakeme kaydına "
+                         "**AŞILMA-TARİHİ:** satırı yazılır (yalnız --damga ile)")
+    s.add_argument("--gecerlilik-bitis", dest="gecerlilik_bitis", default=None,
+                    help="v0.5.8.4 [G5] içtihadın geçerlilik bitişi — muhakeme kaydına "
+                         "**GEÇERLİLİK-BİTİŞ:** satırı yazılır (yalnız --damga ile); "
+                         "bir karar 'aşıldı' işaretlenirken üç alan TEK komutla verilebilir")
     s.add_argument("--sorgu-onayli", dest="sorgu_onayli", action="store_true",
                     help="Layer-0 ucuz sorgu taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN) "
                          "bilinçli biçimde geçer")

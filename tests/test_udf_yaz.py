@@ -60,36 +60,44 @@ def test_eski_b5_motor_fonksiyonlari_hala_yok():
             f"'{ad}' geri gelmiş — B5 dönemi motoru sözleşmesiz dirilmiş olabilir")
 
 
-def test_yerel_motor_v2_sozlesmesi():
-    """v0.5.7 sözleşmesi (B5'in sessiz-yanlışını yapısal engeller):
-    (1) bayrak --help'te VAR ve UYARI dili taşıyor; (2) --format-id diye
-    serbest bir şablon kapısı YOK; (3) varsayılan hat değişmedi — bayraksız
+def test_yerel_motor_v3_sozlesmesi():
+    """v0.5.8.4 sözleşmesi (372 A/B hükmüyle sıkılaştı): (1) eski bayrak
+    --help'te hâlâ görünür (EMEKLİ notuyla) ve YENİ riskli bayrak VAR;
+    (2) uyarı dili ('GARANTİ DEĞİL') yardımda görünür; (3) --format-id diye
+    serbest bir şablon kapısı YOK; (4) varsayılan hat değişmedi — bayraksız
     çağrı hâlâ html2udf hattına gider (yardım metni bunu söylemeye devam
     eder)."""
     cp = subprocess.run([sys.executable, str(SCRIPT), "--help"],
                          capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert "--yerel-motor" in cp.stdout
-    assert "GARANTİ DEĞİL" in cp.stdout      # uyarı dili yardımda görünür
+    assert "--yerel-motor-riskli" in cp.stdout
+    assert "GARANTİ" in cp.stdout             # uyarı dili yardımda görünür
     assert "--format-id" not in cp.stdout
     assert "html2udf" in cp.stdout            # varsayılan hat anlatımı duruyor
 
 
-def test_yerel_motor_v2_uretir_ve_mekanik_kapidan_gecer(tmp_path):
-    """Uçtan uca (AĞSIZ): --yerel-motor ile üretilen .udf, gerçek
-    udf_dogrula() kapısından GEÇERLİ çıkmalı ve CDATA metni korunmalı."""
+def test_yerel_motor_riskli_uretir_ama_elle_uretim_imzasi_islenir(tmp_path):
+    """Uçtan uca (AĞSIZ — npx bilerek bozuk): --yerel-motor-riskli dosyayı
+    ÜRETİR (exit 0, üretim kırılmaz) ama v0.5.8.4 mekanik kapısı bu ürünü
+    'elle-üretim imzası' ile GEÇERSİZ işaretler (372: bu hattın ürünleri
+    UYAP'ta açılmadı) ve okuyucu doğrulayamadığından DOGRULANMADI işareti
+    düşer. CDATA metni yine de korunur."""
     girdi = tmp_path / "taslak.md"
     girdi.write_text("# BAŞLIK\n\nSayın Mahkeme, arz ederiz.\n- madde bir\n",
                      encoding="utf-8")
     cikti = tmp_path / "taslak.udf"
     cp = subprocess.run(
         [sys.executable, str(SCRIPT), "--girdi", str(girdi),
-         "--cikti", str(cikti), "--yerel-motor"],
+         "--cikti", str(cikti), "--yerel-motor-riskli",
+         "--npx", "oa-boyle-bir-komut-yok-xyz"],
         capture_output=True, text=True, encoding="utf-8", errors="replace")
     assert cp.returncode == 0, cp.stdout + cp.stderr
     assert cikti.is_file() and cikti.stat().st_size > 0
     assert "GARANTİ DEĞİL" in cp.stderr       # görünür uyarı basıldı
     sonuc = uy.udf_dogrula(str(cikti), resmi_okuyucu=False)
-    assert sonuc["gecerli"], sonuc["hatalar"]
+    assert sonuc["gecerli"] is False          # elle-üretim imzası yakalanır
+    assert any("hvl-default stil tanımı yok" in h for h in sonuc["hatalar"])
+    assert (tmp_path / "taslak.udf.DOGRULANMADI").is_file()
     with zipfile.ZipFile(str(cikti)) as z:
         ic = z.read("content.xml").decode("utf-8")
     assert "Sayın Mahkeme, arz ederiz." in ic
@@ -158,7 +166,10 @@ def _sentetik_udf_yaz(tmp_path, metin="Birinci satır.\nİkinci satır.\n", ad="
                     % (imlec, u16))
         imlec += u16
     xml.append('</elements>')
-    xml.append('<styles><style name="default" family="Times New Roman" size="12"/></styles>')
+    # v0.5.8.4: geçerli-şekilli fixture hvl-default STİL TANIMI taşır — 372 A/B
+    # hükmü: açılan gerçek üretici çıktılarında bu tanım VAR (yokluğu
+    # elle-üretim imzasıdır ve udf_dogrula artık GEÇERSİZ sayar).
+    xml.append('<styles><style name="hvl-default" family="Times New Roman" size="12"/></styles>')
     xml.append('</template>')
     xml_str = "\n".join(xml) + "\n"
 
@@ -262,7 +273,7 @@ def test_udf_dogrula_ic_ice_tablo_hucreli_belgeyi_GECERLI_sayar():
         '<cell><paragraph><content startOffset="14" length="7"/></paragraph></cell></row>'
         '</table>\n'
         '</elements>\n'
-        '<styles><style name="default" family="Times New Roman" size="12" /></styles>\n'
+        '<styles><style name="hvl-default" family="Times New Roman" size="12" /></styles>\n'
         '</template>\n'
     )
     import tempfile
@@ -607,6 +618,7 @@ def test_udf_dogrula_tab_elemanli_gercek_belgeyi_GECERLI_sayar():
         '<content startOffset="9" length="11"/>'
         '</paragraph>\n'
         '</elements>\n'
+        '<styles><style name="hvl-default" family="Times New Roman" size="12"/></styles>\n'
         '</template>\n'
     )
     import tempfile
@@ -665,6 +677,7 @@ def test_udf_dogrula_editorde_kaydedilmis_bos_paragrafi_GECERLI_sayar():
         '<paragraph/>\n'                        # boş paragraf: 7. karakter kaplanmaz
         '<paragraph><content startOffset="8" length="3"/></paragraph>\n'
         '</elements>\n'
+        '<styles><style name="hvl-default" family="Times New Roman" size="12"/></styles>\n'
         '</template>\n'
     )
     import tempfile

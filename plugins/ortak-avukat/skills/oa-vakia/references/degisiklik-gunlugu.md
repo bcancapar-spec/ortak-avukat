@@ -19,3 +19,8 @@
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M4, Paket D):** Yeni "UNSUR ŞABLONLARI — dava-türü bağlantısı" bölümü — `oa-alan`'ın dava-türü unsur listeleriyle (`references/unsur-sablonlari/`) vakıa matrisi unsur-bazlı doldurulur; delilsiz unsur DURUM.md'de kırmızı işaretlenir.
 - **2026-08-12 — v0.5.8 fork-prova:** ozne_eslestirici.py (P4, M9 motoru): TR-normalize + Jaro-Winkler/Levenshtein (VENDOR: semantica algoritma uyarlaması, testli); ≥0.92 BAGLA / 0.80-0.92 AVUKATA-SOR; advisory.
+
+## v0.5.8.4 — 2026-08-15
+
+- **ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi hiçbir akış çağırmıyordu — tetik oa-vakia'ya bağlandı):** `vakia_matris.py --dogrula` artık özne yazım varyantlarını (üst-düzey `taraflar` listesi + olayların opsiyonel `ozne` alanı) kardeş `ozne_eslestirici`nin Jaro-Winkler motoruyla skorlar; çıktı ve JSON'a `ozne_eslestirme` bölümü eklenir: ≥0.92 BAGLA / 0.80-0.92 AVUKATA-SOR. Advisory — `saglikli` hesabına girmez; kardeş modül yüklenemezse görünür uyarı (sessiz atlama yok). SKILL'e yeni bölüm: AVUKATA-SOR görülünce model kendi karar vermez, avukata sorar.
+- İskelet şablonuna `taraflar` listesi + olaylarda `ozne` alanı eklendi (opsiyonel; geriye uyumlu).

@@ -5,17 +5,17 @@
 """
 udf_yaz.py — markdown → UYAP UDF TESLİM HATTI (oa-dilekce yardımcısı)
 
-GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): saha dosyası A dosyasında bu script'in
-ESKİ elle (zip + content.xml, `--yerel-motor`) motoru bir `.udf` ürettiği hâlde
-o dosya **UYAP editöründe AÇILMADI**. Zip bütünlüğünün "OK" görünmesi format
-GEÇERLİLİĞİ demek DEĞİLDİR. Yargı Pro rehberi (`udf_tiff_pdf_guide` MCP aracı /
-`yargi-udf-tiff-pdf-guide` skill, sürüm 2026-06-22) açıkça şunu söyler: **"UDF
-opak bir UYAP biçimidir — yalnız `udf-cli` üretebilir/okuyabilir; ASLA elle
-yazma/düzenleme; her zaman `html2udf`, ASLA `md2udf`."**
+GÜNCEL SÖZLEŞME (v0.5.8.4 — 372 sahası A/B hükmü, ders 10-D): elle kurulan
+`content.xml`'li UDF'ler **UYAP editöründe AÇILMADI** (7 dosya karantina);
+A/B testi python re-zip'ini ve pageFormat kenar yamasını AKLADI — suçlu,
+yerel motorun `content.xml` içeriğidir (styles bloğunda `name="hvl-default"`
+STİL TANIMI yok; `udf_dogrula` bu imzayı artık GEÇERSİZ sayar). Yargı Pro
+rehberi (`udf_tiff_pdf_guide` MCP aracı / `yargi-udf-tiff-pdf-guide` skill,
+sürüm 2026-06-22) zaten açıkça söyler: **"UDF opak bir UYAP biçimidir — yalnız
+`udf-cli` üretebilir/okuyabilir; ASLA elle yazma/düzenleme; her zaman
+`html2udf`, ASLA `md2udf`."**
 
-Bu yüzden elle zip/content.xml ÜRETİMİ bu script'ten TAMAMEN KALDIRILMIŞTIR
-(`--yerel-motor` bayrağı ve onu destekleyen `udf_uret`/`udf_yaz`/
-`udf_metni_geri_oku` fonksiyonları artık YOKTUR). TEK geçerli yazma hattı:
+BİRİNCİL (ve varsayılan) yazma hattı:
 
     md taslak → UDF-HTML (md_udf_html.py, inline-CSS, rehber şemasına birebir)
              → `npx -y udf-cli@latest html2udf` (GERÇEK UYAP yazıcısı)
@@ -25,13 +25,26 @@ Bu yüzden elle zip/content.xml ÜRETİMİ bu script'ten TAMAMEN KALDIRILMIŞTIR
 davranır — çıkış kodu != 0, stderr'e NET talimat (`npx -y udf-cli@latest
 login` İNSAN varsa; başsız/otomasyon ortamda `issue_cli_login_code` MCP aracı
 çağrılıp dönen tek-kullanımlık kodla `udf-cli login --token <kod>`), ve HİÇBİR
-`.udf` dosyası YAZILMAZ. Eski elle-zip yoluna SESSİZCE düşmek YASAKTIR — bozuk
-ama "üretildi" görünen bir UDF, hiç üretilmemiş bir UDF'den DAHA KÖTÜDÜR
+`.udf` dosyası YAZILMAZ. Yerel motora SESSİZCE düşmek YASAKTIR — bozuk ama
+"üretildi" görünen bir UDF, hiç üretilmemiş bir UDF'den DAHA KÖTÜDÜR
 (sessiz-yanlış > açık-eksik).
+
+İSTİSNA — BİLİNÇLİ RİSK BAYRAĞI: `--yerel-motor` EMEKLİDİR (artık HATA verir
+ve yönlendirir); çevrimdışı yerel üretim yalnız `--yerel-motor-riskli` ile
+koşar. Bu yol resmî okuyucu (`udf2md`) doğrulamasını dener; OK gelmezse
+çıktının YANINA `<ad>.DOGRULANMADI` işaret dosyası bırakır — üretim kırılmaz
+ama doğrulanmamışlık diskte görünür kalır (işaretli dosya UYAP'a yüklenmez;
+işareti görsel teyit sonrası avukat siler).
+
+ÜRETİM MAKBUZU (v0.5.8.4): her `.udf` üretimi, dava klasöründe `_oa/defter`
+varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz düşer (motor,
+sha256, doğrulama durumu) — makbuz kayıt aracıdır, kapı değildir; yazılamaması
+üretimi asla kırmaz.
 
 `--dogrula` var olan HERHANGİ bir `.udf` dosyasını (gerçek `udf-cli` çıktısı
 dâhil) mekanik GEÇERLİLİK KAPISI'ndan geçirir (zip açılır mı / content.xml var
-mı / XML iyi biçimli mi / CDATA+offset tutarlı mı) — bu bir hukuki/biçimsel
+mı / XML iyi biçimli mi / `hvl-default` STİL TANIMI var mı / CDATA+offset
+tutarlı mı) — bu bir hukuki/biçimsel
 KALİTE hükmü DEĞİLDİR, yalnız yapısal "var/yok" ve "tutarlı/tutarsız" denetimi.
 
 DETERMİNİST MOTOR: bu script hukuki değerlendirme YAPMAZ; yalnız biçim üretir.
@@ -59,8 +72,10 @@ for _s in (_sys.stdout, _sys.stderr):
 import argparse
 import contextlib
 import datetime
+import hashlib
 import importlib.util
 import io
+import json
 import os
 import pathlib
 import re
@@ -128,6 +143,7 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
         "content_xml_var": False, "xml_iyi_bicimli": False,
         "cdata_bulundu": False, "karakter_sayisi": None,
         "paragraf_sayisi": None, "offsetler_tutarli": None,
+        "hvl_stil_tanimi": None,
         "resmi_okuyucu": None, "resmi_okuyucu_not": None,
         "resmi_okuyucu_karakter": None,
         "notlar": [], "kapsanmayan_bosluk": None, "imza_dosyasi": None,
@@ -164,6 +180,18 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
     except ET.ParseError as e:
         sonuc["hatalar"].append("content.xml iyi biçimli değil: %s" % e)
         return sonuc
+
+    # 3.5) hvl-default STİL TANIMI (v0.5.8.4 — 372 A/B saha hükmü): UYAP'ta
+    # AÇILMAYAN elle üretimlerin ayırt edici imzası, `<elements
+    # resolver="hvl-default" ...>` yazıp `<styles>` bloğunda `name="hvl-default"`
+    # STİL TANIMI vermemekti (açılan gerçek üretici çıktılarında tanım VAR).
+    # DİKKAT: `<elements ... name="hvl-default">` bu denetimi SAĞLAMAZ —
+    # ölçüt tam olarak `<style>` etiketidir; ayırt edici fark budur.
+    sonuc["hvl_stil_tanimi"] = bool(
+        re.search(r'<style\b[^>]*name="hvl-default"', ham))
+    if not sonuc["hvl_stil_tanimi"]:
+        sonuc["hatalar"].append(
+            "hvl-default stil tanımı yok (elle-üretim imzası)")
 
     # 4) CDATA + offset/uzunluk tutarlılığı (round-trip'in temeli)
     m = re.search(r"<content>\s*<!\[CDATA\[(.*?)\]\]>\s*</content>", ham, re.S)
@@ -800,11 +828,17 @@ def _durum_md_uyari_ekle(kok, satir):
 # round-trip'inden 13/13 çapayla geçti. Kullanıcı talebi: md→UDF çevrimi
 # barındırılan hesaba (npx udf-cli oturumu) MAHKÛM olmasın.
 #
-# YENİ SÖZLEŞME (B5'in sessiz-yanlışını yapısal olarak engeller):
-#   1. YALNIZ AÇIK BAYRAKLA (--yerel-motor) koşar — varsayılan hat DEĞİŞMEDİ
-#      (md → UDF-HTML → npx html2udf, fail-closed). Sessiz düşüş YOKTUR.
-#   2. Ürettiği dosya udf_dogrula() mekanik kapısından GEÇMEK ZORUNDADIR;
-#      geçmezse dosya SİLİNİR ve exit != 0 (fail-closed).
+# GÜNCEL SÖZLEŞME (v0.5.8.4 — 372 sahası A/B hükmüyle SIKILAŞTI):
+#   0. 372 sahasında bu hattın ürünleri UYAP'ta AÇILMADI (7 dosya karantina);
+#      A/B testi re-zip'i ve kenar yamasını AKLADI — suçlu content.xml'in
+#      kendisi (styles bloğunda hvl-default STİL TANIMI yok). Bu yüzden
+#      `--yerel-motor` EMEKLİDİR: artık HATA verir ve yönlendirir.
+#   1. Hat yalnız YENİ AÇIK BAYRAKLA (--yerel-motor-riskli) koşar —
+#      varsayılan hat DEĞİŞMEDİ (md → UDF-HTML → npx html2udf, fail-closed).
+#      Sessiz düşüş YOKTUR.
+#   2. Ürettiği dosya udf_dogrula(resmi_okuyucu=True) kapısından geçirilir;
+#      okuyucu OK vermezse çıktının yanına `<ad>.DOGRULANMADI` işaret dosyası
+#      düşer (üretim tamamlanır, fırlatmaz — doğrulanmamışlık diskte görünür).
 #   3. Her koşuda GÖRÜNÜR uyarı: resmî yazıcı değildir; e-imza öncesi UYAP
 #      Doküman Editörü'nde görsel teyit ZORUNLUDUR.
 # Eski motorun fonksiyon adları (udf_uret/udf_yaz/udf_metni_geri_oku) BİLEREK
@@ -902,28 +936,95 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
     return xml_str, tam, len(paragraflar)
 
 
-def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False):
-    """--yerel-motor gövdesi: üret → ATOMİK yaz → udf_dogrula MEKANİK KAPISI.
-    Kapıdan geçemezse dosyayı SİLER ve dict'te basarili=False döner
-    (fail-closed; B5 sessiz-yanlışı yapısal olarak imkânsız)."""
+def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False, npx_yolu="npx"):
+    """--yerel-motor-riskli gövdesi (v0.5.8.4): üret → ATOMİK yaz →
+    udf_dogrula RESMÎ OKUYUCU DAHİL (resmi_okuyucu=True — 372 dersi: kendi
+    round-trip'imiz kanıt değildir). Okuyucu OK vermezse çıktının YANINA
+    `<ad>.DOGRULANMADI` işaret dosyası bırakılır — üretim yine TAMAMLANIR
+    (fırlatmaz), ama doğrulanmamışlık diskte GÖRÜNÜR kalır; çağıran taraf
+    (main) ayrıca stderr'e blok uyarı basar. 372 A/B hükmü gereği bu hattın
+    ürünleri mekanik kapıda da 'elle-üretim imzası' ile işaretlenir; sonuç
+    dict'in `dogrulama` alanı her iki bacağı olduğu gibi taşır (sahte
+    kesinlik yok)."""
     xml_str, tam, paragraf = _ym_icerik_xml(metin, ham_mod=ham_mod)
     tmp = cikti_yolu + ".tmp-%d" % os.getpid()
     try:
         with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
             z.writestr("content.xml", xml_str.encode("utf-8"))
-        sonuc = udf_dogrula(tmp, resmi_okuyucu=False)
-        if not sonuc.get("gecerli"):
-            return {"basarili": False, "paragraf": paragraf,
-                    "hatalar": sonuc.get("hatalar", ["mekanik kapı GEÇERSİZ dedi"])}
-        os.replace(tmp, cikti_yolu)
-        return {"basarili": True, "paragraf": paragraf,
-                "karakter": len(tam), "hatalar": []}
+        _atomik_tasi(tmp, cikti_yolu)
     finally:
         if os.path.exists(tmp):
             try:
                 os.remove(tmp)
             except OSError:
                 pass
+
+    dogrulama = udf_dogrula(
+        cikti_yolu, resmi_okuyucu=True,
+        okuyucu_fn=lambda yol: npx_ile_udf_oku(yol, npx_yolu=npx_yolu))
+
+    isaret = None
+    if dogrulama.get("resmi_okuyucu") != "OK":
+        # üretim KIRILMAZ; ama dosyanın UYAP tarafında açıldığı DOĞRULANMADI —
+        # işaret dosyası, teslim anında gözden kaçmasın diye çıktının yanında.
+        isaret = cikti_yolu + ".DOGRULANMADI"
+        try:
+            with open(isaret, "w", encoding="utf-8") as f:
+                f.write(
+                    "Bu .udf dosyasının UYAP tarafında AÇILDIĞI DOĞRULANMADI.\n"
+                    "Üretici: yerel motor (--yerel-motor-riskli, bilinçli risk).\n"
+                    "372 sahası: bu hattın ürünleri UYAP'ta açılmadı (7 dosya "
+                    "karantina).\n"
+                    "resmî okuyucu: %s — %s\n"
+                    "Teslimden ÖNCE UYAP Doküman Editörü'nde açıp görsel teyit "
+                    "ZORUNLUDUR; teyit sonrası bu işaret dosyasını avukat siler.\n"
+                    % (dogrulama.get("resmi_okuyucu"),
+                       dogrulama.get("resmi_okuyucu_not") or
+                       "; ".join(dogrulama.get("hatalar", [])) or "ayrıntı yok"))
+        except OSError:
+            isaret = None  # yazılamadıysa görünürlük stderr uyarısına kalır
+
+    return {"basarili": True, "paragraf": paragraf, "karakter": len(tam),
+            "hatalar": dogrulama.get("hatalar", []),
+            "dogrulama": dogrulama, "isaret_dosyasi": isaret}
+
+
+# ═══════════ ÜRETİM MAKBUZU (v0.5.8.4 — best-effort, _oa/defter) ════════════
+# 372 saha ölçümü: makbuz HİÇ üretilmedi çünkü tek üretici
+# `teslim_paketi._makbuz_yaz` idi ve model o zinciri atladı (Stop hook 23 kez
+# uyardı, 0 kez uygulandı). Çözüm zorlamak değil ÜRETİM NOKTASINA taşımak:
+# .udf'i FİİLEN yazan bu script, dava klasörü defter tutuyorsa
+# (`_oa/defter` VARSA) kendi üretim makbuzunu düşer. Defter yoksa sessiz
+# atlanır (defter açmak pipeline'ın işidir, bu script dayatmaz); HİÇBİR
+# hata üretimi kırmaz (makbuz kayıt aracıdır, kapı değildir).
+def _uretim_makbuzu_yaz(kok, girdi_yolu, cikti_yolu, motor, dogrulama,
+                        kenar_notu=None):
+    """`_oa/defter/udf-uretim-makbuz.jsonl` dosyasına TEK satır JSON APPEND
+    eder. Döner: yazılan dosyanın yolu ya da None (defter yok / yazılamadı).
+    ASLA istisna fırlatmaz — üretim akışını hiçbir koşulda etkilemez."""
+    try:
+        defter = os.path.join(kok or ".", "_oa", "defter")
+        if not os.path.isdir(defter):
+            return None
+        with open(cikti_yolu, "rb") as f:
+            sha = hashlib.sha256(f.read()).hexdigest()
+        d = dogrulama or {}
+        kayit = {
+            "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+            "girdi": girdi_yolu,
+            "cikti": cikti_yolu,
+            "sha256": sha,
+            "motor": motor,                      # "html2udf" | "yerel-riskli"
+            "dogrulama": bool(d.get("gecerli")),
+            "resmi_okuyucu": d.get("resmi_okuyucu"),
+            "kenar_notu": kenar_notu,
+        }
+        yol = os.path.join(defter, "udf-uretim-makbuz.jsonl")
+        with open(yol, "a", encoding="utf-8") as f:
+            f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+        return yol
+    except Exception:
+        return None
 
 
 def main():
@@ -955,13 +1056,18 @@ def main():
     ap.add_argument("--npx", default="npx", metavar="KOMUT",
                     help="npx çalıştırılabilir yolu/adı (varsayılan: %(default)s).")
     ap.add_argument("--yerel-motor", action="store_true",
-                    help="ÇEVRİMDIŞI YEDEK YOL (v0.5.7, açık istekle): UDF'i npx/"
-                         "oturum OLMADAN, 307-tamirli yerel motorla üretir. Çıktı "
-                         "mekanik GEÇERLİLİK KAPISINDAN geçmek zorundadır (geçmezse "
-                         "dosya silinir, exit != 0). UYAP uyumu GARANTİ DEĞİLDİR — "
-                         "resmî yazıcı html2udf'tir; e-imza öncesi UYAP Doküman "
-                         "Editörü'nde görsel teyit ZORUNLUDUR. Varsayılan hattı "
-                         "DEĞİŞTİRMEZ; sessiz düşüş yolu YOKTUR.")
+                    help="EMEKLİ (v0.5.8.4): bu bayrak artık HATA verir — 372 "
+                         "sahasında yerel motor ürünleri UYAP'ta açılmadı "
+                         "(7 dosya karantina). Varsayılan html2udf hattını "
+                         "kullanın; bilinçli risk için --yerel-motor-riskli.")
+    ap.add_argument("--yerel-motor-riskli", action="store_true",
+                    help="BİLİNÇLİ RİSK (çevrimdışı yedek yol): UDF'i npx/oturum "
+                         "OLMADAN yerel motorla üretir. UYAP uyumu GARANTİ "
+                         "DEĞİLDİR (372: bu hattın ürünleri UYAP'ta AÇILMADI); "
+                         "çıktı resmî okuyucu (udf2md) ile doğrulanamazsa yanına "
+                         "'<ad>.DOGRULANMADI' işareti bırakılır. E-imza öncesi "
+                         "UYAP Doküman Editörü'nde görsel teyit ZORUNLUDUR. "
+                         "Varsayılan hattı DEĞİŞTİRMEZ; sessiz düşüş yolu YOKTUR.")
     ap.add_argument("--kaynak-docx", metavar="YOL", default=None,
                     help="BONUS YOL (rehber §5): md/HTML akışını ATLAYIP hazır bir "
                          ".docx/.pdf dosyasını doğrudan `docx2udf` ile --cikti'ye "
@@ -970,6 +1076,16 @@ def main():
                          "girdi hatası, 2 Giriş gerekli, 3 Hesap yasaklı, 4 Sunucuya "
                          "erişilemiyor, 5 Kota bitti) stderr'e basılır.")
     a = ap.parse_args()
+
+    # v0.5.8.4 — YEREL MOTOR EMEKLİYE: 372 saha ölçümü (A/B) elle kurulan
+    # content.xml'li UDF'lerin UYAP'ta AÇILMADIĞINI kanıtladı (7 dosya
+    # karantina). Eski bayrak sessizce üretmeye devam etmesin: HATA + yönlendirme.
+    if a.yerel_motor:
+        sys.exit(
+            "HATA: --yerel-motor EMEKLİYE AYRILDI — yerel motor ürünleri "
+            "UYAP'ta açılmıyor (372 sahası: 7 dosya karantina). html2udf "
+            "hattını kullanın (bayraksız varsayılan yol); bilinçli risk "
+            "almak için --yerel-motor-riskli.")
 
     if a.kaynak_docx:
         kaynak = _kok_coz(a.kaynak_docx, a.kok)
@@ -1019,9 +1135,9 @@ def main():
     cikti = _kok_coz(a.cikti, a.kok)
     pdf_yolu = _kok_coz(a.pdf, a.kok) if a.pdf else None
 
-    if a.yerel_motor:
-        # ÇEVRİMDIŞI YEDEK YOL — yalnız açık istekle (bkz. YEREL MOTOR v2 blok
-        # yorumu). Ağ/npx/oturum GEREKMEZ; mekanik kapı zorunlu; uyarı görünür.
+    if a.yerel_motor_riskli:
+        # BİLİNÇLİ RİSK YOLU (v0.5.8.4) — yalnız açık bayrakla. Ağ/npx/oturum
+        # GEREKMEZ (resmî okuyucu bacağı denenir, olmazsa GÖRÜNÜR "YAPILAMADI").
         if girdi:
             with open(girdi, "r", encoding="utf-8", errors="replace") as f:
                 metin = f.read()
@@ -1029,21 +1145,33 @@ def main():
             if _sys.stdin is None:
                 sys.exit("HATA: --girdi verilmedi ve stdin yok.")
             metin = _sys.stdin.read()
-        print("⚠ YEREL MOTOR (çevrimdışı yedek yol, açık istekle):", file=sys.stderr)
+        print("⚠ YEREL MOTOR — RİSKLİ (bilinçli istekle):", file=sys.stderr)
         print("  Bu çıktı RESMÎ yazıcıdan (npx udf-cli html2udf) ÇIKMADI.", file=sys.stderr)
-        print("  UYAP uyumu GARANTİ DEĞİLDİR — e-imza öncesi UYAP Doküman", file=sys.stderr)
-        print("  Editörü'nde açıp görsel teyit ZORUNLUDUR (B5 dersi).", file=sys.stderr)
-        sonuc = yerel_motor_ile_uret(metin, cikti, ham_mod=a.ham)
-        if not sonuc["basarili"]:
-            for h in sonuc["hatalar"]:
-                print("  [HATA] %s" % h, file=sys.stderr)
-            sys.exit("FAIL-CLOSED: yerel motor çıktısı mekanik GEÇERLİLİK "
-                     "KAPISINDAN geçemedi — HİÇBİR .udf yazılmadı.")
-        print("UDF yazıldı (YEREL MOTOR): %s" % cikti)
+        print("  UYAP uyumu GARANTİ DEĞİLDİR — 372 sahasında bu hattın ürünleri", file=sys.stderr)
+        print("  UYAP'ta AÇILMADI (7 dosya karantina). E-imza öncesi UYAP", file=sys.stderr)
+        print("  Doküman Editörü'nde açıp görsel teyit ZORUNLUDUR.", file=sys.stderr)
+        sonuc = yerel_motor_ile_uret(metin, cikti, ham_mod=a.ham, npx_yolu=a.npx)
+        d = sonuc["dogrulama"]
+        print("UDF yazıldı (YEREL MOTOR — RİSKLİ): %s" % cikti)
         print("  paragraf         : %d" % sonuc["paragraf"])
         print("  karakter (CDATA) : %d" % sonuc["karakter"])
-        print("  mekanik kapı     : GEÇERLİ ✓ (udf_dogrula, çevrimdışı)")
-        print("  UYAP editör teyidi: AVUKATA AİT — mekanik doğrulama yerine geçmez.")
+        print("  mekanik kapı     : %s" % (
+            "GEÇERLİ ✓" if d.get("gecerli") else "GEÇERSİZ ✗"))
+        for h in d.get("hatalar", []):
+            print("  [HATA] %s" % h, file=sys.stderr)
+        _resmi_okuyucu_bas(d)
+        if sonuc["isaret_dosyasi"] or d.get("resmi_okuyucu") != "OK":
+            print("", file=sys.stderr)
+            print("!" * 66, file=sys.stderr)
+            print("UYARI: bu dosyanın UYAP tarafında açıldığı DOĞRULANMADI — "
+                  "üretim tamamlandı ama bu dosya doğrulanmadan YÜKLENMEZ.",
+                  file=sys.stderr)
+            if sonuc["isaret_dosyasi"]:
+                print("  İşaret dosyası: %s" % sonuc["isaret_dosyasi"],
+                      file=sys.stderr)
+            print("!" * 66, file=sys.stderr)
+        _uretim_makbuzu_yaz(a.kok, girdi or "<stdin>", cikti,
+                            "yerel-riskli", d)
         sys.exit(0)
 
     # NOT: --html AÇIKÇA verilmediyse ara HTML SİSTEM TEMP dizinine yazılır,
@@ -1117,6 +1245,14 @@ def main():
             print("  karakter (CDATA) : %d" % dogrulama["karakter_sayisi"])
         _resmi_okuyucu_bas(dogrulama)
         print("  GEÇERLİLİK KAPISI: %s" % ("GEÇERLİ ✓" if dogrulama["gecerli"] else "GEÇERSİZ ✗"))
+        # v0.5.8.4 ÜRETİM MAKBUZU (best-effort): .udf fiilen üretildi —
+        # defter varsa iz düşülür (dogrulama alanı sonucu OLDUĞU GİBİ taşır;
+        # geçersiz çıksa bile üretim kaydı dürüstçe deftere geçer).
+        makbuz_yolu = _uretim_makbuzu_yaz(
+            a.kok, girdi or "<stdin>", cikti, "html2udf", dogrulama,
+            kenar_notu=sonuc.get("kenar_notu"))
+        if makbuz_yolu:
+            print("  üretim makbuzu   : %s" % makbuz_yolu)
         if not dogrulama["gecerli"]:
             for h in dogrulama["hatalar"]:
                 print("  [HATA] %s" % h, file=sys.stderr)

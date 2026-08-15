@@ -391,4 +391,30 @@ Amaç ikili: (a) taze oturum ürün ağını BAĞLARDAN gezer, dosyaları yenide
 okumaz (devir ekonomisi); (b) `oa-kontrol/scripts/tazelik_denetim.py --kok .`
 kaynağı sonradan değişen ürünü BAYAT ilan eder — "delta geçişi gerek"
 (advisory, bloklamaz; Çal-1079 dersinin otomasyonu). Kapanış adımında ve her
-DURUM.md türetiminde bir kez koşturulur.
+DURUM.md türetiminde bir kez koşturulur. **Bloğu elle kurma (v0.5.8.4):**
+satırı `oa-kontrol/scripts/kaynak_blogu.py --girdiler <yol...>` üretir —
+sha'yı model değil script hesaplar; @sha8'siz blok tazelik denetimini fiilen
+işlevsiz bırakır (372 Torbalı bulgusu).
+
+## v0.5.8.4 — HOOK KATMANI (372 dersleri: uyarı işlemiyor, otomasyon + iz gerek)
+
+- **PreToolUse ELLE-UDF KAPISI (YENİ — ders 10-D):** `hooks.json`'a
+  `PreToolUse(Write|Edit|Bash|PowerShell)` girdisi eklendi
+  (`pipeline_kayit.py --hook-pretool`): araç girdisinde elle-UDF kurulum
+  deseni (`zipfile`+`content.xml` veya `ZipFile(`+`.udf`) varsa ve kök bir
+  DAVA klasörüyse **"ask" kararı** basılır — elle kurulan content.xml
+  UYAP'ta açılmıyor; devam etmek avukatın kararıdır (BLOKLAMAZ; kod
+  deposunda zipfile meşru iştir, kapı orada susar).
+- **Teslim-disiplini hatırlatması genişledi:** defter AÇIKKEN de, mühürsüz
+  teslim-sınıfı ürün varsa UserPromptSubmit enjeksiyonu mühür zincirini
+  (udf_yaz → muhur_yaz → teslim_paketi) her turda hatırlatır (372: 23 uyarı /
+  0 uygulama).
+- **AĞ-İMPORT SAHA TARAMASI:** `_oa/araclar/` kopyalarında satır-başı ağ
+  kütüphanesi importu taranır (YASAK-NÖBETÇİSİ'nin saha ayağı — Layer 0
+  kopyada görünmez delinmesin); bulgu görünür uyarıdır, engel değildir.
+- **HOOK OLAY İZİ:** hook gövdesi fiilen iş yaptığında (enjeksiyon/uyarı/ask)
+  `pipeline-olaylar.jsonl`'e `{"tip":"hook"}` satırı düşer (araç-imzalı) —
+  hook nöbeti artık defterde görünür (372 kanıtı: defterde hook olayı 0'dı).
+- **Stop/SessionEnd OTOMATİK MÜHÜR:** mühürsüz teslim-sınıfı ürün varsa hook
+  `muhur_yaz.py`'yi kendisi koşturur (post-hoc mühür üretim yolunu İDDİA
+  EDEMEZ — `was_generated_by` bunu açıkça beyan eder; `--dogrula` ile teyit).

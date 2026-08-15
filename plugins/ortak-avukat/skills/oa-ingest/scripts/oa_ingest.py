@@ -160,6 +160,19 @@ v1.6 değişiklikleri (2026-07) — GATE A+C (M1-2, Denizli canlı testinden):
   Künye şeması GENİŞLEDİ (`buyuk`, `harita`, `tur_tahmini` + üst seviyede `buyuk_evrak`,
   `buyuk_esik`) — geriye dönük UYUMLU (eski okuyucular ekstra anahtarı yok sayar).
 
+v1.7.1 değişiklikleri (2026-08) — GATE A DİRİLTME (iki saha ölçümü: binlerce md'ye
+  karşı 0 harita; künyede buyuk_esik/buyuk_evrak alanı bile yok):
+  KÖK NEDEN: harita üretimi yalnız çıkarım (önbellek-MISS) yolundaki md_yaz'a
+  bağlıydı; önbellek-HIT kayıtları künyeye OLDUĞU GİBİ basılıyordu. v1.6 öncesi
+  bir motorla ingest edilmiş korpusta imza (mtime+size) hiç değişmediği için her
+  koşu %100 HIT olur → Gate A o korpusta hiç ateşlemiyordu (buyuk anahtarı bile
+  yoktu, buyuk_evrak hep 0). ONARIM: FAZ C sonrası `_gate_a_uygula` HER kaydın
+  buyuk/harita (+eksikse tur_tahmini) alanını karakterden YENİDEN türetir; eşiği
+  aşan kaydın eksik `.harita.json`u md'den BYTE-ÖZDEŞ geri üretilir
+  (_md_metin_geri_oku). Onarım önbellek nesnelerine de işler (kendini iyileştirme);
+  SAF+DETERMİNİSTİK → seri==paralel korunur; küçük evrakta ek maliyet YOK
+  (bkz. tests/test_v0584_gate_a.py).
+
 ÇIKARIM YOLLARI (model kurmaz, script çıkarır):
   PDF (metin katmanlı)  → PyMuPDF text            [BEDAVA, kayıpsız]
   PDF (taranmış/fontsuz) → PyMuPDF render + OCR    [OCR — ⚠ teyit]
@@ -394,6 +407,71 @@ def _harita_yaz(yol, metin, govde_uzunluk, kaynak_md):
             "adet": len(bolumler), "bolumler": bolumler}
     with open(yol, "w", encoding="utf-8") as f:
         json.dump(veri, f, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def _md_metin_geri_oku(md_yol):
+    """Gate A DİRİLTME (v1.7.1) — üretilmiş .md dosyasından ham metni ve başlık
+    (govde) uzunluğunu GERİ çıkarır. md_yaz sözleşmesi: başlık bloğu daima
+    '\\n---\\n' ile biter, ardından ham metin + md_yaz'ın eklediği TEK sondaki
+    '\\n' gelir. Başlık satırlarının hiçbiri tek başına '---' içermez (hepsi
+    '# '/'- ' ile başlar veya boştur) → dosyadaki İLK '\\n---\\n' güvenle başlık
+    sonudur. Bu geri-okuma, _harita_yaz'a taze koşudakiyle AYNI (metin,
+    govde_uzunluk) çiftini verir → geri-üretilen harita BYTE-ÖZDEŞtir.
+    Sözleşme dışı/eksik dosyada (None, 0) döner — UYDURMA yapılmaz."""
+    try:
+        with open(md_yol, encoding="utf-8") as f:
+            icerik = f.read()
+    except OSError:
+        return None, 0
+    bas, ayrac, kuyruk = icerik.partition("\n---\n")
+    if not ayrac:
+        return None, 0
+    metin = kuyruk[:-1] if kuyruk.endswith("\n") else kuyruk   # md_yaz'ın son '\n'ı
+    return metin, len(bas) + len(ayrac)
+
+
+def _gate_a_uygula(kunye, hedef, buyuk_esik):
+    """Gate A NORMALİZASYON/DİRİLTME (v1.7.1) — künyedeki HER kayıt için
+    `buyuk`/`harita` alanlarını karakter sayısından YENİDEN türetir ve eşiği
+    aşan her kaydın `.harita.json` dosyasını GARANTİ eder (dosya yoksa md'den
+    BYTE-ÖZDEŞ geri üretir — bkz. _md_metin_geri_oku).
+
+    KÖK NEDEN (iki saha ölçümü: binlerce md / 0 harita, künyede alan bile yok):
+    harita üretimi YALNIZ çıkarım (önbellek-MISS) yolundaki md_yaz'a bağlıydı;
+    önbellek-HIT kayıtları künyeye OLDUĞU GİBİ basılıyordu. v1.6 (Gate A)
+    ÖNCESİ bir motorla ingest edilmiş korpusta kaynak dosyaların imzası
+    (mtime+size) hiç değişmediği için her sonraki koşu %100 HIT olur → Gate A
+    o korpusta SONSUZA DEK ölü kalıyordu. Şema alanı üst seviyede yazılsa bile
+    `buyuk_evrak` hep 0 sayılıyordu (eski kayıtlarda `buyuk` anahtarı yok).
+
+    ÖZELLİKLER: SAF ve DETERMİNİSTİK (yalnız künye içeriği + disk durumundan
+    türer; işçi sayısından bağımsız → seri==paralel byte-eşitliği KORUNUR).
+    Kayıt sözlükleri önbellekle PAYLAŞILAN nesnelerdir → onarım FAZ D'de
+    önbelleğe de yazılır: korpus KENDİNİ İYİLEŞTİRİR, sonraki koşular yeniden
+    stat-only kalır. MALİYET: küçük evrakta yalnız sözlük ataması (disk IO
+    YOK); disk okuması yalnız eşiği aşan VE haritası eksik kayıtta (hedefli)."""
+    for k in kunye:
+        buyuk = (k.get("karakter") or 0) > buyuk_esik
+        k["buyuk"] = buyuk
+        # Gate C aynı kök nedenin eşi: eski (v1.6 öncesi) kayıtta hiç yoksa doldur
+        # (setdefault — taze kayıtların değeri, None dahil, DEĞİŞMEZ).
+        k.setdefault("tur_tahmini", tur_tahmin_et(k.get("ad"), k.get("kaynak")))
+        if not buyuk:
+            k["harita"] = k.get("harita") or ""
+            continue
+        md = k.get("md")
+        if not md:                      # metinsiz/arızalı kayıt — harita üretilemez
+            k["harita"] = ""
+            continue
+        harita_dosya = k.get("harita") or (os.path.splitext(md)[0] + ".harita.json")
+        harita_yol = os.path.join(hedef, harita_dosya)
+        if not os.path.exists(harita_yol):
+            metin, govde_uzunluk = _md_metin_geri_oku(os.path.join(hedef, md))
+            if metin is None:           # md yok/sözleşme dışı — sessiz uydurma YASAK
+                k["harita"] = ""
+                continue
+            _harita_yaz(harita_yol, metin, govde_uzunluk, md)
+        k["harita"] = harita_dosya
 
 
 def slug(ad):
@@ -1123,6 +1201,11 @@ def main():
     _mevcut_gorece = {it["gorece"] for it in items}
     for _stale in [g for g in onbellek if g not in _mevcut_gorece]:
         del onbellek[_stale]
+
+    # ---- GATE A DİRİLTME (v1.7.1): buyuk/harita HER kayıtta, önbellek-HIT dahil ----
+    # buyuk_sayisi bu normalizasyondan SONRA türetilmeli; kayıt nesneleri önbellekle
+    # paylaşıldığı için onarım FAZ D'de önbelleğe de işlenir (kendini iyileştirme).
+    _gate_a_uygula(kunye, hedef, a.buyuk_esik)
 
     # ---- ÖZET SAYAÇLARI: final künyeden TÜRET (yol-bağımsız → idempotent + seri==paralel) ----
     # ocr_sayisi = gerçek OCR/zayıf çıkarım (teyit gerekli, idari-olmayan); idari kayıtlar

@@ -25,3 +25,7 @@
 - **2026-08-08 (v0.5.7.4 — BAĞLANTI KATMANI, kullanıcı kararı):** Eklenti artık iki sunucuyu KENDİSİ İLAN EDER (plugin.json mcpServers, `claude plugin validate` geçti): birincil `yargi-pro` (betaspacestudio) + `yargi-mcp-yedek` (MIT, hesapsız, yargimcp.surucu.dev). SKILL'e tek yönlü katman kuralı yazıldı: Pro araçları bağlamda varsa yedek HİÇ kullanılmaz; Pro yoksa/düşüyorsa araç eşleme tablosuyla yedeğe geçilir (ictihat_ara↔search_bedesten_unified, ictihat_getir↔get_bedesten_document_markdown, AYM↔search_anayasa_unified). DÜRÜST SINIRLAR açık: yedekte mevzuat ve AİHM araçları YOK ('mevzuat teyidi YAPILAMADI (yedek kip)' çıktıya yazılır, hafızadan doldurulmaz); semantik arama yedekte anahtar-teslim değil. oa_hafiza sözlüğü yedek adları tanır — yedek kipte teyit kültürü aynen işler.
 - **2026-08-12 — v0.5.8 fork-prova:** AŞILMIŞLIK SORUSU teyit adımına eklendi (AŞAN-KAYNAK/AŞILMA-TARİHİ alanları → [G5]).
 - **2026-08-13 — v0.5.8.1:** AŞILMIŞLIK zorunlu son sorusu çekirdek teyit akışına taşındı (şablon-bağımsız; [G5] beslemesi).
+
+## v0.5.8.4 — 2026-08-15
+
+- **[G5] üretici ucu belgelendi:** AŞILMIŞLIK SORUSU bölümüne teyit komutu bayrakları eklendi — `--asan-kaynak` / `--asilma-tarihi` / `--gecerlilik-bitis` (yalnız `--damga` ile; damgasız çağrı RET). 372 karnesi: [G5] kapısı kuruluydu ama kütükte alanları dolduran üretici adım yoktu → 2 sahada %0 ateşleme; risk gerçekti (mülga norm + onamayla aşılan karar elle yakalandı). Desen silinmedi, üretici uca bağlandı; alanlar `_oa/cikti/03-ictihat-muhakeme.md` kütüğünde yaşar.

@@ -18,3 +18,7 @@
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M2, Paket D):** `ictihat-muhakeme-sablonu.md`'ye KIYAS ŞEMASI eklendi — muhakeme kaydı alanları RATIO/ÖRTÜŞME (≥3 nokta)/FARKLAR'dan DAMGA'nın BEYAN EDİLMEDEN türetilmesi; P0-2'nin `--bag=örtüşme`/`--ilgili-kisim=ratio alıntısı` bayraklarıyla hizalandı.
 - **2026-08-12 — v0.5.8 fork-prova:** ictihat-muhakeme-sablonu: AŞILMIŞLIK alanları (3 opsiyonel alan + [G5] kuralı); kiyas_denetim exit-0 kararı docstring'e şerh edildi (Can #1: kapı değil karar-malzemesi).
+
+## v0.5.8.4 — 2026-08-15
+
+- **ictihat-muhakeme-sablonu — AŞILMIŞLIK üretici ucu + kullanım örneği:** üç alanın (`AŞAN-KAYNAK`/`AŞILMA-TARİHİ`/`GEÇERLİLİK-BİTİŞ`) elle değil `oa_hafiza.py teyit --damga … --asan-kaynak … --asilma-tarihi … --gecerlilik-bitis …` komutuyla yazıldığı şablona işlendi (damgasız çağrı fail-closed RET; DAMGA=LEHE + aşılmışlık dolu = görünür çelişki uyarısı; LEHE+aşılmış+atıf = [G5] TESLİM ENGELİ). Lehe-denetim akışı için tek-komut kullanım örneği eklendi.

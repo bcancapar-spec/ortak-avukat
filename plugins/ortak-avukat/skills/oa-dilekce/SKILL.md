@@ -221,7 +221,7 @@ Süre satırı için `oa-sure`; her atıf `oa-ictihat`'tan teyitli; alan tespiti
 
 **Çıktı formatı — UDF VARSAYILAN (kurucu kural):** Kullanıcı/Fable kararı: **aksi açıkça talep edilmedikçe (ör. "md olarak ver", "docx istiyorum") dilekçe çıktısı UDF formatında üretilir.** md taslak her hâlde ARA ÜRÜNdür (UDF ondan türetilir), teslim edilen NİHAİ çıktı UDF'dir.
 
-**ALTIN KURAL — UDF ELLE YAZILMAZ (GÖREV D, B5 — bağlayıcı):** UDF, yalnız `udf-cli`'nin üretebildiği/okuyabildiği opak bir UYAP biçimidir; içyapısı hakkında varsayımda bulunulmaz, zip/`content.xml` elle kurulmaz, `.udf` elle düzenlenmez, ve **`md2udf` ASLA kullanılmaz — daima `html2udf`**. Ayrıntılı operasyonel referans: `references/uyap-belge-formatlari.md` (Yargı Pro `udf_tiff_pdf_guide` rehberinin ailedeki klonu — güncel sürüm için daima o dosyaya/rehbere bakılır). Saha kanıtı (v0.5.5, KRİTİK): eski hand-rolled zip motorunun ürettiği `.udf` **UYAP editöründe açılmadı** — bu yüzden o motor (`--yerel-motor`) `udf_yaz.py`'den TAMAMEN KALDIRILDI; script'in artık TEK yazma yolu gerçek `npx -y udf-cli@latest html2udf` çağrısıdır.
+**ALTIN KURAL — UDF ELLE YAZILMAZ (GÖREV D, B5 + 372 dersi 10-D — bağlayıcı):** UDF, yalnız `udf-cli`'nin üretebildiği/okuyabildiği opak bir UYAP biçimidir; içyapısı hakkında varsayımda bulunulmaz, zip/`content.xml` elle kurulmaz, `.udf` elle düzenlenmez, ve **`md2udf` ASLA kullanılmaz — daima `html2udf`**. Ayrıntılı operasyonel referans: `references/uyap-belge-formatlari.md` (Yargı Pro `udf_tiff_pdf_guide` rehberinin ailedeki klonu — güncel sürüm için daima o dosyaya/rehbere bakılır). Saha kanıtı (372 sahası A/B ölçümü, KRİTİK): elle kurulan `content.xml`'li UDF'ler **UYAP editöründe açılmadı** (7 dosya karantina); A/B testi re-zip'i ve kenar yamasını AKLADI — suçlu `content.xml`'in kendisidir. Bu yüzden **`--yerel-motor` EMEKLİDİR: artık HATA verir.** Geçerli tek üretim yolu html2udf hattıdır; bilinçli risk için `--yerel-motor-riskli` vardır (resmî okuyucu doğrulaması zorunlu denenir; OK gelmezse çıktının yanına `<ad>.DOGRULANMADI` işaret dosyası düşer — o dosya silinmeden UDF yüklenmez).
 
 Akış: taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` — bu komut md'yi UDF-HTML'e çevirir (`md_udf_html.py`) ve rehberin ZORUNLU kıldığı gerçek yazıcıyı (`npx -y udf-cli@latest html2udf`, ağ+oturum ister) çağırır; opsiyonel `--pdf dilekce.pdf` ile aynı ara HTML'den A4 PDF de üretir (`udf_html2pdf.py`, ağsız — UDF üretimi başarısız olsa BİLE denenir). **npx/udf-cli bulunamazsa veya oturum gerekiyorsa script FAIL-CLOSED çıkar: hiçbir `.udf` yazılmaz, exit != 0, stderr'de net talimat** (`npx -y udf-cli@latest login` insan varsa; başsız ortamda `issue_cli_login_code` MCP aracı) — eski elle-zip yoluna SESSİZCE düşülmez. Ardından aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır; hazır bir `.docx`/`.pdf` varsa `docx2udf` (login-gated) kullanılabilir (bkz. referans §5).
 
@@ -286,7 +286,10 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
    Mekanik gözü: `dilekce_denetim.py` [K] taraması (advisory).
 3. **KAYNAK-BLOĞU:** ürünün İLK satırları `<!-- kaynaklar: yol@sha8 · ... -->`
    `<!-- besledigi: ... -->` `<!-- uretim: <zaman> · <parça> -->` (graft
-   deseni; `tazelik_denetim.py` bunu okur — bayatlama görünür olur).
+   deseni; `tazelik_denetim.py` bunu okur — bayatlama görünür olur). Bloğu
+   ELLE KURMA: satırı `oa-kontrol/scripts/kaynak_blogu.py --girdiler <yol...>`
+   üretir — sha'yı model değil script hesaplar; @sha8'siz blok tazelik
+   denetimini fiilen işlevsiz bırakır (372 Torbalı bulgusu, v0.5.8.4).
 4. **MÜHÜR:** üretimden hemen sonra
    `oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdiler>`
    koşulur (ürün başına `.prov.json` doğum belgesi; UYAP öncesi `--dogrula`).
@@ -302,3 +305,21 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
 - **Satır aralığı 1,5** ve **dört kenar 1,5 cm (42.52 pt)** — Resmî Yazışma
   Yönetmeliği (No. 2646) m.7/m.8'e uyarlanmış üretim standardı; UDF hattı
   bunu otomatik uygular (`udf_yaz` kenar yaması), elle müdahale gerekmez.
+
+### UDF hattı v0.5.8.4 (372 A/B hükmü — yerel motor emekli + makbuz)
+
+- **Yerel motor EMEKLİ:** `--yerel-motor` artık HATA verir (372: elle kurulan
+  `content.xml` UYAP'ta açılmıyor — ders 10-D). Bilinçli risk yolu
+  `--yerel-motor-riskli`dir: resmî okuyucu (`udf2md`) doğrulaması denenir,
+  OK gelmezse çıktının yanına `<ad>.DOGRULANMADI` işaret dosyası bırakılır —
+  işaretli dosya UYAP'a YÜKLENMEZ, işareti görsel teyit sonrası avukat siler.
+- **Elle-üretim imzası:** `udf_dogrula` artık styles bloğunda
+  `name="hvl-default"` STİL TANIMI yoksa dosyayı GEÇERSİZ sayar (açılmayan
+  elle üretimlerin ayırt edici imzası; açılan gerçek üretici çıktısında tanım VAR).
+- **Üretim makbuzu:** her `.udf` üretimi (`html2udf` veya riskli yol), dava
+  klasöründe defter varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz
+  düşer (motor, sha256, doğrulama durumu) — makbuz kayıt aracıdır, kapı değildir.
+- **Biçim birliği (`md_udf_html`):** tüm link puntoları 11pt'de birleşti
+  (markdown-link ve düz parantezli link aynı stil); başlıklar ve tablo hücreleri
+  de 1,5 satır aralığı taşır; liste maddeleri hayalet boş paragraf üretmez
+  (`<li>` içine blok `<p>` değil, stillenmiş satır-içi metin yazılır).

@@ -84,6 +84,28 @@ ara karar talebi KURULMAZ (rakibin dosyasını onarmaya yardım = müvekkil-
 aleyhi talep inşası). [I] karşı-taraf-kusuru bağlamında 'süre verilsin/
 tamamlan-/gideril-' kalıplarını ararsa bir uyarı basar — advisory, ASLA
 bloklamaz.
+
+── [K] İZ SATIRI (v0.5.8.4 — 372 karnesi dersi) ──
+Cephanelik denetimi 0 bulgu verdiğinde de '[K] cephanelik: 0 bulgu' satırı
+basılır — sessiz yeşil ÖLÇÜLEBİLİR olur (372 saha karnesi bunu isteyerek
+kanıtlayamadı: iz yoksa "denetim koştu ve temizdi" ile "denetim hiç koşmadı"
+ayırt edilemez).
+
+── [L] KAYNAK-BLOĞU İSTİŞARİ DENETİMİ (v0.5.8.4, advisory — ASLA bloklamaz) ──
+372 Torbalı bulgusu: KAYNAK-BLOĞU deseni sahada YARIM kaldı — bloklar var ama
+@sha8'siz; oa-kontrol/tazelik_denetim.py'nin KAYNAK_OGE_RE'si hash'siz öğeyi
+yakalamadığından ürün-tazelik denetimi fiilen işlevsizdi. [L] girdi md'nin
+İLK 3 SATIRINDA bloğu arar; yoksa ya da öğeler @sha8'sizse üreticiyi
+(oa-kontrol/scripts/kaynak_blogu.py) işaret eden İSTİŞARİ uyarı basar — exit
+kodu DEĞİŞMEZ. Regexler TEK KAYNAKTAN (tazelik_denetim) import edilir,
+burada TEKRARLANMAZ.
+
+── [Ş] ŞEKİL STANDARDI (v0.5.8.4, advisory — SERT kapı teslim_paketi'nde) ──
+Girdi .udf ise content.xml'den üç istişari kalem: pageFormat DÖRT kenar
+42.52 pt mi (1,5 cm — Resmî Yazışma Yönetmeliği No. 2646 m.8), gövdede
+LineSpacing="0.50" (~1,5 satır) yaygın mı, '(https://…)' bağlantıları 11pt
+kapsamında mı (md_udf_html standardı: bağlantı gövdeden 1 punto küçük).
+Burada yalnız GÖRÜNÜRLÜK — exit koduna ASLA dokunmaz.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -102,6 +124,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import zipfile
 
 # Tip → [(unsur adı, [anahtar desen/kelime])] — herhangi biri geçerse unsur VAR sayılır.
 GENEL = [
@@ -634,6 +657,161 @@ def _kusur_sonuc_talep_asimetri_uyarilari(metin):
     return uyarilar
 
 
+# ── [L] KAYNAK-BLOĞU İSTİŞARİ DENETİMİ (v0.5.8.4, advisory) ────────────────
+# 372 Torbalı bulgusu: bloklar var ama @sha8'siz → tazelik_denetim'in
+# KAYNAK_OGE_RE'si öğeyi yakalamıyor, ürün-tazelik denetimi fiilen işlevsiz.
+# Regexler TEK KAYNAKTAN (oa-kontrol/tazelik_denetim.py) okunur — kopya regex
+# üretici/denetçi simetrisini sessizce DELERDİ; burada TEKRARLANMAZ.
+
+_TAZELIK_MOD = None
+
+
+def _tazelik_modulu():
+    """tazelik_denetim.py'yi (…/oa-kontrol/scripts/) İN-PROCESS import eder —
+    KAYNAK_BLOK_RE/KAYNAK_OGE_RE tek kaynaktan gelir. Kardeş skill kurulu
+    değilse/import çökerse None döner — [L] advisory olduğundan çağıran taraf
+    bunu '[BİLGİ] denetlenemedi' olarak GÖRÜNÜR kılar, sessizce yeşil demez
+    (bkz. `_kunye_ortak_modulu` ile aynı fail-safe desen)."""
+    global _TAZELIK_MOD
+    if _TAZELIK_MOD is not None:
+        return _TAZELIK_MOD
+    yol = (pathlib.Path(__file__).resolve().parent.parent.parent
+           / "oa-kontrol" / "scripts" / "tazelik_denetim.py")
+    if not yol.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_oa_dilekce_tazelik_inproc", str(yol))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _TAZELIK_MOD = mod
+    return _TAZELIK_MOD
+
+
+def kaynak_blogu_uyarilari(metin):
+    """İlk 3 satırda '<!-- kaynaklar: yol@sha8 ... -->' bloğu var mı ve TÜM
+    öğeler @sha8'li mi. Döner: [] = temiz · [uyarı] = eksik/hashsiz · None =
+    tazelik_denetim yüklenemedi (denetlenemedi — çağıran [BİLGİ] basar).
+    Modelden elle sha yazması BEKLENMEZ — uyarı üreticiyi işaret eder."""
+    tz = _tazelik_modulu()
+    if tz is None:
+        return None
+    ilk3 = "\n".join((metin or "").splitlines()[:3])
+    m = tz.KAYNAK_BLOK_RE.search(ilk3)
+    if not m:
+        return ["KAYNAK-BLOĞU EKSİK/HASHSİZ — kaynak_blogu.py kullan "
+                "(ilk 3 satırda '<!-- kaynaklar: yol@sha8 ... -->' bloğu yok; "
+                "tazelik_denetim.py bu ürünün bayatlığını izleyemez)"]
+    # tek-satır biçiminde 'besledigi:'/'uretim:' segmentleri öğe DEĞİLDİR
+    ogeler_ham = m.group(1).split("|")[0]
+    tokenlar = [t.strip() for t in re.split(r"[·,]", ogeler_ham) if t.strip()]
+    hashsiz = [t for t in tokenlar if not tz.KAYNAK_OGE_RE.fullmatch(t)]
+    if not tokenlar or hashsiz:
+        return ["KAYNAK-BLOĞU EKSİK/HASHSİZ — kaynak_blogu.py kullan "
+                "(@sha8'siz öğe: %s; KAYNAK_OGE_RE hash'siz öğeyi yakalayamaz, "
+                "tazelik denetimi fiilen işlevsiz kalır)"
+                % (", ".join(hashsiz[:4]) if hashsiz else "öğe yok")]
+    return []
+
+
+# ── [Ş] ŞEKİL STANDARDI İSTİŞARİ DENETİMİ (v0.5.8.4, advisory) ─────────────
+# 372 Torbalı A/B hükmü: zip + kenar yaması MASUM; şekil standardının SERT
+# kapısı teslim_paketi'nde yaşar — burada yalnız GÖRÜNÜRLÜK. Üç kalem:
+# pageFormat dört kenar 42.52 pt (1,5 cm — Resmî Yazışma Yönetmeliği No. 2646
+# m.8), gövdede LineSpacing 0.50 (~1,5 satır) yaygınlığı, '(https://…)'
+# bağlantılarının 11pt kapsamı (md_udf_html standardı).
+_SEKIL_KENARLAR = ("leftMargin", "rightMargin", "topMargin", "bottomMargin")
+_SEKIL_KENAR_PT = 42.52
+_SEKIL_LINK_RE = re.compile(r"\(https?://")
+
+
+def _sekil_utf16(s):
+    """UYAP offset'leri UTF-16 code-unit sayar (bkz. udf_yaz._ym_utf16_uzunluk)."""
+    return len(s.encode("utf-16-le")) // 2
+
+
+def _sekil_deger_esit(deger, hedef):
+    try:
+        return deger is not None and abs(float(deger) - hedef) < 0.01
+    except (TypeError, ValueError):
+        return False
+
+
+def sekil_uyarilari(udf_yolu):
+    """.udf içindeki content.xml üzerinde üç İSTİŞARİ şekil kalemini denetler;
+    uyarı listesi döner (boş = uyumlu görünüyor). Yalnız var/yok-uyum söyler,
+    'iyi dilekçe' hükmü VERMEZ ve exit koduna ASLA dokunmaz — okunamayan
+    dosyada da çökmez, GÖRÜNÜR 'denetlenemedi' uyarısı döner."""
+    try:
+        with zipfile.ZipFile(udf_yolu) as z:
+            ad = next((n for n in z.namelist()
+                       if n.lower().endswith("content.xml")), None)
+            if ad is None:
+                return ["şekil denetlenemedi: arşivde content.xml yok"]
+            xml = z.read(ad).decode("utf-8", errors="replace")
+    except Exception as e:
+        return ["şekil denetlenemedi: %s açılamadı (%s)" % (udf_yolu, e)]
+
+    uyarilar = []
+
+    # 1) pageFormat DÖRT kenar 42.52 pt (1,5 cm)
+    m = re.search(r"<pageFormat\b([^>]*)>", xml)
+    if not m:
+        uyarilar.append("pageFormat bulunamadı — dört kenarın 42.52 pt "
+                        "(1,5 cm) olduğu doğrulanamadı")
+    else:
+        attrs = dict(re.findall(r'([\w:-]+)\s*=\s*"([^"]*)"', m.group(1)))
+        sapan = ["%s=%s" % (k, attrs.get(k, "YOK")) for k in _SEKIL_KENARLAR
+                 if not _sekil_deger_esit(attrs.get(k), _SEKIL_KENAR_PT)]
+        if sapan:
+            uyarilar.append("pageFormat kenarları 42.52 pt (1,5 cm — Yön. 2646 "
+                            "m.8) değil: " + ", ".join(sapan))
+
+    # 2) gövdede LineSpacing="0.50" (~1,5 satır) yaygınlığı — '0.5' de aynı değerdir
+    paragraflar = re.findall(r"<paragraph\b[^>]*>", xml)
+    if not paragraflar:
+        uyarilar.append('paragraph öğesi bulunamadı — LineSpacing="0.50" '
+                        "yaygınlığı doğrulanamadı")
+    else:
+        uygun = 0
+        for p in paragraflar:
+            mm = re.search(r'LineSpacing\s*=\s*"([^"]+)"', p)
+            if mm and _sekil_deger_esit(mm.group(1), 0.5):
+                uygun += 1
+        if uygun * 2 < len(paragraflar):
+            uyarilar.append('gövdede LineSpacing="0.50" (~1,5 satır aralığı) '
+                            "yaygın değil (%d/%d paragraf)" % (uygun, len(paragraflar)))
+
+    # 3) '(https://…)' bağlantıları 11pt kapsamında mı (md_udf_html standardı)
+    cdata = "".join(re.findall(r"<!\[CDATA\[(.*?)\]\]>", xml, re.S))
+    spanlar = []
+    for sm in re.finditer(r"<content\b([^>]*?)/?>", xml):
+        at = dict(re.findall(r'([\w:-]+)\s*=\s*"([^"]*)"', sm.group(1)))
+        if "startOffset" not in at:
+            continue  # CDATA taşıyıcısı <content> özniteliksizdir — span değildir
+        try:
+            bas = int(at["startOffset"])
+            son = bas + int(at.get("length", "0"))
+        except (TypeError, ValueError):
+            continue
+        spanlar.append((bas, son, at.get("size")))
+    toplam, kapsam_disi = 0, 0
+    for lm in _SEKIL_LINK_RE.finditer(cdata):
+        toplam += 1
+        off = _sekil_utf16(cdata[:lm.start()])
+        if not any(b <= off < s and _sekil_deger_esit(sz, 11.0)
+                   for b, s, sz in spanlar):
+            kapsam_disi += 1
+    if kapsam_disi:
+        uyarilar.append("'(https://…)' bağlantılarının %d/%d tanesi 11pt "
+                        "kapsamında görünmüyor (bağlantı gövdeden 1 punto "
+                        "küçük yazılır — md_udf_html standardı)"
+                        % (kapsam_disi, toplam))
+    return uyarilar
+
+
 # ── [J] SAYI/TARİH HARİTASI (v0.5.5.2 — BAĞIMSIZ İÇERİK HAKEMİ'nin mekanik gözü)
 # 2026/307 saha vakası: mekanik kapıların TÜMÜ yeşilken, dilekçenin nakden tazmin
 # savunması KENDİ başka bölümüyle aritmetik olarak çelişiyordu (karşı tarafın 836
@@ -908,6 +1086,9 @@ def main():
 
     print("\n[K] m.6 CEPHANELİK BEKÇİSİ (v0.5.8.1 — advisory, ASLA bloklamaz)")
     k_uyarilar = cephanelik_ifsa_uyarilari(metin)
+    # v0.5.8.4 İZ SATIRI — 372 karnesi 0-bulgu hâlini KANITLAYAMADI (iz yoksa
+    # 'koştu ve temizdi' ile 'hiç koşmadı' ayrılamaz); sayı HER koşuda basılır.
+    print(f"   [K] cephanelik: {len(k_uyarilar)} bulgu")
     if k_uyarilar:
         for u in k_uyarilar:
             print(f"   [UYARI] {u}")
@@ -939,6 +1120,32 @@ def main():
                   f"kalemle sınırlı) — tamamı için taslağı elle tarayın.")
     else:
         print("   [OK] birden çok yerde geçen sayı bulunmadı (çapraz-hesap riski düşük)")
+
+    print("\n[L] KAYNAK-BLOĞU (advisory — v0.5.8.4, ASLA bloklamaz)")
+    if a.taslak.lower().endswith(".udf"):
+        print("   [BİLGİ] taslak .udf — kaynak-bloğu denetimi md ürünlere özgüdür, atlandı")
+    else:
+        l_uyarilar = kaynak_blogu_uyarilari(metin)
+        if l_uyarilar is None:
+            print("   [BİLGİ] tazelik_denetim.py yüklenemedi (oa-kontrol kurulu mu?) — "
+                  "kaynak-bloğu DENETLENEMEDİ (bu bir yeşil ışık DEĞİLDİR)")
+        elif l_uyarilar:
+            for u in l_uyarilar:
+                print(f"   [UYARI] {u}")
+        else:
+            print("   [OK] kaynaklar bloğu ilk 3 satırda ve tüm öğeler @sha8'li")
+
+    sekil_yolu = a.udf or (a.taslak if a.taslak.lower().endswith(".udf") else "")
+    if sekil_yolu:
+        print("\n[Ş] ŞEKİL STANDARDI (advisory — v0.5.8.4, ASLA bloklamaz; "
+              "SERT kapı teslim_paketi'nde)")
+        s_uyarilar = sekil_uyarilari(sekil_yolu)
+        if s_uyarilar:
+            for u in s_uyarilar:
+                print(f"   [UYARI] {u}")
+        else:
+            print("   [OK] kenar 42.52 · LineSpacing 0.50 · bağlantılar 11pt — "
+                  "şekil standardı uyumlu görünüyor")
 
     print("\n" + cizgi)
     engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel)

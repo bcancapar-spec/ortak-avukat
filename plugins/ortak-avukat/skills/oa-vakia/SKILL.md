@@ -47,6 +47,17 @@ atıfları başlangıç ÇIPASIDIR; kullanım anında Mevzuat MCP'den teyit edil
 ## ispat_durumu kategorileri
 `belgeli · tanik · bilirkisi · karine · ikrar · yemin · ispatsiz` — her olgunun ispat aracını işaretle; "ispatsiz" olanlar matriste otomatik boşluk sinyali üretir.
 
+## ÖZNE EŞLEŞTİRME — yazım varyantı taraması (v0.5.8.4, advisory)
+Matris girdisine tarafları `taraflar` listesine, her olayın failini opsiyonel
+`ozne` alanına yaz — `vakia_matris.py --dogrula` bu adları Jaro-Winkler ile
+skorlar ve çıktıya `ozne_eslestirme` bölümünü ekler: **skor ≥0.92 → BAGLA**
+(aynı öznenin yazım varyantı sayılır), **0.80-0.92 → AVUKATA-SOR**. Amaç
+kayıpsızlıktır: "öznenin tüm beyanları" sorgusu yazım varyantı yüzünden kayıt
+kaçırmasın. **AVUKATA-SOR görüldüğünde model KENDİ KARAR VERMEZ — iki yazımın
+aynı kişi olup olmadığını avukata sorar ve cevabı gelene dek kayıtları
+birleştirmez.** Tarama `saglikli` hesabına girmez (advisory); varyant yoksa
+sessizdir.
+
 ## Aktif çıkarım refleksi
 Kronolojiyi edilgen dizme. Sıralama sırasında **müvekkil lehine örüntü** ara: bir illiyet zinciri, bir karşı tarafın temerrüt anı, bir hak düşürücü sürenin başlangıcı, lehe bir karine doğuran olgu. Boşluğu yalnız işaretleme — **nasıl kapatılacağını** da öner.
 

@@ -78,4 +78,5 @@ def test_hooks_json_tek_komut_zincirsiz():
     """Regresyon kilidi: hooks.json'a bir daha || zinciri girmesin."""
     t = (REPO / "plugins" / "ortak-avukat" / "hooks" / "hooks.json").read_text(encoding="utf-8")
     assert "||" not in t
-    assert "run-hook.cmd" in t and t.count("${CLAUDE_PLUGIN_ROOT}") == 4
+    # v0.5.8.4: PreToolUse (hook-pretool, elle-UDF kapısı) eklendi → 5 komut.
+    assert "run-hook.cmd" in t and t.count("${CLAUDE_PLUGIN_ROOT}") == 5

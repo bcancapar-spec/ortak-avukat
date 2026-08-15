@@ -42,6 +42,22 @@ aranır; hiçbiri yoksa hata TÜM denenen TAM YOLLARI gösterir. `pipeline_kayit
 py`'nin adım-9 önkoşul kapısı VE `--denetle`'nin makbuz bütünlük denetimi
 (taslak sha256 eşleşmesi dahil) bu dosyayı okur.
 
+## UDF TESLİM KAPILARI + MAKBUZ GARANTİSİ (v0.5.8.4 — 372 Torbalı devşirmesi)
+
+`teslim_paketi.py` zincirinin UDF ucu 372 saha derslerinin mekanik karşılığıyla genişledi. Kapılar sabit sırada, elle sayılmaz (R2 — tek ölçüt yine exit kodu):
+
+- **MEVCUT-UDF DEVRALMA:** üretimden ÖNCE aday `.udf` aranır (`<taslak>.udf` + `_oa/cikti` altında aynı kök-adlılar). Geçerli aday varsa YENİDEN ÜRETİLMEZ — `udf_devralindi` alanıyla makbuza geçer (çift-UDF tuzağı kapandı); geçersiz aday (elle-üretim imzalı) SİLİNMEZ, `_oa/arsiv-yerel/gecersiz-elle-udf/` karantinasına taşınır.
+- **PROV-TAZELİK:** mühürdeki sha güncel dosyayla uyuşmuyorsa (bayat mühür) teslim RED — bayat mühürle teslim YOK.
+- **YEREL-DAMGA:** mührün `was_generated_by` alanı yerel-motor gösteriyorsa teslim RED — yerel motor ürünü teslime giremez (372 A/B hükmü: suçlu yerel-motor content.xml).
+- **ŞEKİL:** pageFormat 4 kenar 42.52 pt (Yönetmelik 2646 m.8) değilse `udf_yaz`'ın kenar yaması OTOMATİK uygulanır ve mühür sha'sı GÜNCELLENİR; düzeltilemezse RED. `LineSpacing="0.50"` (1,5 satır) yaygınlığı ve 11pt link imzası yalnız İSTİŞARİ satırdır (kapı kapatmaz).
+- **OTOMATİK MÜHÜR:** teslime giren UDF mühürsüzse `teslim_paketi` onu KENDİSİ mühürler — mühürsüz teslim fiziksel olarak imkânsız (372: 23 uyarı / 0 uygulama dersi).
+- **MAKBUZ GARANTİSİ:** zincir try/finally sarmalayıcıdadır — erken çıkışlar (taslak yok, argparse hatası, beklenmeyen çökme) dahil HER başarısız yol bir RED makbuzu düşürür (zaman + sebep + argv). Makbuzsuz ölüm yolu kalmadı.
+- **TAZELİK BİLGİ KAPISI:** `tazelik_denetim.py` advisory koşulur; BAYAT/EKSİK satırları makbuza `tazelik_uyarilari` olarak geçer, kapı kapatmaz.
+
+**`muhur_yaz.py` ekleri:** ürün arşive taşınırken mührü AYIRMA — `python scripts/muhur_yaz.py --kok . --tasi ESKI YENI` mühür-dosya çiftini birlikte taşır (`artifact_file` güncellenir; sha DEĞİŞMİŞSE RET — taşıma içerik değiştirmez). `--llm` boş bırakılırsa kayda otomatik olarak 'mekanik üretim; içerik oturum LLM koşusundan' yazılır (dürüst varsayılan, boş beyan değil).
+
+**`kaynak_blogu.py` (YENİ):** her `_oa/cikti` ürününün ilk satırına konacak `<!-- kaynaklar: yol@sha8 · ... -->` bloğunu `python scripts/kaynak_blogu.py --girdiler <yol...> [--besledigi X] [--uretim Y]` üretir — sha'yı model değil script hesaplar; `tazelik_denetim.py` bu blokla çalışır (@sha8'siz blok tazelik denetimini fiilen işlevsiz bırakır — 372 Torbalı bulgusu).
+
 ## A. Atıf denetimi (tavizsiz)
 Dilekçeye giren **her** içtihat/mevzuat atfı için:
 - [ ] Künye resmî kaynaktan teyitli mi? (esas/karar no, tarih, daire — Yargı/Mevzuat MCP, `oa-ictihat`). Hafıza/Gemini'den künye **iddia**dır.

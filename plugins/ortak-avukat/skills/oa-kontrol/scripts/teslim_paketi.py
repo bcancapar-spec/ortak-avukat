@@ -58,6 +58,15 @@ GÖRÜNÜR kalır, ad ne olursa olsun)}. Kapı
 başına durum ENUM'u {OK, BLOK, ATLA, BILGI} — pipeline_kayit.py'nin adım-9
 önkoşul kapısı VE --denetle'nin makbuz denetimi bu dosyayı okur.
 
+v0.5.8.4 (372 Torbalı saha devşirmesi): (1) UDF üretiminden ÖNCE mevcut aday
+.udf DEVRALINIR (hafif geçerlilik süzgeciyle; geçersiz elle-üretim adayı
+karantinaya taşınır) — çift-UDF tuzağı kapandı; (2) makbuz try/finally
+GARANTİSİNDE — erken çıkışlar dahil her başarısız yol RED makbuzu düşürür;
+(3) teslim edilecek UDF için PROV-TAZELİK + YEREL-DAMGA + ŞEKİL (kenar 42.52)
+kapıları ve OTOMATİK mühürleme (mühürsüz teslim fiziksel imkânsız);
+(4) tazelik_denetim.py advisory olarak zincire bağlı (makbuzda
+`tazelik_uyarilari`). Ayrıntı: aşağıda GÖREV 1-6 blok yorumu.
+
 Alt scriptler bu scriptin __file__ konumundan GÖRELİ keşfedilir
 (../../<skill>/scripts/...); bulunamazsa `OA_SKILLS_KOK` ortam değişkeni
 fallback denenir (P0-5(b) path-fix). "Script bulunamadı/çalıştırılamadı" artık
@@ -95,8 +104,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
+import zipfile
 
 # ── Alt script keşfi: __file__ (.../skills/oa-kontrol/scripts/) → .../skills ──
 BURA = os.path.dirname(os.path.abspath(__file__))
@@ -190,6 +202,198 @@ def _sha256_dosya(yol):
     return h.hexdigest()
 
 
+# ════════════════════════════════════════════════════════════════════════════
+# v0.5.8.4 — 372 Torbalı saha derslerinin mekanik karşılığı (GÖREV 1-6):
+#   1) MEVCUT-UDF DEVRALMA: üretimden ÖNCE aday .udf aranır — çift-UDF tuzağı
+#      (372: koşu kendi ürettiği ikinci .udf'i kendisi karantinaya almıştı).
+#   2) MAKBUZ GARANTİSİ: try/finally — erken çıkışlar dahil HER başarısız yol
+#      RED makbuzu düşürür (372: makbuz hiç üretilmedi, model zinciri atladı).
+#   3) PROV-TAZELİK + otomatik mühür: mühürsüz teslim fiziksel imkânsız
+#      (372: Stop hook 23 kez MÜHÜRSÜZ uyardı, model 0 kez uyguladı).
+#   4) YEREL-DAMGA KAPISI: yerel-motor ürünü teslime giremez (A/B hükmü:
+#      suçlu yerel motorun content.xml'i — stil tanımsız hvl-default).
+#   5) ŞEKİL KAPISI: pageFormat 4 kenar 42.52 pt değilse udf_yaz'ın GERÇEK
+#      yamasıyla düzeltilir (AB3 tanığı: yamalı dosya UYAP'ta açıldı) ve
+#      mühür sha'sı GÜNCELLENİR; LineSpacing/11pt yalnız İSTİŞARİ.
+#   6) TAZELİK BİLGİ KAPISI: tazelik_denetim.py advisory — BAYAT satırları
+#      makbuza `tazelik_uyarilari` olarak geçer, kapı KAPATMAZ.
+# ════════════════════════════════════════════════════════════════════════════
+
+# GÖREV 2 — makbuz garantisi durum kaydı: _makbuz_yaz her yazımda işaretler;
+# main()'in finally kolu, başarısız çıkışta hiç makbuz yazılmamışsa erken-RED
+# makbuzu düşürür (zaman + sebep + argv).
+_MAKBUZ_DURUM = {"yazildi": False, "kok": None, "sebep": None}
+
+# 372 A/B hükmünün imzası: yerel motor <elements resolver="hvl-default"> yazar
+# ama styles bloğunda name="hvl-default" STİL TANIMI yoktur → UYAP'ta açılmaz.
+# (`<style\b` — `<styles>` etiketine YANLIŞ eşleşmez.)
+_HVL_STIL_RE = re.compile(r'<style\b[^>]*name="hvl-default"')
+
+# udf_yaz._KENAR_PT yüklenemezse yedek (tek kaynak udf_yaz'dır; bu yalnız
+# fail-durumu yedeğidir — Yönetmelik No. 2646 m.8, 1,5 cm).
+_KENAR_PT_YEDEK = "42.52"
+
+
+def _argv_kok_tahmini(argv=None):
+    """Erken-RED makbuzu için kök tahmini: argparse'a hiç ulaşılamamış olsa
+    bile sys.argv'den `--kok` değerini söker; bulunamazsa '.' döner."""
+    argv = list(sys.argv[1:] if argv is None else argv)
+    for i, s in enumerate(argv):
+        if s == "--kok" and i + 1 < len(argv):
+            return argv[i + 1]
+        if s.startswith("--kok="):
+            return s.split("=", 1)[1]
+    return "."
+
+
+def _modul_yukle(skill, ad, takma):
+    """Kardeş scripti importlib ile İN-PROCESS yükler (P0-4 ilkesi: kapı
+    kapıyı subprocess ile çağırmaz). Yüklenemezse None (çağıran fail-closed
+    karar verir)."""
+    betik = _script(skill, ad)
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(takma, betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception as e:
+        print("UYARI: %s import edilemedi (%s) — tam yol: %s" % (ad, e, betik))
+        return None
+
+
+def _muhur_modulu():
+    return _modul_yukle("oa-kontrol", "muhur_yaz.py", "_oa_tp_muhur_yaz_inproc")
+
+
+def _udf_yaz_modulu():
+    return _modul_yukle("oa-dilekce", "udf_yaz.py", "_oa_tp_udf_yaz_inproc")
+
+
+def _udf_content_xml(yol):
+    """UDF zip'inden content.xml metnini döndürür; açılamazsa/yoksa None."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            if "content.xml" not in z.namelist():
+                return None
+            return z.read("content.xml").decode("utf-8", "replace")
+    except Exception:
+        return None
+
+
+def _udf_hafif_gecerli_mi(yol):
+    """GÖREV 1 — hafif geçerlilik süzgeci: (gecerli, sebep).
+    zip açılıyor + content.xml var + styles içinde name="hvl-default" STİL
+    TANIMI var. Stil tanımı yoksa bu, 372 A/B testinin akladığı zip/yama
+    değil, SUÇLU bulunan yerel-motor content.xml imzasıdır."""
+    xml = _udf_content_xml(yol)
+    if xml is None:
+        return False, "zip açılamadı ya da content.xml yok"
+    if not _HVL_STIL_RE.search(xml):
+        return False, ('styles içinde name="hvl-default" stil tanımı YOK — '
+                       "elle-üretim imzası (372: bu dosyalar UYAP'ta açılmıyor)")
+    return True, "hafif geçerlilik geçti"
+
+
+def _udf_adaylari(taslak, kok):
+    """GÖREV 1 — üretimden ÖNCE devralınabilir .udf adayları, SABİT sırayla:
+      (1) <taslak-kök>.udf   (2) <taslak>.udf
+      (3) _oa/cikti altında taslakla aynı kök-adlı .udf'ler (alt klasörler
+          dahil — Ş9 alt-klasör körlüğü dersi burada da geçerli)."""
+    adaylar = []
+    for y in (os.path.splitext(taslak)[0] + ".udf", taslak + ".udf"):
+        y = os.path.abspath(y)
+        if os.path.isfile(y) and y not in adaylar:
+            adaylar.append(y)
+    kok_ad = os.path.basename(taslak).split(".")[0]
+    cikti_dizin = os.path.join(kok, "_oa", "cikti")
+    if os.path.isdir(cikti_dizin):
+        for dizin, _altlar, adlar in os.walk(cikti_dizin):
+            for ad in sorted(adlar):
+                if not ad.lower().endswith(".udf"):
+                    continue
+                if ad.split(".")[0] != kok_ad:
+                    continue
+                y = os.path.abspath(os.path.join(dizin, ad))
+                if os.path.isfile(y) and y not in adaylar:
+                    adaylar.append(y)
+    return adaylar
+
+
+def _karantinaya_tasi(kok, yol):
+    """GÖREV 1 — geçersiz adayı _oa/arsiv-yerel/gecersiz-elle-udf/ altına
+    zaman damgalı adla taşır (SİLMEZ — kayıpsızlık invaryantı); yanındaki
+    .prov.json varsa çifti ayırmadan birlikte taşır. Hedef yolu döndürür."""
+    hedef_dizin = os.path.join(kok, "_oa", "arsiv-yerel", "gecersiz-elle-udf")
+    os.makedirs(hedef_dizin, exist_ok=True)
+    damga = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    hedef = os.path.join(hedef_dizin, "%s-%s" % (damga, os.path.basename(yol)))
+    shutil.move(yol, hedef)
+    prov = yol + ".prov.json"
+    if os.path.isfile(prov):
+        shutil.move(prov, hedef + ".prov.json")
+    return hedef
+
+
+def _kenarlar_uygun_mu(xml, kenar_pt):
+    """GÖREV 5 — content.xml pageFormat'ında DÖRT kenar da kenar_pt mi?"""
+    m = re.search(r"<pageFormat[^>]*>", xml or "")
+    if not m:
+        return False
+    etiket = m.group(0)
+    for ad in ("leftMargin", "rightMargin", "topMargin", "bottomMargin"):
+        deger = re.search(ad + r'="([0-9.]+)"', etiket)
+        if not deger or deger.group(1) != kenar_pt:
+            return False
+    return True
+
+
+def _sekil_istisari_uyarilar(xml):
+    """GÖREV 5 (istişari kol) — KAPI KAPATMAZ, yalnız satır basılır:
+    gövdede LineSpacing="0.50" (1,5 satır) yaygınlığı + link için 11pt imzası
+    (372 saha standardı). Sert ölçüt DEĞİLDİR — v0.5.5 dersi: yanlış katmanı
+    sertleştirme."""
+    uyarilar = []
+    p_toplam = xml.count("<paragraph")
+    p_15 = xml.count('LineSpacing="0.50"')
+    if p_toplam and p_15 * 2 < p_toplam:
+        uyarilar.append('gövdede LineSpacing="0.50" (1,5 satır) yaygın değil '
+                        "(%d/%d paragraf) — şekil standardı v2 önerisi"
+                        % (p_15, p_toplam))
+    if "http" in xml and 'size="11"' not in xml:
+        uyarilar.append('bağlantı (link) metni için 11pt (size="11") imzası '
+                        "görünmüyor — saha standardı önerisi")
+    return uyarilar
+
+
+def _tazelik_uyarilari_topla(kok):
+    """GÖREV 6 — tazelik_denetim.py --json advisory koşusu: BAYAT/EKSİK
+    satırları liste olarak döner (makbuza `tazelik_uyarilari` girer), HİÇBİR
+    koşulda bloklamaz. Script yok / çıktı çözülemedi → None (sessiz varsayım
+    yok; alan makbuzda None kalır)."""
+    bulundu, rc, cikti = _kos(("oa-kontrol", "tazelik_denetim.py"),
+                              ["--kok", kok, "--json"], kok)
+    if not bulundu or rc is None:
+        return None
+    try:
+        satir = next(s for s in (cikti or "").splitlines()
+                     if s.strip().startswith("{"))
+        rapor = json.loads(satir)
+    except Exception:
+        return None
+    uyarilar = []
+    for b in rapor.get("bayat") or []:
+        uyarilar.append("BAYAT: %s — kaynağı %s üretiminden sonra değişti "
+                        "(%s → %s); delta geçişi gerek"
+                        % (b.get("urun"), b.get("kaynak"),
+                           b.get("beyan"), b.get("simdiki")))
+    for e in rapor.get("eksik") or []:
+        uyarilar.append("EKSİK-KAYNAK: %s — beyan edilen %s bulunamadı/kök dışında"
+                        % (e.get("urun"), e.get("kaynak")))
+    return uyarilar
+
+
 # ── P0-5 (v0.5.5) — pipeline_kayit.py İN-PROCESS import (dairesel bağımlılık
 # kırıcı, P0-4'ün tasarım kuralıyla simetrik: 'kapı başka kapıyı subprocess
 # ile çağırmaz'). (d) adımı artık `sys.executable pipeline_kayit.py --denetle`
@@ -281,7 +485,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.8.3"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.8.4"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -297,6 +501,7 @@ def _makbuz_yaz(kok, veri, basarili):
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(veri, f, ensure_ascii=False, indent=2)
     os.replace(tmp, hedef)
+    _MAKBUZ_DURUM["yazildi"] = True  # GÖREV 2 — garanti kolu ikinci kez yazmasın
     # Görev A (B2 kapanışı, v0.5.5 devamı) — DURUM.md üretimi artık YALNIZ
     # pipeline_kayit.py'nin --isle/--katman çağrısına bağlı DEĞİLDİR:
     # teslim_paketi.py de HER makbuz (başarılı/RED) yazımından sonra TEK
@@ -311,7 +516,81 @@ def _makbuz_yaz(kok, veri, basarili):
     return hedef
 
 
+def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
+                  sebep=None, ekstra=None):
+    """Makbuz gövdesinin TEK üreticisi (v0.5.8.4 — beş ayrı el-yazımı dict'in
+    tekilleştirilmesi): şema alanları her yolda aynı kalır; `sebep` ve `argv`
+    GÖREV 2 gereği eklenir, `ekstra` başarı yoluna özgü alanları taşır."""
+    veri = {
+        "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+        "taslak_yol": taslak, "taslak_sha256": _sha256_dosya(taslak),
+        "tip": a.tip, "taraf": a.taraf or None,
+        "kapilar": kapilar, "exit_kodu": exit_kodu, "udf_yolu": udf_yolu,
+        "udf_atlandi_istekle": bool(a.udf_yok),
+        "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
+        "kismi_ingest": _kismi_ingest_alani(kok),
+        "durdu": durdu,
+        "argv": sys.argv[1:],
+    }
+    if sebep is not None:
+        veri["sebep"] = sebep
+    if ekstra:
+        veri.update(ekstra)
+    return veri
+
+
+def _erken_red_makbuz(exit_kodu):
+    """GÖREV 2 — MAKBUZ GARANTİSİ emniyet kolu: zincir makbuz yazamadan ölen
+    HER başarısız çıkış (taslak yok, kök yok, argparse hatası, beklenmeyen
+    çökme) için RED makbuzu düşer (zaman + sebep + argv). Bu emniyet yazımı
+    KENDİSİ asla yeni bir çöküş üretmez (best-effort; hook felsefesiyle
+    simetrik: emniyet katmanı akışı bloklamaz)."""
+    try:
+        kok = _MAKBUZ_DURUM.get("kok") or os.path.abspath(_argv_kok_tahmini())
+        veri = {
+            "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+            "sebep": (_MAKBUZ_DURUM.get("sebep")
+                      or "erken çıkış — zincir kapılara ulaşamadan sonlandı"),
+            "argv": sys.argv[1:],
+            "erken_cikis": True,
+            "taslak_yol": None, "taslak_sha256": None, "tip": None, "taraf": None,
+            "kapilar": [], "exit_kodu": exit_kodu if isinstance(exit_kodu, int) else 1,
+            "udf_yolu": None, "udf_atlandi_istekle": False,
+            "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
+            "kismi_ingest": None, "durdu": "(erken çıkış)",
+        }
+        _makbuz_yaz(kok, veri, basarili=False)
+        print("RED MAKBUZU (erken çıkış — makbuz garantisi): "
+              "_oa/defter/teslim-makbuz-RED.json", file=sys.stderr)
+    except Exception:
+        pass
+
+
 def main():
+    """GÖREV 2 — try/finally MAKBUZ GARANTİSİ sarmalayıcısı: `_zincir()` hangi
+    yoldan çıkarsa çıksın, başarısız (exit != 0) VE henüz makbuz yazılmamış
+    her durumda RED makbuzu düşer. 372 kanıtı: makbuz hiç üretilmedi çünkü
+    tek üretici zincirin SONUNDAYDI ve erken çıkışlar makbuzsuz ölüyordu."""
+    _MAKBUZ_DURUM["yazildi"] = False
+    _MAKBUZ_DURUM["kok"] = None
+    _MAKBUZ_DURUM["sebep"] = None
+    kod = 0
+    try:
+        _zincir()
+    except SystemExit as e:
+        kod = e.code if isinstance(e.code, int) else (0 if e.code is None else 1)
+        raise
+    except BaseException as e:
+        kod = 1
+        if not _MAKBUZ_DURUM.get("sebep"):
+            _MAKBUZ_DURUM["sebep"] = "beklenmeyen hata: %r" % (e,)
+        raise
+    finally:
+        if kod != 0 and not _MAKBUZ_DURUM.get("yazildi"):
+            _erken_red_makbuz(kod)
+
+
+def _zincir():
     ap = argparse.ArgumentParser(
         description="oa-kontrol tek komut teslim zinciri — ilk engelde durur, tek rapor basar.")
     ap.add_argument("taslak", help="Teslim edilecek taslak (.md/.txt)")
@@ -333,11 +612,14 @@ def main():
 
     taslak = os.path.abspath(a.taslak)
     kok = os.path.abspath(a.kok)
+    _MAKBUZ_DURUM["kok"] = kok  # GÖREV 2 — erken-RED makbuzunun düşeceği kök
 
     if not os.path.isfile(taslak):
+        _MAKBUZ_DURUM["sebep"] = "taslak bulunamadı: %s" % taslak
         print("HATA: taslak bulunamadı: %s" % taslak, file=sys.stderr)
         sys.exit(1)
     if not os.path.isdir(kok):
+        _MAKBUZ_DURUM["sebep"] = "kök klasör yok: %s" % kok
         print("HATA: kök klasör yok: %s" % kok, file=sys.stderr)
         sys.exit(1)
 
@@ -490,86 +772,197 @@ def main():
                   "kapı(lar): " + ", ".join(atlanan) + ".")
         print("UDF ÜRETİLMEDİ. Kapanan kapıyı gider ve teslim_paketi'ni yeniden koş.")
         print(CIZGI)
-        makbuz_veri = {
-            "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
-            "taslak_yol": taslak, "taslak_sha256": _sha256_dosya(taslak),
-            "tip": a.tip, "taraf": a.taraf or None,
-            "kapilar": kapilar_makbuz, "exit_kodu": 1, "udf_yolu": None,
-            "udf_atlandi_istekle": bool(a.udf_yok),
-            "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
-            "kismi_ingest": _kismi_ingest_alani(kok),
-            "durdu": ad,
-        }
-        _makbuz_yaz(kok, makbuz_veri, basarili=False)
+        _makbuz_yaz(kok, _makbuz_taban(
+            a, taslak, kok, kapilar_makbuz, 1, None, ad,
+            sebep="kapı kapandı: %s (exit %s)" % (ad, rc)), basarili=False)
         sys.exit(1)
 
-    # ── tüm engelleyici kapılar açık → UDF üret (--udf-yok verilmedikçe) ────
+    # ── tüm engelleyici kapılar açık → UDF devralma/üretim (--udf-yok yoksa) ─
     udf_cikti = taslak + ".udf"
     udf_uretildi = False
+    udf_devralindi = None    # GÖREV 1 — {"yol","sha256"} | None (makbuza girer)
+    kenar_duzeltildi = False  # GÖREV 5 — kenar yaması uygulandı mı (makbuza girer)
     if a.udf_yok:
         _bolum("[+] UDF ÜRETİMİ — ATLANDI (--udf-yok BİLİNÇLİ istekle)")
         print("    [BILGI] --udf-yok verildi; UDF üretimi kullanıcı isteğiyle atlandı "
               "(kurucu kural 'varsayılan çıktı UDF' bilinçli olarak devre dışı — makbuza yazıldı).")
         kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "BILGI", "exit": None})
     else:
-        _bolum("[+] UDF ÜRETİMİ — udf_yaz.py --girdi <taslak> --cikti <taslak>.udf")
-        print("    [BILGI] GERÇEK UYAP yazıcısı çağrılıyor (npx udf-cli html2udf, "
-              "rehbere birebir) — ağ + oturum gerektirir. `--yerel-motor` KALDIRILDI "
-              "(B5 saha bulgusu: o motorun ürettiği .udf UYAP'ta açılmıyordu); "
-              "npx/oturum yoksa bu adım FAIL-CLOSED BLOK olur (bkz. oa-dilekce/"
-              "scripts/udf_yaz.py, 'npx -y udf-cli@latest login').")
-        bulundu, rc, cikti = _kos(
-            S_UDF, ["--girdi", taslak, "--cikti", udf_cikti], kok)
-        if not bulundu:
+        # ── GÖREV 1 — MEVCUT-UDF DEVRALMA: üretimden ÖNCE aday ara (372'nin
+        # çift-UDF tuzağı: mevcut geçerli .udf dururken koşulsuz ikinci üretim) ──
+        _bolum("[+] UDF DEVRALMA — mevcut aday arama (üretimden ÖNCE)")
+        for aday in _udf_adaylari(taslak, kok):
+            gecerli, aday_sebep = _udf_hafif_gecerli_mi(aday)
+            if gecerli:
+                udf_cikti = aday
+                udf_uretildi = True
+                udf_devralindi = {"yol": aday, "sha256": _sha256_dosya(aday)}
+                print("    [OK] mevcut UDF DEVRALINDI — yeniden üretim YOK: %s" % aday)
+                kapilar_makbuz.append({"ad": "(+) UDF DEVRALMA", "durum": "OK", "exit": 0})
+                break
+            hedef = _karantinaya_tasi(kok, aday)
+            print("    [UYARI] geçersiz aday (%s)" % aday_sebep)
+            print("            → karantinaya taşındı (silinmedi): %s" % hedef)
+        if udf_devralindi is None:
+            print("    [BILGI] devralınabilir geçerli aday yok — taze üretime geçiliyor.")
+            _bolum("[+] UDF ÜRETİMİ — udf_yaz.py --girdi <taslak> --cikti <taslak>.udf")
+            print("    [BILGI] GERÇEK UYAP yazıcısı çağrılıyor (npx udf-cli html2udf, "
+                  "rehbere birebir) — ağ + oturum gerektirir. `--yerel-motor` KALDIRILDI "
+                  "(B5 saha bulgusu: o motorun ürettiği .udf UYAP'ta açılmıyordu); "
+                  "npx/oturum yoksa bu adım FAIL-CLOSED BLOK olur (bkz. oa-dilekce/"
+                  "scripts/udf_yaz.py, 'npx -y udf-cli@latest login').")
+            bulundu, rc, cikti = _kos(
+                S_UDF, ["--girdi", taslak, "--cikti", udf_cikti], kok)
+            if not bulundu:
+                _alt_cikti_yaz(cikti)
+                print("    [ATLA→BLOK] script bulunamadı — FAIL-CLOSED: UDF üretilemedi "
+                      "(kurucu kural: varsayılan çıktı UDF; atlamak için --udf-yok kullan).")
+                atlanan.append("(+) udf_yaz.py")
+                kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "ATLA", "exit": None})
+                print()
+                print(CIZGI)
+                print("SONUÇ: TÜM KAPILAR AÇIK ama UDF ÜRETİLEMEDİ (script bulunamadı) — "
+                      "kurucu kural gereği bu bir TESLİM ENGELİDİR.")
+                if atlanan:
+                    print("Not — atlanan kapı(lar): " + ", ".join(atlanan) + ".")
+                print(CIZGI)
+                _makbuz_yaz(kok, _makbuz_taban(
+                    a, taslak, kok, kapilar_makbuz, 1, None, "(+) UDF ÜRETİMİ",
+                    sebep="udf_yaz.py bulunamadı (FAIL-CLOSED)"), basarili=False)
+                sys.exit(1)
             _alt_cikti_yaz(cikti)
-            print("    [ATLA→BLOK] script bulunamadı — FAIL-CLOSED: UDF üretilemedi "
-                  "(kurucu kural: varsayılan çıktı UDF; atlamak için --udf-yok kullan).")
-            atlanan.append("(+) udf_yaz.py")
-            kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "ATLA", "exit": None})
+            if rc != 0:
+                print("    [BLOK] UDF üretimi başarısız (exit %s)." % rc)
+                kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "BLOK", "exit": rc})
+                print()
+                print(CIZGI)
+                print("SONUÇ: TÜM KAPILAR AÇIK ama UDF ÜRETİLEMEDİ — udf_yaz.py çıktısına bak.")
+                if atlanan:
+                    print("Not — atlanan kapı(lar): " + ", ".join(atlanan) + ".")
+                print(CIZGI)
+                _makbuz_yaz(kok, _makbuz_taban(
+                    a, taslak, kok, kapilar_makbuz, 1, None, "(+) UDF ÜRETİMİ",
+                    sebep="udf_yaz.py üretimi başarısız (exit %s)" % rc), basarili=False)
+                sys.exit(1)
+            udf_uretildi = os.path.isfile(udf_cikti)
+            kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "OK", "exit": rc})
+            print("    [OK] UDF üretildi.")
+
+        # ── GÖREV 3/4/5 — UDF TESLİM KAPILARI: mühür-tazelik → yerel-damga →
+        # şekil (kenar 42.52) → mühür üret/güncelle + doğrula. "Üretilen .udf
+        # doğrulanmadan YÜKLENMEZ" kuralının mekanik karşılığı. ───────────────
+        _bolum("[++] UDF TESLİM KAPILARI — PROV tazelik / yerel-damga / şekil / mühür")
+
+        def _udf_red(durdu_ad, sebep_metni):
+            print("    [BLOK] %s" % sebep_metni)
+            kapilar_makbuz.append({"ad": durdu_ad, "durum": "BLOK", "exit": 1})
             print()
             print(CIZGI)
-            print("SONUÇ: TÜM KAPILAR AÇIK ama UDF ÜRETİLEMEDİ (script bulunamadı) — "
-                  "kurucu kural gereği bu bir TESLİM ENGELİDİR.")
-            if atlanan:
-                print("Not — atlanan kapı(lar): " + ", ".join(atlanan) + ".")
+            print("SONUÇ: TESLİM DURDURULDU — %s" % sebep_metni)
             print(CIZGI)
-            makbuz_veri = {
-                "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
-                "taslak_yol": taslak, "taslak_sha256": _sha256_dosya(taslak),
-                "tip": a.tip, "taraf": a.taraf or None,
-                "kapilar": kapilar_makbuz, "exit_kodu": 1, "udf_yolu": None,
-                "udf_atlandi_istekle": False,
-                "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
-                "kismi_ingest": _kismi_ingest_alani(kok),
-                "durdu": "(+) UDF ÜRETİMİ",
-            }
-            _makbuz_yaz(kok, makbuz_veri, basarili=False)
+            _makbuz_yaz(kok, _makbuz_taban(
+                a, taslak, kok, kapilar_makbuz, 1, None, durdu_ad,
+                sebep=sebep_metni,
+                ekstra={"udf_devralindi": udf_devralindi,
+                        "kenar_duzeltildi": kenar_duzeltildi}), basarili=False)
             sys.exit(1)
-        _alt_cikti_yaz(cikti)
-        if rc != 0:
-            print("    [BLOK] UDF üretimi başarısız (exit %s)." % rc)
-            kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "BLOK", "exit": rc})
-            print()
-            print(CIZGI)
-            print("SONUÇ: TÜM KAPILAR AÇIK ama UDF ÜRETİLEMEDİ — udf_yaz.py çıktısına bak.")
-            if atlanan:
-                print("Not — atlanan kapı(lar): " + ", ".join(atlanan) + ".")
-            print(CIZGI)
-            makbuz_veri = {
-                "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
-                "taslak_yol": taslak, "taslak_sha256": _sha256_dosya(taslak),
-                "tip": a.tip, "taraf": a.taraf or None,
-                "kapilar": kapilar_makbuz, "exit_kodu": 1, "udf_yolu": None,
-                "udf_atlandi_istekle": False,
-                "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
-                "kismi_ingest": _kismi_ingest_alani(kok),
-                "durdu": "(+) UDF ÜRETİMİ",
-            }
-            _makbuz_yaz(kok, makbuz_veri, basarili=False)
-            sys.exit(1)
-        udf_uretildi = os.path.isfile(udf_cikti)
-        kapilar_makbuz.append({"ad": "(+) UDF ÜRETİMİ", "durum": "OK", "exit": rc})
-        print("    [OK] UDF üretildi.")
+
+        # (i) mevcut mühür okunur; YEREL-DAMGA (GÖREV 4) yeniden mühürlemeden
+        # ÖNCE denetlenir — aksi hâlde suç delili kendi elimizle silinirdi.
+        prov_yolu = udf_cikti + ".prov.json"
+        muhur_kaydi = None
+        if os.path.isfile(prov_yolu):
+            try:
+                with open(prov_yolu, encoding="utf-8") as f:
+                    muhur_kaydi = json.load(f)
+            except Exception as e:
+                _udf_red("(+) PROV-TAZELİK",
+                         "mühür (.prov.json) OKUNAMADI (%s) — güvenilmez mühürle "
+                         "teslim YOK (fail-closed)" % e)
+            uretici = str(muhur_kaydi.get("was_generated_by") or "")
+            if "yerel" in uretici.lower():
+                _udf_red("(+) YEREL-DAMGA",
+                         "YEREL-MOTOR ÜRÜNÜ TESLİME GİREMEZ — üretilen .udf "
+                         "doğrulanmadan yüklenmez kuralı (372 A/B hükmü: suçlu "
+                         "yerel-motor content.xml; was_generated_by=%r)" % uretici)
+            # (ii) GÖREV 3 — PROV-TAZELİK: mühürdeki sha güncel sha ile uyuşmalı
+            guncel_sha = _sha256_dosya(udf_cikti)
+            if muhur_kaydi.get("artifact_sha256") != guncel_sha:
+                _udf_red("(+) PROV-TAZELİK",
+                         "PROV-BAYAT: mühürdeki sha güncel dosyayla uyuşmuyor "
+                         "(mühür %s… ≠ şimdiki %s…) — 372 kanıtı: cikti/10 mührü "
+                         "bayat kalmıştı; bayat mühürle teslim YOK"
+                         % (str(muhur_kaydi.get("artifact_sha256", "?"))[:12],
+                            str(guncel_sha or "?")[:12]))
+            print("    [OK] mühür taze (sha uyumlu) ve yerel-damgasız.")
+        else:
+            print("    [BILGI] mühür yok — şekil kapısından sonra OTOMATİK "
+                  "mühürlenecek (mühürsüz teslim fiziksel olarak imkânsız).")
+
+        # (iii) GÖREV 5 — ŞEKİL KAPISI: pageFormat 4 kenar 42.52 pt (Yönetmelik
+        # 2646 m.8); değilse udf_yaz'ın GERÇEK yamasıyla düzeltilir (AB3 tanığı:
+        # bu yama UYAP'ta açılan dosya üretir), düzeltilemezse RED.
+        uy_mod = _udf_yaz_modulu()
+        kenar_pt = getattr(uy_mod, "_KENAR_PT", _KENAR_PT_YEDEK) if uy_mod else _KENAR_PT_YEDEK
+        xml = _udf_content_xml(udf_cikti)
+        if xml is None:
+            _udf_red("(+) ŞEKİL", "content.xml okunamadı — şekil denetimi "
+                     "yapılamadı (fail-closed)")
+        if not _kenarlar_uygun_mu(xml, kenar_pt):
+            kenar_fn = getattr(uy_mod, "_sayfa_kenari_yonetmelik", None) if uy_mod else None
+            if kenar_fn is None:
+                _udf_red("(+) ŞEKİL", "pageFormat kenarları %s pt değil ve "
+                         "udf_yaz._sayfa_kenari_yonetmelik yüklenemedi — "
+                         "DÜZELTİLEMEDİ" % kenar_pt)
+            print("    [BILGI] %s" % kenar_fn(udf_cikti))
+            xml = _udf_content_xml(udf_cikti)
+            if xml is None or not _kenarlar_uygun_mu(xml, kenar_pt):
+                _udf_red("(+) ŞEKİL", "pageFormat 4 kenar %s pt'ye DÜZELTİLEMEDİ "
+                         "— düzeltilemeyen şekil teslime giremez" % kenar_pt)
+            kenar_duzeltildi = True
+            print("    [OK] kenarlar düzeltildi (4x%s pt) — makbuza yazıldı." % kenar_pt)
+        else:
+            print("    [OK] pageFormat 4 kenar %s pt (Yönetmelik 2646 m.8)." % kenar_pt)
+        for istisari in _sekil_istisari_uyarilar(xml):
+            print("    [İSTİŞARİ] %s (kapı KAPATMAZ)" % istisari)
+
+        # (iv) GÖREV 3 devamı — MÜHÜR: hiç yoksa teslim_paketi KENDİSİ üretir;
+        # kenar yaması sha'yı değiştirdiyse GÜNCELLER (bayat mühür bırakma).
+        mm = _muhur_modulu()
+        if mm is None:
+            _udf_red("(+) MÜHÜR", "muhur_yaz.py yüklenemedi — mühürsüz teslim "
+                     "YOK (fail-closed)")
+        if muhur_kaydi is None or kenar_duzeltildi:
+            onceki = (muhur_kaydi.get("artifact_sha256")
+                      if (muhur_kaydi and kenar_duzeltildi) else None)
+            try:
+                yeni_kayit = mm.muhur_uret(
+                    kok, udf_cikti, "dilekce_udf",
+                    "dilekce:%s" % os.path.basename(udf_cikti),
+                    [taslak], onceki=onceki,
+                    arac="teslim_paketi (html2udf zinciri)")
+                prov_dosya, muhur_hata = mm.muhur_yaz(kok, udf_cikti, yeni_kayit)
+            except Exception as e:
+                prov_dosya, muhur_hata = None, str(e)
+            if muhur_hata:
+                _udf_red("(+) MÜHÜR", "mühür YAZILAMADI (%s) — mühürsüz teslim "
+                         "fiziksel olarak imkânsız" % muhur_hata)
+            print("    [OK] mühür %s: %s" % (
+                "GÜNCELLENDİ (kenar yaması sonrası)" if muhur_kaydi else "üretildi",
+                os.path.basename(prov_dosya)))
+        if mm.dogrula(udf_cikti) != 0:
+            _udf_red("(+) MÜHÜR", "mühür doğrulaması BAŞARISIZ — mühür↔dosya "
+                     "uyuşmazlığıyla teslim YOK")
+        kapilar_makbuz.append({"ad": "(++) UDF TESLİM KAPILARI", "durum": "OK", "exit": 0})
+
+    # ── GÖREV 6 — TAZELİK BİLGİ KAPISI (advisory; kapı KAPATMAZ) ────────────
+    tazelik_uyarilari = _tazelik_uyarilari_topla(kok)
+    if tazelik_uyarilari:
+        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
+        for uyari in tazelik_uyarilari:
+            print("    [UYARI-BİLGİ] %s" % uyari)
+        print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
+              "kapı kapatmaz (amaç çizgisi: görünürlük).")
 
     print()
     print(CIZGI)
@@ -590,17 +983,12 @@ def main():
     print("Not: bu zincir mekanik kapıların açık olduğunu gösterir; içerik/esas doğruluğu ve")
     print("     nihai göz AVUKATINDIR (oa-kontrol A-listesi muhakeme işidir).")
 
-    makbuz_veri = {
-        "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
-        "taslak_yol": taslak, "taslak_sha256": _sha256_dosya(taslak),
-        "tip": a.tip, "taraf": a.taraf or None,
-        "kapilar": kapilar_makbuz, "exit_kodu": 0,
-        "udf_yolu": (udf_cikti if udf_uretildi else None),
-        "udf_atlandi_istekle": bool(a.udf_yok),
-        "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
-        "kismi_ingest": _kismi_ingest_alani(kok),
-        "durdu": None,
-    }
+    makbuz_veri = _makbuz_taban(
+        a, taslak, kok, kapilar_makbuz, 0,
+        (udf_cikti if udf_uretildi else None), None,
+        ekstra={"udf_devralindi": udf_devralindi,        # GÖREV 1
+                "kenar_duzeltildi": kenar_duzeltildi,    # GÖREV 5
+                "tazelik_uyarilari": tazelik_uyarilari})  # GÖREV 6
     makbuz_yolu = _makbuz_yaz(kok, makbuz_veri, basarili=True)
     print("TESLİM MAKBUZU  : %s" % makbuz_yolu)
     sys.exit(0)

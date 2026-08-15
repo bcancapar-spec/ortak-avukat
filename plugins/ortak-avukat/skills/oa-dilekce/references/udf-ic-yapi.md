@@ -41,27 +41,44 @@ oturum ister (`npx -y udf-cli@latest login`, jeton `~/.config/yargi/token.json`,
 üç yargı CLI'ı paylaşır); yoksa hat FAIL-CLOSED durur — bozuk-ama-üretildi,
 dürüst engelden kötüdür (B5).
 
-## 3. Yerel motor v2 (`--yerel-motor`) — çevrimdışı yedek, sınırı net
+## 3. Yerel motor — EMEKLİ (v0.5.8.4; riskli bayrak istisnası)
 
-Barındırılan oturuma erişilemeyen durum için (v0.5.7): §1'deki yapıyı
-doğrudan üretir; çıktı mekanik kapıdan GEÇMEK ZORUNDADIR (geçmezse dosya
-silinir). Sınırlar dürüstçe:
+**372 sahası A/B hükmü (ders 10-D):** yerel motorun ürettiği UDF'ler UYAP
+editöründe AÇILMADI (7 dosya karantina). A/B testi python re-zip'ini ve
+pageFormat kenar yamasını AKLADI — suçlu `content.xml`'in kendisidir: yerel
+motor `<elements resolver="hvl-default">` yazar ama `<styles>` bloğunda
+`name="hvl-default"` STİL TANIMI vermez (açılan gerçek üretici çıktısında
+tanım VAR). Bu imza artık `udf_dogrula`'da GEÇERSİZLİK sebebidir.
 
-| | html2udf (kanonik) | yerel motor v2 |
+Sonuç: `--yerel-motor` **HATA verir** (emekli). Çevrimdışı üretim yalnız
+`--yerel-motor-riskli` (bilinçli risk) ile koşar; çıktı resmî okuyucu
+(`udf2md`) ile doğrulanamazsa yanına `<ad>.DOGRULANMADI` işaret dosyası düşer
+— işaretli dosya YÜKLENMEZ. Sınırlar dürüstçe:
+
+| | html2udf (kanonik) | yerel motor (`--yerel-motor-riskli`) |
 |---|---|---|
-| Ağ/oturum | gerekir | gerekmez |
+| Ağ/oturum | gerekir | gerekmez (resmî okuyucu bacağı denenir) |
 | Zengin biçim (tablo, renk, tab-stop) | tam | YOK — paragraf + başlık kalın/orta |
-| UYAP editör uyumu | resmî yazıcı | saha-kanıtlı ama GARANTİSİZ |
+| UYAP editör uyumu | resmî yazıcı | **372'de AÇILMADI — garanti YOK** |
+| Doğrulanamazsa | FAIL-CLOSED | `<ad>.DOGRULANMADI` işareti (yükleme yasağı) |
 | Son söz | yine avukat | **UYAP editöründe görsel teyit ZORUNLU** |
 
-## 4. Geçerlilik kapısının beş bacağı (`udf_dogrula`)
+## 4. Geçerlilik kapısının bacakları (`udf_dogrula`)
 
 1. ZIP açılır + `content.xml` var; 2. XML iyi biçimli; 3. CDATA bulunur;
+3.5. **`hvl-default` STİL TANIMI** (v0.5.8.4): `<styles>` bloğunda
+`name="hvl-default"` taşıyan bir `<style>` etiketi yoksa dosya GEÇERSİZDİR
+(elle-üretim imzası — `<elements ... name="hvl-default">` bu denetimi
+SAĞLAMAZ, ölçüt tam olarak `<style>` etiketidir);
 4. offset/length aralıkları CDATA'yı boşluksuz ve taşmasız döşer (tüm
 `startOffset` taşıyan elementler — yalnız `<content>` değil; `<tab/>` da
 sayılır); 5. resmî okuyucu tanığı (`npx udf2md` exit 0 + metin döner).
-Beşinci bacak ağ ister; ilk dördü çevrimdışıdır. Mekanik GEÇERLİ ≠ görsel
+Beşinci bacak ağ ister; öncekiler çevrimdışıdır. Mekanik GEÇERLİ ≠ görsel
 kusursuz — nihai göz avukatındır.
+
+**Üretim makbuzu (v0.5.8.4):** her `.udf` üretimi, dava klasöründe defter
+varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz düşer (motor,
+sha256, doğrulama durumu) — üretim noktasında yazılır, kapı değildir.
 
 ## 5. Okuma yönü (hatırlatma)
 

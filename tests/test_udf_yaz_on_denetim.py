@@ -144,7 +144,7 @@ def _dummy_udf_yaz(yol, metin):
         '<elements resolver="hvl-default">'
         '<paragraph Alignment="3"><content startOffset="0" length="%d"/></paragraph>'
         '</elements>'
-        '<styles><style name="default" description="Govde" family="Times New Roman" '
+        '<styles><style name="hvl-default" description="Govde" family="Times New Roman" '
         'size="12" bold="false" italic="false" foreground="-16777216"/></styles>'
         '</template>' % u16
     )

@@ -46,7 +46,8 @@ import sys
 
 # v0.5.7.2 — SAHA STANDARDI (e-imzalı gerçek nüshadan ölçüldü, bkz.
 # references/udf-ic-yapi.md §6): gövde iki yana yaslı + İLK SATIR 24pt
-# girintili + altında 6pt boşluk + 1.3 satır aralığı.
+# girintili + altında 6pt boşluk + 1,5 satır aralığı (v0.5.8.4: yorum
+# koddan sapmıştı — sabit zaten 1.5 üretiyor, yorum da 1,5 der).
 JUST = "text-align:justify; text-indent:24pt; line-height:1.5; margin-top:0pt; margin-bottom:6pt"
 QUOTE = "text-align:justify; line-height:1.5; margin-left:36pt; margin-right:18pt; margin-top:6pt; margin-bottom:6pt"
 
@@ -67,8 +68,10 @@ def satir_ici(t):
     t = re.sub(r"\[([^\]]+)\]\((https?://[^\)]+)\)",
                lambda m: m.group(1) +
                ' <span style="font-size:11pt">(' + m.group(2) + ')</span>', t)
-    # düz yazılmış (https://...) parantezli bağlantılar da aynı stile çekilir
-    t = re.sub(r"\((https?://[^\s\)]+)\)",
+    # düz yazılmış (https://...) parantezli bağlantılar da aynı stile çekilir.
+    # v0.5.8.4: lookbehind, üstteki markdown-link dönüşümünün AZ ÖNCE ürettiği
+    # span'i İKİNCİ kez sarmalamayı önler (iç içe çift span → çift stil).
+    t = re.sub(r'(?<!font-size:11pt">)\((https?://[^\s\)]+)\)',
                r'<span style="font-size:11pt">(\1)</span>', t)
     t = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
@@ -123,12 +126,16 @@ def donustur(md, ham=False):
             out.append("<table>")
             for ri, cells in enumerate(rows):
                 out.append("<tr>")
-                bg = ' style="background-color:#EEEEEE"' if ri == 0 else ""
+                # v0.5.8.4 — 1,5 satır aralığı standardı tablo hücrelerinde de
+                # geçerli: hücre İÇİ inline stil (html2udf hücre stilini
+                # hücreden okur; dış <p> sarmalayıcı KULLANILMAZ).
+                hucre_stil = ("background-color:#EEEEEE; line-height:1.5"
+                              if ri == 0 else "line-height:1.5")
                 for c in cells:
                     body = satir_ici(c) if c else "&nbsp;"
                     if ri == 0 and "<strong>" not in body:
                         body = "<strong>%s</strong>" % body
-                    out.append("<td%s>%s</td>" % (bg, body))
+                    out.append('<td style="%s">%s</td>' % (hucre_stil, body))
                 out.append("</tr>")
             out.append("</table>")
             continue
@@ -138,14 +145,16 @@ def donustur(md, ham=False):
         if m:
             lvl = len(m.group(1))
             txt = satir_ici(m.group(2))
+            # v0.5.8.4 — başlıklar da 1,5 satır aralığı standardına dahil
+            # (gövdeyle aynı; uzun başlıklar iki satıra kırıldığında sıkışmasın).
             if lvl == 1:
-                out.append('<p style="text-align:center; margin-top:0pt; margin-bottom:12pt">'
+                out.append('<p style="text-align:center; line-height:1.5; margin-top:0pt; margin-bottom:12pt">'
                             '<span style="font-size:14pt"><strong>%s</strong></span></p>' % txt)
             elif lvl == 2:
-                out.append('<p style="text-align:left; margin-top:14pt; margin-bottom:8pt">'
+                out.append('<p style="text-align:left; line-height:1.5; margin-top:14pt; margin-bottom:8pt">'
                             '<span style="font-size:13pt"><strong>%s</strong></span></p>' % txt)
             else:
-                out.append('<p style="text-align:left; margin-top:12pt; margin-bottom:6pt">'
+                out.append('<p style="text-align:left; line-height:1.5; margin-top:12pt; margin-bottom:6pt">'
                             '<strong>%s</strong></p>' % txt)
             i += 1
             continue
@@ -187,7 +196,12 @@ def donustur(md, ham=False):
                     break
             out.append("<ol>")
             for it in items:
-                out.append("<li><p style=\"%s\">%s</p></li>" % (JUST, satir_ici(it)))
+                # v0.5.8.4 CANLI ÖLÇÜM (372): `<li><p style=...>` deseni
+                # html2udf'te her maddeden sonra HAYALET boş Numbered paragraf
+                # üretiyor — li içine blok <p> DEĞİL, doğrudan stillenmiş
+                # span/metin verilir.
+                out.append('<li><span style="line-height:1.5">%s</span></li>'
+                           % satir_ici(it))
             out.append("</ol>")
             continue
 
@@ -198,7 +212,9 @@ def donustur(md, ham=False):
                 items.append(re.sub(r"^[-*+]\s+", "", lines[i].strip())); i += 1
             out.append("<ul>")
             for it in items:
-                out.append("<li><p style=\"%s\">%s</p></li>" % (JUST, satir_ici(it)))
+                # bkz. <ol> notu — hayalet boş paragraf önlemi burada da geçerli.
+                out.append('<li><span style="line-height:1.5">%s</span></li>'
+                           % satir_ici(it))
             out.append("</ul>")
             continue
 

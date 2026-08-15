@@ -26,7 +26,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 PLUGIN_KOK = REPO / "plugins" / "ortak-avukat"
 HOOKS_JSON = PLUGIN_KOK / "hooks" / "hooks.json"
 
-BEKLENEN_OLAYLAR = ["UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd"]
+BEKLENEN_OLAYLAR = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd"]
 
 
 def _hooks_veri():
@@ -48,7 +48,7 @@ def _ilk_python_alternatifi(komut):
     assert parcalar[0].strip('"').endswith("hooks/run-hook.cmd"), ilk
     assert len(parcalar) == 2, ilk
     mod = parcalar[1]
-    assert mod in ("hook-prompt", "hook-postwrite", "hook-denetle"), mod
+    assert mod in ("hook-prompt", "hook-postwrite", "hook-denetle", "hook-pretool"), mod
     script = PLUGIN_KOK / "skills" / "oa-pipeline" / "scripts" / "pipeline_kayit.py"
     return [sys.executable, str(script), "--" + mod]
 

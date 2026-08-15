@@ -239,3 +239,10 @@ kararlarına kısa bakış atılır; aşılmışlık tespit edilirse muhakeme ka
 `**AŞAN-KAYNAK:**` / `**AŞILMA-TARİHİ:**` işlenir (şablon: oa-kiyas
 ictihat-muhakeme-sablonu.md). [G5] kapısı DAMGA=LEHE + aşılmış + dilekçede
 atıf birleşimini TESLİM ENGELİ sayar — aşılmış karar lehte dayanak olamaz.
+
+**Üretici uç (v0.5.8.4):** alanları elle yazma — aşılmışlık, teyit komutunun
+kendi bayraklarıyla işlenir: `oa_hafiza.py teyit … --damga <DAMGA>
+--asan-kaynak "<künye/norm>" --asilma-tarihi GG.AA.YYYY --gecerlilik-bitis
+GG.AA.YYYY` (üç bayrak YALNIZ `--damga` ile geçerlidir; damgasız çağrı RET —
+üç alan tek komutla yazılır, lehe-denetimde AŞILMIŞ çıkan karar böyle işlenir;
+kullanım örneği şablondadır).

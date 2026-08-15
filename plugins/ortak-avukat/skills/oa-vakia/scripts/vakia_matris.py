@@ -24,18 +24,82 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, json, sys
+import argparse, importlib.util, json, os, sys
 from datetime import date
 
 ISPAT = {"belgeli","tanik","bilirkisi","karine","ikrar","yemin","ispatsiz"}
+
+
+# ── v0.5.8.4 ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi HİÇBİR akış
+# çağırmıyordu — kullanıcı kararı: tetik oa-vakia'ya bağlanır). vakia_matris
+# matris kurarken taraf/özne yazım varyantlarını toplar ve kardeş motorun
+# jaro_winkler + eşikleriyle (BAGLA >= 0.92 / AVUKATA-SOR 0.80-0.92) damgalar.
+# ADVISORY — karar vermez, `saglikli` hesabına GİRMEZ; varyant yoksa sessiz.
+
+def _ozne_eslestirici_modulu():
+    """ozne_eslestirici.py'yi (aynı dizin) İN-PROCESS import eder — algoritma
+    TEKRARLANMAZ (tek-yazar kuralı; ozne_eslestirici.py DEĞİŞTİRİLMEZ, yalnız
+    kullanılır). Import çökerse None döner; çağıran taraf bunu GÖRÜNÜR uyarıya
+    çevirir (sessiz atlama yasağı)."""
+    yol = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "ozne_eslestirici.py")
+    if not os.path.isfile(yol):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_vakia_ozne_eslestirici", yol)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception:
+        return None
+
+
+def _ozne_adlarini_topla(m):
+    """Matris girdisindeki taraf/özne YAZIMLARINI deterministik sırayla toplar:
+    üst-düzey `taraflar` listesi (dize veya {"ad": ...}) + her olayın opsiyonel
+    `ozne` alanı. Birebir aynı dize TEK sayılır (aynı yazım varyant değildir)."""
+    adlar, gorulen = [], set()
+
+    def _ekle(ad):
+        ad = str(ad or "").strip()
+        if ad and ad not in gorulen:
+            gorulen.add(ad); adlar.append(ad)
+
+    for t in m.get("taraflar", []) or []:
+        _ekle(t.get("ad") if isinstance(t, dict) else t)
+    for o in m.get("olaylar", []) or []:
+        _ekle(o.get("ozne") if isinstance(o, dict) else None)
+    return adlar
+
+
+def ozne_eslestirme_kur(m):
+    """tr_normalize sonrası aynı özneye ait GÖRÜNEN birden çok yazım varsa
+    ozne_eslestirici skorlarıyla `ozne_eslestirme` bölümünü kurar:
+      [{"varyantlar": [...], "skor": f, "karar": "BAGLA"|"AVUKATA-SOR"}]
+    Varyant yoksa boş liste (sessiz). Döner: (bulgular, uyari) — `uyari`
+    yalnız kardeş modül import edilemezse dolar (görünür fail-open)."""
+    adlar = _ozne_adlarini_topla(m)
+    if len(adlar) < 2:
+        return [], None
+    oe = _ozne_eslestirici_modulu()
+    if oe is None:
+        return [], ("ozne_eslestirici.py import edilemedi — özne yazım-varyantı "
+                    "taraması YAPILAMADI (advisory; varyant birleştirme kararı "
+                    "avukatta kalır)")
+    bulgular = [{"varyantlar": [e["a"]["ad"], e["b"]["ad"]],
+                 "skor": e["skor"], "karar": e["karar"]}
+                for e in oe.eslestir(adlar)]
+    return bulgular, None
 
 def iskelet():
     print("="*68); print("  VAKIA/DELİL MATRİSİ — kronoloji + iddia↔delil eşleme"); print("="*68)
     print("ispat_durumu değerleri:", ", ".join(sorted(ISPAT)))
     sablon = {
+        "taraflar": ["Taraf/özne adı (opsiyonel — yazım varyantları otomatik taranır, v0.5.8.4)"],
         "iddialar": [{"id":"I1","metin":"İspatlanacak maddi iddia — bir cümle"}],
         "olaylar": [{
             "tarih":"YYYY-MM-DD","olgu":"Ne oldu (kısa)",
+            "ozne":"Olayın öznesi/faili (opsiyonel — özne varyant taramasına girer)",
             "belge":"Dayanak belge/delil (sözleşme, ihtarname, tutanak, tanık...) veya boş",
             "destekler":["I1"],
             "ispat_durumu":"belgeli|tanik|bilirkisi|karine|ikrar|yemin|ispatsiz"
@@ -118,6 +182,20 @@ def dogrula(path, json_yol=None):
     blok("GEÇERSİZ İDDİA REFERANSI", gecersiz_ref, "!")
     blok("GEÇERSİZ ispat_durumu", gecersiz_durum, "!")
 
+    # 4) Özne yazım-varyantı taraması (v0.5.8.4 ÖZNE TETİĞİ — advisory,
+    # saglikli hesabına GİRMEZ; "öznenin tüm beyanları" sorgusu varyant
+    # yüzünden kayıt kaçırmasın — kayıpsızlık invaryantı). Varyant yoksa
+    # SESSİZ (blok basılmaz); kardeş modül çökerse görünür uyarı.
+    ozne_bulgular, ozne_uyari = ozne_eslestirme_kur(m)
+    if ozne_uyari:
+        print(f"\n  ! {ozne_uyari}")
+    if ozne_bulgular:
+        print("\n--- ÖZNE EŞLEŞTİRME (yazım varyantları — advisory, karar avukatta) ---")
+        for b in ozne_bulgular:
+            isaret = "?" if b["karar"] == "AVUKATA-SOR" else "~"
+            print(f"  {isaret} {b['karar']} [{b['skor']}] "
+                  + " ↔ ".join(f"«{v}»" for v in b["varyantlar"]))
+
     # Özet
     n_id = len(iddialar); n_destekli = n_id - len(bos_iddia)
     print("\n--- ÖZET ---")
@@ -137,6 +215,7 @@ def dogrula(path, json_yol=None):
             "yetim_deliller": yetim,
             "gecersiz_referans": gecersiz_ref,
             "gecersiz_ispat_durumu": gecersiz_durum,
+            "ozne_eslestirme": ozne_bulgular,
             "ozet": {"iddia": n_id, "belgeli_destekli": n_destekli,
                      "ispat_boslugu": len(bos_iddia), "olay": len(olaylar),
                      "tarihsiz": len(tarihsiz), "yetim": len(yetim)},

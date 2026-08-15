@@ -6,8 +6,11 @@ REM "python X || py -3 X" zincirindeki || kabuk operatoru olarak degil
 REM python'a arguman olarak gidiyor -> sessiz olum (uc sahada sifir atesleme).
 REM Cozum (superpowers run-hook.cmd deseni): fallback mantigi BU dosyanin
 REM icinde; hooks.json tek tirnakli TEK komut cagirir.
-REM Kullanim: run-hook.cmd <mod>   (hook-prompt | hook-postwrite | hook-denetle)
+REM Kullanim: run-hook.cmd <mod>
+REM   (hook-prompt | hook-postwrite | hook-denetle | hook-pretool)
 REM CWD'ye DOKUNMAZ: pipeline_kayit.py dava kokunu CWD'den okur.
+REM STDIN python'a AKTARILIR (cocuk surec miras alir) — hook-pretool payload'i
+REM (tool_input) bu kanaldan okur; asla tuketilmez/kesilmez.
 
 if "%~1"=="" exit /b 0
 set "HOOK_DIR=%~dp0"

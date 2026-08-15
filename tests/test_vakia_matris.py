@@ -283,10 +283,13 @@ def test_eksik_dosyada_da_exit_kodu_sifir(izole_dizin):
 
 # ── --json makine-okur çıktı şeması ─────────────────────────────────────────
 
+# v0.5.8.4: "ozne_eslestirme" anahtarı eklendi (ÖZNE TETİĞİ — taraf/özne
+# yazım varyantları ozne_eslestirici eşikleriyle damgalanır; varyant yoksa
+# boş liste, sessiz — bkz. test_v0584_desenler.py).
 BEKLENEN_ANAHTARLAR = {
     "arac", "girdi", "kronoloji", "tarihsiz", "iddia_delil_matrisi",
     "ispat_bosluklari", "yetim_deliller", "gecersiz_referans",
-    "gecersiz_ispat_durumu", "ozet", "saglikli",
+    "gecersiz_ispat_durumu", "ozne_eslestirme", "ozet", "saglikli",
 }
 
 
@@ -317,6 +320,7 @@ def test_json_cikti_semasi_saglikli_dosya(izole_dizin):
     assert sonuc["yetim_deliller"] == []
     assert sonuc["gecersiz_referans"] == []
     assert sonuc["gecersiz_ispat_durumu"] == []
+    assert sonuc["ozne_eslestirme"] == []  # taraf/ozne alanı yok → sessiz boş liste
     assert sonuc["ozet"] == {"iddia": 2, "belgeli_destekli": 2, "ispat_boslugu": 0,
                              "olay": 2, "tarihsiz": 0, "yetim": 0}
 

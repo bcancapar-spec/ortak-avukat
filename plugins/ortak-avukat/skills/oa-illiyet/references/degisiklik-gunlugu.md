@@ -18,3 +18,7 @@
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M5, Paket D):** Yeni "ZAMAN KATMANI — kronoloji + süre pencere bindirme" bölümü — illiyet grafına zaman katmanı bindirilir; `oa-sure/scripts/hesapla_sure.py --pencereler` çıktısı (aynı dönemde çakışan birden fazla süre) bu katmanın girdisidir (`references/cikti-blogu.md` şeması güncellendi).
 - **2026-08-12 — v0.5.8 fork-prova:** grafik_denetim --zincir (P3): illiyet zinciri güven analizi — confidence_decay çarpımı + en zayıf halka (oa-antitez beslemesi; bayraksız çıktı DEĞİŞMEZ).
+
+## v0.5.8.4 — 2026-08-15
+
+- **Zincir analizi VARSAYILAN oldu (bilinçli sözleşme değişikliği):** `grafik_denetim.py` illiyet zinciri güven analizini (confidence_decay + en zayıf halka; bölüm 8 + json `zincirler` alanı) artık bayraksız her koşuda üretir — 372 sahasında `--zincir` 0 kez verilmişti, analiz hiç üretilmemişti (opsiyonel kapı = ateşlemeyen kapı; tetik>sertlik dersi). Kapatmak için `--zincirsiz`; eski `--zincir` geriye-uyum için kabul edilen NO-OP. SKILL örnek komutları güncellendi.

@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-"""grafik_denetim.py --zincir (v0.5.8 P3 — semantica confidence_decay +
-weakest_link deseni) testleri. Advisory: --zincir bayrağı olmadan çıktı
-DEĞİŞMEZ (78 karakterizasyon testi korunur)."""
+"""grafik_denetim.py zincir analizi (v0.5.8 P3 — semantica confidence_decay +
+weakest_link deseni) testleri.
+
+SÖZLEŞME DEĞİŞİKLİĞİ (v0.5.8.4, bilinçli): zincir analizi artık VARSAYILAN
+çalışır — 372 Torbalı sahasında grafik_denetim 2 kez koştu ama --zincir
+bayrağı 0 kez verildi, analiz HİÇ üretilmedi (opsiyonel kapı = ateşlemeyen
+kapı). Yeni sözleşme: bayraksız ÜRETİLİR; --zincirsiz kapatır; --zincir
+geriye uyum için kabul edilen NO-OP'tur. Advisory niteliği değişmedi."""
 import importlib.util
 import json
 import pathlib
@@ -61,7 +66,11 @@ def test_guc_beyan_edilmemis_varsayilan_ve_iliski_kenari_haric():
     assert z[0]["en_zayif"]["guc"] == "beyan-yok"
 
 
-def test_cli_bayraksiz_cikti_degismez_bayrakli_json_alani():
+def test_cli_zincir_varsayilan_zincirsiz_kapatir_zincir_noop():
+    """v0.5.8.4 yeni sözleşme (bilinçli değişiklik — 372'de 0 ateşleme kanıtı):
+    (a) bayraksız → bölüm 8 VAR + json'a 'zincirler' düşer (varsayılan);
+    (b) --zincirsiz → bölüm 8 YOK + json'da 'zincirler' anahtarı YOK;
+    (c) --zincir → geriye-uyum NO-OP (varsayılanla aynı çıktı)."""
     d = {"dugumler": [{"id": "a", "tip": "olay", "ad": "A"},
                       {"id": "b", "tip": "olay", "ad": "B"}],
          "kenarlar": [{"kaynak": "a", "hedef": "b", "kategori": "illiyet",
@@ -70,15 +79,30 @@ def test_cli_bayraksiz_cikti_degismez_bayrakli_json_alani():
     tmp = pathlib.Path(tempfile.mkdtemp())
     graf = tmp / "graf.json"
     graf.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-    out_json = tmp / "out.json"
-    # bayraksız: bölüm 8 YOK (karakterizasyon korunur)
-    p1 = subprocess.run([sys.executable, str(SCRIPT), str(graf)],
+
+    # (a) bayraksız: VARSAYILAN üretim
+    out1 = tmp / "out1.json"
+    p1 = subprocess.run([sys.executable, str(SCRIPT), str(graf),
+                         "--json", str(out1)],
                         capture_output=True, text=True, encoding="utf-8")
-    assert "ZİNCİR GÜVEN" not in (p1.stdout or "")
-    # bayraklı: bölüm 8 VAR + json'a zincirler alanı düşer
-    p2 = subprocess.run([sys.executable, str(SCRIPT), str(graf), "--zincir",
-                         "--json", str(out_json)],
+    assert "ZİNCİR GÜVEN" in (p1.stdout or "")
+    r1 = json.loads(out1.read_text(encoding="utf-8"))
+    assert r1["zincirler"] and r1["zincirler"][0]["guven"] == 0.9
+
+    # (b) --zincirsiz: bilinçli kapatma
+    out2 = tmp / "out2.json"
+    p2 = subprocess.run([sys.executable, str(SCRIPT), str(graf), "--zincirsiz",
+                         "--json", str(out2)],
                         capture_output=True, text=True, encoding="utf-8")
-    assert "ZİNCİR GÜVEN" in (p2.stdout or "")
-    r = json.loads(out_json.read_text(encoding="utf-8"))
-    assert r["zincirler"] and r["zincirler"][0]["guven"] == 0.9
+    assert "ZİNCİR GÜVEN" not in (p2.stdout or "")
+    r2 = json.loads(out2.read_text(encoding="utf-8"))
+    assert "zincirler" not in r2
+
+    # (c) --zincir: geriye-uyum no-op — varsayılanla aynı
+    out3 = tmp / "out3.json"
+    p3 = subprocess.run([sys.executable, str(SCRIPT), str(graf), "--zincir",
+                         "--json", str(out3)],
+                        capture_output=True, text=True, encoding="utf-8")
+    assert "ZİNCİR GÜVEN" in (p3.stdout or "")
+    r3 = json.loads(out3.read_text(encoding="utf-8"))
+    assert r3["zincirler"] == r1["zincirler"]

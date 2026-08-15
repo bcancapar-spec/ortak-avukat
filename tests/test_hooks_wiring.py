@@ -39,14 +39,17 @@ def test_hooks_json_var_ve_gecerli_json():
 
 
 def test_hooks_json_stop_ve_sessionend_hook_denetle_cagirir():
+    """v0.5.8.2 sözleşme (447 yapısal-arıza onarımı): komut artık
+    `"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" hook-denetle` — çift tire
+    sarmalayıcının İÇİNDE eklenir; pipeline_kayit.py adı komutta GEÇMEZ."""
     with open(HOOKS_JSON, encoding="utf-8") as f:
         veri = json.load(f)
     hooks = veri.get("hooks", {})
     for olay in ("Stop", "SessionEnd"):
         assert olay in hooks, f"hooks.json'da '{olay}' girdisi yok"
         komutlar = json.dumps(hooks[olay], ensure_ascii=False)
-        assert "--hook-denetle" in komutlar, f"'{olay}' hook'u --hook-denetle çağırmıyor"
-        assert "pipeline_kayit.py" in komutlar
+        assert "hook-denetle" in komutlar, f"'{olay}' hook'u hook-denetle çağırmıyor"
+        assert "run-hook.cmd" in komutlar
 
 
 def test_hooks_json_posttooluse_hook_postwrite_cagirir():
@@ -61,8 +64,9 @@ def test_hooks_json_posttooluse_hook_postwrite_cagirir():
     assert any("Write" in (g.get("matcher") or "") and "Edit" in (g.get("matcher") or "")
                for g in girdiler), "PostToolUse matcher'ı Write|Edit'i kapsamıyor"
     komutlar = json.dumps(girdiler, ensure_ascii=False)
-    assert "--hook-postwrite" in komutlar
-    assert "pipeline_kayit.py" in komutlar
+    # v0.5.8.2 sözleşme: sarmalayıcı çağrısı (çift tire sarmalayıcının içinde).
+    assert "hook-postwrite" in komutlar
+    assert "run-hook.cmd" in komutlar
 
 
 def test_hook_postwrite_bayragi_pipeline_kayit_scriptinde_tanimli():
@@ -100,29 +104,40 @@ def test_hook_denetle_bayragi_pipeline_kayit_scriptinde_tanimli():
     assert "def hook_denetle(" in metin
 
 
-def test_hooks_json_python_fallback_zinciri_calistirabilir_bir_yorumlayiciya_sahip():
-    """DÜZELTME (v0.5.5 şerh turu — Ş12 KUCUK): `hooks.json` çıplak `python`
-    çağırıyordu — Windows'ta `python` PATH'te olmayabilir (yalnız `py`
-    launcher'ı, ya da Microsoft Store alias'ı Store'u açar) ve P0-7 fail-open
-    tasarımı gereği bu durum HİÇBİR sinyal üretmeden hook'u kalıcı no-op
-    yapardı. Komut artık `python || py -3 || python3` ZİNCİRİDİR; bu ucuz
-    statik test zincirdeki launcher token'larından EN AZ BİRİNİN bu makinede
-    fiilen ÇALIŞTIRILABİLİR olduğunu doğrular (shutil.which VEYA mevcut
-    yorumlayıcının kendisi — `sys.executable`)."""
+def test_hooks_json_sarmalayici_sozlesmesi_v0582():
+    """v0.5.8.2 SÖZLEŞME (447 yapısal-arıza onarımı — eski `||` zinciri
+    testinin yerine): masaüstü uygulaması hook komutunu KABUKSUZ
+    çalıştırabiliyor; `python X || py -3 X` zincirindeki `||` kabuk operatörü
+    olarak değil python'a ARGÜMAN olarak gidiyordu → sessiz ölüm (üç sahada
+    sıfır ateşleme). Fallback mantığı artık sarmalayıcının (run-hook.cmd)
+    İÇİNDEDİR; hooks.json'daki HER komut tek tırnaklı TEK sarmalayıcı çağrısı
+    olmalıdır: `"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" <mod>` — `||`
+    YASAK, çift tire pipeline_kayit'e sarmalayıcının İÇİNDE eklenir."""
     import sys as _sys
     with open(HOOKS_JSON, encoding="utf-8") as f:
         veri = json.load(f)
-    komut = veri["hooks"]["Stop"][0]["hooks"][0]["command"]
-    assert "||" in komut, "hooks.json'da fallback zinciri ('||') yok"
-    segmentler = [s.strip() for s in komut.split("||")]
-    launcherlar = [s.split()[0] for s in segmentler if s.split()]
-    assert len(launcherlar) >= 2, launcherlar
+    for olay, girdiler in veri["hooks"].items():
+        for girdi in girdiler:
+            for h in girdi.get("hooks", []):
+                komut = h.get("command", "")
+                assert "||" not in komut, (
+                    f"'{olay}' komutunda || zinciri var — v0.5.8.2 yasağı: {komut}")
+                parcalar = komut.split()
+                assert len(parcalar) == 2, f"tek sarmalayıcı + tek mod olmalı: {komut}"
+                assert parcalar[0].strip('"').endswith("hooks/run-hook.cmd"), komut
+                assert parcalar[0].startswith('"'), (
+                    "sarmalayıcı yolu tırnaklı olmalı (boşluklu kurulum yolları)")
+                assert parcalar[1].startswith("hook-"), (
+                    f"mod 'hook-*' biçiminde olmalı (çift tiresiz): {parcalar[1]}")
+    # Sarmalayıcı diskte var VE bu makinede en az bir python launcher'ı
+    # fiilen çalıştırılabilir (sarmalayıcının fallback zinciri boşa düşmesin).
+    assert (PLUGIN_ROOT / "hooks" / "run-hook.cmd").is_file()
+    launcherlar = ("python", "py", "python3")
     calisan_var = any(
-        shutil.which(tok) or pathlib.Path(_sys.executable).stem.lower() == tok.lower()
-        for tok in launcherlar
-    )
+        shutil.which(tok) or pathlib.Path(_sys.executable).stem.lower() == tok
+        for tok in launcherlar)
     assert calisan_var, (
-        f"fallback zincirindeki HİÇBİR launcher ({launcherlar}) bu makinede "
+        f"sarmalayıcı zincirindeki HİÇBİR launcher ({launcherlar}) bu makinede "
         "çalıştırılabilir görünmüyor")
 
 

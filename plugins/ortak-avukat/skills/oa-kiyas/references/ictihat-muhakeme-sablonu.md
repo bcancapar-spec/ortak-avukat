@@ -198,4 +198,24 @@ değişikliği veya daire kaymasıyla aşılmış olabilir mi?" — biliniyorsa 
 Kural ([G5], Can kararı 2026-08-12): **DAMGA=LEHE + aşılmış + dilekçede atıf →
 TESLİM ENGELİ.** ALEYHE+aşılmış ise cephanelik bilgisidir (karşı taraf ileri
 sürerse aşan kaynak kozdur) — bloklamaz. Otomatik aşan-kaynak taraması v2'ye
-ertelendi; alanlar elle/teyit-anında doldurulur.
+ertelendi.
+
+**ÜRETİCİ UÇ (v0.5.8.4 — alanlar elle yazılmaz, teyit komutuyla yazılır):**
+`oa_hafiza.py teyit` üç bayrak kazandı: `--asan-kaynak "<künye/norm>"`,
+`--asilma-tarihi GG.AA.YYYY`, `--gecerlilik-bitis GG.AA.YYYY` — **yalnız
+`--damga` ile birlikte** geçerlidir (damgasız çağrıda fail-closed RET: alanlar
+muhakeme kaydında yaşar, kayıt yalnız damgayla üretilir). Üç alan da
+`_oa/cikti/03-ictihat-muhakeme.md` kütüğündeki kayda `**AŞAN-KAYNAK:**` /
+`**AŞILMA-TARİHİ:**` / `**GEÇERLİLİK-BİTİŞ:**` satırları olarak yazılır ve
+`ictihat_muhakeme_denetim.py`'nin [G5] kapısı bunları okur. Lehe-denetimde
+AŞILMIŞ çıkan karar bu üç alanla işlenir; bir karar "aşıldı" işaretlenirken üç
+alan TEK komutla verilebilir. DAMGA=LEHE ile aşılmışlık alanı birlikte
+yazılırsa üretici görünür çelişki uyarısı basar (aşılmış karar lehte dayanak
+olamaz — damga gözden geçirilmeli).
+
+Kullanım örneği (lehe-denetimde aşılmışlık tespit edildi — ör. mülga norm /
+onamayla aşılan karar):
+
+```bash
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --damga ALEYHE --sorgu "9. HD işe iade süre" --sonuc "Yargıtay 9. HD, E. 2019/1234, K. 2020/5678" --bag "...(≥40 kr)..." --ilgili-kisim "...(döküm içinde VERBATİM alıntı)..." --dokum-icerik @ham.md --asan-kaynak "7036 sK. m.11 değişikliği" --asilma-tarihi 01.01.2026 --gecerlilik-bitis 01.01.2026
+```

@@ -79,7 +79,7 @@ Grafı `_oa/cikti/01-illiyet-graf.json` olarak yaz (şema `references/illiyet-do
 Sonra deterministik denetimi çalıştır:
 
 ```bash
-python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json
+python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json [--json _oa/cikti/01-illiyet-denetim.json]
 ```
 
 Script şunları kesin tespit eder ve raporlar:
@@ -91,6 +91,12 @@ Script şunları kesin tespit eder ve raporlar:
 - **Çevrim** — dairesel illiyet (mantık hatası)
 - **Kesme adayları** — `kesme_flag` dolu illiyet kenarları (→ oa-antitez beslemesi)
 - **Yük taşıyan kenar** — çıkarılırsa illiyet zincirini koparan kritik bağ (→ oa-strateji)
+- **Zincir güven analizi** — VARSAYILAN (v0.5.8.4): uçtan uca her illiyet
+  zinciri için `confidence_decay` + **en zayıf halka** (advisory —
+  oa-antitez/oa-strateji beslemesi). 372 sahasında `--zincir` bayrağı 0 kez
+  verildiği için analiz hiç üretilmemişti (opsiyonel kapı = ateşlemeyen kapı);
+  artık bayraksız koşar. Bilinçli kapatmak için `--zincirsiz`; eski `--zincir`
+  geriye-uyum no-op'tur.
 
 ### 3. Raporu hukuki sonuca bağla (model)
 
