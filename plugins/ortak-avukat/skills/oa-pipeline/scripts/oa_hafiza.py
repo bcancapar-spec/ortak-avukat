@@ -200,6 +200,82 @@ def _devir_bos_mu():
     return not any(os.path.isfile(os.path.join(ddir, ad)) for ad in os.listdir(ddir))
 
 
+# ── E4/E6 + B2-KİLİT (v0.5.8.5) — KAPANIŞ tutarlılık yardımcıları ───────────
+
+def _sure_flag_bos_mu():
+    """E4(a) — `_oa/sureler.json` flagler listesi boş/okunamaz mı? (uyarı
+    tetiği; okunamayan defter de 'boş' sayılır — fail-visible)."""
+    try:
+        with open(yol("sureler.json"), encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        return True
+    fl = d.get("flagler") if isinstance(d, dict) else None
+    return not (isinstance(fl, list) and fl)
+
+
+def _ad_fold(s):
+    """Dosya adı karşılaştırması için Türkçe harfleri ASCII'ye indirger +
+    küçültür (oa_ingest Gate C `tur_tahmin_et` desenleriyle aynı yaklaşım)."""
+    tablo = str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")
+    return (s or "").translate(tablo).lower()
+
+
+# Süre-nöbeti SINIFI belge adları — oa-ingest Gate C `TUR_TAHMIN_ANAHTAR`
+# tablosunun süre-başlatan alt kümesi (tebligat/karar sınıfları): tebligat ve
+# gerekçeli karar/ilam/hüküm, kanun yolu sürelerini BAŞLATAN evrak sınıflarıdır.
+_SURE_NOBETI_AD_ANAHTARLARI = ("tebligat", "teblig", "ilam", "hukum", "karar",
+                               "odeme emri", "odeme-emri", "odemeemri")
+_SURE_NOBETI_TUR_RE = re.compile(r'"tur_tahmini"\s*:\s*"(tebligat|karar)"')
+
+
+def _sure_nobeti_belgesi_bul():
+    """E4(a) — çalışma kökünde (üst seviye dosya adları) ya da ingest
+    künyesinde (`_oa/metin/00-kunye.json` `tur_tahmini`) süre-nöbeti sınıfı
+    (tebligat/karar) bir belge izi arar; bulursa görünen adı döndürür, yoksa
+    None. İçerik OKUMAZ — yalnız ad/künye taraması (ucuz, advisory)."""
+    kok = _calisma_koku()
+    try:
+        adlar = sorted(os.listdir(kok))
+    except OSError:
+        adlar = []
+    for ad in adlar:
+        if ad.startswith(".") or ad == "_oa":
+            continue
+        if not os.path.isfile(os.path.join(kok, ad)):
+            continue
+        f = _ad_fold(ad)
+        if any(a in f for a in _SURE_NOBETI_AD_ANAHTARLARI):
+            return ad
+    kunye_yolu = yol("metin", "00-kunye.json")
+    if os.path.isfile(kunye_yolu):
+        try:
+            with open(kunye_yolu, encoding="utf-8", errors="replace") as f:
+                m = _SURE_NOBETI_TUR_RE.search(f.read())
+        except OSError:
+            m = None
+        if m:
+            return f"_oa/metin/00-kunye.json → tur_tahmini={m.group(1)}"
+    return None
+
+
+def _makbuz_gecerli_mi():
+    """B2-KİLİT (E6) — `_oa/defter/teslim-makbuz.json` var VE exit_kodu==0 mu?
+    Döner: (gecerli: bool, neden: str|None). TESLİM tanımı tekildir:
+    teslim_paketi.py exit 0 + makbuz (bkz. ajan-brif kural satırı)."""
+    makbuz_yolu = yol("defter", "teslim-makbuz.json")
+    if not os.path.isfile(makbuz_yolu):
+        return False, "_oa/defter/teslim-makbuz.json YOK"
+    try:
+        with open(makbuz_yolu, encoding="utf-8") as f:
+            m = json.load(f)
+    except Exception as e:
+        return False, f"teslim-makbuz.json okunamadı/bozuk ({e})"
+    if not isinstance(m, dict) or m.get("exit_kodu") != 0:
+        return False, "teslim-makbuz.json exit_kodu != 0 (son teslim RED/başarısız)"
+    return True, None
+
+
 _PIPELINE_KAYIT_MOD = None
 
 
@@ -268,6 +344,26 @@ def cmd_oturum_kapat(args):
         sys.exit("RET: kapanış ritüelsiz olmaz. --not içinde üç soruyu cevapla: "
                  "(1) defter --denetle'den geçti mi / hangi adımda kalındı? "
                  "(2) süre flag'leri + hatırlatıcı güncel mi? (3) bekleyen avukat kararı ne?")
+
+    # B2-KİLİT (E6, v0.5.8.5): "TESLİME HAZIR" ibaresi yalnız teslim_paketi.py
+    # exit 0 + makbuz (`_oa/defter/teslim-makbuz.json`) ile yazılabilir —
+    # makbuzsuz/RED-makbuzlu iddia kapanış notuna GİREMEZ. Bu RET, ritüel
+    # reddiyle AYNI sınıftadır (not daha diske yazılmadan reddedilir): yanlış
+    # "teslim edildi" iddiası kalıcı devir notuna dönüşüp sonraki oturumu
+    # yanıltamaz (v0.5.5 saha bulgusu: makbuzsuz UDF "teslim" sayılmıştı).
+    _tum_not = " ".join(x for x in (args.not_, getattr(args, "serhle", None)) if x)
+    if "teslime hazır" in _tr_kucuk(_tum_not):
+        _makbuz_ok, _makbuz_neden = _makbuz_gecerli_mi()
+        if not _makbuz_ok:
+            sys.exit(
+                "RET (B2-KİLİT): kapanış notunda 'TESLİME HAZIR' ibaresi var ama "
+                f"geçerli teslim makbuzu yok ({_makbuz_neden}). TESLİM tanımı "
+                "tekildir: teslim_paketi.py exit 0 + makbuz — makbuzsuz hiçbir "
+                "çıktı TESLİM/HAZIR adı alamaz. Kapanış notu REDDEDİLDİ (diske "
+                "YAZILMADI, kilit KALDI); doğru ibare: \"AÇIK UÇLU — MAKBUZ "
+                "RED/YOK\". Ya teslim_paketi.py'yi koşup makbuz üretin ya da "
+                "notu bu ibareyle düzeltin.")
+
     if _cikti_bos_mu():
         print("UYARI: _oa/cikti boş — ajan-brif kural #4 ('her üretim _oa/cikti'ya "
               "çalışma evrakı adıyla yazılır') karşılanmamış görünüyor; KAPANIŞ'a kadar "
@@ -277,6 +373,34 @@ def cmd_oturum_kapat(args):
               "(`oa_hafiza.py devir ...`) bırakılmamış olabilir; statüler deftere işlenmiş "
               "olsa bile ara bağlam yalnız sözle/beyanla kalmış olabilir "
               "(mekanik uyarı — engel değil).")
+
+    # E4(a) (v0.5.8.5): süre flag'i BOŞ ∧ kökte süre-nöbeti sınıfı belge VAR →
+    # görünür uyarı. Tebligat/gerekçeli karar süre BAŞLATIR; süresiz kapanan
+    # bir oturum, telafisi olmayan tek hatanın (süre) üstünü örtebilir.
+    if _sure_flag_bos_mu():
+        _snb = _sure_nobeti_belgesi_bul()
+        if _snb:
+            print(f"UYARI (E4): _oa/sureler.json süre flag'i BOŞ ama kökte "
+                  f"süre-nöbeti sınıfı belge var ({_snb}). Tebligat/karar sınıfı "
+                  "evrak SÜRE BAŞLATIR — kapanmadan `oa_hafiza.py sure-flag` + "
+                  "`sure_nobetci.py --kok .` ile süreyi deftere işleyin "
+                  "(mekanik uyarı — engel değil; anayasa m.2: süre telafisi "
+                  "olmayan tek hatadır).")
+
+    # E6(b) (v0.5.8.5): dosya.md'de '[doldur]' kalıntısı → görünür uyarı —
+    # dosya kimliği tamamlanmadan kapanan oturum sonraki devralana eksik
+    # bağlam bırakır (bloklamaz — yalnız görünürlük).
+    _dosya_md = yol("dosya.md")
+    if os.path.isfile(_dosya_md):
+        try:
+            with open(_dosya_md, encoding="utf-8", errors="replace") as f:
+                _dosya_icerik = f.read()
+        except OSError:
+            _dosya_icerik = ""
+        if "[doldur]" in _dosya_icerik:
+            print("UYARI (E6): _oa/dosya.md hâlâ '[doldur]' kalıntısı içeriyor — "
+                  "dosya kimliği tamamlanmadan oturum kapanıyor; sonraki oturum "
+                  "eksik bağlamla devralacak (mekanik uyarı — engel değil).")
 
     denetim_metni, denetim_calisti = _kapanis_denetim_calistir(getattr(args, "kok", None))
     serhle = getattr(args, "serhle", None)
@@ -387,6 +511,19 @@ MEVZUAT_KURUM_ARACLARI = {
 }
 BILINEN_ARACLAR = ARAMA_ARACLARI | GETIR_ARACLARI | MEVZUAT_KURUM_ARACLARI
 _BILINEN_ARACLAR_CASEFOLD = {a.casefold(): a for a in BILINEN_ARACLAR}
+
+
+def _arac_anahtar(s):
+    """E3 (v0.5.8.5) — normalize eşleşme anahtarı: casefold + tüm boşluk ve
+    alt-çizgiler atılır ('Ictihat Getir' ≡ 'ictihat_getir'). Kanonik adlar
+    arasında yalnız boşluk/alt-çizgiyle ayrışan çift YOKTUR — çakışma riski yok."""
+    return re.sub(r"[\s_]+", "", (s or "").casefold())
+
+
+_BILINEN_ARACLAR_ANAHTAR = {_arac_anahtar(a): a for a in BILINEN_ARACLAR}
+# E3 — sondaki parantezli ek ('ictihat_getir (Yargı Pro)' / 'mevzuat_getir (yedek)')
+# normalize sırasında ATILIR; parantez içi içerik kütüğe/muhakemeye asla sızmaz.
+_ARAC_PARANTEZ_EK_RE = re.compile(r"\s*\([^)]*\)\s*$")
 _GUVENLI_ARAC_TOKEN_RE = re.compile(r"[A-Za-z0-9_.-]{1,64}")
 DAMGA_ENUM = {"LEHE", "ALEYHE", "ALEYHE-AYIRT", "NOTR"}
 
@@ -412,6 +549,16 @@ def _arac_normalize_ve_dogrula(arac_ham):
     if not arac:
         return None, "RET: --arac boş olamaz."
     kanonik = _BILINEN_ARACLAR_CASEFOLD.get(arac.casefold())
+    if kanonik is not None:
+        return kanonik, None
+    # E3 (v0.5.8.5) — TAM-EŞLEŞME REDDİ KALKTI: parantezli ek + boşluk/alt-çizgi
+    # toleransıyla ikinci bir normalize denemesi yapılır ('ictihat_getir (Yargı
+    # Pro)', 'Ictihat Getir' → 'ictihat_getir'). Parantez içi içerik TAMAMEN
+    # atılır (yalnız KANONİK ad diske yazılır — enjeksiyon yüzeyi büyümez);
+    # eşleşme yine yalnız BİLİNEN sözlüğe çıkabilir, sınıf kuralları (--damga
+    # zorunluluğu/yasağı) kanonik ad üzerinden AYNEN uygulanır (t8 kapalı kalır).
+    taban = _ARAC_PARANTEZ_EK_RE.sub("", arac).strip()
+    kanonik = _BILINEN_ARACLAR_ANAHTAR.get(_arac_anahtar(taban))
     if kanonik is not None:
         return kanonik, None
     if not _GUVENLI_ARAC_TOKEN_RE.fullmatch(arac):
@@ -640,7 +787,10 @@ def _hucre(s):
     return re.sub(r"\s+", " ", (s or "").replace("|", "/")).strip()
 
 
-_DAMGA_ENJEKSIYON_RE = re.compile(r"DAMGA\s*=")
+# v0.5.8.5 (A1a): DAMGA= yanına DOKUM-SINIFI= ve DUYULMUS= tokenları da
+# eklendi — kullanıcı-kontrolündeki metin, script'in kendi yazdığı doğrulanmış
+# sınıf/duyulmuş tokenlarıyla da KARIŞAMAZ (aynı ikinci-katman savunma).
+_DAMGA_ENJEKSIYON_RE = re.compile(r"(DAMGA|DOKUM-SINIFI|DUYULMUS)\s*=")
 
 
 def _sonuc_damga_ize_karismasin(s):
@@ -668,12 +818,13 @@ def _sonuc_damga_ize_karismasin(s):
     (doğrulanmış --damga değerini) eklediği olur; `args.sonuc`/
     `args.damga_degistir`'in ASIL hâli (muhakeme dosyası/kunye_normalize/
     verbatim denetimi) bu dönüşümden ETKİLENMEZ — yalnız KÜTÜK hücresine
-    yazılan taban için kullanılır."""
-    return _DAMGA_ENJEKSIYON_RE.sub("DAMGA∶", s or "")
+    yazılan taban için kullanılır. (v0.5.8.5: DOKUM-SINIFI=/DUYULMUS=
+    tokenları da aynı katmandan geçer — bkz. `_DAMGA_ENJEKSIYON_RE`.)"""
+    return _DAMGA_ENJEKSIYON_RE.sub(lambda m: m.group(1) + "∶", s or "")
 
 
 _MUHAKEME_YAPISAL_RE = re.compile(
-    r"(?m)^(\*\*(?:KUNYE|KAYNAK-IZI|DAMGA|GEÇERSİZ-KILINDI):\*\*|#{1,6}\s)"
+    r"(?m)^(\*\*(?:KUNYE|KAYNAK-IZI|DAMGA|DÖKÜM-SINIFI|GEÇERSİZ-KILINDI):\*\*|#{1,6}\s)"
 )
 
 
@@ -879,6 +1030,41 @@ def cmd_teyit(args):
 
     is_arama = args.arac in ARAMA_ARACLARI
     is_getir = args.arac in GETIR_ARACLARI
+    is_mevzuat_kurum = args.arac in MEVZUAT_KURUM_ARACLARI
+
+    # E3 (v0.5.8.5) — mevzuat/kurum kaydında --damga UYGULANMAZ (damga ritüeli
+    # içtihat/GETİR sınıfına aittir) ama SESSİZCE de yutulmaz: açık bir [BİLGİ]
+    # satırı basılır ve damga bu çağrı için düşürülür (kütüğe DAMGA= yazılmaz,
+    # muhakeme kaydı üretilmez) — sessiz atlama yasağı.
+    if is_mevzuat_kurum and args.damga:
+        print(f"[BİLGİ] --damga ({args.damga}) mevzuat/kurum aracı ({args.arac}) "
+              "kaydında UYGULANMAZ — damga ritüeli içtihat (GETİR) sınıfına aittir; "
+              "bu çağrıda damga YOK SAYILDI (kütüğe DAMGA= yazılmadı, muhakeme "
+              "kaydı üretilmedi). İçtihat damgalamak için --arac ictihat_getir/"
+              "kurum_karari_getir kullanın (E3 — sessiz düşme yasağı).")
+        args.damga = None
+
+    # A1a (v0.5.8.5) — TAM-OKUMA ALANI: --dokum-sinifi {tam-metin|ilgili-kisim}
+    # yalnız GETİR sınıfında anlamlıdır (ARAMA tam metin döndürmez — 'tam-metin'
+    # beyanı yapısal yalan olurdu; mevzuat/kurum kaydında sınıf alanı yoktur).
+    # GETİR+damga çağrısında sınıf beyan edilmemişse SESSİZCE tam-okuma
+    # sayılmaz: görünür UYARI ile dürüst 'ilgili-kisim' sınıfı işlenir (geriye
+    # uyum — sınıfsız ESKİ kütük satırları da okur tarafında ilgili-kisim
+    # sayılır, bkz. ictihat_muhakeme_denetim [G6]).
+    _dokum_sinifi = getattr(args, "dokum_sinifi", None)
+    _duyulmus = bool(getattr(args, "duyulmus", False))
+    if _dokum_sinifi and not is_getir:
+        sys.exit("RET: --dokum-sinifi yalnız GETİR sınıfı araçlarla "
+                 "(ictihat_getir/kurum_karari_getir) verilebilir — ARAMA tam metin "
+                 "döndürmez ('tam-metin' beyanı yapısal yalan olur), mevzuat/kurum "
+                 "kaydında döküm sınıfı uygulanmaz (fail-closed, sessiz düşme yasağı).")
+    if is_getir and args.damga and not _dokum_sinifi:
+        _dokum_sinifi = "ilgili-kisim"
+        print("UYARI: --dokum-sinifi belirtilmedi — geriye uyum: bu döküm "
+              "'ilgili-kisim' sınıfıyla kütüğe işlendi (A1a). Karar BAŞTAN SONA "
+              "İSTİSNASIZ okunduysa --dokum-sinifi tam-metin verin; triyaj kapısı "
+              "([G6] ictihat_muhakeme_denetim) dilekçedeki her künye için kütükte "
+              "TAM-METİN sınıfı döküm arar.")
 
     # P0-2 DÜZELTME (e): Layer-0 taraması artık HER --sorgu için çalışır —
     # arac sınıfından (ARAMA/GETİR) BAĞIMSIZ; mevzuat_*/kurum_karari_ara dahil
@@ -1117,6 +1303,10 @@ def cmd_teyit(args):
             sonuc_yazilan += " [ARAMA — tam metin çekilmedi]"
         if args.damga:
             sonuc_yazilan += f" DAMGA={args.damga}"
+            # A1a (v0.5.8.5) — döküm sınıfı kütük satırında yaşar; sınıfsız
+            # ESKİ satırlar okur tarafında 'ilgili-kisim' sayılır (geriye uyum).
+            if _dokum_sinifi:
+                sonuc_yazilan += f" DOKUM-SINIFI={_dokum_sinifi}"
             if (args.damga_degistir and ko_mod is not None and son_damga_kutukte is not None
                     and son_damga_kutukte != args.damga):
                 # DÜZELTME (v0.5.5 şerh turu 2 — YENİ-3, KÜÇÜK): gerekçe de
@@ -1130,6 +1320,10 @@ def cmd_teyit(args):
                 gerekce_h = _sonuc_damga_ize_karismasin(args.damga_degistir.strip())
                 sonuc_yazilan += (f" (DEĞİŞTİRİLDİ — önceki: {son_damga_kutukte}; "
                                    f"gerekçe: {gerekce_h})")
+        if _duyulmus:
+            # A1a — karşı tarafın fiilen İLERİ SÜRDÜĞÜ karar işareti: [G6]
+            # triyaj istisnasının (duyulmuş + ayırt bağlamı) kütük ayağı.
+            sonuc_yazilan += " DUYULMUS=EVET"
 
         # DÜZELTME (v0.5.5 düzeltme turu — P0-2 (d) BLOKER, salt-ALEYHE sızma
         # yolu): kütüğe yazılan HER serbest-metin alanı `_hucre`'den geçirilir
@@ -1209,6 +1403,12 @@ def cmd_teyit(args):
                 if _kurl:
                     f.write(f"**KAYNAK-URL:** {_muhakeme_kacis(_kurl)}\n")
                 f.write(f"**DAMGA:** {args.damga}\n")
+                # A1a (v0.5.8.5) — döküm sınıfı muhakeme kaydına da yazılır
+                # (satır biçimi `ictihat_muhakeme_denetim.DOKUM_SINIFI_LINE_RE`
+                # ile round-trip uyumlu); satırın YOKLUĞU okur tarafında
+                # 'ilgili-kisim' sayılır (geriye uyum — eski kayıt bozulmaz).
+                if _dokum_sinifi:
+                    f.write(f"**DÖKÜM-SINIFI:** {_muhakeme_kacis(_dokum_sinifi)}\n")
                 # v0.5.8.4 [G5] — aşılmışlık satırları: biçim
                 # `ictihat_muhakeme_denetim.py`'nin ASAN_KAYNAK_LINE_RE /
                 # ASILMA_TARIHI_LINE_RE / GECERLILIK_BITIS_LINE_RE regexleriyle
@@ -1605,6 +1805,21 @@ def main():
                     help="v0.5.8.4 [G5] içtihadın geçerlilik bitişi — muhakeme kaydına "
                          "**GEÇERLİLİK-BİTİŞ:** satırı yazılır (yalnız --damga ile); "
                          "bir karar 'aşıldı' işaretlenirken üç alan TEK komutla verilebilir")
+    s.add_argument("--dokum-sinifi", dest="dokum_sinifi", default=None,
+                    choices=["tam-metin", "ilgili-kisim"],
+                    help="A1a (v0.5.8.5) TAM-OKUMA ALANI — bu dökümün okuma sınıfı: "
+                         "'tam-metin' = karar BAŞTAN SONA İSTİSNASIZ okundu; "
+                         "'ilgili-kisim' = yalnız ilgili kısım okundu. Yalnız GETİR "
+                         "sınıfında geçerlidir; kütük satırına (DOKUM-SINIFI=) ve "
+                         "muhakeme kaydına (**DÖKÜM-SINIFI:**) yazılır. Sınıfsız eski "
+                         "kayıt okur tarafında ilgili-kisim sayılır (geriye uyum); "
+                         "[G6] triyaj kapısı dilekçedeki künye için tam-metin arar")
+    s.add_argument("--duyulmus", action="store_true",
+                    help="A1a (v0.5.8.5) — karşı tarafın FİİLEN İLERİ SÜRDÜĞÜ karar "
+                         "işareti; kütük satırına DUYULMUS=EVET olarak işlenir. "
+                         "[G6] triyaj istisnası (duyulmuş + ayırt/çürütme bağlamı) "
+                         "bu işareti arar — işaretsiz aleyhe karara preemptive "
+                         "ifşa yasağı uygulanır (anayasa m.6)")
     s.add_argument("--sorgu-onayli", dest="sorgu_onayli", action="store_true",
                     help="Layer-0 ucuz sorgu taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN) "
                          "bilinçli biçimde geçer")

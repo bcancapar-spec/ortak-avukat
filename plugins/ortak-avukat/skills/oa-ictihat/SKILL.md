@@ -158,7 +158,7 @@ Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işl
   `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_ara --sorgu "<sorgu>" --sonuc "<aday künyeler/özet>" [--dokum-icerik "<ham snippet>"]`
   — `--dokum-icerik` verilirse script kendi döküm dosyasını `_oa/teyit/dokum/`'a YAZAR (ayrıca dosyayı elle oluşturup `--dokum <yol>` ile bağlaman GEREKMEZ).
 - **GETİR sınıfı** (`ictihat_getir`/`kurum_karari_getir` — tam metin DÖNER): `--damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR` ZORUNLUDUR (damgasız içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ) — bu, İçtihat Muhakeme Zinciri'nin (MODÜL 2) tek-komut ritüelidir, MUHAKEME adımını (`oa-kiyas`/`oa-kontrol`) de aynı çağrıda tetikler:
-  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<Yargıtay 4. HD, E. 2023/1234, K. 2023/5678>" --damga LEHE --bag "<DAVAYA-BAĞ, ≥40 karakter>" --ilgili-kisim "<döküm içinde VERBATİM geçen alıntı>" --dokum-icerik "<ham tam metin>"`
+  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<Yargıtay 4. HD, E. 2023/1234, K. 2023/5678>" --damga LEHE --dokum-sinifi tam-metin --bag "<DAVAYA-BAĞ, ≥40 karakter>" --ilgili-kisim "<döküm içinde VERBATİM geçen alıntı>" --dokum-icerik "<ham tam metin>"`
   `--sonuc` içinde ayrıştırılabilir bir `E./K. YYYY/NNNN` künyesi bulunmalıdır (yoksa RET — çıplak künye üretmez). Aynı künye için ikinci bir `teyit --damga` çağrısıyla FARKLI bir damga vermek (ör. ALEYHE→LEHE) sessizce kabul edilmez; bilinçli değişim `--damga-degistir "<gerekçe, ≥40 karakter>"` ister.
 
 Her iki sınıfta da dökümü **elle** yazıp yalnızca `--dokum <mevcut-dosya>` ile bağlamak da geçerlidir (ör. daha önce başka bir araçla üretilmiş bir ham metni yeniden kullanmak için); ama normal akışta `--dokum-icerik` tek adımda hem dosyayı yazar hem bağlar.
@@ -246,3 +246,39 @@ kendi bayraklarıyla işlenir: `oa_hafiza.py teyit … --damga <DAMGA>
 GG.AA.YYYY` (üç bayrak YALNIZ `--damga` ile geçerlidir; damgasız çağrı RET —
 üç alan tek komutla yazılır, lehe-denetimde AŞILMIŞ çıkan karar böyle işlenir;
 kullanım örneği şablondadır).
+
+## v0.5.8.5 — A1 TRİYAJ (tam-okuma + LEHE şartı)
+
+> **ÇEKİRDEK (kullanıcı direktifi — aynen):** "Müvekkil aleyhine HİÇBİR yargı
+> kararı dilekçeye giremez. MCP'den çekilen TÜM kararlar İSTİSNASIZ baştan
+> sona (TAM METİN) okunur. LEHE ise dilekçeye; ALEYHE ise CEPHANELİĞE
+> (strateji/farkındalık); NÖTR kütükte kalır."
+
+CEK adımının triyaj yükümlülükleri:
+
+- **Tam metni oku, sonra damgala.** `ictihat_getir` ile çekilen HER karar
+  baştan sona okunur. **Arama sonucu parçasından alıntı YASAKTIR** — ARAMA
+  sınıfı tam metin döndürmez; snippet'ten alıntı "birebir" iddiasıyla
+  yapısal yalandır. Alıntı daima GETİR dökümünden gelir.
+- **Okuma sınıfını beyan et:** karar baştan sona okunduysa teyit komutuna
+  `--dokum-sinifi tam-metin` ekle (yalnız GETİR sınıfında geçerlidir; ARAMA
+  ve mevzuat/kurum çağrısında RET). Sınıf beyan edilmezse script görünür
+  UYARI basar ve dürüst `ilgili-kisim` işler; sınıfsız ESKİ kütük satırı da
+  okur tarafında `ilgili-kisim` sayılır — tam-okuma İDDİA EDİLMEZ.
+- **Duyulmuş işareti:** karşı tarafın FİİLEN ileri sürdüğü kararı
+  `--duyulmus` ile işaretle (kütüğe `DUYULMUS=EVET` yazılır) — [G6] ayırt
+  istisnasının kütük ayağı budur; işaretsiz aleyhe karara preemptive ifşa
+  yasağı (m.6) uygulanır.
+- **[G6] kapısını baştan besle:** `ictihat_muhakeme_denetim.py` dilekçedeki
+  her künye için kütükte TAM-METİN sınıfı döküm arar; yoksa TESLİM ENGELİ.
+  Tam-metinsiz künyeyi zincire hiç sokma — kapıda değil, kaynağında çöz.
+
+Örnek (GETİR + tam-okuma + damga; alan örnekleri:
+`oa-kiyas/references/ictihat-muhakeme-sablonu.md`):
+
+```bash
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<künye>" --damga LEHE --dokum-sinifi tam-metin --bag "..." --ilgili-kisim "..." --dokum-icerik @ham.md
+```
+
+Aleyhe + karşı tarafça fiilen ileri sürülmüş karar: aynı komuta
+`--damga ALEYHE-AYIRT --duyulmus --ayirt "<somut fark>"` verilir.

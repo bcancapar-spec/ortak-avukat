@@ -106,6 +106,49 @@ Girdi .udf ise content.xml'den üç istişari kalem: pageFormat DÖRT kenar
 LineSpacing="0.50" (~1,5 satır) yaygın mı, '(https://…)' bağlantıları 11pt
 kapsamında mı (md_udf_html standardı: bağlantı gövdeden 1 punto küçük).
 Burada yalnız GÖRÜNÜRLÜK — exit koduna ASLA dokunmaz.
+
+── [Y] HAVADA-KALAN ALINTI KAPISI (346 saha dersi) ────────────────────────
+Dört sınıf AYRILIR — sınıflandırma önce gelir, kural körlemesine uygulanamaz
+(saha dersi: akış-içi alıntıya kapanış eklemek metni BOZAR):
+  (a) akış-bağlı alıntı — cümle tırnaktan sonra gramerce devam ediyor
+      ('… şeklinde', '… ifadesiyle', 'denilmiş; devamında', 'sonucuna
+      varılmıştır' vb.) → DOKUNULMAZ/temiz;
+  (b) havada-kalan — tırnak içinde açılıp '...' ile kesilen ve kapanış kalıbı
+      (denilmiştir/şeklindedir/ifade edilmiştir/belirtilmiştir/vurgulanmıştır)
+      taşımadan paragraf biten alıntı → BLOK sınıfı bulgu;
+  (c) açılan tırnak paragraf sonunda kapanmıyor → BLOK;
+  (d) alıntı-dışı serbest '...' → yalnız uyarı.
+'>' satırları birebir blok-alıntı gövdesidir ([B4]'ün alanı) — [Y] taramaz.
+BLOK bulgular exit 1 üretir; avukat onaylı istisna için `--istisna-gerekce`
+(aşağıda) BLOK'u görünür uyarıya düşürür ve istisna defterine yazar.
+
+── [M] MADDE NUMARASI SÜREKLİLİĞİ (346 saha dersi, uyarı sınıfı) ───────────
+Numaralı madde/paragraf dizisinde ATLAMA ve MÜKERRERLİK denetimi (saha:
+ekleme sırasında 1-5 ve 28-31 blokları mükerrer doğmuştu) → görünür bulgu.
+Bölüm başlığından (#) sonra 1'den yeniden başlamak meşru yazım tarzıdır,
+uyarı üretmez; sıra bozukluğu BLOK DEĞİLDİR — yazım tarzları değişkendir.
+
+── [N] ÇIPLAK KISALTMA (346 saha dersi, uyarı sınıfı) ──────────────────────
+2+ büyük harfli kısaltma metinde geçiyor ama hiçbir yerde tam açılımı
+('Açılım (KIS)' ya da 'KIS (Açılım)') verilmemişse uyarı. BİREBİR ALINTI
+içindeki kısaltma MUAF (tırnak içi + '>' blok-alıntı tespiti). Yaygın hukuki
+kısaltmalar beyaz listesi (HMK, TTK, TBK, TMK, CMK, İYUK, AYM, BAM, E., K.,
+md. — örneklemdir, numerus clausus değil) uyarı üretmez.
+
+── [T] TESLİME-HAZIR MAKBUZ KAPISI (346 saha dersi — makbuz garantisi) ─────
+Denetlenen taslakta ya da kökün `_oa/` belgelerinde 'TESLİME HAZIR' ibaresi
+var ama `_oa/defter/teslim-makbuz.json` (exit_kodu=0) yok/geçersiz →
+'makbuzsuz hazır-beyanı' görünür ihlali, BLOK (R2: tek ölçüt teslim_paketi.py
+exit 0 + makbuzdur; sözle/ibare ile 'hazır' İLAN EDİLEMEZ). Olumsuzlanmış
+geçişler ('hiç TESLİME HAZIR olmamış' — pipeline_kayit uyarı metni) beyan
+DEĞİLDİR, sayılmaz.
+
+── İSTİSNA DEFTERİ (ortak şema, append-only) ───────────────────────────────
+`--istisna-gerekce METİN` verilirse [Y]/[T] BLOK bulguları avukat onayıyla
+görünür UYARIYA düşer (exit'e yansımaz) ve `_oa/defter/istisna-kayitlari.jsonl`
+dosyasına {"zaman","tur":"yanlis-pozitif-ilani","ilgili","gerekce","onay":
+"avukat","imza"} satırı APPEND-ONLY yazılır — kapı muhakemeyi ENGELLEMEZ,
+kaydını tutarak yol verir (sessiz opt-out yok).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -116,6 +159,7 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import datetime
 import glob
 import importlib.util
 import json
@@ -869,6 +913,297 @@ def _sayi_haritasi(metin):
     return kalemler[:_SAYI_AZAMI_KALEM], atlanan
 
 
+# ── [Y] HAVADA-KALAN ALINTI KAPISI (346 saha dersi) ────────────────────────
+# Sınıflandırma ÖNCE gelir (saha dersi: akış-içi alıntıya kapanış eklemek
+# metni bozar): (a) akış-bağlı temiz · (b) '...' ile kesik + kapanışsız BLOK ·
+# (c) kapanmayan tırnak BLOK · (d) alıntı-dışı serbest '...' yalnız uyarı.
+_Y_TIRNAK_KAPANIS = {'"': '"', "“": "”", "«": "»"}
+_Y_ELIPS_SON_RE = re.compile(r"(\.{3}|…)\s*$")
+_Y_ELIPS_RE = re.compile(r"\.{3}|…")
+# (a)+(b) ortak kuyruk deseni: tırnaktan SONRA gelen akış/kapanış kalıpları —
+# 'şeklinde(dir)', 'biçiminde', 'ifadesiyle/ifadesine/ifade edilmiştir',
+# 'denilmiş(tir)', 'belirtilmiştir', 'vurgulanmıştır', 'sonucuna varılmıştır',
+# 'yer verilmiştir', 'yönünde', 'gerekçesiyle', 'değerlendirmesi'.
+_Y_AKIS_KAPANIS_RE = re.compile(
+    r"\bşeklinde|\bbiçiminde|\bifadesi\w*|\bifade\s+edil\w*|\bdenil\w*|"
+    r"\bden(?:mek|miş)\w*|\bbelirtil\w*|\bvurgulan\w*|\bsonucuna\s+var\w*|"
+    r"\byer\s+veril\w*|\byönünde|\bgerekçesiyle|\bdeğerlendirme")
+
+
+def _y_tirnak_boluntule(parca):
+    """Bir paragraftaki tırnak segmentlerini ayırır. Döner:
+    (kapali_segmentler, acik_baslangic) — kapali: (icerik, bas, son_dahil_degil);
+    acik_baslangic: kapanmamış tırnağın indeksi ya da None. Düz `\"` için
+    açılış/kapanış sıralı eşlenir; kıvrık “” ve «» çifti açıkça eşlenir."""
+    segmentler, acik = [], None
+    for i, ch in enumerate(parca):
+        if acik is None:
+            if ch in _Y_TIRNAK_KAPANIS:
+                acik = (i, _Y_TIRNAK_KAPANIS[ch])
+        elif ch == acik[1]:
+            segmentler.append((parca[acik[0] + 1:i], acik[0], i + 1))
+            acik = None
+    return segmentler, (acik[0] if acik else None)
+
+
+def _y_kirp(parca, bas, uzunluk=60):
+    return " ".join(parca[bas:bas + uzunluk].split())
+
+
+def havada_kalan_alinti_denetle(metin):
+    """(bloklar, uyarilar) döndürür — bloklar (b)/(c) sınıfı (teslim engeli),
+    uyarilar (d) sınıfı (serbest '...'). (a) akış-bağlı alıntı hiçbir listeye
+    GİRMEZ (DOKUNULMAZ). '>' satırları birebir blok-alıntıdır, taranmaz."""
+    bloklar, uyarilar = [], []
+    for ham in re.split(r"\n\s*\n", metin or ""):
+        satirlar = [s for s in ham.splitlines() if not s.lstrip().startswith(">")]
+        parca = "\n".join(satirlar).strip()
+        if not parca:
+            continue
+        segmentler, acik = _y_tirnak_boluntule(parca)
+        if acik is not None:
+            bloklar.append(
+                "(c) açılan tırnak paragraf sonunda KAPANMIYOR: "
+                f"„…{_y_kirp(parca, acik)}…” — alıntı ya kapatılmalı ya da "
+                "tırnak kaldırılmalı (avukat gözü şart)")
+        for icerik, bas, son in segmentler:
+            if not _Y_ELIPS_SON_RE.search(icerik.rstrip()):
+                continue  # '...' ile kesilmemiş alıntı bu kapının konusu değil
+            kuyruk = parca[son:]
+            if _Y_AKIS_KAPANIS_RE.search(kuyruk):
+                continue  # (a) akış-bağlı / kapanış kalıplı — DOKUNULMAZ
+            bloklar.append(
+                "(b) havada-kalan alıntı: „…" + _y_kirp(parca, bas) + "…” — "
+                "'...' ile kesilmiş ve kapanış kalıbı (denilmiştir/şeklindedir/"
+                "ifade edilmiştir/belirtilmiştir/vurgulanmıştır) taşımadan "
+                "paragraf bitiyor; alıntı cümleye bağlanmalı")
+        # (d) alıntı-dışı serbest '...': tırnak içleri maskelenir, kalan taranır
+        maske = list(parca)
+        for _icerik, bas, son in segmentler:
+            maske[bas:son] = " " * (son - bas)
+        if acik is not None:
+            maske[acik:] = " " * (len(parca) - acik)
+        disari = "".join(maske)
+        m = _Y_ELIPS_RE.search(disari)
+        if m:  # (d) her paragraf için EN FAZLA bir uyarı — gürültü kontrolü
+            uyarilar.append(
+                "(d) alıntı-dışı serbest '...': „…"
+                + _y_kirp(disari, max(0, m.start() - 30)) + "…” — kesik anlatım "
+                "sinyali; bilinçli üslupsa dokunulmaz (uyarı, engel değil)")
+    return bloklar, uyarilar
+
+
+# ── [M] MADDE NUMARASI SÜREKLİLİĞİ (346 saha dersi, uyarı sınıfı) ──────────
+_M_MADDE_RE = re.compile(r"^\s{0,3}(\d{1,3})[.)]\s+\S")
+_M_BASLIK_RE = re.compile(r"^\s{0,3}#{1,6}\s")
+
+
+def madde_numara_uyarilari(metin):
+    """Numaralı madde dizilerinde ATLAMA ve MÜKERRERLİK uyarıları (uyarı
+    sınıfı — BLOK değil, yazım tarzları değişkendir). Bölüm başlığı (#) yeni
+    sayaç başlatır: bölüm başına 1'den yeniden başlamak MEŞRUDUR. Tarih
+    satırları ('01.01.2026') madde numarası desenine girmez (rakam + [.)] +
+    BOŞLUK zorunlu)."""
+    uyarilar = []
+    bolum, bolumler = [], []
+    bolumler.append(bolum)
+    for satir in (metin or "").splitlines():
+        if _M_BASLIK_RE.match(satir):
+            bolum = []
+            bolumler.append(bolum)
+            continue
+        m = _M_MADDE_RE.match(satir)
+        if m:
+            bolum.append(int(m.group(1)))
+    for numaralar in bolumler:
+        if not numaralar:
+            continue
+        sayim = {}
+        for n in numaralar:
+            sayim[n] = sayim.get(n, 0) + 1
+        for n in sorted(k for k, c in sayim.items() if c > 1):
+            uyarilar.append(
+                f"mükerrer madde numarası: {n} ({sayim[n]} kez) — ekleme "
+                "sırasında bir blok İKİNCİ KEZ doğmuş olabilir (saha: 1-5 ve "
+                "28-31 mükerrerliği); avukat gözden geçirmeli")
+        onceki = None
+        for n in numaralar:
+            if onceki is not None and n > onceki + 1:
+                uyarilar.append(
+                    f"madde numarası atlaması: {onceki} → {n} (aradaki "
+                    f"{onceki + 1}..{n - 1} görünmüyor) — bilinçli değilse dizi onarılmalı")
+            onceki = n
+    return uyarilar
+
+
+# ── [N] ÇIPLAK KISALTMA (346 saha dersi, uyarı sınıfı) ─────────────────────
+# Beyaz liste ÖRNEKLEMDİR (numerus clausus değil): görev listesi (HMK, TTK,
+# TBK, TMK, CMK, İYUK, AYM, BAM, E., K., md.) + aynı sınıftan yaygın hukuki
+# daire/kanun kısaltmaları + sistem damgaları (TC/UYAP/OCR/UDF/RG). 'E.', 'K.',
+# 'md.' tek harfli/noktalı biçimler {2,} desenine zaten girmez — belge amaçlı.
+_N_BEYAZ_LISTE = {
+    "HMK", "TTK", "TBK", "TMK", "CMK", "İYUK", "IYUK", "AYM", "BAM",
+    "HD", "CD", "HGK", "CGK", "TCK", "İİK", "IIK", "AİHM", "AIHM", "KVKK",
+    "TC", "UYAP", "OCR", "UDF", "RG",
+}
+_N_KISALTMA_RE = re.compile(r"(?<!\w)[A-ZÇĞİÖŞÜ]{2,5}(?!\w)")
+_N_ROMEN_RE = re.compile(r"[IVXLCDM]+")
+_N_KUCUK_HARF_RE = re.compile(r"[a-zçğıöşü]")
+_N_AZAMI_UYARI = 8
+
+
+def ciplak_kisaltma_uyarilari(metin):
+    """Tam açılımı hiçbir yerde verilmemiş 2+ büyük harfli kısaltmalar için
+    uyarı listesi (uyarı sınıfı — BLOK değil). MUAFİYETLER: tırnak/'>' birebir
+    alıntı içi (alıntı metnine müdahale edilemez), beyaz liste, romen rakamı,
+    tamamı-büyük başlık satırı ve tamamı-büyük ibarenin parçası olan sözcük."""
+    metin = metin or ""
+    # tırnak spanları (kapanmamış tırnak paragraf/metin sonuna kadar alıntıdır)
+    spanlar, acik = [], None
+    for i, ch in enumerate(metin):
+        if acik is None:
+            if ch in _Y_TIRNAK_KAPANIS:
+                acik = (i, _Y_TIRNAK_KAPANIS[ch])
+        elif ch == acik[1]:
+            spanlar.append((acik[0], i + 1))
+            acik = None
+    if acik is not None:
+        spanlar.append((acik[0], len(metin)))
+
+    def _tirnak_icinde(k):
+        return any(b <= k < s for b, s in spanlar)
+
+    adaylar = []
+    gorulen = set()
+    for sm in re.finditer(r"[^\n]+", metin):
+        satir = sm.group(0)
+        if satir.lstrip().startswith(">"):
+            continue  # birebir blok-alıntı — MUAF
+        if not _N_KUCUK_HARF_RE.search(satir):
+            continue  # tamamı-büyük başlık/damga satırı — kısaltma bağlamı değil
+        for m in _N_KISALTMA_RE.finditer(satir):
+            tok = m.group(0)
+            if tok in gorulen or tok in _N_BEYAZ_LISTE or _N_ROMEN_RE.fullmatch(tok):
+                continue
+            if _tirnak_icinde(sm.start() + m.start()):
+                continue  # birebir alıntı içi — MUAF
+            once, sonra = satir[:m.start()], satir[m.end():]
+            if (re.search(r"[A-ZÇĞİÖŞÜ]{2,}[\s:;,.\-]*$", once)
+                    or re.search(r"^[\s:;,.\-]*[A-ZÇĞİÖŞÜ]{2,}", sonra)):
+                continue  # tamamı-büyük ibarenin parçası ('TESLİME HAZIR' gibi)
+            gorulen.add(tok)
+            adaylar.append(tok)
+    uyarilar = []
+    for tok in adaylar:
+        if (re.search(r"\(\s*%s\s*\)" % re.escape(tok), metin)
+                or re.search(r"(?<!\w)%s\s*\(" % re.escape(tok), metin)):
+            continue  # 'Açılım (KIS)' ya da 'KIS (Açılım)' — açılım verilmiş
+        uyarilar.append(
+            f"çıplak kısaltma '{tok}' — metinde tam açılımı görünmüyor; ilk "
+            "geçtiği yerde 'Açılım (KISALTMA)' biçiminde açılmalı (mahkeme "
+            "metni okuyucuya kısaltma sözlüğü borçlu bırakmaz)")
+    if len(uyarilar) > _N_AZAMI_UYARI:
+        kirpilan = len(uyarilar) - _N_AZAMI_UYARI
+        uyarilar = uyarilar[:_N_AZAMI_UYARI]
+        uyarilar.append(f"(+{kirpilan} çıplak kısaltma adayı daha — rapor "
+                        f"{_N_AZAMI_UYARI} kalemle sınırlı, taslağı elle tarayın)")
+    return uyarilar
+
+
+# ── [T] TESLİME-HAZIR MAKBUZ KAPISI (346 saha dersi — makbuz garantisi) ────
+# İbare BÜYÜK HARFLİ damga biçiminde aranır ('TESLİME HAZIR' — teslim_paketi
+# çıktı damgasıyla aynı yüzey); olumsuzlanmış geçişler ('hiç TESLİME HAZIR
+# olmamış' — pipeline_kayit uyarı metni) hazır-BEYANI değildir, sayılmaz.
+_T_HAZIR_RE = re.compile(r"TESL[İI]ME\s+HAZ[İI]R")
+_T_OLUMSUZ_SONRA_RE = re.compile(r"^\s*(olmam[ıi]ş|olmad[ıi]|de[ğg]il|DE[ĞG][İI]L)")
+_T_OLUMSUZ_ONCE_RE = re.compile(r"hi[çc]\s*$", re.I)
+
+
+def _teslim_makbuzu_gecerli_mi(taban):
+    """_oa/defter/teslim-makbuz.json var + JSON okunuyor + exit_kodu==0 mu.
+    (teslim_paketi.py makbuzu yalnız başarıda bu adla yazar; RED denemesi
+    teslim-makbuz-RED.json'dur — o makbuz DEĞİLDİR.)"""
+    yol = os.path.join(taban, "_oa", "defter", "teslim-makbuz.json")
+    if not os.path.isfile(yol):
+        return False
+    try:
+        with open(yol, encoding="utf-8") as f:
+            veri = json.load(f)
+        return int(veri.get("exit_kodu", 0)) == 0
+    except Exception:
+        return False
+
+
+def _t_beyan_var_mi(icerik):
+    for m in _T_HAZIR_RE.finditer(icerik or ""):
+        if _T_OLUMSUZ_SONRA_RE.search(icerik[m.end():m.end() + 20]):
+            continue
+        if _T_OLUMSUZ_ONCE_RE.search(icerik[max(0, m.start() - 10):m.start()]):
+            continue
+        return True
+    return False
+
+
+def teslime_hazir_ihlalleri(metin, kok):
+    """'TESLİME HAZIR' ibaresi taslakta ya da kökün _oa/ *.md belgelerinde
+    geçiyor ama geçerli teslim makbuzu yoksa 'makbuzsuz hazır-beyanı' ihlal
+    listesi döner (BLOK sınıfı). Kök verilmemişse CWD'ye düşer
+    (`_antitez_matris_dosyalari` ile simetrik — kanonik hat CWD=kok koşar)."""
+    taban = kok if kok else "."
+    yerler = []
+    if _t_beyan_var_mi(metin):
+        yerler.append("denetlenen taslak")
+    oa = os.path.join(taban, "_oa")
+    if os.path.isdir(oa):
+        # TARİHÇE MUAFİYETİ (v0.5.8.5, 346 prova bulgusu): oturum/ ve devir/
+        # dizinleri GEÇMİŞ koşuların kayıtlarıdır — tarih kaydı beyan değildir;
+        # taransaydı eski bir koşunun hatası kökü KALICI bloğa çevirirdi.
+        # [T] yalnız YAŞAYAN belgeleri denetler (00-TESLIM, DURUM, kök notlar).
+        _TARIHCE_DIZINLER = {"oturum", "devir", "dersler", "arsiv-yerel"}
+        for yol in sorted(glob.glob(os.path.join(oa, "**", "*.md"), recursive=True)):
+            gorel = os.path.relpath(yol, oa)
+            if gorel.split(os.sep)[0] in _TARIHCE_DIZINLER:
+                continue
+            try:
+                with open(yol, encoding="utf-8", errors="replace") as f:
+                    icerik = f.read()
+            except Exception:
+                continue
+            if _t_beyan_var_mi(icerik):
+                yerler.append(os.path.relpath(yol, taban))
+    if not yerler or _teslim_makbuzu_gecerli_mi(taban):
+        return []
+    return [
+        f"makbuzsuz hazır-beyanı: 'TESLİME HAZIR' ibaresi «{yer}» içinde ama "
+        "_oa/defter/teslim-makbuz.json (exit_kodu=0) yok/geçersiz — R2: tek "
+        "ölçüt teslim_paketi.py exit 0 + makbuzdur; makbuz üretilmeden 'hazır' "
+        "İLAN EDİLEMEZ (üretildi≠teslime hazır)"
+        for yer in yerler]
+
+
+# ── İSTİSNA DEFTERİ YAZICISI (ortak şema, append-only) ─────────────────────
+
+def istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="avukat"):
+    """_oa/defter/istisna-kayitlari.jsonl'a ORTAK ŞEMA ile bir satır APPEND
+    eder ve dosya yolunu döndürür. Şema (birden çok ajan yazar, append-only):
+    {"zaman": ISO, "tur": "gizlilik-deny-override"|"kunye-istisna"|
+    "yanlis-pozitif-ilani"|"dogrulama-toleransi", "ilgili": str, "gerekce":
+    str, "onay": "avukat"|"otomatik-kural", "imza": arac-imzasi}. Bu yardımcı
+    BİLEREK yereldir — ortak modül bağımlılığı yaratılmaz."""
+    taban = kok if kok else "."
+    defter = os.path.join(taban, "_oa", "defter")
+    os.makedirs(defter, exist_ok=True)
+    yol = os.path.join(defter, "istisna-kayitlari.jsonl")
+    kayit = {
+        "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+        "tur": tur, "ilgili": ilgili, "gerekce": gerekce, "onay": onay,
+        "imza": "dilekce_denetim.py",
+    }
+    with open(yol, "a", encoding="utf-8") as f:
+        f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    return yol
+
+
 def denetle(metin, tip, taraf):
     eksik, uyari = [], []
     unsurlar = TIPLER.get(tip, TIPLER["genel"])
@@ -947,6 +1282,12 @@ def main():
     ap.add_argument("--muhakeme-dizin", default=None,
                     help="(opsiyonel) --ictihat-muhakeme ile birlikte; verilmezse "
                          "--kok/_oa/cikti (--kok yoksa CWD-göreli _oa/cikti)")
+    ap.add_argument("--istisna-gerekce", default="",
+                    help="(opsiyonel) AVUKAT ONAYLI istisna: [Y] havada-kalan alıntı / "
+                         "[T] makbuzsuz hazır-beyanı BLOK bulgularını görünür UYARIYA "
+                         "düşürür ve gerekçeyi _oa/defter/istisna-kayitlari.jsonl'a "
+                         "(ortak şema, append-only, tur=yanlis-pozitif-ilani) yazar — "
+                         "sessiz opt-out yok, kapı kaydını tutarak yol verir.")
     ap.add_argument("--ictihat-dokum-dizin", default=None,
                     help="(opsiyonel) --ictihat-muhakeme ile birlikte; verilmezse "
                          "--kok/_oa/teyit/dokum (--kok yoksa CWD-göreli _oa/teyit/dokum)")
@@ -997,6 +1338,32 @@ def main():
     if aleyhe_notu:
         print(f"   [BİLGİ] olumsuzlanmış kalıp(lar) sinyal sayılmadı (ör. 'kabul anlamına "
               f"gelmemek kaydıyla'): {', '.join(sorted(set(aleyhe_notu)))}")
+
+    print("\n[Y] HAVADA-KALAN ALINTI KAPISI (a: akış-bağlı DOKUNULMAZ · b/c: BLOK · d: uyarı)")
+    y_blok, y_uyari = havada_kalan_alinti_denetle(metin)
+    for u in y_blok:
+        print(f"   [BLOK] {u}")
+    for u in y_uyari:
+        print(f"   [UYARI] {u}")
+    if not y_blok and not y_uyari:
+        print("   [OK] havada-kalan/kapanmayan alıntı ve serbest '...' sinyali yok")
+
+    print("\n[M] MADDE NUMARASI SÜREKLİLİĞİ (uyarı sınıfı — sıra tarzı değişkendir, "
+          "ASLA bloklamaz)")
+    m_uyarilar = madde_numara_uyarilari(metin)
+    if m_uyarilar:
+        for u in m_uyarilar:
+            print(f"   [UYARI] {u}")
+    else:
+        print("   [OK] numaralı dizilerde atlama/mükerrerlik sinyali yok")
+
+    print("\n[N] ÇIPLAK KISALTMA (uyarı sınıfı — birebir alıntı içi MUAF, ASLA bloklamaz)")
+    n_uyarilar = ciplak_kisaltma_uyarilari(metin)
+    if n_uyarilar:
+        for u in n_uyarilar:
+            print(f"   [UYARI] {u}")
+    else:
+        print("   [OK] açılımsız kısaltma sinyali yok (beyaz liste + alıntı muafiyeti sonrası)")
 
     udf_gecersiz = False
     if a.udf:
@@ -1135,6 +1502,14 @@ def main():
         else:
             print("   [OK] kaynaklar bloğu ilk 3 satırda ve tüm öğeler @sha8'li")
 
+    print("\n[T] TESLİME-HAZIR MAKBUZ KAPISI (makbuzsuz hazır-beyanı = görünür ihlal, BLOK)")
+    t_ihlaller = teslime_hazir_ihlalleri(metin, a.kok)
+    if t_ihlaller:
+        for u in t_ihlaller:
+            print(f"   [BLOK] {u}")
+    else:
+        print("   [OK] makbuzsuz 'TESLİME HAZIR' beyanı yok (ibare yok ya da makbuz geçerli)")
+
     sekil_yolu = a.udf or (a.taslak if a.taslak.lower().endswith(".udf") else "")
     if sekil_yolu:
         print("\n[Ş] ŞEKİL STANDARDI (advisory — v0.5.8.4, ASLA bloklamaz; "
@@ -1147,11 +1522,25 @@ def main():
             print("   [OK] kenar 42.52 · LineSpacing 0.50 · bağlantılar 11pt — "
                   "şekil standardı uyumlu görünüyor")
 
+    # AVUKAT ONAYLI İSTİSNA — [Y]/[T] BLOK bulguları --istisna-gerekce ile görünür
+    # uyarıya düşer; gerekçe istisna defterine (append-only, ortak şema) yazılır.
+    # Kayıt YALNIZ fiilen düşürülen bir bulgu varken atılır (defter kirletilmez).
+    yeni_blok_istisnali = False
+    if (y_blok or t_ihlaller) and a.istisna_gerekce:
+        ilgili = a.taslak + " [" + "/".join(
+            e for e, var in (("Y", y_blok), ("T", t_ihlaller)) if var) + "]"
+        defter_yolu = istisna_kaydi_yaz(a.kok, "yanlis-pozitif-ilani",
+                                        ilgili, a.istisna_gerekce)
+        print(f"\n[Y/T] avukat onaylı istisna: BLOK bulguları UYARIYA düşürüldü; "
+              f"gerekçe istisna defterine yazıldı: {defter_yolu}")
+        yeni_blok_istisnali = True
+
     print("\n" + cizgi)
-    engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel)
+    engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel
+                 or ((y_blok or t_ihlaller) and not yeni_blok_istisnali))
     if engel:
         print("SONUÇ: TESLİM ÖNCESİ AVUKAT GÖZÜ ŞART (eksik unsur / aleyhe sinyal / teyit şerhi "
-              "/ ictihat muhakeme kapısı).")
+              "/ ictihat muhakeme kapısı / havada-kalan alıntı / makbuzsuz hazır-beyanı).")
         print(cizgi)
         sys.exit(1)
     print("SONUÇ: temel şablon denetimi temiz (nihai sorumluluk avukatındır).")

@@ -12,7 +12,10 @@ PROVENANCE MÜHRÜ: her teslim ürününe PROV-O adlarıyla hizalı doğum belge
 Şema `oa-muhur/1.0` (~11 alan):
   prov_schema        : "oa-muhur/1.0"
   entity_id          : mantıksal kimlik (ör. "dilekce:cbs-2023-1079:v2")
-  entity_type        : dilekce_udf | dilekce_pdf | graf_json | analiz_md | diger
+  entity_type        : dilekce_udf | dilekce_pdf | graf_json | analiz_md |
+                       e-imzali-nusha | diger  (e-imzali-nusha: B5a e-imza
+                       halkası — sign.sgn'li imzalı nüshanın mührü;
+                       was_derived_from = imza-öncesi nüshanın sha'sı)
   artifact_file      : ürünün DAVA KÖKÜNE GÖRELİ yolu (sabit-yol sızıntı dersi)
   artifact_sha256    : ürünün HAM BAYTLARININ tam SHA-256'ı — semantica'nın
                        compute_checksum'unda OLMAYAN, bizde ŞART olan alan
@@ -62,6 +65,7 @@ import json
 import os
 import shutil
 import sys
+import zipfile
 
 # v0.5.8.4 — llm_kullanimi verilmediğinde 'beyan edilmedi' yerine dürüst
 # otomatik beyan (üretim mekaniği script, içerik oturumun LLM koşusudur).
@@ -82,6 +86,34 @@ def _goreli(kok, yol):
                                os.path.realpath(kok)).replace("\\", "/")
     except ValueError:  # farklı sürücü — göreli yazılamaz, ad yazılır
         return os.path.basename(yol)
+
+
+def sign_sgn_var_mi(yol):
+    """B5a — E-İMZA MÜHÜR HALKASI: UDF zip'inde e-imza girdisi (sign.sgn)
+    var mı? UYAP editörü bir .udf'i e-imzalayınca zip'e sign.sgn girdisi
+    ekler; bu tespit, imzalı nüshayı imza-öncesi nüshadan ayırt etmenin
+    mekanik yoludur. Zip değilse / açılamazsa False — tespit ENGEL değildir,
+    ASLA fırlatmaz (hook felsefesi: emniyet katmanı akışı bloklamaz)."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            return any(ad.rsplit("/", 1)[-1].lower() == "sign.sgn"
+                       for ad in z.namelist())
+    except Exception:
+        return False
+
+
+def e_imza_muhur_uret(kok, urun, imza_oncesi_sha=None, girdiler=(),
+                      arac=None, llm=None, kimlik=None):
+    """B5a — imzalı dosya için "e-imzali-nusha" tipiyle mühür: e-imza,
+    dosyanın baytlarını DEĞİŞTİRİR (sign.sgn eklenir) — bu yüzden imzalı
+    nüshanın sha'sı imza-öncesi mühürle eşleşmez; bu BAYAT değil TÜREV'dir.
+    `imza_oncesi_sha` (imza-öncesi nüshanın artifact_sha256'ı) was_derived_from
+    zincirini kurar; bilinmiyorsa None kalır (zincir kurulamadı — çağıran
+    görünür uyarı basmalıdır). Üretilen kayıt muhur_yaz/--tasi/--dogrula ile
+    birebir uyumludur (aynı oa-muhur/1.0 şeması)."""
+    kimlik = kimlik or "e-imzali-nusha:%s" % os.path.basename(urun)
+    return muhur_uret(kok, urun, "e-imzali-nusha", kimlik, list(girdiler),
+                      onceki=imza_oncesi_sha, arac=arac, llm=llm)
 
 
 def muhur_uret(kok, urun, tip, kimlik, girdiler, onceki=None,
@@ -209,8 +241,20 @@ def main():
     if not args.urun or not os.path.isfile(args.urun):
         sys.exit(f"HATA: ürün bulunamadı: {args.urun}")
 
-    kimlik = args.kimlik or f"urun:{os.path.basename(args.urun)}"
-    kayit = muhur_uret(args.kok, args.urun, args.tip, kimlik,
+    # B5a — sign.sgn tespiti: kullanıcı tip vermemişse (varsayılan 'diger')
+    # ve üründe e-imza girdisi varsa tip otomatik 'e-imzali-nusha' olur;
+    # was_derived_from zinciri --onceki (imza-öncesi sha) ile kurulur.
+    tip = args.tip
+    if tip == "diger" and sign_sgn_var_mi(args.urun):
+        tip = "e-imzali-nusha"
+        print("ℹ sign.sgn tespit edildi — tip otomatik 'e-imzali-nusha' "
+              "(imza-öncesi sha'yı --onceki ile verin ki was_derived_from "
+              "zinciri kurulsun).")
+
+    kimlik = args.kimlik or (f"e-imzali-nusha:{os.path.basename(args.urun)}"
+                             if tip == "e-imzali-nusha"
+                             else f"urun:{os.path.basename(args.urun)}")
+    kayit = muhur_uret(args.kok, args.urun, tip, kimlik,
                        args.girdi, args.onceki, args.arac, args.llm)
     yol, hata = muhur_yaz(args.kok, args.urun, kayit)
     if hata:

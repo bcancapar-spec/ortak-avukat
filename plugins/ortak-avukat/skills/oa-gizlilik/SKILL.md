@@ -86,3 +86,36 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8.5 — E2 bağlam istisnaları + DENY-override protokolü
+
+### Bağlam istisnaları (yanlış-pozitif onarımı — fail-closed yön korunur)
+
+- **"rapor" tek başına sağlık verisi DEĞİLDİR.** Hukuk metninin en sık
+  kelimelerindendir (bilirkişi raporu / ek rapor / kök rapor). "rapor" yalnız
+  ±60 karakterlik pencerede sağlık-bağlam komşusu (hastane/teşhis/tedavi
+  sınıfı kelime ya da doktor/hekim/heyet) varsa sağlık sinyali sayılır.
+  Çekirdek sağlık kelimeleri (teşhis, tedavi, hastane, psikiyatr, …) bağımsız
+  tetiklenmeye DEVAM eder — gerçek sağlık verisinde yanlış negatif üretmez.
+- **Mersis biçim kuralı:** 16 hane + `0` başlangıcı = kart DEĞİL, işletme
+  kaydı biçimidir (kart IIN'i hiçbir ödeme ağında 0 ile başlamaz); Luhn
+  tesadüfen tutsa bile kart DENY'i üretmez. Sessiz de yutulmaz — `[BİLGİ]`
+  kanalına düşer.
+- **Telefon zayıf-şiddet sinyaldir:** 05XX/+90 biçimli kişisel telefon
+  yakalanır (`ask` sınıfı, zayıf); ama ±40 karakter penceresinde belge/
+  doküman-id etiketi (documentId, evrak no, belge no, doğrulama kodu, barkod)
+  taşıyan 10 haneli diziler telefon uyarısından AYRIŞIR — UYAP evrak
+  kimlikleri telefonla aynı hane genişliğindedir. Etiketi olmayan her
+  telefon-biçimli dizi yine yakalanır (fail-closed yön).
+
+### DENY-OVERRIDE protokolü — model tek başına aşamaz
+
+DENY sonucu YALNIZ avukatın açık kararıyla aşılabilir:
+`--override-onay avukat` + `--override-gerekce "<≥30 karakter>"` — ikisi
+birden ZORUNLU (gerekçesiz override fail-closed DENY, exit 2; hiç tarama
+yapılmadan reddedilir). Kullanım `_oa/defter/istisna-kayitlari.jsonl`'a
+(`tur=gizlilik-deny-override`, `onay=avukat`) kaydedilir ve rapor AYNEN
+basılır — görünürlük kaybolmaz, sorumluluk bilinçli karara aittir. Model bu
+parametreyi kendi inisiyatifiyle EKLEYEMEZ: avukattan gelen açık talimat +
+gerekçe olmadan DENY nihaidir; alternatif daima önce önerilir (yerel işleme,
+maskeleme `--maskele`, manuel adım).

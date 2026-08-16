@@ -378,6 +378,26 @@ def tur_tahmin_et(ad, kaynak):
     return None
 
 
+def _baslik_utf8_onar(s):
+    """E5 (v0.5.8.5) — harita BAŞLIK metninde mojibake onarımı (UTF-8 güvenli
+    yazım): OCR/karışık-kodek kaynaklı tipik UTF-8→cp1252/latin-1 çift-çözüm
+    artıkları ('DilekÃ§e', 'BaÅŸlÄ±k') deterministik geri çevrilir; çözülemeyen
+    U+FFFD işaretleri atılır. SAF fonksiyon (yalnız girdiden türer — seri==
+    paralel determinizmi ve _gate_a_uygula'nın byte-özdeş geri-üretimi korunur);
+    mojibake işareti taşımayan metin OLDUĞU GİBİ döner (gövde/offset'lere
+    DOKUNULMAZ — kayıpsızlık: onarım yalnız harita başlığı temsilindedir)."""
+    s = (s or "").replace("�", "").strip()
+    if any(m in s for m in ("Ã", "Ä", "Å")):
+        for kodek in ("cp1252", "latin-1"):
+            try:
+                aday = s.encode(kodek).decode("utf-8")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                continue
+            if not any(m in aday for m in ("Ã", "Ä", "Å")):
+                return aday
+    return s
+
+
 def _harita_yaz(yol, metin, govde_uzunluk, kaynak_md):
     """Gate A — DETERMİNİSTİK, KAYIPSIZ sayfa/bölüm haritası: mevcut
     '<!-- --- sayfa N --- -->' ayracından offset (üretilen .md dosyasındaki karakter
@@ -389,7 +409,7 @@ def _harita_yaz(yol, metin, govde_uzunluk, kaynak_md):
     bolumler = []
     if not eslesmeler:
         gov = metin or ""
-        ilk = next((s.strip() for s in gov.splitlines() if s.strip()), "")
+        ilk = _baslik_utf8_onar(next((s.strip() for s in gov.splitlines() if s.strip()), ""))
         kar = anlamli(gov)
         bolumler.append({"sayfa": None, "offset": govde_uzunluk, "baslik": ilk[:120],
                           "karakter": kar, "token": kar // KAR_PER_TOKEN})
@@ -399,7 +419,7 @@ def _harita_yaz(yol, metin, govde_uzunluk, kaynak_md):
             bas_ofs = m.end()
             bit_ofs = eslesmeler[i + 1].start() if i + 1 < len(eslesmeler) else len(metin)
             gov = metin[bas_ofs:bit_ofs]
-            ilk = next((s.strip() for s in gov.splitlines() if s.strip()), "")
+            ilk = _baslik_utf8_onar(next((s.strip() for s in gov.splitlines() if s.strip()), ""))
             kar = anlamli(gov)
             bolumler.append({"sayfa": no, "offset": govde_uzunluk + bas_ofs, "baslik": ilk[:120],
                               "karakter": kar, "token": kar // KAR_PER_TOKEN})
@@ -758,16 +778,32 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
 
 
 def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan,
-                 buyuk_esik, gorsel_sayfalar=None):
+                 buyuk_esik, gorsel_sayfalar=None, sha_ilk=None):
     karakter = anlamli(metin)
+    sha = hashlib.sha256((metin or "").encode("utf-8", "replace")).hexdigest()[:16]
     kayit = {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
              "teyit_gerek": teyit, "karakter": karakter,
-             "sha": hashlib.sha256((metin or "").encode("utf-8", "replace")).hexdigest()[:16],
+             "sha": sha,
              "sayfa": sayfa, "hata": hata,
              "tur_tahmini": tur_tahmin_et(ad, kaynak),
              "buyuk": karakter > buyuk_esik,
              "ocr_durum": None, "ocr_bos_sayfalar": [], "gorsel_klasor": ""}
+    # ---- E5 SHA-DEDUP (v0.5.8.5): aynı sha256 içerik bu koşuda İKİNCİ bir ad
+    # altında görülürse ikinci metin/harita ÜRETİLMEZ; kayıt SİLİNMEZ, künyeye
+    # "ayni_icerik: <ilk kaydın md'si>" işaretiyle girer (kayıpsızlık: hiçbir
+    # kaynak yok sayılmaz, yalnız tekrar üretim engellenir). Yalnız METİNLİ
+    # kayıtlar dedup'lanır (karakter>0) — boş/arızalı kayıtların ortak BOS_SHA
+    # imzası birbirini 'aynı içerik' YAPMAZ. sha_ilk=None verilirse (ör.
+    # --onbakis kanalı) davranış ESKİSİYLE BİREBİR aynıdır.
+    if sha_ilk is not None and karakter > 0:
+        ilk = sha_ilk.get(sha)
+        if ilk:
+            kayit["md"], kayit["harita"] = "", ""
+            kayit["ayni_icerik"] = ilk
+            return kayit
     kayit["md"], kayit["harita"] = md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik)
+    if sha_ilk is not None and karakter > 0 and kayit["md"]:
+        sha_ilk.setdefault(sha, kayit["md"])
     # ---- P0-9 OCR-NÖBETÇİSİ: hâlâ çökük kalan sayfalar İÇİN (hedefli) görsel-inceleme
     # dosyaları — yazım burada (TEK-YAZAR EBEVEYN); işçi yalnız PNG baytlarını taşıdı. ----
     taban = os.path.splitext(kayit["md"])[0] if kayit["md"] else None
@@ -1124,6 +1160,16 @@ def main():
                     kullanilan.add(k["md"])
 
     temsil = set()   # MEKANİK KAPI (GERÇEK invaryant): HER kaynak ≥1 kayıtla temsil edilmeli
+    # E5 SHA-DEDUP defteri: sha -> ilk kaydın md'si. FAZ C SIRALI-İNDEKS tek-yazar
+    # döngüsünde dolar → dedup kararı işçi sayısından BAĞIMSIZ (seri==paralel korunur).
+    # Önbellek-HIT kayıtları da (md'li, dedup-işaretsiz olanlar) baştan kaydolur ki
+    # yeni işlenen bir kopya, önceki koşuda üretilmiş metnin tekrarını üretmesin.
+    sha_ilk = {}
+
+    def _sha_kaydet(k):
+        if k.get("sha") and (k.get("karakter") or 0) > 0 and k.get("md") and not k.get("ayni_icerik"):
+            sha_ilk.setdefault(k["sha"], k["md"])
+
     for it in items:      # items zaten SIRALI → md adlandırma seri koşuyla BİREBİR aynı
         gorece, no, temiz, tarih = it["gorece"], it["no"], it["temiz"], it["tarih"]
 
@@ -1140,11 +1186,13 @@ def main():
                     kunye.append(k)
                     if k.get("md"):
                         kullanilan.add(k["md"])
+                    _sha_kaydet(k)
                     atlanan += 1; temsil.add(it["index"])
             else:
                 k = onb["kayit"]; kunye.append(k); atlanan += 1
                 if k.get("md"):
                     kullanilan.add(k["md"])
+                _sha_kaydet(k)
                 temsil.add(it["index"])
             continue
 
@@ -1158,7 +1206,7 @@ def main():
         if it["sinif"] == "tekil":
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
                              gorece, no, temiz, tarih, hedef, kullanilan, a.buyuk_esik,
-                             gorsel_sayfalar=p.get("gorsel"))
+                             gorsel_sayfalar=p.get("gorsel"), sha_ilk=sha_ilk)
             kunye.append(k); yeni += 1; temsil.add(it["index"])
             # v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ — sonraki koşuda
             # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
@@ -1184,7 +1232,7 @@ def main():
             k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
                              f"{gorece}::{ic['icad']}", ic_no,
                              f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan,
-                             a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"))
+                             a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"), sha_ilk=sha_ilk)
             kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
         # v1.5.1 (a): arşiv içinde arıza {hata, atlandı} taşıyan EN AZ BİR iç kayıt varsa
         # bu arşiv de önbelleğe YAZILMAZ (imza aynı kalır → araç sonradan kurulunca
@@ -1252,16 +1300,24 @@ def main():
         else:
             harita_hucre = ""
         ocr_bos_hucre = f"🔴({len(k.get('ocr_bos_sayfalar') or [])})" if k.get("ocr_durum") else ""
+        if k.get("ayni_icerik"):        # E5 sha-dedup: ikinci metin üretilmedi, ilkine işaret
+            dosya_hucre = f"aynı içerik → `{k['ayni_icerik']}`"
+        else:
+            dosya_hucre = f"`{k.get('md','')}`"
         idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
                    f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
                    f"| {ocr_bos_hucre} | {tur_hucre} | {k.get('karakter') or 0} | {harita_hucre} "
-                   f"| `{k.get('md','')}` |\n")
+                   f"| {dosya_hucre} |\n")
     idx.append("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
                "Orijinal evrak salt-okunur arşivde durur.\n")
     idx.append("> Tür~ = dosya adından MEKANİK tahmin (Gate C), kesinlik DEĞİLDİR — advisory.\n")
     idx.append(f"> Harita = büyük evrağın (>{a.buyuk_esik:,} anlamlı karakter) sayfa/bölüm "
                "haritası (`<dosya>.harita.json`, md yanında); DETERMİNİSTİK ve KAYIPSIZ "
                "yapısal bölme, özet DEĞİLDİR (Gate A).\n")
+    if any(k.get("ayni_icerik") for k in kunye):
+        idx.append("> aynı içerik = E5 sha-dedup: bu kaynağın sha256'sı listedeki bir önceki "
+                   "kayıtla BİREBİR aynı — ikinci metin/harita üretilmedi, okuma oradan yapılır "
+                   "(kayıt silinmedi, işaretlendi — kayıpsızlık).\n")
     idx.append(f"> 🔴 = P0-9 OCR-NÖBETÇİSİ: {len(OCR_RETRY_ADIMLARI)} deterministik denemeden "
                "(DPI/PSM/yönelim) sonra da o sayfa(lar) boş/çöp kaldı — 'YÜKLENEMEDİ' DEĞİL, "
                "'işlendi' de DEĞİL; sayfa görseli `_oa/metin/gorsel/<evrak>/pNN.png` altında, "

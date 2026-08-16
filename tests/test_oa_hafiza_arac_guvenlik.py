@@ -154,9 +154,12 @@ KUNYE_HAYALET = "4. HD, E. 2019/7777, K. 2019/8888, T. 01.01.2019"
 
 
 def _kutuk_satiri_yaz(kutuk_yolu, kunye, damga, dokum_ad="a.md"):
+    # v0.5.8.5 [G6]: dürüst-akış satırı TAM-METİN sınıfı taşır (A1a) — sınıfsız
+    # satır geriye-uyumla 'ilgili-kisim' sayılıp triyaj kapısında bloklanır.
     with open(kutuk_yolu, "a", encoding="utf-8") as f:
         f.write(f"| 2026-01-01T00:00:00 | ictihat_getir | sorgu | {kunye} "
-                f"DAMGA={damga} | [döküm](_oa/teyit/dokum/{dokum_ad}) |\n")
+                f"DAMGA={damga} DOKUM-SINIFI=tam-metin | "
+                f"[döküm](_oa/teyit/dokum/{dokum_ad}) |\n")
 
 
 def test_t3_hayalet_muhakeme_kutuk_dayanagi_olmadan_bloklanir(tmp_path):

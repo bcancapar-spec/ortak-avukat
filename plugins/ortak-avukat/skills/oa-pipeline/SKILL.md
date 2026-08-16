@@ -418,3 +418,57 @@ işlevsiz bırakır (372 Torbalı bulgusu).
 - **Stop/SessionEnd OTOMATİK MÜHÜR:** mühürsüz teslim-sınıfı ürün varsa hook
   `muhur_yaz.py`'yi kendisi koşturur (post-hoc mühür üretim yolunu İDDİA
   EDEMEZ — `was_generated_by` bunu açıkça beyan eder; `--dogrula` ile teyit).
+
+## v0.5.8.5 — HOOK KATMANI: klon tanıma + açılış envanteri + nabız + ELDEN
+
+- **C1 — Dava-klasörü tanıma Yargı PRO klonlarını kapsar:** `_dosya_klasoru_mu`
+  artık kökte `uyap-project.json` VEYA `evraklar/` dizini VEYA
+  (`INDEX.md` ∧ `dava-analiz.md`) çifti görürse de dava klasörü sayar
+  (INDEX.md TEK BAŞINA yetmez — her markdown deposu dava klasörü sanılmasın);
+  UYAP evrak deseni `NNN_` → `NNN_/NNNN_` (yıl önekli adlar da sayılır).
+  Saha ölümü buydu: UserPromptSubmit klon kökünde hiç ateşlemiyordu.
+- **C4 — SessionStart açılış envanteri (`hook-acilis`):** oturum açılırken
+  dava klasöründeyse kurulu script hattının envanteri (oa_ingest / tam_tur /
+  oa_hafiza / teslim_paketi / dilekce_denetim / udf_yaz / muhur_yaz /
+  kaynak_blogu / grafik_denetim / vakia_matris / gizlilik_tara) modelin
+  bağlamına ENJEKTE edilir + "UDF üretimi HER ZAMAN udf_yaz.py üzerinden"
+  hatırlatması. Çağrı beklemez — SKILL.md'nin "ancak çağrılırsa yüklenir"
+  tuzağına düşmez. Dava-dışı klasörde sessiz; ASLA bloklamaz.
+- **C3 — HOOK NABZI (`.hook-son-iz.json`):** her kanca ateşlediğinde
+  olay-başına ISO damga düşer ({prompt, pretool, postwrite, denetle, acilis});
+  kapanış-sınıfı koşu, `prompt` damgası YOK/24 saatten ESKİ ise **ÖLÜ-PROMPT
+  uyarısı** basar ("kanca sessizce ölür, kimse görmez" — üç saha ölümünün
+  ortak deseni). Sessizlik artık "temiz" ile "ölü"yü ayırt ettirir.
+- **C2 — Kök simetrisi:** `hook_prompt`/`hook_pretool` kök keşfini artık
+  `hook_denetle` ile AYNI ortak keşiften yapar (stdin payload cwd/file_path +
+  CLAUDE_PROJECT_DIR + süreç CWD'si); stdin payload'ı süreç başına BİR KEZ
+  okunur.
+- **C5 — ELDEN statüsü (yeni resmî durum):** SCRIPT'li parça UYGULANDI
+  yazılırken kanıtta `_oa/` altı artefakt yolu YOKSA (ya da yol diskte yoksa)
+  statü otomatik **ELDEN**'e düşer — iş yapılmış olabilir ama script
+  artefaktı diskte KANITSIZDIR; UYGULANDI ile aynı kefeye konmaz, BLOKLANMAZ
+  da. ŞERHLİ geçişte düşürme yok (şerh zaten görünür istisnadır). `--denetle`
+  ELDEN kalemlerini TEK özet satıra indirir; DURUM.md `✋ ELDEN sayacı` ile
+  ayrı sayar; ELDEN doğrudan da yazılabilir (dürüst beyan — kanıt yine
+  zorunlu). `oa_metrik` ELDEN'i işlenmiş parça sayar (override oranı
+  UYGULANDI+ELDEN üzerinden — şerhli ELDEN sayaçtan kaybolmaz).
+- **B3 — Zincir-dışı UDF advisory doğrulaması:** hook-denetle, mühürsüz/bayat
+  `.udf`'lerde `udf_yaz.udf_dogrula`'yı İN-PROCESS koşar (resmî okuyucu
+  bacağı hariç) + pageFormat 4x42.52 kenar kontrolü; bulgular görünür satır +
+  deftere `denetle-udf` olayı. Zinciri atlayarak üretilen UDF artık en geç
+  kapanışta görünür — advisory, ASLA bloklamaz.
+- **A4.8b — RED-makbuz görünür satırı:** `teslim-makbuz-RED.json` diskte
+  durduğu sürece hook-denetle her koşuda "son teslim denemesi REDDEDİLMİŞ —
+  sebep giderilmeden teslim edilemez" satırını basar; RED sessizce
+  eskiyemez.
+- **B5 — Mühür bayatlık taraması:** teslim-sınıfı üründe `.prov.json` sha'sı
+  güncel dosyayla uyuşmuyorsa kayıt BAYAT işaretlenir ve otomatik mühür
+  `was_derived_from=eski-sha` ile TAZELER (zincir kopmaz); ürün `sign.sgn`
+  taşıyorsa BAYAT SAYILMAZ — yalnız bilgi satırı basılır, otomatik tazeleme
+  YAPILMAZ (karar teslim_paketi/muhur_yaz kuralına bırakılır; istisna
+  defterine `dogrulama-toleransi` izi düşer).
+- **oa_metrik — RED-makbuz sayacı:** `teslim-makbuz-RED.json` dosyasının
+  varlığı `[6]` override bölümünde ayrı sayaçtır (`red_makbuz`) — dosya
+  bozuk JSON olsa bile varlık kanıttır, parse etmeden sayılır (eski sayaç
+  yalnız `teslim-makbuz.json`a baktığından sahada yanlış "RED: 0"
+  basıyordu).

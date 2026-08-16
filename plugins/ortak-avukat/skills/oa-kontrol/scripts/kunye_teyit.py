@@ -86,6 +86,8 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import datetime
+import json
 import os
 import re
 import sys
@@ -157,6 +159,57 @@ MEVZUAT_BARE_RE = re.compile(
 )
 
 OCR_RE = re.compile(r"OCR|⚠")
+
+# ── B1 (v0.5.8.5) — KENDİ-DOSYA-NO İSTİSNASI ────────────────────────────────
+# Saha bulgusu: taslağın başlık/künye bloğundaki KENDİ dosya numarası satırı
+# ("DOSYA NO : 2024/123 Esas") içtihat künyesi sanılıp TEYİTSİZ/teslim engeli
+# üretiyordu. Muafiyet DARALTILMIŞTIR (fail-closed): yalnız DOSYA NO/ESAS NO/
+# MERCİ etiketiyle BAŞLAYAN satırdaki, daire ANMAYAN ve E.+K. ÇİFTİ taşımayan
+# (esas-only / karar-only) desen muaf olur; daire adı ya da tam E./K. çifti
+# taşıyan metin gerçek içtihat künyesi olabilir → aynen yakalanmaya devam eder.
+# Muafiyet SESSİZ DEĞİLDİR: `_oa/defter/istisna-kayitlari.jsonl` ortak şemasına
+# (zaman/tur/ilgili/gerekce/onay/imza) kayıt düşülür + rapora [BİLGİ] basılır.
+KENDI_DOSYA_SATIR_RE = re.compile(
+    r"^\s*[>*\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
+
+
+def _istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
+    """İstisna defteri ortak şeması (append-only JSONL, birden çok araç yazar):
+    `_oa/defter/istisna-kayitlari.jsonl` satırı = {"zaman": ISO, "tur": ...,
+    "ilgili": str, "gerekce": str, "onay": "avukat"|"otomatik-kural",
+    "imza": araç-imzası}. Küçük YEREL yardımcı — ortak modül bağımlılığı
+    yaratılmaz (şema sözleşmesi satır biçimidir, kod değil). Yazılamazsa
+    görünür uyarı basılır, akış bloklanmaz (defter kaydı advisory izdir)."""
+    defter_dizin = os.path.join(kok or ".", "_oa", "defter")
+    kayit = {"zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+             "tur": tur, "ilgili": ilgili, "gerekce": gerekce,
+             "onay": onay, "imza": "kunye_teyit.py"}
+    try:
+        os.makedirs(defter_dizin, exist_ok=True)
+        with open(os.path.join(defter_dizin, "istisna-kayitlari.jsonl"),
+                  "a", encoding="utf-8") as f:
+            f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    except OSError as e:
+        print(f"UYARI: istisna defterine yazılamadı ({e}) — muafiyet yine de "
+              "uygulandı, iz eksik kaldı.", file=sys.stderr)
+
+
+def kendi_dosya_no_ayikla(atiflar, metin):
+    """B1 — atıf listesinden başlık/künye bloğundaki KENDİ dosya no satırlarını
+    ayıklar. Döner: (kalanlar, muaflar). Muafiyet şartları (hepsi birden):
+    (1) içtihat türü atıf, (2) E.+K. çifti TAM DEĞİL (esas-only/karar-only),
+    (3) daire/merci anılmıyor, (4) satır DOSYA NO/ESAS NO/MERCİ etiketiyle
+    başlıyor. Gerçek içtihat künyeleri (daire adı ve/veya E.+K. çifti) bu
+    süzgeçten GEÇMEZ — yakalanmaya devam eder (testle kanıtlı)."""
+    kalanlar, muaflar = [], []
+    for a in atiflar:
+        muaf = (a.tur == "ictihat"
+                and not (a.esas and a.karar)
+                and a.daire_key is None
+                and bool(KENDI_DOSYA_SATIR_RE.match(
+                    _satir_metni_no(metin, a.satir_no or 0))))
+        (muaflar if muaf else kalanlar).append(a)
+    return kalanlar, muaflar
 
 
 def _sikistir(s, n=140):
@@ -619,6 +672,23 @@ def main():
         metin = f.read()
 
     atiflar = atiflari_cikar(metin)
+
+    # B1 (v0.5.8.5) — KENDİ-DOSYA-NO İSTİSNASI: başlık/künye bloğundaki kendi
+    # dosya numarası satırları içtihat taramasından muaf; muafiyet istisna
+    # defterine yazılır ve rapora [BİLGİ] basılır (sessiz atlama yasağı).
+    atiflar, muaf_atiflar = kendi_dosya_no_ayikla(atiflar, metin)
+    for a in muaf_atiflar:
+        print(f"[BİLGİ] (satır {a.satir_no}) '{a.metin}' — başlık/künye "
+              "bloğundaki KENDİ dosya numarası satırı (DOSYA NO/ESAS NO/MERCİ): "
+              "içtihat künyesi taramasından MUAF tutuldu (B1); istisna defterine "
+              "kaydedildi (_oa/defter/istisna-kayitlari.jsonl).")
+        _istisna_kaydi_yaz(
+            args.kok, "kunye-istisna",
+            ilgili=f"satır {a.satir_no}: {a.metin} (E. {a.esas or '—'} / K. {a.karar or '—'})",
+            gerekce="başlık/künye bloğundaki kendi dosya numarası satırı — "
+                    "içtihat künyesi değil, taslağın kendi kimliği (B1 muafiyeti; "
+                    "daire ve E./K. çifti taşımayan etiketli satır)")
+
     teyit_kaynaklar, bilgi_kaynaklar, kutuk_var = kaynaklari_yukle(
         kutuk, dokum_dizin, cikti_dizin)
 

@@ -43,9 +43,12 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
+import argparse
+import datetime
+import json
+import os
 import re
 import sys
-import argparse
 
 # --- MUTLAK DENY desenleri (her mod) ---
 # (Kart no ve IBAN ayrıca algoritmik doğrulanır; aşağıya bakınız.)
@@ -61,14 +64,83 @@ MUTLAK_DENY = [
 KART = re.compile(r"\b(?:\d[ -]?){15,16}\b")
 TCKN = re.compile(r"(?<!\d)[1-9]\d{10}(?!\d)")
 
+# ── E2 BAĞLAM İSTİSNALARI (v0.5.8.5, saha karnesi — yanlış pozitif onarımı) ──
+# (a) SAĞLIK: "rapor" TEK BAŞINA sağlık verisi DEĞİLDİR (hukuk metninin en sık
+#     kelimelerinden biri: bilirkişi raporu / ek rapor / kök rapor). Sağlık
+#     çekirdek deseni "rapor"suz tanımlanır; "rapor" YALNIZ sağlık-bağlam
+#     komşuluğunda (± _RAPOR_PENCERE karakter içinde hastane/teşhis/tedavi
+#     sınıfı bir kelime ya da doktor/hekim/heyet) sağlık sinyali sayılır.
+#     Gerçek sağlık verisinde YANLIŞ NEGATİF ÜRETMEZ: çekirdek kelimelerin
+#     herhangi biri metinde geçiyorsa desen zaten bağımsız tetiklenir.
+SAGLIK_CEKIRDEK = re.compile(
+    r"\b(te[sş]his|tan[ıi]\b|hastal[ıi][kğ]|hastane|klinik|poliklinik|psikiyatr|psikoloj|"
+    r"engel(li|\s?oran)|sa[gğ]l[ıi]k|t[ıi]bb[iî]|tedavi|ameliyat|operasyon|kanser|t[üu]m[öo]r|hiv|aids|"
+    r"hepatit|ila[çc]\b|re[çc]ete|tahlil|biyopsi|gebe|hamile|ruh\s?sa[gğ]l[ıi]|ba[gğ][ıi]ml[ıi]l[ıi]k)\b", re.I)
+RAPOR = re.compile(r"\brapor\w*", re.I)
+# "rapor"u sağlıklaştıran EK komşu kelimeler (çekirdekte olmayanlar):
+RAPOR_SAGLIK_KOMSU = re.compile(r"\b(doktor|hekim|heyet|sa[gğ]l[ıi]k\s?kurulu)\b", re.I)
+_RAPOR_PENCERE = 60
+
+
+class _BaglamliSaglikDeseni:
+    """re.Pattern gibi .search sunar (HASSAS listesi API'si değişmez):
+    çekirdek kelime → doğrudan eşleşme; 'rapor' → yalnız pencere içinde
+    sağlık-bağlam komşusu varsa eşleşme (yoksa None — tetiklenmez)."""
+
+    def search(self, metin):
+        m = SAGLIK_CEKIRDEK.search(metin)
+        if m:
+            return m
+        for r in RAPOR.finditer(metin):
+            pencere = metin[max(0, r.start() - _RAPOR_PENCERE): r.end() + _RAPOR_PENCERE]
+            if SAGLIK_CEKIRDEK.search(pencere) or RAPOR_SAGLIK_KOMSU.search(pencere):
+                return r
+        return None
+
+
+# (c) TELEFON: 05XX/+90 biçimli kişisel telefon YAKALANIR; ama 10 haneli
+#     belge/doküman-id dizileri (documentId / evrak no / belge no / doğrulama
+#     kodu / barkod komşuluğu) telefon uyarısından AYRIŞIR — UYAP evrak
+#     kimlikleri telefonla aynı hane genişliğindedir, etiket komşuluğu ayırır.
+TELEFON = re.compile(
+    r"(?<!\d)(?:\+?\s?90[\s.\-]?)?(?:\(0?\d{3}\)|0\d{3}|\d{3})"
+    r"[\s.\-]?\d{3}[\s.\-]?\d{2}[\s.\-]?\d{2}(?!\d)")
+DOKUMAN_ID_KOMSU = re.compile(
+    r"(documentid|dok[uü]man\s*(?:no|id)|evrak\s*(?:no|numaras[ıi])|"
+    r"belge\s*(?:no|numaras[ıi])|do[gğ]rulama\s*kodu|barkod)", re.I)
+_DOKUMAN_PENCERE = 40
+
+
+class _DokumanIdAyrikTelefonDeseni:
+    """re.Pattern gibi .search sunar: telefon-biçimli her dizi, ± pencere
+    içinde belge/doküman-id etiketi TAŞIMIYORSA eşleşme sayılır (fail-closed
+    yön: etiketi olmayan her telefon-biçimli dizi yine yakalanır)."""
+
+    def search(self, metin):
+        for m in TELEFON.finditer(metin):
+            cevre = metin[max(0, m.start() - _DOKUMAN_PENCERE): m.end() + _DOKUMAN_PENCERE]
+            if not DOKUMAN_ID_KOMSU.search(cevre):
+                return m
+        return None
+
+
+def _mersis_gibi(ham):
+    """(b) MERSİS AYRIMI: Mersis no 16 hanedir ve 0 ile başlar; kart IIN'i
+    (ilk hane) hiçbir ödeme ağında 0 DEĞİLDİR. 16 hane + '0' başlangıcı →
+    kart değil işletme kaydı biçimi (Mersis, Luhn'dan bağımsızdır — tesadüfen
+    Luhn tutturan bir Mersis no kart DENY'i üretmesin)."""
+    hane = "".join(c for c in ham if c.isdigit())
+    return len(hane) == 16 and hane.startswith("0")
+
+
 # --- Hassas veri desenleri (mod'a göre deny/ask) ---
 HASSAS = [
     ("Esas/Karar no (taraf bağlamı olabilir)", "zayif",
      re.compile(r"\b(?:19|20)\d{2}\s?/\s?\d{1,6}(?:\s*(?:E|K|Esas|Karar)\.?)?\b", re.I)),
     ("Sağlık verisi (KVKK m.6 özel nitelikli)", "guclu",
-     re.compile(r"\b(te[sş]his|tan[ıi]\b|rapor|hastal[ıi][kğ]|hastane|klinik|poliklinik|psikiyatr|psikoloj|"
-                r"engel(li|\s?oran)|sa[gğ]l[ıi]k|t[ıi]bb[iî]|tedavi|ameliyat|operasyon|kanser|t[üu]m[öo]r|hiv|aids|"
-                r"hepatit|ila[çc]\b|re[çc]ete|tahlil|biyopsi|gebe|hamile|ruh\s?sa[gğ]l[ıi]|ba[gğ][ıi]ml[ıi]l[ıi]k)\b", re.I)),
+     _BaglamliSaglikDeseni()),
+    ("Telefon numarası (kişisel veri — belge-id bağlamı hariç)", "zayif",
+     _DokumanIdAyrikTelefonDeseni()),
     ("Ceza/sabıka verisi (KVKK m.6)", "guclu",
      re.compile(r"\b(sab[ıi]ka|adli\s?sicil|mahk[uû]miyet|ceza\s?kayd|h[üu]k[üu]ml[üu]|tutuklu|g[öo]zalt[ıi]|"
                 r"uyu[şs]turucu|denetimli\s?serbest|infaz\s?kurumu|su[çc]\s?kayd)\b", re.I)),
@@ -134,8 +206,14 @@ def tara(metin, mod, bilgi=None):
     elif tckn_hit:
         ask.append(("guclu", "Olası 11 haneli kimlik/hesap (checksum tutmadı — teyit)"))
 
-    # Kart no: Luhn tutan → MUTLAK; tutmayan uzun dizi → 'olası'
-    kart_hit = KART.findall(metin)
+    # Kart no: Luhn tutan → MUTLAK; tutmayan uzun dizi → 'olası'.
+    # E2(b) v0.5.8.5: Mersis biçimli diziler (16 hane + 0 başlangıcı — kart
+    # IIN'i 0 ile başlamaz) kart uyarısından AYRIŞIR; Luhn tesadüfen tutsa
+    # bile kart sayılmaz. Raporsuz da yutulmaz: bilgi kanalına düşer.
+    kart_hit = [x for x in KART.findall(metin) if not _mersis_gibi(x)]
+    mersis_hit = [x for x in KART.findall(metin) if _mersis_gibi(x)]
+    if mersis_hit and bilgi is not None:
+        bilgi.append(("zayif", "Mersis biçimli 16 haneli dizi (0 ile başlar — kart sayılmadı)"))
     if any(luhn_gecerli(x) for x in kart_hit):
         deny.append(("MUTLAK", "Kart numarası (Luhn geçerli)"))
     elif kart_hit:
@@ -170,10 +248,10 @@ def _yaz_ve_cik(deny, ask, mod, bilgi=None):
     print(cizgi)
     if bilgi:
         # Engellemez, exit kodunu değiştirmez; ama sessiz ALLOW da bırakmaz.
-        print("\n[BİLGİ] esas/karar no var — dış araca gidiyorsa bilinçli karar olsun")
+        print("\n[BİLGİ] engellemeyen desen(ler) var — dış araca gidiyorsa bilinçli karar olsun")
         for siddet, ad in bilgi:
             print(f"   - {ad}  [{siddet}]")
-        print("   (balanced modda engellenmez; anayasa §10 gereği esas no taranır.)")
+        print("   (bu satırlar engellemez; anayasa §10 gereği esas no ve benzeri desenler taranır.)")
     if deny:
         print("\n[DENY] bu içerik dış araca GÖNDERİLMEMELİ:")
         for siddet, ad in deny:
@@ -195,12 +273,58 @@ def _yaz_ve_cik(deny, ask, mod, bilgi=None):
     return 0
 
 
+OVERRIDE_GEREKCE_ASGARI = 30  # şerh konvansiyonuyla aynı alt sınır (>=30 karakter)
+
+
+def _istisna_defterine_yaz(kok, tur, ilgili, gerekce, onay):
+    """E2(d) v0.5.8.5 — İSTİSNA DEFTERİ ortak şeması (append-only JSONL):
+    `_oa/defter/istisna-kayitlari.jsonl` satırı = {zaman, tur, ilgili, gerekce,
+    onay, imza}. Birden çok araç aynı deftere YALNIZ satır ekleyerek yazar;
+    bu yardımcı bilinçli olarak YEREL tutulur (ortak modül bağımlılığı
+    yaratılmaz — her araç kendi küçük yazıcısını taşır)."""
+    dizin = os.path.join(kok, "_oa", "defter")
+    os.makedirs(dizin, exist_ok=True)
+    satir = {
+        "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+        "tur": tur,
+        "ilgili": ilgili,
+        "gerekce": gerekce,
+        "onay": onay,
+        "imza": "gizlilik_tara.py",
+    }
+    yol = os.path.join(dizin, "istisna-kayitlari.jsonl")
+    with open(yol, "a", encoding="utf-8") as f:
+        f.write(json.dumps(satir, ensure_ascii=False) + "\n")
+    return yol
+
+
 def main():
     ap = argparse.ArgumentParser(description="oa-gizlilik — deterministik hassas veri / Layer 0 tarayıcı")
     ap.add_argument("dosya")
     ap.add_argument("--mod", choices=["strict", "balanced"], default="strict")
     ap.add_argument("--maskele", metavar="CIKTI", help="maskelenmiş kopyayı bu dosyaya yaz")
+    # E2(d) DENY-OVERRIDE PROTOKOLÜ (v0.5.8.5): DENY sonucu YALNIZ bu
+    # parametreyle aşılabilir — model tek başına aşamaz; parametre avukatın
+    # bilinçli kararını temsil eder ve istisna defterine İZ bırakır.
+    ap.add_argument("--override-onay", dest="override_onay", choices=["avukat"],
+                    default=None,
+                    help="DENY sonucunu bilinçli olarak aşar (yalnız 'avukat'); "
+                         "--override-gerekce (>=30 karakter) ZORUNLU; kullanım "
+                         "_oa/defter/istisna-kayitlari.jsonl'e kaydedilir")
+    ap.add_argument("--override-gerekce", dest="override_gerekce", default=None,
+                    help="override gerekçesi (>=30 karakter) — istisna defterine yazılır")
+    ap.add_argument("--kok", default=".",
+                    help="istisna defterinin yazılacağı çalışma kökü "
+                         "(<kok>/_oa/defter/istisna-kayitlari.jsonl; varsayılan: .)")
     args = ap.parse_args()
+
+    # FAIL-CLOSED: override parametresi eksik/yanlış kullanılmışsa hiç taramadan
+    # DENY — 'yarım onay' hiçbir sonucu aşamaz.
+    if args.override_onay and not (args.override_gerekce
+                                   and len(args.override_gerekce.strip()) >= OVERRIDE_GEREKCE_ASGARI):
+        print(f"[DENY] --override-onay için --override-gerekce (>= {OVERRIDE_GEREKCE_ASGARI} "
+              "karakter) ZORUNLU — gerekçesiz override yok (fail-closed).", file=sys.stderr)
+        sys.exit(2)
 
     # FAIL-CLOSED: taramanın herhangi bir aşaması çökerse DENY (exit 2) — asla sessiz geçme.
     try:
@@ -217,7 +341,17 @@ def main():
             with open(args.maskele, "w", encoding="utf-8") as f:
                 f.write(maskele(metin))
             print(f"Maskelenmiş kopya yazıldı: {args.maskele}")
-        sys.exit(_yaz_ve_cik(deny, ask, args.mod, bilgi))
+        kod = _yaz_ve_cik(deny, ask, args.mod, bilgi)
+        if kod == 2 and args.override_onay == "avukat":
+            # DENY aşımı: rapor AYNEN basıldı (görünürlük); iz istisna defterine.
+            yol = _istisna_defterine_yaz(args.kok, "gizlilik-deny-override",
+                                         args.dosya, args.override_gerekce.strip(),
+                                         "avukat")
+            print("\n[OVERRIDE] DENY, avukat onayıyla AŞILDI — sorumluluk bilinçli "
+                  "karara aittir; istisna defterine kaydedildi:")
+            print(f"   {yol}")
+            sys.exit(0)
+        sys.exit(kod)
     except SystemExit:
         raise
     except Exception as e:

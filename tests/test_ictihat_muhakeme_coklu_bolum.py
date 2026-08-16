@@ -91,7 +91,14 @@ def test_uc_bolum_hepsi_tam_ok_3(tmp_path):
         _bolum_yaz(KUNYE_C, "ALEYHE-AYIRT", ayirt_etme="ayırt edici gerekçe metni").replace("{KAYNAK}", kaynak_c),
     ])
     (cikti_dizin / "03-ictihat-muhakeme.md").write_text(icerik, encoding="utf-8")
-    taslak = _taslak_yaz(tmp_path, [KUNYE_A, KUNYE_B, KUNYE_C])
+    # v0.5.8.5 [G6]: ALEYHE-AYIRT künye (KUNYE_C) dilekçede yalnız AYIRT/
+    # ÇÜRÜTME bağlamında anılabilir — destek cümlesi artık BLOK olurdu.
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(
+        f"{KUNYE_A} sayılı karar emsal teşkil etmektedir. "
+        f"{KUNYE_B} sayılı karar emsal teşkil etmektedir. "
+        f"Davalı tarafın dayandığı {KUNYE_C} sayılı karar somut olaydan AYIRT "
+        "edilmelidir; olgusal zemin başkadır.", encoding="utf-8")
     kod, cikti = _cli([str(taslak.name), "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod == 0, cikti
     assert "OK 3" in cikti
@@ -207,9 +214,13 @@ def test_bolumlere_ayir_bos_veya_tek_eslesme_tum_metni_doner():
 
 # ── P0-2 DÜZELTME (d) — kütük (append-only) SON DAMGA çapraz kontrolü ──────
 
-def _kutuk_satiri_yaz(kutuk_yolu, kunye, damga, dokum_ad="x"):
+def _kutuk_satiri_yaz(kutuk_yolu, kunye, damga, dokum_ad="x",
+                      sinif="DOKUM-SINIFI=tam-metin"):
+    # v0.5.8.5 [G6]: dürüst-akış satırları TAM-METİN sınıfı taşır (A1a) —
+    # sınıfsız satır geriye-uyumla 'ilgili-kisim' sayılıp triyajda bloklanır.
+    ek = f" {sinif}" if sinif else ""
     with open(kutuk_yolu, "a", encoding="utf-8") as f:
-        f.write(f"| 2026-01-01T00:00:00 | ictihat_getir | sorgu | {kunye} DAMGA={damga} | "
+        f.write(f"| 2026-01-01T00:00:00 | ictihat_getir | sorgu | {kunye} DAMGA={damga}{ek} | "
                 f"[döküm]({dokum_ad}) |\n")
 
 
@@ -296,8 +307,8 @@ def test_kutuk_kullaniliyorsa_atlama_bilgi_satiri_basilmaz(tmp_path):
     kutuk_yolu = kutuk_dizin / "kunye-teyit.md"
     kutuk_yolu.write_text(
         "| Zaman | Araç | Sorgu | Sonuç | Döküm |\n|---|---|---|---|---|\n"
-        f"| 2026-01-01T00:00:00 | ictihat_getir | sorgu | {KUNYE_A} DAMGA=LEHE | "
-        f"[döküm]({kaynak_a}) |\n",
+        f"| 2026-01-01T00:00:00 | ictihat_getir | sorgu | {KUNYE_A} DAMGA=LEHE "
+        f"DOKUM-SINIFI=tam-metin | [döküm]({kaynak_a}) |\n",
         encoding="utf-8")
     taslak = _taslak_yaz(tmp_path, [KUNYE_A])
     kod, cikti = _cli([str(taslak.name), "--kok", str(tmp_path)], cwd=tmp_path)

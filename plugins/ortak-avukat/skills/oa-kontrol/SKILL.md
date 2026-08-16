@@ -167,3 +167,67 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8.5 — teslim zinciri: advisory tamamlanma + e-imza halkası + istisna defteri
+
+### B4 — RED makbuzda advisory rapor (zincirin görünür yarısı)
+
+Engelleyici bir kapı kapandığında İLK-ENGELDE-DUR exit davranışı DEĞİŞMEZ;
+ama engelleyici-OLMAYAN denetimler (devralma-aday raporu, şekil, prov-tazelik,
+yerel-damga, tazelik advisory) yine de koşulur ve RED makbuzu
+`advisory_denetimler` alanı kazanır (saha kanıtı: künye BLOK'u kenar ihlalini
+görünmez bırakmıştı). Bu satırlar KAPI DEĞİLDİR: exit'i etkilemez, dosya
+sistemine dokunmaz — RED raporunu okurken advisory bölümünü de OKU; engel
+giderilince seni bekleyen ikinci sürprizi orada görürsün.
+
+### B5 — E-İMZA MÜHÜR HALKASI (imzalı türev BAYAT değildir)
+
+- UYAP editörü bir `.udf`'i e-imzalayınca zip'e `sign.sgn` girdisi ekler —
+  dosyanın baytları DEĞİŞİR. Bu yüzden imzalı nüshanın sha'sı imza-öncesi
+  mühürle eşleşmez; bu **BAYAT değil TÜREV'dir**. `muhur_yaz.py` sign.sgn
+  tespit ederse tipi otomatik `e-imzali-nusha` yapar; `was_derived_from` =
+  imza-öncesi nüshanın sha'sı (zincir kurulamıyorsa None + görünür uyarı).
+- `teslim_paketi.py`: was_derived_from zinciri kurulmuş e-imzalı nüsha →
+  YEŞİL; imzalı ama mühürsüz/zincirsiz → "imzalı türev mühürsüz" uyarısı +
+  best-effort e-imzali-nusha mührü + istisna defterine `dogrulama-toleransi`
+  satırı. İmzasız dosyada PROV-BAYAT RED'i AYNEN sürer.
+
+### E-İMZA GUARD — imzalı nüshaya kenar yaması ASLA uygulanmaz
+
+Kenar yaması zip'i yeniden yazar ve e-imzayı BOZAR. `sign.sgn`'li nüshada
+kenarlar 42.52 pt değilse: yama YOK, RED de YOK (dosya zaten imzalı — karar
+avukatındır); sapma görünür uyarı + makbuzda `sekil_imzali_sapma` alanı +
+istisna defteri kaydı olur. Düzeltme imza ÖNCESİ sürümde yapılıp yeniden
+imzalanır — imzalı dosyaya dokunulmaz.
+
+### A4.8 — Teslim sunum disiplini
+
+- **Durum sorusuna makbuz okunarak cevap ver.** "Teslime hazır mı / ne
+  durumda" sorusunun cevabı bellekten değil `_oa/defter/teslim-makbuz.json`
+  (ya da `teslim-makbuz-RED.json`) OKUNARAK verilir — makbuzda ne yazıyorsa
+  durum odur.
+- **RED makbuz kullanıcı mesajında GİZLENEMEZ.** Son deneme RED ise bu,
+  kullanıcıya verilen özette açıkça ve ilk satırlarda söylenir (sebep +
+  kapanan kapı); RED'i geçiştirip "taslak hazırlandı" demek makbuz
+  garantisinin ihlalidir.
+- **Teslimde tam yerel yol + mühür notu.** Teslim edilen ürünün TAM yerel
+  yolu yazılır ve şu not eklenir: ürün taşınırken/kopyalanırken yanındaki
+  `.prov.json` mührü BİRLİKTE taşınır (`muhur_yaz.py --tasi ESKI YENI`) —
+  mühürsüz kopya, soy zinciri kopmuş kopyadır.
+
+### İSTİSNA DEFTERİ — `_oa/defter/istisna-kayitlari.jsonl` (ortak şema)
+
+Append-only JSONL; her satır: `{"zaman": ISO, "tur": ..., "ilgili": str,
+"gerekce": str, "onay": "avukat"|"otomatik-kural", "imza": araç-imzası}`.
+Yazan araçlar ve `tur` değerleri:
+
+| Araç | tur | onay |
+|---|---|---|
+| `kunye_teyit.py` (B1 kendi-dosya-no muafiyeti) | `kunye-istisna` | otomatik-kural |
+| `dilekce_denetim.py` (`--istisna-gerekce` ile [Y]/[T] düşürme) | `yanlis-pozitif-ilani` | avukat |
+| `gizlilik_tara.py` (`--override-onay avukat`) | `gizlilik-deny-override` | avukat |
+| `teslim_paketi.py` / `udf_yaz.py` / `pipeline_kayit.py` (e-imza toleransları) | `dogrulama-toleransi` | otomatik-kural |
+
+Defter kayıt aracıdır, kapı değildir: yazılamaması akışı kırmaz ama görünür
+uyarı bırakır. Hiçbir muafiyet/tolerans SESSİZ kalmaz — hepsi bu deftere iz
+düşer; teslim öncesi gözden geçirmede defter de okunur.

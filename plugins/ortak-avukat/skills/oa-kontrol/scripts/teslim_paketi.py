@@ -67,6 +67,16 @@ kapıları ve OTOMATİK mühürleme (mühürsüz teslim fiziksel imkânsız);
 (4) tazelik_denetim.py advisory olarak zincire bağlı (makbuzda
 `tazelik_uyarilari`). Ayrıntı: aşağıda GÖREV 1-6 blok yorumu.
 
+B4 — ZİNCİRİN ADVISORY TAMAMLANMASI: engelleyici bir kapı kapandığında
+İLK-ENGELDE-DUR exit davranışı DEĞİŞMEZ ama engelleyici-olmayan denetimler
+(şekil, prov-tazelik, yerel-damga, devralma-aday raporu, tazelik advisory)
+yine de koşulur; RED makbuzu `advisory_denetimler` alanı kazanır (saha
+kanıtı: künye BLOK'u kenar ihlalini görünmez bırakmıştı).
+B5b — E-İMZA MÜHÜR HALKASI: teslim-sınıfı UDF'de sign.sgn varsa imza-öncesi
+mühürle sha uyuşmazlığı BAYAT değil TÜREV'dir; was_derived_from zinciri
+kurulmuşsa YEŞİL, kurulmamışsa "imzalı türev mühürsüz" uyarısı + best-effort
+e-imzali-nusha mührü (istisna defterine dogrulama-toleransi satırı düşer).
+
 Alt scriptler bu scriptin __file__ konumundan GÖRELİ keşfedilir
 (../../<skill>/scripts/...); bulunamazsa `OA_SKILLS_KOK` ortam değişkeni
 fallback denenir (P0-5(b) path-fix). "Script bulunamadı/çalıştırılamadı" artık
@@ -394,6 +404,162 @@ def _tazelik_uyarilari_topla(kok):
     return uyarilar
 
 
+def _udf_imzali_mi(yol):
+    """B5b — UDF zip'inde e-imza girdisi (sign.sgn) var mı? muhur_yaz.
+    sign_sgn_var_mi ile aynı kural — burada YEREL kopya tutulur çünkü bu
+    tespit prov-tazelik kapısının ÖN sorusudur ve kardeş modülün yüklenip
+    yüklenemediğine bağlı kalamaz ('opsiyonel yeni bayraklara güvenme' notu).
+    Zip değilse/açılamazsa False (imzasız sayılır; tespit engel değildir)."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            return any(ad.rsplit("/", 1)[-1].lower() == "sign.sgn"
+                       for ad in z.namelist())
+    except Exception:
+        return False
+
+
+def _goreli_guvenli(kok, yol):
+    """Defter satırları için köke-göreli yol (sabit-yol sızıntı dersi);
+    farklı sürücüdeyse yalnız dosya adı."""
+    try:
+        return os.path.relpath(yol, kok).replace("\\", "/")
+    except ValueError:
+        return os.path.basename(yol)
+
+
+def _istisna_kaydi_dus(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
+    """Ortak istisna defteri (append-only, birden çok araç yazar):
+    _oa/defter/istisna-kayitlari.jsonl — şema: {zaman, tur, ilgili, gerekce,
+    onay, imza}. Best-effort: ASLA fırlatmaz/bloklamaz (hook felsefesi)."""
+    try:
+        defter = os.path.join(kok, "_oa", "defter", "istisna-kayitlari.jsonl")
+        os.makedirs(os.path.dirname(defter), exist_ok=True)
+        satir = {
+            "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+            "tur": tur, "ilgili": ilgili, "gerekce": gerekce,
+            "onay": onay, "imza": "teslim_paketi/%s" % OA_SURUM,
+        }
+        with open(defter, "a", encoding="utf-8") as f:
+            f.write(json.dumps(satir, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# B4 — ZİNCİRİN ADVISORY TAMAMLANMASI (saha kanıtı: künye BLOK'u kenar
+# ihlalini GÖRÜNMEZ bıraktı, UDF yönetmelik-dışı kenarla teslim edildi).
+# Engelleyici bir kapı kapandığında İLK-ENGELDE-DUR exit davranışı DEĞİŞMEZ;
+# ama engelleyici-OLMAYAN denetimler yine de koşulur ve RED makbuzu
+# `advisory_denetimler` alanı kazanır. Bu denetimler KAPI DEĞİLDİR:
+#   - exit davranışını hiçbir koşulda etkilemezler,
+#   - dosya sistemine DOKUNMAZLAR (karantina yok, kenar yaması yok, mühür yok),
+#   - hata fırlatmazlar (rapora `hata` notu düşer, zincir raporu sürer).
+# Amaç çizgisi: kapı muhakemeyi engellemez, GÖRÜNÜR kılar.
+# ════════════════════════════════════════════════════════════════════════════
+
+def _advisory_denetimler(taslak, kok):
+    """B4 — engelleyici-olmayan denetim raporu: devralma-aday raporu (hangi
+    UDF adayı bulunurdu), şekil (pageFormat 4x42.52 + LineSpacing istişari),
+    prov-tazelik (yan .prov.json sha karşılaştırması), yerel-damga taraması,
+    tazelik advisory. Salt-okunur ve istisnasız — dict döndürür."""
+    rapor = {"devralma_adaylari": [], "sekil": None, "prov_tazelik": None,
+             "yerel_damga": None, "tazelik_uyarilari": None}
+    try:
+        secili = None
+        for aday in _udf_adaylari(taslak, kok):
+            gecerli, sebep = _udf_hafif_gecerli_mi(aday)
+            rapor["devralma_adaylari"].append(
+                {"yol": aday, "hafif_gecerli": gecerli, "sebep": sebep})
+            if secili is None and gecerli:
+                secili = aday  # devralma kapısının seçeceği aday (rapor amaçlı)
+        if secili is not None:
+            uy_mod = _udf_yaz_modulu()
+            kenar_pt = (getattr(uy_mod, "_KENAR_PT", _KENAR_PT_YEDEK)
+                        if uy_mod else _KENAR_PT_YEDEK)
+            xml = _udf_content_xml(secili)
+            rapor["sekil"] = {
+                "yol": secili, "kenar_pt": kenar_pt,
+                "kenarlar_uygun": bool(xml) and _kenarlar_uygun_mu(xml, kenar_pt),
+                "istisari": _sekil_istisari_uyarilar(xml or ""),
+            }
+            prov_yolu = secili + ".prov.json"
+            if not os.path.isfile(prov_yolu):
+                rapor["prov_tazelik"] = {"yol": secili, "muhur_var": False,
+                                         "taze": None}
+            else:
+                try:
+                    with open(prov_yolu, encoding="utf-8") as f:
+                        kayit = json.load(f)
+                except Exception:
+                    kayit = None
+                if kayit is None:
+                    rapor["prov_tazelik"] = {"yol": secili, "muhur_var": True,
+                                             "taze": None,
+                                             "not": "mühür okunamadı"}
+                else:
+                    guncel = _sha256_dosya(secili)
+                    rapor["prov_tazelik"] = {
+                        "yol": secili, "muhur_var": True,
+                        "taze": kayit.get("artifact_sha256") == guncel,
+                        "muhur_sha256": kayit.get("artifact_sha256"),
+                        "guncel_sha256": guncel,
+                    }
+                    uretici = str(kayit.get("was_generated_by") or "")
+                    rapor["yerel_damga"] = {
+                        "yol": secili, "yerel": "yerel" in uretici.lower(),
+                        "was_generated_by": uretici,
+                    }
+        rapor["tazelik_uyarilari"] = _tazelik_uyarilari_topla(kok)
+    except Exception as e:
+        rapor["hata"] = "advisory denetim tamamlanamadı: %r" % (e,)
+    return rapor
+
+
+def _advisory_yazdir(rapor):
+    """B4 — advisory raporunu tek raporun içinde GÖRÜNÜR kılar (makbuza ek).
+    Bu satırlar bilgi verir; hiçbiri kapı değildir."""
+    _bolum("[adv] ADVISORY DENETİMLER — kapı DEĞİL, görünürlük "
+           "(ilk-engelde-dur davranışı değişmedi)")
+    adaylar = rapor.get("devralma_adaylari") or []
+    if not adaylar:
+        print("    [ADVISORY] devralınabilir .udf adayı yok.")
+    for aday in adaylar:
+        print("    [ADVISORY] devralma adayı: %s (%s)"
+              % (aday["yol"], "hafif-geçerli" if aday["hafif_gecerli"]
+                 else "GEÇERSİZ: %s" % aday["sebep"]))
+    sekil = rapor.get("sekil")
+    if sekil is not None:
+        if sekil["kenarlar_uygun"]:
+            print("    [ADVISORY] şekil: pageFormat 4 kenar %s pt uygun."
+                  % sekil["kenar_pt"])
+        else:
+            print("    [ADVISORY] şekil: pageFormat kenarları %s pt DEĞİL — "
+                  "engel giderilince zincir yeniden koşulduğunda yamalanacak "
+                  "(372 kanıtı: künye BLOK'u kenar ihlalini görünmez bırakmıştı)."
+                  % sekil["kenar_pt"])
+        for u in sekil.get("istisari") or []:
+            print("    [ADVISORY] şekil-istişari: %s" % u)
+    pt = rapor.get("prov_tazelik")
+    if pt is not None:
+        if not pt.get("muhur_var"):
+            print("    [ADVISORY] prov-tazelik: aday mühürsüz (.prov.json yok).")
+        elif pt.get("taze") is False:
+            print("    [ADVISORY] prov-tazelik: mühür BAYAT (sha uyuşmuyor) — "
+                  "engel giderilse bile bu mühürle teslim RED olurdu.")
+        elif pt.get("taze") is True:
+            print("    [ADVISORY] prov-tazelik: mühür taze (sha uyumlu).")
+        else:
+            print("    [ADVISORY] prov-tazelik: %s" % pt.get("not", "belirsiz"))
+    yd = rapor.get("yerel_damga")
+    if yd is not None and yd.get("yerel"):
+        print("    [ADVISORY] yerel-damga: was_generated_by=%r — yerel-motor "
+              "ürünü teslime GİREMEZDİ." % yd.get("was_generated_by"))
+    for u in rapor.get("tazelik_uyarilari") or []:
+        print("    [ADVISORY] tazelik: %s" % u)
+    if rapor.get("hata"):
+        print("    [ADVISORY] %s" % rapor["hata"])
+
+
 # ── P0-5 (v0.5.5) — pipeline_kayit.py İN-PROCESS import (dairesel bağımlılık
 # kırıcı, P0-4'ün tasarım kuralıyla simetrik: 'kapı başka kapıyı subprocess
 # ile çağırmaz'). (d) adımı artık `sys.executable pipeline_kayit.py --denetle`
@@ -485,7 +651,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.8.4"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.8.5"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -761,6 +927,12 @@ def _zincir():
     # ── ilk engelde durduysa: RED makbuzu + rapor + çık ─────────────────────
     if kapanan is not None:
         ad, rc = kapanan
+        # B4 — advisory tamamlanma: EXIT DAVRANIŞI DEĞİŞMEZ (ilk engelde dur),
+        # ama engelleyici-olmayan denetimler yine de koşulur ve hem raporda
+        # hem RED makbuzunda (`advisory_denetimler`) görünür — 372/754 saha
+        # kanıtı: künye BLOK'u kenar ihlalini görünmez bırakmıştı.
+        advisory = _advisory_denetimler(taslak, kok)
+        _advisory_yazdir(advisory)
         print()
         print(CIZGI)
         print("SONUÇ: TESLİM DURDURULDU — İLK KAPANAN KAPI: %s (exit %s)." % (ad, rc))
@@ -774,7 +946,8 @@ def _zincir():
         print(CIZGI)
         _makbuz_yaz(kok, _makbuz_taban(
             a, taslak, kok, kapilar_makbuz, 1, None, ad,
-            sebep="kapı kapandı: %s (exit %s)" % (ad, rc)), basarili=False)
+            sebep="kapı kapandı: %s (exit %s)" % (ad, rc),
+            ekstra={"advisory_denetimler": advisory}), basarili=False)
         sys.exit(1)
 
     # ── tüm engelleyici kapılar açık → UDF devralma/üretim (--udf-yok yoksa) ─
@@ -782,6 +955,7 @@ def _zincir():
     udf_uretildi = False
     udf_devralindi = None    # GÖREV 1 — {"yol","sha256"} | None (makbuza girer)
     kenar_duzeltildi = False  # GÖREV 5 — kenar yaması uygulandı mı (makbuza girer)
+    sekil_imzali_sapma = False  # v0.5.8.5 e-imza guard: imzalı nüshada kenar sapması (yama YOK)
     if a.udf_yok:
         _bolum("[+] UDF ÜRETİMİ — ATLANDI (--udf-yok BİLİNÇLİ istekle)")
         print("    [BILGI] --udf-yok verildi; UDF üretimi kullanıcı isteğiyle atlandı "
@@ -864,11 +1038,23 @@ def _zincir():
                 a, taslak, kok, kapilar_makbuz, 1, None, durdu_ad,
                 sebep=sebep_metni,
                 ekstra={"udf_devralindi": udf_devralindi,
-                        "kenar_duzeltildi": kenar_duzeltildi}), basarili=False)
+                        "kenar_duzeltildi": kenar_duzeltildi,
+                        "sekil_imzali_sapma": sekil_imzali_sapma,
+                        # B4 — UDF-kapısı RED'lerinde de advisory tamamlanır
+                        "advisory_denetimler": _advisory_denetimler(taslak, kok)}),
+                basarili=False)
             sys.exit(1)
 
         # (i) mevcut mühür okunur; YEREL-DAMGA (GÖREV 4) yeniden mühürlemeden
         # ÖNCE denetlenir — aksi hâlde suç delili kendi elimizle silinirdi.
+        # B5b — E-İMZA MÜHÜR HALKASI: teslim-sınıfı UDF'de sign.sgn varsa
+        # imza, dosyanın baytlarını değiştirmiştir; imza-öncesi mühürle sha
+        # uyuşmazlığı BAYAT değil TÜREV'dir. was_derived_from zinciri kurulmuş
+        # e-imzali-nusha mührü → YEŞİL; kurulmamışsa "imzalı türev mühürsüz"
+        # uyarısı + best-effort e-imzali-nusha mührü ((iv)'te basılır).
+        imzali = _udf_imzali_mi(udf_cikti)
+        e_imza_turev = False    # (iv)'te e-imzali-nusha mührü basılacak mı
+        imza_oncesi_sha = None  # was_derived_from zincirinin kaynağı
         prov_yolu = udf_cikti + ".prov.json"
         muhur_kaydi = None
         if os.path.isfile(prov_yolu):
@@ -888,13 +1074,46 @@ def _zincir():
             # (ii) GÖREV 3 — PROV-TAZELİK: mühürdeki sha güncel sha ile uyuşmalı
             guncel_sha = _sha256_dosya(udf_cikti)
             if muhur_kaydi.get("artifact_sha256") != guncel_sha:
-                _udf_red("(+) PROV-TAZELİK",
-                         "PROV-BAYAT: mühürdeki sha güncel dosyayla uyuşmuyor "
-                         "(mühür %s… ≠ şimdiki %s…) — 372 kanıtı: cikti/10 mührü "
-                         "bayat kalmıştı; bayat mühürle teslim YOK"
-                         % (str(muhur_kaydi.get("artifact_sha256", "?"))[:12],
-                            str(guncel_sha or "?")[:12]))
-            print("    [OK] mühür taze (sha uyumlu) ve yerel-damgasız.")
+                if imzali:
+                    # B5b — sign.sgn'li dosyada uyuşmazlık = TÜREV (bayat değil)
+                    imza_oncesi_sha = muhur_kaydi.get("artifact_sha256")
+                    e_imza_turev = True
+                    print("    [UYARI] imzalı türev mühürsüz — sign.sgn tespit "
+                          "edildi; sha uyuşmazlığı BAYAT değil TÜREV sayıldı "
+                          "(imza-öncesi mühür %s…). Best-effort e-imzali-nusha "
+                          "mührü basılacak (was_derived_from = imza-öncesi sha)."
+                          % str(imza_oncesi_sha or "?")[:12])
+                    _istisna_kaydi_dus(
+                        kok, "dogrulama-toleransi", _goreli_guvenli(kok, udf_cikti),
+                        "sign.sgn'li imzalı türev: sha uyuşmazlığı PROV-BAYAT "
+                        "RED'i yerine TÜREV toleransıyla geçirildi; e-imzali-nusha "
+                        "mührü was_derived_from=%s… ile basıldı"
+                        % str(imza_oncesi_sha or "?")[:12])
+                else:
+                    _udf_red("(+) PROV-TAZELİK",
+                             "PROV-BAYAT: mühürdeki sha güncel dosyayla uyuşmuyor "
+                             "(mühür %s… ≠ şimdiki %s…) — 372 kanıtı: cikti/10 mührü "
+                             "bayat kalmıştı; bayat mühürle teslim YOK"
+                             % (str(muhur_kaydi.get("artifact_sha256", "?"))[:12],
+                                str(guncel_sha or "?")[:12]))
+            elif (imzali and muhur_kaydi.get("entity_type") == "e-imzali-nusha"
+                    and muhur_kaydi.get("was_derived_from")):
+                print("    [OK] e-imzalı nüsha — was_derived_from zinciri kurulmuş, "
+                      "mühür taze (sha uyumlu) ve yerel-damgasız (YEŞİL).")
+            else:
+                print("    [OK] mühür taze (sha uyumlu) ve yerel-damgasız.")
+        elif imzali:
+            # B5b — imzalı ama HİÇ mühürsüz: zincir kurulamıyor (imza-öncesi
+            # sha bilinmiyor) — uyarı + best-effort e-imzali-nusha mührü.
+            e_imza_turev = True
+            print("    [UYARI] imzalı türev mühürsüz — sign.sgn var ama mühür yok; "
+                  "imza-öncesi sha bilinmediğinden was_derived_from zinciri "
+                  "KURULAMADI. Best-effort e-imzali-nusha mührü basılacak.")
+            _istisna_kaydi_dus(
+                kok, "dogrulama-toleransi", _goreli_guvenli(kok, udf_cikti),
+                "sign.sgn'li imzalı türev mühürsüz bulundu; best-effort "
+                "e-imzali-nusha mührü was_derived_from=None ile basıldı "
+                "(imza-öncesi sha bilinmiyor)")
         else:
             print("    [BILGI] mühür yok — şekil kapısından sonra OTOMATİK "
                   "mühürlenecek (mühürsüz teslim fiziksel olarak imkânsız).")
@@ -909,18 +1128,36 @@ def _zincir():
             _udf_red("(+) ŞEKİL", "content.xml okunamadı — şekil denetimi "
                      "yapılamadı (fail-closed)")
         if not _kenarlar_uygun_mu(xml, kenar_pt):
-            kenar_fn = getattr(uy_mod, "_sayfa_kenari_yonetmelik", None) if uy_mod else None
-            if kenar_fn is None:
-                _udf_red("(+) ŞEKİL", "pageFormat kenarları %s pt değil ve "
-                         "udf_yaz._sayfa_kenari_yonetmelik yüklenemedi — "
-                         "DÜZELTİLEMEDİ" % kenar_pt)
-            print("    [BILGI] %s" % kenar_fn(udf_cikti))
-            xml = _udf_content_xml(udf_cikti)
-            if xml is None or not _kenarlar_uygun_mu(xml, kenar_pt):
-                _udf_red("(+) ŞEKİL", "pageFormat 4 kenar %s pt'ye DÜZELTİLEMEDİ "
-                         "— düzeltilemeyen şekil teslime giremez" % kenar_pt)
-            kenar_duzeltildi = True
-            print("    [OK] kenarlar düzeltildi (4x%s pt) — makbuza yazıldı." % kenar_pt)
+            if e_imza_turev:
+                # E-İMZA GUARD (v0.5.8.5 — 1. dalga ajan bulgusu): imzalı
+                # nüshayı yamalamak zip'i yeniden yazar ve e-imzayı BOZAR.
+                # Yama YOK, RED YOK (karar avukatındır — dosya zaten imzalı);
+                # sapma GÖRÜNÜR uyarı + makbuz alanı + istisna defteri kaydı.
+                print("    [UYARI] imzalı nüsha (sign.sgn) kenarları %s pt "
+                      "DEĞİL — kenar yaması e-imzayı bozacağı için "
+                      "UYGULANMADI. Düzeltme imza ÖNCESİ sürümde yapılıp "
+                      "yeniden imzalanmalıdır." % kenar_pt)
+                _istisna_kaydi_dus(kok, "dogrulama-toleransi",
+                                   os.path.relpath(udf_cikti, kok),
+                                   "imzalı nüshada kenar sapması — yama "
+                                   "e-imzayı bozacağından uygulanmadı")
+                sekil_imzali_sapma = True
+            else:
+                kenar_fn = (getattr(uy_mod, "_sayfa_kenari_yonetmelik", None)
+                            if uy_mod else None)
+                if kenar_fn is None:
+                    _udf_red("(+) ŞEKİL", "pageFormat kenarları %s pt değil ve "
+                             "udf_yaz._sayfa_kenari_yonetmelik yüklenemedi — "
+                             "DÜZELTİLEMEDİ" % kenar_pt)
+                print("    [BILGI] %s" % kenar_fn(udf_cikti))
+                xml = _udf_content_xml(udf_cikti)
+                if xml is None or not _kenarlar_uygun_mu(xml, kenar_pt):
+                    _udf_red("(+) ŞEKİL", "pageFormat 4 kenar %s pt'ye "
+                             "DÜZELTİLEMEDİ — düzeltilemeyen şekil teslime "
+                             "giremez" % kenar_pt)
+                kenar_duzeltildi = True
+                print("    [OK] kenarlar düzeltildi (4x%s pt) — makbuza "
+                      "yazıldı." % kenar_pt)
         else:
             print("    [OK] pageFormat 4 kenar %s pt (Yönetmelik 2646 m.8)." % kenar_pt)
         for istisari in _sekil_istisari_uyarilar(xml):
@@ -932,15 +1169,33 @@ def _zincir():
         if mm is None:
             _udf_red("(+) MÜHÜR", "muhur_yaz.py yüklenemedi — mühürsüz teslim "
                      "YOK (fail-closed)")
-        if muhur_kaydi is None or kenar_duzeltildi:
-            onceki = (muhur_kaydi.get("artifact_sha256")
-                      if (muhur_kaydi and kenar_duzeltildi) else None)
+        if muhur_kaydi is None or kenar_duzeltildi or e_imza_turev:
             try:
-                yeni_kayit = mm.muhur_uret(
-                    kok, udf_cikti, "dilekce_udf",
-                    "dilekce:%s" % os.path.basename(udf_cikti),
-                    [taslak], onceki=onceki,
-                    arac="teslim_paketi (html2udf zinciri)")
+                if e_imza_turev:
+                    # B5b — imzalı türev: e-imzali-nusha mührü (was_derived_from
+                    # = imza-öncesi sha; bilinmiyorsa None kalır). Kardeş modül
+                    # eski sürümse (helper yok) aynı şema muhur_uret ile kurulur
+                    # ('opsiyonel yeni bayraklara güvenme' notu — fail-open değil,
+                    # aynı kayıt her iki yoldan da üretilir).
+                    e_fn = getattr(mm, "e_imza_muhur_uret", None)
+                    if e_fn is not None:
+                        yeni_kayit = e_fn(kok, udf_cikti, imza_oncesi_sha,
+                                          girdiler=[taslak],
+                                          arac="teslim_paketi (e-imza halkası)")
+                    else:
+                        yeni_kayit = mm.muhur_uret(
+                            kok, udf_cikti, "e-imzali-nusha",
+                            "e-imzali-nusha:%s" % os.path.basename(udf_cikti),
+                            [taslak], onceki=imza_oncesi_sha,
+                            arac="teslim_paketi (e-imza halkası)")
+                else:
+                    onceki = (muhur_kaydi.get("artifact_sha256")
+                              if (muhur_kaydi and kenar_duzeltildi) else None)
+                    yeni_kayit = mm.muhur_uret(
+                        kok, udf_cikti, "dilekce_udf",
+                        "dilekce:%s" % os.path.basename(udf_cikti),
+                        [taslak], onceki=onceki,
+                        arac="teslim_paketi (html2udf zinciri)")
                 prov_dosya, muhur_hata = mm.muhur_yaz(kok, udf_cikti, yeni_kayit)
             except Exception as e:
                 prov_dosya, muhur_hata = None, str(e)
@@ -948,7 +1203,9 @@ def _zincir():
                 _udf_red("(+) MÜHÜR", "mühür YAZILAMADI (%s) — mühürsüz teslim "
                          "fiziksel olarak imkânsız" % muhur_hata)
             print("    [OK] mühür %s: %s" % (
-                "GÜNCELLENDİ (kenar yaması sonrası)" if muhur_kaydi else "üretildi",
+                "basıldı (e-imzalı nüsha, best-effort)" if e_imza_turev
+                else ("GÜNCELLENDİ (kenar yaması sonrası)" if muhur_kaydi
+                      else "üretildi"),
                 os.path.basename(prov_dosya)))
         if mm.dogrula(udf_cikti) != 0:
             _udf_red("(+) MÜHÜR", "mühür doğrulaması BAŞARISIZ — mühür↔dosya "
@@ -988,6 +1245,7 @@ def _zincir():
         (udf_cikti if udf_uretildi else None), None,
         ekstra={"udf_devralindi": udf_devralindi,        # GÖREV 1
                 "kenar_duzeltildi": kenar_duzeltildi,    # GÖREV 5
+                "sekil_imzali_sapma": sekil_imzali_sapma,  # v0.5.8.5 e-imza guard
                 "tazelik_uyarilari": tazelik_uyarilari})  # GÖREV 6
     makbuz_yolu = _makbuz_yaz(kok, makbuz_veri, basarili=True)
     print("TESLİM MAKBUZU  : %s" % makbuz_yolu)

@@ -22,3 +22,9 @@
 ## v0.5.8.4 — 2026-08-15
 
 - **ictihat-muhakeme-sablonu — AŞILMIŞLIK üretici ucu + kullanım örneği:** üç alanın (`AŞAN-KAYNAK`/`AŞILMA-TARİHİ`/`GEÇERLİLİK-BİTİŞ`) elle değil `oa_hafiza.py teyit --damga … --asan-kaynak … --asilma-tarihi … --gecerlilik-bitis …` komutuyla yazıldığı şablona işlendi (damgasız çağrı fail-closed RET; DAMGA=LEHE + aşılmışlık dolu = görünür çelişki uyarısı; LEHE+aşılmış+atıf = [G5] TESLİM ENGELİ). Lehe-denetim akışı için tek-komut kullanım örneği eklendi.
+
+## v0.5.8.5 — 2026-08-16
+
+- **A1 TRİYAJ (MUHAKEME adımı):** SKILL'e yeni bölüm — DAMGA tam metin okunmadan VURULMAZ; RATIO çıkarımı yalnız KAYNAK-IZI dökümündeki tam metinden (arama sonucu parçasından alıntı YASAKTIR). Triyaj dağıtımı: LEHE → dilekçe adayı, ALEYHE → cephanelik (oa-antitez), NOTR → kütükte kalır. [G6] mekanik ayna: NOTR artık BLOK (eskiden uyarıydı); ALEYHE-AYIRT yalnız duyulmuş + ayırt bağlamı dar istisnasıyla.
+- **Tek-komut ritüeli genişledi:** SKILL'deki tek-blok örnek `--dokum-sinifi tam-metin` taşır; duyulmuş aleyhe karar `--duyulmus` ile işaretlenir.
+- **`references/ictihat-muhakeme-sablonu.md`:** yeni "DÖKÜM-SINIFI ve DUYULMUŞ alanları" bölümü — alan tablosu (`**DÖKÜM-SINIFI:**` kayıt satırı + `DOKUM-SINIFI=`/`DUYULMUS=EVET` kütük tokenları), [G6] üç-şart kuralı, LEHE/tam-metin ve ALEYHE-AYIRT/duyulmuş kullanım örnekleri, örnek kayıt satırları. Satır biçimleri `ictihat_muhakeme_denetim.py` regexleriyle round-trip uyumludur; alanlar elle yazılmaz, teyit komutuyla yazılır.

@@ -75,3 +75,25 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8.5 — A1 TRİYAJ: ALEYHE'nin adresi CEPHANELİKTİR
+
+> **ÇEKİRDEK (kullanıcı direktifi — aynen):** "Müvekkil aleyhine HİÇBİR yargı
+> kararı dilekçeye giremez. MCP'den çekilen TÜM kararlar İSTİSNASIZ baştan
+> sona (TAM METİN) okunur. LEHE ise dilekçeye; ALEYHE ise CEPHANELİĞE
+> (strateji/farkındalık); NÖTR kütükte kalır."
+
+- **ALEYHE damgalı her kararı cephanelik ürününe FİİLEN İŞLE** (matris /
+  `_oa/cikti/07-antitez-cephanelik.md`) — kütükte damgalı durması yetmez;
+  işlenmemiş aleyhe karar farkındalık kaybıdır. Mekanik ayna: [G6] TERS
+  DENETİMİ, kütükte son damgası ALEYHE olup cephanelik ürünlerinde
+  (`07-antitez*`) hiç anılmayan kararı **"FARKINDALIK KAYBI"** uyarısıyla
+  görünür kılar (advisory — bloklamaz; giderilmesi bu parçanın işidir).
+- **Duyulma anı kütüğe işlenir:** karşı taraf cephanelikteki aleyhe kararı
+  FİİLEN ileri sürünce `oa_hafiza.py teyit --duyulmus` ile `DUYULMUS=EVET`
+  işaretle; ancak o zaman ALEYHE-AYIRT yükseltmesi dilekçeye çıkabilir —
+  yalnız ayırt/çürütme bağlamında, destek atfı olarak asla ([G6] dar
+  istisnası). Duyulmamış aleyhe karar cephanelikte dahili kalır (m.6
+  preemptive ifşa yasağı).
+- **Çürütme de tam metinden kurulur:** arama sonucu parçasından alıntı
+  YASAKTIR — ayırt/çürütme gerekçesi kararın GETİR dökümüne dayanır.

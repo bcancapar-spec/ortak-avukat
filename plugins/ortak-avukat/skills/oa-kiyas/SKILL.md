@@ -98,7 +98,7 @@ tercih edilir; aksi hâlde standart (tek-komut) yol RESMÎ ve yeterli yoldur.
 **Standart yol — tek-blok örnek (anonim sorgu):**
 ```bash
 # 1) MCP: ictihat_getir ile tam metni çek — 2) tek komut kütük+döküm+muhakeme yazar:
-python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "4. HD haksız fiil zamanaşımı" --sonuc "Yargıtay 4. HD, E. .../K. ..." --damga LEHE --bag "...(≥40 kr, hangi unsuru somutlaştırıyor)..." --ilgili-kisim "...(döküm içinde VERBATİM geçen alıntı)..." --dokum-icerik @ham.md
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "4. HD haksız fiil zamanaşımı" --sonuc "Yargıtay 4. HD, E. .../K. ..." --damga LEHE --dokum-sinifi tam-metin --bag "...(≥40 kr, hangi unsuru somutlaştırıyor)..." --ilgili-kisim "...(döküm içinde VERBATİM geçen alıntı)..." --dokum-icerik @ham.md
 ```
 Bu tek komut kütük satırını, döküm dosyasını (provenans notlu) VE
 `03-ictihat-muhakeme.md`'ye bölüm-append muhakeme kaydını AYNI ANDA üretir —
@@ -164,3 +164,26 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+## v0.5.8.5 — A1 TRİYAJ (MUHAKEME adımının tam-okuma şartı)
+
+> **ÇEKİRDEK (kullanıcı direktifi — aynen):** "Müvekkil aleyhine HİÇBİR yargı
+> kararı dilekçeye giremez. MCP'den çekilen TÜM kararlar İSTİSNASIZ baştan
+> sona (TAM METİN) okunur. LEHE ise dilekçeye; ALEYHE ise CEPHANELİĞE
+> (strateji/farkındalık); NÖTR kütükte kalır."
+
+- **DAMGA, tam metin okunmadan VURULMAZ.** RATIO çıkarımı yalnız KAYNAK-IZI
+  dökümündeki TAM METİNDEN yapılır; **arama sonucu parçasından alıntı
+  YASAKTIR** — snippet'ten RATIO kurmak muhakeme değil iddiadır.
+- **Tek-komut ritüeli okuma sınıfını taşır:** karar baştan sona okunduysa
+  `--dokum-sinifi tam-metin` ver; verilmezse döküm dürüst `ilgili-kisim`
+  sınıfıyla işlenir ve [G6] triyaj kapısı o künyeyi dilekçede BLOKLAR.
+  Karşı tarafın fiilen ileri sürdüğü aleyhe karar `--duyulmus` ile
+  işaretlenir (ALEYHE-AYIRT'ın dilekçeye çıkabilmesinin kütük şartı).
+- **Triyaj sonucu üç adrese dağılır:** LEHE → dilekçe adayı (`oa-dilekce`);
+  ALEYHE → cephanelik (`oa-antitez` — strateji/farkındalık; kütükte bırakmak
+  yetmez); NOTR → kütükte kalır, hiçbir çıktıya girmez. [G6] bunu mekanik
+  denetler: NOTR artık BLOK'tur (eskiden uyarıydı); ALEYHE-AYIRT yalnız
+  duyulmuş + ayırt bağlamı dar istisnasıyla geçer.
+- Alan biçimleri ve örnek kayıt: `references/ictihat-muhakeme-sablonu.md`
+  → "DÖKÜM-SINIFI ve DUYULMUŞ" bölümü.

@@ -79,4 +79,5 @@ def test_hooks_json_tek_komut_zincirsiz():
     t = (REPO / "plugins" / "ortak-avukat" / "hooks" / "hooks.json").read_text(encoding="utf-8")
     assert "||" not in t
     # v0.5.8.4: PreToolUse (hook-pretool, elle-UDF kapısı) eklendi → 5 komut.
-    assert "run-hook.cmd" in t and t.count("${CLAUDE_PLUGIN_ROOT}") == 5
+    # v0.5.8.5: SessionStart (hook-acilis, C4 açılış envanteri) eklendi → 6 komut.
+    assert "run-hook.cmd" in t and t.count("${CLAUDE_PLUGIN_ROOT}") == 6

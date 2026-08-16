@@ -323,3 +323,94 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
   (markdown-link ve düz parantezli link aynı stil); başlıklar ve tablo hücreleri
   de 1,5 satır aralığı taşır; liste maddeleri hayalet boş paragraf üretmez
   (`<li>` içine blok `<p>` değil, stillenmiş satır-içi metin yazılır).
+
+## v0.5.8.5 — A1 TRİYAJ + 346 sahası desen kapıları
+
+### A1 TRİYAJ — [G6] teslim engeli (kullanıcı direktifi)
+
+> **ÇEKİRDEK (aynen):** "Müvekkil aleyhine HİÇBİR yargı kararı dilekçeye
+> giremez. MCP'den çekilen TÜM kararlar İSTİSNASIZ baştan sona (TAM METİN)
+> okunur. LEHE ise dilekçeye; ALEYHE ise CEPHANELİĞE (strateji/farkındalık);
+> NÖTR kütükte kalır."
+
+Dilekçedeki HER künye için üç şart ([G6], `ictihat_muhakeme_denetim.py` —
+TESLİM ENGELİ): (1) kütükte TAM-METİN sınıfı döküm (`teyit --dokum-sinifi
+tam-metin` ile yazılır; sınıfsız/eski satır `ilgili-kisim` sayılır ve
+BLOKLAR), (2) muhakeme kaydının şablon alanları dolu, (3) `DAMGA=LEHE`.
+**NOTR artık BLOK'tur** (eskiden uyarıydı — sözleşme değişimi). ALEYHE-AYIRT
+yalnız DAR İSTİSNAYLA geçer: kütükte `DUYULMUS=EVET` (karşı taraf FİİLEN
+ileri sürmüş) VE dilekçede ayırt/çürütme bağlamında anılıyor — destek atfı
+olarak asla. **Arama sonucu parçasından alıntı YASAKTIR** — alıntı daima
+GETİR dökümünün tam metninden gelir. Ters yön: kütükte ALEYHE damgalı karar
+cephanelik ürününde (`07-antitez*`) anılmıyorsa [G6] "FARKINDALIK KAYBI"
+uyarısı basar (advisory) — kararı `oa-antitez` cephaneliğine işlet.
+
+### [Y]/[M]/[N]/[T] — dilekce_denetim.py desen kapıları
+
+- **[Y] HAVADA-KALAN ALINTI (BLOK):** önce SINIFLA, sonra uygula — akış-bağlı
+  alıntıya (cümle tırnaktan sonra gramerce sürüyor: "… şeklinde", "…
+  ifadesiyle") DOKUNMA; kural körlemesine uygulanırsa metin bozulur (346
+  dersi). BLOK yalnız iki sınıfa: (b) `...` ile kesilip kapanış kalıbı
+  (denilmiştir/şeklindedir/ifade edilmiştir/belirtilmiştir/vurgulanmıştır)
+  taşımadan paragraf biten alıntı, (c) paragraf sonunda kapanmayan tırnak.
+  Kesik alıntı YA akışa bağlanır YA "denilmiştir" kalıbıyla kapanır;
+  akış-içine kalıp EKLENMEZ. Alıntı-dışı serbest `...` yalnız uyarıdır;
+  `>` blok-alıntı satırları taranmaz.
+- **[M] MADDE NUMARASI SÜREKLİLİĞİ (uyarı — ASLA bloklamaz):** numaralı
+  dizilerde atlama ve mükerrerlik görünür kılınır (346: ekleme sırasında 1-5
+  ve 28-31 blokları mükerrer doğmuştu). Bölüm başlığından sonra 1'den
+  başlamak meşrudur, uyarı üretmez.
+- **[N] ÇIPLAK KISALTMA (uyarı — ASLA bloklamaz):** 2+ büyük harfli kısaltma
+  ilk geçişte açılır ("Açılım (KISALTMA)"); birebir alıntı içi MUAF (alıntı
+  metnine müdahale edilemez), yaygın hukuki kısaltmalar beyaz listesi (HMK,
+  TTK, TBK, TMK, CMK, İYUK, AYM, BAM… — örneklemdir) uyarı üretmez.
+- **[T] MAKBUZSUZ "TESLİME HAZIR" (BLOK):** taslakta ya da `_oa/` belgelerinde
+  "TESLİME HAZIR" ibaresi geçiyor ama `_oa/defter/teslim-makbuz.json`
+  (exit_kodu=0) yok/geçersizse "makbuzsuz hazır-beyanı" ihlali — R2: tek
+  ölçüt `teslim_paketi.py` exit 0 + makbuzdur; sözle/ibareyle "hazır" İLAN
+  EDİLEMEZ (üretildi ≠ teslime hazır).
+- **`--istisna-gerekce "<metin>"` (avukat onaylı düşürme):** [Y]/[T] BLOK
+  bulgularını görünür UYARIYA düşürür ve gerekçeyi
+  `_oa/defter/istisna-kayitlari.jsonl`'a (ortak şema, append-only,
+  `tur=yanlis-pozitif-ilani`, `onay=avukat`) yazar — kapı muhakemeyi
+  ENGELLEMEZ, kaydını tutarak yol verir; sessiz opt-out yok.
+
+### A4.3 — Bilirkişi raporuna itiraz playbook'u (varsayılan tarama)
+
+Bilirkişi raporuna itiraz yazarken şu dört ekseni VARSAYILAN olarak tara —
+kullanıcı istemese bile her rapor-itirazında denetle, tutan ekseni kur:
+
+1. **Taleple bağlılık (HMK m.25/26):** bilirkişi/mahkeme, tarafların talep
+   sonucundan fazlasına veya başka bir şeye hükmedecek veri üretmiş mi?
+   Rapor, talep edilmeyen bir kalemi hesaplamışsa bu itirazın ilk eksenidir.
+2. **İddia/savunmayı genişletme yasağı (HMK m.141):** rapora dayanılarak
+   dile getirilen yeni vakıa/kalem, teati aşaması kapandıktan sonra
+   genişletme oluşturuyor mu? Karşı tarafın rapora yazdırdığı yeni iddia
+   bu yasağa vurulur.
+3. **Basiretli tacir ölçüsü (TTK m.18/2):** tacir taraflar arasında rapor,
+   müvekkil aleyhine "bilmiyordu/öngöremezdi" varsayımı kurmuşsa basiret
+   ölçüsüyle çapraz denetle — ölçü iki yönlü işler, karşı tacirin basireti
+   de sorgulanır.
+4. **İspat yükü tahsisi:** raporun her aleyhe bulgusu için "bu vakıanın
+   ispat yükü kimdeydi, yük sahibi karşıladı mı" sorusu AÇIKÇA kurulur —
+   ispat yükünü ters çeviren rapor bulgusu itirazın taşıyıcı eksenidir.
+
+### A4.5 — Soru ≠ talimat (onay kapısı)
+
+Avukatın SORUSU ("şunu da ekleyebilir miyiz?", "X iddiası girer mi?") bir
+YAZIM TALİMATI değildir. Soruya cevap ver (hukuki değerlendirme + öneri);
+taslağa işlemek için AÇIK ONAY bekle ("ekle", "yaz", "işle" gibi net
+talimat). Soru üzerine taslağı sessizce değiştirmek, avukatın karar hakkını
+gasp eder — değişiklik ancak onaydan sonra ve onay kapsamıyla sınırlı
+yapılır.
+
+### A4.6 — Teknik itirazda adım-adım fiziksel illiyet anlatımı
+
+Teknik/mekanik bir sürece dayanan itirazda (makine arızası, inşaat hatası,
+trafik mekaniği, üretim süreci) hukuki sonucu adlandırmadan ÖNCE fiziksel
+zinciri ADIM ADIM anlat: her adım tek cümle, her cümle bir önceki adımın
+fiziksel sonucu ("kama gevşedi → mil boşluk yaptı → rulman ısındı → …").
+Okur (hâkim/bilirkişi) zinciri kendi gözünde kurmadan "illiyet vardır/
+yoktur" sonucuna İNANMAZ; soyut niteleme ancak zincir kurulduktan sonra
+gelir. Bu, `oa-illiyet` grafının dilekçe-yüzüdür: grafta ne varsa anlatı o
+sırayla akar, grafta olmayan adım anlatıya girmez.

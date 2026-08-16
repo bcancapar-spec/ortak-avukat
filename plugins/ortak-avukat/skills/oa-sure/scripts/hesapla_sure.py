@@ -35,7 +35,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, json, os, sys
+import argparse, datetime as _datetime, json, os, sys
 from datetime import date, timedelta
 
 ARA_BASLANGIC = (7, 20)   # HMK m.102 / İYUK m.61: 20 Temmuz
@@ -397,6 +397,51 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
         sys.exit(1)
 
 
+def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur):
+    """E4a (v0.5.8.5) — SÜRE BAĞI: hesaplanan son gün(ler) <kok>/_oa varsa
+    `_oa/sureler.json`a OTOMATİK flag olarak işlenir (halüsinasyon çıpası —
+    hesap yapıldı ama deftere hiç yazılmadı boşluğu kapanır). Kayıt biçimi
+    oa_hafiza.py `cmd_sure_flag` ŞEMASIYLA BİREBİR aynıdır (son_gun kanonik +
+    geriye-uyumlu tarih alanı; sure_nobetci.py aynı defteri okur) — subprocess
+    AÇILMAZ, doğrudan İN-PROCESS json yazımı yapılır (kapı-kapıyı-subprocess'le-
+    çağırmaz kuralıyla simetrik). <kok>/_oa YOKSA hiçbir şey yazılmaz (dava
+    kökü değildir; defter İCAT EDİLMEZ) — dönüş (None, sebep). Aynı
+    (son_gun, aciklama) çifti defterde zaten varsa TEKRAR eklenmez (tekrar
+    koşu defteri şişirmez). Dönüş: (yeni_eklenen_listesi, defter_yolu|sebep)."""
+    oa = os.path.join(kok, "_oa")
+    if not os.path.isdir(oa):
+        return None, f"{oa} yok — otomatik flag yazılmadı (dava kökü değil)"
+    syol = os.path.join(oa, "sureler.json")
+    try:
+        with open(syol, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        d = {"flagler": []}
+    if not isinstance(d, dict):
+        d = {"flagler": []}
+    if not isinstance(d.get("flagler"), list):
+        d["flagler"] = []
+    yeni = []
+    for tarih_iso, acik in son_gunler:
+        acik = acik or aciklama_taban
+        if any((f.get("son_gun") or f.get("tarih")) == tarih_iso
+               and f.get("aciklama") == acik
+               for f in d["flagler"] if isinstance(f, dict)):
+            continue   # aynı hesap ikinci koşuda çoğalmaz
+        kayit = {"son_gun": tarih_iso, "tarih": tarih_iso, "aciklama": acik,
+                 "kural": kural,
+                 "kayit": _datetime.datetime.now().isoformat(timespec="seconds"),
+                 "tur": tur}
+        d["flagler"].append(kayit)
+        yeni.append(tarih_iso)
+    if yeni:
+        d["flagler"].sort(key=lambda x: (x.get("son_gun") or x.get("tarih") or "")
+                          if isinstance(x, dict) else "")
+        with open(syol, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False, indent=2)
+    return yeni, syol
+
+
 def main():
     p = argparse.ArgumentParser(description="Deterministik Türk usul/maddi süre hesaplayıcı (v3)")
     p.add_argument("--teblig", help="Başlangıç tarihi: usulde tebliğ/öğrenme; maddi hukukta muacceliyet/öğrenme/fiil (YYYY-MM-DD)")
@@ -427,6 +472,14 @@ def main():
                         "[teblig+1, son_gün] pencerelerinin PAIRWISE çakışıp çakışmadığını raporlar.")
     p.add_argument("--pencereler-json", dest="pencereler_json_cikti", metavar="YOL",
                    help="--pencereler ile: sonucu makine-okur JSON olarak bu yola da yaz")
+    p.add_argument("--kok", default=".",
+                   help="E4a SÜRE BAĞI: çalışma kökü — <kok>/_oa VARSA hesaplanan son gün "
+                        "_oa/sureler.json'a OTOMATİK flag olarak işlenir (oa_hafiza sure-flag "
+                        "şeması; sure_nobetci.py aynı defteri okur). _oa yoksa yazılmaz.")
+    p.add_argument("--aciklama", default=None,
+                   help="otomatik süre flag'i açıklaması (verilmezse kural/süre metninden türetilir)")
+    p.add_argument("--flagsiz", action="store_true",
+                   help="otomatik sureler.json flag yazımını kapat (yalnız hesap yap)")
     a = p.parse_args()
     if a.pencereler:
         _pencere_kontrol(a.pencereler, a.pencereler_json_cikti)
@@ -541,10 +594,36 @@ def main():
     print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")
     for u in uyarilar: print(f"  ! {u}")
     print("="*66)
-    print("Sonraki adım: bu son gün 'python oa_hafiza.py sure-flag --tarih ... --aciklama \"...\" --kural ...'")
-    print("ile _oa/sureler.json'a MEKANİK olarak yazılır (halüsinasyon çıpası). event_create/")
-    print("reminder_create ÇAĞRILMAZ; dış takvim/hatırlatıcı eşgüdümü AVUKAT tarafından ELLE")
-    print("yapılır — araç yoksa/kurulamıyorsa bu açıkça raporlanır (disk pasiftir, kimseyi dürtmez).")
+    # ── E4a SÜRE BAĞI (v0.5.8.5): hesap çıktısı üretilirken flag OTOMATİK yazılır ──
+    # Boşluk sahada ölçüldü: hesap yapılıyor ama sureler.json'a işleme adımı (elle
+    # oa_hafiza sure-flag) atlanıyordu → nöbetçi hiç görmüyordu. Artık <kok>/_oa
+    # varsa son gün deftere İN-PROCESS işlenir; --uets'te karine senaryosu da ayrı
+    # kayıt olur (kayıpsızlık: iki son gün de görünür). Yazım BLOKLAMAZ: defter
+    # hatası hesabı düşürmez, açıkça raporlanır.
+    if a.flagsiz:
+        print("ⓘ --flagsiz: otomatik sureler.json flag yazımı istekle KAPALI.")
+    else:
+        _acik_taban = a.aciklama or ((kaynak or f"{miktar} {birim} süre") + " — son gün")
+        _adaylar = [(son.isoformat(), a.aciklama)]
+        if son_karine is not None:
+            _adaylar.append((son_karine.isoformat(),
+                             (a.aciklama or _acik_taban) + " [UETS karine: ulaşma+5. gün]"))
+        try:
+            _yeni, _bilgi = _sure_flagini_yaz(a.kok, _adaylar, _acik_taban, a.kural, a.tur)
+        except Exception as _e:   # yazım hesabı ASLA düşürmez — açık rapor, sessiz değil
+            print(f"UYARI: süre flag'i yazılamadı ({_e}) — oa_hafiza.py sure-flag ile ELLE işle.")
+        else:
+            if _yeni is None:
+                print(f"ⓘ SÜRE BAĞI: {_bilgi}; dava kökünde `--kok <klasör>` ile koş "
+                      "ya da oa_hafiza.py sure-flag ile elle işle.")
+            elif _yeni:
+                print(f"SÜRE FLAG'İ OTOMATİK İŞLENDİ ({', '.join(_yeni)}): {_bilgi}")
+                print("(sure_nobetci.py --kok . bu deftere göre GEÇMİŞ/YAKLAŞAN son günü tarar.)")
+            else:
+                print(f"ⓘ SÜRE BAĞI: aynı son gün + açıklama defterde ZATEN kayıtlı — tekrar eklenmedi ({_bilgi}).")
+    print("NOT: event_create/reminder_create ÇAĞRILMAZ; dış takvim/hatırlatıcı eşgüdümü AVUKAT")
+    print("tarafından ELLE yapılır — araç yoksa/kurulamıyorsa bu açıkça raporlanır (disk pasiftir,")
+    print("kimseyi dürtmez). _oa/dosya.md süre özetini de güncelle.")
 
 if __name__=="__main__":
     try: main()

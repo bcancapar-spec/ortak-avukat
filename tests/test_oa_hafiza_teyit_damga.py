@@ -150,11 +150,13 @@ def test_dokum_icerik_dosya_dogar_ve_son_dokum_guncellenir(tmp_path):
 
 def test_damga_lehe_muhakeme_bolumu_denetimden_gecer(tmp_path):
     _init(tmp_path)
+    # v0.5.8.5 [G6] sözleşmesi: kütük fiilen kullanılan kökte denetimden
+    # geçmek için döküm sınıfı TAM-METİN beyan edilmiş olmalı (A1 tam-okuma).
     kod, cikti = _cli(
         ["teyit", "--arac", "ictihat_getir", "--sorgu", "TBK m.49 illiyet",
          "--sonuc", KUNYE, "--damga", "LEHE", "--bag", BAG_METNI,
          "--ilgili-kisim", ILGILI_KISIM, "--dokum-icerik", DOKUM_METIN,
-         "--kok", str(tmp_path)],
+         "--dokum-sinifi", "tam-metin", "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
     assert kod == 0, cikti
@@ -368,7 +370,7 @@ def test_kaynak_izi_koke_goreli_posix_yazilir(tmp_path):
         ["teyit", "--arac", "ictihat_getir", "--sorgu", "TBK m.49 illiyet",
          "--sonuc", KUNYE, "--damga", "LEHE", "--bag", BAG_METNI,
          "--ilgili-kisim", ILGILI_KISIM, "--dokum-icerik", DOKUM_METIN,
-         "--kok", str(tmp_path)],
+         "--dokum-sinifi", "tam-metin", "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
     assert kod == 0, cikti
@@ -914,11 +916,14 @@ def test_damga_degistir_sonrasi_gecersiz_kayit_denetimde_celisen_damga_uretmez(t
     assert kod1 == 0, cikti1
 
     gerekce = "Yeniden inceleme sonucu kararın aslında LEHE olduğu anlaşıldı (düzeltme)."
+    # v0.5.8.5 [G6]: denetimden geçmek için düzeltilmiş LEHE teyidinin döküm
+    # sınıfı TAM-METİN beyanlı olmalı (A1 tam-okuma şartı).
     kod2, cikti2 = _cli(
         ["teyit", "--arac", "ictihat_getir", "--sorgu", "TBK m.49 illiyet düzeltme",
          "--sonuc", KUNYE, "--damga", "LEHE", "--bag", BAG_METNI,
          "--ilgili-kisim", ILGILI_KISIM, "--dokum-icerik", DOKUM_METIN,
-         "--damga-degistir", gerekce, "--kok", str(tmp_path)],
+         "--dokum-sinifi", "tam-metin", "--damga-degistir", gerekce,
+         "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
     assert kod2 == 0, cikti2

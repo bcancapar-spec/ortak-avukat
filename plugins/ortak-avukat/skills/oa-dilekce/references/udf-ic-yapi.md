@@ -76,9 +76,41 @@ sayılır); 5. resmî okuyucu tanığı (`npx udf2md` exit 0 + metin döner).
 Beşinci bacak ağ ister; öncekiler çevrimdışıdır. Mekanik GEÇERLİ ≠ görsel
 kusursuz — nihai göz avukatındır.
 
-**Üretim makbuzu (v0.5.8.4):** her `.udf` üretimi, dava klasöründe defter
-varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz düşer (motor,
-sha256, doğrulama durumu) — üretim noktasında yazılır, kapı değildir.
+**Üretim makbuzu (v0.5.8.4; B7 garantisi v0.5.8.5):** her `.udf` üretimi,
+dava klasöründe `_oa` dizini varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e
+tek satır iz düşer (motor, sha256, doğrulama durumu). **Defter alt dizini
+henüz yoksa `udf_yaz` onu makedirs ile KURAR ve makbuzu yine yazar** —
+"defter yoksa sessiz atla" kuralı makbuzu, `_oa`'lı ama defteri açılmamış
+klasörlerde kaybettiriyordu (B7). `_oa` da yoksa sessiz atlanır (defter/_oa
+açmak pipeline'ın işidir). Makbuz üretim noktasında yazılır, kapı değildir;
+yazılamaması üretimi asla kırmaz.
+
+### §4-imzalı — İMZALI-NÜSHA PROFİLİ (B6, v0.5.8.5)
+
+`udf_dogrula`, arşivde `sign.sgn` (ya da `.p7s`) görürse sonuçta
+`imzali_nusha=True` döner ve YALNIZ bu profilde editör-kaynaklı sapmalar
+GEÇERSİZLİK sebebi SAYILMAZ:
+
+- (a) float kenar değerleri (ör. `14.170000000000032`) — kenar zaten mekanik
+  kapının konusu değildir, burada belgelenir;
+- (b) prolog öncesi fazla boşluk/satır — yalnız imzalı nüshada kırpılarak
+  parse edilir;
+- (c) zip data-descriptor bayrağı — editörün akış yazıcısının olağan izi;
+- (d) offset döşemesinde **TEK küçük boşluk** toleransı — yalnız 1 UTF-16
+  birimlik EKSİK kaplama ve yalnız kaplanmayan kuyruk BOŞLUK sınıfıysa;
+  kuyruk metinse ya da fark 1'den büyükse imzalıda BİLE red.
+
+**Gerekçe (v0.5.5.2 dersinin devamı — resmî gerçeklik > bizim varsayım):**
+gerçek e-imzalı, mahkemece KABUL EDİLMİŞ bir dosyada 1 boşluk sapması
+ölçüldü; katı kural o gerçek-geçerli dosyayı yanlış-BLOK'lardı. **İmzasız
+dosyada tolerans YOKTUR** — katı invaryant aynen sürer: imzasız dosya bizim
+üretim hattımızın taze ürünüdür, sapması üretim hatasıdır; imzalı nüsha ise
+editörden/e-imzadan geçmiş resmî gerçekliktir. Uygulanan her tolerans
+`imzali_tolerans` listesinde + notlarda GÖRÜNÜR kalır (sessiz gevşeme yok);
+dava kökü biliniyorsa istisna defterine (`dogrulama-toleransi`) iz düşer.
+Mühür tarafındaki karşılığı için bkz. `oa-kontrol/SKILL.md` "B5 — E-İMZA
+MÜHÜR HALKASI" (imzalı türev BAYAT değildir; kenar yaması imzalı nüshaya
+ASLA uygulanmaz).
 
 ## 5. Okuma yönü (hatırlatma)
 

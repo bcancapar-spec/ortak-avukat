@@ -76,6 +76,16 @@ G-EK (UYARI — BLOKLAMAZ, YENİ-2 backlog): Aynı esas+karar+daireye ait BİRDE
    script "temiz" (engelsiz) adayı bulup kullanabilir (mekanik kapı yine
    açık kalabilir) ama bu yapısal tutarsızlığı SESSİZCE gizlemez.
 
+G6 (ENGEL — TRİYAJ, v0.5.8.5/A1): dilekçedeki HER künye için üç şart —
+   (1) kütükte TAM-METİN sınıfı döküm (DOKUM-SINIFI=tam-metin; sınıfsız eski
+   satır geriye-uyumla ilgili-kisim sayılır), (2) şablon alanları dolu (G2'de
+   denetlenir), (3) DAMGA=LEHE. NOTR artık BLOK; ALEYHE-AYIRT yalnız
+   'kütükte DUYULMUS=EVET + dilekçede ayırt/çürütme bağlamı' istisnasıyla
+   geçer — destek atfı olarak asla. Ayrıca TERS DENETİM (advisory): kütükte
+   son damgası ALEYHE olan karar cephanelik ürününde (07-antitez*)
+   anılmıyorsa "FARKINDALIK KAYBI" uyarısı. Ayrıntı: `triyaj_denetimi` /
+   `farkindalik_denetimi` docstring/yorumları.
+
 Paylaşımlı `kunye_normalize()` — bkz. `kunye_ortak.py` (M2-3'te `kunye_teyit.py`
 ile PAYLAŞILMASI planlanan ortak yardımcı; esas/karar normalizasyon mantığı).
 
@@ -154,6 +164,17 @@ HTTP_URL_RE = re.compile(r"https?://[^\s\)\]\>»\"']+")
 ASAN_KAYNAK_LINE_RE = re.compile(r"^\*\*AŞAN-KAYNAK:\*\*\s*(.+)$", re.M)
 ASILMA_TARIHI_LINE_RE = re.compile(r"^\*\*AŞILMA-TARİHİ:\*\*\s*(.+)$", re.M)
 GECERLILIK_BITIS_LINE_RE = re.compile(r"^\*\*GEÇERLİLİK-BİTİŞ:\*\*\s*(.+)$", re.M)
+# v0.5.8.5 [G6] A1a — TAM-OKUMA ALANI: `oa_hafiza.py teyit --dokum-sinifi`
+# muhakeme kaydına **DÖKÜM-SINIFI:** satırı, kütük hücresine DOKUM-SINIFI=
+# tokenı yazar. Satır/token YOKSA kayıt geriye-uyumla 'ilgili-kisim' sayılır
+# (sınıfsız eski kayıt = ilgili-kisim; tam-okuma iddiası VARSAYILMAZ).
+DOKUM_SINIFI_LINE_RE = re.compile(r"^\*\*DÖKÜM-SINIFI:\*\*\s*(.+)$", re.M)
+_DOKUM_SINIFI_TOKEN_RE = re.compile(r"DOKUM-SINIFI=([A-Za-zçğıöşüÇĞİÖŞÜ-]+)")
+_DUYULMUS_TOKEN_RE = re.compile(r"DUYULMUS=EVET")
+# Kütük hücresindeki DAMGA tokenı — `kunye_ortak._DAMGA_TOKEN_RE` ile aynı
+# biçim; kunye_ortak 2. dalga merkezinde dokunulmaz olduğundan burada YEREL
+# tanımlanır (özel ada bağımlılık kurulmaz).
+_KUTUK_DAMGA_TOKEN_RE = re.compile(r"DAMGA=([A-ZÇĞİÖŞÜa-zçğıöşü-]+)")
 
 
 def _bolum_al(metin, baslik):
@@ -185,7 +206,7 @@ class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
                  "gecersiz", "kaynak_url", "asan_kaynak", "asilma_tarihi",
-                 "gecerlilik_bitis")
+                 "gecerlilik_bitis", "dokum_sinifi")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -220,6 +241,11 @@ class MuhakemeKaydi:
         self.asilma_tarihi = m.group(1).strip() if m else None
         m = GECERLILIK_BITIS_LINE_RE.search(metin)
         self.gecerlilik_bitis = m.group(1).strip() if m else None
+
+        # v0.5.8.5 [G6] A1a — döküm sınıfı; satır yoksa geriye-uyumla
+        # 'ilgili-kisim' (sınıfsız eski kayıt tam-okuma İDDİA EDEMEZ).
+        m = DOKUM_SINIFI_LINE_RE.search(metin)
+        self.dokum_sinifi = m.group(1).strip().lower() if m else "ilgili-kisim"
 
         self.ilgili_kisim = _bolum_al(metin, "İLGİLİ-KISIM")
         # R4: eski "İLLİYET" alanı DAVAYA-BAĞ oldu (oa-illiyet nedensellik
@@ -812,6 +838,209 @@ def asilmis_ictihat_denetimi(atiflar, kayitlar):
     return bloklar, uyarilar
 
 
+# ── [G6] TRİYAJ KAPISI (v0.5.8.5 — A1c) ────────────────────────────────────
+# Kullanıcı direktifi (EN YÜKSEK EFOR): "Müvekkil aleyhine HİÇBİR yargı kararı
+# dilekçeye giremez; model çektiği TÜM kararları İSTİSNASIZ baştan sona okur;
+# LEHE ise dilekçeye, ALEYHE ise cephaneliğe."
+#
+# Dilekçedeki HER künye için ÜÇ şart:
+#   (1) kütükte TAM-METİN sınıfı döküm satırı (DOKUM-SINIFI=tam-metin — A1a;
+#       sınıfsız eski satır geriye-uyumla 'ilgili-kisim' sayılır → şart
+#       SAĞLANMAZ). Kütük fiilen kullanılmıyorsa bu şart MEKANİK denetlenemez
+#       — sessiz atlama yasağı gereği görünür [BİLGİ] ile atlanır (geriye
+#       uyum, `kutuk_dayanagi_denetle` ile aynı desen).
+#   (2) muhakeme kaydının şablon alanları dolu (RATIO/ÖRTÜŞME/FARKLAR =
+#       İLGİLİ-KISIM/DAVAYA-BAĞ/AYIRT-ETME) — bu şart G2'de (alan bütünlüğü)
+#       zaten fail-closed denetlenir; burada TEKRAR blok üretilmez (çift
+#       rapor yasağı).
+#   (3) DAMGA=LEHE. Değilse:
+#       - ALEYHE / damgasız / geçersiz enum → G3 zaten BLOK (çift rapor yok);
+#       - NOTR → BLOK (eskiden yalnız uyarıydı — v0.5.8.5 sözleşme değişimi);
+#       - ALEYHE-AYIRT → YALNIZ İSTİSNA yoluyla geçer: künye kütükte
+#         duyulmus=EVET işaretli (karşı taraf FİİLEN ileri sürmüş — m.6
+#         'sunulmamış antiteze preemptive ifşa yasağı'nın mekanik ayağı) VE
+#         dilekçede ayırt/çürütme BAĞLAMINDA anılıyor. Destek atfı olarak asla.
+#
+# TERS DENETİM (advisory): kütükte SON damgası ALEYHE olan bir karar
+# cephanelik ürünlerinde (07-antitez* / *antitez* / *cephanelik* —
+# `oa_metrik`/`pipeline_kayit` "07-antitez*" adlandırması) HİÇ anılmıyorsa
+# "FARKINDALIK KAYBI" uyarısı basılır (bloklamaz) — "ALEYHE ise cephaneliğe"
+# kuralının işlenmemiş kalan yarısını görünür kılar.
+
+_TR_FOLD_TABLO = str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")
+
+
+def _tr_fold(s):
+    return (s or "").translate(_TR_FOLD_TABLO).lower()
+
+
+# Ayırt/çürütme bağlamı anahtarları (ASCII'ye indirgenmiş metinde aranır) —
+# mevcut ALEYHE-AYIRT mekanizmasının dilekçe-metni ayağı: karşı tarafın
+# dayandığı kararı AYIRAN/ÇÜRÜTEN anlatım kalıpları.
+_AYIRT_BAGLAM_ANAHTARLARI = (
+    "ayirt", "ayirdedil", "ayris", "curut", "farkli", "emsal teskil etmez",
+    "emsal niteliginde degildir", "uygulanamaz", "uygulanmaz", "bagdasmaz",
+    "karsi taraf", "davali tarafin dayandigi", "davaci tarafin dayandigi",
+    "dayandigi", "ileri surdugu",
+)
+
+
+def _ayirt_baglami_var_mi(metin, satir_no):
+    """Atıf satırının ±2 satırlık penceresinde ayırt/çürütme bağlamı var mı?"""
+    satirlar = metin.splitlines()
+    if not satir_no:
+        pencere = metin
+    else:
+        pencere = "\n".join(satirlar[max(0, satir_no - 3): satir_no + 2])
+    duz = _tr_fold(pencere)
+    return any(a in duz for a in _AYIRT_BAGLAM_ANAHTARLARI)
+
+
+def _kutuk_kunye_bilgisi(kutuk_yolu, esas, karar, daire):
+    """Kütükte bu esas/karar (+daire) için satırları tarar; döner:
+    {"satir_var", "tam_metin", "duyulmus"}. Hücre eşleşme mantığı
+    `kunye_ortak.kutukte_esas_karar_satiri_var_mi` ile AYNI 7-hücre/
+    esas-karar-daire kuralını izler (kunye_ortak 2. dalga merkezinde
+    dokunulmaz olduğundan burada yerel aynalanır — davranış bire bir)."""
+    bilgi = {"satir_var": False, "tam_metin": False, "duyulmus": False}
+    if not (esas or karar):
+        return bilgi
+    for satir in ko._kutuk_satirlarini_oku(kutuk_yolu):
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        sonuc_hucresi = hucreler[4]
+        esas_var = bool(esas) and ko.sayi_var(sonuc_hucresi, esas)
+        karar_var = bool(karar) and ko.sayi_var(sonuc_hucresi, karar)
+        if esas and karar:
+            if not (esas_var and karar_var):
+                continue
+        elif esas:
+            if not esas_var:
+                continue
+        elif not karar_var:
+            continue
+        if daire is not None:
+            satir_daire = ko.daire_key(sonuc_hucresi)
+            if satir_daire is not None and satir_daire != daire:
+                continue
+        bilgi["satir_var"] = True
+        m = _DOKUM_SINIFI_TOKEN_RE.search(sonuc_hucresi)
+        if m and m.group(1).strip().lower() == "tam-metin":
+            bilgi["tam_metin"] = True
+        if _DUYULMUS_TOKEN_RE.search(sonuc_hucresi):
+            bilgi["duyulmus"] = True
+    return bilgi
+
+
+def triyaj_denetimi(metin, atiflar, sonuclar, kutuk_yolu, kutuk_kullanimda):
+    """[G6] — döner: (bloklar, uyarilar, bilgiler) — hepsi [str]."""
+    bloklar, uyarilar, bilgiler = [], [], []
+    if atiflar and not kutuk_kullanimda:
+        bilgiler.append(
+            "Künye teyit kütüğü bu kökte fiilen kullanılmıyor — TAM-OKUMA "
+            "(döküm sınıfı) ve DUYULMUŞ şartları MEKANİK denetlenemedi (geriye "
+            "uyum; tam-metin okuma yükümlülüğü KALKMAZ, yalnız mekanik kanıtı yok).")
+    for atif, (durum, _e, _u, kayit) in zip(atiflar, sonuclar):
+        if kayit is None:
+            continue  # çıplak atıf — G2 zaten BLOK
+        etiket = f"E. {atif['esas'] or '—'} / K. {atif['karar'] or '—'}"
+        bilgi = None
+        if kutuk_kullanimda:
+            bilgi = _kutuk_kunye_bilgisi(
+                kutuk_yolu, atif["esas"], atif["karar"], atif.get("daire_key"))
+            # Şart (1) — kütükte TAM-METİN sınıfı döküm izi.
+            if not bilgi["tam_metin"]:
+                bloklar.append(
+                    f"{etiket}: kütükte TAM-METİN sınıfı döküm satırı yok — karar "
+                    "BAŞTAN SONA okunduğu mekanik kanıtlanmadı (sınıfsız/eski satır "
+                    "geriye-uyumla 'ilgili-kisim' sayılır). Kararı İSTİSNASIZ baştan "
+                    "sona okuyup `teyit --dokum-sinifi tam-metin` ile yeniden "
+                    "damgalayın (A1 tam-okuma şartı).")
+        damga = kayit.damga
+        if damga == "NOTR":
+            # Şart (3) — eskiden yalnız uyarıydı; triyajda LEHE olmayan damga
+            # dilekçeye giremez (NOTR = LEHE değil, ayırt istisnası da yok).
+            bloklar.append(
+                f"{etiket}: DAMGA=NOTR — triyaj şartı (3) DAMGA=LEHE sağlanmadı; "
+                "nötr karar dilekçeye destek olarak GİREMEZ (LEHE ise dilekçeye, "
+                "ALEYHE ise cephaneliğe; NOTR hiçbirine dayanak değildir).")
+        elif damga == "ALEYHE-AYIRT":
+            baglam = _ayirt_baglami_var_mi(metin, atif.get("satir_no"))
+            if not baglam:
+                bloklar.append(
+                    f"{etiket}: DAMGA=ALEYHE-AYIRT ama dilekçede ayırt/çürütme "
+                    "BAĞLAMI görünmüyor — aleyhe(-ayırt) karar DESTEK atfı olarak "
+                    "asla kullanılamaz; yalnız karşı tarafın dayandığı kararı "
+                    "AYIRMAK/ÇÜRÜTMEK için anılabilir.")
+            if kutuk_kullanimda and not bilgi["duyulmus"]:
+                bloklar.append(
+                    f"{etiket}: kütükte DUYULMUS=EVET işareti yok — karşı tarafça "
+                    "FİİLEN İLERİ SÜRÜLMEMİŞ aleyhe karar, ayırt edilerek dahi "
+                    "dilekçeye giremez (anayasa m.6: sunulmamış antiteze preemptive "
+                    "ifşa yasağı). Karar fiilen duyulduysa `teyit --duyulmus` ile "
+                    "işaretleyin; duyulmadıysa cephanelikte tutun.")
+            elif not kutuk_kullanimda and baglam:
+                bilgiler.append(
+                    f"{etiket}: ALEYHE-AYIRT ayırt bağlamıyla geçti ama DUYULMUŞ "
+                    "işareti kütük kullanılmadığından doğrulanamadı.")
+        # LEHE → şart (3) tam; ALEYHE/damgasız/geçersiz → G3 zaten BLOK.
+    return bloklar, uyarilar, bilgiler
+
+
+def farkindalik_denetimi(kutuk_yolu, cikti_dizin):
+    """TERS DENETİM (advisory) — kütükte SON damgası ALEYHE olan her karar
+    cephanelik ürünlerinde anılmalı; anılmıyorsa 'FARKINDALIK KAYBI' uyarısı
+    döner (bloklamaz). Son-damga esası: --damga-degistir ile düzeltilmiş
+    (artık ALEYHE olmayan) karar yanlış-pozitif üretmez."""
+    son_damgalar = {}
+    for satir in ko._kutuk_satirlarini_oku(kutuk_yolu):
+        if not satir.startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        sonuc_hucresi = hucreler[4]
+        m = _KUTUK_DAMGA_TOKEN_RE.search(sonuc_hucresi)
+        if not m:
+            continue
+        esas, karar = ko.kunye_normalize(sonuc_hucresi)
+        if esas is None and karar is None:
+            continue
+        daire = ko.daire_key(sonuc_hucresi)
+        son_damgalar[(esas, karar, daire)] = m.group(1).upper()
+    aleyheler = [k for k, v in son_damgalar.items() if v == "ALEYHE"]
+    if not aleyheler:
+        return []
+    cephanelik_icerik = ""
+    gorulen_dosyalar = set()
+    if cikti_dizin and os.path.isdir(cikti_dizin):
+        for desen in ("07-antitez*", "*antitez*", "*cephanelik*"):
+            for yol in sorted(glob.glob(os.path.join(cikti_dizin, desen))):
+                if yol in gorulen_dosyalar or not os.path.isfile(yol):
+                    continue
+                gorulen_dosyalar.add(yol)
+                try:
+                    with open(yol, encoding="utf-8", errors="replace") as f:
+                        cephanelik_icerik += "\n" + f.read()
+                except OSError:
+                    continue
+    uyarilar = []
+    for (esas, karar, _daire) in aleyheler:
+        anildi = ((esas and ko.sayi_var(cephanelik_icerik, esas)) or
+                  (karar and ko.sayi_var(cephanelik_icerik, karar)))
+        if not anildi:
+            uyarilar.append(
+                f"FARKINDALIK KAYBI: kütükte ALEYHE damgalı karar (E. {esas or '—'} "
+                f"/ K. {karar or '—'}) cephanelik ürünlerinde (07-antitez*) HİÇ "
+                "anılmıyor — 'ALEYHE ise cephaneliğe' kuralının işleme yarısı eksik "
+                "kalmış olabilir; kararı oa-antitez cephaneliğine işleyin "
+                "(advisory — bloklamaz).")
+    return uyarilar
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="oa-kontrol içtihat muhakeme zinciri mekanik kapısı — "
@@ -862,10 +1091,11 @@ def main():
 
     sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin, kutuk_yolu) for a in atiflar]
 
+    kutuk_kullanimda = ko.kutuk_gercek_veri_var_mi(kutuk_yolu)
     engel_var = rapor_yaz(args.taslak, atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
                            kutuk_bos_mu=not kayitlar and not gecersiz_sayisi, tip=args.tip,
                            gecersiz_sayisi=gecersiz_sayisi,
-                           kutuk_kullanimda_mi=ko.kutuk_gercek_veri_var_mi(kutuk_yolu))
+                           kutuk_kullanimda_mi=kutuk_kullanimda)
 
     url_bloklar, url_uyarilar = kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar)
     if url_bloklar or url_uyarilar:
@@ -894,6 +1124,26 @@ def main():
             engel_var = True
             print("SONUÇ-EK: TESLİM ENGELİ — İBK/kanun değişikliği/daire "
                   "kaymasıyla aşılmış içtihat LEHE dayanak olarak kullanılamaz.")
+
+    g6_bloklar, g6_uyarilar, g6_bilgiler = triyaj_denetimi(
+        metin, atiflar, sonuclar, kutuk_yolu, kutuk_kullanimda)
+    farkindalik_uyarilari = farkindalik_denetimi(kutuk_yolu, muhakeme_dizin)
+    if g6_bloklar or g6_uyarilar or g6_bilgiler or farkindalik_uyarilari:
+        print("\n" + "-" * 72)
+        print("[G6] TRİYAJ — TAM-OKUMA + LEHE ŞARTI (v0.5.8.5 — A1: LEHE ise "
+              "dilekçeye, ALEYHE ise cephaneliğe)")
+        print("-" * 72)
+        for b in g6_bloklar:
+            print(f"  ✗ {b}")
+        for u in g6_uyarilar + farkindalik_uyarilari:
+            print(f"  ⚠ {u}")
+        for i in g6_bilgiler:
+            print(f"  [BİLGİ] {i}")
+        if g6_bloklar:
+            engel_var = True
+            print("SONUÇ-EK: TESLİM ENGELİ — triyaj üç şartı (tam-metin döküm + "
+                  "dolu şablon alanları + DAMGA=LEHE) sağlanmadan künye dilekçede "
+                  "kalamaz (istisna: duyulmuş + ayırt bağlamındaki ALEYHE-AYIRT).")
 
     sys.exit(1 if engel_var else 0)
 

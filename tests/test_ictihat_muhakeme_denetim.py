@@ -59,7 +59,8 @@ def _bos_iskelet(tmp_path):
 def _kur(tmp_path, damga="LEHE", ayirt_etme="", kaynak_izi_var=True,
          kaynak_dosya_ad="kaynak.md", ilgili_kisim="...ilgili kısım metni...",
          davaya_bag="...davaya bağ açıklaması...", damga_satiri=True, kaynak_icerik=None,
-         kaynak_izi_deger_override=None, davaya_bag_baslik="DAVAYA-BAĞ"):
+         kaynak_izi_deger_override=None, davaya_bag_baslik="DAVAYA-BAĞ",
+         taslak_metin=TASLAK_METIN):
     """Tek atıflı, tek muhakeme kayıtlı bir _oa iskeleti + taslak kurar; taslak
     dosya yolunu döndürür (CLI'ye cwd-göreli 'taslak.md' olarak verilir)."""
     dokum_dizin, cikti_dizin = _bos_iskelet(tmp_path)
@@ -89,8 +90,17 @@ def _kur(tmp_path, damga="LEHE", ayirt_etme="", kaynak_izi_var=True,
     (cikti_dizin / "01-ictihat-muhakeme.md").write_text("\n".join(satirlar), encoding="utf-8")
 
     taslak = tmp_path / "taslak.md"
-    taslak.write_text(TASLAK_METIN, encoding="utf-8")
+    taslak.write_text(taslak_metin, encoding="utf-8")
     return taslak
+
+
+# v0.5.8.5 [G6] — ALEYHE-AYIRT bir karar dilekçede yalnız AYIRT/ÇÜRÜTME
+# bağlamında anılabilir (destek atfı olarak asla); pozitif AYIRT vakaları bu
+# metni kullanır (kütüksüz kökte DUYULMUŞ şartı [BİLGİ] ile atlanır — geriye uyum).
+AYIRT_TASLAK_METIN = (
+    "Davalı tarafın dayandığı Yargıtay 4. HD E. 2023/1234 K. 2023/5678 sayılı "
+    "karar somut olaydan AYIRT edilmelidir; olgusal zemin tamamen başkadır.\n"
+)
 
 
 # ── POZİTİF: temiz zincir geçer ─────────────────────────────────────────────
@@ -104,11 +114,27 @@ def test_temiz_lehe_zincir_gecer_exit0(tmp_path):
 
 
 def test_aleyhe_ayirt_dolu_ayirt_etme_ile_gecer(tmp_path):
+    """v0.5.8.5 [G6] güncellemesi: ALEYHE-AYIRT kayıt artık yalnız dilekçede
+    AYIRT/ÇÜRÜTME bağlamında anılıyorsa geçer (destek atfı olarak asla) —
+    taslak metni bu yüzden ayırt bağlamlıdır."""
+    _kur(tmp_path, damga="ALEYHE-AYIRT",
+         ayirt_etme="Emsal kararda davacı %70 kusurlu; dosyamızda davacı kusuru yok — "
+                    "olgusal zemin farklı olduğundan emsal karar uygulanmaz.",
+         taslak_metin=AYIRT_TASLAK_METIN)
+    kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+
+
+def test_aleyhe_ayirt_destek_atfi_baglaminda_triyaj_bloklar(tmp_path):
+    """[G6] simetrik negatif: aynı ALEYHE-AYIRT kayıt DESTEK cümlesinde
+    ('emsal teşkil etmektedir') anılırsa TESLİM ENGELİ — aleyhe(-ayırt)
+    karar destek atfı olamaz."""
     _kur(tmp_path, damga="ALEYHE-AYIRT",
          ayirt_etme="Emsal kararda davacı %70 kusurlu; dosyamızda davacı kusuru yok — "
                     "olgusal zemin farklı olduğundan emsal karar uygulanmaz.")
     kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
-    assert kod == 0, cikti
+    assert kod == 1, cikti
+    assert "[G6]" in cikti
 
 
 # ── NEGATİF: çıplak atıf — hiçbir muhakeme kaydı yok ────────────────────────
@@ -362,14 +388,17 @@ def test_taslaktaki_atiflari_ayni_esas_karar_farkli_daire_ayri_atif_sayilir():
     assert daireler == {("4", "HD"), ("11", "HD")}
 
 
-# ── UYARI (bloklamaz): DAMGA=NOTR ───────────────────────────────────────────
+# ── DAMGA=NOTR — v0.5.8.5 [G6] sözleşme değişikliği: eskiden yalnız UYARIydı,
+# triyaj kapısı üç şartından (3) DAMGA=LEHE sağlanmadığından artık BLOK
+# (G3'ün uyarısı da görünür kalır — çift katman).
 
-def test_notr_uyarir_bloklamaz(tmp_path):
+def test_notr_triyaj_kapisinda_bloklar(tmp_path):
     _kur(tmp_path, damga="NOTR")
     kod, cikti = _cli(["taslak.md", "--kok", str(tmp_path)], cwd=tmp_path)
-    assert kod == 0, cikti
+    assert kod == 1, cikti
     assert "NOTR" in cikti
-    assert "⚠" in cikti
+    assert "⚠" in cikti  # G3 uyarısı hâlâ görünür
+    assert "[G6]" in cikti
 
 
 # ── UYARI (bloklamaz): G1 — dilekçede hiç ictihat atfı yok ─────────────────

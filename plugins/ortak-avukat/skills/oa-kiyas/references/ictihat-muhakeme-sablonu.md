@@ -219,3 +219,41 @@ onamayla aşılan karar):
 ```bash
 python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --damga ALEYHE --sorgu "9. HD işe iade süre" --sonuc "Yargıtay 9. HD, E. 2019/1234, K. 2020/5678" --bag "...(≥40 kr)..." --ilgili-kisim "...(döküm içinde VERBATİM alıntı)..." --dokum-icerik @ham.md --asan-kaynak "7036 sK. m.11 değişikliği" --asilma-tarihi 01.01.2026 --gecerlilik-bitis 01.01.2026
 ```
+
+## DÖKÜM-SINIFI ve DUYULMUŞ alanları (v0.5.8.5 — [G6] triyaj kapısı)
+
+A1 direktifinin ("çekilen TÜM kararlar İSTİSNASIZ baştan sona okunur; LEHE
+ise dilekçeye, ALEYHE ise cephaneliğe; NÖTR kütükte kalır") mekanik alanları.
+İkisi de `oa_hafiza.py teyit` ile yazılır — elle kurulmaz:
+
+| Alan | Nerede yaşar | Üretici bayrak | Anlam |
+|---|---|---|---|
+| `**DÖKÜM-SINIFI:**` (muhakeme kaydı) + `DOKUM-SINIFI=` (kütük hücresi) | kayıt + kütük satırı | `--dokum-sinifi tam-metin\|ilgili-kisim` (yalnız GETİR sınıfında; ARAMA/mevzuatta RET) | `tam-metin` = karar BAŞTAN SONA İSTİSNASIZ okundu; `ilgili-kisim` = yalnız ilgili kısım okundu. Satır/token YOKSA kayıt geriye-uyumla `ilgili-kisim` sayılır — tam-okuma VARSAYILMAZ. |
+| `DUYULMUS=EVET` (kütük hücresi) | kütük satırı | `--duyulmus` | Karşı tarafın FİİLEN ileri sürdüğü karar işareti — [G6] ALEYHE-AYIRT istisnasının kütük ayağı. |
+
+**[G6] kuralı (`ictihat_muhakeme_denetim.py` — TESLİM ENGELİ):** dilekçedeki
+her künye için (1) kütükte `DOKUM-SINIFI=tam-metin` izi, (2) dolu şablon
+alanları, (3) `DAMGA=LEHE` aranır. **NOTR artık BLOK'tur** (v0.5.8.5 sözleşme
+değişimi — eskiden uyarıydı). `ALEYHE-AYIRT` yalnız `DUYULMUS=EVET` +
+dilekçede ayırt/çürütme bağlamı dar istisnasıyla geçer — destek atfı olarak
+asla. TERS DENETİM (advisory): kütükte son damgası ALEYHE olup cephanelik
+ürünlerinde (`07-antitez*`) anılmayan karar "FARKINDALIK KAYBI" uyarısı alır.
+
+Kullanım örnekleri:
+
+```bash
+# LEHE + tam-okuma (dilekçe adayı — [G6] üç şartı da doldurur):
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678" --damga LEHE --dokum-sinifi tam-metin --bag "...(≥40 kr)..." --ilgili-kisim "...(döküm içinde VERBATİM alıntı)..." --dokum-icerik @ham.md
+
+# Karşı tarafın fiilen ileri sürdüğü aleyhe karar (ayırt edilerek karşılanacak):
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2022/900, K. 2022/4400" --damga ALEYHE-AYIRT --dokum-sinifi tam-metin --duyulmus --ayirt "...(somut fark)..." --bag "..." --ilgili-kisim "..." --dokum-icerik @ham.md
+```
+
+Muhakeme kaydında satır biçimi (KAYNAK-URL varsa onun altında):
+
+```markdown
+**KUNYE:** Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023
+**KAYNAK-IZI:** _oa/teyit/dokum/2026-08-16-ictihat_getir-ornek.md
+**DAMGA:** LEHE
+**DÖKÜM-SINIFI:** tam-metin
+```

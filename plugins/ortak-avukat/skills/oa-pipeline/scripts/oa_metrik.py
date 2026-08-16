@@ -295,7 +295,9 @@ def olc_tam_tur(analiz, analiz_hata, kunye):
 def olc_defter(defter, defter_hata):
     if defter is None:
         return {"durum": YOK, "not": f"pipeline-durum.json {defter_hata or 'okunamadı'} — defter yok."}
-    statuler = ["UYGULANDI", "GEREKSIZ", "BILGI-EKSIK", "YUKLENEMEDI", "BEKLIYOR"]
+    # "ELDEN" = C5 (v0.5.8.5) resmî statüsü (script artefaktı diskte yok, iş elden
+    # beyan edildi) — 'diger' kovasında gizlenmez, ayrı sayılır (görünürlük).
+    statuler = ["UYGULANDI", "ELDEN", "GEREKSIZ", "BILGI-EKSIK", "YUKLENEMEDI", "BEKLIYOR"]
     parca_say = {s: 0 for s in statuler}
     diger = 0
     toplam_parca = 0
@@ -542,12 +544,18 @@ def olc_override(kok, defter, analiz):
     okunmasıdır. Bu yüzden 'gorunmez_kacis_sayaclari' AYNI çıktıda taşınır."""
     if defter is None:
         return {"durum": YOK, "not": "defter yok — override ölçülemedi."}
-    serhli_parca, toplam_uygulandi = 0, 0
+    # C5 uyumu (v0.5.8.5): "ELDEN" (script artefaktı yok, elden beyan) İŞLENMİŞ
+    # bir parçadır ve tipik olarak şerh taşır — override ölçümünün TAM KALBİDİR;
+    # yalnız UYGULANDI sayılsaydı ELDEN'e düşen şerhli parçalar sayaçtan sessizce
+    # kaybolurdu (görünmez kaçış). Oran = işlenmiş (UYGULANDI+ELDEN) parçalarda şerh.
+    serhli_parca, toplam_uygulandi, elden_parca = 0, 0, 0
     try:
         for _no, a in (defter.get("adimlar") or {}).items():
             for _p, p in (a.get("parcalar") or {}).items():
-                if p.get("durum") == "UYGULANDI":
+                if p.get("durum") in ("UYGULANDI", "ELDEN"):
                     toplam_uygulandi += 1
+                    if p.get("durum") == "ELDEN":
+                        elden_parca += 1
                     if p.get("serh"):
                         serhli_parca += 1
     except Exception as e:
@@ -578,6 +586,17 @@ def olc_override(kok, defter, analiz):
         except Exception:
             pass
 
+    # E1 (v0.5.8.5, saha karnesi) — RED makbuzu AYRI dosyadır: teslim_paketi.py
+    # başarısız denemeyi `teslim-makbuz-RED.json`a yazar (başarılı makbuzdan
+    # AYRI ad). Eski sayaç yalnız teslim-makbuz.json'a baktığı için sahada RED
+    # dosyası dururken "teslim-makbuz RED: 0" basılıyordu (yanlış negatif).
+    # Varlık = en az bir başarısız deneme İZİ (dosya üzerine yazılır, tekildir);
+    # JSON bozuk olsa bile dosya kanıttır — parse ETMEDEN sayılır (uydurma yok).
+    red_makbuz = 0
+    red_yol = os.path.join(_oa_kok(kok), "defter", "teslim-makbuz-RED.json")
+    if os.path.isfile(red_yol):
+        red_makbuz = 1
+
     oran = round(serhli_parca / toplam_uygulandi, 4) if toplam_uygulandi else None
 
     # Görünmez-kaçış sayaçları — pipeline_kayit'in TEK KAYNAKLI (ikiz-liste
@@ -598,10 +617,12 @@ def olc_override(kok, defter, analiz):
         "durum": "olculdu",
         "serhli_uygulandi_parca": serhli_parca,
         "toplam_uygulandi_parca": toplam_uygulandi,
+        "elden_parca": elden_parca,
         "override_orani": oran,
         "serh_tarihcesi_uzunluk": serh_tarihcesi_n,
         "serhli_kapanis_sayisi": serhli_kapanis,
         "teslim_makbuz_red_sayisi": makbuz_red,
+        "red_makbuz": red_makbuz,
         "gorunmez_kacis_sayaclari": {
             "sozlesme_disi_dizin": golge_dizin_n,
             "makbuzsuz_dilekce_adayi": makbuzsuz_dilekce_n,
@@ -790,7 +811,8 @@ def ozet_yaz(metrik):
     if d["durum"] == "olculdu":
         ps = d["parca_statuleri"]
         o.append(f"    -> toplam parça : {_s(d['toplam_parca'])}")
-        o.append(f"    -> UYGULANDI {ps['UYGULANDI']} | GEREKSIZ {ps['GEREKSIZ']} | "
+        o.append(f"    -> UYGULANDI {ps['UYGULANDI']} | ELDEN {ps.get('ELDEN', 0)} | "
+                 f"GEREKSIZ {ps['GEREKSIZ']} | "
                  f"BILGI-EKSIK {ps['BILGI-EKSIK']} | YUKLENEMEDI {ps['YUKLENEMEDI']} | "
                  f"BEKLIYOR {ps['BEKLIYOR']}")
     else:
@@ -819,11 +841,12 @@ def ozet_yaz(metrik):
     o.append("[6] OVERRIDE SAYACI (--zorla/--serh/--serhle — İNCELEME TETİKLEYİCİSİ, HEDEF DEĞİL)")
     if ov.get("durum") == "olculdu":
         oran_str = f"%{ov['override_orani']*100:.1f}" if ov.get("override_orani") is not None else "-"
-        o.append(f"    -> şerhli UYGULANDI: {_s(ov['serhli_uygulandi_parca'])} / "
-                 f"{_s(ov['toplam_uygulandi_parca'])} (oran: {oran_str})")
+        o.append(f"    -> şerhli işlenmiş (UYGULANDI+ELDEN): {_s(ov['serhli_uygulandi_parca'])} / "
+                 f"{_s(ov['toplam_uygulandi_parca'])} (oran: {oran_str} · ELDEN: {_s(ov.get('elden_parca'))})")
         o.append(f"    -> serh_tarihcesi (tam_tur --zorla): {_s(ov['serh_tarihcesi_uzunluk'])}")
         o.append(f"    -> şerhli kapanış (oturum-kapat --serhle): {_s(ov['serhli_kapanis_sayisi'])}")
-        o.append(f"    -> teslim-makbuz RED: {_s(ov['teslim_makbuz_red_sayisi'])}")
+        o.append(f"    -> teslim-makbuz RED: {_s(ov['teslim_makbuz_red_sayisi'])} · "
+                 f"RED-makbuz dosyası (teslim-makbuz-RED.json): {_s(ov.get('red_makbuz'))}")
         gk = ov.get("gorunmez_kacis_sayaclari") or {}
         o.append(f"    -> GÖRÜNMEZ-KAÇIŞ: sözleşme-dışı dizin {_s(gk.get('sozlesme_disi_dizin'))} · "
                  f"makbuzsuz-taslak sayacı {_s(gk.get('makbuzsuz_dilekce_adayi'))}")

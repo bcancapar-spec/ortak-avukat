@@ -29,3 +29,10 @@
 ## v0.5.8.4 — 2026-08-15
 
 - **[G5] üretici ucu belgelendi:** AŞILMIŞLIK SORUSU bölümüne teyit komutu bayrakları eklendi — `--asan-kaynak` / `--asilma-tarihi` / `--gecerlilik-bitis` (yalnız `--damga` ile; damgasız çağrı RET). 372 karnesi: [G5] kapısı kuruluydu ama kütükte alanları dolduran üretici adım yoktu → 2 sahada %0 ateşleme; risk gerçekti (mülga norm + onamayla aşılan karar elle yakalandı). Desen silinmedi, üretici uca bağlandı; alanlar `_oa/cikti/03-ictihat-muhakeme.md` kütüğünde yaşar.
+
+## v0.5.8.5 — 2026-08-16
+
+- **A1 TRİYAJ (kullanıcı direktifi):** SKILL'e yeni bölüm — çekirdek aynen: "Müvekkil aleyhine HİÇBİR yargı kararı dilekçeye giremez; MCP'den çekilen TÜM kararlar İSTİSNASIZ baştan sona (TAM METİN) okunur; LEHE ise dilekçeye, ALEYHE ise CEPHANELİĞE, NÖTR kütükte kalır." Arama sonucu parçasından (snippet) alıntı YASAKTIR cümlesi CEK disiplinine işlendi.
+- **`--dokum-sinifi` (A1a):** `oa_hafiza.py teyit` GETİR sınıfında okuma sınıfı beyanı kazandı (`tam-metin|ilgili-kisim`); ARAMA/mevzuat çağrısında RET (tam metin dönmeyen araçta "tam-metin" beyanı yapısal yalan olurdu). GETİR+damga çağrısında sınıf verilmezse görünür UYARI + dürüst `ilgili-kisim`; sınıfsız eski kütük satırı okur tarafında `ilgili-kisim` sayılır (geriye uyum). Kütük hücresine `DOKUM-SINIFI=`, muhakeme kaydına `**DÖKÜM-SINIFI:**` yazılır. SKILL'deki GETİR örnek komutuna `--dokum-sinifi tam-metin` eklendi.
+- **`--duyulmus` (A1a):** karşı tarafın FİİLEN ileri sürdüğü karar işareti — kütüğe `DUYULMUS=EVET`; [G6] ALEYHE-AYIRT istisnasının (duyulmuş + ayırt bağlamı) kütük ayağı. İşaretsiz aleyhe karara m.6 preemptive ifşa yasağı uygulanır.
+- **[G6] beslemesi:** `ictihat_muhakeme_denetim.py`'nin yeni triyaj kapısı dilekçedeki her künye için kütükte TAM-METİN sınıfı döküm arar (yoksa TESLİM ENGELİ) — CEK adımı tam-metinsiz künyeyi zincire sokmayarak kapıyı kaynağında besler.

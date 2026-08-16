@@ -7,7 +7,9 @@ REM python'a arguman olarak gidiyor -> sessiz olum (uc sahada sifir atesleme).
 REM Cozum (superpowers run-hook.cmd deseni): fallback mantigi BU dosyanin
 REM icinde; hooks.json tek tirnakli TEK komut cagirir.
 REM Kullanim: run-hook.cmd <mod>
-REM   (hook-prompt | hook-postwrite | hook-denetle | hook-pretool)
+REM   (hook-prompt | hook-postwrite | hook-denetle | hook-pretool | hook-acilis)
+REM Mod gecisi JENERIKTIR (--%1): yeni hook modlari bu dosyada degisiklik
+REM gerektirmez — v0.5.8.5 hook-acilis (SessionStart) bu yoldan gecer.
 REM CWD'ye DOKUNMAZ: pipeline_kayit.py dava kokunu CWD'den okur.
 REM STDIN python'a AKTARILIR (cocuk surec miras alir) — hook-pretool payload'i
 REM (tool_input) bu kanaldan okur; asla tuketilmez/kesilmez.

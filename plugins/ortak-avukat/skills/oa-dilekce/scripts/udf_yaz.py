@@ -36,10 +36,10 @@ koşar. Bu yol resmî okuyucu (`udf2md`) doğrulamasını dener; OK gelmezse
 ama doğrulanmamışlık diskte görünür kalır (işaretli dosya UYAP'a yüklenmez;
 işareti görsel teyit sonrası avukat siler).
 
-ÜRETİM MAKBUZU (v0.5.8.4): her `.udf` üretimi, dava klasöründe `_oa/defter`
-varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz düşer (motor,
-sha256, doğrulama durumu) — makbuz kayıt aracıdır, kapı değildir; yazılamaması
-üretimi asla kırmaz.
+ÜRETİM MAKBUZU (v0.5.8.4; B7 garantisi): her `.udf` üretimi, dava klasöründe
+`_oa` dizini varsa `_oa/defter/udf-uretim-makbuz.jsonl`'e tek satır iz düşer
+(defter alt dizini yoksa makedirs ile KURULUR; `_oa` da yoksa sessiz atlanır)
+— makbuz kayıt aracıdır, kapı değildir; yazılamaması üretimi asla kırmaz.
 
 `--dogrula` var olan HERHANGİ bir `.udf` dosyasını (gerçek `udf-cli` çıktısı
 dâhil) mekanik GEÇERLİLİK KAPISI'ndan geçirir (zip açılır mı / content.xml var
@@ -130,11 +130,31 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
          uzunluğuyla birebir tutuyor mu (offset kayması → UYAP'ta biçim/aralık
          bozulur).
 
+    İMZALI-NÜSHA PROFİLİ (B6, v0.5.8.5): arşivde `sign.sgn` (ya da `.p7s`)
+    girdisi varsa sonuçta `imzali_nusha=True` döner ve YALNIZ bu profilde
+    editör-kaynaklı sapmalar GEÇERSİZLİK sebebi SAYILMAZ:
+      (a) float kenar değerleri (14.170000000000032 gibi — kenar zaten
+          mekanik kapının denetim konusu değildir, burada belgelenir),
+      (b) prolog öncesi fazla boşluk/satır (katı parser'ı kıran sınıf),
+      (c) zip data-descriptor bayrağı (zipfile merkez dizinden okur; ek
+          denetim kurulmaz — editörün akış yazıcısının olağan izidir),
+      (d) offset döşemesinde 1-boşluk sınıfı sapma (TEK küçük boşluk
+          toleransı — kaplanmayan kuyruk metinse ya da 1 birimden büyükse
+          imzalıda BİLE red).
+    GEREKÇE (v0.5.5.2 dersinin devamı — resmî gerçeklik > bizim varsayım):
+    gerçek e-imzalı, MAHKEMECE KABUL EDİLMİŞ bir dosyada 1 boşluk sapması
+    ölçüldü; katı kural o gerçek-geçerli dosyayı yanlış-BLOK'lardı. İMZASIZ
+    dosyada tolerans YOKTUR — katı invaryant aynen sürer (imzasız dosya bizim
+    üretim hattımızın taze ürünüdür, sapması üretim hatasıdır; imzalı nüsha
+    ise editörden/eimzadan geçmiş resmî gerçekliktir). Uygulanan her tolerans
+    `imzali_tolerans` listesinde GÖRÜNÜR bırakılır (sessiz gevşeme yok).
+
     Döner: dict —
       gecerli (bool), hatalar (list[str] — boşsa geçerli),
       content_xml_var (bool), xml_iyi_bicimli (bool), cdata_bulundu (bool),
       karakter_sayisi (int|None), paragraf_sayisi (int|None),
       offsetler_tutarli (bool|None),
+      imzali_nusha (bool), imzali_tolerans (list[str] — uygulanan toleranslar),
       resmi_okuyucu ("OK"|"RET"|"YAPILAMADI"|None — None = hiç denenmedi),
       resmi_okuyucu_not (str|None), resmi_okuyucu_karakter (int|None).
     """
@@ -144,6 +164,7 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
         "cdata_bulundu": False, "karakter_sayisi": None,
         "paragraf_sayisi": None, "offsetler_tutarli": None,
         "hvl_stil_tanimi": None,
+        "imzali_nusha": False, "imzali_tolerans": [],
         "resmi_okuyucu": None, "resmi_okuyucu_not": None,
         "resmi_okuyucu_karakter": None,
         "notlar": [], "kapsanmayan_bosluk": None, "imza_dosyasi": None,
@@ -156,26 +177,49 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
         sonuc["hatalar"].append("ZIP açılamadı: %s" % e)
         return sonuc
 
-    # 2) content.xml var mı
-    hedef = next((a for a in zf.namelist()
-                  if a.lower().endswith("content.xml")), None)
-    if hedef is None:
-        sonuc["hatalar"].append("content.xml arşivde bulunamadı")
-        return sonuc
-    sonuc["content_xml_var"] = True
     # E-İMZA TESPİTİ: UYAP editöründe imzalanmış UDF arşivinde `sign.sgn`
     # (PKCS#7/CMS) bulunur. Bu bilgi teslim öncesi KRİTİKTİR: imzalı dosyanın
     # içeriği sonradan değiştirilirse imza geçersiz kalır; bu yüzden imzalı
     # dosya "düzenlenip yeniden kaydedilecek" bir taslak DEĞİL, teslim edilecek
     # nüshadır. Script imzanın GEÇERLİLİĞİNİ doğrulamaz (kripto doğrulama UYAP/
     # e-imza altyapısının işidir) — yalnız VARLIĞINI bildirir; sahte kesinlik yok.
+    # (B6: tespit content.xml denetiminden ÖNCE yapılır ki imzalı-nüsha profili
+    # sonraki tüm bacaklarda bilinsin.)
+    adlar = zf.namelist()
     sonuc["imza_dosyasi"] = next(
-        (a for a in zf.namelist() if a.lower().endswith((".sgn", ".p7s"))), None)
+        (a for a in adlar if a.lower().endswith((".sgn", ".p7s"))), None)
+    sonuc["imzali_nusha"] = sonuc["imza_dosyasi"] is not None
+    # NOT (B6-c): imzalı nüshalarda zip girdileri data-descriptor bayrağı
+    # (genel-amaç bit 3, editörün akış yazıcısı) taşıyabilir. zipfile merkez
+    # dizinden okuduğu için bu okuma başarısını etkilemez; ayrıca (a) float
+    # kenar değerleri mekanik kapının denetim konusu DEĞİLDİR — ikisi de
+    # geçersizlik sebebi sayılmaz (imzalı ya da imzasız; burada belgelenir).
+
+    # 2) content.xml var mı
+    hedef = next((a for a in adlar
+                  if a.lower().endswith("content.xml")), None)
+    if hedef is None:
+        sonuc["hatalar"].append("content.xml arşivde bulunamadı")
+        return sonuc
+    sonuc["content_xml_var"] = True
     ham = zf.read(hedef).decode("utf-8", errors="replace")
 
     # 3) XML iyi biçimli mi
+    # B6-b (İMZALI-NÜSHA PROFİLİ): editörün kaydettiği content.xml'de prolog
+    # ÖNCESİ fazla boşluk/satır görülebilir; katı parser bunu "XML declaration
+    # not at start of entity" ile keser. Gerçek e-imzalı, mahkemece kabul
+    # edilmiş dosyayı yanlış-BLOK'lamamak için YALNIZ imzalı nüshada baştaki
+    # boşluk kırpılarak parse edilir — imzasız dosyada tolerans YOK (katı
+    # invaryant sürer; sapma bizim üretim hattımızın hatası olurdu).
+    parse_metni = ham
+    if sonuc["imzali_nusha"]:
+        kirpik = ham.lstrip("\ufeff\r\n\t ")
+        if kirpik != ham:
+            sonuc["imzali_tolerans"].append(
+                "prolog öncesi fazla boşluk/satır (editör-kaynaklı) tolere edildi")
+            parse_metni = kirpik
     try:
-        kok = ET.fromstring(ham)
+        kok = ET.fromstring(parse_metni)
         sonuc["xml_iyi_bicimli"] = True
     except ET.ParseError as e:
         sonuc["hatalar"].append("content.xml iyi biçimli değil: %s" % e)
@@ -291,11 +335,40 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
                 "UYAP editöründe kaydedilmiş dosyalarda olağandır, metin kaybı DEĞİL)."
                 % len(bosluk_notlari))
     if tutarli and imlec != toplam_u16:
-        tutarli = False
-        sonuc["hatalar"].append(
-            "paragraf uzunlukları toplamı (%d) CDATA UTF-16 uzunluğuyla (%d) uyuşmuyor"
-            % (imlec, toplam_u16))
+        # B6-d (İMZALI-NÜSHA PROFİLİ — TEK küçük boşluk toleransı): gerçek
+        # e-imzalı, mahkemece KABUL EDİLMİŞ bir dosyada offset döşemesinin
+        # CDATA'yı 1 boşluk EKSİK kapladığı ÖLÇÜLDÜ; katı kural o gerçek-
+        # geçerli dosyayı yanlış-BLOK'lardı (v0.5.5.2 dersinin devamı: resmî
+        # gerçeklik > bizim varsayım). Tolerans BİLİNÇLİ olarak dardır:
+        #   - yalnız İMZALI nüshada (imzasızda katı invaryant aynen sürer —
+        #     imzasız dosya bizim hattımızın taze ürünüdür, sapması hatadır),
+        #   - yalnız 1 UTF-16 birimlik EKSİK kaplama,
+        #   - yalnız kaplanmayan kuyruk BOŞLUK SINIFI ise (metinse kayıptır
+        #     ve imzalı nüshada BİLE bloklar).
+        fark = toplam_u16 - imlec
+        # kuyruk dilimi UTF-16 biriminde alınır (BMP-dışı karakterlerde
+        # code-point indeksi kayar); fark=1 kuyruk tek BMP karakteridir.
+        kalan = (tam.encode("utf-16-le")[2 * imlec:]
+                 .decode("utf-16-le", "replace") if fark > 0 else "")
+        if sonuc["imzali_nusha"] and fark == 1 and kalan.isspace():
+            sonuc["imzali_tolerans"].append(
+                "offset döşemesi CDATA'yı 1 boşluk eksik kapladı (%d/%d) — "
+                "imzalı nüshada tolere edildi (imzasızda tolerans YOK)"
+                % (imlec, toplam_u16))
+        else:
+            tutarli = False
+            sonuc["hatalar"].append(
+                "paragraf uzunlukları toplamı (%d) CDATA UTF-16 uzunluğuyla (%d) uyuşmuyor"
+                % (imlec, toplam_u16))
     sonuc["offsetler_tutarli"] = tutarli
+    if sonuc["imzali_tolerans"]:
+        # sessiz gevşeme yok: uygulanan toleranslar hem ayrı listede hem
+        # notlarda görünür kalır (istisna defterine yazım çağıran taraftadır —
+        # bkz. _istisna_kaydi_yaz; bu fonksiyon dava kökünü bilmez).
+        sonuc["notlar"].append(
+            "imzalı-nüsha profili: %d editör-kaynaklı sapma tolere edildi "
+            "(imzasız dosyada bu toleranslar YOKTUR)."
+            % len(sonuc["imzali_tolerans"]))
 
     # 5) RESMİ OKUYUCU TANIĞI (dışarıdan kanıt) — bkz. `npx_ile_udf_oku` notu.
     if resmi_okuyucu:
@@ -993,19 +1066,30 @@ def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False, npx_yolu="npx"):
 # 372 saha ölçümü: makbuz HİÇ üretilmedi çünkü tek üretici
 # `teslim_paketi._makbuz_yaz` idi ve model o zinciri atladı (Stop hook 23 kez
 # uyardı, 0 kez uygulandı). Çözüm zorlamak değil ÜRETİM NOKTASINA taşımak:
-# .udf'i FİİLEN yazan bu script, dava klasörü defter tutuyorsa
-# (`_oa/defter` VARSA) kendi üretim makbuzunu düşer. Defter yoksa sessiz
-# atlanır (defter açmak pipeline'ın işidir, bu script dayatmaz); HİÇBİR
-# hata üretimi kırmaz (makbuz kayıt aracıdır, kapı değildir).
+# .udf'i FİİLEN yazan bu script, dava klasörü `_oa` tutuyorsa kendi üretim
+# makbuzunu düşer — B7 (v0.5.8.5) garantisi: `_oa/defter` alt dizini henüz
+# yoksa makedirs ile KURULUR (372'nin devamı: "defter yoksa sessiz atla"
+# kuralı makbuzu _oa'lı ama defteri açılmamış klasörlerde kaybettiriyordu).
+# `_oa` da yoksa sessiz atlanır (defter/_oa açmak pipeline'ın işidir, bu
+# script dayatmaz); HİÇBİR hata üretimi kırmaz (makbuz kayıt aracıdır,
+# kapı değildir).
 def _uretim_makbuzu_yaz(kok, girdi_yolu, cikti_yolu, motor, dogrulama,
                         kenar_notu=None):
     """`_oa/defter/udf-uretim-makbuz.jsonl` dosyasına TEK satır JSON APPEND
     eder. Döner: yazılan dosyanın yolu ya da None (defter yok / yazılamadı).
     ASLA istisna fırlatmaz — üretim akışını hiçbir koşulda etkilemez."""
     try:
-        defter = os.path.join(kok or ".", "_oa", "defter")
+        oa_dizin = os.path.join(kok or ".", "_oa")
+        defter = os.path.join(oa_dizin, "defter")
         if not os.path.isdir(defter):
-            return None
+            # B7 (v0.5.8.5 — MAKBUZ GARANTİSİ): dava klasörü `_oa` tutuyorsa
+            # defter alt dizini makbuz için KURULUR ve yazılır — "defter yoksa
+            # sessiz atla" kuralı makbuzu, defteri henüz açılmamış ama _oa'lı
+            # klasörlerde kaybettiriyordu. `_oa` da yoksa sessiz atlama sürer
+            # (defter/_oa açmak pipeline'ın işidir, bu script dayatmaz).
+            if not os.path.isdir(oa_dizin):
+                return None
+            os.makedirs(defter, exist_ok=True)
         with open(cikti_yolu, "rb") as f:
             sha = hashlib.sha256(f.read()).hexdigest()
         d = dogrulama or {}
@@ -1020,6 +1104,39 @@ def _uretim_makbuzu_yaz(kok, girdi_yolu, cikti_yolu, motor, dogrulama,
             "kenar_notu": kenar_notu,
         }
         yol = os.path.join(defter, "udf-uretim-makbuz.jsonl")
+        with open(yol, "a", encoding="utf-8") as f:
+            f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+        return yol
+    except Exception:
+        return None
+
+
+# ─────────── İSTİSNA DEFTERİ (ortak şema, append-only, best-effort) ─────────
+def _istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
+    """`_oa/defter/istisna-kayitlari.jsonl`e TEK satır JSON APPEND eder —
+    birden çok aracın yazdığı ORTAK istisna defteri şeması:
+    {zaman, tur, ilgili, gerekce, onay, imza}. Bu yardımcı bilerek yereldir
+    (ortak modül bağımlılığı YARATILMAZ — her araç kendi küçük yazıcısını
+    taşır). Dizin kuralı makbuzla AYNIDIR: `_oa` varsa `defter` kurulur;
+    `_oa` da yoksa sessiz atlanır. ASLA istisna fırlatmaz (kayıt aracıdır,
+    kapı değildir — üretim/denetim akışını hiçbir koşulda etkilemez).
+    Döner: yazılan dosyanın yolu ya da None."""
+    try:
+        oa_dizin = os.path.join(kok or ".", "_oa")
+        defter = os.path.join(oa_dizin, "defter")
+        if not os.path.isdir(defter):
+            if not os.path.isdir(oa_dizin):
+                return None
+            os.makedirs(defter, exist_ok=True)
+        kayit = {
+            "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
+            "tur": tur,
+            "ilgili": ilgili,
+            "gerekce": gerekce,
+            "onay": onay,
+            "imza": "udf_yaz.py",
+        }
+        yol = os.path.join(defter, "istisna-kayitlari.jsonl")
         with open(yol, "a", encoding="utf-8") as f:
             f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
         return yol
@@ -1115,6 +1232,9 @@ def main():
         print("  content.xml var  : %s" % ("EVET" if sonuc["content_xml_var"] else "HAYIR"))
         print("  XML iyi biçimli  : %s" % ("EVET" if sonuc["xml_iyi_bicimli"] else "HAYIR"))
         print("  CDATA bulundu    : %s" % ("EVET" if sonuc["cdata_bulundu"] else "HAYIR"))
+        if sonuc.get("imzali_nusha"):
+            print("  imzalı nüsha     : EVET (%s) — editör-kaynaklı sapma "
+                  "toleransı profili etkin" % sonuc.get("imza_dosyasi"))
         if sonuc["karakter_sayisi"] is not None:
             print("  karakter (CDATA) : %d" % sonuc["karakter_sayisi"])
         if sonuc["paragraf_sayisi"] is not None:
@@ -1123,8 +1243,18 @@ def main():
             "TUTARLI" if sonuc["offsetler_tutarli"]
             else ("TUTARSIZ" if sonuc["offsetler_tutarli"] is False else "—")))
         _resmi_okuyucu_bas(sonuc)
+        for n in sonuc.get("notlar") or []:
+            print("  [NOT] %s" % n)
         for h in sonuc["hatalar"]:
             print("  [HATA] %s" % h, file=sys.stderr)
+        # B6: imzalı-nüsha toleransı uygulandıysa ortak istisna defterine
+        # (varsa) iz düşülür — tolerans SESSİZ kalmaz, denetlenebilir olur.
+        if sonuc.get("imzali_tolerans"):
+            istisna_yolu = _istisna_kaydi_yaz(
+                a.kok, "dogrulama-toleransi", a.dogrula,
+                "; ".join(sonuc["imzali_tolerans"]))
+            if istisna_yolu:
+                print("  istisna kaydı    : %s" % istisna_yolu)
         print("SONUÇ: %s" % ("GEÇERLİ ✓" if sonuc["gecerli"] else "GEÇERSİZ ✗"))
         sys.exit(0 if sonuc["gecerli"] else 1)
 
