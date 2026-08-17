@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.8.5"
+OA_SURUM = "0.5.8.6"
 
 
 def _surum_tuple(s):
@@ -1413,6 +1413,43 @@ def isle(args):
     _durum_md_yaz(getattr(args, "kok", None))
 
 
+def adim_batch(args):
+    """G3a (v0.5.8.6 — 777 dersi: 33/42 adım kaydı deftere elle/imzasız
+    düştü çünkü tek tek CLI çağrısı 'pahalı' görüldü) — TEK çağrıda çok adım
+    kaydı. Ucuzlatma SADECE çağrı sayısındadır: her kayıt `isle()` ile AYNI
+    koddan geçer — kanıt disiplini (kanıtsız UYGULANDI = RET), önkoşul
+    kapıları (İNGEST-ÖNCE, P0-6), C5 ELDEN düşürme ve araç imzası AYNEN
+    uygulanır. Kayıtlar SIRAYLA işlenir; i. kayıt RET olursa öncekiler
+    defterde KALIR (append-only — geri alma yoktur) ve komut o noktada hata
+    koduyla durur (hangi kaydın düştüğü görünür).
+
+    JSON biçimi: `[{"adim": 1, "parca": "oa-interview", "durum": "UYGULANDI",
+    "kanit": "..."}, ...]` — alanlar --isle bayraklarıyla birebir
+    (gerekce/eksik/serh/pas_yolu opsiyonel)."""
+    try:
+        with open(args.adim_batch, encoding="utf-8") as f:
+            kayitlar = json.load(f)
+    except Exception as e:
+        sys.exit(f"HATA: --adim-batch dosyası okunamadı/bozuk: {e}")
+    if not isinstance(kayitlar, list) or not kayitlar:
+        sys.exit("HATA: --adim-batch JSON'u boş olmayan bir LİSTE olmalı — "
+                 '[{"adim": 1, "parca": "oa-interview", "durum": "UYGULANDI", '
+                 '"kanit": "..."}].')
+    for i, k in enumerate(kayitlar, 1):
+        if not isinstance(k, dict):
+            sys.exit(f"HATA: --adim-batch kayıt #{i} bir sözlük değil.")
+        if not (k.get("parca") and k.get("durum")):
+            sys.exit(f"HATA: --adim-batch kayıt #{i}: 'parca' ve 'durum' zorunlu.")
+        alt = argparse.Namespace(
+            kok=getattr(args, "kok", None), yol=getattr(args, "yol", None),
+            adim=k.get("adim"), parca=k.get("parca"), durum=k.get("durum"),
+            kanit=k.get("kanit"), gerekce=k.get("gerekce"), eksik=k.get("eksik"),
+            serh=k.get("serh"), pas_yolu=k.get("pas_yolu"))
+        isle(alt)   # RET/HATA hâlinde sys.exit — sonraki kayıtlar işlenmez
+    print(f"BATCH: {len(kayitlar)} kayıt işlendi — tümü araç-imzalı "
+          "(kanıt/önkoşul kuralları tek-kayıt --isle ile AYNEN uygulandı).")
+
+
 def katman_isle(args):
     olaylar_yol, durum_yol = _yollar(args)
     kanit = dogrula_statu(args)
@@ -2602,6 +2639,30 @@ def _siradaki(d):
     return "tüm adım/katmanlar işlenmiş — teslim_paketi.py ile teslim denetimini koş."
 
 
+def _elden_turetilmis_mi(kok, parca, p):
+    """G3b (v0.5.8.6 — 777 dersi: 6 parçanın kanıtı 'ELDEN:' ile başladığı
+    hâlde statü UYGULANDI kaldı; 33/42 satır elle/imzasız düştü) — bir
+    UYGULANDI kaydının TÜRETİLMİŞ görünümde 'UYGULANDI (ELDEN-türetilmiş)'
+    gösterilip gösterilmeyeceği: (a) kanıt metni 'ELDEN' ile başlıyorsa VEYA
+    (b) kayıt imzasız (model-beyanlı) + SCRIPT'li parça + kanıtta diskte var
+    olan `_oa/` artefakt yolu YOKSA. Kayıt DEĞİŞTİRİLMEZ (append-only) —
+    yalnız görünüm türetilir. ASLA fırlatmaz."""
+    try:
+        if (p or {}).get("durum") != "UYGULANDI":
+            return False
+        kanit = str(p.get("kanit") or "").strip()
+        if kanit.upper().startswith("ELDEN"):
+            return True
+        if p.get("arac_imzali"):
+            return False
+        if parca not in ELDEN_KAPSAM:
+            return False
+        yol_var, disk_var = _kanit_artefakt_yolu_var_mi(kok, kanit)
+        return not (yol_var and disk_var)
+    except Exception:
+        return False
+
+
 def _durum_md_yaz(kok, onceden_hesaplanan=None):
     """P0-8 — _oa/DURUM.md'yi fiziksel kanıttan ATOMİK türetir. Defter yoksa
     sessizce çıkar; herhangi bir hata bu fonksiyonun İÇİNDE yutulur (çağıran
@@ -2646,6 +2707,7 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
                          "delil üretmek değildir._")
         satirlar.append("")
         satirlar.append("## Adım Tablosu")
+        elden_turetilmis_n = 0   # G3b — ayrı sayaç (kayıt değişmez, görünüm türetilir)
         for no in sorted(d["adimlar"], key=lambda x: int(x) if str(x).lstrip("-").isdigit() else 0):
             a = d["adimlar"][no]
             try:
@@ -2676,7 +2738,14 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
                             if eksik_metni:
                                 ek = f" — eksik: {eksik_metni}"
                         fiziksel_etiket = f"  [FİZİKSEL: {hal}{ek}]"
-                satirlar.append(f"- {isaret} adım {no} ({a['ad']}) / {parca}: {p['durum']}"
+                # G3b — TÜRETİLMİŞ görünüm: kanıtı 'ELDEN' ile başlayan VEYA
+                # imzasız+script-artefaktsız UYGULANDI, durum sütununda
+                # "UYGULANDI (ELDEN-türetilmiş)" gösterilir (kayıt değişmez).
+                durum_goster = p["durum"]
+                if _elden_turetilmis_mi(kok, parca, p):
+                    durum_goster = "UYGULANDI (ELDEN-türetilmiş)"
+                    elden_turetilmis_n += 1
+                satirlar.append(f"- {isaret} adım {no} ({a['ad']}) / {parca}: {durum_goster}"
                                  f"{serh_bayrak}{imza_etiket}{fiziksel_etiket}")
         # C5 (v0.5.8.5) — ELDEN ayrı sayılır: UYGULANDI ile aynı kefede değil.
         elden_n = sum(1 for a in d["adimlar"].values()
@@ -2686,6 +2755,14 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
             satirlar.append(f"- ✋ ELDEN sayacı: {elden_n} parça — script artefaktı "
                              "diskte kanıtlanmadan elden işlendi (UYGULANDI değildir; "
                              "ayrı sayılır).")
+        # G3b — ELDEN-TÜRETİLMİŞ sayacı (777: elle satır + 'ELDEN:' kanıtlı
+        # UYGULANDI'lar görünmez kalmıştı). Kayıt defterde AYNEN durur
+        # (append-only); yalnız bu türetilmiş görünüm ayrı sayar.
+        if elden_turetilmis_n:
+            satirlar.append(f"- ✋ ELDEN-türetilmiş sayacı: {elden_turetilmis_n} parça — "
+                             "kanıtı 'ELDEN' ile başlayan VEYA imzasız+script-artefaktsız "
+                             "UYGULANDI kayıtları (kayıt DEĞİŞTİRİLMEDİ; yalnız türetilmiş "
+                             "görünümde ayrı sayılır — UYGULANDI ile aynı kefede değildir).")
         satirlar.append("")
         satirlar.append("## Katmanlar")
         for k, p in d["katmanlar"].items():
@@ -3283,9 +3360,54 @@ def _hat_atlandi_uyarisi(kok):
 # çözer: hook, eklenti kökünden koştuğu için karşılaştırma her zaman
 # GÜNCEL sürüme karşıdır. ASLA istisna fırlatmaz.
 
+# ── H2a (v0.5.8.6 — 777 saha dersi) — ÖZELLİK PARMAK İZİ ───────────────────
+# Bayt-kıyası "eklentideki güncel dosyadan FARKLI mı" sorusuna bakar; ama
+# fark her zaman tehlikeyi anlatmaz (yorum satırı da fark üretir) ve indeks
+# bulunamadığında kör kalır. 777 filosunda model bayat kiti `_oa/araclar`a
+# kopyalayıp koştu: eski udf_yaz AÇILAMAYAN UDF üretti, eski teslim_paketi
+# kanonik makbuz (defter/teslim-makbuz.json) hiç yazmadı. Bu tablo, kritik
+# kopyaların KENDİ İÇERİĞİNDEN okunan zorunlu özellik dizgeleridir — eksik
+# dizge = kopya bu özelliklerin OLMADIĞI bir nesilden geliyor demektir
+# ("BAYAT NESİL"), uyarı sınıfı yükselir: üretimde KULLANMA.
+_OZELLIK_PARMAK_IZI = {
+    "udf_yaz.py": ("_sayfa_kenari_yonetmelik",   # v0.5.8.3 şekil standardı (4×42.52)
+                   "hvl-default",                 # v0.5.8.4 stil-tanımı üretimi
+                   "udf-uretim-makbuz"),          # v0.5.8.4 üretim makbuzu
+    "teslim_paketi.py": ("teslim-makbuz.json",),  # kanonik makbuz (tek ölçüt)
+    "oa_hafiza.py": ("--damga",),                 # içtihat muhakeme ritüeli
+}
+
+
+def _bayat_nesil_listesi(kok):
+    """H2a — `_oa/araclar/`daki KRİTİK kopyalarda özellik parmak izi taraması.
+    Döner: `["udf_yaz.py (eksik: hvl-default, ...)", ...]` (sıralı; temizse
+    boş liste). ASLA istisna fırlatmaz."""
+    bulgular = []
+    try:
+        araclar = os.path.join(kok, "_oa", "araclar")
+        if not os.path.isdir(araclar):
+            return bulgular
+        for ad in sorted(_OZELLIK_PARMAK_IZI):
+            yol = os.path.join(araclar, ad)
+            if not os.path.isfile(yol):
+                continue
+            try:
+                with open(yol, encoding="utf-8", errors="replace") as f:
+                    icerik = f.read()
+            except OSError:
+                continue
+            eksik = [dz for dz in _OZELLIK_PARMAK_IZI[ad] if dz not in icerik]
+            if eksik:
+                bulgular.append(f"{ad} (eksik: {', '.join(eksik)})")
+    except Exception:
+        return []
+    return bulgular
+
+
 def _bayat_arac_uyarisi(kok):
-    """`_oa/araclar/` kopyaları yüklü eklentiyle bayt-özdeş mi? Bayat kopya
-    listesi varsa görünür uyarı metni, yoksa None döndürür."""
+    """`_oa/araclar/` kopyaları yüklü eklentiyle bayt-özdeş mi? + H2a: kritik
+    kopyalarda özellik parmak izi tam mı? Bayat kopya VEYA bayat-nesil bulgu
+    varsa görünür uyarı metni, yoksa None döndürür."""
     try:
         araclar = os.path.join(kok, "_oa", "araclar")
         if not os.path.isdir(araclar):
@@ -3311,17 +3433,65 @@ def _bayat_arac_uyarisi(kok):
                         bayat.append(ad)
             except OSError:
                 continue
-        if not bayat:
+        # H2a — ÖZELLİK PARMAK İZİ: eksik dizge = BAYAT NESİL (sınıf yükselir).
+        nesil = _bayat_nesil_listesi(kok)
+        if not bayat and not nesil:
             return None
-        return (
-            "⚠ BAYAT ARAÇ UYARISI — `_oa/araclar/` kopyaları yüklü eklentiden ESKİ:\n"
-            "  " + ", ".join(bayat[:12])
-            + (" … (+%d)" % (len(bayat) - 12) if len(bayat) > 12 else "") + "\n"
-            "  Bu kopyalarla koşan adımlar güncel kapılardan (makbuz/sha, OCR\n"
-            "  nöbetçisi, DAMGA, KAYNAK-URL) YOKSUN olabilir. Tazele: kopyaları\n"
-            "  YÜKLÜ eklentinin `skills/*/scripts/` kökünden YENİDEN al — komşu\n"
-            "  dava klasöründen ASLA kopyalama (bayat-tohum bulaşması,\n"
-            "  Denizli 754 saha bulgusu). Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        parcalar = []
+        if nesil:
+            parcalar.append(
+                "⛔ BAYAT NESİL ARAÇ — üretimde KULLANMA; güncel kaynak: YÜKLÜ "
+                "eklenti (`skills/*/scripts/`):\n"
+                "  " + "; ".join(nesil[:6])
+                + (" … (+%d)" % (len(nesil) - 6) if len(nesil) > 6 else "") + "\n"
+                "  Bu kopyalar kritik özellik parmak izlerinden YOKSUN — eski nesil\n"
+                "  udf_yaz AÇILAMAYAN UDF üretir, eski teslim_paketi kanonik makbuz\n"
+                "  (defter/teslim-makbuz.json) yazmaz, eski oa_hafiza --damga\n"
+                "  ritüelini bilmez (777 saha bulgusu).")
+        if bayat:
+            parcalar.append(
+                "⚠ BAYAT ARAÇ UYARISI — `_oa/araclar/` kopyaları yüklü eklentiden ESKİ:\n"
+                "  " + ", ".join(bayat[:12])
+                + (" … (+%d)" % (len(bayat) - 12) if len(bayat) > 12 else "") + "\n"
+                "  Bu kopyalarla koşan adımlar güncel kapılardan (makbuz/sha, OCR\n"
+                "  nöbetçisi, DAMGA, KAYNAK-URL) YOKSUN olabilir. Tazele: kopyaları\n"
+                "  YÜKLÜ eklentinin `skills/*/scripts/` kökünden YENİDEN al — komşu\n"
+                "  dava klasöründen ASLA kopyalama (bayat-tohum bulaşması,\n"
+                "  Denizli 754 saha bulgusu). Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        return "\n".join(parcalar)
+    except Exception:
+        return None
+
+
+def _arac_version_uyarisi(kok):
+    """H2b (v0.5.8.6) — `_oa/araclar/VERSION.json` sürüm damgası denetimi:
+    (a) `_oa/araclar` VAR ama VERSION.json YOK → "damgasız araç çantası";
+    (b) VERSION.json var ama `surum` alanı `OA_SURUM`dan FARKLI → bayat çanta.
+    Uyumluysa/araclar yoksa None. ASLA istisna fırlatmaz, ASLA bloklamaz."""
+    try:
+        araclar = os.path.join(kok, "_oa", "araclar")
+        if not os.path.isdir(araclar):
+            return None
+        vy = os.path.join(araclar, "VERSION.json")
+        if not os.path.isfile(vy):
+            return ("⚠ DAMGASIZ ARAÇ ÇANTASI — `_oa/araclar/` var ama "
+                    "`_oa/araclar/VERSION.json` YOK: kopyaların hangi sürümden "
+                    "alındığı bilinmiyor (777 dersi: bayat kit sessizce koştu). "
+                    "Kopyaları YÜKLÜ eklentiden tazele ve damgayı bas: "
+                    '`_oa/araclar/VERSION.json` = {"surum": "' + OA_SURUM + '"}. '
+                    "Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        try:
+            with open(vy, encoding="utf-8") as f:
+                v = json.load(f)
+            surum = v.get("surum") if isinstance(v, dict) else None
+        except Exception:
+            surum = None
+        if surum != OA_SURUM:
+            return ("⚠ BAYAT ARAÇ ÇANTASI — `_oa/araclar/VERSION.json` sürümü "
+                    f"({surum or 'okunamadı'}) yüklü eklentiden ({OA_SURUM}) FARKLI: "
+                    "kopyalar eski nesil olabilir; YÜKLÜ eklentiden tazele ve "
+                    "damgayı güncelle. Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        return None
     except Exception:
         return None
 
@@ -3482,9 +3652,19 @@ def hook_prompt(kok=None):
             bayat = _bayat_arac_uyarisi(k)
             if bayat:
                 parcalar.append(bayat)
+                # H2a — BAYAT NESİL bulgusu deftere ayrı olay olarak düşer
+                # (görünürlük izi; _hook_olay_yaz defter yoksa sessiz no-op).
+                nesil = _bayat_nesil_listesi(k)
+                if nesil:
+                    _hook_olay_yaz(k, "bayat-arac",
+                                   "BAYAT NESİL: " + "; ".join(nesil))
             ag = _arac_ag_import_uyarisi(k)
             if ag:
                 parcalar.append(ag)
+            # H3a — kanonik olmayan makbuz (txt var / kanonik json yeşil değil).
+            kanonik = _kanonik_olmayan_makbuz_uyarisi(k)
+            if kanonik:
+                parcalar.append(kanonik)
             muhursuz = _muhursuz_teslim_uyarisi(k)
             if muhursuz:
                 parcalar.append(
@@ -3503,6 +3683,7 @@ def hook_prompt(kok=None):
                 _hook_olay_yaz(k, "prompt",
                                "enjeksiyon: " + "+".join(
                                    e for e, v in (("bayat", bayat), ("ağ-import", ag),
+                                                  ("kanonik-makbuz", kanonik),
                                                   ("teslim-disiplini", muhursuz)) if v))
             return 0
         metin = (
@@ -3538,6 +3719,12 @@ def hook_prompt(kok=None):
         ag = _arac_ag_import_uyarisi(k)
         if ag:
             metin = f"{metin}\n\n{ag}"
+        # H3a (v0.5.8.6) — 777'nin ta kendisi: defter HİÇ açılmamışken kökte
+        # makbuz-şekilli .txt durabilir (bayat teslim_paketi stdout yönlendirmesi).
+        # Kanonik makbuz defter olmadan var OLAMAZ — uyarı devir metnine eklenir.
+        kanonik = _kanonik_olmayan_makbuz_uyarisi(k)
+        if kanonik:
+            metin = f"{metin}\n\n{kanonik}"
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
             "additionalContext": metin,
@@ -3639,6 +3826,51 @@ def _muhursuz_teslim_uyarisi(kok):
                 "UYAP'a yüklemeden önce `oa-kontrol/scripts/muhur_yaz.py --kok . --urun "
                 "<yol>` koşulmalı ve `--dogrula` ile teyit edilmelidir:\n"
                 + "\n".join(satirlar))
+    except Exception:
+        return None
+
+
+def _makbuz_sekilli_txt_mi(ad):
+    """H3a — dosya adı makbuz-şekilli bir .txt mi? (TESLIM-MAKBUZU*.txt VEYA
+    *makbuz*.txt sınıfı; büyük/küçük harf duyarsız)."""
+    kucuk = str(ad).lower()
+    if not kucuk.endswith(".txt"):
+        return False
+    return kucuk.startswith("teslim-makbuzu") or "makbuz" in kucuk
+
+
+def _kanonik_olmayan_makbuz_uyarisi(kok):
+    """H3a (v0.5.8.6 — 777 saha dersi): bayat `teslim_paketi` stdout'u bir
+    `TESLIM-MAKBUZU.txt`ye yönlendirilip "yeşil makbuz" BEYAN edildi — kanonik
+    `_oa/defter/teslim-makbuz.json` hiç yoktu. Kökte (veya `_oa`/`_oa/defter`
+    altında) makbuz-şekilli .txt VAR ama kanonik makbuz (exit_kodu=0) YOKSA
+    görünür uyarı metni döndürür; kanonik makbuz yeşilse (txt yalnız fazlalık)
+    None. ASLA fırlatmaz, ASLA bloklamaz."""
+    try:
+        kok = kok or "."
+        adaylar = []
+        for dizin, onek in ((kok, ""), (os.path.join(kok, "_oa"), "_oa/"),
+                            (os.path.join(kok, "_oa", "defter"), "_oa/defter/")):
+            if not os.path.isdir(dizin):
+                continue
+            try:
+                for girdi in os.scandir(dizin):
+                    if girdi.is_file() and _makbuz_sekilli_txt_mi(girdi.name):
+                        adaylar.append(onek + girdi.name)
+            except OSError:
+                continue
+        if not adaylar:
+            return None
+        m, _hata = _makbuz_oku(kok)
+        if m is not None and m.get("exit_kodu") == 0:
+            return None                # kanonik makbuz yeşil — txt zararsız fazlalık
+        return ("⚠ KANONİK OLMAYAN MAKBUZ — makbuz-şekilli dosya var ("
+                + ", ".join(sorted(adaylar)[:6])
+                + (" … (+%d)" % (len(adaylar) - 6) if len(adaylar) > 6 else "")
+                + ") ama kanonik `_oa/defter/teslim-makbuz.json` (exit_kodu=0) YOK — "
+                "teslim beyanına dayanak OLAMAZ (tek ölçüt: defter/teslim-makbuz.json "
+                "exit 0). Stdout'u bir .txt'ye yönlendirmek makbuz DEĞİLDİR (777 saha "
+                "bulgusu); makbuz yalnız `teslim_paketi.py` zincirinin SONUNDA doğar.")
     except Exception:
         return None
 
@@ -3851,10 +4083,27 @@ def hook_denetle(kok=None):
             print("═" * 66)
             print(bayat)
             print("═" * 66)
+            # H2a — BAYAT NESİL bulgusu deftere ayrı olay olarak düşer.
+            nesil = _bayat_nesil_listesi(kok_aday)
+            if nesil:
+                _hook_olay_yaz(kok_aday, "bayat-arac",
+                               "BAYAT NESİL: " + "; ".join(nesil))
+        # H2b — VERSION damgası (damgasız/bayat araç çantası).
+        surum_damga = _arac_version_uyarisi(kok_aday)
+        if surum_damga:
+            print("═" * 66)
+            print(surum_damga)
+            print("═" * 66)
         ag = _arac_ag_import_uyarisi(kok_aday)
         if ag:
             print("═" * 66)
             print(ag)
+            print("═" * 66)
+        # H3a — kanonik olmayan makbuz (txt var / kanonik json yeşil değil).
+        kanonik = _kanonik_olmayan_makbuz_uyarisi(kok_aday)
+        if kanonik:
+            print("═" * 66)
+            print(kanonik)
             print("═" * 66)
         muhursuz_kayitlar = _muhursuz_teslim_listesi(kok_aday)
         eylemli = [k for k in muhursuz_kayitlar
@@ -3902,10 +4151,13 @@ def hook_denetle(kok=None):
                 kok_aday, "dogrulama-toleransi", k["yol"],
                 "sign.sgn'li e-imzalı türev BAYAT sayılmadı — mühür tazeleme "
                 "teslim_paketi/muhur_yaz kuralına bırakıldı (B5).")
-        if bayat or ag or eylemli or bilgi:
+        if bayat or surum_damga or ag or kanonik or eylemli or bilgi:
             _hook_olay_yaz(kok_aday, "denetle",
                            "uyarı: " + "+".join(
-                               e for e, v in (("bayat", bayat), ("ağ-import", ag),
+                               e for e, v in (("bayat", bayat),
+                                              ("sürüm-damga", surum_damga),
+                                              ("ağ-import", ag),
+                                              ("kanonik-makbuz", kanonik),
                                               ("mühürsüz", eylemli),
                                               ("imzalı-bilgi", bilgi)) if v)
                            + (f"; otomatik mühür {muhur_sayi}" if muhur_sayi else ""))
@@ -4131,6 +4383,12 @@ def main():
                     help="M1 PAS PROTOKOLÜ (Paket D) — bu adımın ürettiği `_oa/cikti/"
                          "NN-*.md` PASının yolu (göreli veya mutlak). Kaydedilir; "
                          "`ajan-brif` bir SONRAKİ parçaya bu pası 1. sıradan enjekte eder.")
+    ap.add_argument("--adim-batch", dest="adim_batch", metavar="JSON_DOSYA",
+                    help="G3a (v0.5.8.6): TEK çağrıda çok adım kaydı — JSON listesi "
+                         '([{"adim":1,"parca":"oa-interview","durum":"UYGULANDI",'
+                         '"kanit":"..."}]). Her kayıt --isle ile AYNI koddan geçer: '
+                         "kanıt/önkoşul kuralları AYNEN (kanıtsız UYGULANDI yine RET), "
+                         "tümü araç-imzalı yazılır.")
     ap.add_argument("--goster", action="store_true")
     ap.add_argument("--telemetri", action="store_true",
                      help="--goster ile birlikte: oa_metrik telemetri tablosunu ([1]-[7]) "
@@ -4196,6 +4454,8 @@ def main():
         avukat_karari_kaydet(args)
     elif args.baslat:
         baslat(args)
+    elif args.adim_batch:
+        adim_batch(args)
     elif args.isle:
         if not (args.parca and args.durum):
             sys.exit("HATA: --isle için --adim, --parca ve --durum gerekli.")

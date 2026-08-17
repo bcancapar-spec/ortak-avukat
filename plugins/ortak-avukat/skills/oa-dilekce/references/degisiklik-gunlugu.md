@@ -57,3 +57,8 @@
 - **A4.5 — Soru ≠ talimat onay kapısı:** avukatın sorusu yazım talimatı değildir; cevap verilir, taslağa işlemek için açık onay beklenir; değişiklik onay kapsamıyla sınırlıdır.
 - **A4.6 — Teknik itirazda adım-adım fiziksel illiyet anlatımı:** hukuki niteleme öncesi fiziksel zincir adım adım kurulur (her adım önceki adımın fiziksel sonucu); oa-illiyet grafının dilekçe-yüzü — grafta olmayan adım anlatıya girmez.
 - **`references/udf-ic-yapi.md`:** yeni "§4-imzalı — İMZALI-NÜSHA PROFİLİ (B6)" — `sign.sgn`'li dosyada editör-kaynaklı sapmalar (float kenar, prolog öncesi boşluk, data-descriptor, 1-boşluk offset toleransı) geçersizlik sebebi sayılmaz; imzasız dosyada katılık aynen sürer; toleranslar `imzali_tolerans` listesinde görünür. Üretim makbuzu paragrafı B7 garantisiyle güncellendi: `_oa` varsa `defter/` makedirs ile kurulup makbuz yine yazılır; yalnız `_oa` da yoksa sessiz atlanır.
+
+## v0.5.8.6 — 2026-08-18
+- [T] genişletildi: "YEŞİL MAKBUZ" iddiası da denetlenir — kanonik defter/teslim-makbuz.json
+  (exit 0) yoksa BLOK ("kanonik olmayan makbuz beyanı"); bulgularda tek-cümle tanım:
+  yeşil makbuz = YALNIZ defter/teslim-makbuz.json; stdout/txt makbuz DEĞİLDİR.

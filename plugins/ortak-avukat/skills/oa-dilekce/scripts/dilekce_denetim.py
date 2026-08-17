@@ -141,7 +141,13 @@ var ama `_oa/defter/teslim-makbuz.json` (exit_kodu=0) yok/geçersiz →
 'makbuzsuz hazır-beyanı' görünür ihlali, BLOK (R2: tek ölçüt teslim_paketi.py
 exit 0 + makbuzdur; sözle/ibare ile 'hazır' İLAN EDİLEMEZ). Olumsuzlanmış
 geçişler ('hiç TESLİME HAZIR olmamış' — pipeline_kayit uyarı metni) beyan
-DEĞİLDİR, sayılmaz.
+DEĞİLDİR, sayılmaz. H3b (v0.5.8.6, 777 saha dersi): aynı kapı 'YEŞİL MAKBUZ'
+iddiasını da arar — _oa yaşayan belgelerinde iddia VAR ama kanonik makbuz
+YOK ise 'kanonik olmayan makbuz beyanı' (BLOK); tarihçe muafiyeti
+(oturum/devir/dersler/arsiv-yerel) AYNEN geçerli. H3c: her [T] bulgusu
+tek-cümle kanonik tanımı taşır: yeşil makbuz = YALNIZ
+_oa/defter/teslim-makbuz.json (exit_kodu=0); stdout dökümü/txt makbuz
+DEĞİLDİR.
 
 ── İSTİSNA DEFTERİ (ortak şema, append-only) ───────────────────────────────
 `--istisna-gerekce METİN` verilirse [Y]/[T] BLOK bulguları avukat onayıyla
@@ -1115,8 +1121,17 @@ def ciplak_kisaltma_uyarilari(metin):
 # çıktı damgasıyla aynı yüzey); olumsuzlanmış geçişler ('hiç TESLİME HAZIR
 # olmamış' — pipeline_kayit uyarı metni) hazır-BEYANI değildir, sayılmaz.
 _T_HAZIR_RE = re.compile(r"TESL[İI]ME\s+HAZ[İI]R")
-_T_OLUMSUZ_SONRA_RE = re.compile(r"^\s*(olmam[ıi]ş|olmad[ıi]|de[ğg]il|DE[ĞG][İI]L)")
-_T_OLUMSUZ_ONCE_RE = re.compile(r"hi[çc]\s*$", re.I)
+# H3b (v0.5.8.6, 777 saha dersi): 'YEŞİL MAKBUZ' iddiası da aynı damga
+# yüzeyinden aranır — bayat teslim_paketi stdout'u bir .txt'ye yönlendirilip
+# kanonik defter/teslim-makbuz.json HİÇ YOKKEN 'yeşil makbuz' beyan edilmişti.
+_T_YESIL_MAKBUZ_RE = re.compile(r"YE[ŞS][İI]L\s+MAKBUZ")
+_T_OLUMSUZ_SONRA_RE = re.compile(
+    r"^\s*(olmam[ıi]ş|olmad[ıi]|de[ğg]il|DE[ĞG][İI]L|yok|YOK|üretilmedi|ÜRET[İI]LMED[İI])")
+_T_OLUMSUZ_ONCE_RE = re.compile(r"hi[çc]\s*$|henüz\s*$", re.I)
+
+# H3c (v0.5.8.6) — KANONİK TANIM: her [T] bulgusuna eklenen tek-cümle tanım.
+_T_KANONIK_TANIM = ("yeşil makbuz = YALNIZ _oa/defter/teslim-makbuz.json "
+                    "(exit_kodu=0); stdout dökümü/txt makbuz DEĞİLDİR")
 
 
 def _teslim_makbuzu_gecerli_mi(taban):
@@ -1134,8 +1149,10 @@ def _teslim_makbuzu_gecerli_mi(taban):
         return False
 
 
-def _t_beyan_var_mi(icerik):
-    for m in _T_HAZIR_RE.finditer(icerik or ""):
+def _beyan_var_mi(icerik, desen):
+    """`desen` ile yakalanan damga-ibare, olumsuzlanmamış EN AZ BİR geçişte
+    varsa True ('hiç ... olmamış' / '... yok' beyan DEĞİLDİR)."""
+    for m in desen.finditer(icerik or ""):
         if _T_OLUMSUZ_SONRA_RE.search(icerik[m.end():m.end() + 20]):
             continue
         if _T_OLUMSUZ_ONCE_RE.search(icerik[max(0, m.start() - 10):m.start()]):
@@ -1144,21 +1161,29 @@ def _t_beyan_var_mi(icerik):
     return False
 
 
+def _t_beyan_var_mi(icerik):
+    return _beyan_var_mi(icerik, _T_HAZIR_RE)
+
+
 def teslime_hazir_ihlalleri(metin, kok):
-    """'TESLİME HAZIR' ibaresi taslakta ya da kökün _oa/ *.md belgelerinde
-    geçiyor ama geçerli teslim makbuzu yoksa 'makbuzsuz hazır-beyanı' ihlal
-    listesi döner (BLOK sınıfı). Kök verilmemişse CWD'ye düşer
+    """'TESLİME HAZIR' ibaresi (makbuzsuz hazır-beyanı) YA DA 'YEŞİL MAKBUZ'
+    iddiası (H3b — kanonik olmayan makbuz beyanı) taslakta ya da kökün _oa/
+    *.md YAŞAYAN belgelerinde geçiyor ama geçerli teslim makbuzu yoksa BLOK
+    sınıfı ihlal listesi döner. Kök verilmemişse CWD'ye düşer
     (`_antitez_matris_dosyalari` ile simetrik — kanonik hat CWD=kok koşar)."""
     taban = kok if kok else "."
-    yerler = []
-    if _t_beyan_var_mi(metin):
-        yerler.append("denetlenen taslak")
+    hazir_yerler, yesil_yerler = [], []
+    if _beyan_var_mi(metin, _T_HAZIR_RE):
+        hazir_yerler.append("denetlenen taslak")
+    if _beyan_var_mi(metin, _T_YESIL_MAKBUZ_RE):
+        yesil_yerler.append("denetlenen taslak")
     oa = os.path.join(taban, "_oa")
     if os.path.isdir(oa):
         # TARİHÇE MUAFİYETİ (v0.5.8.5, 346 prova bulgusu): oturum/ ve devir/
         # dizinleri GEÇMİŞ koşuların kayıtlarıdır — tarih kaydı beyan değildir;
         # taransaydı eski bir koşunun hatası kökü KALICI bloğa çevirirdi.
         # [T] yalnız YAŞAYAN belgeleri denetler (00-TESLIM, DURUM, kök notlar).
+        # H3b: aynı muafiyet 'YEŞİL MAKBUZ' iddiası için de AYNEN geçerlidir.
         _TARIHCE_DIZINLER = {"oturum", "devir", "dersler", "arsiv-yerel"}
         for yol in sorted(glob.glob(os.path.join(oa, "**", "*.md"), recursive=True)):
             gorel = os.path.relpath(yol, oa)
@@ -1169,16 +1194,26 @@ def teslime_hazir_ihlalleri(metin, kok):
                     icerik = f.read()
             except Exception:
                 continue
-            if _t_beyan_var_mi(icerik):
-                yerler.append(os.path.relpath(yol, taban))
-    if not yerler or _teslim_makbuzu_gecerli_mi(taban):
+            if _beyan_var_mi(icerik, _T_HAZIR_RE):
+                hazir_yerler.append(os.path.relpath(yol, taban))
+            if _beyan_var_mi(icerik, _T_YESIL_MAKBUZ_RE):
+                yesil_yerler.append(os.path.relpath(yol, taban))
+    if (not hazir_yerler and not yesil_yerler) or _teslim_makbuzu_gecerli_mi(taban):
         return []
-    return [
+    ihlaller = [
         f"makbuzsuz hazır-beyanı: 'TESLİME HAZIR' ibaresi «{yer}» içinde ama "
         "_oa/defter/teslim-makbuz.json (exit_kodu=0) yok/geçersiz — R2: tek "
         "ölçüt teslim_paketi.py exit 0 + makbuzdur; makbuz üretilmeden 'hazır' "
-        "İLAN EDİLEMEZ (üretildi≠teslime hazır)"
-        for yer in yerler]
+        "İLAN EDİLEMEZ (üretildi≠teslime hazır) · " + _T_KANONIK_TANIM
+        for yer in hazir_yerler]
+    # H3b (777 saha dersi): stdout'un .txt'ye yönlendirilmesiyle 'yeşil makbuz'
+    # BEYAN edilebiliyordu — kanonik dosya yokken bu iddia BLOK'tur.
+    ihlaller += [
+        f"kanonik olmayan makbuz beyanı: 'YEŞİL MAKBUZ' iddiası «{yer}» içinde "
+        "ama _oa/defter/teslim-makbuz.json (exit_kodu=0) yok/geçersiz — "
+        + _T_KANONIK_TANIM
+        for yer in yesil_yerler]
+    return ihlaller
 
 
 # ── İSTİSNA DEFTERİ YAZICISI (ortak şema, append-only) ─────────────────────
@@ -1508,7 +1543,8 @@ def main():
         for u in t_ihlaller:
             print(f"   [BLOK] {u}")
     else:
-        print("   [OK] makbuzsuz 'TESLİME HAZIR' beyanı yok (ibare yok ya da makbuz geçerli)")
+        print("   [OK] makbuzsuz 'TESLİME HAZIR' / kanonik olmayan 'YEŞİL MAKBUZ' "
+              "beyanı yok (ibare yok ya da makbuz geçerli)")
 
     sekil_yolu = a.udf or (a.taslak if a.taslak.lower().endswith(".udf") else "")
     if sekil_yolu:

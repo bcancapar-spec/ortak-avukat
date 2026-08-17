@@ -21,6 +21,8 @@ Kullanım (çalışılan klasörün kökünden — ya da mutlak --kok ile):
       --damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR --bag "...(≥40 karakter)..." \
       --ilgili-kisim "...(döküm içinde VERBATİM geçen alıntı)..." --dokum-icerik @ham.md \
       [--ayirt "...(yalnız ALEYHE-AYIRT'ta ≥20 karakter)..."] [--damga-degistir "...(≥40 karakter gerekçe)..."]
+  # v0.5.8.6 (G1) — serbest-format triyaj/okuma-muhakemesi belgesini kütüğe alma:
+  python oa_hafiza.py triyaj-ice-al --dosya okuma-muhakemesi.md [--ham-dizin _oa/teyit/ham]
   python oa_hafiza.py sure-flag --tarih 2026-08-14 --aciklama "istinaf son günü" --kural hmk_istinaf
   python oa_hafiza.py ajan-brif --parca oa-antitez --gorev "..." [--skill-yol YOL]
   python oa_hafiza.py oturum --not "ara not"
@@ -128,6 +130,11 @@ Kural: Bir künye/madde bu kütükte YOKSA, çıktıya "teyitli" olarak GİREMEZ
 yapılmış bir MCP çağrısına dayanır: yapılmamış çağrı buraya yazılamaz.
 Döküm sütunu, satırı ham MCP çıktı dosyasına bağlar (`teyit --dokum <dosya>`);
 böylece künye ileride yalnız kütük + döküm okunarak doğrulanabilir.
+
+Kopyala-yapıştır (tek satır, GETİR ritüeli — değerleri kendi çağrınla doldur):
+`python oa_hafiza.py teyit --arac ictihat_getir --sorgu "<anonim sorgu>" --sonuc "Yargıtay <N>. HD, E. <YYYY/NNNN>, K. <YYYY/NNNN>" --damga LEHE --dokum-sinifi tam-metin --bag "<≥40 karakter davaya bağ>" --ilgili-kisim "<dökümden birebir alıntı>" --dokum-icerik @<ham-dokum.md>`
+Serbest formatta yazılmış triyaj/okuma-muhakemesi belgesini kütüğe almak için:
+`python oa_hafiza.py triyaj-ice-al --dosya <okuma-muhakemesi.md> [--ham-dizin _oa/teyit/ham]`
 
 | Zaman | Araç | Sorgu | Sonuç (künye/madde + lehe/aleyhe) | Döküm |
 |---|---|---|---|---|
@@ -1017,7 +1024,10 @@ def cmd_teyit(args):
     kontrol()
     if not (args.arac and args.sorgu and args.sonuc):
         sys.exit("RET: teyit kaydı üçlü ister: --arac + --sorgu + --sonuc. "
-                 "Yapılmamış çağrı kütüğe yazılamaz.")
+                 "Yapılmamış çağrı kütüğe yazılamaz. Ne yapmalı: fiilen yaptığın "
+                 "MCP çağrısının aracını (--arac), sorgusunu (--sorgu) ve sonucunu "
+                 "(--sonuc) aynı komutta birlikte ver (kütük başlığındaki "
+                 "kopyala-yapıştır örneğe bak).")
 
     # DÜZELTME (v0.5.5 şerh turu — Ş1/Ş3/Ş4 KÖK ÇÖZÜM, BLOKER): --arac
     # HERHANGİ bir dosya/kütük yazımından ÖNCE doğrulanır/normalize edilir —
@@ -1085,7 +1095,10 @@ def cmd_teyit(args):
     if is_getir and not args.damga:
         sys.exit("RET: GETİR araçları (ictihat_getir/kurum_karari_getir) tam metin "
                  "döndürür — --damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR ZORUNLUDUR: damgasız "
-                 "içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ.")
+                 "içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ. Ne yapmalı: komuta "
+                 "--damga <sınıf> --bag \"<≥40 karakter>\" --ilgili-kisim \"<verbatim "
+                 "alıntı>\" --dokum-icerik @ham.md ekle (kararı baştan sona okuduysan "
+                 "--dokum-sinifi tam-metin de ver).")
 
     # --- --damga "ucuz" (IO'suz) alan denetimleri ÖNCE — bir RET'in dokum
     # dosyası gibi bir yan etki BIRAKMAMASI için dosya yazımından ÖNCE gelir.
@@ -1128,16 +1141,24 @@ def cmd_teyit(args):
                      "ALEYHE-AYIRT|NOTR olmalı.")
         if not args.bag or len(args.bag.strip()) < 40:
             sys.exit("RET: --damga verildiğinde --bag (DAVAYA-BAĞ) ZORUNLU ve ≥40 "
-                     "karakter olmalı — tek satırlık yüzeysel bağ yeterli değildir.")
+                     "karakter olmalı — tek satırlık yüzeysel bağ yeterli değildir. "
+                     "Ne yapmalı: kararın bu dosyanın somut vakıalarına neden "
+                     "emsal olduğunu ≥40 karakterle --bag içinde yaz.")
         if not args.ilgili_kisim or not args.ilgili_kisim.strip():
             sys.exit("RET: --damga verildiğinde --ilgili-kisim (VERBATİM alıntı) "
-                     "ZORUNLUDUR — özet/ikame kabul edilmez (gizli özetleme yasak).")
+                     "ZORUNLUDUR — özet/ikame kabul edilmez (gizli özetleme yasak). "
+                     "Ne yapmalı: kararın ilgili pasajını döküm dosyasından BİREBİR "
+                     "kopyalayıp --ilgili-kisim içine yapıştır.")
         if args.damga == "ALEYHE-AYIRT" and (not args.ayirt or len(args.ayirt.strip()) < 20):
             sys.exit("RET: DAMGA=ALEYHE-AYIRT için --ayirt (AYIRT-ETME) ZORUNLU ve ≥20 "
-                     "karakter olmalı — boş AYIRT-ETME ile ALEYHE-AYIRT geçersizdir.")
+                     "karakter olmalı — boş AYIRT-ETME ile ALEYHE-AYIRT geçersizdir. "
+                     "Ne yapmalı: emsal ile dosyamız arasındaki somut olgusal farkı "
+                     "≥20 karakterle --ayirt içinde yaz.")
         if not (args.dokum or args.dokum_icerik):
             sys.exit("RET: --damga verildiğinde tam metin izi ZORUNLU — --dokum (mevcut "
-                     "döküm dosyası) veya --dokum-icerik (yeni döküm) verin.")
+                     "döküm dosyası) veya --dokum-icerik (yeni döküm) verin. Ne yapmalı: "
+                     "MCP'den dönen ham metni bir dosyaya kaydedip --dokum-icerik "
+                     "@ham.md ver (script dökümü _oa/teyit/dokum/'a kendisi yazar).")
 
     # P0-2 DÜZELTME (--dokum-icerik): dosya yazımı --damga'dan BAĞIMSIZDIR —
     # ARAMA sınıfının normal kullanımı (arama çıktısını iz olarak saklamak)
@@ -1221,7 +1242,9 @@ def cmd_teyit(args):
             if dokum_icerik is None:
                 if not os.path.exists(args.dokum):
                     sys.exit(f"RET: --damga verildi ama --dokum dosyası bulunamadı: {args.dokum} "
-                             "— tam metin izi olmadan damga vurulamaz (fail-closed).")
+                             "— tam metin izi olmadan damga vurulamaz (fail-closed). "
+                             "Ne yapmalı: --dokum yolunu düzelt ya da ham metni "
+                             "--dokum-icerik @ham.md ile şimdi kaydet.")
                 with open(args.dokum, encoding="utf-8", errors="replace") as f:
                     dokum_icerik = f.read()
 
@@ -1233,7 +1256,9 @@ def cmd_teyit(args):
             eksik = _sayilar_gecer_mi(args.sonuc, dokum_icerik)
             if eksik:
                 sys.exit("RET: --sonuc içindeki künye no'ları (" + ", ".join(eksik) + ") döküm "
-                         "içeriğinde dize olarak geçmiyor — künye/döküm tutarsız (fail-closed).")
+                         "içeriğinde dize olarak geçmiyor — künye/döküm tutarsız (fail-closed). "
+                         "Ne yapmalı: --sonuc künyesini dökümdeki gerçek esas/karar no'larıyla "
+                         "düzelt ya da bu künyeye ait doğru döküm dosyasını ver.")
 
             # P0-2 DÜZELTME (kunye dogrulamasi): --sonuc'tan ayrıştırılabilir bir
             # künye (E./K. YYYY/NNNN) çıkmıyorsa üretilecek muhakeme kaydı HİÇBİR
@@ -1258,7 +1283,9 @@ def cmd_teyit(args):
                 if esas_sonuc is None and karar_sonuc is None:
                     sys.exit("RET: --sonuc içinde ayrıştırılabilir bir künye (E. YYYY/NNNN, "
                              "K. YYYY/NNNN) yok — muhakeme kaydı hiçbir dilekçe atfıyla "
-                             "eşleşemez (fail-closed).")
+                             "eşleşemez (fail-closed). Ne yapmalı: --sonuc içine kararın "
+                             "künyesini 'Yargıtay N. HD, E. YYYY/NNNN, K. YYYY/NNNN' "
+                             "biçiminde ekle.")
 
                 # DÜZELTME (v0.5.5 düzeltme turu — DAİRE-KÖR): kütük çapraz
                 # kontrolü `MuhakemeKaydi.eslesir` ile SİMETRİK biçimde
@@ -1442,6 +1469,309 @@ def cmd_teyit(args):
                     os.remove(dokum_bu_cagride_yazilan)
                 except OSError:
                     pass
+
+
+# ── v0.5.8.6 (G1 TRİYAJ-İÇE-AL + G2b HAM DİZİN) ────────────────────────────
+# 777 saha dersi: model gerçek triyaj emeğini (ham dökümler + LEHE/ALEYHE
+# kararları) teyit-script formatının DIŞINDA, serbest bir okuma-muhakemesi
+# belgesine yazdı — [G6] triyaj kapısı bu emeği GÖREMEDİ (kütükte iz yok).
+# `triyaj-ice-al` bu MEŞRU emeği kütük formatına çevirir: ayrıştırılabilen her
+# karar için teyit-formatında satır (DAMGA= tokenı + [ham döküm mevcut ∧ >2KB
+# ise] DOKUM-SINIFI=tam-metin + döküm bağı) ekler ve satırın
+# `ictihat_muhakeme_denetim` okuyucularıyla (kütük regexleri) BİREBİR geri
+# okunabildiğini ROUND-TRIP doğrular. ARAÇ KAPI DEĞİLDİR: ayrıştırılamayan
+# bölüm SESSİZCE atlanmaz — "içe alınamadı: <neden>" ile raporlanır ve çıkış
+# kodu 0 kalır (sessiz atlama yasağı + sürtünmesizlik ilkesi birlikte).
+#
+# G2b — MEŞRU DÖKÜM EVRENİ: sözleşme dizini `_oa/teyit/dokum/` idi; 777
+# koşusunda dökümler `_oa/teyit/ham/` altına inmişti. İKİSİ DE (ve açıkça
+# verilen --ham-dizin) döküm bağı için meşru evren sayılır; evren DIŞINDA
+# duran bir aday dosyaya bağ kurulmaz (görünür uyarıyla düşer).
+
+# Damga tokenı — teyit enum'u + saha yazımı NÖTR (→ NOTR'a normalize edilir).
+# Sıralama önemli: ALEYHE-AYIRT, ALEYHE'den ÖNCE denenir (yutulmasın).
+_TRIYAJ_DAMGA_TOKEN_RE = re.compile(
+    r"(?<![A-ZÇĞİÖŞÜ0-9-])(ALEYHE-AYIRT|ALEYHE|LEHE|NOTR|NÖTR)(?![A-ZÇĞİÖŞÜ0-9-])")
+# Etiketli karar satırı ("TRİYAJ: LEHE" / "KARAR: ALEYHE" / "Damga = NOTR") —
+# serbest metindeki tesadüfi büyük-harf geçişlerinden önce bu satıra bakılır.
+_TRIYAJ_DAMGA_ETIKET_RE = re.compile(
+    r"(?im)^[ \t>*\-•#]*(?:DAMGA|TR[İI]YAJ|KARAR|SONU[ÇC]|DE[ĞG]ERLEND[İI]RME|"
+    r"H[ÜU]K[ÜU]M)\s*[:=]\s*(.+)$")
+# Ham döküm bağı adayları: etiketli satır ("HAM: x.md" / "DÖKÜM: y.md") önce,
+# sonra bağlamdaki genel dosya-adı geçişleri.
+_TRIYAJ_HAM_ETIKET_RE = re.compile(
+    r"(?im)^[ \t>*\-•]*(?:HAM(?:[ -]?D[ÖO]K[ÜU]M[ÜU]?)?|D[ÖO]K[ÜU]M|KAYNAK)"
+    r"\s*[:=]\s*(\S+)")
+_TRIYAJ_DOSYA_ADI_RE = re.compile(r"[^\s\"'`()\[\]|,;:<>]+\.(?:md|txt|json)(?![\w])",
+                                  re.I)
+# DOKUM-SINIFI=tam-metin eşiği: >2KB — tek paragraflık bir "özet" dosyası
+# tam-metin okuma kanıtı SAYILMAZ (üretildi ≠ geçerli, v0.5.5 dersi).
+_TRIYAJ_TAM_METIN_ESIK_BAYT = 2048
+
+_ICTIHAT_MUHAKEME_MOD = None
+
+
+def _ictihat_muhakeme_modulu():
+    """ictihat_muhakeme_denetim.py'yi (…/oa-kontrol/scripts/) İN-PROCESS import
+    eder (`_kunye_ortak_modulu` deseniyle simetrik — subprocess sınıfı açılmaz).
+    Round-trip doğrulaması İÇİN kullanılır: triyaj-ice-al'ın yazdığı kütük
+    satırını, [G6] kapısının FİİLEN kullandığı okuyucu (`_kutuk_kunye_bilgisi` +
+    kütük token regexleri) geri okuyabilmelidir. Bulunamaz/çökerse None —
+    çağıran taraf bunu GÖRÜNÜR bir uyarıya çevirir (sessiz atlama yasağı)."""
+    global _ICTIHAT_MUHAKEME_MOD
+    if _ICTIHAT_MUHAKEME_MOD is not None:
+        return _ICTIHAT_MUHAKEME_MOD
+    burada = os.path.dirname(os.path.abspath(__file__))
+    adaylar = [
+        os.path.join(burada, "..", "..", "oa-kontrol", "scripts",
+                     "ictihat_muhakeme_denetim.py"),
+        os.path.join(burada, "..", "..", "..", "oa-kontrol", "scripts",
+                     "ictihat_muhakeme_denetim.py"),
+    ]
+    betik = next((os.path.normpath(a) for a in adaylar if os.path.isfile(a)), None)
+    if betik is None:
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_oa_hafiza_ictihat_muhakeme_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _ICTIHAT_MUHAKEME_MOD = mod
+    return _ICTIHAT_MUHAKEME_MOD
+
+
+def _triyaj_dizin_icinde_mi(yol_a, dizin):
+    """`yol_a` fiilen `dizin` içinde mi? (ictihat_muhakeme_denetim
+    `_dizin_icinde_mi` deseniyle aynı normcase/normpath yaklaşımı.)"""
+    try:
+        yol_n = os.path.normcase(os.path.normpath(os.path.abspath(yol_a)))
+        dizin_n = os.path.normcase(os.path.normpath(os.path.abspath(dizin)))
+    except OSError:
+        return False
+    return yol_n == dizin_n or yol_n.startswith(dizin_n + os.sep)
+
+
+def _triyaj_bloklara_ayir(metin):
+    """Belgeyi markdown başlık satırlarından (`#`..`######`) bloklara ayırır;
+    her blok (1-tabanlı başlangıç satır no, blok metni) çiftidir. Başlıksız
+    belge / ilk başlıktan önceki giriş metni TEK blok sayılır."""
+    satirlar = _satir_sonu_normalize(metin).split("\n")
+    sinirlar = [i for i, s in enumerate(satirlar) if re.match(r" {0,3}#{1,6}\s", s)]
+    if not sinirlar or sinirlar[0] != 0:
+        sinirlar = [0] + sinirlar
+    sinirlar.append(len(satirlar))
+    bloklar = []
+    for a, b in zip(sinirlar, sinirlar[1:]):
+        if a >= b:
+            continue
+        bloklar.append((a + 1, "\n".join(satirlar[a:b])))
+    return bloklar
+
+
+def _triyaj_damga_bul(baglam):
+    """Bağlam metninden triyaj damgasını çıkarır. Önce ETİKETLİ satırlar
+    ("TRİYAJ: LEHE"), sonra bağlam-geneli tekil token. Döner: (damga, neden)
+    — başarıda neden None; başarısızlıkta damga None + görünür neden."""
+    def _tokenlar(parca):
+        return {("NOTR" if t == "NÖTR" else t)
+                for t in _TRIYAJ_DAMGA_TOKEN_RE.findall(parca)}
+    for m in _TRIYAJ_DAMGA_ETIKET_RE.finditer(baglam):
+        tk = _tokenlar(m.group(1))
+        if len(tk) == 1:
+            return tk.pop(), None
+    tk = _tokenlar(baglam)
+    if not tk:
+        return None, ("damga (LEHE/ALEYHE/ALEYHE-AYIRT/NOTR) bulunamadı — karar "
+                      "bölümüne `TRİYAJ: LEHE` biçiminde etiketli tek satır ekleyin")
+    if len(tk) > 1:
+        return None, ("birden çok damga adayı (" + "/".join(sorted(tk)) + ") — hangisi "
+                      "geçerli belirsiz; `TRİYAJ: <damga>` etiketli tek satır yazın")
+    return tk.pop(), None
+
+
+def _triyaj_dokum_coz(aday, evren, kok):
+    """Belgede anılan döküm adayını meşru döküm evreninde (G2b: --ham-dizin +
+    `_oa/teyit/ham` + `_oa/teyit/dokum`) çözer; evren DIŞINDA kalan bir yol
+    (varolsa bile) döküm bağı SAYILMAZ (fail-closed). Bulunamazsa None."""
+    yollar = []
+    if os.path.isabs(aday):
+        yollar.append(aday)
+    else:
+        yollar.append(os.path.join(kok, aday))
+        for d in evren:
+            yollar.append(os.path.join(d, os.path.basename(aday)))
+    for y in yollar:
+        if os.path.isfile(y) and any(_triyaj_dizin_icinde_mi(y, d) for d in evren):
+            return y
+    return None
+
+
+def cmd_triyaj_ice_al(args):
+    kontrol()
+    ko_mod = _kunye_ortak_modulu()
+    if ko_mod is None:
+        print("içe alınamadı: kunye_ortak.py (oa-kontrol) import edilemedi — künye "
+              "ayrıştırma yapılamıyor. Ne yapmalı: oa-kontrol/scripts/kunye_ortak.py "
+              "erişilebilir olmalı (kurulumu onarın). Araç kapı değildir — çıkış 0.")
+        return
+    try:
+        with open(args.dosya, encoding="utf-8", errors="replace") as f:
+            metin = f.read()
+    except OSError as e:
+        print(f"içe alınamadı: triyaj belgesi okunamadı ({args.dosya}: {e}). "
+              "Ne yapmalı: --dosya yolunu düzeltin. Araç kapı değildir — çıkış 0.")
+        return
+    kok = _calisma_koku()
+    evren = []
+    if getattr(args, "ham_dizin", None):
+        hd = args.ham_dizin if os.path.isabs(args.ham_dizin) else os.path.join(kok, args.ham_dizin)
+        evren.append(hd)
+    # G2b: saha gerçeği ham/ + sözleşme dizini dokum/ — İKİSİ DE meşru evren.
+    evren.append(yol("teyit", "ham"))
+    evren.append(yol("teyit", "dokum"))
+    kutuk_yolu = yol("teyit", "kunye-teyit.md")
+    imd = _ictihat_muhakeme_modulu()
+    if imd is None:
+        print("UYARI: ictihat_muhakeme_denetim.py import edilemedi — round-trip "
+              "doğrulaması yalnız kunye_ortak katmanıyla yapılacak (sessiz atlama "
+              "yasağı gereği görünür).")
+
+    islenen = 0
+    alinamayan = 0
+    belge_adi = os.path.basename(args.dosya)
+    for (satir_taban, blok) in _triyaj_bloklara_ayir(metin):
+        atiflar = ko_mod.esas_karar_atiflari(blok)
+        if not atiflar:
+            # Künyesiz blokta damga sinyali varsa SESSİZCE geçilmez.
+            if _TRIYAJ_DAMGA_TOKEN_RE.search(blok):
+                print(f"içe alınamadı (satır {satir_taban}): damga var ama "
+                      "ayrıştırılabilir künye (E./K. YYYY/NNNN) yok — bölüme kararın "
+                      "künyesini ekleyin.")
+                alinamayan += 1
+            continue
+        # Aynı blokta yinelenen künye teke indirilir (başlık + gövde tekrarı).
+        gorulen, tekil = set(), []
+        for a in atiflar:
+            anahtar = (a["esas"], a["karar"], a["daire_key"])
+            if anahtar in gorulen:
+                continue
+            gorulen.add(anahtar)
+            tekil.append(a)
+        blok_satirlar = blok.split("\n")
+        for idx, atif in enumerate(tekil):
+            if len(tekil) == 1:
+                baglam = blok
+            else:
+                bas = atif["satir_no"] - 1
+                son = (tekil[idx + 1]["satir_no"] - 1
+                       if idx + 1 < len(tekil) else len(blok_satirlar))
+                baglam = "\n".join(blok_satirlar[bas:son])
+            etiket = f"satır {satir_taban + atif['satir_no'] - 1}, {atif['metin']}"
+            damga, neden = _triyaj_damga_bul(baglam)
+            if not damga:
+                print(f"içe alınamadı ({etiket}): {neden}.")
+                alinamayan += 1
+                continue
+            esas, karar, daire = atif["esas"], atif["karar"], atif["daire_key"]
+            son_damga = ko_mod.kutukten_son_damga(kutuk_yolu, esas, karar, daire)
+            if son_damga is not None and son_damga != damga:
+                print(f"içe alınamadı ({etiket}): kütükteki SON DAMGA farklı "
+                      f"('{son_damga}' ≠ '{damga}') — damga sessizce değiştirilemez "
+                      "(anayasa m.6 fail-closed). Ne yapmalı: bilinçli değişim için "
+                      f"`teyit --arac ictihat_getir ... --damga {damga} "
+                      "--damga-degistir \"<≥40 karakter gerekçe>\"` ritüelini kullanın.")
+                alinamayan += 1
+                continue
+
+            # Döküm bağı adayları: etiketli satır önce, sonra genel dosya adları.
+            adaylar = [m.group(1) for m in _TRIYAJ_HAM_ETIKET_RE.finditer(baglam)]
+            for m in _TRIYAJ_DOSYA_ADI_RE.finditer(baglam):
+                if m.group(0) not in adaylar:
+                    adaylar.append(m.group(0))
+            dokum_yolu = next(
+                (c for c in (_triyaj_dokum_coz(a, evren, kok) for a in adaylar) if c),
+                None)
+            tam_metin = False
+            if dokum_yolu:
+                try:
+                    with open(dokum_yolu, encoding="utf-8", errors="replace") as f:
+                        dokum_icerik = f.read()
+                except OSError:
+                    dokum_icerik = ""
+                sayilar_ok = ((not esas or ko_mod.sayi_var(dokum_icerik, esas)) and
+                              (not karar or ko_mod.sayi_var(dokum_icerik, karar)))
+                if not sayilar_ok:
+                    # 346 dersi (parser yanlış-pozitifi): künyesi içinde geçmeyen
+                    # bir dosyaya bağ kurulup tam-okuma iddiası üretilemez.
+                    print(f"UYARI ({etiket}): döküm bağı DÜŞÜRÜLDÜ — künye no'ları "
+                          f"'{os.path.basename(dokum_yolu)}' içinde dize olarak "
+                          "geçmiyor; yanlış dökümle tam-okuma iddiası üretilemez. "
+                          "Satır döküm bağı OLMADAN işlendi.")
+                    dokum_yolu = None
+                else:
+                    try:
+                        tam_metin = (os.path.getsize(dokum_yolu)
+                                     > _TRIYAJ_TAM_METIN_ESIK_BAYT)
+                    except OSError:
+                        tam_metin = False
+            elif adaylar:
+                print(f"UYARI ({etiket}): döküm adayı ({adaylar[0]}) meşru döküm "
+                      "evreninde (--ham-dizin / _oa/teyit/ham / _oa/teyit/dokum) "
+                      "bulunamadı — satır döküm bağı OLMADAN işlendi.")
+
+            # Kütük satırı — cmd_teyit ile AYNI hücre disiplini (_hucre +
+            # _sonuc_damga_ize_karismasin): belgeden gelen serbest metin,
+            # script'in kendi yazdığı doğrulanmış tokenlarla KARIŞAMAZ.
+            taban = atif["metin"] or ""
+            ekler = []
+            if esas and not ko_mod.sayi_var(taban, esas):
+                ekler.append(f"E. {esas}")
+            if karar and not ko_mod.sayi_var(taban, karar):
+                ekler.append(f"K. {karar}")
+            if ekler:
+                taban += " [" + ", ".join(ekler) + "]"
+            sonuc = _sonuc_damga_ize_karismasin(taban) + f" DAMGA={damga}"
+            if tam_metin:
+                sonuc += " DOKUM-SINIFI=tam-metin"
+            dokum_hucre = ""
+            if dokum_yolu:
+                dokum_hucre = f"[döküm]({_hucre(_kaynak_izi_yolu(dokum_yolu, args.kok))})"
+            sorgu_h = _hucre(f"triyaj-ice-al ← {belge_adi}")
+            with open(kutuk_yolu, "a", encoding="utf-8") as f:
+                f.write(f"| {ts()} | triyaj-ice-al | {sorgu_h} | {_hucre(sonuc)} | "
+                        f"{dokum_hucre} |\n")
+
+            # ROUND-TRIP — yazılan satırı [G6]'nın FİİLEN kullandığı okuyucular
+            # geri okuyabilmeli; okuyamıyorsa GÖRÜNÜR uyarı (sessiz başarı yok).
+            rt_sorun = []
+            if ko_mod.kutukten_son_damga(kutuk_yolu, esas, karar, daire) != damga:
+                rt_sorun.append("kunye_ortak.kutukten_son_damga DAMGA'yı geri okuyamadı")
+            if imd is not None:
+                bilgi = imd._kutuk_kunye_bilgisi(kutuk_yolu, esas, karar, daire)
+                if not bilgi["satir_var"]:
+                    rt_sorun.append("ictihat_muhakeme_denetim satırı bulamadı")
+                if tam_metin and not bilgi["tam_metin"]:
+                    rt_sorun.append("DOKUM-SINIFI=tam-metin tokenı geri okunamadı")
+            if rt_sorun:
+                print(f"UYARI ({etiket}): ROUND-TRIP doğrulaması BAŞARISIZ — "
+                      + "; ".join(rt_sorun) + " (satır kütükte; elle denetleyin).")
+            else:
+                ek_not = ""
+                if damga == "ALEYHE":
+                    ek_not = " (ALEYHE — dış çıktıya giremez, cephaneliğe; anayasa m.6)"
+                print(f"İÇE ALINDI ({etiket}): DAMGA={damga}"
+                      + (" DOKUM-SINIFI=tam-metin" if tam_metin else "")
+                      + (f" — döküm: {_kaynak_izi_yolu(dokum_yolu, args.kok)}"
+                         if dokum_yolu else "")
+                      + ek_not)
+            islenen += 1
+
+    print(f"TRİYAJ İÇE ALMA ÖZETİ: {islenen} karar kütüğe işlendi, "
+          f"{alinamayan} bölüm içe alınamadı."
+          + (" Raporlanan bölümleri düzeltip yeniden koşabilirsiniz "
+             "(araç kapı değildir — çıkış 0)." if alinamayan else ""))
 
 
 def cmd_sure_flag(args):
@@ -1828,6 +2158,18 @@ def main():
                          "veriliyorsa ZORUNLU (≥40 karakter gerekçe) — P0-2 DÜZELTME (d): "
                          "damga sessizce değiştirilemez; eski muhakeme bölümüne "
                          "GEÇERSİZ-KILINDI satırı eklenir, gerekçe kütüğe de yazılır")
+    s = sub.add_parser("triyaj-ice-al", parents=[ortak])
+    s.add_argument("--dosya", required=True,
+                   help="v0.5.8.6 (G1) — modelin SERBEST formatta yazdığı triyaj/"
+                        "okuma-muhakemesi belgesi (künye + LEHE/ALEYHE/NOTR kararı "
+                        "+ varsa ham döküm dosya adı); ayrıştırılabilen her karar "
+                        "kütüğe teyit-formatında satır olarak işlenir, "
+                        "ayrıştırılamayan bölüm 'içe alınamadı: <neden>' ile "
+                        "raporlanır (çıkış 0 — araç kapı değildir)")
+    s.add_argument("--ham-dizin", dest="ham_dizin", default=None,
+                   help="G2b — ham dökümlerin indiği ek dizin; --ham-dizin + "
+                        "_oa/teyit/ham + _oa/teyit/dokum üçü birden meşru döküm "
+                        "evreni sayılır (777'de dökümler ham/'a inmişti)")
     s = sub.add_parser("sure-flag", parents=[ortak])
     s.add_argument("--tarih"); s.add_argument("--aciklama"); s.add_argument("--kural")
     s.add_argument("--tur", choices=["usul", "maddi"],
@@ -1847,7 +2189,8 @@ def main():
     args = ap.parse_args()
     _kok_ayarla(getattr(args, "kok", None))
     {"init": cmd_init, "oturum-ac": cmd_oturum_ac, "devir": cmd_devir,
-     "teyit": cmd_teyit, "sure-flag": cmd_sure_flag, "ajan-brif": cmd_ajan_brif,
+     "teyit": cmd_teyit, "triyaj-ice-al": cmd_triyaj_ice_al,
+     "sure-flag": cmd_sure_flag, "ajan-brif": cmd_ajan_brif,
      "oturum": cmd_oturum, "oturum-kapat": cmd_oturum_kapat,
      "durum": cmd_durum}.get(args.komut, lambda a: ap.print_help())(args)
 

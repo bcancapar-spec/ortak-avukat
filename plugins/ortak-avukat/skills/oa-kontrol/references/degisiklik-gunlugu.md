@@ -45,3 +45,7 @@
 - **A4.8 — Teslim sunum disiplini SKILL'e işlendi:** durum sorusuna makbuz OKUNARAK cevap verilir; RED makbuz kullanıcı mesajında GİZLENEMEZ (özetin ilk satırlarında sebep + kapanan kapı); teslimde ürünün TAM yerel yolu + "mühürleri (.prov.json) birlikte taşıyın" notu (`muhur_yaz.py --tasi`).
 - **İSTİSNA DEFTERİ şeması belgelendi:** `_oa/defter/istisna-kayitlari.jsonl` — append-only; satır `{zaman, tur, ilgili, gerekce, onay, imza}`. Yazan araçlar: `kunye_teyit.py` (kunye-istisna — B1 kendi-dosya-no muafiyeti), `dilekce_denetim.py` (yanlis-pozitif-ilani — --istisna-gerekce), `gizlilik_tara.py` (gizlilik-deny-override), `teslim_paketi.py`/`udf_yaz.py`/`pipeline_kayit.py` (dogrulama-toleransi — e-imza toleransları). Hiçbir muafiyet/tolerans sessiz kalmaz.
 - **B1 — `kunye_teyit.py` kendi-dosya-no istisnası:** taslağın başlık/künye bloğundaki KENDİ dosya numarası satırı ("DOSYA NO : 2024/123 Esas") içtihat künyesi sanılmaz — muafiyet DAR (etiketle başlayan + daire anmayan + E.+K. çifti taşımayan satır); muafiyet [BİLGİ] satırı + istisna defteri kaydıyla görünür (sessiz atlama yasağı).
+
+## v0.5.8.6 — 2026-08-18
+- kunye_teyit: kütük Döküm bağlarında `_oa/teyit/ham/` dizini meşru döküm evreni sayılır
+  (dokum/ ile eşdeğer; kök-dışı bağ yine RET) — 777 sahasında dökümler ham/'a inmişti.

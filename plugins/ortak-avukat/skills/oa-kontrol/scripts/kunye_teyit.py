@@ -35,6 +35,8 @@ yeni bir MCP çağrısını atlayabilir; YOKSA MCP teyidi hâlâ gereklidir. Bu 
 Teyit EDİCİ kaynak evreni SADECE ikisidir:
   (1) künye teyit kütüğü      → `_oa/teyit/kunye-teyit.md`
   (2) ham MCP döküm dizini    → `_oa/teyit/dokum/`  (yalnız ham MCP çıktıları)
+  (3) kütük Döküm sütununun bağladığı `_oa/teyit/ham/` dosyaları (K1,
+      v0.5.8.6 — dokum/ ile eşdeğer; kök dışına çıkan bağ RET)
 `_oa/cikti/` teyit kaynağı DEĞİLDİR. Orası MCP dökümü değil, MODELİN yazdığı
 çalışma evraklarıdır (taslak, antitez, kıyas...). Model 3. adımda bir çalışma
 evrakına halüsinasyon künye yazarsa, eski sürümde o künye 9. adımda "döküm izli →
@@ -386,12 +388,77 @@ def _dizin_kaynaklari(dizin, etiket_on):
     return cikan
 
 
+# ── K1 (v0.5.8.6) — KÜTÜK DÖKÜM SÜTUNU ham/ BAĞLARI ────────────────────────
+# 777 saha dersi: model gerçek triyaj emeğini (ham dökümler + LEHE/ALEYHE)
+# teyit-script formatı dışında `_oa/teyit/ham/` altına yazmıştı; kütük Döküm
+# sütunu o dosyaları gösterdiği hâlde kapı onları GÖREMİYORDU. Kütük Döküm
+# sütunundaki bağlar `_oa/teyit/ham/` altını gösteriyorsa artık GEÇERLİ döküm
+# sayılır (dokum/ ile eşdeğer). YOL GÜVENLİĞİ korunur: bağ çözüldüğünde ham
+# dizininin (dolayısıyla kökün) dışına çıkıyorsa RET — yüklenmez, görünür
+# uyarı basılır (fail-closed; ham/ dizini TOPTAN yüklenmez, yalnız bağlılar).
+_HAM_BAG_TOKEN_RE = re.compile(r"[^\s|`'\"()\[\]<>]+")
+_HAM_SEGMENT_RE = re.compile(r"ham[/\\]")
+
+
+def kutuk_ham_baglari(kutuk_yolu):
+    """Kütük tablosunun Döküm sütunundaki (7-hücreli satır, hücre[5] —
+    `kunye_ortak.kutukte_damgali_dayanak_satiri_var_mi` ile aynı hücre
+    sözleşmesi) `_oa/teyit/ham/` bağlarını teyit kaynağı olarak yükler.
+    Göreli bağlar KÖKE göre çözülür (oa_hafiza `--dokum` yazım sözleşmesi);
+    kök dışına çıkan bağ RET edilir (stderr'e görünür uyarı)."""
+    cikan = []
+    if not (kutuk_yolu and os.path.isfile(kutuk_yolu)):
+        return cikan
+    teyit_dizin = os.path.dirname(os.path.abspath(kutuk_yolu))
+    ham_dizin = os.path.join(teyit_dizin, "ham")
+    kok = os.path.dirname(os.path.dirname(teyit_dizin))
+    ham_n = os.path.normcase(os.path.normpath(ham_dizin))
+    gorulen = set()
+    try:
+        with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
+            satirlar = f.read().splitlines()
+    except OSError:
+        return cikan
+    for satir in satirlar:
+        if not satir.lstrip().startswith("|"):
+            continue
+        hucreler = satir.split("|")
+        if len(hucreler) != 7:
+            continue
+        for tok in _HAM_BAG_TOKEN_RE.findall(hucreler[5]):
+            if not _HAM_SEGMENT_RE.search(tok):
+                continue  # ham/ altını göstermeyen hücre içeriği — ilgisiz
+            yol = tok if os.path.isabs(tok) else os.path.join(kok, tok)
+            yol = os.path.normpath(os.path.abspath(yol))
+            yol_n = os.path.normcase(yol)
+            if yol_n in gorulen:
+                continue
+            gorulen.add(yol_n)
+            if not (yol_n == ham_n or yol_n.startswith(ham_n + os.sep)):
+                print("UYARI: kütük Döküm bağı `_oa/teyit/ham/` (kök) dışına "
+                      f"çıkıyor — RET, teyit kaynağı SAYILMADI: {tok}",
+                      file=sys.stderr)
+                continue
+            if not (os.path.isfile(yol)
+                    and yol.lower().endswith((".md", ".txt", ".json"))):
+                continue  # bağ var ama dosya yok/tanınmayan tür — teyit üretmez
+            try:
+                with open(yol, encoding="utf-8", errors="replace") as f:
+                    cikan.append(("döküm(ham):" + os.path.basename(yol),
+                                  _segmentler(f.read())))
+            except OSError:
+                pass
+    return cikan
+
+
 def kaynaklari_yukle(kutuk_yolu, dokum_dizin, cikti_dizin):
     """Teyit edici ve bilgi amaçlı kaynakları AYRI döndürür.
 
     Döner: (teyit_kaynaklar, bilgi_kaynaklar, kutuk_var)
       teyit_kaynaklar : kütük (`_oa/teyit/kunye-teyit.md`) + ham MCP dökümleri
-                        (`_oa/teyit/dokum/`) — statüyü TEYİTLİ yapabilen tek evren.
+                        (`_oa/teyit/dokum/` + kütük Döküm sütununun bağladığı
+                        `_oa/teyit/ham/` dosyaları — K1) — statüyü TEYİTLİ
+                        yapabilen tek evren.
       bilgi_kaynaklar : `_oa/cikti/` çalışma evrakları — MODEL çıktısı; TEYİT
                         SAYILMAZ, yalnız "[BİLGİ] iz var" notu üretir (delik kapalı).
     """
@@ -401,6 +468,8 @@ def kaynaklari_yukle(kutuk_yolu, dokum_dizin, cikti_dizin):
         with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
             teyit_kaynaklar.append(("kütük:" + kutuk_yolu, _segmentler(f.read())))
     teyit_kaynaklar += _dizin_kaynaklari(dokum_dizin, "döküm:")
+    # K1: kütük Döküm sütununun `_oa/teyit/ham/` bağları — dokum/ ile eşdeğer.
+    teyit_kaynaklar += kutuk_ham_baglari(kutuk_yolu)
     # `_oa/cikti/` teyit EDİCİ değildir → yalnız bilgi kaynağı olarak yüklenir.
     bilgi_kaynaklar = _dizin_kaynaklari(cikti_dizin, "çıktı(BİLGİ):")
     return teyit_kaynaklar, bilgi_kaynaklar, kutuk_var

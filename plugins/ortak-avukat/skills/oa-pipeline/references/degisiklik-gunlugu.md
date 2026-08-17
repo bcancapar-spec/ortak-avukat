@@ -56,3 +56,17 @@
 - **A4.8b — RED-makbuz görünür satırı:** hook-denetle `teslim-makbuz-RED.json` diskteyken her koşuda "son teslim denemesi REDDEDİLMİŞ — sebep giderilmeden teslim edilemez" satırını basar.
 - **B5 — Mühür bayatlık taraması:** `_muhursuz_teslim_listesi` artık kayıt listesi döner ({yol, durum: muhursuz|bayat|imzali-bilgi, eski_sha}); prov sha ≠ güncel sha → BAYAT, otomatik mühür `was_derived_from=eski-sha` ile tazeler (zincir kopmaz); `sign.sgn`'li ürün BAYAT SAYILMAZ — imzali-bilgi satırı basılır, otomatik tazeleme YAPILMAZ (teslim_paketi/muhur_yaz kuralına bırakılır) + istisna defterine `dogrulama-toleransi` izi (mükerrer önlenir).
 - **`oa_metrik` — RED-makbuz sayacı + ELDEN uyumu:** `[6]` override bölümüne `red_makbuz` alanı (teslim-makbuz-RED.json dosya VARLIĞI — bozuk JSON olsa bile parse etmeden sayılır; eski sayaç yalnız teslim-makbuz.json'a baktığından sahada yanlış "RED: 0" basıyordu) + `elden_parca` sayacı; override oranı işlenmiş (UYGULANDI+ELDEN) parçalar üzerinden — şerhli ELDEN sayaçtan kaybolmaz. Defter özeti ELDEN'i ayrı statü olarak basar.
+
+## v0.5.8.6 — 2026-08-18
+- SÜRÜM KİLİDİ: `_oa/araclar` kopyalarında özellik parmak-izi denetimi — eski nesil araç
+  "⛔ BAYAT NESİL — üretimde KULLANMA" uyarısı üretir (777 dersi: bayat rpm kiti açılmayan
+  UDF üretmişti); VERSION.json damga denetimi; defterde `{tip:hook, olay:bayat-arac}` izi.
+- `--adim-batch <json>`: tek çağrıda çok adım kaydı (tümü araç-imzalı; kanıt/önkoşul aynen).
+- DURUM görünümünde ELDEN-türetilmiş etiketi + sayacı (kanıtı 'ELDEN' olan/imzasız-artefaktsız
+  UYGULANDI kayıtları görünür — kayıt değişmez, append-only korunur).
+- KANONİK-OLMAYAN MAKBUZ uyarısı (hook-prompt + hook-denetle): TESLIM-MAKBUZU*.txt sınıfı
+  dosya varken defter/teslim-makbuz.json (exit 0) yoksa — "txt makbuz değildir".
+- oa_hafiza `triyaj-ice-al`: serbest-format okuma-muhakemesi belgesini teyit-formatlı kütük
+  satırlarına çevirir (DAMGA/DOKUM-SINIFI tokenli, [G6] round-trip garantili; ham/ dizini
+  meşru döküm evreni); kütük başlığına kopyala-yapıştır CLI örneği; teyit RET mesajları
+  "ne yapmalı" cümleli.
