@@ -70,3 +70,18 @@
   satırlarına çevirir (DAMGA/DOKUM-SINIFI tokenli, [G6] round-trip garantili; ham/ dizini
   meşru döküm evreni); kütük başlığına kopyala-yapıştır CLI örneği; teyit RET mesajları
   "ne yapmalı" cümleli.
+
+## v0.5.9 (Faz A — mekanik omurga) — 2026-08-18
+- SUNUM KİLİDİ: SendUserFile ile teslim-sınıfı ürün (udf/pdf/docx) gönderimi, yeşil
+  kanonik makbuz yokken PreToolUse "ask" kararına bağlandı — "çıktı tüm süreçten
+  geçmeden avukata sunulamaz; yine de göndermek avukatın kararıdır" (dört ilke:
+  tamamlayıcı — engel değil, karar avukatta). UYAP orijinal evrakları muaf.
+- İNLİNE ZİNCİR: dilekçe-taslak sınıfı her yazımda (PostToolUse) dilekce_denetim
+  hızlı-kip İN-PROCESS koşulur, ≤6 satır bulgu özeti modele kesintisiz geri akar
+  (777 kanıtı: model hook bulgusuna kendi tooling'iyle cevap veriyor); temizse tek
+  satır "inline denetim: temiz"; 2sn zaman korumalı, asla bloklamaz.
+- KESİNTİSİZ AKIŞ: defterli kökte her prompt enjeksiyonuna ≤3 satır ZİNCİR DURUMU
+  (son halka + sıradaki + bekleyen avukat kararı + makbuz/mühür kısa durumu) —
+  model her turda zincirdeki yerini bilerek düşünür.
+- dilekce_denetim.hizli_denetim(metin, kok): [Y][M][N][K][T]+kaynak-bloğu hızlı
+  metin denetimi (<1sn, exception sızdırmaz) — inline zincirin giriş noktası.

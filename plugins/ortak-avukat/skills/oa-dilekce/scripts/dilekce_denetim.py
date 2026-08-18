@@ -1239,6 +1239,82 @@ def istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="avukat"):
     return yol
 
 
+# ── HIZLI KİP (v0.5.9 — inline zincirin giriş noktası, İÇ API) ─────────────
+# YALNIZ metin-tabanlı hızlı denetimler koşar: [Y] havada-kalan alıntı,
+# [M] madde sürekliliği/mükerrerlik, [N] çıplak kısaltma, [K] cephanelik-
+# ifşa, [T] teslime-hazır/yeşil-makbuz beyanı (YALNIZ kok verilmişse) ve
+# [L] kaynak-bloğu ilk-satır yokluğu. .udf/zip/npx/resmî-okuyucu bacaklarına
+# ASLA girmez (hız şartı: tipik 50KB taslakta < 1 sn). CLI davranışı
+# DEĞİŞMEZ — main() bu fonksiyonu KULLANMAZ; dört ilke izdüşümü:
+# DETERMİNİSTİK (aynı metin → aynı bulgu listesi) · TAMAMLAYICI (denetler,
+# muhakeme üretmez) · KESİNTİSİZ (bulgular tek listede akar) · SÜRTÜNMESİZ
+# (sessiz ret yok — koşamayan sınıf GÖRÜNÜR "[!]" bulgusudur, hata
+# ne-yapmalıyı söyler).
+
+_HIZLI_KOSAMADI = object()  # sentinel: alt denetim kendi içinde çöktü
+
+
+def hizli_denetim(metin, kok=None):
+    """Metin-tabanlı HIZLI denetimlerin tek-çağrılık iç API'si.
+
+    list[str] döndürür; her bulgu "[X] kısa metin" biçimindedir ve EN KRİTİK
+    ÖNCE sıralanır: BLOK sınıfı ([T] makbuz kapısı, [Y] b/c havada-kalan/
+    kapanmayan alıntı) uyarı sınıfından ([Y] d, [K], [M], [N], [L]) önce
+    gelir. `kok` verilmemişse [T] HİÇ koşulmaz (hızlı kip dosya sistemine
+    CWD üzerinden tırmanmaz). Hiçbir koşulda exception sızdırmaz: bozuk
+    girdide boş bulgu yerine TEK görünür "[!]" uyarısı döner (boş liste
+    'temiz' demektir, 'denetlenemedi' demek DEĞİLDİR — ikisi karışmaz)."""
+    try:
+        if not isinstance(metin, str):
+            return ["[!] hızlı denetim koşamadı: metin str değil "
+                    f"({type(metin).__name__}) — taslağı düz metin (str) olarak "
+                    "ver; boş liste dönmüyor ki 'temiz' sanılmasın"]
+        meta = []
+
+        def _kos(etiket, fn):
+            try:
+                return fn()
+            except Exception as e:
+                meta.append(f"[!] {etiket} denetimi koşamadı "
+                            f"({type(e).__name__}) — bu sınıf DENETLENMEDİ; "
+                            "tam denetim için dilekce_denetim.py CLI'ını koş")
+                return _HIZLI_KOSAMADI
+
+        y = _kos("[Y]", lambda: havada_kalan_alinti_denetle(metin))
+        y_blok, y_uyari = ([], []) if y is _HIZLI_KOSAMADI else y
+        t_ihlal = []
+        if kok:
+            t = _kos("[T]", lambda: teslime_hazir_ihlalleri(metin, kok))
+            t_ihlal = [] if t is _HIZLI_KOSAMADI else t
+        k_uyari = _kos("[K]", lambda: cephanelik_ifsa_uyarilari(metin))
+        m_uyari = _kos("[M]", lambda: madde_numara_uyarilari(metin))
+        n_uyari = _kos("[N]", lambda: ciplak_kisaltma_uyarilari(metin))
+        l_uyari = _kos("[L]", lambda: kaynak_blogu_uyarilari(metin))
+
+        def _liste(x):
+            return [] if x is _HIZLI_KOSAMADI else list(x)
+
+        # BLOK sınıfı önce ([T] teslim yalanı, [Y] b/c alıntı), sonra uyarılar.
+        bulgular = ["[T] " + b for b in t_ihlal]
+        bulgular += ["[Y] " + b for b in y_blok]
+        bulgular += ["[Y] " + b for b in y_uyari]
+        bulgular += ["[K] " + b for b in _liste(k_uyari)]
+        bulgular += ["[M] " + b for b in _liste(m_uyari)]
+        bulgular += ["[N] " + b for b in _liste(n_uyari)]
+        if l_uyari is None:
+            # kaynak_blogu_uyarilari sözleşmesi: None = tazelik_denetim
+            # yüklenemedi → 'denetlenemedi' GÖRÜNÜR kılınır (yeşil değildir).
+            bulgular.append("[L] kaynak-bloğu DENETLENEMEDİ: tazelik_denetim.py "
+                            "yüklenemedi (oa-kontrol kurulu mu?) — bu bir yeşil "
+                            "ışık DEĞİLDİR; kurulumu onarıp yeniden dene")
+        elif l_uyari is not _HIZLI_KOSAMADI:
+            bulgular += ["[L] " + b for b in l_uyari]
+        return bulgular + meta
+    except Exception as e:  # savunma hattı — iç API asla exception sızdırmaz
+        return [f"[!] hızlı denetim koşamadı ({type(e).__name__}) — bulgular "
+                "üretilemedi; tam denetim için dilekce_denetim.py CLI'ını koş"]
+
+
 def denetle(metin, tip, taraf):
     eksik, uyari = [], []
     unsurlar = TIPLER.get(tip, TIPLER["genel"])

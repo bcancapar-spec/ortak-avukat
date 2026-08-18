@@ -26,7 +26,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Bash|PowerShell",
+        "matcher": "Write|Edit|Bash|PowerShell|SendUserFile",
         "hooks": [
           {
             "type": "command",

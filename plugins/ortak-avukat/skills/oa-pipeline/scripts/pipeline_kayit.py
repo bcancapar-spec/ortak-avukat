@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.8.6"
+OA_SURUM = "0.5.9"
 
 
 def _surum_tuple(s):
@@ -3616,9 +3616,70 @@ def _dosya_klasoru_mu(kok):
         return False
 
 
+# ── A4 (v0.5.9) — ZİNCİR DURUMU (UserPromptSubmit → kesintisiz akış özeti) ─
+def _zincir_durumu_ozeti(kok):
+    """Defter VARKEN her tura 2-3 satırlık MEKANİK zincir özeti: son
+    UYGULANDI halka + sıradaki adım + bekleyen avukat kararı sayısı +
+    mühürsüz/makbuz kısa durumu — model her turda zincirdeki YERİNİ bilerek
+    düşünür (KESİNTİSİZ ilkesi: bağlantılı düşünme her turda akar).
+    Kaynak: pipeline-durum.json (türev görünüm). Dosya yok/bozuksa None —
+    boş kabuk defter dizini (durum hiç derlenmemiş) gürültü üretmez, mevcut
+    sessizlik sözleşmeleri korunur. ASLA fırlatmaz."""
+    try:
+        durum_yol = os.path.join(kok, "_oa", "defter", DURUM_ADI)
+        if not os.path.isfile(durum_yol):
+            return None
+        with open(durum_yol, encoding="utf-8") as f:
+            d = json.load(f)
+        if not isinstance(d, dict) or not isinstance(d.get("adimlar"), dict):
+            return None
+        # Son UYGULANDI halka — gunluk (append-only sıra) SONDAN taranır.
+        son = None
+        for kayit in reversed(d.get("gunluk") or []):
+            if kayit.get("durum") == "UYGULANDI":
+                if kayit.get("katman"):
+                    son = f"katman {kayit['katman']}"
+                else:
+                    no = str(kayit.get("adim"))
+                    ad = (d["adimlar"].get(no) or {}).get("ad") or f"ADIM-{no}"
+                    son = f"adım {no} ({ad}) / {kayit.get('parca')}"
+                break
+        try:
+            siradaki = _siradaki(d)
+        except Exception:
+            siradaki = "türetilemedi"
+        try:
+            bekleyen = len(_avukat_karari_bekleyen(d))
+        except Exception:
+            bekleyen = 0
+        muhursuz_sayi = len([x for x in _muhursuz_teslim_listesi(kok)
+                             if x.get("durum") in ("muhursuz", "bayat")])
+        m, _hata = _makbuz_oku(kok)
+        if m is None:
+            makbuz = "YOK"
+        elif m.get("exit_kodu") == 0:
+            makbuz = "YEŞİL"
+        else:
+            makbuz = "KIRMIZI (exit≠0)"
+        return "\n".join([
+            "ZİNCİR DURUMU (v0.5.9 — pipeline-durum.json'dan mekanik özet):",
+            f"  son UYGULANDI: {son or 'henüz yok'} · sıradaki: {siradaki}",
+            f"  bekleyen avukat kararı: {bekleyen} · mühürsüz teslim ürünü: "
+            f"{muhursuz_sayi} · teslim makbuzu: {makbuz}",
+        ])
+    except Exception:
+        return None
+
+
 def hook_prompt(kok=None):
     """UserPromptSubmit — devir yükümlülüğünü modelin bağlamına enjekte eder.
     Döner: her zaman 0 (ASLA bloklamaz). Hat açıksa hiçbir şey basmaz.
+
+    A4 (v0.5.9) — KESİNTİSİZ AKIŞ: defter VARKEN (ve pipeline-durum.json
+    derlenmişken) enjeksiyona 2-3 satırlık ZİNCİR DURUMU özeti eklenir —
+    mevcut kısa-blok uyarılarıyla (bayat/ağ-import/kanonik-makbuz/teslim-
+    disiplini) AYNI kanalda, tek enjeksiyon. Defter yokken mevcut tam devir
+    bloğu AYNEN korunur.
 
     C2 (v0.5.8.5) — KÖK SİMETRİSİ: kök keşfi artık hook_denetle/hook_postwrite
     ile AYNI `_hook_kok_adaylarini_bul` üzerinden yapılır (stdin payload `cwd`
@@ -3649,6 +3710,11 @@ def hook_prompt(kok=None):
             #     teslim-sınıfı ürün varken defterin açık olması yetmez —
             #     mühür zinciri her turda hatırlatılır.
             parcalar = []
+            # A4 (v0.5.9) — ZİNCİR DURUMU her turda İLK sırada akar (kısa,
+            # gürültüsüz; durum dosyası yoksa None → mevcut sessizlik korunur).
+            zincir = _zincir_durumu_ozeti(k)
+            if zincir:
+                parcalar.append(zincir)
             bayat = _bayat_arac_uyarisi(k)
             if bayat:
                 parcalar.append(bayat)
@@ -3680,11 +3746,14 @@ def hook_prompt(kok=None):
                     "hookEventName": "UserPromptSubmit",
                     "additionalContext": "\n\n".join(parcalar),
                 }}, ensure_ascii=False))
-                _hook_olay_yaz(k, "prompt",
-                               "enjeksiyon: " + "+".join(
-                                   e for e, v in (("bayat", bayat), ("ağ-import", ag),
-                                                  ("kanonik-makbuz", kanonik),
-                                                  ("teslim-disiplini", muhursuz)) if v))
+                # Defter olayı yalnız GERÇEK uyarı varken düşer — rutin
+                # ZİNCİR DURUMU satırı her turda olay yazsaydı append-only
+                # defter turda-bir satırla şişerdi (gürültü disiplini).
+                etiketler = [e for e, v in (("bayat", bayat), ("ağ-import", ag),
+                                            ("kanonik-makbuz", kanonik),
+                                            ("teslim-disiplini", muhursuz)) if v]
+                if etiketler:
+                    _hook_olay_yaz(k, "prompt", "enjeksiyon: " + "+".join(etiketler))
             return 0
         metin = (
             "ORTAK AVUKAT — DEVİR YÜKÜMLÜLÜĞÜ (mekanik hatırlatma, bu turda geçerli):\n"
@@ -4222,17 +4291,159 @@ def _hook_postwrite_tetikle_mi(kok_aday, pencere_sn=HOOK_POSTWRITE_PENCERE_SN):
         return False
 
 
+# ── A2 (v0.5.9) — İNLİNE ZİNCİR (PostToolUse → dilekce_denetim hızlı kip) ──
+# 777 kanıtı: PostToolUse çıktısı modele GERİ AKAR (model [M] uyarısına renum
+# scriptiyle cevap verdi). Taslak yazımının HEMEN ardından koşan hızlı bir
+# denetim, bulguyu bir SONRAKİ turda modelin bağlamına taşır (KESİNTİSİZ:
+# zincirdeki yer + önceki halka ürünleri akar; TAMAMLAYICI: script denetler,
+# muhakemeyi üretmez/zorlamaz). dilekce_denetim.py İN-PROCESS import edilir
+# (subprocess YASAK — test_gate_g_dongu kilidi); `hizli_denetim` fonksiyonu
+# yoksa SESSİZ atlanır (eski sürüm uyumu). Çağrı 2sn'yi aşarsa VAZGEÇİLİR
+# (timeout koruması — hook ASLA bloklamaz).
+INLINE_DENETIM_ZAMAN_SINIRI_SN = 2.0
+_DILEKCE_DENETIM_MOD = None
+
+
+def _dilekce_denetim_modulu():
+    """dilekce_denetim.py'yi (kardeş skill `oa-dilekce/scripts/`) İN-PROCESS
+    import eder (_udf_yaz_modulu ile AYNI desen — subprocess YOK).
+    Bulunamaz/çökerse None."""
+    global _DILEKCE_DENETIM_MOD
+    if _DILEKCE_DENETIM_MOD is not None:
+        return _DILEKCE_DENETIM_MOD
+    skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    betik = os.path.join(skills_kok, "oa-dilekce", "scripts", "dilekce_denetim.py")
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_oa_pipeline_dilekce_denetim_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _DILEKCE_DENETIM_MOD = mod
+    return _DILEKCE_DENETIM_MOD
+
+
+def _dilekce_taslak_sinifi_mi(kok, yol):
+    """Yazılan dosya DİLEKÇE-TASLAK sınıfı mı? Ad deseni (*dilekce*/
+    *dilekçe*/*taslak*) + `.md` uzantısı + `_oa/cikti` altında olma — üçü
+    birden. ASLA fırlatmaz."""
+    try:
+        ad = os.path.basename(str(yol)).lower()
+        if not ad.endswith(".md"):
+            return False
+        if not ("dilekce" in ad or "dilekçe" in ad or "taslak" in ad):
+            return False
+        tam = str(yol)
+        if not os.path.isabs(tam):
+            tam = os.path.join(kok, tam)
+        tam = os.path.abspath(tam)
+        cikti = os.path.abspath(os.path.join(kok, "_oa", "cikti"))
+        return tam.startswith(cikti + os.sep)
+    except Exception:
+        return False
+
+
+def _inline_bulgu_listesi(sonuc):
+    """`hizli_denetim` dönüşünü SAVUNMACI normalize eder — kardeş ajan
+    sözleşmesi list[str]'dir; dict({'bulgular': [...]}) ve tekil değer de
+    tolere edilir (paralel geliştirme toleransı)."""
+    if sonuc is None:
+        return []
+    if isinstance(sonuc, dict):
+        sonuc = sonuc.get("bulgular") or []
+    if isinstance(sonuc, (list, tuple)):
+        return [str(b) for b in sonuc if str(b).strip()]
+    return [str(sonuc)] if str(sonuc).strip() else []
+
+
+def _hook_inline_dilekce_denetim(kok, veri, zaman_siniri_sn=None):
+    """A2 gövdesi: payload'daki YENİ yazılan dosya dilekçe-taslak sınıfıysa
+    `hizli_denetim(metin, kok)`'u İN-PROCESS + zaman sınırlı koşar; bulgu
+    özetini (başlık + en çok 5 bulgu satırı = toplam ≤6 satır) stdout'a
+    basar — PostToolUse çıktısı modele geri akar. Bulgu yoksa TEK satır
+    'inline denetim: temiz' (sessiz-yeşil ölçümü için). Defter varsa
+    {tip:hook, olay:inline-denetim, not:'N bulgu'} olayı düşer.
+    `hizli_denetim` yoksa/çökerse/zaman aşarsa SESSİZ vazgeçer —
+    ASLA fırlatmaz, ASLA bloklamaz."""
+    try:
+        if zaman_siniri_sn is None:
+            zaman_siniri_sn = INLINE_DENETIM_ZAMAN_SINIRI_SN
+        if not isinstance(veri, dict):
+            return
+        dosya = None
+        ti = veri.get("tool_input")
+        if isinstance(ti, dict):
+            dosya = ti.get("file_path")
+        if not dosya:
+            tr = veri.get("tool_response")
+            if isinstance(tr, dict):
+                dosya = tr.get("filePath")
+        if not dosya or not _dilekce_taslak_sinifi_mi(kok, dosya):
+            return
+        tam = str(dosya)
+        if not os.path.isabs(tam):
+            tam = os.path.join(kok, tam)
+        mod = _dilekce_denetim_modulu()
+        if mod is None:
+            return
+        fn = getattr(mod, "hizli_denetim", None)
+        if not callable(fn):
+            return                          # eski sürüm uyumu — sessiz atla
+        try:
+            with open(tam, encoding="utf-8", errors="replace") as f:
+                metin = f.read()
+        except OSError:
+            return
+        import threading                    # yerel import — ağ/alt-süreç değil
+        kutu = {}
+
+        def _calistir():
+            try:
+                kutu["sonuc"] = fn(metin, kok)
+            except Exception:
+                kutu["hata"] = True
+
+        is_ipligi = threading.Thread(target=_calistir, daemon=True)
+        is_ipligi.start()
+        is_ipligi.join(zaman_siniri_sn)
+        if is_ipligi.is_alive() or kutu.get("hata") or "sonuc" not in kutu:
+            return                          # zaman aşımı/çökme — vazgeç
+        bulgular = _inline_bulgu_listesi(kutu["sonuc"])
+        if not bulgular:
+            print("inline denetim: temiz")
+            _hook_olay_yaz(kok, "inline-denetim", "0 bulgu")
+            return
+        print(f"İNLİNE DENETİM ({os.path.basename(str(dosya))} — "
+              f"dilekce_denetim.hizli_denetim): {len(bulgular)} bulgu")
+        for b in bulgular[:5]:
+            print("  " + b[:200])
+        _hook_olay_yaz(kok, "inline-denetim", f"{len(bulgular)} bulgu")
+    except Exception:
+        pass                                # sessiz başarısızlık — asla bloklamaz
+
+
 def hook_postwrite(kok=None):
     """GÖREV B / P0-B (v0.5.5) — PostToolUse(Write|Edit) hook komutu. Bu
     kökte (veya keşfedilen aday köklerden herhangi birinde)
     `_hook_postwrite_tetikle_mi` True DÖNMEDİKÇE hiçbir ağır iş yapmaz
-    (hızlı erken çıkış). Döner: her zaman 0 (ASLA bloklamaz)."""
+    (hızlı erken çıkış). Döner: her zaman 0 (ASLA bloklamaz).
+
+    A2 (v0.5.9) — İNLİNE ZİNCİR: payload BİR KEZ okunur (C2 kök-simetrisi ile
+    aynı ilke) ve hem kök keşfine hem `_hook_inline_dilekce_denetim`e AYNI
+    nesne verilir; yazılan dosya dilekçe-taslak sınıfıysa hızlı denetim
+    bulguları PostToolUse çıktısıyla modele GERİ AKAR."""
+    veri = _hook_stdin_payload_oku()        # TTY'de/boşta/bozukta None — asla bekleme
     try:
-        kokler = _hook_kok_adaylarini_bul(kok)
+        kokler = _hook_kok_adaylarini_bul(kok, payload=veri)
     except Exception:
         kokler = [os.path.abspath(kok or ".")]
     for kok_aday in kokler:
         _hook_nabiz_damgala(kok_aday, "postwrite")   # C3 — nabız (defter varsa)
+        _hook_inline_dilekce_denetim(kok_aday, veri)  # A2 — asla fırlatmaz/bloklamaz
         try:
             tetik = _hook_postwrite_tetikle_mi(kok_aday)
         except Exception as e:
@@ -4261,11 +4472,83 @@ def _pretool_elle_udf_deseni_mi(metin):
             or ("ZipFile(" in metin and ".udf" in metin))
 
 
+# ── A1 (v0.5.9) — SUNUM KİLİDİ (PreToolUse → SendUserFile) ─────────────────
+# v0.5.9 çekirdeği: "çıktı tüm süreçten FİZİKSEL geçmeden avukata SUNULMAZ".
+# Model SendUserFile ile teslim-sınıfı bir ürünü (.udf/.pdf/.docx) avukata
+# gönderirken yeşil makbuz (_oa/defter/teslim-makbuz.json, exit_kodu==0 —
+# TEK ÖLÇÜT) yoksa karar 'ask' ile AVUKATA devredilir — BLOKLANMAZ (dört
+# ilke: sürtünmesiz — sessiz ret yok, gerekçe ne-yapmalıyı söyler). Yeşil
+# makbuz varsa kapı SESSİZDİR (çıktı yok, exit 0). Elle-UDF deseni ile AYNI
+# gövdede yaşar; öncelik elle-UDF desenindedir (mevcut davranış AYNEN).
+
+_SUNUM_TESLIM_UZANTILAR = (".udf", ".pdf", ".docx")
+# Kök teslim ürünü deseni: dava KÖKÜNDE duran, adından teslim ürünü olduğu
+# belli dosyalar (dilekçe/taslak/teslim/mütalaa/istinaf/temyiz/cevap/itiraz).
+_SUNUM_KOK_URUN_RE = re.compile(
+    r"dilek[cç]e|taslak|teslim|m[uü]talaa|istinaf|temyiz|cevap|itiraz", re.I)
+
+
+def _sunum_teslim_sinifi_mi(kok, yol):
+    """Gönderilen dosya TESLİM-SINIFI ürün mü? (a) uzantı .udf/.pdf/.docx VE
+    (b) `_oa` altında (orada her teslim uzantısı üründür) VEYA dava kökünde
+    teslim-ürünü adlı (`_SUNUM_KOK_URUN_RE`). UYAP indirme evrakı
+    (^NNN_/^YYYY_ önekli orijinal) ürün DEĞİLDİR — orijinal evrak göndermek
+    kilide takılmaz (yanlış-pozitif disiplini). ASLA fırlatmaz."""
+    try:
+        ad = os.path.basename(str(yol))
+        if not ad.lower().endswith(_SUNUM_TESLIM_UZANTILAR):
+            return False
+        if re.match(r"^\d{3,4}[_-]", ad):
+            return False                    # UYAP indirmesi — orijinal evrak
+        tam = str(yol)
+        if not os.path.isabs(tam):
+            tam = os.path.join(kok, tam)
+        tam = os.path.abspath(tam)
+        oa = os.path.abspath(os.path.join(kok, "_oa"))
+        if tam.startswith(oa + os.sep):
+            return True
+        if (os.path.dirname(tam) == os.path.abspath(kok)
+                and _SUNUM_KOK_URUN_RE.search(ad)):
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _sunum_kilidi_gerekli_mi(veri, kok):
+    """A1 karar çekirdeği: payload SendUserFile mi + gönderilenler arasında
+    teslim-sınıfı ürün var mı + yeşil makbuz YOK mu? Üçü de evetse True
+    ('ask' basılır). Yeşil makbuz (exit_kodu==0) varsa False — kapı sessiz
+    (deterministik: halka makbuz ARTEFAKTINA bağlanır, beyana değil).
+    ASLA fırlatmaz."""
+    try:
+        if not isinstance(veri, dict) or veri.get("tool_name") != "SendUserFile":
+            return False
+        ti = veri.get("tool_input")
+        if not isinstance(ti, dict):
+            return False
+        dosyalar = ti.get("files")
+        if isinstance(dosyalar, str):
+            dosyalar = [dosyalar]
+        if not isinstance(dosyalar, (list, tuple)):
+            return False
+        if not any(_sunum_teslim_sinifi_mi(kok, f) for f in dosyalar):
+            return False
+        m, _hata = _makbuz_oku(kok)
+        if m is not None and m.get("exit_kodu") == 0:
+            return False                    # yeşil makbuz — sessiz geçiş
+        return True
+    except Exception:
+        return False
+
+
 def hook_pretool(kok=None):
-    """PreToolUse(Write|Edit|Bash|PowerShell) hook komutu — stdin'deki
-    payload'ın tool_input metnini (content + new_string + command) tarar.
-    YALNIZ dava klasöründe ve desen varsa 'ask' kararı basar; her durumda
+    """PreToolUse(Write|Edit|Bash|PowerShell|SendUserFile) hook komutu —
+    stdin'deki payload'ın tool_input metnini (content + new_string + command)
+    tarar; A1 (v0.5.9) SendUserFile payload'larında SUNUM KİLİDİ'ni denetler.
+    YALNIZ dava klasöründe ve kural ateşlerse 'ask' kararı basar; her durumda
     exit 0 (ASLA bloklamaz — 'ask' bir karar devri, engel değildir).
+    Kural önceliği: (1) elle-UDF deseni (v0.5.8.4 — AYNEN), (2) SUNUM KİLİDİ.
 
     C2 (v0.5.8.5) — KÖK SİMETRİSİ: payload BİR KEZ okunur
     (`_hook_stdin_payload_oku`) ve hem içerik taramasına hem kök keşfine
@@ -4293,19 +4576,34 @@ def hook_pretool(kok=None):
         k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
         if k is None:
             return 0
-        _hook_nabiz_damgala(k, "pretool")   # C3 — nabız (defter varsa)
-        if not _pretool_elle_udf_deseni_mi(metin):
+        _hook_nabiz_damgala(k, "pretool")   # C3 — nabız (defter varsa, HER çağrıda)
+        # KURAL 1 (öncelik — mevcut v0.5.8.4 davranışı AYNEN): elle-UDF deseni.
+        if _pretool_elle_udf_deseni_mi(metin):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "ELLE-UDF ENGELİ (372 dersi 10-D): elle kurulan content.xml "
+                    "UYAP editöründe AÇILMIYOR. Geçerli tek yol resmî hat: "
+                    "udf_yaz.py veya npx udf-cli html2udf. Yine de devam etmek "
+                    "avukatın kararıdır."),
+            }}, ensure_ascii=False))
+            _hook_olay_yaz(k, "pretool-ask", "elle-UDF deseni yakalandı (ask basıldı)")
             return 0
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": (
-                "ELLE-UDF ENGELİ (372 dersi 10-D): elle kurulan content.xml "
-                "UYAP editöründe AÇILMIYOR. Geçerli tek yol resmî hat: "
-                "udf_yaz.py veya npx udf-cli html2udf. Yine de devam etmek "
-                "avukatın kararıdır."),
-        }}, ensure_ascii=False))
-        _hook_olay_yaz(k, "pretool-ask", "elle-UDF deseni yakalandı (ask basıldı)")
+        # KURAL 2 — A1 SUNUM KİLİDİ (v0.5.9): makbuzsuz teslim-sınıfı gönderim.
+        if _sunum_kilidi_gerekli_mi(veri, k):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "SUNUM KİLİDİ (v0.5.9): yeşil makbuz yok — çıktı tüm "
+                    "süreçten geçmeden avukata sunulamaz. Önce teslim_paketi "
+                    "zincirini yeşile bağlayın (tek ölçüt: _oa/defter/"
+                    "teslim-makbuz.json exit 0). Yine de göndermek avukatın "
+                    "kararıdır."),
+            }}, ensure_ascii=False))
+            _hook_olay_yaz(k, "pretool-ask",
+                           "SUNUM KİLİDİ: makbuzsuz teslim-sınıfı gönderim (ask basıldı)")
         return 0
     except Exception:
         return 0                        # sessiz başarısızlık — asla bloklamaz
@@ -4429,7 +4727,10 @@ def main():
                      help="v0.5.8.4 (372 dersi 10-D): model-bağımsız PreToolUse "
                           "hook komutu — stdin payload'ında elle-UDF kurulum "
                           "deseni (zipfile+content.xml / ZipFile(+.udf) varsa ve "
-                          "kök bir DAVA klasörüyse 'ask' kararı basar; diğer tüm "
+                          "kök bir DAVA klasörüyse 'ask' kararı basar; A1 "
+                          "(v0.5.9) SUNUM KİLİDİ: SendUserFile ile makbuzsuz "
+                          "teslim-sınıfı ürün gönderimi de 'ask' kararına düşer "
+                          "(yeşil makbuz varsa sessiz); diğer tüm "
                           "hâllerde sessiz. ASLA bloklamaz (her zaman exit 0).")
     ap.add_argument("--avukat-karari", dest="avukat_karari", default=None,
                      help="M7 (Paket D): AVUKAT KARARI BEKLEYEN'deki bir çatalı "
