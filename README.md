@@ -32,7 +32,7 @@ müvekkile karşı değil müvekkil için kullanma ayrımını — yazıya döke
 adımını makineyle denetler.** Dil modeli kurar makine deterministik olarak denetler prensibi ile çalışır. 
 
 Ayırt edici yanı şudur: bir işin yapıldığını **modelin beyanına bırakmaz.**
-"İçtihadı doğruladım" "uyuşmazlığı doğruladım" demek yetmez — kararın tam metni diske inmiş, davaya bağı
+"İçtihadı doğruladım" "uyuşmazlığı doğruladım" demek yetmez.Tüm uyuşmazlık deterministik olarak kodlanır ve yerel diske kaydedilir.  — kararın tam metni diske inmiş, davaya bağı
 yazılmış ve lehe/aleyhe olarak damgalanmış olmalıdır. "Dilekçe hazır" demek
 yetmez — teslim öncesi kapılar fiilen koşmuş ve dijital determinizm ile makbuz(yani kontrol)  kesilmiş olmalıdır.
 Bu yüzden sistem, muhakemeyi yapan katman ile onu denetleyen katmanı bilinçli
