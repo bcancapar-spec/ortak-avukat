@@ -142,9 +142,9 @@ Köşeli parantezleri kendi dosyanıza göre doldurun:
 ```text
 Bu klasör [Mahkeme] [Esas No] sayılı dosyamız. [Davacı/Davalı/Sanık müdafii/
 Müşteki vekili] tarafız. Yapılacak iş: [cevap dilekçesi / bilirkişi raporuna
-itiraz / istinaf başvurusu] hazırlanması. Dosyanın tamamını işle, sürelere
+itiraz / istinaf başvurusu/ Dava Analizi / Bilirkişi raporu hazırlanması hazırlanması]. Dosyanın tamamını işle, sürelere
 dikkat et, kullandığın her kararı tam metniyle doğrula, stratejik kavşaklarda
-bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu.
+bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu hazırla. Verdiğin sistem promptu gerçekleştirilince kontrol için benden "kontrol et" şeklindesistem promptu iste.  
 ```
 
 İş tipine göre hazır varyantlar (aynı gövdeye şu cümleyi ekleyin/değiştirin):
