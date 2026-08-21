@@ -13,8 +13,8 @@
 > koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir ek beyana +
-> geçerli UDF'e dönüştü (Claude Fable 5, max efor; evrak
-> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici)
+> geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde  Claude Fable 5, max efor ile) ; evraklar
+> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile pdf olarak indirilmiştir. 
 > ile UYAP'tan indirildi). Sayılar, dürüst kayıp listesiyle birlikte:
 > **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · o gecenin hikâyesi:
 > **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
