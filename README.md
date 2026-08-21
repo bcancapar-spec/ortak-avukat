@@ -8,34 +8,33 @@
 
 **Sürüm:** 0.5.9 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
-> ⚖️ **Gerçek davalarda test edildi.** Bu sistem sentetik örneklerle değil,
+> ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **altı büyük saha
-> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, banka/kefalet).
+> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
-> prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir ek beyana +
-> geçerli UDF'e dönüştü (Claude Fable 5, max efor; evrak
-> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici)
-> ile UYAP'tan indirildi). Sayılar, dürüst kayıp listesiyle birlikte:
-> **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · o gecenin hikâyesi:
-> **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
+> prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir  davalının istinaf dilekçesine
+> geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde plug in sayesinde en ucuz token tüketimi ve en yüksek çıktı kalitesi yakalanmıştır. ( Plug in öncesi Claude Fable 5, max efor ile önceden yaklaşık 1,2m+ token tüketiliyordu 1m token 50$ test için özellikle en pahalımodel seçildi ve test edildi tasarruf maddiyatla görülerek gerçekleşti. ) ; evraklar
+> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile pdf olarak indirilmiş ve bu plug in ile .md .json formatlarına otonom olarak çevrilmiştir. 
+ Sayılar, dürüst kayıp listesiyle birlikte:
+> **[SAHA-SONUCU.md](SAHA-SONUCU.md)** ·  > **[BASARI.md](BASARI.md)**. dosyalarında raporla sunulmuştur. Dosya kimlikleri projenin anayasası m.7 gereği daima
 > anonimdir.
 
-> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın  beta sürümleri tamamlanana kadar geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
+> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Beta sürümleri tamamlanana kadar avukatlar ve geliştiriciler geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
 ---
 
-## Bu nedir — bir meslektaşa anlatır gibi
+## Bu nedir 
 
 **Bu bir "dilekçe yazan yapay zekâ" değildir; bir METODOLOJİ SİSTEMİDİR.**
 Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
 önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
 müvekkile karşı değil müvekkil için kullanma ayrımını — yazıya döker ve **her
-adımını makineyle denetler.**
+adımını makineyle denetler.** Dil modeli kurar makine deterministik olarak denetler prensibi ile çalışır. 
 
 Ayırt edici yanı şudur: bir işin yapıldığını **modelin beyanına bırakmaz.**
-"İçtihadı doğruladım" demek yetmez — kararın tam metni diske inmiş, davaya bağı
+"İçtihadı doğruladım" "uyuşmazlığı doğruladım" "hukuki ihtilafı çözdüm veya buldum" demek yetmez. Tüm uyuşmazlık deterministik olarak kodlanır ve yerel diske kaydedilir.  — kararın tam metni diske inmiş, davaya bağı
 yazılmış ve lehe/aleyhe olarak damgalanmış olmalıdır. "Dilekçe hazır" demek
-yetmez — teslim öncesi kapılar fiilen koşmuş ve makbuz kesilmiş olmalıdır.
+yetmez — teslim öncesi kapılar fiilen koşmuş ve dijital determinizm ile makbuz(yani kontrol)  kesilmiş olmalıdır.
 Bu yüzden sistem, muhakemeyi yapan katman ile onu denetleyen katmanı bilinçli
 olarak ayırır. Kuram üç kelimeyle özetlenir:
 
@@ -53,7 +52,7 @@ araştırması, AYM bireysel başvuru, sözleşme inceleme ve tahriri, ceza müd
 ve müşteki vekilliği. Sistem kişilere değil **yönteme** bağlıdır; her olgusal
 unsuru (künye, madde, tarih, içtihat) resmî kaynaktan doğrular.
 
-Yirmi parça, 20 ayrı araç gibi değil **yetenek sahibi tek bir eş-avukat** gibi
+Yirmi parça, 20 ayrı araç gibi değil **yetenek sahibi tek bir ortak-avukat** gibi
 çalışır: dosyanın analizini kalıcı bir çalışma hafızasına yazar; sonraki her
 oturumda ham evrakı baştan okumak yerine bu kaydı kullanır — token-verimli ve
 kayıpsız.
@@ -65,7 +64,7 @@ kayıpsız.
 Sizin tarafınızdan görünen akış üç adımdır: **klasörü açarsınız, tek bir doğal
 cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yürütür:
 
-1. **Evrak metne iner.** UYAP'tan indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir
+1. **Evrak metne iner.** UYAP'tan https://github.com/bcancapar-spec/avukat-dosya-indirici eklentisi ile indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir
    kez ve en ucuz doğru yoldan metne çevrilir; taranmış olanlar OCR'dan geçer ve
    "⚠ teyit gerek" damgası alır. Evrak sayımı tutmuyorsa analiz **başlamaz**.
 2. **Sorular sorulur.** Uzun analize girmeden önce talep, roller, aşama, **tebliğ
@@ -88,7 +87,7 @@ cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yür�
 ```text
 Siz   : Bu klasör [Mahkeme] 2099/123 esas sayılı dosyamız. Davalı vekiliyiz.
         Cevap dilekçesi hazırlanacak. Dosyanın tamamını işle, sürelere dikkat et,
-        kullandığın her kararı tam metniyle doğrula, kavşaklarda bana sor.
+        kullandığın her kararı tam metniyle doğrula, davacının iddialarını ve elimizdeki delileri analiz et. Karşı tarafın zayıf karnını yargıtay kararları ve mevzuat ile bul. Karar gereken kavşaklarda bana sor.
 
 Sistem: 212 evrak metne indirildi (17'si taranmıştı → OCR; sayım tutuyor).
 Sistem: Başlamadan 6 sorum var: (1) dava dilekçesi hangi tarihte tebliğ edildi?
@@ -112,7 +111,7 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 
 ## DÜSTUR — sistemin anayasası
 
-Yirmi parçanın tamamı tek bir anayasaya tabidir
+Yirmi parçanın tamamı hooklar ile birbirine bağlanmış Av.Bayram Can ÇAPAR tarafından oluşturulan tek bir fiktif anayasaya tabidir
 ([`anayasa.md`](plugins/ortak-avukat/skills/ortak-avukat/references/anayasa.md)).
 Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder — yani
 bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on madde:
@@ -121,13 +120,13 @@ bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on ma
 |---|---|---|
 | **0** | **Kurucu ilke — metodoloji tanım değil, DONANIMDIR** | Bu sistemi kullanan yapay zekâ, Türk hukukunda doğru çıktı için tanımlardan/özetlerden değil kurulu METODOLOJİDEN — tüm yeteneklerle fiilen donatılmış olarak — hareket eder. Bu yetenekler, modelin en verimli ve en başarılı işlem hacmini yaratan, kullanıcı ile yapay zekâ arasındaki KÖPRÜDÜR. |
 | **1** | **Çaba ve kalite standardı** | Tasarruf yalnız **israftan** kesilir: aynı evrağı her adımda yeniden okumak, metni görüntü olarak açmak, bütünü yükleyip parçayı kullanmak. Muhakemeden, araştırmadan, unsur denetiminden **asla** kısılmaz. |
-| **2** | **Usul esasa üstündür** | Usul denetimi esastan **önce** ve en az onun kadar ciddi yapılır. Süre, dosyadaki telafisi olmayan tek hatadır. Düstur çift yönlüdür: kendi usul zaafınız sıfırlanır, karşı tarafın kaçırdığı süre gizlenmez — derhâl ileri sürülür. |
+| **2** | **Usul esasa üstündür** | Usul denetimi esastan **önce** ve en az onun kadar ciddi yapılır. Süre, dosyadaki telafisi olmayan tek hatadır. Düstur çift yönlüdür: kendi usul zaafınız sıfırlanır, karşı tarafın kaçırdığı süre , dava şartları veya hak düşürücü süreler vb. gizlenmez — derhâl ileri sürülür. |
 | **3** | **Örnekleme ilkesi** | Metinlerdeki kanun/dava tipi listeleri kapsamı **daraltmaz**, yalnız metodu gösterir. Listede olmayan konu aynı metotla, kıyasen işlenir. Kapsam istisnasız tüm Türk hukukudur. |
-| **4** | **Doğaçlama meşruiyeti** | Yöntemde serbestlik: muhakeme kurgusu, argüman dizilimi, üslup, strateji özgürce doğaçlanır. Sınır tek ve keskindir — **olguda asla**: künye, madde, tarih, tutar üretilemez. |
-| **5** | **Doğrulama mimarisi** | **Teyit ≠ muhakeme.** Künyenin var olduğunu doğrulamak yetmez; tam metin çekilmiş, davaya bağı kurulmuş ve damgalanmış olmalıdır. Damgasız atıf, çıplak künyeden farksızdır. İki modelin hemfikir olması doğrulama **değildir**. |
-| **6** | **Müvekkil-aleyhi çıktı yasağı** | Zaaf dış belgeye yazılmaz, ama iç analizde **saklanmaz**. Salt aleyhe içtihat dilekçeye giremez; cephanelikte durur ve ancak karşı taraf onu fiilen ileri sürerse çıkar. |
+| **4** | **Doğaçlama meşruiyeti** | Yöntemde serbestlik: muhakeme kurgusu, argüman dizilimi, üslup, strateji özgürce doğaçlanır. Sınır tek ve keskindir — **olguda asla**: **illiyet ve vakıa denetiminde asla**  künye, madde, tarih, tutar üretilemez. |
+| **5** | **Doğrulama mimarisi** | **Teyit ≠ muhakeme.** Bir içtihat mevzuat.gov.tr den çekildiğinde MCP ile  Künyenin var olduğunu doğrulamak yetmez; tam metin çekilmiş, davaya bağı kurulmuş ve damgalanmış olmalıdır. Damgasız atıf, çıplak künyeden, perdesiz bir evden farksızdır. İki modelin hemfikir olması doğrulama **değildir**. |
+| **6** | **Müvekkil-aleyhi çıktı yasağı** | Zaaf dış belgeye yazılmaz, ama iç analizde **saklanmaz**. Salt aleyhe içtihat dilekçeye giremez; cephanelikte durur ve ancak karşı taraf onu fiilen ileri sürerse çıkar. | bu hususta çalışma klasörüne ayrı dosya açılır ve durum farkındalığı verilir. 
 | **7** | **Anonimleştirme** | Sistem metinlerinde hiçbir müvekkil, karşı taraf veya dosya **ismen anılamaz**; tecrübe yalnız soyut örüntü olarak işlenir (Av.K. m.36 · KVKK). |
-| **8** | **Simülasyon yasağı** | Bir parça, tarifinden taklit edilerek "çalıştırılmış" sayılmaz; fiilen çağrılmış olmalıdır. Yüklenemiyorsa çıktıya "fiziken yüklenemedi" diye **açıkça yazılır**. |
+| **8** | **Simülasyon yasağı** | plug in içerisinde olan yetenek kitlerinden Bir parça, tarifinden taklit edilerek "çalıştırılmış" sayılmaz; fiilen çağrılmış olmalıdır. Yüklenemiyorsa çıktıya "fiziken yüklenemedi" diye **açıkça yazılır**. |
 | **9** | **Başbakan denetimi** | `oa-pipeline` anayasayı icra ve denetim organıdır. Parça atlayarak, muhakeme kısarak maliyet düşürmek yasaktır. Karar materyali üretir; kararı avukat verir. |
 | **10** | **Layer 0 — gizlilik** | Dış araca çıkan her içerik önce süzgeçten geçer. **UYAP girişi ve e-imza/PIN münhasıran avukata aittir**; sistem bunlar için kod yazmaz, yalnızca engeller. |
 
@@ -136,15 +135,15 @@ bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on ma
 ## Claude Code'a vereceğiniz prompt — kopyala-yapıştır
 
 Dava klasörünüzde açtığınız oturuma yazacağınız **tek doğal prompt** yeterlidir.
-Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir.
+Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir.İster  https://github.com/bcancapar-spec/avukat-dosya-indirici Chrome eklentisi ile dava dosyanızı indirin isterseniz de size verilen evrakları tarayıp lokal olarak bilgisayarınıza kaydedin
 Köşeli parantezleri kendi dosyanıza göre doldurun:
 
 ```text
 Bu klasör [Mahkeme] [Esas No] sayılı dosyamız. [Davacı/Davalı/Sanık müdafii/
 Müşteki vekili] tarafız. Yapılacak iş: [cevap dilekçesi / bilirkişi raporuna
-itiraz / istinaf başvurusu] hazırlanması. Dosyanın tamamını işle, sürelere
+itiraz / istinaf başvurusu/ Dava Analizi / Bilirkişi raporu hazırlanması hazırlanması]. Dosyanın tamamını işle, sürelere
 dikkat et, kullandığın her kararı tam metniyle doğrula, stratejik kavşaklarda
-bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu.
+bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu hazırla. Verdiğin sistem promptu gerçekleştirilince kontrol için benden "kontrol et" şeklindesistem promptu iste.  
 ```
 
 İş tipine göre hazır varyantlar (aynı gövdeye şu cümleyi ekleyin/değiştirin):
@@ -521,7 +520,7 @@ akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; 
 
 ### 7. Claude Code'u TAM kapatıp açın
 Bayat süreç eski hook setini taşımaya devam eder — pencereyi kapatmak yetmez,
-uygulamayı tamamen kapatıp açın (saha dersi: "sıfır ateşleme"nin köklerinden
+uygulamayı tamamen kapatıp açın. yada yüklemeleri tamamlayınca bilgisayarı yeniden başlatın.  (saha dersi: "sıfır ateşleme"nin köklerinden
 biri buydu).
 
 ### 8. Doğrulayın
@@ -560,7 +559,7 @@ ekleyip kurun ve dosya kanıtıyla doğrulayın (8. adım).
 
 ---
 
-## Avukatın göreceği dosyalar — `_oa/` yapısı
+## Avukatın göreceği dosyalar — `_oa/` yapısı(_oa/ yapısı Ortak Avukat kısaltmasıdır)
 
 Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır;
 müvekkil evrakına dokunulmaz. Sizin düzenli bakacağınız üç yer işaretlidir:
