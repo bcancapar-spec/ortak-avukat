@@ -11,10 +11,10 @@
 > max efor; evrak [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici)
 > ile UYAP'tan indirildi). Sayılar, dürüst kayıp listesiyle birlikte:
 > **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · o gecenin hikâyesi:
-> **[BASARI.md](BASARI.md)**. Dosya kimlikleri anayasa m.7 gereği daima
+> **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
 > anonimdir.
 
-> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp kullanılmadığı müddetçe ücretsizdir.  (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev yasaktır.Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın geliştirmeye yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
+> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın  beta sürümleri tamamlanana kadar geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
 ---
 
