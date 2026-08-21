@@ -9,11 +9,19 @@ oturumunda hiç ateşlemedi — masaüstü uygulaması eklenti güncellemesinden
 "hook'lar çalışır durumda mı" sorusunu beyandan ölçüme çevirir:
 
   [1] Kurulu eklenti kaydı  : installed_plugins.json + plugin.json `hooks`
-  [2] hooks.json şeması     : üst `hooks` sarmalayıcısı + 4 olay
-  [3] Komut sözleşmeleri    : 4 hook komutu FİİLEN koşturulur (ağsız,
-                              sentetik dava klasöründe; enjeksiyon JSON'u
-                              ve exit-0 sözleşmesi doğrulanır)
+  [2] hooks.json şeması     : üst `hooks` sarmalayıcısı + olay envanteri
+                              (DİNAMİK — olaylar hooks.json'dan okunur;
+                              yarın 7. olay eklense bu kod değişmez)
+  [3] Komut sözleşmeleri    : her olayın hook komutu FİİLEN koşturulur
+                              (ağsız, sentetik dava klasöründe; sarmalayıcı
+                              run-hook.cmd DÜŞÜRÜLMEDEN bash ile TAM komut,
+                              stdin'e boş JSON; enjeksiyon ve exit-0
+                              sözleşmesi doğrulanır)
   [4] Canlı doğrulama tarifi: bayat-süreç tuzağına karşı insan adımları
+
+v0.5.9 T1 onarımı: eski sürüm sarmalayıcı yolunu düşürüyordu
+(`[sys.executable] + parcalar[1:]` fiilen `python hook-prompt` koşuyordu,
+exit 2) → katman sağlamken 4 olayda SAHTE ARIZA basıyordu.
 
 Kullanım:  python tools/hook_doktor.py            (repo kökünden)
            python tools/hook_doktor.py --kurulu   (kurulu eklentiyi test et)
@@ -23,6 +31,7 @@ import argparse
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -34,7 +43,32 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-OLAYLAR = ["UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd"]
+
+
+def hooks_olaylari(hooks_yol=None):
+    """hooks.json'daki olayları DİNAMİK okur (v0.5.9 T2 — sabit liste YOK).
+
+    Envanterin tek kaynağı hooks.json'dur: yarın yeni bir olay eklendiğinde
+    bu kod değişmeden onu da teşhis eder. aile_dogrula.py hook-kapsam kapısı
+    da bu fonksiyonu çağırarak envanter eşitliğini doğrular."""
+    if hooks_yol is None:
+        hooks_yol = REPO / "plugins" / "ortak-avukat" / "hooks" / "hooks.json"
+    veri = json.loads(pathlib.Path(hooks_yol).read_text(encoding="utf-8"))
+    return list(veri.get("hooks", {}).keys())
+
+
+def _gercek_bash():
+    """Git Bash'i AÇIK yoldan ara (tests/test_hook_sarmalayici._gercek_bash
+    deseni): PATH'teki `bash` Windows'ta WSL stub'ına (System32) çözülüp WSL
+    kurulu değilse patlar. Ubuntu-CI'da shutil.which normal bash'i bulur."""
+    for aday in (r"C:\Program Files\Git\bin\bash.exe",
+                 r"C:\Program Files (x86)\Git\bin\bash.exe"):
+        if pathlib.Path(aday).is_file():
+            return aday
+    b = shutil.which("bash")
+    if b and "system32" not in b.lower():
+        return b
+    return None
 
 
 def _kurulu_kok():
@@ -50,12 +84,27 @@ def _kurulu_kok():
 
 
 def _komut_calistir(komut, plugin_kok, cwd):
+    """Hook komutunu SARMALAYICIYI DÜŞÜRMEDEN koşturur (v0.5.9 T1 onarımı).
+
+    run-hook.cmd sarmalayıcılı komut bash ile TAM olarak koşulur — eski
+    sürüm `[sys.executable] + parcalar[1:]` ile fiilen `python hook-prompt`
+    koşup exit 2 basıyordu (sahte arıza). stdin'e boş JSON {} verilir:
+    hook-pretool payload'ı bu kanaldan okur, boş girdi asla bloklamaz."""
     ilk = komut.split("||")[0].strip()
     ilk = ilk.replace("${CLAUDE_PLUGIN_ROOT}", str(plugin_kok).replace("\\", "/"))
+    if "run-hook.cmd" in ilk:
+        b = _gercek_bash()
+        if b is None:
+            return None, "gerçek bash bulunamadı — sarmalayıcı koşulamadı"
+        cp = subprocess.run([b, "-c", ilk], input="{}", capture_output=True,
+                            text=True, encoding="utf-8", errors="replace",
+                            cwd=str(cwd), timeout=120)
+        return cp.returncode, cp.stdout or ""
     parcalar = [p.strip('"') for p in ilk.split()]
     argv = [sys.executable] + parcalar[1:]
-    cp = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8",
-                        errors="replace", cwd=str(cwd), timeout=120)
+    cp = subprocess.run(argv, input="{}", capture_output=True, text=True,
+                        encoding="utf-8", errors="replace", cwd=str(cwd),
+                        timeout=120)
     return cp.returncode, cp.stdout or ""
 
 
@@ -86,36 +135,44 @@ def main():
     hooks_yol = plugin_kok / "hooks" / "hooks.json"
     veri = json.loads(hooks_yol.read_text(encoding="utf-8"))
     ic = veri.get("hooks", {})
-    eksik = [o for o in OLAYLAR if o not in ic]
-    if eksik:
-        print("[2] hooks.json      : ✗ eksik olay(lar): %s" % ", ".join(eksik))
+    olaylar = hooks_olaylari(hooks_yol)  # DİNAMİK envanter (v0.5.9 T2)
+    if not olaylar:
+        print("[2] hooks.json      : ✗ hiç olay kayıtlı değil")
         hata = 1
     else:
-        print("[2] hooks.json      : ✓ 4 olay kayıtlı (%s)" % ", ".join(OLAYLAR))
+        print("[2] hooks.json      : ✓ %d olay kayıtlı (%s)"
+              % (len(olaylar), ", ".join(olaylar)))
 
-    # [3] sentetik dava klasöründe komutları fiilen koştur
+    # [3] sentetik dava klasöründe komutları fiilen koştur — her olay için:
+    #     sarmalayıcı komut + exit + tek satır sonuç
     dava = pathlib.Path(tempfile.mkdtemp(prefix="oa-hookdoktor-"))
     for i in ("001", "002", "003"):
         (dava / ("%s_Test_Evraki.pdf" % i)).write_text("sentetik", encoding="utf-8")
     ok = True
-    for olay in OLAYLAR:
+    for olay in olaylar:
         try:
             komut = ic[olay][0]["hooks"][0]["command"]
+            kisa = komut.replace("${CLAUDE_PLUGIN_ROOT}/hooks/", "").strip('"').replace('" ', " ")
             kod, out = _komut_calistir(komut, plugin_kok, dava)
+            if kod is None:
+                print("[3] %-16s: ✗ %s · %s" % (olay, out, kisa))
+                ok = False
+                continue
             if kod != 0:
-                print("[3] %-16s: ✗ exit %d (bloklamama sözleşmesi İHLAL)" % (olay, kod))
+                print("[3] %-16s: ✗ exit %d (bloklamama sözleşmesi İHLAL) · %s"
+                      % (olay, kod, kisa))
                 ok = False
                 continue
             if olay == "UserPromptSubmit":
                 j = json.loads(out)
                 metin = j["hookSpecificOutput"]["additionalContext"]
                 if "DEVİR YÜKÜMLÜLÜĞÜ" not in metin:
-                    print("[3] %-16s: ✗ enjeksiyon metni beklenen değil" % olay)
+                    print("[3] %-16s: ✗ enjeksiyon metni beklenen değil · %s" % (olay, kisa))
                     ok = False
                     continue
-                print("[3] %-16s: ✓ devir enjeksiyonu üretiliyor" % olay)
+                print("[3] %-16s: ✓ exit 0 — devir enjeksiyonu üretiliyor · %s" % (olay, kisa))
             else:
-                print("[3] %-16s: ✓ exit 0" % olay)
+                print("[3] %-16s: ✓ exit 0 · %s" % (olay, kisa))
         except Exception as e:
             print("[3] %-16s: ✗ %s" % (olay, e))
             ok = False

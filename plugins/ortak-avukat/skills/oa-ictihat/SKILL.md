@@ -79,10 +79,10 @@ Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstina
 Tüm dialect'lerde Türkçe diakritikleri koru (ç ş ğ ı İ ö ü).
 
 ## Kurum kararları ve TEK BELGE İÇİNDE arama (v0.5.6.1 — rehber sadeleştirmesi)
-Bu bölüm, ayrı bir "işlem rehberi" skill'i olarak taşınan operasyonel özün
-aileye alınmış hâlidir. Ayrı skill SİLİNDİ: araştırma disiplini iki yerde
-yaşayamaz (ikiz-liste yasağı) — rehberi okuyup "araştırmayı öğrendim" sanmak,
-bu ailenin bilinen halüsinasyon kapısıdır.
+Bu bölüm, kurum kararı ve tek-belge araması operasyonel özünün ailedeki
+TEK yaşadığı yerdir; ayrı bir "işlem rehberi" skill'i YOKTUR ve açılmaz:
+araştırma disiplini iki yerde yaşayamaz (ikiz-liste yasağı) — rehberi okuyup
+"araştırmayı öğrendim" sanmak, bu ailenin bilinen halüsinasyon kapısıdır.
 
 - **`kurum_karari_ara`** — `kurum` parametresiyle **11 kurumda** birleşik arama:
   `gib` (özelge) · `btk` · `rekabet` · `uyusmazlik` · `kik` · `sayistay` ·

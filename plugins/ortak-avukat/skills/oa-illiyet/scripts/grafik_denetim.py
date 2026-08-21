@@ -24,12 +24,77 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 
+import difflib
 import json
 import sys
 from collections import defaultdict
 
 ILISKI_KATEGORI = "iliski"
 ILLIYET_KATEGORI = "illiyet"
+
+# ── v0.5.9 T23/P1 SAHTE-YEŞİL kapanışı: SÖZLÜK DENETİMİ (ADVISORY) ──────────
+# Bilinmeyen alan adı + kanonik-dışı enum değeri bugüne dek SESSİZCE tolere
+# ediliyordu → yanlış alanlı graf "Şema bütün ✓" + 8 yeşil katman + boş
+# analiz üretiyordu. Bu sözlük yalnız UYARIR; hiçbir şeyi bloklamaz, exit
+# kodunu ve mevcut çıktı/JSON sözleşmesini değiştirmez.
+DUGUM_ALANLARI = {"id", "tip", "usul_rolu", "ad"}
+KENAR_ALANLARI = {"kaynak", "hedef", "kategori", "tur", "illiyet_tipi", "guc",
+                  "kesme_flag", "dayanak_delil", "dogrulama", "norm"}
+KANONIK = {  # şema: references/illiyet-doktrini.md §6
+    "tip": {"gercek_kisi", "tuzel_kisi", "kamu", "nesne", "delil", "olay", "hak"},
+    "kategori": {ILISKI_KATEGORI, ILLIYET_KATEGORI},
+    "illiyet_tipi": {"dogal", "uygun", "objektif_isnadiyet"},
+    "guc": {"dispozitif", "guclu", "zayif", "tartismali"},
+    "kesme_flag": {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"},
+    # "delil": bu ağacın saha/fikstür gerçeğinde yerleşik "teyitli" eşanlamı —
+    # uyarıya boğmamak için kabul kümesindedir (gürültü disiplini).
+    "dogrulama": {"teyitli", "iddia", "karine", "delil"},
+}
+
+
+def _oneri(deger, bilinenler):
+    aday = difflib.get_close_matches(str(deger), sorted(bilinenler), n=1, cutoff=0.5)
+    return f" — kastedilen '{aday[0]}' olabilir" if aday else ""
+
+
+def sozluk_uyarilari(dugumler, kenarlar):
+    """Bilinmeyen alan adları + kanonik-dışı enum değerleri (ADVISORY)."""
+    uyarilar = []
+
+    def _denetle(kayit, etiket, bilinen_alanlar):
+        for alan in kayit:
+            if alan not in bilinen_alanlar:
+                uyarilar.append(f"{etiket}: bilinmeyen alan: '{alan}'"
+                                f"{_oneri(alan, bilinen_alanlar)}")
+        for alan, kume in KANONIK.items():
+            deger = kayit.get(alan)
+            if isinstance(deger, str) and deger not in kume:
+                uyarilar.append(f"{etiket}: kanonik-dışı {alan}: '{deger}'"
+                                f"{_oneri(deger, kume)}"
+                                f" (kanonik: {' | '.join(sorted(kume))})")
+
+    for kid, d in dugumler.items():
+        _denetle(d, f"Düğüm '{kid}'", DUGUM_ALANLARI)
+    for i, k in enumerate(kenarlar):
+        _denetle(k, f"Kenar #{i}", KENAR_ALANLARI)
+    return uyarilar
+
+
+def bosluk_aciklamalari(dugumler, kenarlar):
+    """Analiz katmanını boş bırakacak yapısal boşluk SESSİZ geçilmez."""
+    notlar = []
+    if not dugumler and not kenarlar:
+        notlar.append("graf boş (0 düğüm / 0 kenar) — tüm analiz katmanları "
+                      "boş çalışacak; graf.json içeriğini denetleyin")
+    elif not kenarlar:
+        notlar.append(f"0 kenar bulundu ({len(dugumler)} düğüm var) — kenar "
+                      "analizleri boş çalışacak; kenar kayıtlarını denetleyin")
+    elif not any(k.get("kategori") == ILLIYET_KATEGORI for k in kenarlar):
+        notlar.append(f"0 'illiyet' kategorili kenar bulundu ({len(kenarlar)} "
+                      "kenar var) — çevrim/yük/zincir katmanları boş çalışacak; "
+                      "kategori değerlerini denetleyin (kanonik: "
+                      f"{ILISKI_KATEGORI} | {ILLIYET_KATEGORI})")
+    return notlar
 
 
 def yukle(yol):
@@ -312,6 +377,15 @@ def rapor(yol, json_yol=None, zincir=True):
     print(cizgi)
     print(f"Düğüm: {len(dugumler)}  |  Kenar: {len(kenarlar)}")
     print()
+
+    # v0.5.9 T23/P1 — sözlük + açıklanabilir-boşluk uyarıları (ADVISORY):
+    # rapor başında görünür; exit kodunu ve alttaki bölümleri DEĞİŞTİRMEZ.
+    uyarilar = sozluk_uyarilari(dugumler, kenarlar) \
+        + bosluk_aciklamalari(dugumler, kenarlar)
+    if uyarilar:
+        for u in uyarilar:
+            print(f"[ŞEMA UYARISI] {u}")
+        print()
 
     hatalar = dogrula_sema(dugumler, kenarlar)
     print("### 1. ŞEMA DENETİMİ")

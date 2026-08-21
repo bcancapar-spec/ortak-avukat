@@ -2972,6 +2972,144 @@ def _hook_nabiz_damgala(kok, olay_adi):
         pass
 
 
+# ── T12 (v0.5.9) — ÇİFT-KANAL DEDUP ────────────────────────────────────────
+# Saha deseni: plugin `hooks/hooks.json` VE kullanıcı `settings.json` AYNI
+# olayı İKİ KEZ kaydettirmiş olabilir — aynı hook gövdesi aynı turda iki kez
+# koşar: çift enjeksiyon, çift defter olayı, çift otomatik mühür. Çözüm:
+# gövde başında olay-başına son-çalışma damgası (`.hook-son-iz.json` içinde
+# `"_dedup": {olay: epoch_ms}` EK alanı — nabız şeması AYNEN korunur, MERGE
+# yazılır). AYNI olay AYNI SANİYE içinde ikinci kez çağrıldıysa YAN-ETKİSİZ
+# kısa devre: çıktı basılmaz, defter olayı yazılmaz, mühür basılmaz — exit 0
+# sessiz. Farklı olaylar birbirini ETKİLEMEZ; aynı olayın meşru ardışık
+# turları (saniye farklı) ETKİLENMEZ.
+#
+# GÜVENLİK İSTİSNASI (ayirt): PreToolUse/PostToolUse aynı saniyede FARKLI
+# payload'larla meşru olarak art arda ateşleyebilir (paralel araç çağrıları)
+# — elle-UDF/sunum-kilidi kapısının ikinci çağrıda susması kapı kaybıdır.
+# Bu gövdeler payload parmak izini `ayirt` olarak geçirir: anahtar
+# "olay:ayirt" olur — yalnız BİT-BİT AYNI payload (çift kanal kopyası) kısa
+# devre yapar. `_dedup` sözlüğü en yeni kayıtlarla sınırlı tutulur (şişme
+# yok). Damga kısa devrede GÜNCELLENMEZ — üçüncü/dördüncü kopya da aynı
+# ilk damgaya karşı ölçülür.
+_DEDUP_EN_COK_KAYIT = 16
+
+
+def _hook_dedup_kisa_devre(kok, olay_adi, ayirt=None):
+    """Çift-kanal dedup: True → çağıran gövde YAN-ETKİSİZ sessiz çıkmalı.
+    Defter yoksa damga yazılamaz → her zaman False (dedup devre dışı —
+    nabız sözleşmesiyle simetrik). Oku-güncelle-yaz atomik-yakın
+    (tmp + os.replace); HER hata yutulur → False. ASLA fırlatmaz."""
+    try:
+        defter = os.path.join(kok, "_oa", "defter")
+        if not os.path.isdir(defter):
+            return False
+        anahtar = f"{olay_adi}:{ayirt}" if ayirt else str(olay_adi)
+        simdi_ms = int(time.time() * 1000)
+        iz_yolu = _hook_son_iz_yolu(defter)
+        veri = {}
+        if os.path.isfile(iz_yolu):
+            try:
+                with open(iz_yolu, encoding="utf-8") as f:
+                    veri = json.load(f) or {}
+            except Exception:
+                veri = {}
+        if not isinstance(veri, dict):
+            veri = {}
+        dedup = veri.get("_dedup")
+        if not isinstance(dedup, dict):
+            dedup = {}
+        onceki = dedup.get(anahtar)
+        try:
+            if onceki is not None and int(onceki) // 1000 == simdi_ms // 1000:
+                return True          # aynı olay + aynı saniye → kısa devre
+        except Exception:
+            pass                     # bozuk damga — güncellenip geçilir
+        dedup[anahtar] = simdi_ms
+        if len(dedup) > _DEDUP_EN_COK_KAYIT:
+            # En eski damgalar atılır (yalnız sayısal olanlar sıralanabilir).
+            def _ms(c):
+                try:
+                    return int(c[1])
+                except Exception:
+                    return 0
+            dedup = dict(sorted(dedup.items(), key=_ms)[-_DEDUP_EN_COK_KAYIT:])
+        veri["_dedup"] = dedup
+        tmp = f"{iz_yolu}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(veri, f, ensure_ascii=False)
+        os.replace(tmp, iz_yolu)
+        return False
+    except Exception:
+        return False
+
+
+def _hook_payload_ayirt(veri):
+    """Payload parmak izi (pretool/postwrite dedup ayırt edicisi): stdin
+    payload'ının deterministik sha256 kısa özeti. None/bozukta '-' (payload'sız
+    çağrılar kendi aralarında dedup'lanır). ASLA fırlatmaz."""
+    try:
+        if not isinstance(veri, dict):
+            return "-"
+        ham = json.dumps(veri, ensure_ascii=False, sort_keys=True, default=str)
+        return hashlib.sha256(ham.encode("utf-8", "replace")).hexdigest()[:12]
+    except Exception:
+        return "-"
+
+
+def _hook_denetle_ayirt(kok):
+    """`denetle` dedup ayırt edicisi: dava kökünün UCUZ durum parmak izi.
+    İki katman: (a) `_oa/defter` dosyalarının İÇERİK hash'i — denetim
+    çıktısı defterden türediği için defterdeki her gerçek değişiklik
+    (--isle olayı, makbuz, RED) izi değiştirir; denetle'nin KENDİ yazdığı
+    `.hook-son-iz.json` (+ .tmp artıkları) HARİÇTİR ki ilk koşunun damgası
+    izi bozup dedup'u ölü koda çevirmesin; kendi yeniden-türetimleri
+    (pipeline-durum.json/DURUM.md) İÇERİK-AYNI yazdığı için içerik hash'i
+    onlardan etkilenmez (mtime'a bakılmaz). (b) `_oa/{cikti,teslim}` +
+    kök dizin dosya listesi (ad+boyut+mtime) — model arada dilekçe/UDF
+    yazdıysa iz DEĞİŞİR → denetim AYNEN koşar (Paket-B BLOKER senaryosu —
+    durum-körü dedup o kapıyı öldürürdü). ASLA fırlatmaz."""
+    try:
+        parcalar = []
+        kok = os.path.abspath(kok)
+        defter = os.path.join(kok, "_oa", "defter")
+        if os.path.isdir(defter):
+            for taban, _dizinler, dosyalar in os.walk(defter):
+                for ad in dosyalar:
+                    if ad == ".hook-son-iz.json" or ".tmp." in ad:
+                        continue          # denetle'nin kendi yazımı — bağışık
+                    yol = os.path.join(taban, ad)
+                    try:
+                        with open(yol, "rb") as f:
+                            icerik = hashlib.sha256(f.read()).hexdigest()[:16]
+                        parcalar.append(f"{os.path.relpath(yol, kok)}|{icerik}")
+                    except Exception:
+                        pass
+        for d in (os.path.join(kok, "_oa", "cikti"),
+                  os.path.join(kok, "_oa", "teslim")):
+            if not os.path.isdir(d):
+                continue
+            for taban, _dizinler, dosyalar in os.walk(d):
+                for ad in dosyalar:
+                    yol = os.path.join(taban, ad)
+                    try:
+                        st = os.stat(yol)
+                        parcalar.append(f"{os.path.relpath(yol, kok)}|"
+                                        f"{st.st_size}|{st.st_mtime_ns}")
+                    except Exception:
+                        pass
+        try:
+            for girdi in os.scandir(kok):
+                if girdi.is_file():
+                    st = girdi.stat()
+                    parcalar.append(f"{girdi.name}|{st.st_size}|{st.st_mtime_ns}")
+        except Exception:
+            pass
+        ham = "\n".join(sorted(parcalar))
+        return hashlib.sha256(ham.encode("utf-8", "replace")).hexdigest()[:12]
+    except Exception:
+        return "-"
+
+
 def _hook_nabiz_prompt_uyarisi(kok, esik_sn=NABIZ_PROMPT_ESIK_SN):
     """Kapanış-sınıfı koşuda ÖLÜ-PROMPT dedektörü: nabız dosyasında `prompt`
     damgası YOKSA ya da `esik_sn`den ESKİYSE görünür uyarı metni döndürür;
@@ -3696,6 +3834,11 @@ def hook_prompt(kok=None):
         k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
         if k is None:
             return 0                                     # dava klasörü değil — sessiz
+        # T12 — ÇİFT-KANAL DEDUP: aynı olay aynı saniyede ikinci kez
+        # (plugin hooks.json + kullanıcı settings.json çift kaydı) →
+        # yan-etkisiz sessiz kısa devre.
+        if _hook_dedup_kisa_devre(k, "prompt"):
+            return 0
         # C3 — HOOK NABZI: kanca ateşledi; damga defter varsa düşer (sessiz
         # turlarda bile — nabzın amacı tam da sessizlik/ölüm ayrımıdır).
         _hook_nabiz_damgala(k, "prompt")
@@ -4124,6 +4267,15 @@ def hook_denetle(kok=None):
     except Exception:
         kokler = [os.path.abspath(kok or ".")]
     for kok_aday in kokler:
+        # T12 — ÇİFT-KANAL DEDUP (ayirt=durum parmak izi): aynı saniyede,
+        # arada HİÇBİR dosya değişmeden gelen ikinci `denetle` koşusu (çift
+        # kanal kaydı) bu kök için yan-etkisiz atlanır — çıktı yok, defter
+        # olayı yok, otomatik mühür yok. Arada _oa/cikti'ya dilekçe/UDF
+        # yazıldıysa iz değişir → denetim AYNEN koşar (durum-körü dedup
+        # Paket-B atlatma-tespitini öldürmesin).
+        if _hook_dedup_kisa_devre(kok_aday, "denetle",
+                                  ayirt=_hook_denetle_ayirt(kok_aday)):
+            continue
         # C3 — HOOK NABZI: kapanış-sınıfı koşu kendi damgasını basar. Ölü-
         # prompt uyarısının BASIMI `_hook_govde_calistir` içindedir — parmak
         # izine (`_hook_cikti_degisti_mi`) girer ki mevcut gürültü disiplini
@@ -4442,6 +4594,12 @@ def hook_postwrite(kok=None):
     except Exception:
         kokler = [os.path.abspath(kok or ".")]
     for kok_aday in kokler:
+        # T12 — ÇİFT-KANAL DEDUP (ayirt=payload parmak izi): aynı saniyede
+        # BİT-BİT AYNI payload'la ikinci koşu (çift kanal kopyası) atlanır;
+        # farklı payload'lı meşru ardışık Write/Edit'ler ETKİLENMEZ.
+        if _hook_dedup_kisa_devre(kok_aday, "postwrite",
+                                  ayirt=_hook_payload_ayirt(veri)):
+            continue
         _hook_nabiz_damgala(kok_aday, "postwrite")   # C3 — nabız (defter varsa)
         _hook_inline_dilekce_denetim(kok_aday, veri)  # A2 — asla fırlatmaz/bloklamaz
         try:
@@ -4576,6 +4734,12 @@ def hook_pretool(kok=None):
         k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
         if k is None:
             return 0
+        # T12 — ÇİFT-KANAL DEDUP (ayirt=payload parmak izi): yalnız aynı
+        # saniyedeki AYNI payload (çift kanal kopyası) susturulur — aynı
+        # saniyedeki farklı araç çağrıları kapı denetiminden AYNEN geçer
+        # (elle-UDF/sunum-kilidi kapısı kaybolmaz).
+        if _hook_dedup_kisa_devre(k, "pretool", ayirt=_hook_payload_ayirt(veri)):
+            return 0
         _hook_nabiz_damgala(k, "pretool")   # C3 — nabız (defter varsa, HER çağrıda)
         # KURAL 1 (öncelik — mevcut v0.5.8.4 davranışı AYNEN): elle-UDF deseni.
         if _pretool_elle_udf_deseni_mi(metin):
@@ -4643,6 +4807,10 @@ def hook_acilis(kok=None):
         k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
         if k is None:
             return 0                                     # dava klasörü değil — sessiz
+        # T12 — ÇİFT-KANAL DEDUP: çift kayıtlı SessionStart aynı saniyede
+        # iki kez ateşlerse ikinci enjeksiyon + defter olayı bastırılır.
+        if _hook_dedup_kisa_devre(k, "acilis"):
+            return 0
         _hook_nabiz_damgala(k, "acilis")                 # C3 — nabız (defter varsa)
         satirlar = [
             "ORTAK AVUKAT — AÇILIŞ ENVANTERİ (SessionStart; bu klasör bir dava "

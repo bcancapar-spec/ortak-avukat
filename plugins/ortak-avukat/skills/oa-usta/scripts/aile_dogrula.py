@@ -180,12 +180,82 @@ def main():
         pj = os.path.join(kok, "..", ".claude-plugin", "plugin.json")
         mj = os.path.join(kok, "..", "..", "..", ".claude-plugin", "marketplace.json")
         if os.path.isfile(pj) and os.path.isfile(mj):
-            pv = _json.load(open(pj, encoding="utf-8")).get("version")
-            mv = (_json.load(open(mj, encoding="utf-8")).get("plugins") or [{}])[0].get("version")
+            pj_veri = _json.load(open(pj, encoding="utf-8"))
+            mj_veri = _json.load(open(mj, encoding="utf-8"))
+            pv = pj_veri.get("version")
+            mv = (mj_veri.get("plugins") or [{}])[0].get("version")
             if pv and mv and pv != mv:
                 hatalar.append(f"manifest sürüm tutarsız: plugin.json={pv} ↔ marketplace.json={mv}")
+
+            # KAPI-A (v0.5.9): MANİFEST SAYI — description'daki "N skill"
+            # iddiası skills/ altındaki GERÇEK parça sayısıyla eşleşmeli.
+            # (Saha: vitrin "22 skill" derken repoda 20 vardı — vitrin
+            # bayatlığı göz taramasına değil mekanik kapıya emanet.)
+            desc_metinler = [pj_veri.get("description") or "",
+                             mj_veri.get("description") or ""]
+            desc_metinler += [(e.get("description") or "")
+                              for e in (mj_veri.get("plugins") or [])]
+            for metin_ in desc_metinler:
+                for m_ in re.finditer(r"(\d+)\s+skill", metin_):
+                    iddia = int(m_.group(1))
+                    if iddia != len(parcalar):
+                        hatalar.append(
+                            f"manifest sayı iddiası: description '{iddia} skill' diyor "
+                            f"ama skills/ altında {len(parcalar)} gerçek parça var "
+                            "(vitrin bayat — sayı güncellenmeli)")
     except Exception as e:
         uyarilar.append(f"manifest sürüm denetimi yapılamadı ({e})")
+
+    # KAPI-B (v0.5.9): HOOK KAPSAM — hooks.json'daki her run-hook.cmd modu
+    # pipeline_kayit.py'de --<mod> bayrağı olarak tanımlı olmalı; ayrıca
+    # hook_doktor'un DİNAMİK envanteri (hooks_olaylari) hooks.json olay
+    # kümesiyle eşit olmalı. Depo-dışı kopyada (hooks.json / pipeline_kayit /
+    # tools yok) SESSİZCE atlanır — kural depoyu bağlar, kopyayı değil
+    # (VENDOR deseni).
+    try:
+        import json as _json
+        hooks_json = os.path.normpath(os.path.join(kok, "..", "hooks", "hooks.json"))
+        pk_yol = os.path.join(kok, "oa-pipeline", "scripts", "pipeline_kayit.py")
+        if os.path.isfile(hooks_json) and os.path.isfile(pk_yol):
+            hveri = _json.load(open(hooks_json, encoding="utf-8"))
+            olaylar_js = set((hveri.get("hooks") or {}).keys())
+            modlar = set()
+            for girdiler in (hveri.get("hooks") or {}).values():
+                for g in girdiler:
+                    for h in g.get("hooks", []):
+                        m_ = re.search(r'run-hook\.cmd"?\s+([\w-]+)',
+                                       h.get("command") or "")
+                        if m_:
+                            modlar.add(m_.group(1))
+            pk_metin = open(pk_yol, encoding="utf-8").read()
+            for mod_ in sorted(modlar):
+                if not re.search(r'add_argument\(\s*"--%s"' % re.escape(mod_), pk_metin):
+                    hatalar.append(
+                        f"hook kapsamı: hooks.json '{mod_}' modunu çağırıyor ama "
+                        f"pipeline_kayit.py'de --{mod_} bayrağı tanımlı değil "
+                        "(sessiz ölü hook — 447 dersi)")
+            # hook_doktor dinamik envanter eşitliği (yakın-kök araması;
+            # tools/ yoksa depo-dışı kopyadır → sessiz atla)
+            doktor_yol = None
+            for yukari in ("..", os.path.join("..", ".."),
+                           os.path.join("..", "..", "..")):
+                aday = os.path.normpath(os.path.join(kok, yukari, "tools", "hook_doktor.py"))
+                if os.path.isfile(aday):
+                    doktor_yol = aday
+                    break
+            if doktor_yol:
+                import importlib.util as _ilu
+                spec = _ilu.spec_from_file_location("_oa_hook_doktor", doktor_yol)
+                hd = _ilu.module_from_spec(spec)
+                spec.loader.exec_module(hd)
+                doktor_olaylar = set(hd.hooks_olaylari(hooks_json))
+                if doktor_olaylar != olaylar_js:
+                    hatalar.append(
+                        "hook kapsamı: hook_doktor.hooks_olaylari() "
+                        f"({', '.join(sorted(doktor_olaylar))}) hooks.json olaylarıyla "
+                        f"({', '.join(sorted(olaylar_js))}) eşit değil")
+    except Exception as e:
+        uyarilar.append(f"hook kapsam denetimi yapılamadı ({e})")
 
     if len(surumler) > 1:
         detay = "; ".join(f"{s}: {', '.join(pl[:4])}{'...' if len(pl) > 4 else ''}"

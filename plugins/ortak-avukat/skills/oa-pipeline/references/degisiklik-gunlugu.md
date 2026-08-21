@@ -85,3 +85,21 @@
   model her turda zincirdeki yerini bilerek düşünür.
 - dilekce_denetim.hizli_denetim(metin, kok): [Y][M][N][K][T]+kaynak-bloğu hızlı
   metin denetimi (<1sn, exception sızdırmaz) — inline zincirin giriş noktası.
+
+## v0.5.9 (borç-kapatma — KONSOLİDE T1-T26 yerli uygulaması) — 2026-08-21
+- hook_doktor ONARIMI (T1-T3): sarmalayıcı yolu düşürme kusuru giderildi (sahte
+  "ARIZA VAR" bitti — kanıt zinciri: onarım öncesi 4 olayda sahte exit 2 fiilen
+  gösterildi); OLAYLAR sabiti silindi, envanter hooks.json'dan DİNAMİK
+  (hooks_olaylari()); test_hook_doktor.py doğdu (teşhis aracı artık testli).
+- aile_dogrula YENİ KAPILAR (T7): Kapı-A manifest sayı iddiası (gerçek repoda
+  "22 skill" hatasını canlı yakaladı → 20'ye düzeltildi) + Kapı-B hook kapsam
+  (hooks.json modları ↔ pipeline_kayit bayrakları ↔ doktor envanteri).
+- oa-ictihat asılı "işlem rehberi" referansı temizlendi (T6).
+- grafik_denetim SAHTE-YEŞİL kapanışı (T23/P1, advisory): yerli şema sözlüğü
+  (illiyet-doktrini §6) ile bilinmeyen-alan/kanonik-dışı-enum uyarıları +
+  yakın-eşleşme önerisi + açıklanabilir boşluk ("0 illiyet kenarı — kategori
+  değerlerini denetleyin"); JSON çıktı sözleşmesi birebir korundu.
+- ÇİFT-KANAL DEDUP (T12): plugin+settings aynı olayı iki kez koşturursa
+  saniye-içi ikinci çağrı yan-etkisiz kısa devre (.hook-son-iz.json _dedup).
+- ORAN ARAÇLARI (T13): tools/oran_olc.py (TEST-HARİÇ formül) +
+  references/oran-defteri.json taban kaydı — kapı kararı avukatta.
