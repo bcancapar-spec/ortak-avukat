@@ -88,7 +88,7 @@ cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yür�
 ```text
 Siz   : Bu klasör [Mahkeme] 2099/123 esas sayılı dosyamız. Davalı vekiliyiz.
         Cevap dilekçesi hazırlanacak. Dosyanın tamamını işle, sürelere dikkat et,
-        kullandığın her kararı tam metniyle doğrula, kavşaklarda bana sor.
+        kullandığın her kararı tam metniyle doğrula, davacının iddialarını ve elimizdeki delileri analiz et. Karşı tarafın zayıf karnını yargıtay kararları ve mevzuat ile bul. Karar gereken kavşaklarda bana sor.
 
 Sistem: 212 evrak metne indirildi (17'si taranmıştı → OCR; sayım tutuyor).
 Sistem: Başlamadan 6 sorum var: (1) dava dilekçesi hangi tarihte tebliğ edildi?
