@@ -136,7 +136,7 @@ bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on ma
 ## Claude Code'a vereceğiniz prompt — kopyala-yapıştır
 
 Dava klasörünüzde açtığınız oturuma yazacağınız **tek doğal prompt** yeterlidir.
-Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir.
+Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir.İster  https://github.com/bcancapar-spec/avukat-dosya-indirici Chrome eklentisi ile dava dosyanızı indirin isterseniz de size verilen evrakları tarayıp lokal olarak bilgisayarınıza kaydedin
 Köşeli parantezleri kendi dosyanıza göre doldurun:
 
 ```text
