@@ -52,7 +52,7 @@ araştırması, AYM bireysel başvuru, sözleşme inceleme ve tahriri, ceza müd
 ve müşteki vekilliği. Sistem kişilere değil **yönteme** bağlıdır; her olgusal
 unsuru (künye, madde, tarih, içtihat) resmî kaynaktan doğrular.
 
-Yirmi parça, 20 ayrı araç gibi değil **yetenek sahibi tek bir eş-avukat** gibi
+Yirmi parça, 20 ayrı araç gibi değil **yetenek sahibi tek bir ortak-avukat** gibi
 çalışır: dosyanın analizini kalıcı bir çalışma hafızasına yazar; sonraki her
 oturumda ham evrakı baştan okumak yerine bu kaydı kullanır — token-verimli ve
 kayıpsız.
