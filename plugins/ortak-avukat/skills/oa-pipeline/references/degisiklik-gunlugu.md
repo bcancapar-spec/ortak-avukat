@@ -103,3 +103,10 @@
   saniye-içi ikinci çağrı yan-etkisiz kısa devre (.hook-son-iz.json _dedup).
 - ORAN ARAÇLARI (T13): tools/oran_olc.py (TEST-HARİÇ formül) +
   references/oran-defteri.json taban kaydı — kapı kararı avukatta.
+
+## v0.5.9 — 2026-08-22 (ÇIKTI ŞEMASI uyumu — 40-UYAP tarayıcı-dışlama)
+- `tam_tur.py` + `manifest_olustur.py` ATLA_DIZIN kümesine `40-uyap` eklendi:
+  dava kökündeki 40-UYAP/ (teslim_paketi A2 kurucusu) dışa giden ürün KOPYALARINI
+  taşır — gelen evrak DEĞİLDİR; taranırsa kurucu yeşil teslimden hemen sonra
+  KUNYE BAYAT / delta yanlış-pozitifi üretirdi (öz-bulaşma). Doktrin:
+  `oa-kontrol/references/cikti-semasi.md`. Test: `tests/test_v059_cikti_semasi.py`.

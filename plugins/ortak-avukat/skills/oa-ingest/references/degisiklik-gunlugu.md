@@ -23,3 +23,8 @@
 
 - **E5 — SHA-DEDUP:** aynı sha256 içerik aynı koşuda İKİNCİ bir ad altında görülürse ikinci metin/harita ÜRETİLMEZ; kayıt SİLİNMEZ, künyeye `ayni_icerik: <ilk kaydın md'si>` işaretiyle girer (kayıpsızlık: hiçbir kaynak yok sayılmaz, yalnız tekrar üretim engellenir). Yalnız METİNLİ kayıtlar dedup'lanır (boş/arızalı kayıtların ortak imzası birbirini "aynı içerik" yapmaz); dedup defteri FAZ C tek-yazar döngüsünde dolar — karar işçi sayısından bağımsız (seri==paralel korunur); önbellek-HIT kayıtları da baştan kaydolur. 00-INDEX'te ilgili satır "aynı içerik → `<md>`" hücresi + açıklayıcı dipnot taşır.
 - **E5 — Harita başlık encoding onarımı:** `_baslik_utf8_onar` — harita BAŞLIK metnindeki tipik UTF-8→cp1252/latin-1 çift-çözüm artıkları ('DilekÃ§e' sınıfı) deterministik geri çevrilir, çözülemeyen U+FFFD atılır. SAF fonksiyon (yalnız girdiden türer — seri==paralel determinizmi ve Gate A byte-özdeş geri-üretim korunur); onarım yalnız harita başlığı TEMSİLİNDEDİR, gövde/offset'lere dokunulmaz (kayıpsızlık).
+
+## v0.5.9 — 2026-08-22 (ÇIKTI ŞEMASI uyumu — 40-UYAP tarayıcı-dışlama)
+- `oa_ingest.py` ATLA_DIZIN kümesine `40-uyap` eklendi: 40-UYAP/ dışa giden
+  ürün KOPYALARI dizinidir (teslim_paketi A2) — gelen evrak değildir, künye
+  evrenine girmez. Doktrin: `oa-kontrol/references/cikti-semasi.md`.

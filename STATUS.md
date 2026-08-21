@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-08-15 · **Sürüm:** 0.5.8.4 · **Commit:** `fc9cb31`
-*(önceki kayıtlar: 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-08-22 · **Sürüm:** 0.5.9 · **Commit:** `46bd1d3`+
+*(önceki kayıtlar: 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -15,25 +15,56 @@ bir satır ölçülmeden buraya girmez.
 
 ---
 
-## 0. Durum özeti (2026-08-15 · v0.5.8.4)
+## 0. Durum özeti (2026-08-22 · v0.5.9)
 
-v0.5.7.5'ten bu yana **iki saha koşusu** yapıldı: **447 vergi sahası**
-(prova — tetik boşlukları ve hook sessiz-ölümü bulundu → v0.5.8.1/v0.5.8.2)
-ve **372 Torbalı sahası** (hook katmanı ilk kez uçtan uca canlı ateşledi;
-koşunun **5 kollu adli analizi** — transkript + artefakt + kod yolu + şekil
-zinciri + desen karnesi — v0.5.8.4 reçetesini üretti). Reçete infaz edildi:
-elle-UDF engeli (3 katman) · makbuz fiziksel garantisi · mühür otomasyonu
-(23 uyarı / 0 uygulama ölçümünün cevabı) · şekil kapısı · desen onarımları ·
-Gate A dirilişi. Ayrıntı: README sürüm bölümleri v0.5.8 – v0.5.8.4.
+v0.5.8.4'ten bu yana **iki saha koşusu** daha yapıldı ve zincir dört sürüm
+ilerledi:
 
-- **CI:** `fc9cb31` **yeşil** — bu zincirin ilk yeşil CI koşusu (§6b dersinin kapanışı).
-- **Release:** v0.5.8.4 yayında (plugin.json = marketplace.json = 0.5.8.4).
-- **Sırada:** v0.5.8.4'ün kendi **saha provası** — reçete koddan geçti,
-  gerçek dosyada henüz sınanmadı; sınanmamış kapı beyandır.
+- **346 sahası** (bilirkişi itirazı — v0.5.8.4'ün ilk saha provası): künye
+  kapısı **gerçek bir açığı** yakaladı ve model dürüst davrandı; tek bir
+  ayrıştırıcı yanlış-pozitifi (taslağın kendi DOSYA NO satırı) yeşil makbuzu
+  imkânsız kıldı; hook katmanı klon-klasörde ölüydü → **v0.5.8.5** (`1ed49c4`):
+  **A1 mutlak triyaj [G6]** (MCP'den çekilen her karar istisnasız tam metniyle
+  okunur; LEHE → dilekçe, ALEYHE → cephanelik; NOTR artık BLOK) + [Y]/[M]/[N]/[T]
+  denetimleri + kendi-dosya-no istisnası + hook dirilişi + e-imza halkası.
+  160 yeni test; o günkü tam süit 1207 yeşil / 1 atlama.
+- **777 sahası** (banka/kefalet ikinci cevap + 24 kök çapraz taraması): kök
+  neden **bayat araç kiti**; ilk gerçek LEHE/ALEYHE triyajı (23/11) ölçüldü;
+  resmî araç zinciriyle üretilen UDF dört kenarı 42,52 pt ile ilk
+  **tam-standart ürün** olarak UYAP editöründe açıldı → **v0.5.8.6**
+  (`ef018d2`): sürüm kilidi (bayat-nesil parmak izi) + kanonik makbuz kuralı +
+  triyaj köprüsü. 45+ yeni test; tam süit 1256 yeşil / 1 atlama.
+- **v0.5.9 Faz A** (`aee52cc`) — dört ilke (deterministik · tamamlayıcı ·
+  kesintisiz · sürtünmesiz): **sunum kilidi** (yeşil kanonik makbuz yokken
+  teslim-sınıfı dosya gönderimi "ask" kararına bağlı) + **inline zincir**
+  (her dilekçe-taslak yazımında hızlı denetim in-process; bulgu modele geri
+  akar) + **kesintisiz akış** (her prompt'a ≤3 satır ZİNCİR DURUMU). 50 yeni
+  test; tam süit **1317 yeşil / 1 atlama**; 4 damga birlikte 0.5.9.
+- **v0.5.9 borç-kapatma** (`4b861a2`) — iki bağımsız Fable 5 hakem denetiminin
+  konsolide **T1–T26** raporu yerli uygulandı: hook_doktor onarımı + ilk kez
+  testli · aile_dogrula **Kapı-A** (manifest "N skill" sayımı — "22 skill"
+  hatasını canlı yakaladı → 20) ve **Kapı-B** (hook kapsamı) · çift-kanal
+  dedup · oran araçları. 24 yeni test. Ardından `46bd1d3` ci-fix (ubuntu
+  exec-bit).
+
+**Bugünkü ölçüm (2026-08-22, bu makine):** toplanan test **1357**
+(tam süit bugün koşulmadı; son tam ölçüm 1317 yeşil / 1 atlama, `aee52cc`) ·
+vitrin alt-kümesi `-k "skill or sablon or anayasa or referans or readme"` →
+**39 yeşil / 1 tasarımsal atlama** · `aile_dogrula` **TEMİZ (20 parça)** ·
+plugin.json = marketplace.json = **0.5.9**.
+
+- **CI:** `46bd1d3` ci-fix push'landı; bu kayıt anında koşu sonucu bu
+  makineden doğrulanmadı — sürüm etiketlemeden önce `gh run list` (§6b kuralı).
+- **Vitrin:** README kökten yeniden yazıldı (hedef okuyucu: Türk avukatı) —
+  prompt şablonu, saha metodolojisi, 20 parça kataloğu, kolay kurulum,
+  `_oa/` + 40-UYAP; telif blokları ana repodaki son hâlinden (68217f4/7692966)
+  birebir taşındı.
+- **Sırada:** v0.5.9'un kendi **saha provası** (organik yeşil makbuz hâlâ 0 —
+  sınanmamış kapı beyandır) + 40-UYAP çıktı dizini entegrasyonunun saha teyidi.
 
 ---
 
-## 1. Yeşil olanlar (ölçüldü)
+## 1. Yeşil olanlar (2026-08-15 v0.5.8.4 ölçümü — güncel sayılar §0'da)
 
 | Ne | Değer | Nasıl doğrulanır |
 |---|---|---|

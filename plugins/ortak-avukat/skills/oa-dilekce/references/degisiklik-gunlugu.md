@@ -62,3 +62,10 @@
 - [T] genişletildi: "YEŞİL MAKBUZ" iddiası da denetlenir — kanonik defter/teslim-makbuz.json
   (exit 0) yoksa BLOK ("kanonik olmayan makbuz beyanı"); bulgularda tek-cümle tanım:
   yeşil makbuz = YALNIZ defter/teslim-makbuz.json; stdout/txt makbuz DEĞİLDİR.
+
+## v0.5.9 — 2026-08-22 (ÇIKTI ŞEMASI atfı — 40-UYAP)
+- SKILL.md teslim bölümüne 40-UYAP paragrafı eklendi: yeşil makbuz sonrası teslim ürünü
+  `40-UYAP/`ta (kopya; asıl `_oa/cikti`de — tek-nüsha ilkesi); avukat UYAP'a YÜKLERKEN
+  `40-UYAP/`taki kopyayı kullanır; `00-TESLIM.md` teslim notuna `40-UYAP/` yolu satırı.
+  Kurucu: `oa-kontrol/scripts/teslim_paketi.py` (A2); tek yetkili doktrin:
+  `oa-kontrol/references/cikti-semasi.md`.

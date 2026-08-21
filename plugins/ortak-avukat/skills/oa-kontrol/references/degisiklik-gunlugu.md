@@ -49,3 +49,20 @@
 ## v0.5.8.6 — 2026-08-18
 - kunye_teyit: kütük Döküm bağlarında `_oa/teyit/ham/` dizini meşru döküm evreni sayılır
   (dokum/ ile eşdeğer; kök-dışı bağ yine RET) — 777 sahasında dökümler ham/'a inmişti.
+
+## v0.5.9 — 2026-08-22 (ÇIKTI ŞEMASI paketi — 40-UYAP)
+- **A2 KURUCU (`teslim_paketi.py`):** YEŞİL makbuz yolunda dava kökünde muhatap-nötr
+  dış-çıktı dizini `40-UYAP/` doğar: nihai ürün KOPYALARI (UDF + varsa aynı kök-adlı
+  PDF/DOCX — taşıma DEĞİL, tek-nüsha ilkesi: asıl `_oa/cikti`de mührünün yanında kalır)
+  + `_damga` alanlı `teslim-makbuz-KOPYA.json` (sembolik link YASAK — Windows güvenilmez,
+  kopya zip-taşınabilir). Makbuza `uyap_kopya` + `uyap_urun_kopyalari` alanları eklendi.
+  ADVISORY doğuş: kopya hatası teslimi KIRMAZ (görünür uyarı; exit değişmez); makbuz
+  RED/yokken 40-UYAP üretilmez.
+- **A1 DOKTRİN:** `references/cikti-semasi.md` (YENİ) — 40-UYAP tanımı (dışa giden HER
+  şey; muhatap-nötr/yön-belirli), tek-nüsha ilkesi, KOPYA damgası kuralı, advisory doğuş
+  + veriyle kapıya terfi yolu (2-3 saha sonrası tetiklenme sayısıyla — karar avukatta),
+  A3/A4 bekçilerinin v0.5.10'a ertelendiği not.
+- **A5 ATIF:** SKILL.md teslim bölümüne 40-UYAP paragrafı (avukat UYAP'a yüklerken
+  40-UYAP'taki kopyayı kullanır; 00-TESLIM notuna 40-UYAP yolu satırı).
+- Testler: `tests/test_v059_cikti_semasi.py` (yeşil yol doğuşu + sha-eşit kopya + damgalı
+  makbuz-kopyası + RED'de doğmama + kopya-hatası advisory + eski makbuz şeması regresyonsuz).

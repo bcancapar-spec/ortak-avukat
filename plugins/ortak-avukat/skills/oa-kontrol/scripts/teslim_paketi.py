@@ -72,6 +72,13 @@ B4 — ZİNCİRİN ADVISORY TAMAMLANMASI: engelleyici bir kapı kapandığında
 (şekil, prov-tazelik, yerel-damga, devralma-aday raporu, tazelik advisory)
 yine de koşulur; RED makbuzu `advisory_denetimler` alanı kazanır (saha
 kanıtı: künye BLOK'u kenar ihlalini görünmez bırakmıştı).
+A2 (v0.5.9) — ÇIKTI ŞEMASI / 40-UYAP: YEŞİL makbuz kesilen her koşuda dava
+kökünde muhatap-nötr dış-çıktı dizini `40-UYAP/` doğar — nihai ürün KOPYALARI
+(tek-nüsha: asıl `_oa/cikti`de kalır) + `_damga` alanlı `teslim-makbuz-
+KOPYA.json`. Advisory: kopya hatası teslimi KIRMAZ; RED'de üretilmez. Makbuza
+`uyap_kopya` + `uyap_urun_kopyalari` alanları girer. Doktrin:
+references/cikti-semasi.md.
+
 B5b — E-İMZA MÜHÜR HALKASI: teslim-sınıfı UDF'de sign.sgn varsa imza-öncesi
 mühürle sha uyuşmazlığı BAYAT değil TÜREV'dir; was_derived_from zinciri
 kurulmuşsa YEŞİL, kurulmamışsa "imzalı türev mühürsüz" uyarısı + best-effort
@@ -443,6 +450,105 @@ def _istisna_kaydi_dus(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
             f.write(json.dumps(satir, ensure_ascii=False) + "\n")
     except Exception:
         pass
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# A2 (v0.5.9 ÇIKTI ŞEMASI) — 40-UYAP dış-çıktı dizini kurucusu:
+# YEŞİL makbuz kesilen her koşuda dava kökünde muhatap-nötr dış-çıktı dizini
+# `40-UYAP/` doğar; nihai teslim ürünleri (UDF + varsa aynı kök-adlı PDF/DOCX)
+# KOPYALANIR (taşıma DEĞİL — tek-nüsha ilkesi: asıl `_oa/cikti`de, mührünün
+# (.prov.json) yanında kalır) ve makbuzun damgalı bir KOPYASI
+# (`teslim-makbuz-KOPYA.json`, `_damga` alanıyla) yazılır. SEMBOLİK LİNK
+# YASAK — Windows'ta güvenilmez; kopya zip ile taşınabilir. Bu adım ADVISORY
+# doğar: kopyalama HATASI teslimi KIRMAZ (görünür uyarı; exit DEĞİŞMEZ);
+# makbuz RED iken / hiç yokken 40-UYAP ÜRETİLMEZ. Doktrin:
+# oa-kontrol/references/cikti-semasi.md (kapıya terfi yolu dahil).
+# ════════════════════════════════════════════════════════════════════════════
+
+UYAP_DIZIN_ADI = "40-UYAP"
+UYAP_MAKBUZ_KOPYA_AD = "teslim-makbuz-KOPYA.json"
+UYAP_KOPYA_DAMGA = "KOPYA — asil: _oa/defter/teslim-makbuz.json"
+
+
+def _uyap_urunler(taslak, udf_cikti, udf_uretildi):
+    """A2 — 40-UYAP'a kopyalanacak nihai teslim ürünleri, SABİT sırayla:
+    teslim edilen UDF + (varsa) onunla AYNI kök-adlı .pdf/.docx dosyaları
+    (UDF'in dizini + taslağın dizini taranır; kök-ad kuralı `_udf_adaylari`
+    ile aynı: `ad.split(".")[0]`). Ürün yoksa (--udf-yok) boş liste."""
+    urunler = []
+    if not udf_uretildi or not os.path.isfile(udf_cikti):
+        return urunler
+    urunler.append(os.path.abspath(udf_cikti))
+    kok_ad = os.path.basename(udf_cikti).split(".")[0]
+    dizinler = []
+    for d in (os.path.dirname(os.path.abspath(udf_cikti)),
+              os.path.dirname(os.path.abspath(taslak))):
+        if d not in dizinler:
+            dizinler.append(d)
+    for dizin in dizinler:
+        try:
+            adlar = sorted(os.listdir(dizin))
+        except OSError:
+            continue
+        for ad in adlar:
+            if ad.split(".")[0] != kok_ad:
+                continue
+            if not ad.lower().endswith((".pdf", ".docx")):
+                continue
+            y = os.path.abspath(os.path.join(dizin, ad))
+            if os.path.isfile(y) and y not in urunler:
+                urunler.append(y)
+    return urunler
+
+
+def _uyap_disa_kopya(kok, taslak, udf_cikti, udf_uretildi):
+    """A2 — 40-UYAP dizinini kurar ve ürün KOPYALARINI düşürür (asıllara
+    DOKUNULMAZ — tek-nüsha ilkesi). Döndürür:
+      (uyap_kopya, urun_kopyalari, uyarilar)
+      - uyap_kopya    : makbuzun `uyap_kopya` alanı — makbuz-kopyasının köke-
+                        göreli yolu ("40-UYAP/teslim-makbuz-KOPYA.json") |
+                        dizin kurulamadıysa None
+      - urun_kopyalari: kopyalanan ürünlerin köke-göreli yolları
+      - uyarilar      : advisory uyarı satırları (exit'e ASLA dokunmaz)
+    HİÇBİR hata fırlatmaz — bu adım kapı DEĞİLDİR (advisory doğuş)."""
+    uyarilar = []
+    urun_kopyalari = []
+    hedef_dizin = os.path.join(kok, UYAP_DIZIN_ADI)
+    try:
+        os.makedirs(hedef_dizin, exist_ok=True)
+    except Exception as e:
+        uyarilar.append(
+            "%s dizini KURULAMADI (%r) — teslim GEÇERLİ (asıl makbuz: "
+            "_oa/defter/teslim-makbuz.json); dış-çıktı kopyasını elle al."
+            % (UYAP_DIZIN_ADI, e))
+        return None, urun_kopyalari, uyarilar
+    for kaynak in _uyap_urunler(taslak, udf_cikti, udf_uretildi):
+        hedef = os.path.join(hedef_dizin, os.path.basename(kaynak))
+        try:
+            shutil.copy2(kaynak, hedef)
+            urun_kopyalari.append(_goreli_guvenli(kok, hedef))
+        except Exception as e:
+            uyarilar.append(
+                "%s ürün kopyası YAZILAMADI: %s (%r) — asıl yerinde duruyor; "
+                "teslim GEÇERLİ." % (UYAP_DIZIN_ADI,
+                                     _goreli_guvenli(kok, kaynak), e))
+    return (UYAP_DIZIN_ADI + "/" + UYAP_MAKBUZ_KOPYA_AD,
+            urun_kopyalari, uyarilar)
+
+
+def _uyap_makbuz_kopyasi_yaz(kok, makbuz_veri):
+    """A2 — YEŞİL makbuzun damgalı KOPYASI: 40-UYAP/teslim-makbuz-KOPYA.json.
+    İçine `_damga` alanı eklenir (KOPYA olduğu belgeden okunur — asıl her
+    zaman _oa/defter/teslim-makbuz.json). ATOMİK yazım; hata çağırana döner
+    (advisory — teslim exit'ine dokunulmaz)."""
+    hedef = os.path.join(kok, UYAP_DIZIN_ADI, UYAP_MAKBUZ_KOPYA_AD)
+    kopya = dict(makbuz_veri)
+    kopya["_damga"] = UYAP_KOPYA_DAMGA
+    tmp = "%s.tmp.%s" % (hedef, os.getpid())
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(kopya, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, hedef)
+    return hedef
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -1221,6 +1327,25 @@ def _zincir():
         print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
               "kapı kapatmaz (amaç çizgisi: görünürlük).")
 
+    # ── A2 (v0.5.9 ÇIKTI ŞEMASI) — 40-UYAP dış-çıktı dizini (ADVISORY) ──────
+    # YEŞİL makbuz kesiliyor → dava kökünde muhatap-nötr dış-çıktı dizini
+    # doğar; ürün KOPYALARI (asıl yerinde kalır) + damgalı makbuz-kopyası.
+    # Kopya hatası teslimi KIRMAZ (görünür uyarı; exit değişmez). RED
+    # yollarında bu blok HİÇ koşmaz (makbuz RED/yokken 40-UYAP üretilmez).
+    _bolum("[40] DIŞ-ÇIKTI ŞEMASI — %s (advisory; kapı DEĞİL)" % UYAP_DIZIN_ADI)
+    uyap_kopya, uyap_urun_kopyalari, uyap_uyarilar = _uyap_disa_kopya(
+        kok, taslak, udf_cikti, udf_uretildi and not a.udf_yok)
+    if uyap_kopya is not None:
+        print("    [OK] %s/ kuruldu — muhatap-nötr dış-çıktı dizini "
+              "(UYAP'a yükleme dahil DIŞA giden her şey buradan)." % UYAP_DIZIN_ADI)
+        for k in uyap_urun_kopyalari:
+            print("    [OK] ürün kopyası: %s (asıl yerinde — tek-nüsha ilkesi)" % k)
+        if not uyap_urun_kopyalari:
+            print("    [BILGI] kopyalanacak ürün yok (--udf-yok ya da ürün "
+                  "bulunamadı) — dizinde yalnız makbuz-kopyası olacak.")
+    for u in uyap_uyarilar:
+        print("    [UYARI] %s" % u)
+
     print()
     print(CIZGI)
     print("SONUÇ: TESLİME HAZIR")
@@ -1246,9 +1371,21 @@ def _zincir():
         ekstra={"udf_devralindi": udf_devralindi,        # GÖREV 1
                 "kenar_duzeltildi": kenar_duzeltildi,    # GÖREV 5
                 "sekil_imzali_sapma": sekil_imzali_sapma,  # v0.5.8.5 e-imza guard
-                "tazelik_uyarilari": tazelik_uyarilari})  # GÖREV 6
+                "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
+                # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
+                # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
+                "uyap_kopya": uyap_kopya,
+                "uyap_urun_kopyalari": uyap_urun_kopyalari})
     makbuz_yolu = _makbuz_yaz(kok, makbuz_veri, basarili=True)
     print("TESLİM MAKBUZU  : %s" % makbuz_yolu)
+    # A2 — damgalı makbuz-kopyası (advisory: hata teslim exit'ini DEĞİŞTİRMEZ)
+    if uyap_kopya is not None:
+        try:
+            kopya_yolu = _uyap_makbuz_kopyasi_yaz(kok, makbuz_veri)
+            print("40-UYAP KOPYASI : %s" % kopya_yolu)
+        except Exception as e:
+            print("UYARI: %s makbuz-kopyası YAZILAMADI (%r) — teslim GEÇERLİ; "
+                  "asıl makbuz: %s" % (UYAP_DIZIN_ADI, e, makbuz_yolu))
     sys.exit(0)
 
 

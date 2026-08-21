@@ -117,7 +117,10 @@ import sys
 HAM_UZANTILAR = {".pdf", ".udf", ".docx", ".eyp", ".zip",
                  ".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp", ".gif",
                  ".txt", ".md", ".rtf", ".html", ".htm", ".csv", ".xml"}
-ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git"}
+# "40-uyap" (v0.5.9 ÇIKTI ŞEMASI): 40-UYAP/ dışa giden ürün KOPYALARI
+# dizinidir (teslim_paketi A2) — gelen evrak değildir; taranırsa yeşil
+# teslimden hemen sonra KUNYE BAYAT / delta yanlış-pozitifi doğar.
+ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git", "40-uyap"}
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtların sabit imzası
 
 # ── M3-0 — DOĞUM-ANI KALICILIK: bölüm iskeleti (0-14, sabit sıra) ───────────────

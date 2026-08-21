@@ -44,7 +44,9 @@ OFIS    = {".docx", ".doc", ".xlsx", ".xls", ".odt"}
 UYAP    = {".udf"}
 PDF     = {".pdf"}
 ARSIV   = {".eyp", ".zip"}                       # UYAP paketi (zip tabanlı)
-ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git"}
+# "40-uyap" (v0.5.9 ÇIKTI ŞEMASI): 40-UYAP/ dışa giden ürün KOPYALARI
+# dizinidir (teslim_paketi A2) — gelen evrak değildir, manifest'e girmez.
+ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git", "40-uyap"}
 # NOT: "metin" burada YOK — genel isimle dışlama, dava klasöründeki rastgele bir
 # "metin" adlı alt klasörü sessizce sayım dışı bırakırdı. Fiilî ingest çıktı dizini
 # (`_oa/metin`) main() içinde os.walk sırasında mutlak yol eşleşmesiyle ayrıca budanır.

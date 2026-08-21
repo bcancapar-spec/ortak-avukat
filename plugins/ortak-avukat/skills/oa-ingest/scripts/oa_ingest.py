@@ -217,7 +217,10 @@ PDF, UDF, DOCX = {".pdf"}, {".udf"}, {".docx"}
 ARSIV = {".zip", ".eyp"}                     # EYP = UYAP paketi (zip tabanlı)
 DUZ = {".txt", ".md", ".rtf", ".html", ".htm", ".csv", ".xml"}
 IC_BILINEN = PDF | UDF | DOCX | GORUNTU | DUZ  # arşiv içinde işlenecek tipler
-ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git"}
+# "40-uyap" (v0.5.9 ÇIKTI ŞEMASI): dava kökündeki 40-UYAP/ dışa giden ürün
+# KOPYALARINI taşır (teslim_paketi A2) — gelen evrak DEĞİLDİR; taranırsa
+# kurucu kendi bir sonraki koşusunda KUNYE BAYAT üretir (öz-bulaşma).
+ATLA_DIZIN = {"_oa", ".claude", "__pycache__", ".git", "40-uyap"}
 # NOT: "metin" burada YOK — genel isimle dışlama, dava klasöründeki rastgele bir
 # "metin" adlı alt klasörü sessizce yutardı. Fiilî çıktı dizini (hedef) main()
 # içinde os.walk sırasında mutlak yol eşleşmesiyle ayrıca budanır (bkz. main()).
