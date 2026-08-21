@@ -20,17 +20,17 @@
 > **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
 > anonimdir.
 
-> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Yalnızca Yargı Pro MCP  geliştiren ekibin münhasıran kullanımı ve geliştirmesi serbesttir ve tam yetkiyle ticari iş kapsamı olmaksızın  beta sürümleri tamamlanana kadar geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
+> **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Beta sürümleri tamamlanana kadar avukatlar ve geliştiriciler geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 
 ---
 
-## Bu nedir — bir meslektaşa anlatır gibi
+## Bu nedir 
 
 **Bu bir "dilekçe yazan yapay zekâ" değildir; bir METODOLOJİ SİSTEMİDİR.**
 Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
 önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
 müvekkile karşı değil müvekkil için kullanma ayrımını — yazıya döker ve **her
-adımını makineyle denetler.**
+adımını makineyle denetler.** Dil modeli kurar makine deterministik olarak denetler prensibi ile çalışır. 
 
 Ayırt edici yanı şudur: bir işin yapıldığını **modelin beyanına bırakmaz.**
 "İçtihadı doğruladım" demek yetmez — kararın tam metni diske inmiş, davaya bağı
