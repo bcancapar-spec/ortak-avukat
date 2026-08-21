@@ -560,7 +560,7 @@ ekleyip kurun ve dosya kanıtıyla doğrulayın (8. adım).
 
 ---
 
-## Avukatın göreceği dosyalar — `_oa/` yapısı
+## Avukatın göreceği dosyalar — `_oa/` yapısı(_oa/ yapısı Ortak Avukat kısaltmasıdır)
 
 Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır;
 müvekkil evrakına dokunulmaz. Sizin düzenli bakacağınız üç yer işaretlidir:
