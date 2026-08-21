@@ -96,7 +96,13 @@ def _komut_calistir(komut, plugin_kok, cwd):
         b = _gercek_bash()
         if b is None:
             return None, "gerçek bash bulunamadı — sarmalayıcı koşulamadı"
-        cp = subprocess.run([b, "-c", ilk], input="{}", capture_output=True,
+        # bash -c "<yol> <mod>" DEĞİL: ubuntu'da dosyanın exec biti yoksa
+        # exit 126 (permission denied) döner — CI bunu yakaladı. bash'e
+        # dosyayı YORUMLATMAK (bash <yol> <mod>) exec biti gerektirmez ve
+        # sarmalayıcının bash-kolu iki çağrı biçiminde de aynı çalışır.
+        import shlex
+        parcalar = shlex.split(ilk)
+        cp = subprocess.run([b] + parcalar, input="{}", capture_output=True,
                             text=True, encoding="utf-8", errors="replace",
                             cwd=str(cwd), timeout=120)
         return cp.returncode, cp.stdout or ""
