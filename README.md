@@ -521,7 +521,7 @@ akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; 
 
 ### 7. Claude Code'u TAM kapatıp açın
 Bayat süreç eski hook setini taşımaya devam eder — pencereyi kapatmak yetmez,
-uygulamayı tamamen kapatıp açın (saha dersi: "sıfır ateşleme"nin köklerinden
+uygulamayı tamamen kapatıp açın. yada yüklemeleri tamamlayınca bilgisayarı yeniden başlatın.  (saha dersi: "sıfır ateşleme"nin köklerinden
 biri buydu).
 
 ### 8. Doğrulayın
