@@ -65,7 +65,7 @@ kayıpsız.
 Sizin tarafınızdan görünen akış üç adımdır: **klasörü açarsınız, tek bir doğal
 cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yürütür:
 
-1. **Evrak metne iner.** UYAP'tan indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir
+1. **Evrak metne iner.** UYAP'tan https://github.com/bcancapar-spec/avukat-dosya-indirici eklentisi ile indirdiğiniz PDF/TIFF/UDF/EYP/DOCX yığını bir
    kez ve en ucuz doğru yoldan metne çevrilir; taranmış olanlar OCR'dan geçer ve
    "⚠ teyit gerek" damgası alır. Evrak sayımı tutmuyorsa analiz **başlamaz**.
 2. **Sorular sorulur.** Uzun analize girmeden önce talep, roller, aşama, **tebliğ
