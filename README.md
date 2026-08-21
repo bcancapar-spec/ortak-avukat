@@ -112,7 +112,7 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 
 ## DÜSTUR — sistemin anayasası
 
-Yirmi parçanın tamamı tek bir anayasaya tabidir
+Yirmi parçanın tamamı hooklar ile birbirine bağlanmış Av.Bayram Can ÇAPAR tarafından oluşturulan tek bir fiktif anayasaya tabidir
 ([`anayasa.md`](plugins/ortak-avukat/skills/ortak-avukat/references/anayasa.md)).
 Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder — yani
 bir kural yirmi yerde farklı sürümlerle yaşayamaz. Kurucu ilke (m.0) + on madde:
