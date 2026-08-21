@@ -10,7 +10,7 @@
 
 > ⚖️ **Gerçek davalarda test edildi.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **altı büyük saha
-> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, banka/kefalet).
+> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ).
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir ek beyana +
 > geçerli UDF'e dönüştü (Claude Fable 5, max efor; evrak
