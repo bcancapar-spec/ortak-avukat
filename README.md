@@ -8,9 +8,9 @@
 
 **Sürüm:** 0.5.9 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
-> ⚖️ **Gerçek davalarda test edildi.** Bu sistem sentetik örneklerle değil,
+> ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **altı büyük saha
-> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ).
+> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir ek beyana +
 > geçerli UDF'e dönüştü (Claude Fable 5, max efor; evrak
