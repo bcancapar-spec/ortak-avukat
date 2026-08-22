@@ -224,6 +224,63 @@ tarafının kuralları:
 | **346 sahası** | bilirkişi raporuna itiraz | Künye kapısı **gerçek bir açığı** yakaladı ve model dürüst davrandı; tek bir ayrıştırıcı yanlış-pozitifi yeşil makbuzu imkânsız kıldı → v0.5.8.5: mutlak triyaj [G6], hook dirilişi, e-imza halkası |
 | **777 sahası** | banka/kefalet ikinci cevap + **24 kök çapraz taraması** | Bayat araç kiti kök nedeni; ilk gerçek LEHE/ALEYHE triyajı; resmî araçla üretilen UDF, dört kenarı yönetmelik ölçüsünde (42,52 pt) ilk **tam-standart ürün** olarak UYAP editöründe açıldı → v0.5.8.6 + v0.5.9 |
 
+### Gerçek dava testleri — derdest dosyalarda canlı ölçüm
+
+Bu sistem sentetik örneklerle değil, **avukatın kendi derdest dosyalarıyla**
+test edilir. Bir gerçek dava testi şöyle koşar:
+
+1. **Dosya gerçektir:** UYAP'tan indirilen ham evrak klasörü (50–210 evrak),
+   yürüyen bir davanın güncel hali. Dosya kimliği kayıtlarda yalnız saha
+   etiketiyle anılır; isimler ve numaralar hiçbir zaman depoya girmez.
+2. **Prompt tektir ve doğaldır:** avukat işi tek paragrafla tarif eder
+   ("ikinci cevap dilekçemizi hazırlayacağız, süreleri kontrol et...").
+   Mekanik talimat, kapanış promptu, düzeltme zinciri **verilmez**.
+3. **Müdahale yasaktır:** koşu boyunca oturuma dokunulmaz; gözlem dosya
+   sistemi deltası ve defter kayıtları üzerinden salt-okunur yapılır.
+4. **Ölçüm yazılıdır:** hook nabzı, damga oranları, makbuz sınıfı, token
+   eğrisi — karne koşudan sonra transkript + artefakt + mekanizma olmak
+   üzere üç koldan adli analizle çıkarılır.
+5. **İki hüküm ayrı verilir:** mekanik tamlık (zincir fiziksel koştu mu)
+   ve içerik kabulü (dilekçe avukatı tatmin etti mi) birbirine karışmaz.
+
+**İlk temiz deney — 307 sahası (22.08.2026, v0.5.9.1, canlı):** tasarrufun
+iptali davasında ikinci cevap (beyan) dilekçesi; 209 evraklık taze UYAP
+indirimi + bir önceki sürümden devralınan eski çalışma alanı. Ara karne:
+
+| Ölçüm | Sonuç |
+|---|---|
+| Hook nabzı | 6 kanalın tamamı canlı; bayat araç kiti **3 kez yakalandı** ve uyarı modelin bağlamına enjekte edildi |
+| İçtihat triyajı | **41 damga, 41'i tam-metin sınıfı** (40 LEHE + 1 ALEYHE-AYIRT); 27 döküm dosyası |
+| Muhakeme kapısı | 23/23 OK · künye teyidi 59/59 |
+| Aleyhe farkındalığı | Cephanelikteki aleyhe karar dilekçeye alınmadı ve **ana savunma ekseni ona göre kaydırıldı** |
+| Gizlilik Layer 0 | Kimlik verisi DENY — içerik hiçbir dış araca gönderilmedi |
+| Ürün | Resmî hatla üretilmiş, geçerlilik kapısından geçmiş UDF + PDF |
+| Dürüstlük | Yeşil makbuz kesilmeden "hazır" denmedi; sistem **karar-kavşağında durup** 5 kalemi avukatın önüne koydu (fail-closed) |
+
+Tek doğal prompt, sıfır mekanik-hijyen promptu, ~70 dakika. Koşu avukat
+kararlarını bekliyor; nihai karne kapanışta bu bölüme işlenecek.
+
+**Gözcü notları (koşu sırasında, salt-okunur izlemeden):**
+
+- **Teslim zinciri kendiliğinden koştu.** Kapanış promptu verilmeden model
+  teslim paketini iki kez kendisi çalıştırdı; ikisinde de ilk kapı (dilekçe
+  denetimi) fail-closed kesti, model bulguları düzeltmeye döndü. "Çıktı tüm
+  süreçten fiziksel geçmeden sunulmaz" davranışı ilk kez organik gözlendi.
+- **Kırmızı makbuz bile damgalı kesildi.** Blok durumunda dahi makbuz
+  garantisi çalıştı; dış-çıktı dizini yeşil makbuz olmadan **doğmadı** —
+  tasarlandığı gibi.
+- **Devir + taze indirme birlikte sınandı.** Dosya baştan indirildiği için
+  eski çalışma alanının önbelleği yeni evrak adlarıyla hiç örtüşmüyordu
+  (209 dosyada 0 ad kesişimi); sistem eski kütüğün 16 damgasını koruyup
+  üstüne yeni triyajı ekledi, çökmedi.
+- **Üretim temposu:** ~8 bin token/dk sabit; ilk 20 dk keşif+devralma
+  (yüksek önbellek okuma), sonra tam-metin içtihat triyajı, sonra yazım.
+  13 karar tam metniyle tek tek çekildi — künyeden damga basma hiç görülmedi.
+- **Kalan sınır dürüstçe raporlandı:** müvekkil-aleyhi tarayıcısı, birebir
+  Yargıtay alıntısının *içindeki* "davanın kabulüne" ibaresini kendi
+  cümlemizden ayıramıyor; model bunu aşmaya çalışmak yerine kararı gerekçesiyle
+  avukata taşıdı. Bu ayrıştırıcı sınıfı sonraki sürümün onarım listesindedir.
+
 ### Ölçülen örnekler — beyan değil sayı
 
 - **49 dakika / 45,6k token:** ~200 evraklık istinaf dosyasından teslim
