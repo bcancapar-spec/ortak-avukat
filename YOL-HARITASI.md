@@ -139,3 +139,10 @@
 
 ---
 © 2026 Av. Bayram Can Çapar — FSEK. İzinsiz çoğaltma/dağıtma/türev yasaktır.
+
+---
+
+## İleriye dönük yapısal not
+
+Sistemin şeklini değiştirebilecek (ve bugün bilinçli olarak ertelenmiş) mimari
+tartışma ayrı bir belgede durur: [SICRAMA-NOTU.md](SICRAMA-NOTU.md).
