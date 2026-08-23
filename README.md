@@ -243,29 +243,36 @@ test edilir. Bir gerçek dava testi şöyle koşar:
 5. **İki hüküm ayrı verilir:** mekanik tamlık (zincir fiziksel koştu mu)
    ve içerik kabulü (dilekçe avukatı tatmin etti mi) birbirine karışmaz.
 
-**İlk temiz deney — 307 sahası (22.08.2026, v0.5.9.1, canlı):** tasarrufun
+**307 sahası (22.08.2026, v0.5.9.1, tamamlandı — deney sınıfı: MÜDAHALELİ):** tasarrufun
 iptali davasında ikinci cevap (beyan) dilekçesi; 209 evraklık taze UYAP
 indirimi + bir önceki sürümden devralınan eski çalışma alanı. Ara karne:
 
 | Ölçüm | Sonuç |
 |---|---|
-| Hook nabzı | 6 kanalın tamamı canlı; bayat araç kiti **3 kez yakalandı** ve uyarı modelin bağlamına enjekte edildi |
-| İçtihat triyajı | **41 damga, 41'i tam-metin sınıfı** (40 LEHE + 1 ALEYHE-AYIRT); 27 döküm dosyası |
-| Muhakeme kapısı | 23/23 OK · künye teyidi 59/59 |
+| Hook nabzı | 6 kanal ateşledi; bayat araç kiti **3 kez yakalandı**, uyarı modelin bağlamına enjekte edildi ve araçlar 6 dakikada tazelendi |
+| İçtihat triyajı | **45 damga, 45'i tam-metin sınıfı** (44 LEHE + 1 ALEYHE-AYIRT); 30 döküm dosyası |
+| Muhakeme zinciri | teslim metnindeki her künye için ilgili-kısım + davaya-bağ kaydı mevcut (27 kayıt); uydurma künye yok |
 | Aleyhe farkındalığı | Cephanelikteki aleyhe karar dilekçeye alınmadı ve **ana savunma ekseni ona göre kaydırıldı** |
 | Gizlilik Layer 0 | Kimlik verisi DENY — içerik hiçbir dış araca gönderilmedi |
 | Ürün | Resmî hatla üretilmiş, geçerlilik kapısından geçmiş UDF + PDF |
-| Dürüstlük | Yeşil makbuz kesilmeden "hazır" denmedi; sistem **karar-kavşağında durup** 5 kalemi avukatın önüne koydu (fail-closed) |
+| Dürüstlük | Yeşil makbuz kesilmeden "hazır" denmedi; sistem **karar-kavşağında durup** 5 kalemi avukatın önüne koydu (fail-closed). Ama makbuz sonrası ürün mühür dışında değişti — bkz. karne K1/K2 |
 
-Tek doğal prompt, sıfır mekanik-hijyen promptu, ~70 dakika. Koşu avukat
-kararlarını bekliyor; nihai karne kapanışta bu bölüme işlenecek.
+**Koşu kapandı; nihai karne ayrı belgededir: [KARNE-307.md](KARNE-307.md).**
+161 dakika sürdü. Karnenin ilk düzelttiği şey koşu sırasında yapılan kendi
+raporumuzdur: bu koşu "tek doğal prompt / sıfır mekanik-hijyen promptu" ile
+geçmedi — ölçüm 11 kullanıcı turu ve 7 mekanik-hijyen promptu gösterdi. Deney
+sınıfı **müdahalelidir**. Karne ayrıca üç ağır kusur saptadı: teslim ürünü
+makbuzdan sonra mührün dışında değişti, makbuz resmî adlı ürünü kapsamıyordu
+ve parçalar kendiliğinden çağrılmadı (kök sebep kodda bulundu). Bu kusurlar
+v0.5.10 onarım listesini oluşturur.
 
 **Gözcü notları (koşu sırasında, salt-okunur izlemeden):**
 
-- **Teslim zinciri kendiliğinden koştu.** Kapanış promptu verilmeden model
-  teslim paketini iki kez kendisi çalıştırdı; ikisinde de ilk kapı (dilekçe
-  denetimi) fail-closed kesti, model bulguları düzeltmeye döndü. "Çıktı tüm
-  süreçten fiziksel geçmeden sunulmaz" davranışı ilk kez organik gözlendi.
+- **Teslim zinciri koştu — ama kendiliğinden değil.** Zincir birden çok kez
+  çalıştı ve her seferinde bir kapı fail-closed kesti; model bulguları
+  düzeltmeye döndü. Ancak karne, kontrol parçasının modelce kendiliğinden
+  çağrılmadığını, avukatın onu adıyla çağırmak zorunda kaldığını ölçtü
+  (karne K3). Koşu sırasında bunun tersi raporlanmıştı; düzeltilmiştir.
 - **Kırmızı makbuz bile damgalı kesildi.** Blok durumunda dahi makbuz
   garantisi çalıştı; dış-çıktı dizini yeşil makbuz olmadan **doğmadı** —
   tasarlandığı gibi.
@@ -306,7 +313,8 @@ kararlarını bekliyor; nihai karne kapanışta bu bölüme işlenecek.
 
 ### Dürüstlük — başarısızlıklar da yazılır
 
-- **Organik yeşil makbuz henüz 0:** bugüne dek sahada üretilen yeşil makbuzlar
+- **Organik yeşil makbuz hâlâ ölçülmedi:** 307 sahasında yeşil makbuz kesildi, ancak koşu müdahalesiz değildi (7 mekanik-hijyen promptu) — dolayısıyla "organik" sayılmaz.
+- **Eski kayıt:** bugüne dek sahada üretilen yeşil makbuzlar
   hep insan yardımı/onarımı sonrası geldi; sistemin hiç dokunulmadan uçtan uca
   yeşil makbuz kestiği bir koşu **henüz ölçülmedi**. v0.5.9'un varlık sebebi
   tam olarak budur.
