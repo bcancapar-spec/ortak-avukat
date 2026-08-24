@@ -266,6 +266,22 @@ makbuzdan sonra mührün dışında değişti, makbuz resmî adlı ürünü kaps
 ve parçalar kendiliğinden çağrılmadı (kök sebep kodda bulundu). Bu kusurlar
 v0.5.10 onarım listesini oluşturur.
 
+**923 sahası (24.08.2026, v0.5.9.1, CANLI — koşu sürüyor):** vergi/gümrük
+dosyası; ödeme emri + ek tahakkuka karşı, dilekçe ret sonrası yenileme; 38
+evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
+ölçümü (nihai karne kapanışta işlenecek — bunlar ara sayılardır):
+
+| Ölçüm | Ara sonuç |
+|---|---|
+| Prompt disiplini | 1 kullanıcı turu; **0 mekanik-hijyen promptu** (307 dersinden sonra bu kez transkript sayılarak) |
+| Üretim | ~366k token / 56 dk; 25 adım kaydı; alt-ajan 0 |
+| İki ayrı iş ürünü | A: ödeme emrine karşı · B: ek tahakkuka karşı — iki ayrı dilekçe + 2 UDF üretildi |
+| Künye teyidi | A **15/15** · B **18/18** teyitli, teyitsiz 0; çapraz denetimde kopuk referans yok |
+| Antitez / usul | 8/8 cephe + çürütme; usul matrisi süre hesabını bağladı (son gün tespiti) |
+| Bayat araç nöbetçisi | Bu sahada da ateşledi (1 uyarı) |
+| Dürüst altyapı notu | Model, canlı içtihat ucuna erişemeyince yedek arşivle çalıştığını ve arşiv-sonrası kararların eksik olabileceğini kütüğün başına **kendisi yazdı** ("AŞAN-KAYNAK" riski) |
+| Açık sınav | Tam-metin döküm/damga henüz 0 — [G6] kapısının bu atıfları teslim zincirinde bloke edip etmeyeceği koşunun ana sorusu; sonuç ne çıkarsa buraya yazılacak |
+
 **Gözcü notları (koşu sırasında, salt-okunur izlemeden):**
 
 - **Teslim zinciri koştu — ama kendiliğinden değil.** Zincir birden çok kez
