@@ -30,6 +30,15 @@
 - **2026-08-07 (v0.5.7 — [G4] KAYNAK-URL TUTARLILIĞI, Denizli 754 sahası):** `ictihat_muhakeme_denetim.py`'ye [G4] eklendi: (a) künye satırının ±1 satır penceresinde görünen http(s) bağlantısı HİÇBİR muhakeme kaydının `**KAYNAK-URL:**` alanıyla örtüşmüyorsa TESLİM ENGELİ (uydurma bağlantı 'teyit edildi' der — çıplak künyeden DAHA KÖTÜ); (b) teyit anında kaydedilmiş bağlantı dilekçeye işlenmemişse görünür UYARI (bloklamaz — araç URL döndürmemişse künye bağlantısız yazılır, uydurulmaz). `MuhakemeKaydi`ya `kaynak_url` alanı (KAYNAK_URL_LINE_RE) eklendi. Saha gerçeği: 754 koşusunda bayat `oa_hafiza` kopyası `--kaynak-url`'i bilmediğinden 11 teyitli karar dilekçeye bağlantısız girmişti — zincirin dilekçe ucu artık mekanik. Testler: `tests/test_kaynak_url_tutarlilik.py` (4).
 - **2026-08-12 — v0.5.8 fork-prova:** [G5] AŞILMIŞ-İÇTİHAT kapısı (LEHE+aşılmış+atıf=BLOK) + tazelik_denetim.py (P6, graft Sources@hash deseni, advisory) + muhur_yaz.py (P1, PROV-O hizalı oa-muhur/1.0; --dogrula sert, yazım zarif-bozulma). Semantica/graft devşirmesi — m.0 protokolü, Can kararları 2026-08-12.
 
+## v0.5.10 — FİLO-TAZELİK KAPISI (307 karnesi K1+K2)
+- `teslim_paketi.py` yeni BLOKLAYICI kapı `(+++) FİLO-TAZELİK`: dava kökü +
+  40-UYAP'taki TÜM teslim-sınıfı .udf'ler mühür-tazelik hükmünden geçer —
+  prov'lu-bayat ve 40-UYAP-mühürsüz → RED; kökte mühürsüz → ADVISORY (UYAP
+  kaynak evrakı olabilir; yanlış-BLOK yasağı). Kayıtların TAMAMI makbuza
+  `teslim_sinifi_urunler` olarak girer (K2: makbuz seçili ürünle sınırlı kalamaz).
+- `_uyap_disa_kopya`: kopya adında çift-uzantı soyulur; `.prov.json` mühürü
+  kopyayla BİRLİKTE gider (prov'suz kopya sonraki koşuda haklı RED yerdi).
+
 ## v0.5.8.4 — 2026-08-15
 
 - **teslim_paketi yeni kapıları (372 Torbalı devşirmesi):** MEVCUT-UDF DEVRALMA (geçerli aday yeniden üretilmez, `udf_devralindi` makbuza; geçersiz elle-üretim adayı `_oa/arsiv-yerel/gecersiz-elle-udf/` karantinasına — silinmez), PROV-TAZELİK (bayat mühür = RED), YEREL-DAMGA (yerel motor ürünü teslime giremez = RED), ŞEKİL (pageFormat 4×42.52 pt değilse udf_yaz kenar yaması otomatik + mühür sha güncellenir; LineSpacing 0.50 ve 11pt link istişari), OTOMATİK MÜHÜR (mühürsüz UDF teslimde teslim_paketi tarafından mühürlenir), MAKBUZ GARANTİSİ (try/finally — erken çıkışlar dahil her başarısız yol RED makbuzu düşürür; sebep + argv kayıtlı), TAZELİK BİLGİ KAPISI (tazelik_denetim advisory; bulgular makbuzda `tazelik_uyarilari`).

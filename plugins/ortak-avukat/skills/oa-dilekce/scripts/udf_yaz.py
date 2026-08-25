@@ -761,6 +761,109 @@ def _capraz_skill_yukle(dosya_adi, modul_adi):
         return None
 
 
+# ═══════════ v0.5.10 — ATOMİK MÜHÜR + ÇİFT-UZANTI (307 karnesi K1) ═══════════
+# 307 saha kanıtı: teslim UDF'i yeşil makbuzdan ~68 dk sonra yeniden üretildi,
+# mühür (.prov.json) TAZELENMEDİ → mühürdeki sha ile dosyanın gerçek sha'sı
+# uyuşmaz kaldı ve o pencerede hiçbir katman ateşlemedi. Kök neden: üretim ile
+# mühür AYRIK yaşıyordu (üretici udf_yaz, mühürcü hook/oa-kontrol). v0.5.10
+# sözleşmesi: ÜRETİM VE MÜHÜR TEK ATOMİK İŞLEMDİR — udf_yaz her başarılı
+# üretimde mührü KOŞULSUZ kendisi basar/tazeler; hook'a/başka zincire güven
+# YOK. Tek istisna e-imza halkası: imzalı nüshanın (sign.sgn / entity_type=
+# e-imzali-nusha) mührü ASLA ezilmez (B5b, v0.5.8.5 — imza baytları değiştirir,
+# o zincir teslim_paketi'nin işidir).
+
+_BILINEN_ARA_UZANTILAR = {".md", ".markdown", ".txt", ".html", ".htm", ".docx"}
+
+
+def _cikti_adi_normalize(yol):
+    """307 kozmetik kusuru: '…TESLIM.md.udf' sınıfı çift-uzantılı çıktı adı.
+    Taban adın sonunda bilinen bir BELGE ara-uzantısı + '.udf' bitişikse ara
+    uzantıyı soyar. Döner: (normalize_yol, not|None) — not, düzeltme yapıldıysa
+    çağıranın GÖRÜNÜR basacağı tek satırdır (sessiz ad değişikliği yok)."""
+    taban, uzanti = os.path.splitext(yol)
+    if uzanti.lower() != ".udf":
+        return yol, None
+    kok2, ara = os.path.splitext(taban)
+    if ara.lower() in _BILINEN_ARA_UZANTILAR and kok2:
+        yeni = kok2 + ".udf"
+        return yeni, ("çıktı adı normalize edildi: %s → %s (çift-uzantı; "
+                      "v0.5.10)" % (os.path.basename(yol),
+                                    os.path.basename(yeni)))
+    return yol, None
+
+
+def _udf_zipte_imza_var_mi(yol):
+    """zip'te sign.sgn girdisi var mı — e-imzalı nüsha tespiti (asla fırlatmaz)."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            return any(ad.lower().endswith("sign.sgn") for ad in z.namelist())
+    except Exception:
+        return False
+
+
+def _prov_muhur_yaz(cikti_yolu, kok=None, motor="html2udf", girdi_yolu=None):
+    """ATOMİK MÜHÜR: üretilen .udf için .prov.json'u KOŞULSUZ yaz/tazele.
+    Öncelik: kardeş oa-kontrol/muhur_yaz.py (tek şema kaynağı); yoksa aynı
+    oa-muhur/1.0 şemasıyla yerleşik yazım (udf_yaz tek başına da atomiktir).
+    E-imza guard'ı: dosya imzalıysa VEYA mevcut mühür e-imzali-nusha ise
+    DOKUNULMAZ. Asla fırlatmaz → (prov_yolu|None, hata_notu|None)."""
+    try:
+        if _udf_zipte_imza_var_mi(cikti_yolu):
+            return None, "e-imzalı nüsha — mühre dokunulmadı (e-imza halkası)"
+        prov_yolu = cikti_yolu + ".prov.json"
+        if os.path.isfile(prov_yolu):
+            try:
+                with open(prov_yolu, encoding="utf-8") as f:
+                    if json.load(f).get("entity_type") == "e-imzali-nusha":
+                        return None, ("mevcut mühür e-imzali-nusha — "
+                                      "dokunulmadı (e-imza halkası)")
+            except Exception:
+                pass  # bozuk mühür TAZELENİR (kırık mühür bırakmak K1'dir)
+        kok_gercek = kok or os.path.dirname(os.path.abspath(cikti_yolu))
+        arac = "udf_yaz.py v0.5.10 (%s)" % motor
+        girdiler = [girdi_yolu] if (girdi_yolu and os.path.isfile(girdi_yolu)) else []
+        # muhur_yaz modülü köke `_oa/provenance.jsonl` de yazar — `_oa` YOKSA
+        # o yol KULLANILMAZ (udf_yaz "_oa yoksa dizin kurmaz" sözleşmesi;
+        # üretim makbuzu kuralıyla simetrik). Çıplak klasörde yalnız ürün
+        # yanına .prov.json basılır (yerleşik yol).
+        mod = None
+        if os.path.isdir(os.path.join(kok_gercek, "_oa")):
+            mod = _capraz_skill_yukle("muhur_yaz.py", "_oa_udf_yaz_muhur_inproc")
+        if mod is not None:
+            kayit = mod.muhur_uret(kok_gercek, cikti_yolu, "dilekce",
+                                   "urun:%s" % os.path.basename(cikti_yolu),
+                                   girdiler, arac=arac)
+            return mod.muhur_yaz(kok_gercek, cikti_yolu, kayit)
+        # Yerleşik yedek — muhur_yaz.py yoksa AYNI şema, aynı atomiklik.
+        with open(cikti_yolu, "rb") as f:
+            sha = hashlib.sha256(f.read()).hexdigest()
+        kayit = {
+            "prov_schema": "oa-muhur/1.0",
+            "entity_id": "urun:%s" % os.path.basename(cikti_yolu),
+            "entity_type": "dilekce",
+            "artifact_file": os.path.basename(cikti_yolu),
+            "artifact_sha256": sha,
+            "generated_at_time": datetime.datetime.now(
+                datetime.timezone.utc).isoformat(timespec="seconds"),
+            "was_generated_by": arac,
+            "used": [],
+            "was_derived_from": None,
+            "llm_kullanimi": None,
+        }
+        for g in girdiler:
+            with open(g, "rb") as f:
+                kayit["used"].append({
+                    "file": os.path.basename(g),
+                    "sha256": hashlib.sha256(f.read()).hexdigest()})
+        tmp = "%s.tmp.%s" % (prov_yolu, os.getpid())
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(kayit, f, ensure_ascii=False, indent=1, sort_keys=True)
+        os.replace(tmp, prov_yolu)
+        return prov_yolu, None
+    except Exception as e:
+        return None, "mühür yazılamadı: %r" % e
+
+
 _ICTIHAT_MUHAKEME_MOD = None
 _KUNYE_TEYIT_MOD = None
 
@@ -1224,6 +1327,12 @@ def main():
         # docx2udf'in KENDİ resmî ölçütü (yukarıdaki exit+dosya kontrolü)
         # yeterlidir — yanlış-BLOK (false negative) üretmek amaç-çizgisi
         # ihlalidir (kapı FORMU değil İŞİ denetler).
+        _uretim_makbuzu_yaz(a.kok, kaynak, sonuc["cikti_yolu"], "docx2udf",
+                            {"gecerli": True})
+        # v0.5.10 ATOMİK MÜHÜR (K1) — bu yol da mühürsüz ürün bırakamaz.
+        p_yol, p_hata = _prov_muhur_yaz(sonuc["cikti_yolu"], kok=a.kok,
+                                        motor="docx2udf", girdi_yolu=kaynak)
+        print("  mühür (.prov)    : %s" % (p_yol or ("BASILAMADI: %s" % p_hata)))
         sys.exit(0)
 
     if a.dogrula:
@@ -1263,6 +1372,15 @@ def main():
 
     girdi = _kok_coz(a.girdi, a.kok)
     cikti = _kok_coz(a.cikti, a.kok)
+    # v0.5.10 — çift-uzantı ('x.md.udf'): udf_yaz VERİLEN ada yazar (çağıran
+    # sözleşmesi kırılmaz — ad değiştirmek çağıranın beklediği yolu boşa
+    # düşürür); kusur KAYNAĞINDA düzeltildi (teslim_paketi ad türetimi +
+    # 40-UYAP kopya adı). Burada yalnız GÖRÜNÜR not basılır.
+    _oneri, _ad_notu = _cikti_adi_normalize(cikti)
+    if _ad_notu:
+        print("NOT: çıktı adı çift-uzantılı (%s) — önerilen ad: %s"
+              % (os.path.basename(cikti), os.path.basename(_oneri)),
+              file=sys.stderr)
     pdf_yolu = _kok_coz(a.pdf, a.kok) if a.pdf else None
 
     if a.yerel_motor_riskli:
@@ -1302,6 +1420,12 @@ def main():
             print("!" * 66, file=sys.stderr)
         _uretim_makbuzu_yaz(a.kok, girdi or "<stdin>", cikti,
                             "yerel-riskli", d)
+        # v0.5.10 ATOMİK MÜHÜR (K1) — riskli yol da mühürsüz ürün bırakamaz
+        # (was_generated_by "yerel" içerir → teslim kapısı YEREL-DAMGA'yı
+        # zaten RED'ler; mühür burada dürüst kimlik beyanıdır, aklama değil).
+        p_yol, p_hata = _prov_muhur_yaz(cikti, kok=a.kok,
+                                        motor="yerel-riskli", girdi_yolu=girdi)
+        print("  mühür (.prov)    : %s" % (p_yol or ("BASILAMADI: %s" % p_hata)))
         sys.exit(0)
 
     # NOT: --html AÇIKÇA verilmediyse ara HTML SİSTEM TEMP dizinine yazılır,
@@ -1383,6 +1507,17 @@ def main():
             kenar_notu=sonuc.get("kenar_notu"))
         if makbuz_yolu:
             print("  üretim makbuzu   : %s" % makbuz_yolu)
+        # v0.5.10 ATOMİK MÜHÜR (K1): üretim ile mühür ayrılamaz — mühür
+        # burada, üretimin parçası olarak KOŞULSUZ basılır/tazelenir.
+        prov_yolu, prov_hata = _prov_muhur_yaz(cikti, kok=a.kok,
+                                               motor="html2udf",
+                                               girdi_yolu=girdi)
+        if prov_yolu:
+            print("  mühür (.prov)    : %s" % prov_yolu)
+        else:
+            print("  [UYARI] mühür basılamadı: %s — mühürsüz ürün teslim "
+                  "kapısında (FİLO-TAZELİK) RED yer." % prov_hata,
+                  file=sys.stderr)
         if not dogrulama["gecerli"]:
             for h in dogrulama["hatalar"]:
                 print("  [HATA] %s" % h, file=sys.stderr)

@@ -819,7 +819,7 @@ def test_normal_zincir_udf_uretimi_uyari_uretmez(izole_kok):
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
     kod, cikti = _tp([str(taslak), "--tip", "genel", "--kok", str(izole_kok)])
     assert kod == 0, cikti
-    assert (izole_kok / "temiz.md.udf").is_file()
+    assert (izole_kok / "temiz.udf").is_file()  # v0.5.10: çift-uzantı kaynağında öldü
 
     kod_b, _c = _pk(["--baslat", "Test Dosyası", "--kok", str(izole_kok)], cwd=izole_kok)
     assert kod_b == 0

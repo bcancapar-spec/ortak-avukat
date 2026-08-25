@@ -523,10 +523,30 @@ def _uyap_disa_kopya(kok, taslak, udf_cikti, udf_uretildi):
             % (UYAP_DIZIN_ADI, e))
         return None, urun_kopyalari, uyarilar
     for kaynak in _uyap_urunler(taslak, udf_cikti, udf_uretildi):
-        hedef = os.path.join(hedef_dizin, os.path.basename(kaynak))
+        # v0.5.10 — kopya adı normalize: 'x.md.udf' sınıfı çift-uzantı soyulur
+        # (307 kozmetik kusuru; udf_yaz._cikti_adi_normalize ile aynı kural).
+        hedef_ad = os.path.basename(kaynak)
+        taban, uzanti = os.path.splitext(hedef_ad)
+        if uzanti.lower() == ".udf":
+            kok2, ara = os.path.splitext(taban)
+            if kok2 and ara.lower() in (".md", ".markdown", ".txt",
+                                        ".html", ".htm", ".docx"):
+                hedef_ad = kok2 + ".udf"
+        hedef = os.path.join(hedef_dizin, hedef_ad)
         try:
             shutil.copy2(kaynak, hedef)
             urun_kopyalari.append(_goreli_guvenli(kok, hedef))
+            # v0.5.10 — mühür kopyayla BİRLİKTE gider: prov'suz kopya, bir
+            # sonraki koşuda FİLO-TAZELİK kapısında haklı olarak takılırdı.
+            prov = kaynak + ".prov.json"
+            if os.path.isfile(prov):
+                try:
+                    shutil.copy2(prov, hedef + ".prov.json")
+                except Exception as e:
+                    uyarilar.append(
+                        "%s mühür kopyası YAZILAMADI: %s (%r) — ürün kopyası "
+                        "yerinde; mühürü elle kopyala."
+                        % (UYAP_DIZIN_ADI, _goreli_guvenli(kok, prov), e))
         except Exception as e:
             uyarilar.append(
                 "%s ürün kopyası YAZILAMADI: %s (%r) — asıl yerinde duruyor; "
@@ -534,6 +554,109 @@ def _uyap_disa_kopya(kok, taslak, udf_cikti, udf_uretildi):
                                      _goreli_guvenli(kok, kaynak), e))
     return (UYAP_DIZIN_ADI + "/" + UYAP_MAKBUZ_KOPYA_AD,
             urun_kopyalari, uyarilar)
+
+
+# ═══════════ v0.5.10 — FİLO TAZELİĞİ (307 karnesi K1+K2 kilidi) ═══════════
+# 307 saha kanıtı: yeşil makbuz yalnız SEÇİLİ adayı denetledi/kapsadı; dava
+# kökündeki resmî adlı UDF makbuz kapsamına hiç girmedi (K2) ve makbuzdan
+# sonra mühür dışında değişti (K1). v0.5.10 sözleşmesi: teslim zinciri dava
+# kökü + 40-UYAP'taki TÜM teslim-sınıfı .udf'leri mühür-tazelik denetiminden
+# geçirir (mühürsüz/bayat → RED) ve TAMAMINI makbuza yazar. `_oa/` altı
+# çalışma nüshaları filo DIŞIDIR (onların denetçisi seçili-aday hattıdır).
+
+def _teslim_sinifi_udf_listesi(kok):
+    """Dava kökü (maxdepth 1) + 40-UYAP/40-uyap altındaki .udf dosyaları —
+    sıralı, tekilleştirilmiş mutlak yollar. Asla fırlatmaz."""
+    bulunan = []
+    dizinler = [kok,
+                os.path.join(kok, UYAP_DIZIN_ADI),
+                os.path.join(kok, UYAP_DIZIN_ADI.lower())]
+    gorulen = set()
+    for d in dizinler:
+        try:
+            girdiler = sorted(os.scandir(d), key=lambda g: g.name.lower())
+        except OSError:
+            continue
+        for g in girdiler:
+            try:
+                if not g.is_file() or not g.name.lower().endswith(".udf"):
+                    continue
+                anahtar = os.path.normcase(os.path.abspath(g.path))
+                if anahtar in gorulen:
+                    continue
+                gorulen.add(anahtar)
+                bulunan.append(os.path.abspath(g.path))
+            except OSError:
+                continue
+    return bulunan
+
+
+def _filo_tazelik_denetimi(kok, haric=()):
+    """K1+K2 çekirdeği: filodaki her UDF için mühür-tazelik hükmü.
+    Döner: (sorunlar, uyarilar, kayitlar)
+      sorunlar : RED-sınıfı satırlar — yanlış-BLOK İMKÂNSIZ olan sınıflar:
+                 (a) .prov.json'u OLAN dosyada bayat/okunamaz mühür (mühürlü
+                     dosya KESİN bizim ürünümüzdür — 307-K1),
+                 (b) 40-UYAP içinde mühürsüz .udf (o dizini yalnız biz kurarız).
+      uyarilar : advisory — dava kökünde mühürsüz .udf (UYAP kaynak evrakı
+                 OLABİLİR; karşı tarafın dilekçesini RED'lemek yanlış-BLOK
+                 olur — amaç çizgisi: kapı muhakemeyi engellemez).
+      kayitlar : makbuza girecek TAM kapsam (K2) — [{dosya, sha12, muhur}]
+                 muhur ∈ taze | turev (imzalı) | bayat | yok | okunamadi
+    İmzalı (sign.sgn) dosyada sha uyuşmazlığı TÜREV'dir, sorun değildir
+    (B5b simetrisi). Asla fırlatmaz."""
+    sorunlar, uyarilar, kayitlar = [], [], []
+    haric_norm = {os.path.normcase(os.path.abspath(h)) for h in haric if h}
+    uyap_on_ek = os.path.normcase(
+        os.path.abspath(os.path.join(kok, UYAP_DIZIN_ADI)))
+    for yol in _teslim_sinifi_udf_listesi(kok):
+        if os.path.normcase(yol) in haric_norm:
+            continue
+        goreli = _goreli_guvenli(kok, yol)
+        uyapta = os.path.normcase(yol).startswith(uyap_on_ek)
+        try:
+            guncel = _sha256_dosya(yol)
+        except Exception:
+            guncel = None
+        kayit = {"dosya": goreli, "sha12": (guncel or "?")[:12], "muhur": "yok"}
+        prov_yolu = yol + ".prov.json"
+        if not os.path.isfile(prov_yolu):
+            kayitlar.append(kayit)
+            if uyapta:
+                sorunlar.append(
+                    "MÜHÜRSÜZ %s ürünü: %s — o dizine yalnız teslim zinciri "
+                    "yazar; mühürsüz ürünle teslim YOK (v0.5.10)."
+                    % (UYAP_DIZIN_ADI, goreli))
+            else:
+                uyarilar.append(
+                    "kökte mühürsüz .udf: %s — bizim ürünümüzse yeniden üret "
+                    "(udf_yaz mührü atomik basar); UYAP kaynak evrakıysa "
+                    "dokunma (advisory — kapı kapatmaz)." % goreli)
+            continue
+        try:
+            with open(prov_yolu, encoding="utf-8") as f:
+                muhur = json.load(f)
+        except Exception:
+            kayit["muhur"] = "okunamadi"
+            kayitlar.append(kayit)
+            sorunlar.append(
+                "MÜHÜR OKUNAMADI: %s.prov.json — güvenilmez mühürle teslim "
+                "YOK (fail-closed)." % goreli)
+            continue
+        if muhur.get("artifact_sha256") == guncel:
+            kayit["muhur"] = "taze"
+        elif _udf_imzali_mi(yol):
+            kayit["muhur"] = "turev"      # e-imza baytları değiştirir (B5b)
+        else:
+            kayit["muhur"] = "bayat"
+            sorunlar.append(
+                "PROV-BAYAT (307-K1): %s — mühürdeki sha (%s…) güncel "
+                "dosyayla (%s…) uyuşmuyor; ürün mühürden SONRA değişmiş. "
+                "Yeniden üret (udf_yaz mührü atomik tazeler)."
+                % (goreli, str(muhur.get("artifact_sha256", "?"))[:12],
+                   str(guncel or "?")[:12]))
+        kayitlar.append(kayit)
+    return sorunlar, uyarilar, kayitlar
 
 
 def _uyap_makbuz_kopyasi_yaz(kok, makbuz_veri):
@@ -757,7 +880,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.9.1"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.10"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -1057,7 +1180,10 @@ def _zincir():
         sys.exit(1)
 
     # ── tüm engelleyici kapılar açık → UDF devralma/üretim (--udf-yok yoksa) ─
-    udf_cikti = taslak + ".udf"
+    # v0.5.10 — çift-uzantının KAYNAĞI burasıydı: `taslak + ".udf"` kuralı
+    # 'x.md' taslağından 'x.md.udf' üretiyordu (307/923 saha kanıtı: 40-UYAP
+    # kopyaları çift-uzantılı doğdu). Doğru türetim: taslağın uzantısı düşer.
+    udf_cikti = os.path.splitext(taslak)[0] + ".udf"
     udf_uretildi = False
     udf_devralindi = None    # GÖREV 1 — {"yol","sha256"} | None (makbuza girer)
     kenar_duzeltildi = False  # GÖREV 5 — kenar yaması uygulandı mı (makbuza girer)
@@ -1318,6 +1444,40 @@ def _zincir():
                      "uyuşmazlığıyla teslim YOK")
         kapilar_makbuz.append({"ad": "(++) UDF TESLİM KAPILARI", "durum": "OK", "exit": 0})
 
+    # ── v0.5.10 — FİLO-TAZELİK KAPISI (BLOKLAYICI; 307-K1/K2 kilidi) ───────
+    # Seçili aday (++) kapısından geçti; ama 307 kanıtladı ki teslim edilen
+    # ürün SEÇİLİ olmayabilir. Dava kökü + 40-UYAP'taki TÜM teslim-sınıfı
+    # UDF'ler burada mühür-tazelik hükmünden geçer; bayat/mühürsüz-ürün → RED.
+    _bolum("[+++] FİLO-TAZELİK KAPISI — kök + %s (v0.5.10; 307-K1/K2)"
+           % UYAP_DIZIN_ADI)
+    filo_sorunlar, filo_uyarilar, filo_kayitlar = _filo_tazelik_denetimi(kok)
+    for fu in filo_uyarilar:
+        print("    [UYARI] %s" % fu)
+    for fk in filo_kayitlar:
+        if fk["muhur"] in ("taze", "turev"):
+            print("    [OK] %s — mühür %s (sha %s…)"
+                  % (fk["dosya"], fk["muhur"], fk["sha12"]))
+    if filo_sorunlar:
+        for fs in filo_sorunlar:
+            print("    [BLOK] %s" % fs)
+        kapilar_makbuz.append({"ad": "(+++) FİLO-TAZELİK", "durum": "BLOK",
+                               "exit": 1})
+        print()
+        print(CIZGI)
+        print("SONUÇ: FİLO-TAZELİK RED — teslim-sınıfı ürünlerden en az biri "
+              "mühürsüz/bayat (üstte [BLOK] satırları).")
+        print(CIZGI)
+        _makbuz_yaz(kok, _makbuz_taban(
+            a, taslak, kok, kapilar_makbuz, 1,
+            (udf_cikti if udf_uretildi else None), "(+++) FİLO-TAZELİK",
+            sebep="; ".join(filo_sorunlar)[:500],
+            ekstra={"teslim_sinifi_urunler": filo_kayitlar}),
+            basarili=False)
+        sys.exit(1)
+    kapilar_makbuz.append({"ad": "(+++) FİLO-TAZELİK", "durum": "OK",
+                           "exit": 0})
+    gecen.append("(+++) filo-tazelik")
+
     # ── GÖREV 6 — TAZELİK BİLGİ KAPISI (advisory; kapı KAPATMAZ) ────────────
     tazelik_uyarilari = _tazelik_uyarilari_topla(kok)
     if tazelik_uyarilari:
@@ -1375,7 +1535,13 @@ def _zincir():
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
                 # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
                 "uyap_kopya": uyap_kopya,
-                "uyap_urun_kopyalari": uyap_urun_kopyalari})
+                "uyap_urun_kopyalari": uyap_urun_kopyalari,
+                # v0.5.10 (307-K2): makbuz, SEÇİLİ ürünle sınırlı kalamaz —
+                # kök + 40-UYAP'taki TÜM teslim-sınıfı ürünler mühür durumuyla
+                # makbuza girer (kopya SONRASI yeniden ölçülür ki 40-UYAP'a az
+                # önce düşen kopyalar da kapsansın).
+                "teslim_sinifi_urunler": _filo_tazelik_denetimi(kok)[2],
+                "filo_uyarilari": filo_uyarilar})
     makbuz_yolu = _makbuz_yaz(kok, makbuz_veri, basarili=True)
     print("TESLİM MAKBUZU  : %s" % makbuz_yolu)
     # A2 — damgalı makbuz-kopyası (advisory: hata teslim exit'ini DEĞİŞTİRMEZ)

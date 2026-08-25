@@ -208,16 +208,24 @@ def test_gecersiz_aday_karantinaya_tasinir_taze_uretilir(ortam):
     kod, cikti = _tp(ortam)
 
     assert kod == 0, cikti
-    assert not aday.exists(), "geçersiz aday yerinde bırakılmamalıydı"
+    # v0.5.10: udf_cikti artık 'taslak.udf' — geçersiz ADAYIN yolu ile ürün
+    # yolu AYNI olabilir. Testin ruhu değişmez: geçersiz BAYTLAR karantinada
+    # durmalı, TAZE üretim çağrılmalı, makbuz udf_yolu doğru olmalı. O yolda
+    # duran dosya varsa artık TAZE ürün olmalıdır (elle-imzasız), eski
+    # geçersiz baytlar OLMAMALIDIR.
     karantina = ortam["kok"] / "_oa" / "arsiv-yerel" / "gecersiz-elle-udf"
     assert karantina.is_dir()
     tasinanlar = list(karantina.glob("*taslak.udf"))
     assert tasinanlar, "aday karantina klasöründe zaman damgalı adla durmalıydı"
     assert (ortam["kok"] / "URETIM-IZI.txt").exists(), (
         "geçersiz aday sonrası TAZE üretim çağrılmalıydı:\n%s" % cikti)
+    if aday.exists():
+        assert aday.read_bytes() != tasinanlar[0].read_bytes(), (
+            "aday yolundaki dosya hâlâ ESKİ geçersiz baytları taşıyor — "
+            "taze üretim o yola yazılmamış")
     m = _makbuz(ortam)
     assert m["udf_devralindi"] is None
-    assert m["udf_yolu"].endswith("taslak.md.udf")
+    assert m["udf_yolu"].endswith("taslak.udf")
 
 
 # ── GÖREV 2 — MAKBUZ GARANTİSİ (erken çıkış dahi izli) ─────────────────────
@@ -281,9 +289,9 @@ def test_taze_uretim_de_otomatik_muhurlenir(ortam):
     kod, cikti = _tp(ortam)
 
     assert kod == 0, cikti
-    udf = ortam["kok"] / "taslak.md.udf"
+    udf = ortam["kok"] / "taslak.udf"   # v0.5.10 ad şeması
     assert udf.is_file()
-    assert (ortam["kok"] / "taslak.md.udf.prov.json").is_file()
+    assert (ortam["kok"] / "taslak.udf.prov.json").is_file()
 
 
 # ── GÖREV 4 — YEREL-DAMGA KAPISI ────────────────────────────────────────────

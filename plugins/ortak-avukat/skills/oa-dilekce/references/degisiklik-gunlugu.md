@@ -39,6 +39,14 @@
 - **2026-08-13 — v0.5.8.1:** KOMPAKT-KAPANIŞ KURALI bölümü (pipeline şartsız beşli) + dilekce_denetim [K] m.6 cephanelik bekçisi (muhtemel-savunma analizi dilekçede → UYARI).
 - **2026-08-13 — v0.5.8.3 ŞEKİL STANDARDI v2:** Yönetmelik 2646 m.7/m.8 uyarlaması — 4 kenar 42.52pt, satır aralığı 1,5, linkler parantez+11pt (md_udf_html stil + udf_yaz kenar yaması + yerel motor).
 
+## v0.5.10 — KUSURSUZ UDF: atomik mühür + çift-uzantı (307 karnesi K1)
+- `udf_yaz.py`: ÜRETİM VE MÜHÜR TEK ATOMİK İŞLEM — her başarılı üretimde
+  (html2udf / docx2udf / yerel-riskli) `.prov.json` KOŞULSUZ basılır/tazelenir
+  (`_prov_muhur_yaz`; kardeş `muhur_yaz.py` şeması, yoksa yerleşik aynı şema).
+  E-imza halkası korunur: sign.sgn'li/e-imzali-nusha mühürlü dosyaya dokunulmaz.
+  307 kanıtı: ürün makbuzdan ~68 dk sonra mühür dışında değişmişti.
+- `_cikti_adi_normalize`: 'x.md.udf' sınıfı çift-uzantı görünür notla soyulur.
+
 ## v0.5.8.4 — 2026-08-15
 
 - **YEREL MOTOR EMEKLİ (372 A/B hükmü, ders 10-D):** `--yerel-motor` artık HATA verir; bilinçli risk `--yerel-motor-riskli` (resmî okuyucu doğrulaması denenir, OK gelmezse `<ad>.DOGRULANMADI` işaret dosyası — üretim kırılmaz ama işaretli dosya yüklenmez). Geçerli tek üretim yolu html2udf hattı — elle kurulan content.xml UYAP'ta açılmıyor (7 dosya karantina; re-zip + kenar yaması AKLANDI).

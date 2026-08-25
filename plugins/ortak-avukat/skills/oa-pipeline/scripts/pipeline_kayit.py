@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.9.1"
+OA_SURUM = "0.5.10"
 
 
 def _surum_tuple(s):
@@ -3870,6 +3870,17 @@ def hook_prompt(kok=None):
             ag = _arac_ag_import_uyarisi(k)
             if ag:
                 parcalar.append(ag)
+            # v0.5.10 (307-K1) — MÜHÜR-KIRIK ürün uyarısı: kök + 40-UYAP'taki
+            # .udf ürünlerden mührü bayat/okunamaz olan varsa her turda kısa
+            # uyarı akar (mühürsüz kök dosyaları SAYILMAZ — UYAP kaynak
+            # evrakı olabilir; yanlış alarm amaç-çizgisi ihlalidir).
+            kirik = _muhur_kirik_urun_listesi(k)
+            if kirik:
+                parcalar.append(
+                    "MÜHÜR-KIRIK ÜRÜN (%d): %s — ürün mühürden sonra "
+                    "değişmiş; teslimden önce udf_yaz ile yeniden üret "
+                    "(mühür atomik tazelenir; FİLO-TAZELİK kapısı bunu "
+                    "RED'ler)." % (len(kirik), "; ".join(kirik[:3])))
             # H3a — kanonik olmayan makbuz (txt var / kanonik json yeşil değil).
             kanonik = _kanonik_olmayan_makbuz_uyarisi(k)
             if kanonik:
@@ -4673,11 +4684,86 @@ def _sunum_teslim_sinifi_mi(kok, yol):
         return False
 
 
+def _muhur_kirik_urun_listesi(kok):
+    """v0.5.10 — kök (maxdepth 1) + 40-UYAP altındaki .udf'lerden mührü
+    KIRIK olanların köke-göreli listesi. Mühürsüz KÖK dosyaları listeye
+    GİRMEZ (UYAP kaynak evrakı olabilir); 40-UYAP'ta mühürsüz dahil her
+    kırık girer (o dizin yalnız bizimdir). Asla fırlatmaz."""
+    kirik = []
+    try:
+        dizinler = [(kok, False), (os.path.join(kok, "40-UYAP"), True),
+                    (os.path.join(kok, "40-uyap"), True)]
+        for dizin, bizim in dizinler:
+            try:
+                girdiler = sorted(os.scandir(dizin), key=lambda g: g.name.lower())
+            except OSError:
+                continue
+            for g in girdiler:
+                try:
+                    if not g.is_file() or not g.name.lower().endswith(".udf"):
+                        continue
+                    provlu = os.path.isfile(g.path + ".prov.json")
+                    if not provlu and not bizim:
+                        continue          # kökte mühürsüz → kaynak evrak olabilir
+                    if _muhur_kirik_mi(g.path):
+                        try:
+                            kirik.append(os.path.relpath(g.path, kok))
+                        except ValueError:
+                            kirik.append(g.name)
+                except OSError:
+                    continue
+    except Exception:
+        pass
+    return kirik
+
+
+def _muhur_kirik_mi(yol, muhursuz_sayilir=True):
+    """v0.5.10 (307-K1 penceresi): teslim-sınıfı .udf ürünün mührü kırık mı?
+    - .udf değilse → False (bu sensör yalnız UDF ürünlere bakar).
+    - .prov.json yoksa → `muhursuz_sayilir` (varsayılan True: mühürsüz ürün
+      kırık sayılır — üretim/mühür atomiktir). SUNUM KİLİDİ'nin yeşil-makbuz
+      dalı False ile çağırır: yeşil makbuz filo kapısından geçmiştir, kökteki
+      mühürsüz .udf kaynak evrak olabilir; orada yalnız GERÇEK bayatlık
+      (mühür VAR + sha uyuşmaz — 307'nin birebir durumu) 'ask' doğurur.
+    - mühürdeki artifact_sha256 güncel sha ile uyuşmuyorsa → True; TEK
+      istisna imzalı nüsha (zip'te sign.sgn): e-imza baytları değiştirir,
+      uyuşmazlık TÜREV'dir (B5b) → False.
+    Okuma hatası → True (fail-closed; 'ask' engel değil, karar devridir)."""
+    try:
+        if not str(yol).lower().endswith(".udf") or not os.path.isfile(yol):
+            return False
+        prov_yolu = str(yol) + ".prov.json"
+        if not os.path.isfile(prov_yolu):
+            return bool(muhursuz_sayilir)
+        with open(prov_yolu, encoding="utf-8") as f:
+            muhur = json.load(f)
+        h = hashlib.sha256()
+        with open(yol, "rb") as f:
+            for parca in iter(lambda: f.read(1 << 20), b""):
+                h.update(parca)
+        if muhur.get("artifact_sha256") == h.hexdigest():
+            return False
+        try:
+            import zipfile as _zf
+            with _zf.ZipFile(yol) as z:
+                if any(ad.lower().endswith("sign.sgn") for ad in z.namelist()):
+                    return False            # imzalı türev — B5b toleransı
+        except Exception:
+            pass
+        return True
+    except Exception:
+        return True
+
+
 def _sunum_kilidi_gerekli_mi(veri, kok):
     """A1 karar çekirdeği: payload SendUserFile mi + gönderilenler arasında
     teslim-sınıfı ürün var mı + yeşil makbuz YOK mu? Üçü de evetse True
     ('ask' basılır). Yeşil makbuz (exit_kodu==0) varsa False — kapı sessiz
     (deterministik: halka makbuz ARTEFAKTINA bağlanır, beyana değil).
+    v0.5.10 (307-K1): yeşil makbuz VARKEN bile gönderilen teslim-sınıfı
+    ürünün MÜHRÜ KIRIKSA (makbuz-sonrası değişiklik penceresi) kilit yine
+    devreye girer — 307'de ürün makbuzdan 68 dk sonra mühür dışında değişti
+    ve hiçbir katman ateşlemedi; bu koşul o pencereyi kapatır.
     ASLA fırlatmaz."""
     try:
         if not isinstance(veri, dict) or veri.get("tool_name") != "SendUserFile":
@@ -4690,11 +4776,17 @@ def _sunum_kilidi_gerekli_mi(veri, kok):
             dosyalar = [dosyalar]
         if not isinstance(dosyalar, (list, tuple)):
             return False
-        if not any(_sunum_teslim_sinifi_mi(kok, f) for f in dosyalar):
+        teslim_sinifi = [f for f in dosyalar if _sunum_teslim_sinifi_mi(kok, f)]
+        if not teslim_sinifi:
             return False
         m, _hata = _makbuz_oku(kok)
         if m is not None and m.get("exit_kodu") == 0:
-            return False                    # yeşil makbuz — sessiz geçiş
+            # yeşil makbuz VAR — ama gönderilen üründe GERÇEK bayatlık
+            # (mühür var + sha uyuşmaz + imzasız = makbuz-sonrası değişiklik,
+            # 307-K1) varsa kilit yine gerekir. Mühürsüz dosya bu dalda
+            # SESSİZDİR (kaynak evrak olabilir; filo kapısı zaten geçti).
+            return any(_muhur_kirik_mi(f, muhursuz_sayilir=False)
+                       for f in teslim_sinifi)
         return True
     except Exception:
         return False

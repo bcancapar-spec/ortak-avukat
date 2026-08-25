@@ -562,7 +562,10 @@ def test_cli_gecici_html_cikti_klasorune_dosya_birakmaz(tmp_path):
         timeout=180)
     assert cp.returncode == 0, cp.stdout + cp.stderr
     kalanlar = sorted(p.name for p in tmp_path.iterdir())
-    assert kalanlar == ["taslak.md", "taslak.md.udf"], (
+    # v0.5.10: mühür üretimin atomik parçası — .prov.json MEŞRU artefakttır;
+    # _oa'sız çıplak klasörde _oa DOĞMAMALI (yan-etki yasağı).
+    assert kalanlar == ["taslak.md", "taslak.md.udf",
+                        "taslak.md.udf.prov.json"], (
         f"cikti klasöründe beklenmedik artefakt kaldı: {kalanlar}")
 
 

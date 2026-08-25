@@ -99,7 +99,7 @@ def test_eksik_unsurlu_taslak_ilk_kapida_durur_udf_uretilmez(izole_kok):
     assert "TESLİM DURDURULDU" in cikti
     assert "İLK KAPANAN KAPI" in cikti
     assert "UDF ÜRETİLMEDİ" in cikti
-    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    udf_yolu = taslak.with_suffix(".udf")  # v0.5.10: çift-uzantı kaynağında öldü
     assert not udf_yolu.exists(), "eksik unsurlu taslak için UDF üretilmemeliydi"
 
 
@@ -129,7 +129,7 @@ def test_tam_temiz_taslak_zincir_gecer_udf_uretilir(izole_kok):
 
     assert kod == 0, f"tam/temiz taslak zinciri geçmeliydi; çıktı:\n{cikti}"
     assert "TESLİME HAZIR" in cikti
-    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    udf_yolu = taslak.with_suffix(".udf")  # v0.5.10: çift-uzantı kaynağında öldü
     assert udf_yolu.exists(), "temiz taslak için UDF üretilmeliydi"
     assert udf_yolu.stat().st_size > 0
 
@@ -146,7 +146,7 @@ def test_tam_temiz_taslak_zincir_gecer_udf_yok_kipinde_de(izole_kok):
     assert kod == 0, f"tam/temiz taslak zinciri geçmeliydi; çıktı:\n{cikti}"
     assert "TESLİME HAZIR" in cikti
     assert "--udf-yok BİLİNÇLİ istekle" in cikti
-    assert not taslak.with_suffix(taslak.suffix + ".udf").exists()
+    assert not taslak.with_suffix(".udf").exists()  # v0.5.10 ad şeması
 
 
 def test_tam_temiz_taslakta_dilekce_ve_kunye_kapilari_acik(izole_kok):
@@ -247,7 +247,7 @@ def test_ictihatli_taslak_muhakeme_kaydi_yoksa_b2_kapisi_engeller(izole_kok):
     assert "İLK KAPANAN KAPI: (b2)" in cikti
     assert "[OK] kapı açık (exit 0)." in cikti.split("[b2]")[0], (
         "(b2)'den önceki (a)/(b) kapıları açık olmalıydı")
-    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    udf_yolu = taslak.with_suffix(".udf")  # v0.5.10: çift-uzantı kaynağında öldü
     assert not udf_yolu.exists()
 
 
@@ -275,7 +275,7 @@ def test_ictihatli_taslak_lehe_muhakeme_kaydiyla_tum_kapilar_gecer_udf_uretilir(
     assert kod == 0, f"LEHE damgalı, tam alanlı muhakeme kaydıyla zincir geçmeliydi; çıktı:\n{cikti}"
     assert "TESLİME HAZIR" in cikti
     assert "(b2) içtihat muhakeme zinciri" in cikti
-    udf_yolu = taslak.with_suffix(taslak.suffix + ".udf")
+    udf_yolu = taslak.with_suffix(".udf")  # v0.5.10: çift-uzantı kaynağında öldü
     assert udf_yolu.exists()
     assert udf_yolu.stat().st_size > 0
 

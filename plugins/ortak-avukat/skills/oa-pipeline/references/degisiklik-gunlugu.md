@@ -38,6 +38,13 @@
 - **2026-08-13 — v0.5.8.1 tetik paketi (447 dersleri):** hook devir enjeksiyonuna TESLİM DİSİPLİNİ beşlisi + Stop hook'una mühürsüz-teslim nöbetçisi (_muhursuz_teslim_uyarisi).
 - **2026-08-13 — v0.5.8.2 HOOK YAPISAL ONARIM:** üç sahada sıfır-ateşleme kök nedeni bulundu (kabuksuz yürütmede '||' zinciri python'a argüman gidiyordu); run-hook.cmd polyglot sarmalayıcı + tek-komutlu hooks.json (superpowers deseni); 4 sarmalayıcı testi.
 
+## v0.5.10 — MÜHÜR-KIRIK sensörü (307 karnesi K1 penceresi)
+- `pipeline_kayit.py`: `_muhur_kirik_mi` + `_muhur_kirik_urun_listesi` —
+  SUNUM KİLİDİ artık yeşil makbuz VARKEN bile mühür-kırık teslim-sınıfı ürün
+  SendUserFile edilirse 'ask' basar (307: makbuz-sonrası değişiklik penceresi
+  hiçbir katmanda ateşlememişti). Prompt kanalına her turda kısa MÜHÜR-KIRIK
+  uyarısı eklendi (kökte mühürsüz dosyalar sayılmaz — kaynak evrak gürültüsü yok).
+
 ## v0.5.8.4 — 2026-08-15
 
 - **Hook katmanı (372 dersleri):** YENİ PreToolUse elle-UDF kapısı (`--hook-pretool`; Write/Edit/Bash/PowerShell girdisinde zipfile+content.xml deseni + dava klasörü → 'ask' kararı — ders 10-D; bloklamaz, karar avukatta); teslim-disiplini hatırlatması artık defter VARKEN de enjekte edilir (mühürsüz teslim-sınıfı ürün varsa — 23/0 dersi); `_oa/araclar` kopyalarında ağ-import saha taraması (Layer 0'ın saha ayağı, görünürlük); hook ateşlemeleri `pipeline-olaylar.jsonl`'e `{"tip":"hook"}` satırı düşer (araç-imzalı — defterde hook nöbeti görünür); Stop/SessionEnd mühürsüz üründe `muhur_yaz.py`'yi otomatik koşar (post-hoc mühür dürüst beyanla — üretim yolu iddia edilmez).
