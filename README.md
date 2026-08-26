@@ -743,7 +743,9 @@ koşu ölçümü 1385 yeşil / 1 tasarımsal atlama),
 ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm
 tutarlılığı, manifest "N skill" sayımı, hook kapsamı) denetler. Güncel ölçüm
 ve açık bulgular: [STATUS.md](STATUS.md) · yol haritası:
-[YOL-HARITASI.md](YOL-HARITASI.md).
+[YOL-HARITASI.md](YOL-HARITASI.md) · sürüm zincirinin kök defteri:
+[CHANGELOG.md](CHANGELOG.md) (parça ayrıntısı her skill'in kendi
+`references/degisiklik-gunlugu.md` dosyasındadır).
 
 ```
 ortak-avukat/
