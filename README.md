@@ -10,9 +10,7 @@
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.11'e gelen
-> geliştirme zinciri **149 gerçek davada** test edildi (istinaf, vergi,
-> aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet, tasarrufun
-> iptali, vergi/gümrük, idari yüksek yargı itirazı vd.); bunların **dokuzu**,
+> geliştirme zinciri **149 gerçek davada** test edildi; bunların **dokuzu**,
 > sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur (aşağıda
 > tablo). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
