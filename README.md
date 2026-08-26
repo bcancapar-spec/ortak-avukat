@@ -220,8 +220,9 @@ tarafının kuralları:
 ### Belgeli dokuz büyük saha koşusu (149 gerçek dava testi içinden)
 
 Sistem 149 gerçek davada test edilerek bugüne geldi; her koşu karneye
-bağlanmadı. Aşağıdaki dokuzu, sensörlü izleme ve adli analizle uçtan uca
-BELGELENEN koşulardır — sürüm zincirini fiilen bunlar yönlendirdi.
+bağlanmadı. Aşağıdaki dokuzu, **v0.5.x geliştirme döngüsünde** koşulan ve
+sensörlü izleme + adli analizle uçtan uca BELGELENEN dava testleridir —
+v0.5 sürüm zincirini fiilen bu dokuz dava yönlendirdi.
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
