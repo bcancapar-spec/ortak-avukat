@@ -279,6 +279,11 @@ bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu haz�
 | **Cevap dilekçesi** | "Dava dilekçesi [tarih] günü tebliğ edildi; cevap süremizin son gününü hesapla ve cevap dilekçesini hazırla." |
 | **Bilirkişi itirazı** | "Bilirkişi raporu [tarih] günü tebliğ edildi; itiraz süresi içinde rapora itiraz dilekçesi hazırla; raporun hesabını kendi hesabınla çaprazla." |
 | **İstinaf / temyiz** | "Gerekçeli karar [tarih] günü tebliğ edildi; kanun yolu süresini hesapla ve istinaf/temyiz dilekçesini hazırla." |
+| **Dava dilekçesi** | "Davayı biz açıyoruz: [talep — ör. alacak/tazminat/tahliye/iptal]. Görevli-yetkili mahkemeyi ve harca esas değeri değerlendir; zamanaşımı/hak düşürücü süreyi kontrol et; dava dilekçesini delil listesiyle birlikte hazırla." |
+| **Savunma dilekçesi (ceza)** | "[Sanık müdafii / şüpheli müdafii] olarak savunma yapacağız; [iddianame/ifade çağrısı] [tarih] günü tebliğ edildi. Suçun unsurlarını tek tek denetle, delil yasaklarını tara, lehe delilleri topla ve savunma dilekçesini hazırla." |
+| **Suç duyurusu / şikâyet** | "Müşteki vekiliyiz; şikâyet süresini kontrol et, suçun unsurlarını delillere eşleyerek suç duyurusu dilekçesi hazırla; celbi gereken delilleri ayrıca listele." |
+| **İdari başvuru** | "Dava öncesi idari başvuru aşamasındayız: [işlem/eylem] [tarih] günü tebliğ edildi/öğrenildi. Başvuru ve dava sürelerini birlikte hesapla; [ilgili idareye] itiraz/başvuru dilekçesini hazırla ve zımni ret ihtimaline göre takvimi çıkar." |
+| **Kuruma dilekçe** | "[Kurum — ör. SGK/vergi dairesi/tapu/belediye/KVKK] nezdinde [talep/itiraz] için kurum dilekçesi hazırla; dayanak mevzuatı tam künyesiyle doğrula ve varsa başvuru süresini nöbete al." |
 | **Yalnız analiz** | "Henüz dilekçe istemiyorum; dosyayı işle, güçlü/zayıf yanlarımızı ve yol seçeneklerini içeren bir strateji notu çıkar." |
 
 > **Kapanış promptu gerekmez (v0.5.9).** Oturum kapanırken defter denetimi,
