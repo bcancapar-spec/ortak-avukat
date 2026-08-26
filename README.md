@@ -25,7 +25,7 @@
 
 ## Bu nedir 
 
-**Bu bir "dilekçe yazan yapay zekâ" değildir; bir METODOLOJİ SİSTEMİDİR.**
+**Büyük dil modellerini deterministik çalıştırmak üzere hazırlanmış bir METODOLOJİ SİSTEMİDİR.**
 Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
 önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
 müvekkile karşı değil müvekkil için kullanma ayrımını — yazıya döker ve **her
