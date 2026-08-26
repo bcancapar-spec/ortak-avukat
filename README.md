@@ -5,6 +5,13 @@
 > hesaplar, içtihadı resmî kaynaktan tam metniyle doğrular, dilekçeyi yazar,
 > teslimden önce kendi işini makineyle denetler — ve son kararı **daima size**
 > bırakır. Bir Claude Code / Cowork **plugin marketplace** deposudur.
+>
+> Bir avukatın Türk hukuku metodoloji sistemidir. Dil modelleri şimdilik
+> zekâ sahibi değildir; AGI henüz oluşmamıştır. Bu yüzden modelin
+> yetenekleri, deterministik olması için Python kodlarıyla — plugin kodlama
+> yönünden olan kısmında deneme/yanılma ile — kurulmuştur ve geliştirilmeye
+> devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
+> ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
 **Sürüm:** 0.5.11 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
