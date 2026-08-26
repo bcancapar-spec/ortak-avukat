@@ -229,6 +229,8 @@ Sistem 149 gerçek davada test edilerek bugüne geldi; her koşu karneye
 bağlanmadı. Aşağıdaki dokuzu, **v0.5.x geliştirme döngüsünde** koşulan ve
 sensörlü izleme + adli analizle uçtan uca BELGELENEN dava testleridir —
 v0.5 sürüm zincirini fiilen bu dokuz dava yönlendirdi.
+**Dokuz koşunun tam kaydı — yöntem, ölçümler, dersler:**
+[SAHA-DENEYLERI.md](SAHA-DENEYLERI.md).
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
