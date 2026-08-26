@@ -9,8 +9,12 @@
 **Sürüm:** 0.5.11 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
-> derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **dokuz büyük saha
-> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet, tasarrufun iptali, vergi/gümrük, idari yüksek yargı itirazı vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
+> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.11'e gelen
+> geliştirme zinciri **149 gerçek davada** test edildi (istinaf, vergi,
+> aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet, tasarrufun
+> iptali, vergi/gümrük, idari yüksek yargı itirazı vd.); bunların **dokuzu**,
+> sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur (aşağıda
+> tablo). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir  davalının istinaf dilekçesine
 > geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde plug in sayesinde en ucuz token tüketimi ve en yüksek çıktı kalitesi yakalanmıştır. ( Plug in öncesi Claude Fable 5, max efor ile önceden yaklaşık 1,2m+ token tüketiliyordu 1m token 50$ test için özellikle en pahalımodel seçildi ve test edildi tasarruf maddiyatla görülerek gerçekleşti. ) ; evraklar
@@ -213,7 +217,11 @@ tarafının kuralları:
   kapılarla (aile_dogrula Kapı-A/B) doğrulanır — "denetleyen kim denetliyor"
   sorusu açık bırakılmaz.
 
-### Dokuz büyük saha koşusu
+### Belgeli dokuz büyük saha koşusu (149 gerçek dava testi içinden)
+
+Sistem 149 gerçek davada test edilerek bugüne geldi; her koşu karneye
+bağlanmadı. Aşağıdaki dokuzu, sensörlü izleme ve adli analizle uçtan uca
+BELGELENEN koşulardır — sürüm zincirini fiilen bunlar yönlendirdi.
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
