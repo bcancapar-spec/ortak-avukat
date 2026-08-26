@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-08-22 · **Sürüm:** 0.5.9 · **Commit:** `46bd1d3`+
-*(önceki kayıtlar: 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-08-26 · **Sürüm:** 0.5.11 · **Commit:** `26bd278`+
+*(önceki kayıtlar: 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -14,6 +14,27 @@ açık kaldığı, sıradaki sürümün neden değiştiği. Beyan değil **ölç
 bir satır ölçülmeden buraya girmez.
 
 ---
+
+## 0. Durum özeti (2026-08-26 · v0.5.11)
+
+- **v0.5.10 — Kusursuz UDF Dönüşümü** (`83969e4`, 307 karnesi K1/K2 + 923
+  çift-kanıt): atomik mühür (üretim=mühür, üç yolda) · FİLO-TAZELİK kapısı
+  (kök+40-UYAP tüm teslim-sınıfı UDF'ler makbuza) · çift-uzantı kaynağında
+  öldü · kopyalar mühürleriyle gider · sunum kilidi makbuz-sonrası değişiklik
+  penceresini kapattı. Süit o gün 1371 yeşil.
+- **v0.5.11 — Kit Güvenlik Katmanı** (`c428aa4`, 1865 karnesi T1-T7): rpm
+  karantinası ('ask') · kilitli çekirdek (salt-okunur + 'ask') · yönlü
+  tazelik (bayat/kanaldan-yeni/özdeş) · oturum damgası (defter+makbuz
+  session_id) · çok-oturum görünürlüğü · dizin + MANİFEST-önce bekçileri.
+- **Tam süit: 1385 yeşil / 1 tasarımsal atlama** · aile denetimi temiz ·
+  CI 4'lü matris yeşil · kurulu kanal 0.5.11.
+- **Saha:** 149 gerçek dava toplam; v0.5.x döngüsünde 9 belgeli koşu
+  ([SAHA-DENEYLERI.md](SAHA-DENEYLERI.md)); ilk ORGANİK yeşil makbuz 923
+  sahasında; 1865 çok-oturumlu + müdahaleli-yetkili sınıf
+  ([KARNE-1865.md](KARNE-1865.md)).
+- **Açık işler:** v0.5.12 adayı P1-4b (çok-oturum kilit sahipliği) ·
+  1865 içerik hükümleri avukatta · yeni saha koşusu v0.5.11 korumalarının
+  canlı sınavı olacak.
 
 ## 0. Durum özeti (2026-08-22 · v0.5.9)
 

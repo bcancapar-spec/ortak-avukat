@@ -121,7 +121,8 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 ## Kurulum — kolay yol
 
 Sistem dört ayağa basar. Önce ne gerektiğini ve **neden** gerektiğini görün,
-sonra adım adım kurun:
+sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
+**[Hukukçular için sözlük → SOZLUK.md](SOZLUK.md)**.
 
 | Yazılım | Nereden | Neden gerekli |
 |---|---|---|
@@ -133,7 +134,7 @@ sonra adım adım kurun:
 | **Node.js (LTS)** | [nodejs.org](https://nodejs.org/) | UDF üretim araçları npm ekosisteminde yaşar ve `npx` ile koşar. |
 | **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@latest login` gerekir. |
 | **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. |
-| **Yargı Pro MCP** | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. |
+| **Yargı Pro MCP** | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Alternatif: açık kaynak [yargi-mcp](https://github.com/saidsurucu/yargi-mcp) (semantik arama için ayrıca AI API anahtarı gerekir). |
 
 Adım adım:
 
@@ -185,6 +186,13 @@ claude mcp add --transport http yargipro https://yargi.betaspacestudio.com/mcp
 (veya Claude Code **connectors** bölümünden aynı adresi ekleyin) ve OAuth
 akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; içtihat
 "teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
+
+**Yargı Pro kullanmayanlar için alternatif:** açık kaynak
+[yargi-mcp](https://github.com/saidsurucu/yargi-mcp) sunucusu da içtihat
+arama kanalı olarak bağlanabilir — dikkat: **semantik arama özelliği için
+ayrıca bir AI API anahtarı gerekir** ve kanal yetenekleri Yargı Pro ile
+birebir değildir; sistemin "resmî kaynaktan teyit" kuralı hangi kanal
+bağlıysa onun üzerinden işler.
 
 ### 6. Eklentiyi kurun
 

@@ -1,7 +1,10 @@
 # TEST-KULLANIM — bu fork'u ana ortak-avukat'tan AYRI nasıl kullanırsınız
 
-> Bu depo v0.5.8 aday paketinin (semantica+graft desen devşirmesi) PROVA
-> sahasıdır. Ana depo (`bcancapar-spec/ortak-avukat`, v0.5.7.5) DONUKTUR.
+> **GÜNCEL DURUM (2026-08-26):** prova dönemi kapandı — ana depo
+> (`bcancapar-spec/ortak-avukat`) v0.5.11'dedir ve KANONİKTİR; fork artık
+> yalnız AYNA olarak eşit tutulur. Aşağıdaki anahtarlamalı-kullanım tarifi,
+> ileride yeniden bir aday-paket prova dönemi açılırsa geçerli olacak
+> TARİHÎ prosedürdür.
 
 ## Altın kural: İKİ AİLE AYNI ANDA KURULU OLMAZ
 
