@@ -201,12 +201,37 @@ ayrıca bir AI API anahtarı gerekir** ve kanal yetenekleri Yargı Pro ile
 birebir değildir; sistemin "resmî kaynaktan teyit" kuralı hangi kanal
 bağlıysa onun üzerinden işler.
 
-### 6. Eklentiyi kurun
+### 6. Eklentiyi (plugin) kurun — hukukçu için adım adım
+
+Eklenti kurulumu iki satırdır ve programcılık bilgisi GEREKTİRMEZ. Yeriniz:
+Claude Code'un **sohbet kutusu** — yani normalde soru yazdığınız yer. Baştaki
+`/` işareti dahil, satırı aynen yazıp Enter'a basacaksınız.
+
+**Adım 6a — mağaza rafını tanıtın** (bir kez yapılır):
 
 ```
 /plugin marketplace add bcancapar-spec/ortak-avukat
+```
+
+Bu komut, Ortak Avukat'ın yayımlandığı GitHub rafını Claude Code'a tanıtır.
+"added/eklendi" sınıfı bir onay mesajı görürsünüz.
+
+**Adım 6b — eklentiyi o raftan kurun:**
+
+```
 /plugin install ortak-avukat@ortak-avukat
 ```
+
+Claude Code onay isterse onaylayın; kurulum birkaç saniye sürer ve 20
+skill'lik aile makinenize iner. (`@` işaretinin iki yanı aynıdır: eklenti
+adı @ raf adı.)
+
+**Takılırsanız:** komutlar terminale değil SOHBET kutusuna yazılır ve `/`
+ile başlar; `/plugin` yazdığınızda menü açılıyorsa oradan da
+Marketplace → Add ve Install adımlarını tıklayarak ilerleyebilirsiniz.
+Terminalden kurmayı bilenler için eşdeğeri: `claude plugin marketplace add
+bcancapar-spec/ortak-avukat` ve `claude plugin install
+ortak-avukat@ortak-avukat`.
 
 ### 7. Claude Code'u TAM kapatıp açın
 Bayat süreç eski hook setini taşımaya devam eder — pencereyi kapatmak yetmez,
