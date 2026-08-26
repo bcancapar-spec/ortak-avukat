@@ -19,12 +19,24 @@
 
 ## Koşu tablosu (belgeli koşular)
 
-| Koşu | Süre | Üretim tokeni | Araç çağrısı | Not |
-|---|---|---|---|---|
-| İlk tam koşu (istinaf, ~200 evrak) | 49 dk | **45,6k** | — | Kıyas ölçümü: aynı iş, evrakı görüntü olarak yükleyen eski usulde **1,2M+** token — fark **~26×** ([SAHA-SONUCU.md](SAHA-SONUCU.md)) |
-| 307 (tasarrufun iptali, ikinci cevap) | 161 dk | **~822k** | 271 (161 kabuk + 69 hukuk MCP) | 45 karar tam metin okundu; 154. dakikada bağlam sıkışması (bitişe 7 dk kala) |
-| 923 (vergi/gümrük, çift dilekçe) | ~70 dk | **~400k** | 100+ | Tek cümlelik prompt, sıfır müdahale; ilk ORGANİK yeşil makbuz |
-| 1865 (soruşturma-izni itirazı, 2 müvekkil) | çok oturumlu, ~2 gün | oturum başına 0,4M–1,13M; **toplam ~4M** | 500+ | 5-6 paralel oturum; 34 TIFF'in tamamı OCR'dan geçti |
+Süre sütunu iki türdür: **iş süresi** (kesintisiz koşularda, dakika dakika
+ölçülü) ve *duvar saati* (♦ işaretli — oturumun ilk-son kaydı arası; molalar
+dahil olduğundan iş süresinden büyüktür).
+
+| Koşu | Süre | Üretim tokeni | Not |
+|---|---|---|---|
+| İlk tam koşu (istinaf, ~200 evrak) | 49 dk | **45,6k** | Kıyas: aynı iş, evrakı görüntü olarak yükleyen eski usulde **1,2M+** token — fark **~26×** ([SAHA-SONUCU.md](SAHA-SONUCU.md)) |
+| 447 (vergi) | ♦ | **~604k** | Hook katmanının sessiz ölümünün teşhis koşusu |
+| 372 (aile/mal rejimi) | ♦ | **~1,24M** | Elle-UDF krizi + 5 kollu adli analiz bu koşudan çıktı |
+| 346 (bilirkişi itirazı) | ♦ ~8,5 saat | **~1,17M** | [G6] kuralının doğduğu koşu |
+| 777 (banka/kefalet, ikinci cevap) | ♦ | **~1,50M** | İçerik reddi + yeniden inşa dahil; ilk 23/11 LEHE/ALEYHE triyajı |
+| 307 (tasarrufun iptali, ikinci cevap) | 161 dk | **~822k** | 271 araç çağrısı (161 kabuk + 69 hukuk MCP); 45 karar tam metin; 154. dk'da bağlam sıkışması |
+| 923 (vergi/gümrük, çift dilekçe) | 57 dk (yeşile kadar) | **~360k**; kapanış oturumuyla **~930k** | Tek cümlelik prompt, sıfır müdahale; ilk ORGANİK yeşil makbuz |
+| 1865 (soruşturma-izni itirazı, 2 müvekkil) | çok oturumlu, ~2 gün ♦ | oturum başına 0,4M–1,14M; **toplam ~4,3M** | 5-6 paralel oturum; 34 TIFF'in tamamı OCR'dan geçti |
+
+*447/372/777 ölçümleri koşu sonrasında hayatta kalan transkriptlerden geriye
+dönük sayılmıştır (2026-08-27); o koşular canlı token-izlemesiz yapılmıştı —
+izleme disiplini 307 ile başladı.*
 
 ## 307 dilim eğrisi — bir koşunun anatomisi
 
@@ -46,6 +58,16 @@ muhakemenin ortasına denk gelebilir (okuma işinin destelenmesi bu yüzden
 bir "hafıza yatırımı"dır).
 
 ## Diğer ölçülmüş kalemler
+
+### Geliştirme tarafı ölçümleri (saha değil, sürüm üretimi)
+
+Yöntemin kendisi de token yer; şeffaflık gereği kaydı:
+
+- **Karne adli analizi (307):** 3 kol + sentez = 4 ajan, **~566k** token.
+- **v0.5.10 tasarım paneli:** 5 lens + 5 çürütücü + sentez = 11 ajan,
+  **~1,43M** token (yapısal sıçrama tartışması dahil).
+- Bir sürümün tam laboratuvar döngüsü (testler + süit koşuları + CI) bunlara
+  ek; süit tek koşusu makine-yerelde ~7-10 dakikadır, model tokeni yemez.
 
 - **Alt-ajan sabit maliyeti:** iki işlem yapan minik bir alt-ajan **~63k**
   token yedi (her ajan doğuşta tüm kurulumu yükleniyor). Sonuç: karar-başına
