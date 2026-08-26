@@ -586,6 +586,10 @@ testler, araç yoksa kendini **görünür şekilde** atlar (sessiz geçiş yok).
 Süitin tamamı her push'ta dört ortamda (Windows + Ubuntu × iki Python)
 baştan koşar.
 
+**Mühendisler için ayrıntı:** test mimarisinin geliştirici-dili anlatımı
+(desenler, sözleşme sınıfları, koşum tarifleri, yeni test ekleme disiplini)
+ayrı belgededir: [tests/README.md](tests/README.md).
+
 **Neden ve ne amaçla:** bu sistemin avukata verdiği güvenceler ("makbuzsuz
 teslim olmaz", "aleyhe karar dilekçeye giremez", "elle UDF yazılamaz") birer
 cümle değil, birer KAPIDIR — ve kapının kendisi de bozulabilir. 1.385 test,
