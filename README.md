@@ -6,11 +6,11 @@
 > teslimden önce kendi işini makineyle denetler — ve son kararı **daima size**
 > bırakır. Bir Claude Code / Cowork **plugin marketplace** deposudur.
 
-**Sürüm:** 0.5.9 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.11 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
-> derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **altı büyük saha
-> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
+> derdest gerçek dosyalarla sahada sınanıyor: bugüne dek **dokuz büyük saha
+> koşusu** (istinaf, vergi, aile/mal rejimi, bilirkişi itirazı, dava analizi, banka/kefalet, tasarrufun iptali, vergi/gümrük, idari yüksek yargı itirazı vd. ). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir  davalının istinaf dilekçesine
 > geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde plug in sayesinde en ucuz token tüketimi ve en yüksek çıktı kalitesi yakalanmıştır. ( Plug in öncesi Claude Fable 5, max efor ile önceden yaklaşık 1,2m+ token tüketiliyordu 1m token 50$ test için özellikle en pahalımodel seçildi ve test edildi tasarruf maddiyatla görülerek gerçekleşti. ) ; evraklar
@@ -189,7 +189,7 @@ vardır. Protokol beş adımdır ve her koşuda aynıdır:
 Saha, son sınavdır; ama hiçbir kod sahaya test görmeden çıkmaz. Laboratuvar
 tarafının kuralları:
 
-- **1.357 otomatik test** (bu sürüm itibarıyla; ilk paket 57 testle çıkmıştı —
+- **1.385 otomatik test** (bu sürüm itibarıyla; ilk paket 57 testle çıkmıştı —
   her sürüm, sahada bulunan her kusuru önce bir teste çevirir). Testlerin
   tamamı **sentetik veriyle** koşar: anayasa m.7 gereği hiçbir gerçek dava
   verisi, kişi adı veya dosya yolu test koduna giremez.
@@ -213,7 +213,7 @@ tarafının kuralları:
   kapılarla (aile_dogrula Kapı-A/B) doğrulanır — "denetleyen kim denetliyor"
   sorusu açık bırakılmaz.
 
-### Altı büyük saha koşusu
+### Dokuz büyük saha koşusu
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
@@ -223,6 +223,9 @@ tarafının kuralları:
 | **372 sahası** | aile / mal rejimi | Hook katmanı ilk kez uçtan uca canlı ateşledi; koşunun **5 kollu adli analizi** (transkript + artefakt + kod yolu + şekil zinciri + desen karnesi) → v0.5.8.4: elle-UDF engeli, makbuz garantisi, mühür otomasyonu |
 | **346 sahası** | bilirkişi raporuna itiraz | Künye kapısı **gerçek bir açığı** yakaladı ve model dürüst davrandı; tek bir ayrıştırıcı yanlış-pozitifi yeşil makbuzu imkânsız kıldı → v0.5.8.5: mutlak triyaj [G6], hook dirilişi, e-imza halkası |
 | **777 sahası** | banka/kefalet ikinci cevap + **24 kök çapraz taraması** | Bayat araç kiti kök nedeni; ilk gerçek LEHE/ALEYHE triyajı; resmî araçla üretilen UDF, dört kenarı yönetmelik ölçüsünde (42,52 pt) ilk **tam-standart ürün** olarak UYAP editöründe açıldı → v0.5.8.6 + v0.5.9 |
+| **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](KARNE-307.md)) |
+| **923 sahası** | vergi/gümrük — ödeme emri + ek tahakkuk, dilekçe ret sonrası yenileme | Tek cümlelik tek prompt, sıfır müdahale, çift ürün (2 dilekçe + 2 UDF); [G6] kapısı dökümsüz atıfları RED'ledi ve model tam-metin damgayla yeşile döndü → v0.5.10 çift-kanıt |
+| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), iki müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](KARNE-1865.md)) |
 
 ### Gerçek dava testleri — derdest dosyalarda canlı ölçüm
 
@@ -266,7 +269,7 @@ makbuzdan sonra mührün dışında değişti, makbuz resmî adlı ürünü kaps
 ve parçalar kendiliğinden çağrılmadı (kök sebep kodda bulundu). Bu kusurlar
 v0.5.10 onarım listesini oluşturur.
 
-**923 sahası (24.08.2026, v0.5.9.1, CANLI — koşu sürüyor):** vergi/gümrük
+**923 sahası (24.08.2026, v0.5.9.1, TAMAMLANDI — tek doğal prompt, sıfır müdahale):** vergi/gümrük
 dosyası; ödeme emri + ek tahakkuka karşı, dilekçe ret sonrası yenileme; 38
 evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 ölçümü (nihai karne kapanışta işlenecek — bunlar ara sayılardır):
@@ -280,7 +283,7 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 | Antitez / usul | 8/8 cephe + çürütme; usul matrisi süre hesabını bağladı (son gün tespiti) |
 | Bayat araç nöbetçisi | Bu sahada da ateşledi (1 uyarı) |
 | Dürüst altyapı notu | Model, canlı içtihat ucuna erişemeyince yedek arşivle çalıştığını ve arşiv-sonrası kararların eksik olabileceğini kütüğün başına **kendisi yazdı** ("AŞAN-KAYNAK" riski) |
-| Açık sınav | Tam-metin döküm/damga henüz 0 — [G6] kapısının bu atıfları teslim zincirinde bloke edip etmeyeceği koşunun ana sorusu; sonuç ne çıkarsa buraya yazılacak |
+| [G6] sınavının SONUCU | Kapı ÇALIŞTI: teslim zinciri dökümsüz atıflarla RED verdi; model 7 kararın tam metnini döküp damgaladıktan sonra yeşil makbuz kesebildi (04:53). Ayrıca bu koşu, v0.5.10'u doğuran iki kusuru bağımsız tekrarladı: 40-UYAP kopyalarında çift-uzantı ve mühürsüz kopya |
 
 **1865 sahası (25-26.08.2026, v0.5.10→v0.5.11, TAMAMLANDI — sınıf:
 MÜDAHALELİ-YETKİLİ · ÇOK OTURUMLU):** idari yüksek yargıda soruşturma-izni
@@ -340,11 +343,11 @@ karantinası, kilitli çekirdek, yönlü tazelik, oturum damgası.
 
 ### Dürüstlük — başarısızlıklar da yazılır
 
-- **Organik yeşil makbuz hâlâ ölçülmedi:** 307 sahasında yeşil makbuz kesildi, ancak koşu müdahalesiz değildi (7 mekanik-hijyen promptu) — dolayısıyla "organik" sayılmaz.
-- **Eski kayıt:** bugüne dek sahada üretilen yeşil makbuzlar
-  hep insan yardımı/onarımı sonrası geldi; sistemin hiç dokunulmadan uçtan uca
-  yeşil makbuz kestiği bir koşu **henüz ölçülmedi**. v0.5.9'un varlık sebebi
-  tam olarak budur.
+- **İlk organik yeşil makbuz: 923 sahası.** Tek cümlelik tek prompt, sıfır
+  müdahale, sıfır mekanik-hijyen promptu — ve zincir RED'den kendi düzeltmesiyle
+  yeşile döndü. 307 ise müdahaleliydi (7 hijyen promptu ölçüldü) ve karnesine
+  öyle yazıldı; 1865 "müdahaleli-yetkili" sınıfındaydı. Sınıflar karıştırılmaz:
+  her koşunun makbuzu kendi damgasını taşır.
 - **İçerik kabulü avukat yargısıdır:** hiçbir kapı "bu dilekçe hukuken
   isabetli" demez; kapılar unsur, künye, biçim ve iz denetler. Hukuki isabet
   hükmü size aittir.
@@ -380,6 +383,7 @@ model her turda zincirde nerede olduğunu, neyin beklediğini ve hangi avukat
 kararının açık olduğunu bilir.
 
 ### Dosyayı ele alma
+ v0.5.11 ile **kit güvenlik katmanı** geldi: araç kopyaları yalnız güvenilir kaynaktan doğar (uygulamanın rpm anlık-görüntü yolu karantinada), tam-nesil çekirdek scriptler salt-okunur kilitlenir, tazelik uyarısı yön bilir (bayat / kanaldan-yeni / özdeş) ve her defter olayı ile makbuz, hangi oturumun ürünü olduğunu söyleyen **oturum damgası** taşır — çok oturumlu çalışmada (aynı dosyada 5-6 paralel oturum sahada ölçüldü) kim-ne-yaptı sorusu artık cevaplıdır.
 
 #### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 1 script
 UYAP klasöründeki her evrağın metnini **bir kez** ve en ucuz doğru yoldan
@@ -494,7 +498,10 @@ mantığı (iddia → norm → içtihat → örtüşme → sonuç) görünmez is
 etiket olarak sızmaz. UDF'i **elle kurmaz** — resmî araçla üretir; biçim, Resmî
 Yazışma Yönetmeliği ölçülerine (dört kenar 42,52 pt, 1,5 satır aralığı)
 otomatik uyar. v0.5.9 ile **inline denetim** geldi: her taslak yazımında hızlı
-denetim kendiliğinden koşar ve bulgusunu modele anında geri verir. E-imzalı
+denetim kendiliğinden koşar ve bulgusunu modele anında geri verir. v0.5.10
+ile **üretim ve mühür tek atomik işlemdir**: her başarılı UDF üretimi kendi
+mührünü (.prov.json) kendisi basar/tazeler — mühürsüz ya da bayat-mühürlü
+ürün akışta yaşayamaz. E-imzalı
 nüsha ayrıca korunur: imzalı dosyaya sistem **asla** dokunmaz.
 
 #### [`oa-sozlesme`](plugins/ortak-avukat/skills/oa-sozlesme/) — akdî metin · 1 script
@@ -514,7 +521,12 @@ toplamak yasaktır. Her koşuda **teslim makbuzu** kesilir (başarısız koşuda
 RED makbuzu düşer) ve ürüne kalıcı bir **mühür** (kaynak izi + parmak izi)
 basılır. v0.5.9'un **sunum kilidi** buraya bağlıdır: yeşil makbuz yokken
 teslim-sınıfı bir dosya size gönderilmek istenirse sistem durup sorar — "yine
-de gönder" demek sizin kararınızdır, ama artık **görmeden olmaz**.
+de gönder" demek sizin kararınızdır, ama artık **görmeden olmaz**. v0.5.10'un
+**filo-tazelik kapısı** denetimi seçili üründen filoya genişletti: dava kökü +
+40-UYAP'taki TÜM teslim-sınıfı UDF'ler mühür-tazelik hükmünden geçer ve
+tamamı makbuza yazılır — "makbuz yeşil ama yüklenecek dosya başka" penceresi
+(307 karnesi) yapısal olarak kapandı; sunum kilidi de yeşil makbuz varken bile
+bayat-mühürlü ürünü yakalar.
 
 ### Ceza dalı — aynanın iki yüzü
 
@@ -726,8 +738,8 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (depoda **1.350+ test**; son tam
-koşu ölçümü 1317 yeşil / 1 tasarımsal atlama + sonrasında eklenen testler),
+İlki deterministik denetçilerin regresyonunu (depoda **1.385 test**; son tam
+koşu ölçümü 1385 yeşil / 1 tasarımsal atlama),
 ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm
 tutarlılığı, manifest "N skill" sayımı, hook kapsamı) denetler. Güncel ölçüm
 ve açık bulgular: [STATUS.md](STATUS.md) · yol haritası:
