@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.11"
+OA_SURUM = "0.5.12"
 
 
 def _surum_tuple(s):

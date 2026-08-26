@@ -753,6 +753,9 @@ karantinası, kilitli çekirdek, yönlü tazelik, oturum damgası.
 
 ### Ölçülen örnekler — beyan değil sayı
 
+Tüm koşuların token/süre/verim kayıtları ve ölçüm yöntemi ayrı
+belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
+
 - **49 dakika / 45,6k token:** ~200 evraklık istinaf dosyasından teslim
   edilebilir ek beyan + geçerli UDF. Aynı sınıf iş, evrakı modele görüntü olarak
   yükleyen eski usulde **1M+ token** yiyordu — fark **~26×**, muhakemeden tek

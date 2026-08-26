@@ -880,7 +880,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.11"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.12"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -936,6 +936,29 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
     if ekstra:
         veri.update(ekstra)
     return veri
+
+
+def _kaynakca_isle(taslak, kok):
+    """v0.5.12 — İÇTİHAT KAYNAKÇASI (link zinciri tamamlayıcısı; avukat
+    kuralı 2026-08-27: çalışmaya giren her kararın linki tüm çıktılarda).
+    Kardeş `kaynakca_uret.py` İN-PROCESS çağrılır (subprocess yasak);
+    taslağın sonuna işaretli kaynakça bloğu işlenir — UDF/PDF/40-UYAP
+    kopyaları bu hâlden üretileceği için linkler tüm ürünlere taşınır.
+    Döner: makbuz alanı {linkli, linksiz} (+hata varsa 'hata').
+    ASLA fırlatmaz — kaynakça işlenemezse teslim KIRILMAZ, alanda hata
+    görünür kalır (bu bir kapı değil tamamlayıcıdır; linksizlik zaten
+    görünür uyarıdır)."""
+    try:
+        yol = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "kaynakca_uret.py")
+        spec = importlib.util.spec_from_file_location(
+            "_teslim_kaynakca_inproc", yol)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        r = mod.taslaga_isle(taslak, kok)
+        return {"linkli": r["linkli"], "linksiz": r["linksiz"]}
+    except Exception as e:
+        return {"linkli": None, "linksiz": None, "hata": repr(e)[:120]}
 
 
 def _son_oturum_izi(kok):
@@ -1193,6 +1216,20 @@ def _zincir():
             sebep="kapı kapandı: %s (exit %s)" % (ad, rc),
             ekstra={"advisory_denetimler": advisory}), basarili=False)
         sys.exit(1)
+
+    # ── v0.5.12 — İÇTİHAT KAYNAKÇASI (UDF üretiminden ÖNCE işlenir ki
+    # linkler ürün zincirine taşınsın; kapı DEĞİL, tamamlayıcı) ─────────────
+    _bolum("[≡] İÇTİHAT KAYNAKÇASI — link zinciri (v0.5.12; tamamlayıcı)")
+    kaynakca_alani = _kaynakca_isle(taslak, kok)
+    if kaynakca_alani.get("hata"):
+        print("    [UYARI] kaynakça işlenemedi: %s — teslim sürer, alan "
+              "makbuzda görünür." % kaynakca_alani["hata"])
+    else:
+        print("    [OK] kaynakça taslağa işlendi: %s linkli, %s linksiz."
+              % (kaynakca_alani["linkli"], kaynakca_alani["linksiz"]))
+        if kaynakca_alani.get("linksiz"):
+            print("    [UYARI] linksiz künye var — teyit kaydına --kaynak-url "
+                  "eklenmeli (link UYDURULMAZ; yokluk görünür bırakılır).")
 
     # ── tüm engelleyici kapılar açık → UDF devralma/üretim (--udf-yok yoksa) ─
     # v0.5.10 — çift-uzantının KAYNAĞI burasıydı: `taslak + ".udf"` kuralı
@@ -1556,7 +1593,10 @@ def _zincir():
                 # makbuza girer (kopya SONRASI yeniden ölçülür ki 40-UYAP'a az
                 # önce düşen kopyalar da kapsansın).
                 "teslim_sinifi_urunler": _filo_tazelik_denetimi(kok)[2],
-                "filo_uyarilari": filo_uyarilar})
+                "filo_uyarilari": filo_uyarilar,
+                # v0.5.12 — link zinciri izi: kaynakçadaki linkli/linksiz
+                # sayıları makbuza girer; linksiz>0 görünür borçtur.
+                "ictihat_kaynakca": kaynakca_alani})
     makbuz_yolu = _makbuz_yaz(kok, makbuz_veri, basarili=True)
     print("TESLİM MAKBUZU  : %s" % makbuz_yolu)
     # A2 — damgalı makbuz-kopyası (advisory: hata teslim exit'ini DEĞİŞTİRMEZ)

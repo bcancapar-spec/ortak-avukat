@@ -136,9 +136,27 @@ geçir) bu sistemde yasaktır: şüpheden sanık yararlanır ama şüpheden
 gönderilmek istenirse sistemin durup "emin misiniz?" diye sorması. Karar
 devri sizdedir; ama artık görmeden olmaz.
 
-**40-UYAP dizini:** Yeşil makbuz kesilince dava klasörünüzde doğan çıktı
-klasörü — UYAP'a yüklenecek her şey (UDF, PDF, mühürler, makbuz kopyası)
-tek yerde. E-imza ve yükleme yalnız avukata aittir.
+**40-UYAP dizini:** Yeşil makbuz kesilince dava klasörünüzde doğan
+dış-çıktı klasörü. Adı iki parçadan oluşur ve ikisinin de gerekçesi vardır:
+
+*Neden "40"?* Sistemin dosya kapağındaki (`_oa/cikti`) her çalışma evrakı,
+klasik dosya tasnifi gibi numaralıdır: 00 manifest, 01 ilişki haritası,
+04 vakıa, 05 kıyas, 07 antitez, 08 dilekçe taslağı... Bu 0X-1X bandı
+**içeride kalan** çalışma evrakının bandıdır. **40, "dışa giden" işler için
+ayrılmış ayrı bir bant başıdır** — araya bilerek boşluk bırakılmıştır ki
+çalışma evrakı çoğalsa da dış-çıktı bandına karışmasın; sayı sayesinde
+dizin, klasör listesinde her zaman çalışma evrakından ayrı, kendi blokunda
+dizilir. Kısacası 40, kapaktaki "GİDEN EVRAK" gözünün numarasıdır.
+
+*Neden "UYAP"?* En sık muhatap odur; ama dizin **muhatap-nötrdür** —
+UYAP'a yüklenecek dilekçe de, karşı vekile ihtarname de, kuruma başvuru da,
+müvekkile rapor da buraya düşer. Ayrım muhataba göre değil YÖNE göredir:
+içeride kalan `_oa/`ta yaşar, dışa çıkan `40-UYAP/`ta durur.
+
+İçindekiler hep **kopyadır** (asıllar mühürleriyle yerinde kalır) ve yanına
+yeşil makbuzun damgalı kopyası konur — giden evrak gözünde, neyin hangi
+denetimle gittiğinin belgesi de birlikte durur. E-imza ve yükleme yalnız
+avukata aittir.
 
 **Kit (araç çantası):** Sistemin denetim aletlerinin, çalıştığınız dava dosyasının kapağına konan takımıdır — bir ustanın alet çantası gibi: süre hesabı cetveli, künye teyit aleti, teslim zinciri, mühür... hepsi tek çantada, dosyanın yanında durur. Böylece her denetim, dosyanın içinde ve kayıt bırakarak yapılır; sistem çantanın güncel ve eksiksiz olmasını kendisi gözetir.
 
