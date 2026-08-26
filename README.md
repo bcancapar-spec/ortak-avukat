@@ -118,6 +118,122 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 
 ---
 
+## Kurulum — kolay yol
+
+Sistem dört ayağa basar. Önce ne gerektiğini ve **neden** gerektiğini görün,
+sonra adım adım kurun:
+
+| Yazılım | Nereden | Neden gerekli |
+|---|---|---|
+| **Claude Code** (veya Claude masaüstü/Cowork) | [claude.com/claude-code](https://claude.com/claude-code) | Sistemin koştuğu ajan ortamı: skill'ler, hook ağı ve MCP bağlantıları burada yaşar. Eklenti bu ortama kurulur. |
+| **Python 3.10+** | [python.org/downloads](https://www.python.org/downloads/) | Bütün deterministik denetim scriptleri (defter, makbuz, künye teyidi, süre hesabı, teslim zinciri) Python'dur — "script denetler" ayağının motoru. |
+| **PyMuPDF** (pip paketi) | [pypi.org/project/PyMuPDF](https://pypi.org/project/PyMuPDF/) | Metin-katmanlı PDF'lerden evrak çıkarımı ve PDF önizleme üretimi — evrakı görüntü olarak modele yüklememenin (26× tasarrufun) temeli. |
+| **Pillow** (pip paketi) | [pypi.org/project/pillow](https://pypi.org/project/pillow/) | TIFF/görüntü evrakların sayfalara ayrılıp OCR'a hazırlanması. |
+| **Tesseract OCR + Türkçe dil paketi** | [github.com/UB-Mannheim/tesseract/wiki](https://github.com/UB-Mannheim/tesseract/wiki) | UYAP klasörlerindeki taranmış evrak (mazbata, eski dilekçe, TIFF) metne ancak OCR ile iner; çıktı "⚠ teyit gerek" damgası alır. Türkçe paket (`tur`) olmadan Türkçe evrak doğru okunmaz. |
+| **Node.js (LTS)** | [nodejs.org](https://nodejs.org/) | UDF üretim araçları npm ekosisteminde yaşar ve `npx` ile koşar. |
+| **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@latest login` gerekir. |
+| **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. |
+| **Yargı Pro MCP** | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. |
+
+Adım adım:
+
+### 1. Claude Code'u kurun
+Claude Code (CLI veya Desktop) kurulu ve oturum açık olmalı: <https://claude.com/claude-code>
+
+### 2. Python 3.10+ ve iki paket
+
+```bash
+python --version
+pip install pymupdf pillow
+```
+
+`pymupdf` PDF metin çıkarımı, `pillow` TIFF/JPG işleme içindir — bunlar olmadan
+evrak işlenemez.
+
+### 3. Tesseract OCR (Türkçe dil paketiyle — taranmış evrak için önerilir)
+
+- **Windows:** [UB-Mannheim kurucusu](https://github.com/UB-Mannheim/tesseract/wiki) — kurulumda **Turkish (`tur`)** dil paketini seçin **ve** "Add Tesseract to PATH" işaretleyin
+- **Linux:** `sudo apt-get install tesseract-ocr tesseract-ocr-tur`
+- **macOS:** `brew install tesseract tesseract-lang`
+
+```bash
+tesseract --version
+```
+
+Tesseract yoksa metin evraklar yine işlenir; taranmış evraklar "YÜKLENEMEDİ
+(OCR yok)" damgasıyla künyeye girer — sessiz atlama yoktur.
+
+### 4. Node.js + `udf-cli` girişi (UDF üretimi için ZORUNLU)
+UYAP'a sunulacak `.udf` dosyası **yalnız** resmî `udf-cli` aracıyla üretilebilir
+(elle üretilen dosyalar UYAP editöründe **açılmaz** — sahada doğrulandı):
+
+```bash
+node --version
+npx -y udf-cli@latest login
+npx -y udf-cli@latest whoami
+```
+
+Giriş tek seferliktir; token `~/.config/yargi/token.json`'da tutulur. Giriş
+yapılmamışsa sistem bozuk UDF üretmez — durur ve size giriş talimatı verir.
+
+### 5. Yargı Pro MCP'yi ekleyin (içtihat doğrulaması için ZORUNLU)
+
+```bash
+claude mcp add --transport http yargipro https://yargi.betaspacestudio.com/mcp
+```
+
+(veya Claude Code **connectors** bölümünden aynı adresi ekleyin) ve OAuth
+akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; içtihat
+"teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
+
+### 6. Eklentiyi kurun
+
+```
+/plugin marketplace add bcancapar-spec/ortak-avukat
+/plugin install ortak-avukat@ortak-avukat
+```
+
+### 7. Claude Code'u TAM kapatıp açın
+Bayat süreç eski hook setini taşımaya devam eder — pencereyi kapatmak yetmez,
+uygulamayı tamamen kapatıp açın. yada yüklemeleri tamamlayınca bilgisayarı yeniden başlatın.  (saha dersi: "sıfır ateşleme"nin köklerinden
+biri buydu).
+
+### 8. Doğrulayın
+Skill listesinde tek bir `ortak-avukat` ailesi (**20 skill**) görünmeli. Sürüm
+etiketi yetmez — **dosya kanıtıyla** doğrulayın:
+
+```bash
+ls ~/.claude/plugins/cache/ortak-avukat/ortak-avukat/
+```
+
+Yalnız güncel sürüm klasörü görünmeli; eski sürüm klasörleri kalmışsa hangi
+kodun koştuğu belirsizdir (bkz. sorun giderme).
+
+> **5 dakikada ilk kullanım**
+> 1. UYAP'tan dosyanızın evrakını bir klasöre indirin
+>    ([avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) işinizi görür).
+> 2. O klasörde Claude Code oturumu açın.
+> 3. Yukarıdaki **prompt şablonunu** doldurup gönderin.
+> 4. Sistemin sorularını cevaplayın; stratejik kavşaklarda size dönecektir.
+> 5. Bitince `_oa/DURUM.md`'ye bakın; üretilen UDF'i UYAP editöründe **açıp
+>    teyit edin**, e-imzayı **siz** atın.
+
+### Güncelleme
+
+```bash
+claude plugin marketplace update ortak-avukat && claude plugin update ortak-avukat@ortak-avukat
+```
+
+Ardından Claude Code'u yine **TAM kapatıp açın**.
+
+### Sorun giderme — temiz kurulum
+Güncelleme takılırsa: eklentiyi ve marketplace'i kaldırın, Claude Code'u
+kapatın, `~/.claude/plugins/cache/ortak-avukat` ile
+`~/.claude/plugins/marketplaces/ortak-avukat` dizinlerini silin, yeniden
+ekleyip kurun ve dosya kanıtıyla doğrulayın (8. adım).
+
+---
+
 ## DÜSTUR — sistemin anayasası
 
 Yirmi parçanın tamamı hooklar ile birbirine bağlanmış Av.Bayram Can ÇAPAR tarafından oluşturulan tek bir fiktif anayasaya tabidir
@@ -577,109 +693,6 @@ Parçaların ayrıntılı kataloğu: **[plugins/ortak-avukat/README.md](plugins/
 
 ---
 
-## Kurulum — kolay yol
-
-Sistem dört ayağa basar: **(1) Claude Code** · **(2) Python + Tesseract** (evrak
-çıkarımı ve denetim scriptleri) · **(3) Node.js + udf-cli** (UDF üretimi) ·
-**(4) Yargı Pro MCP** (içtihat/mevzuat doğrulaması). Adım adım:
-
-### 1. Claude Code'u kurun
-Claude Code (CLI veya Desktop) kurulu ve oturum açık olmalı: <https://claude.com/claude-code>
-
-### 2. Python 3.10+ ve iki paket
-
-```bash
-python --version
-pip install pymupdf pillow
-```
-
-`pymupdf` PDF metin çıkarımı, `pillow` TIFF/JPG işleme içindir — bunlar olmadan
-evrak işlenemez.
-
-### 3. Tesseract OCR (Türkçe dil paketiyle — taranmış evrak için önerilir)
-
-- **Windows:** [UB-Mannheim kurucusu](https://github.com/UB-Mannheim/tesseract/wiki) — kurulumda **Turkish (`tur`)** dil paketini seçin **ve** "Add Tesseract to PATH" işaretleyin
-- **Linux:** `sudo apt-get install tesseract-ocr tesseract-ocr-tur`
-- **macOS:** `brew install tesseract tesseract-lang`
-
-```bash
-tesseract --version
-```
-
-Tesseract yoksa metin evraklar yine işlenir; taranmış evraklar "YÜKLENEMEDİ
-(OCR yok)" damgasıyla künyeye girer — sessiz atlama yoktur.
-
-### 4. Node.js + `udf-cli` girişi (UDF üretimi için ZORUNLU)
-UYAP'a sunulacak `.udf` dosyası **yalnız** resmî `udf-cli` aracıyla üretilebilir
-(elle üretilen dosyalar UYAP editöründe **açılmaz** — sahada doğrulandı):
-
-```bash
-node --version
-npx -y udf-cli@latest login
-npx -y udf-cli@latest whoami
-```
-
-Giriş tek seferliktir; token `~/.config/yargi/token.json`'da tutulur. Giriş
-yapılmamışsa sistem bozuk UDF üretmez — durur ve size giriş talimatı verir.
-
-### 5. Yargı Pro MCP'yi ekleyin (içtihat doğrulaması için ZORUNLU)
-
-```bash
-claude mcp add --transport http yargipro https://yargi.betaspacestudio.com/mcp
-```
-
-(veya Claude Code **connectors** bölümünden aynı adresi ekleyin) ve OAuth
-akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; içtihat
-"teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
-
-### 6. Eklentiyi kurun
-
-```
-/plugin marketplace add bcancapar-spec/ortak-avukat
-/plugin install ortak-avukat@ortak-avukat
-```
-
-### 7. Claude Code'u TAM kapatıp açın
-Bayat süreç eski hook setini taşımaya devam eder — pencereyi kapatmak yetmez,
-uygulamayı tamamen kapatıp açın. yada yüklemeleri tamamlayınca bilgisayarı yeniden başlatın.  (saha dersi: "sıfır ateşleme"nin köklerinden
-biri buydu).
-
-### 8. Doğrulayın
-Skill listesinde tek bir `ortak-avukat` ailesi (**20 skill**) görünmeli. Sürüm
-etiketi yetmez — **dosya kanıtıyla** doğrulayın:
-
-```bash
-ls ~/.claude/plugins/cache/ortak-avukat/ortak-avukat/
-```
-
-Yalnız güncel sürüm klasörü görünmeli; eski sürüm klasörleri kalmışsa hangi
-kodun koştuğu belirsizdir (bkz. sorun giderme).
-
-> **5 dakikada ilk kullanım**
-> 1. UYAP'tan dosyanızın evrakını bir klasöre indirin
->    ([avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) işinizi görür).
-> 2. O klasörde Claude Code oturumu açın.
-> 3. Yukarıdaki **prompt şablonunu** doldurup gönderin.
-> 4. Sistemin sorularını cevaplayın; stratejik kavşaklarda size dönecektir.
-> 5. Bitince `_oa/DURUM.md`'ye bakın; üretilen UDF'i UYAP editöründe **açıp
->    teyit edin**, e-imzayı **siz** atın.
-
-### Güncelleme
-
-```bash
-claude plugin marketplace update ortak-avukat && claude plugin update ortak-avukat@ortak-avukat
-```
-
-Ardından Claude Code'u yine **TAM kapatıp açın**.
-
-### Sorun giderme — temiz kurulum
-Güncelleme takılırsa: eklentiyi ve marketplace'i kaldırın, Claude Code'u
-kapatın, `~/.claude/plugins/cache/ortak-avukat` ile
-`~/.claude/plugins/marketplaces/ortak-avukat` dizinlerini silin, yeniden
-ekleyip kurun ve dosya kanıtıyla doğrulayın (8. adım).
-
----
-
 ## Avukatın göreceği dosyalar — `_oa/` yapısı(_oa/ yapısı Ortak Avukat kısaltmasıdır)
 
 Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır;
@@ -781,7 +794,7 @@ ortak-avukat/
 
 Bu depodaki tüm içerik — "Ortak Avukat" metodolojisi, skill metinleri, scriptler ve dokümantasyon dâhil — özgün bir eserdir ve **5846 sayılı Fikir ve Sanat Eserleri Kanunu (FSEK)** kapsamında korunur. Eserin sahibi ve tüm **mali ve manevi hakların** münhasır hak sahibi **Av. Bayram Can Çapar**'dır (b.cancapar@gmail.com).
 
-Depo kamuya açık (public) olarak yayımlanmıştır;   Kopyalama, çoğaltma, dağıtma, değiştirme, çeviri, türev çalışma oluşturma ve ticari kullanım **önceden yazılı izne tabidir**. Telif/atıf bildirimleri ve hak sahibinin adı kaldırılamaz. Yalnızca Yargı Pro MCP oluşturan ekibin fikri değişimine ve gerektiğinde ticari amaçla kullanımına izin verilmiştir. 
+Depo kamuya açık (public) olarak yayımlanmıştır;   Kopyalama, çoğaltma, dağıtma, değiştirme, çeviri, türev çalışma oluşturma ve ticari kullanım **önceden yazılı izne tabidir**. Telif/atıf bildirimleri ve hak sahibinin adı kaldırılamaz. 
 
 Tam koşullar: [LICENSE](LICENSE) · Özet bildirim: [NOTICE](NOTICE).
 
