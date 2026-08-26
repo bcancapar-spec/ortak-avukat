@@ -66,7 +66,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, json, os, sys, datetime, importlib.util, re, glob, time, hashlib
+import argparse, json, os, sys, datetime, importlib.util, re, glob, time, hashlib, stat
 
 # Gerçeğin kaynağı (append-only) ve türev görünüm — aynı 'defter' klasöründe yaşar.
 OLAYLAR_ADI = "pipeline-olaylar.jsonl"   # append-only olay defteri (SOURCE OF TRUTH)
@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.10"
+OA_SURUM = "0.5.11"
 
 
 def _surum_tuple(s):
@@ -2946,9 +2946,12 @@ def _hook_son_iz_yolu(defter):
 NABIZ_PROMPT_ESIK_SN = 24 * 3600  # 'eski' eşiği — bir çalışma dönemi (24 saat)
 
 
-def _hook_nabiz_damgala(kok, olay_adi):
+def _hook_nabiz_damgala(kok, olay_adi, oturum=None):
     """Nabız damgası: `.hook-son-iz.json`a `{olay_adi: şimdi}` MERGE eder
-    (hash + diğer olay damgaları korunur). ASLA fırlatmaz, ASLA bloklamaz."""
+    (hash + diğer olay damgaları korunur). v0.5.11 (1865-T4a): payload
+    session_id verilirse `son_oturum` alanı da güncellenir — Bash'le koşan
+    scriptler (teslim_paketi, --isle) oturum izini bu köprüden okur.
+    ASLA fırlatmaz, ASLA bloklamaz."""
     try:
         defter = os.path.join(kok, "_oa", "defter")
         if not os.path.isdir(defter):
@@ -2964,6 +2967,8 @@ def _hook_nabiz_damgala(kok, olay_adi):
         if not isinstance(veri, dict):
             veri = {}
         veri[olay_adi] = simdi()
+        if oturum:
+            veri["son_oturum"] = str(oturum)[:64]
         tmp = f"{iz_yolu}.tmp.{os.getpid()}"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(veri, f, ensure_ascii=False)
@@ -3231,7 +3236,13 @@ def _hook_stdin_payload_oku():
     ikinci okuma boş döner; bu yüzden payload'a hem kök keşfi hem içerik
     taraması gereken gövdeler (hook_pretool) bunu KENDİLERİ çağırıp sonucu
     `_hook_kok_adaylarini_bul`a parametreyle geçirir (payload bir kez okunur
-    ilkesi). ASLA istisna fırlatmaz."""
+    ilkesi). v0.5.11 (T4a): ilk başarılı okuma MODÜL ÖNBELLEĞİNE alınır —
+    stdin İKİNCİ KEZ OKUNMAZ (sözleşme aynen), ama aynı süreçte sonraki
+    çağrılar (ör. `_payload_oturum`) önbellekten aynı dict'i alır.
+    ASLA istisna fırlatmaz."""
+    global _PAYLOAD_ONBELLEK
+    if _PAYLOAD_ONBELLEK is not None:
+        return _PAYLOAD_ONBELLEK
     try:
         if sys.stdin.isatty():
             return None
@@ -3239,7 +3250,22 @@ def _hook_stdin_payload_oku():
         if not ham:
             return None
         veri = json.loads(ham)
-        return veri if isinstance(veri, dict) else None
+        if isinstance(veri, dict):
+            _PAYLOAD_ONBELLEK = veri
+            return veri
+        return None
+    except Exception:
+        return None
+
+
+_PAYLOAD_ONBELLEK = None
+
+
+def _payload_oturum():
+    """T4a — bu hook sürecinin payload'ındaki session_id (önbellekten;
+    stdin yeniden OKUNMAZ). Payload yoksa None. ASLA fırlatmaz."""
+    try:
+        return (_PAYLOAD_ONBELLEK or {}).get("session_id") or None
     except Exception:
         return None
 
@@ -3513,7 +3539,171 @@ _OZELLIK_PARMAK_IZI = {
                    "udf-uretim-makbuz"),          # v0.5.8.4 üretim makbuzu
     "teslim_paketi.py": ("teslim-makbuz.json",),  # kanonik makbuz (tek ölçüt)
     "oa_hafiza.py": ("--damga",),                 # içtihat muhakeme ritüeli
+    # v0.5.11 (1865-T1): rpm anlık-görüntüsünden gelen 20KB'lik erken-nesil
+    # pipeline_kayit kopyaları da yakalansın — defter/nabız çekirdeği imzaları.
+    "pipeline_kayit.py": ("_hook_nabiz_damgala", "OLAYLAR_ADI"),
 }
+
+# ═══════════ v0.5.11 — KİT GÜVENLİK KATMANI (1865 karnesi T1/T3/T4a/T5) ═════
+# Saha kanıtı: onarılan kit, masaüstü uygulamasının rpm anlık-görüntü
+# yolundan 9 dk sonra eski nesille geri ezildi (777'den beri 3. nüks); onu
+# durduran tek şey dosya-düzeyi koruma (salt-okunur) oldu. Doktrin: kit
+# güvenilir kaynaktan doğar, kilitli yaşar, yönünü bilir.
+
+# rpm / uygulama anlık-görüntüsü yolu — araç KAYNAĞI olarak YASAK (bayat
+# nesil deposu; 777 kök nedeni). Desen hem / hem \ ayırıcıyla eşleşir.
+_RPM_YOL_DESENI = re.compile(
+    r"local[-_]agent[-_]mode[-_]sessions|AppData[/\\]Roaming[/\\]Claude[/\\]",
+    re.I)
+_ARACLAR_HEDEF_DESENI = re.compile(r"_oa[/\\]araclar", re.I)
+
+_CEKIRDEK_SCRIPTLER = ("pipeline_kayit.py", "teslim_paketi.py", "udf_yaz.py")
+
+
+def _pretool_rpm_karantina_mi(metin):
+    """P0-1 karar çekirdeği: komut metninde rpm-yolu deseni VE `_oa/araclar`
+    hedefi BİRLİKTE var mı? Tek başına hiçbiri karantina değildir (rpm
+    yolundan OKUMAK serbest; araclar'a meşru kaynaktan kopya serbest).
+    ASLA fırlatmaz."""
+    try:
+        m = str(metin or "")
+        return bool(_RPM_YOL_DESENI.search(m)
+                    and _ARACLAR_HEDEF_DESENI.search(m))
+    except Exception:
+        return False
+
+
+def _pretool_cekirdek_yazimi_mi(veri):
+    """P0-2 karar çekirdeği: Write/Edit hedefi `_oa/araclar/` altındaki bir
+    ÇEKİRDEK script mi? (Çekirdek elle yazılmaz — kaynaktan kopyalanır;
+    1865: üç çekirdek 14-20KB taklitlerle ezilmişti.) ASLA fırlatmaz."""
+    try:
+        if not isinstance(veri, dict):
+            return False
+        if veri.get("tool_name") not in ("Write", "Edit"):
+            return False
+        ti = veri.get("tool_input")
+        yol = str((ti or {}).get("file_path") or "")
+        if not _ARACLAR_HEDEF_DESENI.search(yol):
+            return False
+        return os.path.basename(yol) in _CEKIRDEK_SCRIPTLER
+    except Exception:
+        return False
+
+
+def _cekirdek_kilitle(kok):
+    """P0-2: `_oa/araclar/`daki çekirdek scriptlerden PARMAK İZİ TAM olanları
+    salt-okunur yapar (bayat/taklit kit KİLİTLENMEZ — çöp mühürlenmez; onun
+    yolu tazeleme + BAYAT NESİL uyarısıdır). İdempotent; kilitlenen dosya
+    sayısını döndürür. ASLA fırlatmaz."""
+    kilitlenen = 0
+    try:
+        araclar = os.path.join(kok, "_oa", "araclar")
+        for ad in _CEKIRDEK_SCRIPTLER:
+            yol = os.path.join(araclar, ad)
+            if not os.path.isfile(yol):
+                continue
+            imzalar = _OZELLIK_PARMAK_IZI.get(ad)
+            if imzalar:
+                try:
+                    with open(yol, encoding="utf-8", errors="replace") as f:
+                        icerik = f.read()
+                except OSError:
+                    continue
+                if any(dz not in icerik for dz in imzalar):
+                    continue          # eksik nesil — kilitleme
+            try:
+                mod = os.stat(yol).st_mode
+                if mod & stat.S_IWRITE:
+                    os.chmod(yol, stat.S_IREAD | stat.S_IRGRP | stat.S_IROTH)
+                kilitlenen += 1
+            except OSError:
+                continue
+    except Exception:
+        pass
+    return kilitlenen
+
+
+def _son_oturum_oku(kok):
+    """P1-4a köprüsü: hook'ların `.hook-son-iz.json`a yazdığı `son_oturum`
+    değerini okur — Bash'le koşan scriptler (teslim_paketi, --isle) payload
+    alamadığından oturum kimliğini buradan alır. Kesin kimlik DEĞİLDİR
+    (en-son-aktif-oturum yaklaşımı); alan adları bunu dürüstçe taşır.
+    Yoksa/hata → None."""
+    try:
+        yolu = os.path.join(kok, "_oa", "defter", ".hook-son-iz.json")
+        with open(yolu, encoding="utf-8") as f:
+            return json.load(f).get("son_oturum") or None
+    except Exception:
+        return None
+
+
+def _taze_oturum_uyarisi(transcript_path, esik_sn=1800):
+    """P1-4a: bu oturumun transkript dizininde, KENDİSİ dışında son
+    `esik_sn` saniyede değişmiş .jsonl varsa tek satır uyarı (çok-oturum
+    görünürlüğü — 1865: 5 paralel oturum kit ezme yarışına girdi).
+    Tek oturum → None. ASLA fırlatmaz."""
+    try:
+        if not transcript_path:
+            return None
+        dizin = os.path.dirname(os.path.abspath(transcript_path))
+        kendim = os.path.normcase(os.path.abspath(transcript_path))
+        simdi_ts = time.time()
+        taze = 0
+        for ad in os.listdir(dizin):
+            if not ad.endswith(".jsonl"):
+                continue
+            yol = os.path.join(dizin, ad)
+            if os.path.normcase(os.path.abspath(yol)) == kendim:
+                continue
+            try:
+                if (simdi_ts - os.path.getmtime(yol)) <= esik_sn:
+                    taze += 1
+            except OSError:
+                continue
+        if not taze:
+            return None
+        return ("ÇOK-OTURUM: bu klasörde %d taze oturum izi daha var — "
+                "aynı _oa üzerinde paralel çalışılıyor. Kit onarımı/kritik "
+                "yazımlar TEK oturumda yapılmalı; defter olayları oturum "
+                "damgası taşır." % taze)
+    except Exception:
+        return None
+
+
+def _sozlesme_disi_uyarisi(kok):
+    """P2-5 (1865-T6 'metin-sororn'): sözleşme-dışı `_oa` alt dizinlerini
+    prompt kanalına tek satır taşır (bekçi zaten --denetle'de vardı; typo
+    dizin oturum İÇİNDE görünür olsun). Bloklamaz. ASLA fırlatmaz."""
+    try:
+        disi = _sozlesme_disi_dizinler(kok)
+        if not disi:
+            return None
+        return ("SÖZLEŞME-DIŞI DİZİN: _oa altında bilinmeyen dizin(ler): "
+                + ", ".join(sorted(disi)[:4])
+                + " — yazım hatası olabilir (ör. 'metin-sororn'); içerik "
+                  "doğru dizine taşınmalı (bloklamaz).")
+    except Exception:
+        return None
+
+
+def _manifest_once_uyarisi(kok):
+    """P2-6 (1865-T7): künye (`_oa/metin/00-kunye.json`) HENÜZ YOKKEN künye
+    teyit kütüğü satır almaya başladıysa — araştırma sayım kapısından önce
+    derinleşiyor demektir — tek satır hatırlatma. Bloklamaz. ASLA fırlatmaz."""
+    try:
+        kunye = os.path.join(kok, "_oa", "metin", "00-kunye.json")
+        if os.path.isfile(kunye):
+            return None
+        kutuk = os.path.join(kok, "_oa", "teyit", "kunye-teyit.md")
+        if not os.path.isfile(kutuk) or os.path.getsize(kutuk) == 0:
+            return None
+        return ("MANİFEST ÖNCE: evrak sayım kapısı (00-kunye.json) henüz "
+                "kurulmadan içtihat araştırması derinleşiyor — oa_ingest "
+                "künye+INDEX üretimini tamamla (sayım tutmazsa analiz "
+                "başlamaz kuralı).")
+    except Exception:
+        return None
 
 
 def _bayat_nesil_listesi(kok):
@@ -3573,7 +3763,29 @@ def _bayat_arac_uyarisi(kok):
                 continue
         # H2a — ÖZELLİK PARMAK İZİ: eksik dizge = BAYAT NESİL (sınıf yükselir).
         nesil = _bayat_nesil_listesi(kok)
-        if not bayat and not nesil:
+        # v0.5.11 P1-3 (1865-T5) — YÖN AYRIMI: bayt-farklı ama parmak izi TAM
+        # dosya "bayat" DEĞİLDİR — büyük olasılıkla kanaldan YENİ nesildir
+        # (depo klonundan tazelenmiş kit + henüz güncellenmemiş kurulum).
+        # Yanlış-yön gürültüsü gerçek uyarının itibarını yer (1865: 12 uyarının
+        # ~4'ü bu sınıftı); o dosyalar ayrı, düşük tonlu bir satır alır.
+        yeni = []
+        if bayat:
+            kalan = []
+            for ad in bayat:
+                imzalar = _OZELLIK_PARMAK_IZI.get(ad)
+                if imzalar:
+                    try:
+                        with open(os.path.join(araclar, ad),
+                                  encoding="utf-8", errors="replace") as f:
+                            icerik = f.read()
+                        if all(dz in icerik for dz in imzalar):
+                            yeni.append(ad)
+                            continue
+                    except OSError:
+                        pass
+                kalan.append(ad)
+            bayat = kalan
+        if not bayat and not nesil and not yeni:
             return None
         parcalar = []
         if nesil:
@@ -3596,6 +3808,13 @@ def _bayat_arac_uyarisi(kok):
                 "  YÜKLÜ eklentinin `skills/*/scripts/` kökünden YENİDEN al — komşu\n"
                 "  dava klasöründen ASLA kopyalama (bayat-tohum bulaşması,\n"
                 "  Denizli 754 saha bulgusu). Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        if yeni:
+            parcalar.append(
+                "ℹ kit kanaldan FARKLI ama nesil TAM (muhtemelen kanaldan "
+                "YENİ): " + ", ".join(yeni[:6])
+                + " — araç kopyaları depo neslinden görünüyor; kurulumu "
+                  "güncelleyince bu not susar (v0.5.11 yön ayrımı; bayat "
+                  "DEĞİLDİR, tazeleme gerekmez).")
         return "\n".join(parcalar)
     except Exception:
         return None
@@ -3690,13 +3909,18 @@ def _arac_ag_import_uyarisi(kok):
 # olayı APPEND eder (araç-imzalı — elle düşürülmüş satırdan ayırt edilir).
 # `derle` bilinmeyen tipleri zaten yok sayar → durum derlemesi bozulmaz.
 # Sessiz-başarısız: hiçbir hata dışarı sızmaz, hook ASLA bloklanmaz.
-def _hook_olay_yaz(kok, olay_adi, not_metni):
+def _hook_olay_yaz(kok, olay_adi, not_metni, oturum=None):
     try:
         defter = os.path.join(kok, "_oa", "defter")
         if not os.path.isdir(defter):
             return
         olay = {"zaman": simdi(), "tip": "hook", "olay": olay_adi,
                 "not": str(not_metni or "")[:200]}
+        # v0.5.11 (1865-T4a): olay hangi oturumun ürünü — payload session_id.
+        # Yoksa son-iz köprüsünden best-effort (kesinlik iddiasız).
+        oturum = oturum or _son_oturum_oku(kok)
+        if oturum:
+            olay["oturum"] = str(oturum)[:64]
         olay["imza"] = _imza_hesapla(olay)
         olay_ekle(os.path.join(defter, OLAYLAR_ADI), olay)
     except Exception:
@@ -3841,7 +4065,7 @@ def hook_prompt(kok=None):
             return 0
         # C3 — HOOK NABZI: kanca ateşledi; damga defter varsa düşer (sessiz
         # turlarda bile — nabzın amacı tam da sessizlik/ölüm ayrımıdır).
-        _hook_nabiz_damgala(k, "prompt")
+        _hook_nabiz_damgala(k, "prompt", oturum=_payload_oturum())
         if os.path.isdir(os.path.join(k, "_oa", "defter")):
             # Hat açık — devir hatırlatması GEREKSİZ (gürültü disiplini).
             # Ama üç şey AYRICA söylenir (temiz durumda ÜÇÜ DE None → SESSİZ):
@@ -3881,6 +4105,19 @@ def hook_prompt(kok=None):
                     "değişmiş; teslimden önce udf_yaz ile yeniden üret "
                     "(mühür atomik tazelenir; FİLO-TAZELİK kapısı bunu "
                     "RED'ler)." % (len(kirik), "; ".join(kirik[:3])))
+            # v0.5.11 — kit güvenlik katmanı (1865): kilit + çok-oturum +
+            # sözleşme-dışı dizin + MANİFEST-önce. Hepsi advisory/sessiz-temiz.
+            _cekirdek_kilitle(k)
+            taze = _taze_oturum_uyarisi(
+                (_PAYLOAD_ONBELLEK or {}).get("transcript_path"))
+            if taze:
+                parcalar.append(taze)
+            sd = _sozlesme_disi_uyarisi(k)
+            if sd:
+                parcalar.append(sd)
+            mo = _manifest_once_uyarisi(k)
+            if mo:
+                parcalar.append(mo)
             # H3a — kanonik olmayan makbuz (txt var / kanonik json yeşil değil).
             kanonik = _kanonik_olmayan_makbuz_uyarisi(k)
             if kanonik:
@@ -4291,7 +4528,7 @@ def hook_denetle(kok=None):
         # prompt uyarısının BASIMI `_hook_govde_calistir` içindedir — parmak
         # izine (`_hook_cikti_degisti_mi`) girer ki mevcut gürültü disiplini
         # (defter değişmeden ikinci koşu SESSİZ kısa devre) bozulmasın.
-        _hook_nabiz_damgala(kok_aday, "denetle")
+        _hook_nabiz_damgala(kok_aday, "denetle", oturum=_payload_oturum())
         # A4.8b — RED GİZLENEMEZ: makbuz RED dosyası varken bu satır zorunlu.
         try:
             red_yolu = os.path.join(kok_aday, "_oa", "defter", "teslim-makbuz-RED.json")
@@ -4611,7 +4848,8 @@ def hook_postwrite(kok=None):
         if _hook_dedup_kisa_devre(kok_aday, "postwrite",
                                   ayirt=_hook_payload_ayirt(veri)):
             continue
-        _hook_nabiz_damgala(kok_aday, "postwrite")   # C3 — nabız (defter varsa)
+        _hook_nabiz_damgala(kok_aday, "postwrite",
+                            oturum=(veri or {}).get("session_id"))   # C3 + T4a
         _hook_inline_dilekce_denetim(kok_aday, veri)  # A2 — asla fırlatmaz/bloklamaz
         try:
             tetik = _hook_postwrite_tetikle_mi(kok_aday)
@@ -4832,7 +5070,8 @@ def hook_pretool(kok=None):
         # (elle-UDF/sunum-kilidi kapısı kaybolmaz).
         if _hook_dedup_kisa_devre(k, "pretool", ayirt=_hook_payload_ayirt(veri)):
             return 0
-        _hook_nabiz_damgala(k, "pretool")   # C3 — nabız (defter varsa, HER çağrıda)
+        _hook_nabiz_damgala(k, "pretool",
+                            oturum=(veri or {}).get("session_id"))   # C3 + T4a
         # KURAL 1 (öncelik — mevcut v0.5.8.4 davranışı AYNEN): elle-UDF deseni.
         if _pretool_elle_udf_deseni_mi(metin):
             print(json.dumps({"hookSpecificOutput": {
@@ -4845,6 +5084,44 @@ def hook_pretool(kok=None):
                     "avukatın kararıdır."),
             }}, ensure_ascii=False))
             _hook_olay_yaz(k, "pretool-ask", "elle-UDF deseni yakalandı (ask basıldı)")
+            return 0
+        # KURAL 1.5a — P0-1 RPM KARANTİNASI (v0.5.11, 1865-T1): rpm anlık-
+        # görüntü yolundan `_oa/araclar`a kopya girişimi karar devri ister.
+        if _pretool_rpm_karantina_mi(metin):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "RPM KARANTİNASI (v0.5.11 — 1865/777 kök nedeni): "
+                    "uygulamanın rpm anlık-görüntü yolu araç KAYNAĞI olarak "
+                    "yasaktır — bayat nesil taşır (eski teslim_paketi makbuz "
+                    "yazmaz, eski udf_yaz açılamayan UDF üretir). Meşru "
+                    "kaynak: YÜKLÜ eklentinin skills/*/scripts/ kökü. Yine "
+                    "de devam etmek avukatın kararıdır."),
+            }}, ensure_ascii=False))
+            _hook_olay_yaz(k, "pretool-ask",
+                           "RPM karantinası: rpm→araclar kopya girişimi",
+                           oturum=(veri.get("session_id")
+                                   if isinstance(veri, dict) else None))
+            return 0
+        # KURAL 1.5b — P0-2 KİLİTLİ ÇEKİRDEK (v0.5.11, 1865-T3): çekirdek
+        # script elle yazılmaz/ezilmez — kaynaktan kopyalanır.
+        if _pretool_cekirdek_yazimi_mi(veri):
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "KİLİTLİ ÇEKİRDEK (v0.5.11 — 1865: üç çekirdek script "
+                    "14-20KB taklitlerle ezilmişti): _oa/araclar çekirdeği "
+                    "(pipeline_kayit/teslim_paketi/udf_yaz) Write/Edit ile "
+                    "DEĞİŞTİRİLMEZ; eksikse yüklü eklentinin "
+                    "skills/*/scripts/ kökünden KOPYALA. Yine de devam "
+                    "etmek avukatın kararıdır."),
+            }}, ensure_ascii=False))
+            _hook_olay_yaz(k, "pretool-ask",
+                           "kilitli çekirdek: araclar çekirdeğine Write/Edit",
+                           oturum=(veri.get("session_id")
+                                   if isinstance(veri, dict) else None))
             return 0
         # KURAL 2 — A1 SUNUM KİLİDİ (v0.5.9): makbuzsuz teslim-sınıfı gönderim.
         if _sunum_kilidi_gerekli_mi(veri, k):
@@ -4903,7 +5180,8 @@ def hook_acilis(kok=None):
         # iki kez ateşlerse ikinci enjeksiyon + defter olayı bastırılır.
         if _hook_dedup_kisa_devre(k, "acilis"):
             return 0
-        _hook_nabiz_damgala(k, "acilis")                 # C3 — nabız (defter varsa)
+        _hook_nabiz_damgala(k, "acilis", oturum=_payload_oturum())   # C3 + T4a
+        _cekirdek_kilitle(k)   # v0.5.11 P0-2 — idempotent, asla fırlatmaz
         satirlar = [
             "ORTAK AVUKAT — AÇILIŞ ENVANTERİ (SessionStart; bu klasör bir dava "
             "klasörü). Kurulu script hattı:",

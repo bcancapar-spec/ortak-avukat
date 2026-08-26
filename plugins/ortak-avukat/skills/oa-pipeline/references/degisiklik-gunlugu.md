@@ -38,6 +38,21 @@
 - **2026-08-13 — v0.5.8.1 tetik paketi (447 dersleri):** hook devir enjeksiyonuna TESLİM DİSİPLİNİ beşlisi + Stop hook'una mühürsüz-teslim nöbetçisi (_muhursuz_teslim_uyarisi).
 - **2026-08-13 — v0.5.8.2 HOOK YAPISAL ONARIM:** üç sahada sıfır-ateşleme kök nedeni bulundu (kabuksuz yürütmede '||' zinciri python'a argüman gidiyordu); run-hook.cmd polyglot sarmalayıcı + tek-komutlu hooks.json (superpowers deseni); 4 sarmalayıcı testi.
 
+## v0.5.11 — KİT GÜVENLİK KATMANI (1865 karnesi T1/T3/T4a/T5/T6/T7)
+- P0-1 RPM KARANTİNASI: rpm anlık-görüntü yolundan `_oa/araclar`a kopya
+  girişimi PreToolUse'ta 'ask' (777/1865 kök nedeni: bayat nesil deposu).
+- P0-2 KİLİTLİ ÇEKİRDEK: tam-nesil çekirdek scriptler açılış/prompt'ta
+  salt-okunur kilitlenir (`_cekirdek_kilitle`); çekirdeğe Write/Edit → 'ask'.
+  Bayat kit KİLİTLENMEZ (çöp mühürlenmez). Parmak izine pipeline_kayit eklendi.
+- P1-3 YÖNLÜ TAZELİK: bayt-farklı + parmak izi TAM = "kanaldan YENİ" (düşük
+  tonlu ayrı not); BAYAT yalnız gerçek eski nesle denir — yanlış-yön gürültüsü
+  öldü (1865: 12 uyarının ~4'ü bu sınıftı, uyarı itibarını yiyordu).
+- P1-4a OTURUM DAMGASI: hook olayları + nabız payload `session_id` taşır;
+  `.hook-son-iz.json` `son_oturum` köprüsü Bash-koşulan scriptlere kimlik
+  verir; `_taze_oturum_uyarisi` paralel oturum izlerini görünür kılar.
+- P2-5/6: sözleşme-dışı `_oa` dizini ('metin-sororn' sınıfı) ve MANİFEST-önce
+  hatırlatması prompt kanalına bağlandı (bloklamaz).
+
 ## v0.5.10 — MÜHÜR-KIRIK sensörü (307 karnesi K1 penceresi)
 - `pipeline_kayit.py`: `_muhur_kirik_mi` + `_muhur_kirik_urun_listesi` —
   SUNUM KİLİDİ artık yeşil makbuz VARKEN bile mühür-kırık teslim-sınıfı ürün

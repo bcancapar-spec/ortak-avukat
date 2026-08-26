@@ -30,6 +30,11 @@
 - **2026-08-07 (v0.5.7 — [G4] KAYNAK-URL TUTARLILIĞI, Denizli 754 sahası):** `ictihat_muhakeme_denetim.py`'ye [G4] eklendi: (a) künye satırının ±1 satır penceresinde görünen http(s) bağlantısı HİÇBİR muhakeme kaydının `**KAYNAK-URL:**` alanıyla örtüşmüyorsa TESLİM ENGELİ (uydurma bağlantı 'teyit edildi' der — çıplak künyeden DAHA KÖTÜ); (b) teyit anında kaydedilmiş bağlantı dilekçeye işlenmemişse görünür UYARI (bloklamaz — araç URL döndürmemişse künye bağlantısız yazılır, uydurulmaz). `MuhakemeKaydi`ya `kaynak_url` alanı (KAYNAK_URL_LINE_RE) eklendi. Saha gerçeği: 754 koşusunda bayat `oa_hafiza` kopyası `--kaynak-url`'i bilmediğinden 11 teyitli karar dilekçeye bağlantısız girmişti — zincirin dilekçe ucu artık mekanik. Testler: `tests/test_kaynak_url_tutarlilik.py` (4).
 - **2026-08-12 — v0.5.8 fork-prova:** [G5] AŞILMIŞ-İÇTİHAT kapısı (LEHE+aşılmış+atıf=BLOK) + tazelik_denetim.py (P6, graft Sources@hash deseni, advisory) + muhur_yaz.py (P1, PROV-O hizalı oa-muhur/1.0; --dogrula sert, yazım zarif-bozulma). Semantica/graft devşirmesi — m.0 protokolü, Can kararları 2026-08-12.
 
+## v0.5.11 — makbuzda oturum izi (1865-T4a)
+- `_makbuz_taban` her makbuza `oturum_izi` alanı ekler (hook son-iz
+  köprüsünden; kesin kimlik değil, en-son-aktif-oturum — alan adı dürüst).
+  Çok-oturumlu koşuda "bu makbuz hangi oturumun ürünü" sorusu yanıtlanabilir.
+
 ## v0.5.10 — FİLO-TAZELİK KAPISI (307 karnesi K1+K2)
 - `teslim_paketi.py` yeni BLOKLAYICI kapı `(+++) FİLO-TAZELİK`: dava kökü +
   40-UYAP'taki TÜM teslim-sınıfı .udf'ler mühür-tazelik hükmünden geçer —

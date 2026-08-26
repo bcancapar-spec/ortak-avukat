@@ -880,7 +880,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.10"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.11"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -926,12 +926,27 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
         "kismi_ingest": _kismi_ingest_alani(kok),
         "durdu": durdu,
         "argv": sys.argv[1:],
+        # v0.5.11 (1865-T4a): makbuz hangi oturumun ürünü — hook'ların
+        # `.hook-son-iz.json`a yazdığı son_oturum köprüsünden. Kesin kimlik
+        # DEĞİLDİR (en-son-aktif-oturum); alan adı bunu dürüstçe taşır.
+        "oturum_izi": _son_oturum_izi(kok),
     }
     if sebep is not None:
         veri["sebep"] = sebep
     if ekstra:
         veri.update(ekstra)
     return veri
+
+
+def _son_oturum_izi(kok):
+    """T4a köprü okuyucusu (pipeline_kayit._son_oturum_oku simetriği —
+    teslim_paketi bağımsız kalır, import etmez). Yoksa/hata → None."""
+    try:
+        yolu = os.path.join(kok, "_oa", "defter", ".hook-son-iz.json")
+        with open(yolu, encoding="utf-8") as f:
+            return json.load(f).get("son_oturum") or None
+    except Exception:
+        return None
 
 
 def _erken_red_makbuz(exit_kodu):

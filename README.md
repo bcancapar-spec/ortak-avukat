@@ -282,6 +282,17 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 | Dürüst altyapı notu | Model, canlı içtihat ucuna erişemeyince yedek arşivle çalıştığını ve arşiv-sonrası kararların eksik olabileceğini kütüğün başına **kendisi yazdı** ("AŞAN-KAYNAK" riski) |
 | Açık sınav | Tam-metin döküm/damga henüz 0 — [G6] kapısının bu atıfları teslim zincirinde bloke edip etmeyeceği koşunun ana sorusu; sonuç ne çıkarsa buraya yazılacak |
 
+**1865 sahası (25-26.08.2026, v0.5.10→v0.5.11, TAMAMLANDI — sınıf:
+MÜDAHALELİ-YETKİLİ · ÇOK OTURUMLU):** idari yüksek yargıda soruşturma-izni
+itirazı; iki müvekkil, iki dilekçe + çelişki raporu; aynı klasörde 5-6 paralel
+oturum. Nihai karne: [KARNE-1865.md](KARNE-1865.md). Özet: v0.5.10'un üç
+onarımı ilk gerçek sınavında doğrulandı (filo kapısı yeşilin içinde koştu,
+mühür-kırık penceresi dakikasında yakalandı); 777'den beri üçüncü kez nükseden
+kök düşman adlandırıldı — uygulamanın rpm anlık-görüntüsünden bulaşan bayat
+araç nesli — ve tek seferlik onarımın yetmediği ölçüldü (onarım 9 dk'da geri
+ezildi; dosya-düzeyi koruma tuttu). Bu ölçümler v0.5.11'i doğurdu: rpm
+karantinası, kilitli çekirdek, yönlü tazelik, oturum damgası.
+
 **Gözcü notları (koşu sırasında, salt-okunur izlemeden):**
 
 - **Teslim zinciri koştu — ama kendiliğinden değil.** Zincir birden çok kez
