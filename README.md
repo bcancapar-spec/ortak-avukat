@@ -344,6 +344,52 @@ tarafının kuralları:
   kapılarla (aile_dogrula Kapı-A/B) doğrulanır — "denetleyen kim denetliyor"
   sorusu açık bırakılmaz.
 
+#### 1.385 test tam olarak nedir — ne, nasıl, neden
+
+**Ne:** 107 test dosyasında 1.302 test fonksiyonu; parametreli varyantlarla
+her tam koşuda **1.385 ayrı sınama**. Sayısal anatomi (tema → test sayısı):
+
+| Tema | Test | Neyi güvence altına alır |
+|---|---|---|
+| Sürüm-reçetesi paketleri | ~515 | Her saha karnesinden doğan onarım paketinin (v0.5.5 → v0.5.11) kendi testleri — sahada bulunan her kusur burada sonsuza dek nöbettedir |
+| UDF hattı | 118 | Üretilen .udf UYAP'ta açılır mı: stil iskeleti, kenar ölçüleri (4×42,52 pt), round-trip okuma, elle-üretim yasağı, atomik mühür |
+| Hook katmanı | 109 | Altı kanalın ateşleme koşulları, kök çözümü, dedup, nabız, enjeksiyon içerikleri, sunum kilidi kararları |
+| Künye / içtihat | 98 | Atıf resmî kaynağa çözülüyor mu, [G6] tam-metin/damga şartı, muhakeme kaydı, yetim alıntı |
+| Pipeline / defter | 83 | Adım zinciri, kanıt şartı, append-only defter bütünlüğü, oturum damgası |
+| Teslim zinciri / makbuz | 80 | Dokuz kapının sırası, RED/yeşil makbuz garantisi, filo tazeliği, 40-UYAP kopyaları |
+| Hafıza / devir | 79 | `_oa` iskeleti, oturum devri, çalışma hafızasının senkronu |
+| Vakıa / antitez / kıyas | 45 | Kronoloji-delil eşlemesi, sekiz cephe bütünlüğü, unsur eşleşme denetimi |
+| Süre hesabı | 38 | Usul ve maddi süreler, adli tatil ayrımı, son-gün hesabı |
+| Ingest / OCR | 38 | Evrak sayımı, metin çıkarımı, OCR damgası, künye/indeks üretimi |
+| Aile / sürüm bütünlüğü | 31 | 20 parçanın manifest-sürüm-hook tutarlılığı, parmak izi, "N skill" sayımı |
+| Usul / kontrol · graf · kit güvenliği · gizlilik · şekil · sözleşme | 92 | Usul matrisi, illiyet grafının yapısal sağlığı, rpm karantinası + kilitli çekirdek, Layer 0 desenleri, şekil standardı, kloz kapsamı |
+
+**Nasıl doğar:** hiçbir test "aklımıza geldi" diye yazılmadı. Döngü sabittir:
+saha karnesi bir kusur ölçer → kusur, **geçici klasörde kurulan sentetik bir
+dava senaryosuyla** yeniden üretilir ve test önce KIRMIZI görülür → onarım
+yazılır, test yeşile döner → test süitte kalır ve o kusur bir daha asla
+sessizce geri gelemez (regresyon kilidi). Somut örnek: bir koşuda teslim
+ürününün makbuzdan 68 dakika sonra mührün dışında değiştiği ölçüldü; bugün
+süitte "dosya değişti → mühür tazelenmek zorunda" senaryosunu birebir kuran
+ve bozulursa sürümü durduran testler var.
+
+**Ne şekilde koşar:** her test kendi geçici klasöründe uydurma bir dosya
+kurar ("2024/123 Esas" gibi kurgu kimliklerle) — anayasa m.7 gereği hiçbir
+gerçek dava verisi, kişi adı veya yerel yol test koduna giremez. Testler
+ağsızdır; ağ/oturum gerektiren gerçek UDF yazıcısı gibi araçlara bağımlı
+testler, araç yoksa kendini **görünür şekilde** atlar (sessiz geçiş yok).
+Süitin tamamı her push'ta dört ortamda (Windows + Ubuntu × iki Python)
+baştan koşar.
+
+**Neden ve ne amaçla:** bu sistemin avukata verdiği güvenceler ("makbuzsuz
+teslim olmaz", "aleyhe karar dilekçeye giremez", "elle UDF yazılamaz") birer
+cümle değil, birer KAPIDIR — ve kapının kendisi de bozulabilir. 1.385 test,
+o kapıların her sürümde hâlâ kapandığının makine kanıtıdır: bir güncelleme
+eski bir güvenceyi bozarsa süit kırmızıya döner ve **CI yeşermeden sürüm
+etiketi atılamadığı için** o sürüm yayınlanamaz. Amaç tektir: sahada
+avukatın karşısına, laboratuvarda bir kez bile kanıtlanmamış hiçbir
+davranışın çıkmaması.
+
 ### Belgeli dokuz büyük saha koşusu (149 gerçek dava testi içinden)
 
 Sistem 149 gerçek davada test edilerek bugüne geldi; her koşu karneye
