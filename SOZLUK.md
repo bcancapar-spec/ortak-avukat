@@ -140,16 +140,7 @@ devri sizdedir; ama artık görmeden olmaz.
 klasörü — UYAP'a yüklenecek her şey (UDF, PDF, mühürler, makbuz kopyası)
 tek yerde. E-imza ve yükleme yalnız avukata aittir.
 
-**Kit / araç çantası · bayat araç:** Her dava dosyası açıldığında sistem,
-denetim araçlarının güncel kopyalarını o dosyanın kapağına koyar — duruşma
-çantanızı hazırlamak gibi: içinde güncel tarife, güncel matbu, güncel
-içtihat notu olmalı. **Bayat araç**, çantada eski baskının kalmasıdır:
-2024 harç tarifesiyle 2026'da hesap yapmak gibi — hesap "yapılır" ama
-yanlış yapılır; sahada en sinsi arıza sınıfı bu çıktı (eski araç, makbuz
-kesmeyi ya da geçerli UDF üretmeyi hiç bilmiyordu). v0.5.11'in cevabı üç
-katmandır: çanta yalnız güvenilir kaynaktan doldurulur (eski paket
-depolarından kopya girişimi onayınıza düşer), çekirdek aletler kilitlenir
-(elle değiştirilemez) ve eski baskı görünür uyarı alır.
+**Kit (araç çantası):** Sistemin denetim aletlerinin, çalıştığınız dava dosyasının kapağına konan takımıdır — bir ustanın alet çantası gibi: süre hesabı cetveli, künye teyit aleti, teslim zinciri, mühür... hepsi tek çantada, dosyanın yanında durur. Böylece her denetim, dosyanın içinde ve kayıt bırakarak yapılır; sistem çantanın güncel ve eksiksiz olmasını kendisi gözetir.
 
 ## Dosya biçimleri ve yardımcı araçlar
 
