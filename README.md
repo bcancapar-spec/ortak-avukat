@@ -11,8 +11,15 @@
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.11'e gelen
 > geliştirme zinciri **149 gerçek davada** test edildi; bunların **dokuzu**,
-> sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur (aşağıda
-> tablo). yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
+> sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur:
+> (1) ~200 evraklık istinaf dosyasında ek beyan (ilk tam koşu), (2) 214
+> evraklık bakir klasörde müdahalesiz test, (3) 447 sahası — vergi davası,
+> (4) 372 sahası — aile/mal rejimi, (5) 346 sahası — bilirkişi ek raporuna
+> itiraz, (6) 777 sahası — banka/kefalet ikinci cevap + 24 kök çapraz
+> taraması, (7) 307 sahası — tasarrufun iptalinde ikinci cevap (devralmalı),
+> (8) 923 sahası — vergi/gümrük, ödeme emri + ek tahakkuk (ilk organik yeşil
+> makbuz), (9) 1865 sahası — idari yüksek yargıda soruşturma-izni itirazı
+> (çok oturumlu, iki müvekkil). Ayrıntılar aşağıdaki tabloda ve karnelerdedir. yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir  davalının istinaf dilekçesine
 > geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde plug in sayesinde en ucuz token tüketimi ve en yüksek çıktı kalitesi yakalanmıştır. ( Plug in öncesi Claude Fable 5, max efor ile önceden yaklaşık 1,2m+ token tüketiliyordu 1m token 50$ test için özellikle en pahalımodel seçildi ve test edildi tasarruf maddiyatla görülerek gerçekleşti. ) ; evraklar
