@@ -24,7 +24,7 @@ araç nesli (777'den beri 3. nüks); tek seferlik onarımın yetmediği ölçül
 **Onarım:** rpm karantinası ('ask') · kilitli çekirdek (salt-okunur + 'ask') ·
 yönlü tazelik (bayat / kanaldan-yeni / özdeş) · oturum damgası (defter+makbuz
 `session_id`) · çok-oturum görünürlüğü · sözleşme-dışı dizin ve MANİFEST-önce
-bekçileri. Süit 1385.
+bekçileri. Süit 1385. Saha koşusu maliyeti: ~4,3M token (çok oturumlu).
 
 ## v0.5.10 — Kusursuz UDF Dönüşümü (2026-08-25)
 **Saha kanıtı:** 307 (K1: ürün makbuzdan 68 dk sonra mühür dışında değişti;
@@ -33,11 +33,11 @@ K2: makbuz resmî ürünü kapsamıyordu · [KARNE-307.md](KARNE-307.md)) + 923
 **Onarım:** atomik mühür (üretim=mühür, üç yolda) · filo-tazelik kapısı
 (kök + 40-UYAP tüm teslim-sınıfı UDF'ler makbuza) · çift-uzantı kaynağında
 öldü · kopyalar mühürleriyle gider · sunum kilidi makbuz-sonrası değişiklik
-penceresini kapattı. Süit 1371.
+penceresini kapattı. Süit 1371. Saha maliyetleri: 307 ~822k · 923 ~360k token.
 
 ## v0.5.9 / v0.5.9.1 — Deterministik Tamamlayıcı Zincir (2026-08-22)
 **Saha kanıtı:** 777 karnesi + 24-kök çapraz taraması + iki bağımsız hakem
-turu (T1-T26 konsolide raporun yerli uygulaması).
+turu (T1-T26 konsolide raporun yerli uygulaması). 777 koşusu ~1,50M token.
 Sunum kilidi (makbuzsuz teslim-sınıfı gönderim → 'ask') · inline dilekçe
 denetimi · zincir-durumu enjeksiyonu · 40-UYAP dış-çıktı şeması · vitrinin
 avukat diliyle sıfırdan inşası. 0.5.9.1: kurulum damgası (sürüm-cache kuralı).
@@ -50,7 +50,7 @@ kit kök nedeni).
 otomasyonu + şekil kapısı (4×42,52 pt). 0.5.8.5: [G6] mutlak triyaj (tam metin
 okunmadan karar dilekçeye giremez; ALEYHE → iç cephanelik) + hook dirilişi +
 e-imza halkası. 0.5.8.6: sürüm kilidi/parmak izi + VERSION.json + devralma
-köprüleri.
+köprüleri. Koşu maliyetleri: 372 ~1,24M · 346 ~1,17M token.
 
 ## v0.5.7.x — Saha Donanımı (2026-08-07 → 08-08)
 Bayat-tohum aşısı (komşu klasörden kopya yasağı — 754 bulgusu) · G4 bağlantı

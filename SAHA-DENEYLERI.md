@@ -51,6 +51,8 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 
 ## Koşu 2 — Müdahalesiz test: 214 evraklık bakir klasör
 
+- **Token:** canlı izleme henüz yoktu; bu koşunun saf üretim ölçümü ayrıştırılamıyor (izleme disiplini 307 ile başladı).
+
 - **Düzen:** tek doğal prompt, sıfır müdahale; sistemin kendi başına ne
   yaptığı ölçüldü.
 - **Ana bulgu (kurucu ders):** "Kapının gücü kodunda değil TETİĞİNDEDİR" —
@@ -62,6 +64,8 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 
 ## Koşu 3 — 447 sahası: vergi davası
 
+- **Token:** ~604k üretim (transkriptten geriye dönük sayım).
+
 - **Ana bulgu:** hook katmanının **sessiz ölümü** — masaüstü uygulaması
   hook'u kabuksuz koşturuyordu; katman "tanımlı" görünüyor ama hiç
   ateşlemiyordu. "Tanımlı ≠ çalışıyor" dersi buradan çıktı; duman testi
@@ -69,6 +73,8 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 - → **v0.5.8.1 / v0.5.8.2** (hook kayıt kanalının onarımı).
 
 ## Koşu 4 — 372 sahası: aile / mal rejimi
+
+- **Token:** ~1,24M üretim (geriye dönük sayım; elle-UDF krizi ve A/B testi dahil).
 
 - **İlk kez:** hook katmanı uçtan uca canlı ateşledi. Koşu, **beş kollu adli
   analizle** (transkript + artefakt + kod yolu + şekil zinciri + desen
@@ -82,6 +88,8 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 
 ## Koşu 5 — 346 sahası: bilirkişi ek raporuna itiraz
 
+- **Token:** ~1,17M üretim · ~8,5 saat duvar saati (geriye dönük sayım).
+
 - **Parlayan an:** künye kapısı **gerçek bir açığı** yakaladı ve model dürüst
   davrandı — uydurmak yerine eksikliği bildirdi.
 - **Kırılma:** tek bir ayrıştırıcı yanlış-pozitifi (belgenin kendi "DOSYA NO"
@@ -93,6 +101,8 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
   LEHE damgası şartı), hook dirilişi, e-imza halkası.
 
 ## Koşu 6 — 777 sahası: banka/kefalet ikinci cevabı + 24 kök çapraz taraması
+
+- **Token:** ~1,50M üretim (içerik reddi + yeniden inşa dahil; geriye dönük sayım).
 
 - **İçerik dersi:** ilk sunum avukat tarafından REDDEDİLDİ; yeniden inşa
   sonrası kabul edildi. "Kapılar yeşil ama içerik ret" ayrımı ilk kez burada
@@ -127,6 +137,7 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 
 ## Koşu 8 — 923 sahası: vergi/gümrük — ödeme emri + ek tahakkuk
 
+- **Token:** yeşile kadar 57 dk / ~360k üretim; kapanış oturumuyla ~930k.
 - **İLK ORGANİK YEŞİL MAKBUZ:** tek cümlelik tek prompt, sıfır müdahale,
   sıfır mekanik-hijyen promptu — RED'den kendi düzeltmesiyle yeşile döndü.
 - **[G6] kapısının canlı sınavı:** dilekçelerde atıflar vardı ama tam-metin
@@ -142,6 +153,7 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 
 ## Koşu 9 — 1865 sahası: idari yüksek yargıda soruşturma-izni itirazı
 
+- **Token:** toplam ~4,3M üretim (5-6 paralel oturum; oturum başına 0,4M–1,14M).
 - **En zorlu düzen:** 34 evrakın TAMAMI taranmış TIFF (OCR hattının sınavı);
   **iki müvekkil**, iki ayrı itiraz dilekçesi + çelişki raporu; aynı dava
   klasöründe **5-6 paralel oturum** (çok-oturumlu çalışmanın ilk ölçümü);
@@ -182,6 +194,7 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
    düzeltildi; karneler gözcünün hükümlerini de çürütmekle görevlidir.
 
 ---
-*Bu defter, koşular eklendikçe büyür. Sürüm eşlemesi:
+*Token ölçümlerinin yöntemi ve tam tablosu: [OLCUMLER.md](OLCUMLER.md).
+Bu defter, koşular eklendikçe büyür. Sürüm eşlemesi:
 [CHANGELOG.md](CHANGELOG.md) · özet tablo ve ölçülen örnekler:
 [README → Saha deneyleri](README.md#saha-deneyleri--testler-nasıl-yapıldı).*

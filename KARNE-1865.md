@@ -14,6 +14,11 @@ tarafında: **777'den beri üçüncü kez nükseden gerçek düşman adlandırı
 (uygulamanın rpm anlık-görüntüsünden bulaşan bayat araç nesli) ve tek
 seferlik onarımın ona YETMEDİĞİ ölçüldü.
 
+## 0.5 Token ölçümü
+
+Toplam üretim **~4,3M token** (5-6 paralel oturum; oturum başına 0,4M–1,14M;
+duvar saati ~2 gün). Yöntem ve tüm koşuların tablosu: [OLCUMLER.md](OLCUMLER.md).
+
 ## 1. Çalışan taraf
 
 - **v0.5.10 canlı doğrulama:** FİLO-TAZELİK kapısı yeşil makbuzun içinde
