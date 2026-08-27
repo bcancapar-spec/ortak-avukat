@@ -40,7 +40,7 @@
 ---
 
 ## Bu nedir 
-
+hukuj ve hak arama hürriyeti su ve nefes gibi erişilebilir olmalıdır.Eşit ve adelet gözetilmelidir.
 **Büyük dil modellerini Türk Hukuku alanlarında deterministik çalıştırmak üzere hazırlanmış bir METODOLOJİ SİSTEMİDİR.**
 Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
 önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
