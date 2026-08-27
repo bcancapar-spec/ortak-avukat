@@ -98,27 +98,6 @@ cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yür�
 7. **Karar sizindir.** Sistem karar *materyali* üretir; nihai kararı avukat verir.
    Stratejik kavşaklarda sistem durur ve size sorar — sessizce karar vermez.
 
-**Temsilî bir oturum** (kısaltılmış; kimlikler kurgudur):
-
-```text
-Siz   : Bu klasör [Mahkeme] 2099/123 esas sayılı dosyamız. Davalı vekiliyiz.
-        Cevap dilekçesi hazırlanacak. Dosyanın tamamını işle, sürelere dikkat et,
-        kullandığın her kararı tam metniyle doğrula, davacının iddialarını ve elimizdeki delileri analiz et. Karşı tarafın zayıf karnını yargıtay kararları ve mevzuat ile bul. Karar gereken kavşaklarda bana sor.
-
-Sistem: 212 evrak metne indirildi (17'si taranmıştı → OCR; sayım tutuyor).
-Sistem: Başlamadan 6 sorum var: (1) dava dilekçesi hangi tarihte tebliğ edildi?
-        (2) ... (6) karşı tarafın en güçlü kozu sizce nedir?
-Siz   : [cevaplarınız]
-Sistem: Cevap süreniz [tarih] günü doluyor — 9 gün var. Usul taraması: yetki
-        itirazı mümkün görünüyor. Devam ediyorum.
-Sistem: 14 karar tam metniyle çekildi ve okundu: 9 LEHE → dilekçeye,
-        3 ALEYHE → iç cephaneliğe, 2 ilgisiz → elendi.
-Sistem: [AVUKAT KARARI BEKLENİYOR] Zamanaşımı def'i iki türlü kurulabilir:
-        (a) ... (b) ... Hangisini tercih edersiniz?
-Siz   : [kararınız]
-Sistem: Taslak hazır; teslim kapıları koştu, makbuz kesildi, UDF üretildi:
-        _oa/cikti/40-UYAP/ — UYAP editöründe açıp e-imzanızla siz yüklersiniz.
-```
 
 Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır.
 **Müvekkil evrakı salt-okunurdur, değiştirilmez.**
