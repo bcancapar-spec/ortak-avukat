@@ -106,6 +106,46 @@ Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kök
 
 ## Kurulum — kolay yol
 
+### 0. Tek yapıştırmayla kurulum — sistemi Claude Code kendisi kursun
+
+Aşağıdaki bloğu OLDUĞU GİBİ kopyalayıp Claude Code'un sohbet kutusuna
+yapıştırın; kurulumu sizin yerinize Claude yürütür, yalnız insan eli gereken
+yerlerde (tarayıcı onayı gibi) durup size söyler:
+
+```text
+Bu bilgisayara "Ortak Avukat" sistemini uçtan uca kur. Sırayla ve her adımın
+sonucunu tek satır göstererek ilerle:
+
+1) Python 3.10+ kurulu mu denetle (python --version). Yoksa kurulum linkini
+   ver ve bekle. Varsa: pip install pymupdf pillow (kuruluysa geç).
+2) Tesseract OCR + Türkçe paketi denetle (tesseract --list-langs içinde
+   "tur"). Eksikse Windows için UB-Mannheim kurulum sayfası linkini ver,
+   kurulumda "Turkish" dilini seçmemi söyle ve ben kurana kadar bekle.
+3) Node.js/npx denetle (node --version). Yoksa nodejs.org LTS linkini ver ve
+   bekle. Varsa `npx -y udf-cli@latest login` başlat; tarayıcı onayı
+   gerektiğinde adresi ve kodu bana göster, ben onaylayınca
+   `npx -y udf-cli@latest whoami` ile doğrula.
+4) Yargı Pro MCP bağlantısını kur (uç nokta:
+   https://yargi.betaspacestudio.com/mcp). Bağlayıcı onayı benden isteniyorsa
+   dur ve ne yapacağımı söyle. (Alternatif kanal kullanacaksam ben söylerim.)
+5) Eklentiyi kur: önce `claude plugin marketplace add
+   bcancapar-spec/ortak-avukat`, sonra `claude plugin install
+   ortak-avukat@ortak-avukat`. CLI yoksa bana sohbete yazmam için
+   /plugin komutlarını ver.
+6) DOSYA KANITIYLA doğrula: eklenti önbelleğinde ortak-avukat klasörünün ve
+   20 skill'in indiğini listele; sürüm damgasını göster.
+7) Özet tablo ver: hangi adım TAMAM, hangisi benim elimi bekliyor. En sonda
+   Claude Code'u TAM kapatıp açmam gerektiğini hatırlat.
+
+Kurallar: benden hiçbir şifre/PIN/kart bilgisi isteme ve hiçbirini bir yere
+yazma; e-imza ve UYAP girişi kurulumun parçası DEĞİLDİR; var olan kurulumları
+bozma (önce denetle, eksikse kur).
+```
+
+Kurulum bittikten sonra Claude Code'u **tamamen kapatıp açın** (7. adım bunu
+zaten hatırlatır). Elle, adım adım kurmayı tercih ederseniz aşağıdaki tablo
+ve 1-8 numaralı adımlar aynı işin açılımıdır.
+
 Sistem dört ayağa basar. Önce ne gerektiğini ve **neden** gerektiğini görün,
 sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
 **[Hukukçular için sözlük → SOZLUK.md](SOZLUK.md)**.
