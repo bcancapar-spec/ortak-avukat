@@ -111,8 +111,15 @@ Mevzuat MCP'den teyit** edilir (hafızadan süre üretilmez):
   ve doğru üst sınır esas alınarak taranır; zincirleme/kesintisiz suçta başlangıç ayrıca
   belirlenir (m.66/6).
 - **KYOK'a itiraz:** CMK m.173 — tebliğden **iki hafta**, yetkili Sulh Ceza Hâkimliği.
-- **Katılma:** kovuşturmada her aşamada talep edilebilir (CMK m.237); duruşma/temyiz
-  haklarının korunması için zamanında yapılır.
+- **Katılma (CMK m.237 — §1 ile BİREBİR aynı kural; A-8, v0.5.14):** katılma yalnız
+  **ilk derece** mahkemesindeki kovuşturma evresinin her aşamasında ve
+  **hüküm verilinceye kadar** istenebilir (m.237/1). **Kanun yolu muhakemesinde katılma
+  isteğinde BULUNULAMAZ** (m.237/2). Tek istisna: ilk derecede ileri sürülüp
+  **reddolunan veya karara bağlanmayan** katılma istekleri, **kanun yolu başvurusunda
+  açıkça belirtilmişse** incelenip karara bağlanır. Nöbet bu yüzden tarih değil
+  **olay** tetiklidir: "kovuşturma açıldı → katılma talebi" ve "hüküm yaklaştı →
+  talep karara bağlandı mı". Karara bağlanmamışsa müşteki istinaf-temyiz hakkını
+  **telafisiz** kaybeder.
 - **Karşı tarafın/şüphelinin lehine süre dolmasın:** zamanaşımının yaklaştığı dosyada
   ivedi işlem (delil celbi, tedbir) önceliklendirilir.
 
@@ -167,7 +174,7 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **müşteki/iddia taraf�
 9. YAZIM       → oa-dilekce (suç duyurusu/şikâyet · katılma · KYOK itirazı · delil-tedbir talebi
                  · esas hakkında beyan — kademeli netice-i talep)
 10. KONTROL    → oa-kontrol (atıf denetimi · ifşa kontrolü · müvekkil-aleyhi zaaf taraması)
-10. KAPANIŞ    → oa-usta (kimliksiz ders damıtma; _oa/dersler)
+11. KAPANIŞ    → oa-usta (kimliksiz ders damıtma; _oa/dersler)
 ```
 
 Kalıcı katmanlar (`oa-usul`, `oa-illiyet`, `oa-gizlilik`) her adımda devrededir.

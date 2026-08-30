@@ -26,6 +26,29 @@ Ama **sorguya çevirme:** karar-kritik az sayıda soruyu öne al, gerisini "sonr
 ## Mülakat protokolü — İNTERAKTİF
 Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; müvekkilin cevabına göre **uyarlanır, derinleşir, yönlenir.** Bir tur sor → gelen cevabı işle → eksik/çelişkili/fırsat doğuran noktayı **takip sorusuyla** kovala → anlayışını teyit et. Diyalog, form değil.
 
+0. **ÇATIŞMA TARAMASI — meslek kuralları kapısı (A-13, v0.5.14; her şeyden önce).**
+   İşin esasına girmeden önce **iki mekanik soru** sorulur ve cevabı deftere yazılır:
+   - **(a) Menfaati zıt taraf:** aynı işte karşı tarafa daha önce avukatlık edilmiş
+     veya mütalaa verilmiş mi? Bu iş daha önce hâkim/hakem/savcı/bilirkişi/memur
+     sıfatıyla görülmüş mü? Senedi/sözleşmeyi biz mi düzenledik (şimdi hükümsüzlüğünü
+     ileri sürmek gerekiyor mu)? Teklif yolsuz/haksız görünüyor mu?
+     **Av.K. m.38 — "İşin reddi zorunluluğu" — bu hâllerde teklifi reddetmeyi
+     ZORUNLU kılar** (işin reddi bir takdir değil, yükümlülüktür) (m.38/b birebir:
+     *"Aynı işte menfaati zıt bir tarafa avukatlık etmiş veya mütalaa vermiş olursa"*)
+     ve bu zorunluluk **ortakları ile yanında çalıştırdığı avukatları da kapsar**.
+     Çatışma varsa mülakat **durdurulur**, dosya açılmaz, avukata bildirilir —
+     farkında olmadan üstlenilen iş vekâleti sakatlar.
+   - **(b) Karşı taraf vekille temsil ediliyor mu?** (aynı soru
+     `references/soru-bankasi.md`'de de var — burada **yükümlülüğe** bağlanır.)
+     Ediliyorsa **karşı tarafla doğrudan görüşülmez**; temsil edilmiyorsa görüşme
+     hâlinde **müvekkil bilgilendirilir**. Dayanak: **Av.K. m.135/1-p**
+     (24/12/2025-7571 s.K. ile yeniden düzenlenen disiplin maddesi; uyarma cezası
+     sebebi) — *"Avukatla temsil edilen karşı taraf ile avukatı bulunmaksızın
+     görüşmek veya avukatla temsil edilmeyen karşı tarafla görüşmesi halinde
+     müvekkilini bilgilendirmemek"*. Aile karşı tarafa yönelik **metin üretebilir**
+     (ihtarname, cevap); **gönderim ve temas avukata aittir** ve bu kurala tabidir.
+   Her iki madde de kullanım anında Mevzuat MCP'den teyit edilir; sır saklama
+   yükümlülüğü (Av.K. m.36) ve Layer 0 (`oa-gizlilik`) bu kapının yanında durur.
 1. **Meseleyi bir cümlede yansıt** — "Anladığım kadarıyla: …" diyerek anlayışını teyit et; yanlışsa müvekkil hemen düzeltsin.
 2. **Karar-kritik çekirdeği topla (ilk tur, toplu):**
    - **Talep:** somut, ölçülebilir hedef ne?

@@ -37,36 +37,39 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse
 import glob
+import importlib.util
 import io
 import os
 import re
 import sys
 
-# kunye_ortak ile aynı ruh: yıl/no çifti — geniş ama karar-özgü desen.
-ESAS_RE = re.compile(r"\bE\.?\s*[:\s]?\s*(\d{4})\s*/\s*(\d{1,6})")
-KARAR_RE = re.compile(r"\bK\.?\s*[:\s]?\s*(\d{4})\s*/\s*(\d{1,6})")
+# ── B-3 DÜZELTMESİ (v0.5.14) — TEK KAYNAK ──────────────────────────────────
+# Eski hâlde bu dosyanın kendi ESAS_RE/KARAR_RE'si vardı; yorumu "kunye_ortak
+# ile aynı ruh" diyordu ama DESEN FARKLIYDI. Sonuç: kapının GÖREMEDİĞİ bir
+# künyeyi kaynakça GÖRÜYOR ve o künye hakkında dilekçeye "tam metniyle okundu"
+# beyanı yazıyordu. Artık çıkarım TEK yerde (`kunye_ortak`) yaşar — kapı neyi
+# görüyorsa kaynakça da onu görür.
+_KO_YOL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kunye_ortak.py")
+_spec = importlib.util.spec_from_file_location("_kaynakca_kunye_ortak", _KO_YOL)
+ko = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ko)
+
 KUNYE_SATIR_RE = re.compile(r"^\*\*KUNYE:\*\*\s*(.+)$", re.M)
 KAYNAK_URL_RE = re.compile(r"^\*\*KAYNAK-URL:\*\*\s*(\S+)\s*$", re.M)
 
-BLOK_BAS = "<!-- kaynakca:v1 -->"
-BLOK_SON = "<!-- /kaynakca -->"
+# İşaretler/başlık/önsöz `kunye_ortak`ta tanımlıdır (B-18: aynı tanımı
+# `makine_blogu_maskele` de okur — üretici ile maskeleyici ayrışamaz).
+BLOK_BAS = ko.KAYNAKCA_BLOK_BAS
+BLOK_SON = ko.KAYNAKCA_BLOK_SON
 
 
 def _ciftler(metin):
     """Metindeki (esas, karar) numara çiftleri — sıralı, tekil.
-    Esas ve karar aynı cümle penceresinde aranmaz; belge ölçeğinde
-    eşleşen sıradaki çiftler alınır (muhakeme kaydı künye-satırı tek
-    satır olduğu için orada birebir; taslakta ise atıf kalıbı gereği
-    E./K. yan yana geçer)."""
-    esaslar = [(m.start(), f"{m.group(1)}/{m.group(2)}") for m in ESAS_RE.finditer(metin)]
-    kararlar = [(m.start(), f"{m.group(1)}/{m.group(2)}") for m in KARAR_RE.finditer(metin)]
-    ciftler = []
-    for pos_e, e in esaslar:
-        # en yakın (aynı atıf içindeki) karar no: e'den sonra 120 karakter içinde
-        aday = [k for pos_k, k in kararlar if 0 <= pos_k - pos_e <= 160]
-        ciftler.append((e, aday[0] if aday else None))
+    Çıkarım `kunye_ortak.esas_karar_atiflari` iledir (tek-yazar kuralı);
+    AYM/AİHM künyelerinde `karar` None'dır."""
     tekil = []
-    for c in ciftler:
+    for a in ko.esas_karar_atiflari(metin):
+        c = (a["esas"], a["karar"])
         if c not in tekil:
             tekil.append(c)
     return tekil
@@ -98,12 +101,31 @@ def muhakeme_haritasi(kok):
     return harita
 
 
-def _kaynakca_blogu(satirlar):
+def _kaynakca_blogu(satirlar, teyitsiz=0):
+    """B-3 (P0, v0.5.14) — BEYAN KOŞULLUDUR.
+
+    Eski hâlde blok, listedeki künyelerin TEYİT DURUMUNA BAKMADAN
+    "Aşağıdaki kararların tamamı tam metinleriyle okunup kütüğe
+    damgalanmıştır" diyordu. Denetim kanıtı (2026-08-31): muhakeme kaydı HİÇ
+    olmayan uydurma bir künye için bu cümle taslağa YAZILDI ve diske işlendi
+    (taslak md5 değişti). Bu, avukatın imzasını taşıyacak belgeye mekanik
+    olarak YALAN yazmaktır — kütüğün hiç görmediği bir karar hakkında
+    doğrulama beyanı üretilmesidir.
+
+    Yeni kural: kütükte teyitli olmayan tek bir künye varsa "tam metniyle
+    okundu" cümlesi HİÇ yazılmaz; onun yerine her satırın teyit durumunu
+    gösteren dürüst bir önsöz kurulur."""
     govde = "\n".join(satirlar) if satirlar else "- (taslakta karar atfı bulunamadı)"
-    return (f"{BLOK_BAS}\n\n## İÇTİHAT KAYNAKÇASI\n\n"
-            "Aşağıdaki kararların tamamı tam metinleriyle okunup kütüğe\n"
-            "damgalanmıştır; erişim linkleri teyit kaydından gelir (bu blok\n"
-            "`kaynakca_uret.py` tarafından mekanik üretilir — elle yazılmaz).\n\n"
+    if teyitsiz:
+        onsoz = ("Aşağıdaki listede her kararın TEYİT DURUMU ayrıca gösterilmiştir:\n"
+                 "\"⚠ TEYİT EDİLMEDİ\" işaretli künyeler için tam metin teyidi\n"
+                 "YAPILMAMIŞTIR; erişim linkleri yalnız teyit kaydından gelir (bu blok\n"
+                 "`kaynakca_uret.py` tarafından mekanik üretilir — elle yazılmaz).")
+    else:
+        onsoz = ("Aşağıdaki kararların tamamı tam metinleriyle okunup kütüğe\n"
+                 "damgalanmıştır; erişim linkleri teyit kaydından gelir (bu blok\n"
+                 "`kaynakca_uret.py` tarafından mekanik üretilir — elle yazılmaz).")
+    return (f"{BLOK_BAS}\n\n{ko.KAYNAKCA_BASLIK}\n\n{onsoz}\n\n"
             f"{govde}\n\n{BLOK_SON}")
 
 
@@ -116,19 +138,29 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
     if BLOK_BAS in govde and BLOK_SON in govde:
         govde = govde[:govde.index(BLOK_BAS)] + govde[govde.index(BLOK_SON) + len(BLOK_SON):]
     harita = muhakeme_haritasi(kok)
-    satirlar, linkli, linksiz = [], 0, 0
+    satirlar, linkli, linksiz, teyitsiz = [], 0, 0, 0
     for cift in _ciftler(govde):
         kayit = harita.get(cift)
-        if kayit and kayit.get("url"):
+        if kayit is None:
+            # B-3: künye muhakeme kaydında HİÇ YOK — teyit edilmemiştir.
+            # "link yok" ile "teyit yok" AYRI şeylerdir; eski şerh yalnız
+            # LİNK yokluğuna dairdi ve teyitsizliği görünmez bırakıyordu.
+            kunye = f"E. {cift[0]}" + (f" K. {cift[1]}" if cift[1] else "")
+            satirlar.append(
+                f"- {kunye} — ⚠ TEYİT EDİLMEDİ: bu künye teyit kütüğünde "
+                "bulunamadı; tam metin teyidi YAPILMAMIŞTIR (oa_hafiza.py "
+                "teyit --damga ile kütüğe işlenmelidir)")
+            teyitsiz += 1
+            linksiz += 1
+        elif kayit.get("url"):
             satirlar.append(f"- {kayit['kunye']} — erişim: {kayit['url']}")
             linkli += 1
         else:
-            kunye = (kayit or {}).get("kunye") or f"E. {cift[0]}" + (f" K. {cift[1]}" if cift[1] else "")
             satirlar.append(
-                f"- {kunye} — ⚠ erişim linki kütüğe işlenmedi "
+                f"- {kayit['kunye']} — ⚠ erişim linki kütüğe işlenmedi "
                 "(teyit kaydına --kaynak-url ile tamamlanmalı)")
             linksiz += 1
-    blok = _kaynakca_blogu(satirlar)
+    blok = _kaynakca_blogu(satirlar, teyitsiz)
     if BLOK_BAS in metin and BLOK_SON in metin:
         yeni = (metin[:metin.index(BLOK_BAS)].rstrip()
                 + "\n\n" + blok
@@ -141,7 +173,7 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
         with io.open(tmp, "w", encoding="utf-8", newline="\n") as f:
             f.write(yeni)
         os.replace(tmp, taslak_yolu)
-    return {"linkli": linkli, "linksiz": linksiz,
+    return {"linkli": linkli, "linksiz": linksiz, "teyitsiz": teyitsiz,
             "degisti": degisti, "satirlar": satirlar}
 
 
@@ -153,9 +185,14 @@ def main():
     a = ap.parse_args()
     r = taslaga_isle(a.taslak, a.kok, kuru=a.kuru)
     print(f"KAYNAKÇA: linkli={r['linkli']} linksiz={r['linksiz']} "
+          f"teyitsiz={r['teyitsiz']} "
           f"{'(kuru koşu)' if a.kuru else ('işlendi' if r['degisti'] else 'değişiklik yok')}")
     for satir in r["satirlar"]:
         print("  " + satir)
+    if r["teyitsiz"]:
+        print("UYARI (B-3): TEYİT EDİLMEMİŞ künye var — kaynakçaya 'tam metniyle "
+              "okundu' beyanı YAZILMADI. Bu künyeler teyit kütüğünde yok; "
+              "teyit edilmeden çıktıya giremez (kapı: kunye_teyit.py).")
     if r["linksiz"]:
         print("UYARI: linksiz künye var — teyit kaydına --kaynak-url eklenmeli "
               "(bu araç link UYDURMAZ; yokluk görünür bırakılır).")

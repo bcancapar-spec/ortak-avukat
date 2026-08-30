@@ -32,7 +32,8 @@ def _kismi_kok_kur(tmp_path, n=2, toplam=5):
         (tmp_path / f"{i:03d}-evrak.txt").write_text(
             f"Evrak {i} içeriği — yeterince uzun metin örneği burada tekrar eder. " * 2,
             encoding="utf-8")
-    kod, cikti = _run(OA_INGEST, ["--ocr", "kapali", "--onbakis", str(n)], tmp_path)
+    # v0.5.14/B-25: oa_ingest artık AÇIK yol ister (pozisyonel varsayılan kaldırıldı).
+    kod, cikti = _run(OA_INGEST, [".", "--ocr", "kapali", "--onbakis", str(n)], tmp_path)
     assert kod == 4, cikti
     assert (tmp_path / "_oa" / "metin-onbakis" / "00-kunye.onbakis.json").is_file()
 
@@ -95,7 +96,7 @@ def test_dosya_analiz_md_basliginda_onbakis_damgasi(tmp_path):
 def test_dosya_analiz_md_tam_ingest_sonrasi_damgasiz(tmp_path):
     for i in range(1, 3):
         (tmp_path / f"{i:03d}-evrak.txt").write_text("İçerik " * 5, encoding="utf-8")
-    kod, cikti = _run(OA_INGEST, ["--ocr", "kapali", "--isci", "1"], tmp_path)
+    kod, cikti = _run(OA_INGEST, [".", "--ocr", "kapali", "--isci", "1"], tmp_path)
     assert kod == 0, cikti
     kod, cikti = _run(TAM_TUR, ["--baslat", "--dosya", "Test Dosyası", "--kok", "."], tmp_path)
     assert kod == 0, cikti

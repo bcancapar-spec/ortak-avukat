@@ -74,9 +74,17 @@ def dava_klasoru():
 # ── (1) ŞEMA — belgeyle birebir (docs: hooks.md) ────────────────────────────
 
 def test_hooks_json_semasi_belgeye_uygun():
-    """Üst seviye `hooks` sarmalayıcısı + dört olay + her girdide `hooks`
-    listesi + `type: command`. (Belge teyidi 2026-08-07: bu üçlü yuvalama
-    TEK belgelenmiş şemadır.)"""
+    """Üst seviye `hooks` sarmalayıcısı + BEKLENEN_OLAYLAR'ın tamamı (bugün
+    altı olay) + her girdide `hooks` listesi + `type: command`. (Belge teyidi
+    2026-08-07: bu üçlü yuvalama TEK belgelenmiş şemadır.)
+
+    DÜZELTME (v0.5.14 / denetim bulgusu B-40): docstring olay sayısını
+    "dört" diye yazıyordu,
+    oysa `BEKLENEN_OLAYLAR` v3.17'den beri ALTI olay taşıyor — öz-denetim
+    metni envanterin kendisini yanlış anlatıyordu. Sayı artık metne
+    yazılmıyor; envanterin TAM-KÜME kilidi
+    `tests/test_v0514_vitrin.py::test_b40_hook_olay_envanteri_hooks_json_ile_tam_kume`
+    dosyasındadır (hooks.json'a sessizce EKLENEN olay da yakalanır)."""
     v = _hooks_veri()
     assert set(v.keys()) == {"hooks"}, "üst seviye YALNIZ 'hooks' olmalı"
     ic = v["hooks"]

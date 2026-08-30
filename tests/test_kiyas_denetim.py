@@ -15,12 +15,14 @@ kapıya çevirme kararı Can'a sorulacak (bkz. _gorus/semantica-uyarlama.md).
 
 Diğer kilitlenen mevcut davranışlar:
 - Argümansız çağrı: kullanım mesajı (stdout) + exit 1.
-- Var olmayan girdi dosyası / bozuk JSON: script ÇÖKER (yakalanmamış
-  FileNotFoundError / JSONDecodeError traceback'i, returncode != 0) —
-  karakterizasyon: mevcut tasarımda girdi hatası yakalanmaz.
 - Sonuç yazılmamış olması ve içtihat yokluğu yalnız ⚠ uyarıdır, kritik
   boşluk SAYILMAZ ("Yapı bütün" basılır).
 - Unsurlar hem {"id","ad"} sözlük hem düz-string biçiminde kabul edilir.
+
+v0.5.14'te BİLİNÇLİ olarak güncellenen üç kilit (gerekçeler ilgili testlerin
+docstring'lerinde): unsursuz normda "Yapı bütün" yerine kritik boşluk (B-11) ·
+girdi hatasında traceback yerine temiz mesaj + exit 1 (B-23, iki test).
+Exit kodu sözleşmesi (kritik boşlukta exit 0) DEĞİŞMEDİ.
 
 Girdiler tempfile tabanlı İZOLE dizinlerde üretilir; repo dosyalarına
 dokunulmaz.
@@ -272,18 +274,24 @@ def test_unsurlar_duz_string_bicimi_de_kabul_edilir(izole_dizin):
     assert "SONUÇ: Yapı bütün." in out
 
 
-def test_unsurlar_hic_yoksa_eslesme_denetimi_atlanir_kritik_sayilmaz(izole_dizin):
-    """Karakterizasyon — mevcut tasarım: unsurlara ayrılmamış norm yalnız
-    ⚠ uyarı alır; eşleşme denetimi yapılamadığı hâlde kritik SAYILMAZ."""
+def test_unsurlar_hic_yoksa_denetim_YAPILAMADI_ve_kritik_sayilir(izole_dizin):
+    """v0.5.14'te BİLİNÇLİ olarak değiştirildi (B-11). Eski karakterizasyon
+    sessiz bir YANLIŞ-YEŞİLİ kilitliyordu: norm unsurlara hiç ayrılmamışsa
+    subsumtion denetimi HİÇ yapılmadığı hâlde script "SONUÇ: Yapı bütün." +
+    `kritik_bosluk=False` basıyor, tüm aşağı akış (DURUM.md, makbuz zinciri,
+    gerekçe iskeleti) temiz bir kıyas görüyordu. "Denetim yapılamadı" ile
+    "denetim geçti" aynı hükmü üretemez → artık kritik boşluktur.
+    Exit kodu sözleşmesi (yazılı avukat kararı) DEĞİŞMEDİ."""
     k = _tam_kiyas()
     k["buyuk_onerme"]["unsurlar"] = []
     yol = _kiyas_yaz(izole_dizin, k)
     kod, out, _ = _cli(yol)
 
     assert kod == 0
-    assert "⚠ Norm unsurlarına ayrılmamış — eşleşme denetimi yapılamıyor." in out
+    assert "✗ Norm unsurlarına ayrılmamış — subsumtion denetimi YAPILAMADI." in out
     assert "Normu unsurlara böl" in out
-    assert "SONUÇ: Yapı bütün." in out
+    assert "SONUÇ: Yapı bütün." not in out
+    assert "KRİTİK BOŞLUK var" in out
 
 
 # ── yetim vakıa ─────────────────────────────────────────────────────────────
@@ -350,23 +358,35 @@ def test_argumentsiz_cagri_kullanim_mesaji_exit1():
     assert "Kullanım: python kiyas_denetim.py kiyas.json [--json out.json]" in out
 
 
-# ── bozuk/eksik girdi: script ÇÖKER (karakterizasyon) ───────────────────────
+# ── bozuk/eksik girdi: temiz mesaj + exit 1 (v0.5.14 / B-23) ────────────────
 
-def test_var_olmayan_dosya_cokus_traceback(izole_dizin):
-    """Karakterizasyon — mevcut tasarım: girdi dosyası yoksa yukle()
-    yakalanmamış FileNotFoundError fırlatır; traceback + returncode != 0."""
+def test_var_olmayan_dosya_temiz_mesaj_exit1(izole_dizin):
+    """v0.5.14'te BİLİNÇLİ olarak değiştirildi (B-23): eski karakterizasyon
+    ham FileNotFoundError traceback'ini kilitliyordu. Girdiyi MODEL üretir;
+    traceback avukata 'araç bozuldu' izlenimi verip asıl mesajı kaybediyor.
+    Aile standardı (temiz mesaj + exit 1) buraya da uygulandı."""
     kod, out, err = _cli(izole_dizin / "yok-boyle-dosya.json")
-    assert kod != 0
-    assert "Traceback" in err
-    assert "FileNotFoundError" in err
+    assert kod == 1
+    assert "Traceback" not in err
+    assert "❌ JSON okunamadı: dosya yok" in out
 
 
-def test_bozuk_json_girdi_cokus_traceback(izole_dizin):
-    """Karakterizasyon — mevcut tasarım: geçersiz JSON'da json.load
-    yakalanmamış JSONDecodeError fırlatır; traceback + returncode != 0."""
+def test_bozuk_json_girdi_temiz_mesaj_exit1(izole_dizin):
+    """v0.5.14'te BİLİNÇLİ olarak değiştirildi (B-23) — gerekçe yukarıdaki
+    testle aynı; JSONDecodeError traceback'i yerine temiz mesaj."""
     yol = izole_dizin / "kiyas.json"
     yol.write_text("{ gecersiz json", encoding="utf-8")
     kod, out, err = _cli(yol)
-    assert kod != 0
-    assert "Traceback" in err
-    assert "JSONDecodeError" in err
+    assert kod == 1
+    assert "Traceback" not in err
+    assert "❌ JSON okunamadı" in out
+
+
+def test_json_koku_sozluk_degilse_temiz_mesaj_exit1(izole_dizin):
+    """B-23: kök `null`/`[]`/`"dize"` ise AttributeError yerine temiz mesaj."""
+    yol = izole_dizin / "kiyas.json"
+    yol.write_text("[]", encoding="utf-8")
+    kod, out, err = _cli(yol)
+    assert kod == 1
+    assert "Traceback" not in err
+    assert "JSON kökü sözlük değil (list)" in out

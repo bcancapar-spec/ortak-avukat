@@ -49,11 +49,25 @@ def test_varsayilan_davranis_degismedi(mod):
 
 
 def test_imza_sonuna_eklendi(mod):
-    """M2 kilidi: yeni parametre EN SONDA; altıncı argüman hâlâ istisna bayrağı."""
+    """M2 kilidi: yeni parametreler imzanın SONUNA eklenir; eski konumlar korunur.
+
+    BİLİNÇLİ GÜNCELLEME (v0.5.14): kilidin ASIL amacı, mevcut POZİSYONEL çağrıların
+    (`hesapla(t, m, b, yargi, tur, istisna)`) bozulmamasıdır. Eski hâli `adlar[-1] ==
+    "baslangic_turu"` diyordu; bu, "sona ekle" kuralını "bir daha ASLA parametre ekleme"
+    kuralına çeviriyordu ve v0.5.14'te A-1/A-20 için gereken `kural` parametresi
+    eklenince kırıldı. Kilit artık POZİSYONLARI doğruluyor: 6. argüman istisna bayrağı,
+    7. argüman başlangıç türü; sonrasına eklenen her parametre varsayılan değerli
+    olmak ZORUNDA (aksi hâlde mevcut çağrılar kırılır) — bu da ayrıca denetleniyor.
+    """
     import inspect
-    adlar = list(inspect.signature(mod.hesapla).parameters)
+    imza = inspect.signature(mod.hesapla)
+    adlar = list(imza.parameters)
     assert adlar[5] == "adli_tatil_istisna", "6. parametre yerini korumalı"
-    assert adlar[-1] == "baslangic_turu", "yeni parametre imzanın SONUNDA olmalı"
+    assert adlar[6] == "baslangic_turu", "7. parametre başlangıç türü olmalı"
+    for ad in adlar[6:]:
+        assert imza.parameters[ad].default is not inspect.Parameter.empty, (
+            f"sonradan eklenen '{ad}' parametresi varsayılan değerli OLMALI "
+            "(mevcut pozisyonel çağrılar kırılmasın)")
 
 
 @pytest.mark.parametrize("tur", ["teblig", "tefhim", "ogrenme", "olay"])

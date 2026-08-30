@@ -132,3 +132,50 @@
   taşır — gelen evrak DEĞİLDİR; taranırsa kurucu yeşil teslimden hemen sonra
   KUNYE BAYAT / delta yanlış-pozitifi üretirdi (öz-bulaşma). Doktrin:
   `oa-kontrol/references/cikti-semasi.md`. Test: `tests/test_v059_cikti_semasi.py`.
+
+- **2026-08-31 (v0.5.14 — PIPELINE + HOOK + KİT GÜVENLİĞİ paketi; denetim raporu B-1/B-4/B-5/B-28):**
+  - **[B-4 · P0] SUNUM KİLİDİ kök keşfi iki sözleşmeyi de okur.** Neden: kök keşfi
+    yalnız `tool_input.file_path` okuyordu, `SendUserFile` payload'ı ise yolu
+    `tool_input.files` (str VEYA liste) alanında taşır; oturum dava klasörünün
+    DIŞINDA açıldığında (kod deposunda çalışma, çok köklü kurulum, dava klasörünün
+    "ek çalışma dizini" olması) kapı SESSİZCE ölüydü — aynı payload dava kökünde
+    `ask` basarken kök dışında hiç çıktı üretmiyordu (EXIT=0). Ne: yeni
+    `_payload_dosya_yollari()` üç kanalı da (file_path · files · tool_response.filePath)
+    toplar; yukarı-arama `_oa/defter` katı ölçütünden sonra `_dava_koku_yukari_ara()`
+    (`_dosya_klasoru_mu` ölçütü) ile tekrarlanır — defteri henüz doğmamış dava
+    klasörü de bulunur. Ayrıca kök HİÇ bulunamadığında artık sessiz geçilmez:
+    gönderilen dosya teslim-sınıfı görünüyorsa (`_sunum_adi_teslim_sinifi_mi`)
+    "SUNUM KİLİDİ DOĞRULANAMADI" gerekçeli `ask` basılır (karar devri; hook yine
+    ASLA bloklamaz). Test: `tests/test_v0514_pipeline.py`.
+  - **[B-5 · P0] Bayat-araç nöbetçisi NEGATİF parmak izinden POZİTİF sürüm
+    kanıtına geçti.** Neden: parmak izi tablosunun en yeni imzaları v0.5.11
+    çekirdeğine aitti ve 0.5.9.1 kitinde ZATEN vardı; dolayısıyla ≥0.5.9 her nesil
+    otomatik *"kanaldan YENİ … bayat DEĞİLDİR, tazeleme gerekmez"* ilan ediliyordu —
+    nöbetçi kendi neslini referans aldığı için bayat kurulumu YAPISAL OLARAK
+    göremiyordu. Üstüne `_cekirdek_kilitle` o bayat çekirdeği salt-okunur çiviliyor,
+    düz kopyayla tazeleme izin hatasıyla düşüyordu (kapı, bayat nesli KORUYAN bir
+    çiviye dönüşmüştü). Ne: `_arac_surum_damgasi()` + `_kopya_taze_kaniti()` —
+    "taze" hükmü yalnız İKİ pozitif kanıttan biriyle verilir: (a) kanal kaynağıyla
+    BAYT-ÖZDEŞLİK, (b) makine-okur `OA_SURUM` damgası ≥ eklenti sürümü. Kanıt yoksa
+    cevap "taze" değil "nesli doğrulanamadı"dır ve kopya bayat muamelesi görür
+    (fail-closed). `_cekirdek_kilitle` yalnız kanıtlı kopyayı kilitler.
+    `_arac_version_uyarisi` artık `VERSION.json` BEYANINI artefaktla sınar (kite
+    elle güncel sürüm yazarak kanalı susturmak mümkün değil — "makbuz artefakta
+    bağlanır, beyana değil").
+  - **[B-28] Kıyas artefaktı TEK SÖZLEŞMEYE indi + içerik denetimi.** Neden: önkoşul
+    `05-kiyas*`, tüketici `*kiyas*.json` arıyordu (`01-kiyas.json` haksız yere
+    bloklanıyordu); ters yönde `05-kiyas.json` içine yazılmış 400 harflik 'A'
+    dolgusu boyut kapısını geçip önkoşulu (True, None) yapıyordu. Ne: tek desen
+    `*kiyas*`; `.json` adayı `arac == "kiyas_denetim"` olmak zorunda
+    (`_kiyas_artefakti_mi`). `.md` çalışma evrakı AYNEN gövde boyutuyla geçer.
+  - **[B-1 · P0, `tools/hook_doktor.py`] SERVİS EDİLEN NESİL kapısı.** Ölçüldü: depo
+    0.5.13 · kurulu önbellek 0.5.9.1 · rpm anlık görüntüsü 0.5.0 — üç nesil aynı
+    anda diskteydi ve araç iki kipte de yeşil basıyordu. Ne: `[1b] SÜRÜM MUTABAKATI`
+    (plugin.json ↔ makine-okur `OA_SURUM` damgaları; `--kurulu` kipinde depo ile de
+    karşılaştırılır) + `[5] SERVİS EDİLEN NESİL` (CLAUDE_PLUGIN_ROOT ·
+    installed_plugins.json · rpm anlık görüntüleri taranır; farklı VEYA okunamayan
+    her servis kökü yeşili düşürür). Kurulumun HİÇ olmaması bilinmezlik değil
+    belirli bir cevaptır (temiz klon/CI) — yeşil kalır ama açıkça yazılır.
+    `--servis-atla` yalnız depo katmanını denetlemek için AÇIK bayraktır.
+  - Ölü kod temizliği: `_bayat_arac_uyarisi` içindeki gömülü script indeksi
+    `_eklenti_script_indeksi()` olarak tek kaynağa çekildi (üç yerde kullanılıyor).

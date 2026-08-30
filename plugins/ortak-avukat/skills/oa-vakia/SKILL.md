@@ -21,9 +21,10 @@ Sök-tak parça. Gerçek davada işin yarısı olgu ve delildir; sistem hukukta 
 Script hukuki değerlendirme yapmaz; **sıralar, eşler, boşluk/yetim tespit eder.** İspatın yeterliliğine ve delilin caizliğine muhakeme + `oa-antitez` (ispat/delil cephesi) karar verir.
 
 ```bash
-python scripts/vakia_matris.py --iskelet > _oa/cikti/04-vakia.json  # iddia+olay şablonu
+python scripts/vakia_matris.py --iskelet > _oa/cikti/04-vakia.json  # iddia+olay şablonu (STDOUT = saf JSON)
 python scripts/vakia_matris.py --dogrula _oa/cikti/04-vakia.json   # kronoloji + matris + boşluk
 ```
+`--iskelet` **yalnız JSON'u stdout'a** basar; banner/açıklamalar stderr'e gider (v0.5.14 — yukarıdaki yönlendirme önceden ayrıştırılamaz bir dosya üretiyordu). Girdi JSON'unun kökü sözlük değilse script traceback yerine tek satırlık hata verip exit 1 döner.
 Çıktı: **(1) Kronoloji** (tarihe göre sıralı; tarihsizler ayrı işaretli), **(2) İddia↔delil matrisi** (her iddiayı destekleyen olaylar), **(3) İspat boşlukları** (belgeli/somut delili olmayan iddialar — ispat yükü riski), **(4) Yetim deliller** (hiçbir iddiaya bağlanmamış olgular) ve geçersiz referans/ispat-durumu denetimi.
 
 ## İş akışı
@@ -45,7 +46,13 @@ bkz. `pipeline_kayit.py::_vakia_delilsiz_unsur_uyarisi`). Şablondaki norm
 atıfları başlangıç ÇIPASIDIR; kullanım anında Mevzuat MCP'den teyit edilir.
 
 ## ispat_durumu kategorileri
-`belgeli · tanik · bilirkisi · karine · ikrar · yemin · ispatsiz` — her olgunun ispat aracını işaretle; "ispatsiz" olanlar matriste otomatik boşluk sinyali üretir.
+**TAM ispat araçları:** `belgeli · tanik · bilirkisi · karine · ikrar · yemin` — bunlar, olayın `belge` alanı da doluysa iddiayı **belgeli destekli** yapar.
+**KISMİ ispat aracı:** `beyan` — kayda geçer, matriste `kismi_destek` olarak görünür, ama **tek başına iddiayı belgeli yapmaz**; iddia yine `ispat_bosluklari`na düşer.
+**Boşluk sinyali:** `ispatsiz`.
+
+Kategori listesi **kapalı beyaz listedir** (v0.5.14): listede olmayan bir etiket (ör. `"video"`) yazılırsa olay artık iddiayı belgeli SAYMAZ ve `GEÇERSİZ ispat_durumu` bloğunda görünür. Önceden hesap negatif listeye dayanıyordu (`!= "ispatsiz"`) ve geçersiz etiketli dolu bir belge iddiayı sessizce "belgeli" yapıyordu.
+
+`beyan` **daima ifade/sorgu tutanağı `belge`si ile yazılır** — belgesiz `beyan` olayı, `oa-pipeline/scripts/capraz_denetim.py`'nin `BELGESIZ_MESRU` kümesinde (`karine · ikrar · yemin`) yer almadığı için `OLGU_EVRAKSIZ` kopukluğu sayılır ve o script exit 1 verir. Bu küme v0.5.14'te **bilinçli olarak değiştirilmemiştir** (kapı bir kütük/olgu disiplini kapısıdır; beyanın belgesiz kalması meşru değildir).
 
 ## ÖZNE EŞLEŞTİRME — yazım varyantı taraması (v0.5.8.4, advisory)
 Matris girdisine tarafları `taraflar` listesine, her olayın failini opsiyonel

@@ -60,12 +60,20 @@ DAYANAK_DURUMLARI = {"teyitli", "teyitsiz", "yok"}
 
 
 def iskelet():
-    print("=" * 70)
-    print("  ANTİTEZ CEPHELERİ — durum farkındalığı için EKSİKSİZ değerlendirilir")
-    print("=" * 70)
+    """v0.5.14 (B-26): STDOUT yalnız GEÇERLİ JSON taşır; cephe listesi ve
+    açıklamalar STDERR'e gider. `--iskelet > _oa/cikti/NN-antitez.json`
+    bugüne kadar ayrıştırılamaz bir dosya üretiyordu — oysa
+    `dilekce_denetim.py`'nin [G] ANTİTEZ-CEVAP-ÇAPASI kapısı tam da
+    `_oa/cikti/*antitez*.json` dosyalarını okur."""
+    def _not(*a):
+        print(*a, file=sys.stderr)
+
+    _not("=" * 70)
+    _not("  ANTİTEZ CEPHELERİ — durum farkındalığı için EKSİKSİZ değerlendirilir")
+    _not("=" * 70)
     for k, v in STANDART_CEPHELER.items():
-        print(f"  [{k}]\n      {v}")
-    print("\n--- Doldurulacak matris şablonu (JSON) ---")
+        _not(f"  [{k}]\n      {v}")
+    _not("\n--- Doldurulacak matris şablonu (JSON — STDOUT) ---")
     sablon = {
         "tez": "Müvekkilin ana tezi — bir cümle",
         "cepheler": [
@@ -83,7 +91,7 @@ def iskelet():
         ],
     }
     print(json.dumps(sablon, ensure_ascii=False, indent=2))
-    print("\nDoldurduktan sonra: python antitez_matris.py --dogrula matris.json")
+    _not("\nDoldurduktan sonra: python antitez_matris.py --dogrula matris.json")
 
 
 def dogrula(path):
@@ -94,8 +102,21 @@ def dogrula(path):
         print(f"❌ JSON okunamadı: {e}")
         sys.exit(1)
 
+    # v0.5.14 (B-23): kök tipi denetimi — girdiyi MODEL üretir; kök sözlük
+    # değilse (null / [] / "dize") eski kod ham AttributeError traceback'i
+    # veriyor, asıl mesaj kayboluyordu.
+    if not isinstance(m, dict):
+        print(f"❌ JSON kökü sözlük değil ({type(m).__name__}) — antitez_matris "
+              '{"tez": "...", "cepheler": [...]} biçiminde bir nesne bekler '
+              "(şablon: --iskelet).")
+        sys.exit(1)
+
     tez = m.get("tez", "(tez belirtilmemiş)")
-    cepheler = m.get("cepheler", [])
+    ham_cepheler = m.get("cepheler") or []
+    if not isinstance(ham_cepheler, list):
+        ham_cepheler = []
+    cepheler = [c for c in ham_cepheler if isinstance(c, dict)]
+    bicimsiz_cephe = len(ham_cepheler) - len(cepheler)
     verilen = {c.get("cephe") for c in cepheler}
 
     eksik_cepheler = [k for k in STANDART_CEPHELER if k not in verilen]
@@ -104,6 +125,10 @@ def dogrula(path):
     dayanaksiz_guclu = []  # güçlü antiteze dayanaksız çürütme
     artik_riskler = []     # dürüst kalıntı riskler
     gecersiz = []          # şema hatası
+    if bicimsiz_cephe:
+        # sessiz atlama yasağı: düşürülen kayıt GÖRÜNÜR olsun (B-23)
+        gecersiz.append(f"cepheler: {bicimsiz_cephe} kayıt sözlük değil — "
+                        "denetime alınmadı")
 
     saldiri_sayisi = 0
     cozulen = 0

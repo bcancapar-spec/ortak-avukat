@@ -71,7 +71,14 @@ def test_sabit_olay_listesi_silindi():
 
 def test_hooks_olaylari_gercek_hooks_json_ile_esit():
     """hook_doktor.hooks_olaylari() GERÇEK repo hooks.json'ındaki olay
-    kümesiyle birebir eşit olmalı (bugün 6 olay)."""
+    kümesiyle birebir eşit olmalı.
+
+    DÜZELTME (v0.5.14 / B-40): docstring parantez içinde sabit bir olay
+    sayısı beyan ediyordu, ama bu sayı bu testte HİÇ assert edilmiyor — beklenti
+    zaten test edilen dosyadan türetiliyor (amaç dinamik ayrıştırmadır,
+    envanter kilidi değil). Doğrulanmayan sayı beyanı metinden kaldırıldı;
+    envanter kilidi `test_hook_komutlari.BEKLENEN_OLAYLAR` üzerinden
+    `tests/test_v0514_vitrin.py` içinde tam-küme olarak kurulur."""
     mod = _modul()
     beklenen = set(json.loads(HOOKS_JSON.read_text(encoding="utf-8"))["hooks"].keys())
     assert set(mod.hooks_olaylari(HOOKS_JSON)) == beklenen
@@ -122,10 +129,20 @@ def test_sarmalayici_stdin_bos_json_alir():
 def test_uctan_uca_tum_olaylar_yesil():
     """Onarım sonrası hook_doktor GERÇEK repo üzerinde koşunca: her olay
     için sarmalayıcı komut + exit satırı basılır ve SONUÇ yeşildir.
-    (Sentetik değil — repo hooks.json'ındaki 6 olayın tamamı fiilen koşulur.)"""
+    (Sentetik değil — repo hooks.json'ındaki 6 olayın tamamı fiilen koşulur.)
+
+    v0.5.14 (B-1) ŞERHİ — `--servis-atla` ile koşulur. Bu testin kilitlediği
+    sözleşme HOOK KATMANIDIR ve makineden bağımsız olmak zorundadır; oysa
+    yeni [5] SERVİS EDİLEN NESİL kapısı bilinçli olarak MAKİNEYE BAĞLIDIR
+    (o makinede bayat bir kurulum varsa kırmızı yanar — B-1'in bütün amacı
+    budur ve bu depoda gerçekten öyle: kurulu 0.5.9.1, depo 0.5.13). O kapı
+    `tests/test_v0514_pipeline.py` içinde sentetik servis kökleriyle ayrıca
+    kilitlenir; burada bayrakla ayrıştırılması, iki sözleşmenin birbirini
+    maskelemesini önler."""
     if _gercek_bash() is None:
         pytest.skip("ortamda gerçek bash yok")
-    cp = subprocess.run([sys.executable, str(DOKTOR)], cwd=str(REPO),
+    cp = subprocess.run([sys.executable, str(DOKTOR), "--servis-atla"],
+                        cwd=str(REPO),
                         capture_output=True, text=True, encoding="utf-8",
                         errors="replace", timeout=600)
     out = cp.stdout or ""

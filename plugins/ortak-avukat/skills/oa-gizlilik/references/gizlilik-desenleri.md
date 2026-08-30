@@ -29,6 +29,21 @@ manuel yapın" der ve durur.
 | Esas/Karar no + taraf bağlamı | zayıf | ASK | geçer |
 | Müvekkil ad + dosya bağlamı | zayıf | ASK | geçer |
 
+**Künye beyaz listesi (A-22, v0.5.14).** Yukarıdaki satırın ölçütü **taraf
+bağlamıdır**, künyenin kendisi değil. Bir esas/karar numarası, penceresinde
+**yerleşik içtihat mercii** adı (Yargıtay, Danıştay, AYM, AİHM, BAM/BİM, HGK,
+CGK, İçtihadı Birleştirme) taşıyor **ve** taraf bağlamı (davacı/davalı/müvekkil/
+sanık/müşteki/borçlu/vekil …) taşımıyorsa **kamuya açık atıftır**: hassas veri
+sayılmaz, ASK üretmez, `[BİLGİ]` kanalında görünür ve exit kodunu etkilemez.
+
+Beyaz listeye **girmeyen** iki hâl (fail-closed):
+- **Mercisiz çıplak künye** (`E. 2020/1111`) — müvekkilin kendi esas numarası olabilir.
+- **İlk derece mahkemesi künyesi** (`… 3. İş Mahkemesi 2025/354 E.`) — dava
+  dosyası kimliğidir; "Mahkemesi" ibaresi yerleşik içtihat mercii yerine geçmez.
+
+Gerekçe: yanlış-pozitif üreten bir gizlilik kapısı uzun vadede **gerçek
+pozitifi de** geçirtir; desen doktrinden sapmamalıdır.
+
 ## Modlar
 - **strict** — dış buluta, web aramasına, üçüncü parti MCP'ye giderken. Varsayılan.
 - **balanced** — yerel DB / çevrimdışı model (Ollama) gibi düşük riskli hedef.

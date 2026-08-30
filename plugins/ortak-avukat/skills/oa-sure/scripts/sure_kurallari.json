@@ -1,91 +1,208 @@
 {
-  "_aciklama": "SÜRE KURALLARI tablosu (güncellenebilir). hesapla_sure.py bu dosya varsa buradan okur; yoksa script içindeki GÖMÜLÜ tabloya düşer (geriye uyumlu). Her kural: kanun-yolu/başvuru/itiraz süresinin KAÇ gün/hafta olduğunu ve dayanağını (kaynak) taşır. Script yalnızca DATE ARİTMETİĞİNİ deterministik yapar; sürenin miktarı/birimi HUKUKİ kuraldır ve resmî kaynaktan (Mevzuat MCP) TEYİT edilmelidir.",
-  "_teyit_notu": "mcp_teyit_tarihi: kuralın Mevzuat MCP'den (veya Resmî Gazete/güncel kanun metninden) en son teyit edildiği tarih (YYYY-MM-DD). BOŞ ise kural HENÜZ teyit edilmemiştir — kullanmadan önce teyit et ve bu alanı doldur. Süreler kanun değişiklikleriyle değişebilir (ör. 6183 m.58 7→15 gün, 7061 s.K.); tabloya körlemesine güvenme.",
-  "_dikkat_cmk": "CMK istinaf/temyiz süreleri bu tabloda kullanıcı talimatıyla 2 hafta olarak girildi; ANCAK yürürlükteki CMK metni istinaf (m.273) için 7 gün, temyiz (m.291) için 15 gün diyebilir. Bu kayıtlar TEYİT EDİLMEDEN kullanılmamalıdır (mcp_teyit_tarihi boş).",
+  "_aciklama": "SÜRE KURALLARI tablosu (güncellenebilir). hesapla_sure.py bu dosya varsa buradan okur; yoksa/bozuksa script içindeki GÖMÜLÜ tabloya düşer ve bunu GÖRÜNÜR şekilde raporlar (v0.5.14 / B-21 — sessiz fallback kaldırıldı). İki tablo BİREBİR aynıdır ve tests/test_v0514_sure.py::test_B21_gomulu_ve_json_kural_tablosu_BIREBIR_ayni ile mekanik olarak kilitlidir. Her kural: sürenin KAÇ gün/hafta olduğunu, dayanağını (kaynak), MCP teyit tarihini ve hukuken izinli başlangıç türlerini taşır. Script yalnızca DATE ARİTMETİĞİNİ deterministik yapar; sürenin miktarı/birimi HUKUKİ kuraldir ve resmî kaynaktan (Mevzuat MCP) TEYİT edilmelidir.",
+  "_teyit_notu": "mcp_teyit_tarihi: kuralın Mevzuat MCP'den (veya Resmî Gazete/güncel kanun metninden) en son teyit edildiği tarih (YYYY-MM-DD). BOŞ ise kural HENÜZ teyit edilmemiştir — kullanmadan önce teyit et ve bu alanı doldur. Teyit tarihi YALNIZ bu alanda tutulur; 'kaynak' metnine YAZILMAZ (v0.5.14 / B-21 — ikiz beyan yasağı). Süreler kanun değişiklikleriyle değişebilir (ör. 6183 m.58 7→15 gün, 7061 s.K.); tabloya körlemesine güvenme.",
+  "_dikkat_cmk": "CMK kanun yolu süreleri Mevzuat MCP'den TEYİTLİDİR (2026-08-31): istinaf m.273/1 İKİ HAFTA, temyiz m.291/1 İKİ HAFTA, itiraz m.268/1 İKİ HAFTA. Her iki kanun yolu maddesinde de hazır bulunmayanlara ilişkin ikinci fıkralar 2/3/2024 tarihli 7499 s.K. ile MÜLGA edilmiştir; dolayısıyla eski 'istinaf yedi gün / temyiz on beş gün' rejimi YÜRÜRLÜKTE DEĞİLDİR. Tutuklu sanık yönünden CMK m.263 (ceza infaz kurumu müdürüne başvuru — süreleri KESER) her üç maddede de saklıdır. ADLİ TATİL: ceza sürelerine HMK m.104 (bir hafta) DEĞİL, CMK m.331/4 (ÜÇ GÜN) uygulanır — hesap `--yargi ceza` ile koşulur, aksi hâlde script DURUR.",
+  "_baslangic_notu": "izinli_baslangic_turleri: kuralın hukuken hangi olaydan işlediği. `--baslangic-turu` bu kümenin DIŞINDA verilirse script UYARI basar (nitelendirme yapmaz, aritmetiği değiştirmez). Boş liste = kısıt kaydedilmemiş.",
   "kurallar": {
     "hmk_istinaf": {
       "miktar": 2,
       "birim": "hafta",
       "kaynak": "HMK m.345 — istinaf, ilamın tebliğinden",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "tefhim"
+      ]
     },
     "hmk_temyiz": {
       "miktar": 2,
       "birim": "hafta",
       "kaynak": "HMK m.361 — temyiz, BAM kararının tebliğinden",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "tefhim"
+      ]
     },
     "hmk_cevap": {
       "miktar": 2,
       "birim": "hafta",
       "kaynak": "HMK m.127 — cevap (kural; uzatma ayrı)",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "iik_istinaf": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL)",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL) · 7499 s.K. (yür. 1/6/2024) süreyi iki haftaya çıkardı VE \"tefhim veya\" ibaresini metinden ÇIKARDI — süre artık YALNIZ tebliğden işler.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "tefhim"
+      ]
     },
     "iik_sikayet": {
       "miktar": 7,
       "birim": "gun",
       "kaynak": "İİK m.16 — icra mahkemesine şikâyet; kural 7 gün (SÜRESİZ şikâyet halleri ayrıktır — m.16/2)",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "ogrenme",
+        "teblig"
+      ]
     },
     "cmk_itiraz": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "CMK m.268 — itiraz; ilgililerin kararı ÖĞRENDİĞİ günden itibaren iki hafta (m.35: yüze karşı açıklama; hazır bulunamayana tebliğ). Eski '7 gün' YÜRÜRLÜKTE DEĞİL.",
-      "mcp_teyit_tarihi": "2026-08-27"
+      "kaynak": "CMK m.268 — itiraz; ilgililerin kararı ÖĞRENDİĞİ günden itibaren iki hafta (m.35: yüze karşı açıklama; hazır bulunamayana tebliğ). Eski '7 gün' YÜRÜRLÜKTE DEĞİL. CMK m.263 (tutuklunun kurum müdürüne başvurusu — süreyi KESER) saklıdır.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "ogrenme",
+        "teblig",
+        "tefhim"
+      ]
     },
     "cmk_istinaf": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "CMK m.273/1 — istinaf; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta. (Hazır bulunmayanlara ilişkin f.2, 7499 s.K. ile MÜLGA — tek başlangıç: gerekçeli karar tebliği. Savcı yönünden: kararın başsavcılığa geliş tarihi.)",
-      "mcp_teyit_tarihi": "2026-08-27"
+      "kaynak": "CMK m.273/1 — istinaf; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta. (Hazır bulunmayanlara ilişkin f.2, 7499 s.K. ile MÜLGA — tek başlangıç: gerekçeli karar tebliği. Savcı yönünden f.3: kararın başsavcılığa geliş tarihi. m.263 saklıdır.)",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "cmk_temyiz": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "CMK m.291/1 — temyiz; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta (f.2 7499 ile MÜLGA; m.273 ile simetrik).",
-      "mcp_teyit_tarihi": "2026-08-27"
+      "kaynak": "CMK m.291/1 — temyiz; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta (f.2 7499 ile MÜLGA; m.273 ile simetrik; m.263 saklıdır).",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "iyuk_dava_idare": {
       "miktar": 60,
       "birim": "gun",
-      "kaynak": "İYUK m.7 — idare mah./Danıştay dava açma",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "İYUK m.7 — idare mah./Danıştay dava açma · 7331 s.K.'nın \"altmış→otuz\" değişikliği m.10/11/13 içindir; m.7 dava açma süresine DOKUNULMAMIŞTIR (sık karıştırılır).",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ]
     },
     "iyuk_dava_vergi": {
       "miktar": 30,
       "birim": "gun",
       "kaynak": "İYUK m.7 — vergi mah. dava açma",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ]
     },
     "iyuk_istinaf": {
       "miktar": 30,
       "birim": "gun",
       "kaynak": "İYUK m.45 — BİM istinaf",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "iyuk_temyiz": {
       "miktar": 30,
       "birim": "gun",
-      "kaynak": "İYUK m.46 — Danıştay temyiz",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "İYUK m.46 — Danıştay temyiz · Süre değişmedi; ANCAK 7589 s.K. (31/7/2026) kapsamı genişletti (yeni f.2; (c) bendi mülga) — geçici m.1/3: 31/7/2026 SONRASI BİM kararlarına uygulanır.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "iyuk_yd_itiraz": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İYUK m.27/7 — yürütmenin durdurulması istemi hakkında verilen karara İTİRAZ; kararın tebliğini İZLEYEN günden itibaren yedi gün, BİR DEFAYA MAHSUS (itiraz üzerine verilen karar kesindir). İSTİSNA: m.20/A-2/e (ivedi yargılama) ve m.20/B-1/d (merkezî ve ortak sınav) davalarında YD kararlarına İTİRAZ EDİLEMEZ.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "iyuk_dava_ivedi": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "İYUK m.20/A-2/a — İVEDİ YARGILAMA usulünde dava açma; otuz gün. Katalog m.20/A-1: ihale işlemleri (yasaklama hariç), acele kamulaştırma, ÖYK kararları, 2634 turizm satış/tahsis/kiralama, ÇED kararları, 6306 CB kararları. m.20/A-2/b: m.11 UYGULANMAZ. m.45/8: istinaf yolu KAPALI.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ]
+    },
+    "iyuk_temyiz_ivedi": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "İYUK m.20/A-2/g — ivedi yargılamada nihai karara karşı TEMYİZ; tebliğ tarihinden on beş gün (istinaf YOK — m.45/8; temyize cevap süresi m.20/A-2/ı on beş gün).",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "iyuk_dava_sinav": {
+      "miktar": 10,
+      "birim": "gun",
+      "kaynak": "İYUK m.20/B-1/a — MEB ve ÖSYM'nin MERKEZÎ VE ORTAK SINAVLARINA ilişkin davalarda dava açma; on gün. m.20/B-1/b: m.11 UYGULANMAZ.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ]
+    },
+    "iyuk_temyiz_sinav": {
+      "miktar": 5,
+      "birim": "gun",
+      "kaynak": "İYUK m.20/B-1/f — merkezî ve ortak sınav davalarında nihai karara karşı TEMYİZ; tebliğ tarihinden beş gün (temyize cevap süresi m.20/B-1/ğ beş gün).",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "iyuk_temyiz_cevap": {
+      "miktar": 30,
+      "birim": "gun",
+      "kaynak": "İYUK m.48/3 — temyiz dilekçesine CEVAP; tebliğ tarihini izleyen otuz gün. Cevap veren, kararı süresinde temyiz etmemiş olsa bile dilekçesinde temyiz isteminde bulunabilir (bu dilekçe temyiz dilekçesi yerine geçer).",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "iyuk_temyiz_ozel_7gun": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İYUK m.48/6 son cümle — temyiz isteminde bulunulmamış sayılmasına (m.48/2) ve temyiz isteminin reddine ilişkin kararlara karşı tebliğ tarihini İZLEYEN günden itibaren yedi gün; İYUK m.45/2 ek cümle (7524 s.K.) — BİM'in m.48/7 uyarınca verdiği kararlara karşı da yedi gün.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "amme_6183_m58": {
       "miktar": 15,
       "birim": "gun",
-      "kaynak": "6183 m.58 — ödeme emrine karşı dava; tebliğden 15 gün (7061 s.K. ile 7→15 değişti — TEYİT ET)",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "6183 m.58 — ödeme emrine karşı dava; tebliğ tarihinden itibaren 15 gün (7061 s.K. ile 7→15). Ödeme emri bir TAHSİLAT işlemidir: dava açılması tahsili KENDİLİĞİNDEN durdurmaz (İYUK m.27/4) — ayrıca yürütmenin durdurulması istenir.",
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
     },
     "aym_bireysel": {
       "miktar": 30,
       "birim": "gun",
       "kaynak": "6216 m.47/5 — AYM bireysel başvuru",
-      "mcp_teyit_tarihi": ""
+      "mcp_teyit_tarihi": "2026-08-31",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ]
     }
   }
 }

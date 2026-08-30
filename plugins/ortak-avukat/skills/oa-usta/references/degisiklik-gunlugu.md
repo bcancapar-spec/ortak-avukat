@@ -17,3 +17,10 @@
 - **2026-07 (v3.23 — M3-3, hafif çapa):** "Başbakan'dan öğren" maddesine İçtihat Muhakeme Zinciri çapası eklendi: `_oa/cikti/NN-ictihat-muhakeme.md` kayıtları (özellikle ALEYHE-AYIRT'ın AYIRT-ETME gerekçeleri) Çırak için zengin bir ders kaynağı olarak işaretlendi.
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-08-12 — v0.5.8 fork-prova:** aile_dogrula: YASAK-NÖBETÇİSİ (ağ-import taraması, m.0 icra aracı) + VENDOR testsiz-olamaz denetimi.
+- **2026-08-31 (v0.5.14 — denetim raporu B-27):** `aile_dogrula.py --help` / `-h` artık
+  KULLANIM HATASI değildir: kullanım metni stdout'a basılır ve **exit 0** dönülür.
+  Neden: 32 script taranmış, `rc=0 → 31`, `rc=1 → 1` çıkmış; tek istisna bu scriptti
+  (kullanım metni `sys.exit(str)` ile stderr'e gidip exit 1 üretiyordu) ve otomatik
+  keşif yapan bir üst katman aracı bunu "bozuk/yok" sayabiliyordu. Argümansız çağrının
+  hâlâ kullanım hatası (exit != 0) olması AYNEN korundu.
+  Test: `tests/test_v0514_pipeline.py::test_b27_aile_dogrula_help_exit0`.

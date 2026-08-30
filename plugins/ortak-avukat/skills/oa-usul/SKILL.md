@@ -72,13 +72,31 @@ Bu eş zamanlılık **her pipeline katmanında** geçerlidir: ALIM'daki usul sor
    - **Hukuk (HMK):** eski hâle getirme m.95 vd. (elde olmayan sebep şartı).
    - **İdare/vergi:** İYUK'ta eski hâle getirme kurumu **YOKTUR** — bu satır
      idari dosyaya ASLA basılmaz. Bakılacak yerler: **AY m.40/2** (yasa yolu,
-     mercii ve süresinin bildirilmemiş olması), İYUK m.10 başvuru yolu ve
-     vergide **düzeltme-şikâyet** (yalnız *vergi hatası* varsa; hukuki
-     uyuşmazlıkta bu yol kapalıdır — ayrım keskindir).
+     mercii ve süresinin bildirilmemiş olması → K-12), İYUK m.10 başvuru yolu
+     (→ K-15) ve vergide **düzeltme-şikâyet** (yalnız *vergi hatası* varsa;
+     hukuki uyuşmazlıkta bu yol kapalıdır — ayrım keskindir). Düzeltme-şikâyetin
+     dörtlü kaydı (norm **VUK m.116/m.117-118**, yazılı talep **m.122**, şikâyet
+     mercii **m.124** — Bakanlık / il özel idare vergilerinde valilik / belediye
+     vergilerinde belediye başkanlığı, düzeltme zamanaşımı **m.126**) cetvelde
+     **K-17** olarak durur; adı anılıp açılışı öğretilmeyen kapı yasaktır.
    Araştırma **olumsuz** sonuçlanırsa sonuç **kesin dille kapatılır**
    ("kurtarma kapısı yoktur, süre kesindir") — umut tacirliği yasaktır.
+3.6. **İDARİ/VERGİ DOSYADA GEÇİCİ KORUMA NÖBETİ — YD (İYUK m.27):** dava
+   açılması **yürütmeyi durdurmaz** (m.27/1); vergide tahsilat işleminden
+   doğan davalar **tahsil işlemini durdurmaz**, ayrıca YD istenmesi gerekir
+   (m.27/4). Ödeme emri gibi bir **tahsilat** halkası dava konusuysa "dava
+   açtık, işlem durdu" varsayımı müvekkilin malının dava sürerken haczedilip
+   satılmasına yol açar. YD **kararına itiraz süresi yedi gündür ve bir defaya
+   mahsustur** (m.27/7) — süre `oa-sure`'ye verilir; **ivedi yargılama
+   (m.20/A-2/e) ve merkezî/ortak sınav (m.20/B-1/d) davalarında YD kararına
+   itiraz EDİLEMEZ.** Ayrıca **aynı sebeple ikinci kez YD istenemez** (m.27/10):
+   ilk istem hazırlıksız yapılmaz. Cetvel karşılığı **K-16**.
 
-4. **KAPILARI KAPAT (çökertme adımı):** karşı tarafın başvurabileceği kurtuluş kapılarını ÖNGÖR — eski hâle getirme mi diyecek (mazeret unsuru var mı?), tebliğin usulsüzlüğünü mü ileri sürecek (7201 m.32 öğrenme tarihi?), tamamlanabilir eksiklik mi diyecek? Her öngörülen kapı için **kapatma argümanını** (unsur eksikliği, süre, içtihat) hazırla ve itirazla BİRLİKTE sun. Bu, gizli cephanelik değildir — derhâl ileri sürülecek aktif usul itirazının *sağlamlaştırılmasıdır*.
+4. **KAPILARI KAPAT (çökertme adımı) — İKİ KATMAN AYRIDIR (ANAYASA m.6):** karşı tarafın başvurabileceği kurtuluş kapılarını ÖNGÖR — eski hâle getirme mi diyecek (mazeret unsuru var mı?), tebliğin usulsüzlüğünü mü ileri sürecek (7201 m.32 öğrenme tarihi?), tamamlanabilir eksiklik mi diyecek? Her öngörülen kapı için **kapatma argümanını** (unsur eksikliği, süre, içtihat) hazırla. Sonra iki katmanı ASLA karıştırma:
+   - **(a) DAHİLİ HAZIRLIK — daima EKSİKSİZ:** öngörülen her kapı ve kapatma argümanı **iç dosyaya** yazılır (`usul_matris.py` `kapi_kapatma` kaydı + `_oa/cikti/07-antitez-cephanelik.md`). Motorun [G2b] kapısı **bu katmanı** denetler; hiçbir kapı öngörülmeden karşı tarafın kaçırması "kapatılmış" sayılmaz.
+   - **(b) SUNULAN BELGE — yalnız DUYULMUŞ olan:** dilekçeye **karşı tarafın fiilen ileri sürdüğü** (dilekçesinde, dosyadaki bir belgede ya da kararın gerekçesinde **var olan**) kapının çürütmesi girer. Henüz ileri sürülmemiş bir kapıyı sunulan metinde önden kapatmak, karşı tarafa hangi kapının bulunduğunu ÖĞRETİR ve zayıf noktayı ifşa eder — **ANAYASA m.6 preemptive ifşa yasağı** (`ortak-avukat/references/anayasa.md` §6: *zaaf dış belgeye yazılmaz, ama iç analizde saklanmaz*). Aynı disiplin `oa-antitez` (gizli cephanelik), `oa-dilekce` (sunum disiplini) ve `oa-kontrol` (teslim öncesi ifşa kontrolü) ile birebir aynıdır.
+   - **İSTİSNA (tek):** bilinçli ön-karşılama (**praeoccupatio**) — kapının önden kapatılması taktik olarak gerekliyse bu **yalnız avukat onayıyla** yapılır (`oa-dilekce`: "Bilinçli ön-karşılama yalnız avukat onayıyla kalır"). Onay yoksa varsayılan **dahili tutmaktır**.
+   - **Sınır — bu bir "gizleme" değildir:** kendi usul itirazımızın KURUCU unsuru olan tespitler (ör. "tebligat m.21 prosedürüne uygundur, dolayısıyla süre işlemiştir") sunulan metne girer; bunlar bizim iddiamızın ispatıdır, karşı tarafın savunmasının ön-çürütmesi değildir. Ayrım ölçütü: cümle **bizim** iddiamızı mı kuruyor, yoksa **karşı tarafın** henüz kurmadığı iddiasını mı anlatıyor?
 5. **Çalışmaya ekle — net/kesin dille:** "süresinden sonra", "usulden reddi gerekir", "dinlenemez". **Kesinlik şartı:** tebliğ/işlem tarihi BELGELİ (şerh/mazbata/UYAP) ise kesin dil; değilse "teyidi kaydıyla" + açık uç işareti.
 
 **B) MÜVEKKİL — SAVUNMA (dürüst tespit + kapı araştırması):**
@@ -102,7 +120,8 @@ süre verilsin" talebi **KURULMAZ** — rakibin dosyasını onarmasına yardım
 etmek müvekkil-aleyhi talep inşasıdır (Anayasa m.6'nın taktik yüzü).
 A-4'teki "kapıları kapat" adımı bunun İSTİSNASI değildir: orada kapatılan
 kapı KENDİ itirazımızın sağlamlaştırılmasıdır, karşı tarafa onarma imkânı
-sunulması DEĞİLDİR.
+sunulması DEĞİLDİR — ve A-4/(b) uyarınca sunulan metne yalnız karşı tarafın
+**fiilen ileri sürdüğü** kapının çürütmesi girer (ANAYASA m.6).
 
 **C) KAMU GÜCÜ — ÜÇÜNCÜ CEPHE (devlet de usul hatası yapar; bazen kasıtlı yapar):**
 Usul hatası yalnızca özel hukuk taraflarına özgü değildir. **İdare, yargı organı ve icra organı dahil her kamu gücü** usul hatası yapar — ve bu hatalar müvekkil lehine en güçlü kapılardandır, çünkü kamu gücü usule UYMAK ZORUNDADIR (AY m.123 kanunilik, m.40/2 başvuru yolu gösterme yükümü):
@@ -116,7 +135,9 @@ Usul hatası yalnızca özel hukuk taraflarına özgü değildir. **İdare, yarg
 
 ## Deterministik motor — `scripts/usul_matris.py`
 
-Model düşünür, script **eksiksizliği denetler**. Dosyanın usul resmini JSON olarak alır ve şu garantileri mekanik verir: tarihli her işlem süre denetiminden geçti mi; karşı tarafın her kaçırması sonuca bağlandı mı ve kapıları kapatıldı mı; müvekkilin her hatası için kapı araştırması yapıldı mı; teyitsiz tebliğde kesin dil engellendi mi. Boşluk varsa adıyla raporlar ve hata koduyla çıkar — boşluklu usul analizi teslim edilemez.
+Model düşünür, script **eksiksizliği denetler**. Dosyanın usul resmini JSON olarak alır ve şu garantileri mekanik verir: tarihli her işlem süre denetiminden geçti mi; karşı tarafın her kaçırması sonuca bağlandı mı ve kapıları kapatıldı mı (A-4/(a) **dahili** katman); müvekkilin her hatası için kapı araştırması yapıldı mı; teyitsiz tebliğde kesin dil engellendi mi. Boşluk varsa adıyla raporlar ve hata koduyla çıkar — boşluklu usul analizi teslim edilemez.
+
+**[G9] — kesin dilin SÜRE DAYANAĞI (v0.5.14):** `son_gun` motora dışarıdan gelir; script onu hesaplamaz. Bu yüzden kesin dil izni (`kesin_dil: true`) artık iki alanın DOLU olmasını da ister: `sure_kurali` (son gün hangi kurala dayanıyor) ve `yargi_kolu` (hangi süre rejimi). Ayrıca iki alan da doluysa **tutarlılık** denetlenir: kural adının öneki (`hmk_`/`iik_` → hukuk, `cmk_` → ceza, `iyuk_`/`amme_` → idari; `aym_` kol-bağımsız) beyan edilen yargı kolunu yalanlıyorsa boşluk açılır. **Script HUKUKİ NİTELENDİRME YAPMAZ:** hangi kuralın uygulanacağına karar vermez, hangisinin doğru olduğunu söylemez — yalnız "bu alanlar dolu mu ve birbirini yalanlıyor mu" sorusunu sorar; tanınmayan önek/kol değeri "bilinmiyor" sayılır ve boşluk üretmez (eski artefaktlar kapıda düşmez). Hesabın kendisi ve düzeltmesi `oa-sure`'nindir.
 
 ```bash
 python scripts/usul_matris.py --girdi _oa/cikti/usul-matris.json   # tam denetim raporu

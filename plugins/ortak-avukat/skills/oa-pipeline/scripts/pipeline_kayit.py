@@ -136,7 +136,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.13"
+OA_SURUM = "0.5.14"
 
 
 def _surum_tuple(s):
@@ -564,15 +564,40 @@ def _glob_saglam(desen):
     return None
 
 
+def _kiyas_artefakti_mi(yol):
+    """B-28 (v0.5.14) — TEK SÖZLEŞME + İÇERİK DENETİMİ.
+
+    Onarım öncesi iki ayrı ad sözleşmesi vardı: önkoşul `05-kiyas*` arıyor,
+    tüketici (`_kiyas_bosluk_uyarisi`) `*kiyas*.json` okuyordu — `01-kiyas.json`
+    üreten model haksız yere bloklanıyor, ters yönde ise `05-kiyas.json` içine
+    yazılmış 400 harflik 'A' dolgusu boyut kapısını (`_govde_saglam_mi`) geçip
+    önkoşulu YEŞİL yapıyordu. Artık tek sözleşme `*kiyas*` desenidir ve `.json`
+    uzantılı aday, tüketicinin okuduğu şeyin ta kendisi olmak zorundadır
+    (`arac == "kiyas_denetim"`). `.md`/`.txt` çalışma evrakı AYNEN gövde
+    boyutuyla değerlendirilir (geriye uyum — saha deseni). ASLA fırlatmaz."""
+    if not _govde_saglam_mi(yol):
+        return False
+    if not str(yol).lower().endswith(".json"):
+        return True
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            m = json.load(f)
+    except Exception:
+        return False
+    return isinstance(m, dict) and m.get("arac") == "kiyas_denetim"
+
+
 def _kiyas_onkosul_saglam_mi(kok):
     cikti = os.path.join(kok or ".", "_oa", "cikti")
-    kiyas = _glob_saglam(os.path.join(cikti, "05-kiyas*"))
+    kiyas = next((y for y in sorted(glob.glob(os.path.join(cikti, "*kiyas*")))
+                  if _kiyas_artefakti_mi(y)), None)
     muhakeme = _glob_saglam(os.path.join(cikti, "*ictihat-muhakeme*"))
     if kiyas and muhakeme:
         return True, None
     eksik = []
     if not kiyas:
-        eksik.append("_oa/cikti/05-kiyas* yok/boş")
+        eksik.append("_oa/cikti/05-kiyas* (tek sözleşme: *kiyas*; .json ise "
+                     "arac=kiyas_denetim olmalı) yok/boş/geçersiz")
     if not muhakeme:
         eksik.append("_oa/cikti/*ictihat-muhakeme* yok/boş (P0-2 tek-komutunu koş)")
     return False, " ; ".join(eksik)
@@ -3229,6 +3254,68 @@ def _defter_koku_yukari_ara(baslangic_yol, maks_derinlik=30):
     return None
 
 
+def _payload_dosya_yollari(veri):
+    """B-4 (v0.5.14) — payload'ın taşıdığı TÜM dosya yollarını sırayla döndürür.
+
+    İki sözleşme birden desteklenir (kök keşfi yalnız birincisini okuduğu için
+    SUNUM KİLİDİ saha kurulumunda ölüydü):
+      · `tool_input.file_path`  — Write/Edit (PostToolUse) sözleşmesi
+      · `tool_input.files`      — SendUserFile sözleşmesi (str VEYA liste)
+      · `tool_response.filePath`— araç yanıtı
+    Sıra deterministiktir; tekrar eden yol bir kez döner. ASLA fırlatmaz."""
+    yollar, gorulen = [], set()
+
+    def _ekle(deger):
+        if isinstance(deger, (list, tuple)):
+            for d in deger:
+                _ekle(d)
+            return
+        if not isinstance(deger, str) or not deger.strip():
+            return
+        if deger not in gorulen:
+            gorulen.add(deger)
+            yollar.append(deger)
+
+    try:
+        if not isinstance(veri, dict):
+            return []
+        ti = veri.get("tool_input")
+        if isinstance(ti, dict):
+            _ekle(ti.get("file_path"))
+            _ekle(ti.get("files"))
+        tr = veri.get("tool_response")
+        if isinstance(tr, dict):
+            _ekle(tr.get("filePath"))
+    except Exception:
+        return yollar
+    return yollar
+
+
+def _dava_koku_yukari_ara(baslangic_yol, maks_derinlik=30):
+    """B-4 (v0.5.14) — `_defter_koku_yukari_ara`nın GEVŞEK kardeşi: ölçüt
+    `_oa/defter` değil `_dosya_klasoru_mu` (defteri henüz doğmamış dava
+    klasörü de bulunur). Yalnız katı arama boş döndüğünde çağrılır — aday
+    listesinin sırası (dolayısıyla mevcut davranış) korunur.
+    ASLA fırlatmaz."""
+    try:
+        yol = os.path.abspath(str(baslangic_yol))
+    except Exception:
+        return None
+    if not os.path.isdir(yol):
+        yol = os.path.dirname(yol)
+    onceki, derinlik = None, 0
+    while yol and yol != onceki and derinlik < maks_derinlik:
+        try:
+            if _dosya_klasoru_mu(yol):
+                return yol
+        except Exception:
+            pass
+        onceki = yol
+        yol = os.path.dirname(yol)
+        derinlik += 1
+    return None
+
+
 def _hook_stdin_payload_oku():
     """C2 (v0.5.8.5) — hook stdin payload'ını BİR KEZ okur: stdin bir TTY ise
     (elle interaktif çağrı) ASLA okuma-bekleme yapılmaz; okunamaz/boş/bozuk/
@@ -3288,7 +3375,8 @@ def _hook_kok_adaylarini_bul(kok_arg, payload=None):
         — interaktif elle çağrıda ASLA blokla-BEKLEME; okunamazsa/boşsa
         sessizce atlanır);
     (3) DÜZELTME (madde 3) — stdin JSON payload'ındaki `tool_input.file_path`
-        (yoksa `tool_response.filePath`): PostToolUse'un YENİ YAZDIĞI
+        VE `tool_input.files` (B-4/v0.5.14: SendUserFile sözleşmesi; yoksa
+        `tool_response.filePath`): PostToolUse'un YENİ YAZDIĞI
         dosyanın kendi yolundan `_defter_koku_yukari_ara` ile yukarı
         yürünerek `_oa/defter` içeren ilk ata dizin bulunursa aday listesine
         eklenir — (1)/(2)/(4) hiçbiri dava köküne değmediğinde (gerçek saha
@@ -3314,16 +3402,13 @@ def _hook_kok_adaylarini_bul(kok_arg, payload=None):
                 if stdin_cwd:
                     adaylar.append(stdin_cwd)
                 # DÜZELTME (madde 3) — bkz. docstring (3).
-                dosya_yolu = None
-                ti = veri.get("tool_input")
-                if isinstance(ti, dict):
-                    dosya_yolu = ti.get("file_path")
-                if not dosya_yolu:
-                    tr = veri.get("tool_response")
-                    if isinstance(tr, dict):
-                        dosya_yolu = tr.get("filePath")
-                if dosya_yolu:
-                    bulunan = _defter_koku_yukari_ara(dosya_yolu)
+                # B-4 (v0.5.14): `file_path` TEK SÖZLEŞME DEĞİLDİR. SendUserFile
+                # payload'ı yolu `tool_input.files` (str veya liste) alanında
+                # taşır; kök keşfi onu okumadığı için oturum dava klasörünün
+                # DIŞINDAYKEN SUNUM KİLİDİ sessizce ölüydü (EXIT=0, çıktı yok).
+                for dosya_yolu in _payload_dosya_yollari(veri):
+                    bulunan = (_defter_koku_yukari_ara(dosya_yolu)
+                               or _dava_koku_yukari_ara(dosya_yolu))
                     if bulunan:
                         adaylar.append(bulunan)
         except Exception:
@@ -3560,6 +3645,88 @@ _ARACLAR_HEDEF_DESENI = re.compile(r"_oa[/\\]araclar", re.I)
 _CEKIRDEK_SCRIPTLER = ("pipeline_kayit.py", "teslim_paketi.py", "udf_yaz.py")
 
 
+# B-5 (v0.5.14) — POZİTİF SÜRÜM KANITI. Parmak izi tablosu NEGATİF bir
+# ölçüttür: "eksik dizge yoksa temiz" der. Denetimde ölçüldü — tablonun en
+# yeni imzaları v0.5.11 çekirdeğine aitti ve 0.5.9.1 kitinde ZATEN vardı;
+# dolayısıyla ≥0.5.9 her nesil otomatik "taze" ilan ediliyordu ("kanaldan
+# YENİ … bayat DEĞİLDİR, tazeleme gerekmez"). Nöbetçi kendi neslini referans
+# aldığı için bayat kurulumun bayat olduğunu YAPISAL OLARAK göremiyordu.
+# Onarım: hüküm artık dosyanın KENDİ İÇİNDEKİ makine-okur sürüm damgasına
+# dayanır. Damga yoksa cevap "taze" değil BİLİNMİYOR'dur.
+_ARAC_SURUM_RE = re.compile(
+    r"""^\s*OA_SURUM\s*=\s*["']([0-9][0-9A-Za-z.\-]*)["']""", re.M)
+
+
+def _arac_surum_damgasi(icerik):
+    """Script gövdesindeki makine-okur `OA_SURUM = "x.y.z"` damgasını döndürür;
+    damga yoksa None ('bilinmiyor'). ASLA fırlatmaz."""
+    try:
+        m = _ARAC_SURUM_RE.search(str(icerik or ""))
+        return m.group(1) if m else None
+    except Exception:
+        return None
+
+
+def _arac_dosya_surumu(yol):
+    """Diskteki bir araç kopyasının sürüm damgası (yoksa/okunamazsa None)."""
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            return _arac_surum_damgasi(f.read())
+    except OSError:
+        return None
+
+
+def _eklenti_script_indeksi():
+    """Yüklü eklentinin `skills/*/scripts/*.py` indeksi {ad: yol} (kanal =
+    tek meşru kaynak). Deterministik sıralı; ASLA fırlatmaz."""
+    indeks = {}
+    try:
+        skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))))
+        for parca in sorted(os.listdir(skills_kok)):
+            sdir = os.path.join(skills_kok, parca, "scripts")
+            if not os.path.isdir(sdir):
+                continue
+            for ad in sorted(os.listdir(sdir)):
+                if ad.endswith(".py") and ad not in indeks:
+                    indeks[ad] = os.path.join(sdir, ad)
+    except Exception:
+        pass
+    return indeks
+
+
+def _kopya_taze_kaniti(ad, yol, icerik=None, indeks=None):
+    """B-5 (v0.5.14) — bir `_oa/araclar/` kopyası için POZİTİF tazelik kanıtı.
+
+    Döner: `("taze", kanıt)` | `("bayat", damga)` | `("bilinmiyor", None)`.
+    Kabul edilen İKİ pozitif kanıt (ikisi de artefakta bağlıdır, beyana değil):
+      (a) kopya kanal kaynağıyla BAYT-ÖZDEŞ (en güçlü kanıt; damgası olmayan
+          scriptler bu yoldan doğrulanır),
+      (b) kopyanın makine-okur `OA_SURUM` damgası eklentininkinden küçük değil.
+    Hiçbiri gösterilemiyorsa cevap "taze" DEĞİL, "bilinmiyor"dur. ASLA
+    fırlatmaz."""
+    try:
+        if icerik is None:
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                icerik = f.read()
+    except OSError:
+        return "bilinmiyor", None
+    try:
+        kaynak = (indeks if indeks is not None else _eklenti_script_indeksi()).get(ad)
+        if kaynak and os.path.isfile(kaynak):
+            with open(yol, "rb") as f1, open(kaynak, "rb") as f2:
+                if f1.read() == f2.read():
+                    return "taze", "bayt-özdeş"
+    except OSError:
+        pass
+    damga = _arac_surum_damgasi(icerik)
+    if damga is None:
+        return "bilinmiyor", None
+    if _surum_tuple(damga) < _OA_SURUM_TUPLE:
+        return "bayat", damga
+    return "taze", "sürüm %s" % damga
+
+
 def _pretool_rpm_karantina_mi(metin):
     """P0-1 karar çekirdeği: komut metninde rpm-yolu deseni VE `_oa/araclar`
     hedefi BİRLİKTE var mı? Tek başına hiçbiri karantina değildir (rpm
@@ -3592,10 +3759,16 @@ def _pretool_cekirdek_yazimi_mi(veri):
 
 
 def _cekirdek_kilitle(kok):
-    """P0-2: `_oa/araclar/`daki çekirdek scriptlerden PARMAK İZİ TAM olanları
+    """P0-2: `_oa/araclar/`daki çekirdek scriptlerden SÜRÜM MUTABAKATI olanları
     salt-okunur yapar (bayat/taklit kit KİLİTLENMEZ — çöp mühürlenmez; onun
     yolu tazeleme + BAYAT NESİL uyarısıdır). İdempotent; kilitlenen dosya
-    sayısını döndürür. ASLA fırlatmaz."""
+    sayısını döndürür. ASLA fırlatmaz.
+
+    B-5 (v0.5.14): kilit ölçütü artık parmak izi DEĞİL, makine-okur sürüm
+    damgasıdır. Denetimde ölçüldü — parmak izi tam ama nesli 0.5.9.1 olan bir
+    kit kilitleniyordu; kilit o bayat çekirdeği koruyan bir ÇİVİYE dönüşüyor,
+    düz kopyayla tazeleme izin hatasıyla düşüyordu. Sürüm kanıtı yoksa
+    (damga okunamıyor ya da eklentininkinden eski) DOSYA KİLİTLENMEZ."""
     kilitlenen = 0
     try:
         araclar = os.path.join(kok, "_oa", "araclar")
@@ -3603,13 +3776,17 @@ def _cekirdek_kilitle(kok):
             yol = os.path.join(araclar, ad)
             if not os.path.isfile(yol):
                 continue
+            try:
+                with open(yol, encoding="utf-8", errors="replace") as f:
+                    icerik = f.read()
+            except OSError:
+                continue
+            # (a) POZİTİF TAZELİK KANITI — damgasız/eski kopya çivilenmez (B-5).
+            durum, _ayrinti = _kopya_taze_kaniti(ad, yol, icerik)
+            if durum != "taze":
+                continue
             imzalar = _OZELLIK_PARMAK_IZI.get(ad)
             if imzalar:
-                try:
-                    with open(yol, encoding="utf-8", errors="replace") as f:
-                        icerik = f.read()
-                except OSError:
-                    continue
                 if any(dz not in icerik for dz in imzalar):
                     continue          # eksik nesil — kilitleme
             try:
@@ -3740,16 +3917,7 @@ def _bayat_arac_uyarisi(kok):
         araclar = os.path.join(kok, "_oa", "araclar")
         if not os.path.isdir(araclar):
             return None
-        skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__))))
-        indeks = {}
-        for parca in os.listdir(skills_kok):
-            sdir = os.path.join(skills_kok, parca, "scripts")
-            if not os.path.isdir(sdir):
-                continue
-            for ad in os.listdir(sdir):
-                if ad.endswith(".py") and ad not in indeks:
-                    indeks[ad] = os.path.join(sdir, ad)
+        indeks = _eklenti_script_indeksi()
         bayat = []
         for ad in sorted(os.listdir(araclar)):
             if not ad.endswith(".py") or ad not in indeks:
@@ -3763,27 +3931,30 @@ def _bayat_arac_uyarisi(kok):
                 continue
         # H2a — ÖZELLİK PARMAK İZİ: eksik dizge = BAYAT NESİL (sınıf yükselir).
         nesil = _bayat_nesil_listesi(kok)
-        # v0.5.11 P1-3 (1865-T5) — YÖN AYRIMI: bayt-farklı ama parmak izi TAM
-        # dosya "bayat" DEĞİLDİR — büyük olasılıkla kanaldan YENİ nesildir
-        # (depo klonundan tazelenmiş kit + henüz güncellenmemiş kurulum).
-        # Yanlış-yön gürültüsü gerçek uyarının itibarını yer (1865: 12 uyarının
-        # ~4'ü bu sınıftı); o dosyalar ayrı, düşük tonlu bir satır alır.
+        # v0.5.11 P1-3 (1865-T5) — YÖN AYRIMI: bayt-farklı bir kopya her zaman
+        # "bayat" değildir; kanaldan YENİ nesil de olabilir (depo klonundan
+        # tazelenmiş kit + henüz güncellenmemiş kurulum). Yanlış-yön gürültüsü
+        # gerçek uyarının itibarını yer.
+        # B-5 ONARIMI (v0.5.14): bu ayrım NEGATİF parmak izine dayanıyordu —
+        # parmak izi tam olan HER kopya "kanaldan YENİ … tazeleme gerekmez"
+        # ilan ediliyordu; ölçüldü: gerçekten bayat bir 0.5.9.1 kiti bu yoldan
+        # "taze" damgası aldı. Artık hüküm POZİTİF KANITA bağlıdır ve kanıt
+        # gösterilemeyen kopya "taze" değil BİLİNMİYOR sınıfına düşer.
         yeni = []
         if bayat:
             kalan = []
             for ad in bayat:
-                imzalar = _OZELLIK_PARMAK_IZI.get(ad)
-                if imzalar:
-                    try:
-                        with open(os.path.join(araclar, ad),
-                                  encoding="utf-8", errors="replace") as f:
-                            icerik = f.read()
-                        if all(dz in icerik for dz in imzalar):
-                            yeni.append(ad)
-                            continue
-                    except OSError:
-                        pass
-                kalan.append(ad)
+                yol_ = os.path.join(araclar, ad)
+                durum, ayrinti = _kopya_taze_kaniti(ad, yol_, indeks=indeks)
+                if durum == "taze":
+                    yeni.append("%s (%s)" % (ad, ayrinti))
+                elif durum == "bayat":
+                    kalan.append("%s (damga %s < %s)" % (ad, ayrinti, OA_SURUM))
+                else:
+                    # KANIT YOK → "taze" DEĞİL. Fail-closed varsayılan: bu
+                    # kopya bayat muamelesi görür ve tazelenmesi istenir
+                    # (B-5: "doğrulayamıyorsan 'taze' DEME").
+                    kalan.append("%s (nesli doğrulanamadı)" % ad)
             bayat = kalan
         if not bayat and not nesil and not yeni:
             return None
@@ -3803,6 +3974,9 @@ def _bayat_arac_uyarisi(kok):
                 "⚠ BAYAT ARAÇ UYARISI — `_oa/araclar/` kopyaları yüklü eklentiden ESKİ:\n"
                 "  " + ", ".join(bayat[:12])
                 + (" … (+%d)" % (len(bayat) - 12) if len(bayat) > 12 else "") + "\n"
+                "  ('nesli doğrulanamadı' = kopya kanaldan farklı ve tazelik KANITI\n"
+                "  yok — ne bayt-özdeşlik ne makine-okur `OA_SURUM` damgası; B-5\n"
+                "  gereği bu sınıf 'taze' SAYILMAZ, kurulum güncellemesi istenir.)\n"
                 "  Bu kopyalarla koşan adımlar güncel kapılardan (makbuz/sha, OCR\n"
                 "  nöbetçisi, DAMGA, KAYNAK-URL) YOKSUN olabilir. Tazele: kopyaları\n"
                 "  YÜKLÜ eklentinin `skills/*/scripts/` kökünden YENİDEN al — komşu\n"
@@ -3810,11 +3984,10 @@ def _bayat_arac_uyarisi(kok):
                 "  Denizli 754 saha bulgusu). Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
         if yeni:
             parcalar.append(
-                "ℹ kit kanaldan FARKLI ama nesil TAM (muhtemelen kanaldan "
-                "YENİ): " + ", ".join(yeni[:6])
-                + " — araç kopyaları depo neslinden görünüyor; kurulumu "
-                  "güncelleyince bu not susar (v0.5.11 yön ayrımı; bayat "
-                  "DEĞİLDİR, tazeleme gerekmez).")
+                "ℹ kit kanaldan FARKLI ama TAZELİK KANITLI (kanaldan YENİ): "
+                + ", ".join(yeni[:6])
+                + " — kurulumu güncelleyince bu not susar (v0.5.11 yön ayrımı, "
+                  "v0.5.14 pozitif kanıt; tazeleme gerekmez).")
         return "\n".join(parcalar)
     except Exception:
         return None
@@ -3848,6 +4021,29 @@ def _arac_version_uyarisi(kok):
                     f"({surum or 'okunamadı'}) yüklü eklentiden ({OA_SURUM}) FARKLI: "
                     "kopyalar eski nesil olabilir; YÜKLÜ eklentiden tazele ve "
                     "damgayı güncelle. Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
+        # B-5 (v0.5.14) — BEYAN ARTEFAKTLA DOĞRULANIR. VERSION.json bir
+        # BEYANDIR; denetimde ölçüldü: gerçekten bayat bir kite elle
+        # `{"surum": "<güncel>"}` yazmak bu kanalı tamamen susturuyordu.
+        # Ailenin kendi doktrini "makbuz artefakta bağlanır, beyana değil"
+        # der; beyan artık çantadaki çekirdeğin kendi damgasıyla sınanır.
+        indeks = _eklenti_script_indeksi()
+        yalanci = []
+        for ad in sorted(os.listdir(araclar)):
+            if not ad.endswith(".py") or ad not in indeks:
+                continue
+            durum, ayrinti = _kopya_taze_kaniti(
+                ad, os.path.join(araclar, ad), indeks=indeks)
+            if durum == "bayat":
+                yalanci.append("%s (damga %s)" % (ad, ayrinti))
+        if yalanci:
+            return ("⛔ DOĞRULANMAYAN SÜRÜM BEYANI — `_oa/araclar/VERSION.json` "
+                    f"`{OA_SURUM}` diyor ama çantadaki kopyaların kendi damgası "
+                    "DAHA ESKİ:\n"
+                    "  " + ", ".join(yalanci[:12])
+                    + (" … (+%d)" % (len(yalanci) - 12) if len(yalanci) > 12 else "") + "\n"
+                    "  Beyana değil ARTEFAKTA bakılır (B-5): kopyaları YÜKLÜ "
+                    "eklentiden yeniden al.\n"
+                    "  Bu bir ENGEL DEĞİLDİR; görünürlüktür.")
         return None
     except Exception:
         return None
@@ -4922,6 +5118,26 @@ def _sunum_teslim_sinifi_mi(kok, yol):
         return False
 
 
+def _sunum_adi_teslim_sinifi_mi(yol):
+    """B-4 (v0.5.14) — KÖKSÜZ ad denetimi: dava kökü HİÇ bulunamadığında bile
+    gönderilen dosyanın teslim-sınıfı görünüp görünmediğini söyler
+    (uzantı + teslim-ürünü adı VEYA yolunda `_oa` segmenti). Kök gerektiren
+    `_sunum_teslim_sinifi_mi`nin ikamesi DEĞİLDİR; yalnız 'denetim
+    YAPILAMADI' uyarısının yanlış-pozitif eşiğidir. ASLA fırlatmaz."""
+    try:
+        ad = os.path.basename(str(yol))
+        if not ad.lower().endswith(_SUNUM_TESLIM_UZANTILAR):
+            return False
+        if re.match(r"^\d{3,4}[_-]", ad):
+            return False                    # UYAP indirmesi — orijinal evrak
+        parcalar = [p.lower() for p in re.split(r"[/\\]", str(yol))]
+        if "_oa" in parcalar:
+            return True
+        return bool(_SUNUM_KOK_URUN_RE.search(ad))
+    except Exception:
+        return False
+
+
 def _muhur_kirik_urun_listesi(kok):
     """v0.5.10 — kök (maxdepth 1) + 40-UYAP altındaki .udf'lerden mührü
     KIRIK olanların köke-göreli listesi. Mühürsüz KÖK dosyaları listeye
@@ -5063,6 +5279,33 @@ def hook_pretool(kok=None):
             kokler = [os.path.abspath(kok or ".")]
         k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
         if k is None:
+            # B-4 (v0.5.14) — SESSİZ GEÇME YOK. Dava kökü bulunamadığında
+            # makbuz denetimi YAPILAMAZ; gönderilen dosya teslim-sınıfı
+            # görünüyorsa bu bilinmezlik avukata GÖRÜNÜR kılınır (karar
+            # devri; hook yine exit 0 — ASLA bloklamaz).
+            # ENTEGRATÖR ŞERHİ (v0.5.14): B-4 ile v0.5.9-A1 ("dava dışı
+            # klasörde SESSİZ") çatışıyordu. Ayrım şudur: denetlenecek bir
+            # ÜRÜN fiilen var mı? Diskte OLMAYAN bir yol için denetlenecek
+            # bir şey de yoktur — orada susmak gürültü disiplinidir, sessiz
+            # ölüm değil. Uyarı yalnız ürün DİSKTE VARKEN ve kökü
+            # bulunamadığında çıkar (B-4'ün asıl vakası: SendUserFile'ın
+            # 'files' listesiyle gelen gerçek teslim ürünü).
+            if (isinstance(veri, dict)
+                    and veri.get("tool_name") == "SendUserFile"
+                    and any(_sunum_adi_teslim_sinifi_mi(y) and os.path.isfile(y)
+                            for y in _payload_dosya_yollari(veri))):
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "ask",
+                    "permissionDecisionReason": (
+                        "SUNUM KİLİDİ DOĞRULANAMADI (v0.5.14 — B-4): "
+                        "gönderilen dosya teslim-sınıfı görünüyor ama dava "
+                        "kökü bulunamadı; yeşil makbuz (_oa/defter/"
+                        "teslim-makbuz.json) DENETLENEMEDİ. Ürünün kendi "
+                        "dava klasöründen gönderildiğini doğrulayın ya da "
+                        "oturumu dava kökünde açın. Yine de göndermek "
+                        "avukatın kararıdır."),
+                }}, ensure_ascii=False))
             return 0
         # T12 — ÇİFT-KANAL DEDUP (ayirt=payload parmak izi): yalnız aynı
         # saniyedeki AYNI payload (çift kanal kopyası) susturulur — aynı

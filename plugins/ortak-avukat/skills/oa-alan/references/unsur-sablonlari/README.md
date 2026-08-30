@@ -27,6 +27,10 @@ görünür (bkz. `oa-pipeline/scripts/pipeline_kayit.py::_vakia_delilsiz_unsur_u
 - `ise-iade.md` — 4857 sayılı İş Kanunu m.18-21 işe iade davası
 - `itirazin-iptali.md` — İİK m.67-68 itirazın iptali davası
 - `kidem-ihbar.md` — kıdem tazminatı (1475 sayılı Kanun m.14) + ihbar tazminatı (İş K. m.17)
+- `amme-odeme-emri.md` — **amme (kamu) alacağı** ödeme emrine karşı dava
+  (6183 m.55, m.58; usul rejimi 2577 İYUK). **Karıştırma:** `itirazin-iptali.md`
+  şablonundaki "ödeme emri" İİK m.58-60 anlamındadır — özel hukuk takibi;
+  bu şablon idari yargıdaki amme alacağı davasıdır.
 
 Yeni bir dava türü şablonu eklenirken bu dört sütun (**unsur | norm | delil-türü | yük**)
 korunur; norm hücresi kullanım anında MCP-teyitli hâle getirilecek bir **başlangıç

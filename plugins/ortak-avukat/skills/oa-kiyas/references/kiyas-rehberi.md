@@ -50,7 +50,41 @@ ayrı ayrı ispatlanması gerektiğini ve karşı tarafın nereye vuracağını 
 }
 ```
 
+## İspat yükü alanları (opsiyonel — v0.5.14)
+
+Karşılanmamış her unsur otomatik olarak bizim boşluğumuz değildir: ispat yükü,
+kanunda özel bir düzenleme bulunmadıkça, iddia edilen vakıaya bağlanan hukuki
+sonuçtan **kendi lehine hak çıkaran** tarafa aittir (HMK m.190/1 — *"İspat yükü,
+kanunda özel bir düzenleme bulunmadıkça, iddia edilen vakıaya bağlanan hukuki
+sonuçtan kendi lehine hak çıkaran tarafa aittir."*; aynı yönde TMK m.6). Her
+unsura şu **opsiyonel** alanlar yazılabilir — eski dosyalarda yoksa script
+çökmez, `bilinmiyor` sayar:
+
+```json
+{
+  "id": "kusur",
+  "ad": "Kusur",
+  "ispat_yuku": "bizde | karsi_taraf | resen | bilinmiyor",
+  "ispat_yuku_kaynak": "Yükü kaydıran norm/karine çıpası (kullanım anında MCP'den teyit)",
+  "curutme_hazirligi": ["Karşı taraf yükünü kaldırırsa ne yapacağız — dahili"]
+}
+```
+
+`ispat_yuku` **kapalı enum**dur; dışında bir değer script tarafından
+YORUMLANMAZ (görünür uyarı + `bilinmiyor`). `unsur_vakia_eslesme[].durum`
+alanı dört değerlidir: `karsilanan_delilli · karsilanan_delilsiz ·
+karsilanmamis · ispat_yuku_karsida`.
+
+**Carve-out üç şartlıdır (fail-CLOSED):** `ispat_yuku == "karsi_taraf"` **+**
+dolu `ispat_yuku_kaynak` **+** boş olmayan `curutme_hazirligi`. Üçü birlikte
+yoksa unsur eskisi gibi karşılanmamış ve **kritik** sayılır; rapor "carve-out
+VERİLMEDİ" der. `curutme_hazirligi` DAHİLİdir — raporun 5. bölümü filigranlıdır,
+dilekçeye kopyalanmaz.
+
 ## Kullanım
 `kiyas.json` yaz, `python scripts/kiyas_denetim.py kiyas.json` çalıştır. Script
 karşılanmamış unsuru, delilsiz vakıayı, teyitsiz içtihadı ve yetim vakıayı yakalar.
+Norm hiç unsurlara ayrılmamışsa denetim YAPILAMAMIŞ sayılır ve kritik boşluk
+basılır ("yapı bütün" DEĞİL). Girdi okunamaz/bozuk ya da kökü sözlük değilse
+traceback yerine tek satırlık hata + exit 1 döner.
 Yorum ve nihai sonuç avukata aittir.

@@ -183,9 +183,21 @@ def test_uets_karine_5_gun():
 
 
 def test_kural_tablosu_json_okunuyor():
-    """sure_kurallari.json'a taşınan yeni kurallar (CMK/İİK/6183) CLI'da seçilebilir olmalı."""
-    for kural, beklenen in (("cmk_itiraz", None), ("iik_sikayet", None), ("amme_6183_m58", None)):
-        out = _cli_run(teblig="2026-05-20", kural=kural)
+    """sure_kurallari.json'a taşınan yeni kurallar (CMK/İİK/6183) CLI'da seçilebilir olmalı.
+
+    BİLİNÇLİ GÜNCELLEME (v0.5.14 — denetim bulgusu A-1, P0): `cmk_itiraz` burada
+    varsayılan `--yargi hukuk` ile koşuluyordu ve bu, testin farkında olmadığı bir
+    HATAYI yeşile boyuyordu — motor ceza sürelerine hukuk yargısının adli tatil
+    rejimini (HMK m.104, bir hafta) uygulayıp son günü CMK m.331/4'e (ÜÇ GÜN) göre
+    olması gerekenden DÖRT GÜN GEÇ veriyordu. v0.5.14'ten itibaren `cmk_*` kuralı
+    ceza kolu dışında seçilirse script hesabı DURDURUR (exit 2), çünkü sessiz yanlış
+    varsayılan yasaktır ve yanlış son gün `_oa/sureler.json` defterine de yazılırdı.
+    Bu yüzden CMK kuralı artık `--yargi ceza` ile koşulur; testin ASIL amacı
+    (kuralların JSON'dan okunup CLI'da seçilebilmesi) değişmemiştir.
+    """
+    for kural, yargi in (("cmk_itiraz", "ceza"), ("iik_sikayet", "hukuk"),
+                         ("amme_6183_m58", "idari")):
+        out = _cli_run(teblig="2026-05-20", kural=kural, yargi=yargi)
         assert _SON_GUN_RE.search(out), f"{kural}: son gün satırı üretilmedi:\n{out}"
 
 

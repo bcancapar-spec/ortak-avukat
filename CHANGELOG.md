@@ -17,6 +17,54 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.14 — Denetimin İnfazı: 62 bulgu (2026-08-31)
+**Kanıt türü:** iki bağımsız denetim turu. (1) Ertelenen dört tez kod üzerinde
+planlandı ve planlar adversarial çürütmeden geçirildi; (2) eklentiyi **fiilen
+çalıştıran** 5 hukukçu + scriptleri **fiilen koşturan** 4 mühendis avcı,
+her biri ayrı bir şüpheci tarafından çürütülmeye tabi tutuldu. Toplam **62
+bulgu** (A-1…A-22 hukuki, B-1…B-40 mühendislik). Hukuki iddiaların tamamı
+Mevzuat MCP'den madde metniyle doğrulandı.
+
+**Telafisiz üç hata düzeltildi:**
+- **CMK m.331/4** — ceza kanun yolu sürelerine hukuk yargısının adli tatil
+  rejimi (HMK m.104, bir hafta) uygulanıyordu; doğrusu **üç gündür**. Sistem
+  dört gün geç tarih veriyordu; 4-7 Eylül'de verilen istinaf/temyiz süreden
+  reddedilirdi. `--yargi ceza` kolu açıldı; kural↔kol uyuşmazlığı artık
+  **hesabı durduruyor** (yanlış tarih deftere yazılamıyor).
+- **CMK m.268** — referans dosyasında süre hâlâ "yedi gün"dü (v0.5.13'te
+  SKILL.md düzeltilmiş, referans atlanmıştı: ikiz liste kayması).
+- **IBAN deseni** — Layer 0'ın MUTLAK_DENY kuralı hane sayısı yanlış olduğu
+  için **geçerli hiçbir Türk IBAN'ında ateşlemiyordu**.
+
+**Halüsinasyon panzehirinin onarımı (P0):** künye kapısı yaygın künye
+biçimlerini görmüyordu ve uydurma içtihatlı taslak uçtan uca "TESLİME HAZIR"
+alabiliyordu; kaynakça üreteci ise kapının göremediği künye için dilekçeye
+**gerçeğe aykırı "tam metniyle okundu" beyanı** yazıyordu. Kapı artık
+ayrıştıramadığı atıfta **fail-closed**; teyitsiz künye varsa okundu beyanı
+**hiç yazılmıyor**.
+
+**Diğer P0'lar:** yürütmenin durdurulması (İYUK m.27) ailenin tamamında yoktu —
+ödeme emrine karşı dava açmanın tahsilatı durdurmadığı hiçbir yerde yazılı
+değildi; sunum kilidi dava klasörü dışında sessizce ölüydü; bayat-araç
+nöbetçisi negatif parmak izine dayandığı için gerçekten bayat bir kiti
+"kanaldan yeni" ilan ediyordu; mühürsüz-teslim taraması fail-open'dı;
+`teslim_paketi` girdisini mutasyona uğratıyordu (aynı komut 1. koşuda yeşil,
+2. koşuda kırmızı).
+
+**Yapısal onarımlar:** kural tablosu artık **tek kaynak** (JSON) — gömülü
+fallback ondan türetiliyor ve ayrışmayı bir test mekanik olarak yakalıyor
+(bu tur entegratörün kendi kaymasını da yakaladı). Süit sayısı iddiası tek
+işaretçiye indirildi. `unsur-sablonlari/` altına **amme ödeme emri** şablonu
+eklendi (İİK ödeme emriyle karıştırma uyarısıyla). 21 süre kuralının
+tamamı MCP teyit tarihli — teyitsiz kural **sıfır**.
+
+**Entegratör hükmü (çatışma çözümü):** yeni sunum-kilidi uyarısı ile v0.5.9'un
+"dava dışı klasörde sessiz kal" sözleşmesi çarpışıyordu. Ayrım: *diskte
+olmayan bir yol için denetlenecek şey yoktur* (susmak gürültü disiplinidir);
+uyarı yalnız **var olan** teslim ürününün kökü bulunamadığında çıkar.
+
+Süit **1688** (v0.5.13'te 1406). Ayrıntı: [DENETIM-v0514.md](DENETIM-v0514.md).
+
 ## v0.5.13 — Heyet Kararlarının İnfazı (2026-08-27)
 **Kanıt türü farklı:** bu sürüm bir saha karnesinden değil, **denetimden**
 doğdu — 20 skill dört turdan geçti (7 mesleki denetçi + puanlama · 5 disiplinli
@@ -36,7 +84,7 @@ tutuklu dosya kipi · celse kartı + **dahili sızıntı kapısı** (iç analiz
 belgesi dış çıktıya kopyalanamaz) · zorunlu arabuluculuk dava şartı dört
 adreste · İİK m.67/68/72 + İYUK m.10/11 + VUK m.107/A çıpaları · mal kaçırma
 kavşağı (iki tarih ekseni). Gerekçeli daraltmalar
-[HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md)'de. Süit **1405**.
+[HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md)'de. Süit o gün **1406** toplandı (v0.5.14/B-35 düzeltmesi: kayıt 1405 yazıyordu, yeniden ölçüldü).
 
 ## v0.5.12 — İçtihat Kaynakçası (2026-08-27)
 **Avukat kuralı:** dilekçeye giren her Yargıtay/Danıştay kararının **kaynak
@@ -100,7 +148,7 @@ kodlama çökmesi onarımı (P0).
 Temiz kurulum (tek kaynak: GitHub) · oa-ingest v1.5 paralel çıkarım · Okuma
 Ekonomisi (Gate A-G) · İçtihat Muhakeme Zinciri (G1-G3) · working memory
 (`dosya-analiz.md` doğum anı) · dilekçe playbook · anayasa dedup. İlk paket
-57 testle çıktı; bugün 1405.
+57 testle çıktı; süitin GÜNCEL büyüklüğü tek kaynaktan okunur: [tests/README.md](tests/README.md) `OA-SUIT-SAYISI` işaretçisi.
 
 ---
 *Daha eski tarih öncesi (v0.4.0 ve öncesi) tek-skill dönemidir; bugünkü

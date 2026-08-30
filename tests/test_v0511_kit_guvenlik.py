@@ -62,7 +62,10 @@ def _defterli_kok(tmp_path):
 
 # ────────────── P0-1 · RPM KARANTİNASI (T1) ──────────────
 
-RPM = r"C:\Users\pc\AppData\Roaming\Claude\local-agent-mode-sessions\abc\plugin_X\skills"
+# SENTETIK-YOL: diskte açılmayan, yalnız desen sınavı için kurulmuş örnek yol
+# (v0.5.14/B-38 — mutlak yerel yol yasağı artık mekanik: bkz.
+#  tests/test_v0514_vitrin.py::test_b38_depoda_sabit_mutlak_yerel_yol_yok).
+RPM = r"C:\Users\pc\AppData\Roaming\Claude\local-agent-mode-sessions\abc\plugin_X\skills"   # SENTETIK-YOL
 
 
 def test_rpm_karantina_deseni(pk):
@@ -110,12 +113,46 @@ def _cekirdek_kur(kok, tam=True):
 
 
 def test_cekirdek_kilitle_tam_nesilde(pk, tmp_path):
+    """DEĞİŞTİRİLDİ (v0.5.14 / B-5) — kilit ölçütü PARMAK İZİ değil POZİTİF
+    TAZELİK KANITIDIR.
+
+    Eski hâli, parmak izi tam olan HER kopyayı salt-okunur çiviliyordu.
+    Denetimde ölçüldü: gerçekten bayat bir 0.5.9.1 kiti (parmak izi tam,
+    çünkü tablodaki en yeni imzalar o nesilde ZATEN vardı) çivileniyor ve
+    düz kopyayla tazeleme izin hatasıyla düşüyordu — kapı, bayat nesli
+    KORUYAN bir çiviye dönüşmüştü. Yeni sözleşme: kopya ya kanalla
+    bayt-özdeş olacak ya da makine-okur `OA_SURUM` damgası taşıyacak.
+    Bu test o iki kanıt yolunu ayrı ayrı kilitler."""
     kok = _defterli_kok(tmp_path)
     a = _cekirdek_kur(kok, tam=True)
-    kilitlenen = pk._cekirdek_kilitle(str(kok))
-    assert kilitlenen >= 2   # en az teslim_paketi + udf_yaz
-    for ad in ("teslim_paketi.py", "udf_yaz.py"):
-        assert not (os.stat(a / ad).st_mode & stat.S_IWRITE), ad
+    # (a) kanıtsız kopya (parmak izi tam ama damgasız, kanaldan farklı) →
+    #     ÇİVİLENMEZ; tazeleme yolu açık kalır.
+    assert pk._cekirdek_kilitle(str(kok)) == 0
+    assert os.stat(a / "udf_yaz.py").st_mode & stat.S_IWRITE
+    # (b) sürüm damgası kanıtlı kopya → AYNEN kilitlenir.
+    (a / "teslim_paketi.py").write_text(
+        'OA_SURUM = "%s"\n# teslim-makbuz.json uretir\n' % pk.OA_SURUM,
+        encoding="utf-8")
+    try:
+        assert pk._cekirdek_kilitle(str(kok)) == 1
+        assert not (os.stat(a / "teslim_paketi.py").st_mode & stat.S_IWRITE)
+    finally:
+        os.chmod(a / "teslim_paketi.py", stat.S_IWRITE | stat.S_IREAD)
+
+
+def test_cekirdek_kilitle_bayt_ozdes_kopyayi_kilitler(pk, tmp_path):
+    """İkinci pozitif kanıt yolu (damgasız scriptleri de kapsar): kopya
+    kanal kaynağıyla BAYT-ÖZDEŞSE tazedir ve kilitlenir."""
+    kok = _defterli_kok(tmp_path)
+    a = kok / "_oa" / "araclar"
+    a.mkdir(parents=True, exist_ok=True)
+    kaynak = SK / "oa-dilekce" / "scripts" / "udf_yaz.py"
+    (a / "udf_yaz.py").write_bytes(kaynak.read_bytes())
+    try:
+        assert pk._cekirdek_kilitle(str(kok)) == 1
+        assert not (os.stat(a / "udf_yaz.py").st_mode & stat.S_IWRITE)
+    finally:
+        os.chmod(a / "udf_yaz.py", stat.S_IWRITE | stat.S_IREAD)
 
 
 def test_cekirdek_bayat_kit_kilitlenmez(pk, tmp_path):
@@ -148,18 +185,36 @@ def _kanal_udf_yaz_icerigi():
 
 
 def test_yonlu_tazelik_kanaldan_yeni(pk, tmp_path):
-    """Parmak izi TAM + bayt farklı → 'kanaldan farklı/yeni' mesajı;
-    BAYAT NESİL metni KULLANILMAZ (yanlış-yön gürültüsü ölür)."""
+    """DEĞİŞTİRİLDİ (v0.5.14 / B-5) — 'kanaldan YENİ' hükmü artık POZİTİF
+    KANIT ister.
+
+    Eski hâli, "parmak izi TAM + bayt farklı → kanaldan yeni" çıkarımını
+    kilitliyordu. Denetimde ölçüldü: parmak izi tablosunun en yeni imzaları
+    v0.5.11 çekirdeğine aitti ve 0.5.9.1 kitinde ZATEN vardı; dolayısıyla
+    ≥0.5.9 HER nesil otomatik "kanaldan YENİ … bayat DEĞİLDİR, tazeleme
+    gerekmez" ilan ediliyordu — nöbetçi kendi neslini referans aldığı için
+    bayat kurulumu YAPISAL OLARAK göremiyordu. Yeni sözleşme: kanıt yoksa
+    cevap "taze" değildir. Yön ayrımı (yanlış-yön gürültüsünün ölmesi)
+    korunur ama artık damgaya dayanır."""
     kok = _defterli_kok(tmp_path)
     a = kok / "_oa" / "araclar"
     a.mkdir(parents=True)
-    # tam parmak izli ama kanal baytlarından farklı kopya
+    # (a) KANITSIZ: tam parmak izli, bayt farklı, damgasız → "taze" DENMEZ
     (a / "udf_yaz.py").write_text(
         _kanal_udf_yaz_icerigi() + "\n# yerel-fark\n", encoding="utf-8")
     metin = pk._bayat_arac_uyarisi(str(kok)) or ""
+    assert "BAYAT NESİL" not in metin      # parmak izi tam → sınıf yükselmez
+    assert "tazeleme gerekmez" not in metin
+    assert "doğrulanamadı" in metin
+    # (b) KANITLI: makine-okur damga eklentininkiyle aynı → kanaldan YENİ
+    (a / "udf_yaz.py").unlink()
+    (a / "pipeline_kayit.py").write_text(
+        'OA_SURUM = "%s"\nOLAYLAR_ADI = "x"\ndef _hook_nabiz_damgala(): pass\n'
+        "# yerel-fark\n" % pk.OA_SURUM, encoding="utf-8")
+    metin = pk._bayat_arac_uyarisi(str(kok)) or ""
     assert "BAYAT NESİL" not in metin
-    assert ("YENİ" in metin.upper() or "FARKLI" in metin.upper())
-    assert "kurulum" in metin.lower() or "güncelle" in metin.lower()
+    assert "kanaldan YENİ" in metin
+    assert "tazeleme gerekmez" in metin
 
 
 def test_yonlu_tazelik_gercek_bayat(pk, tmp_path):

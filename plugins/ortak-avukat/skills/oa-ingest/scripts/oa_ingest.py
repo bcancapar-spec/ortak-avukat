@@ -192,7 +192,8 @@ BAĞIMLILIKLAR (Windows-dostu, binary gerektirmez):
   Tesseract yoksa metin PDF/UDF/DOCX yine BEDAVA işlenir; yalnız taranmış
   evraklar "YÜKLENEMEDİ (OCR yok)" damgasıyla künyeye yazılır (sessiz atlama yok).
 
-Kullanım:
+Kullanım (klasör ZORUNLUDUR — v0.5.14/B-25: argümansız koşu artık REDDEDİLİR;
+bulunulan dizini kastediyorsan '.' yaz):
   python oa_ingest.py "<dava_klasoru>"
   python oa_ingest.py "<klasor>" --ocr auto|zorla|kapali
   python oa_ingest.py "<klasor>" --ocr-sayfa-limit 2      # demo/hızlı (0 = sınırsız)
@@ -1022,8 +1023,15 @@ def _onbakis_calistir(a, opts):
 
 def main():
     ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.7 (PyMuPDF, paralel, Gate A+C, OCR-Nöbetçisi)")
-    ap.add_argument("klasor", nargs="?", default=".",
-                    help="dava klasörü (verilmezse BULUNDUĞUN klasör işlenir)")
+    ap.add_argument("klasor",
+                    help="işlenecek DAVA KLASÖRÜ — AÇIKÇA verilir (zorunlu). "
+                         "Bulunulan dizini kastediyorsan '.' yaz. "
+                         "v0.5.14/B-25: pozisyonel varsayılan KALDIRILDI — "
+                         "argümansız koşu, birden çok müvekkil klasörünü "
+                         "içeren bir üst dizini onaysız ve ÖZYİNELEMELİ "
+                         "ingest ederek dosya ayrımı ilkesini bozuyordu "
+                         "(kirlenme `_oa/` .gitignore'da olduğu için "
+                         "`git status` refleksiyle GÖRÜNMÜYORDU).")
     ap.add_argument("--hedef")
     ap.add_argument("--ocr", choices=["auto", "zorla", "kapali"], default="auto")
     ap.add_argument("--dil", default="tur")

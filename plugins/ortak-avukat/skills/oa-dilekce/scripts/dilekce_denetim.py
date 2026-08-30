@@ -655,11 +655,55 @@ _TALEP_ONARMA_RE = re.compile(
     r"gideril(sin|mesi|melidir)", re.I)
 
 
-CEPHANELIK_IFSA_RE = re.compile(
-    r"(?:davalı|karşı\s*taraf|idare(?:nin)?|hasım)[^.\n]{0,80}"
-    r"(?:savunabil|ileri\s*sürebil|itiraz\s*edebil|iddia\s*edebil|"
-    r"muhtemel\s*savunma|olası\s*savunma|savunması(?:na|nda)?\s*karşı|"
-    r"karşı\s*çıkabil|dayanabil)", re.IGNORECASE)
+# ── B-30 DÜZELTMESİ (v0.5.14) — [K] BEKÇİSİ GERÇEK CÜMLEDE ATEŞLEMİYORDU ───
+# Eski desen tek parçaydı: `(hasım)[^.\n]{0,80}(fiil)`. In-process vaka seti
+# (2026-08-31) beş ayrı körlük gösterdi: (a) `[^.]` MADDE ATFINDAKİ noktayı
+# ('TBK m. 146') pencere dışına atıyor, (b) `[^\n]` SATIR KIRIĞINI kesiyor,
+# (c) 80 karakter gerçek cümle için dar, (d) fiil listesi eksik
+# ('def'inde bulunabilir', 'savunması muhtemeldir'). Uçtan uca koşuda taslakta
+# ihlal varken "[OK] … bulunamadı" basıldı — advisory'nin TEK işlevi
+# GÖRÜNÜRLÜKTÜR, o da üretilmiyordu.
+#
+# Yeni yapı: tek dev regex yerine PENCERE MANTIĞI — metin cümlelere bölünür,
+# her cümlede "muhtemel savunma fiili" aranır, fiilden ÖNCE aynı cümlede bir
+# hasım sözcüğü olması şartı konur. Cümle sınırı, RAKAMDAN SONRA GELEN noktayı
+# (madde atfı 'm. 146', künye '9. HD') sınır SAYMAZ; tek satır kırığı sınır
+# değildir, BOŞ SATIR sınırdır.
+CEPHANELIK_HASIM_RE = re.compile(
+    r"davalı|karşı\s*taraf|idare(?:nin|ye|yi|si)?|hasım", re.IGNORECASE)
+
+CEPHANELIK_FIIL_RE = re.compile(
+    r"savunabil"
+    r"|savunma(?:s[ıi]|lar[ıi])?\s+(?:muhtemel|olas[ıi]|beklen)"
+    r"|(?:muhtemel|olas[ıi])\s+savunma"
+    r"|savunmas[ıi](?:na|nda)?\s*karşı"
+    r"|ileri\s*sürebil"
+    r"|itiraz\s*edebil"
+    r"|iddia\s*edebil"
+    r"|karşı\s*çıkabil"
+    r"|dayanabil"
+    r"|(?:def['’]?\w*|itiraz\w*|talep\w*|talebin\w*|savunma\w*)\s+bulunabil",
+    re.IGNORECASE)
+
+# Cümle sınırı: nokta/ünlem/soru + boşluk + BÜYÜK harf — ama noktadan ÖNCE
+# RAKAM varsa sınır DEĞİLDİR ('m. 146', 'Yargıtay 9. HD', 'E. 2020/1111').
+# Boş satır her hâlde sınırdır (paragraf değişimi).
+_CEPHANELIK_CUMLE_SINIRI_RE = re.compile(
+    r"\n\s*\n|(?<![0-9])(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ])")
+
+# v0.5.14: eski tek-parça desen SİLİNDİ (tek yazar kuralı — iki desen evreni
+# doğmasın). Dışa açık ad olarak `CEPHANELIK_HASIM_RE`/`CEPHANELIK_FIIL_RE`
+# kullanılır.
+
+
+def _cephanelik_cumleler(metin):
+    """(başlangıç_ofseti, cümle_metni) çiftleri — bkz. sınır kuralı."""
+    parcalar, son = [], 0
+    for m in _CEPHANELIK_CUMLE_SINIRI_RE.finditer(metin or ""):
+        parcalar.append((son, metin[son:m.start()]))
+        son = m.end()
+    parcalar.append((son, (metin or "")[son:]))
+    return parcalar
 
 
 def cephanelik_ifsa_uyarilari(metin):
@@ -670,13 +714,16 @@ def cephanelik_ifsa_uyarilari(metin):
     noktalarını İFŞA etmektir. ADVISORY: bilinçli ön-karşılama (praeoccupatio)
     nadiren meşru bir retorik tercihtir — karar avukatta, script BLOKLAMAZ."""
     uyarilar = []
-    for m in CEPHANELIK_IFSA_RE.finditer(metin):
-        bas = max(0, m.start() - 30)
-        parca = " ".join(metin[bas:m.end() + 50].split())
-        uyarilar.append(
-            f"muhtemel-savunma analizi dilekçede: \"…{parca[:140]}…\" — m.6: "
-            "bu analiz CEPHANELİĞE yazılır (07-antitez), dilekçeye DEĞİL; "
-            "bilinçli ön-karşılama ise avukat onayıyla kalabilir")
+    for bas, cumle in _cephanelik_cumleler(metin or ""):
+        for m in CEPHANELIK_FIIL_RE.finditer(cumle):
+            if not CEPHANELIK_HASIM_RE.search(cumle[:m.start()]):
+                continue
+            parca = " ".join(cumle[:m.end() + 50].split())
+            uyarilar.append(
+                f"muhtemel-savunma analizi dilekçede: \"…{parca[:140]}…\" — m.6: "
+                "bu analiz CEPHANELİĞE yazılır (07-antitez), dilekçeye DEĞİL; "
+                "bilinçli ön-karşılama ise avukat onayıyla kalabilir")
+            break          # aynı cümleden tek uyarı (gürültü yasağı)
         if len(uyarilar) >= 6:
             break
     return uyarilar
@@ -1161,8 +1208,10 @@ def _beyan_var_mi(icerik, desen):
     return False
 
 
-def _t_beyan_var_mi(icerik):
-    return _beyan_var_mi(icerik, _T_HAZIR_RE)
+# B-29 (v0.5.14): `_t_beyan_var_mi` sarmalayıcısı SİLİNDİ — depo genelinde 0
+# çağrıydı (tek satır: tanımın kendisi); gerçek kapı `_beyan_var_mi`'yı
+# doğrudan çağırıyor. Ölü sarmalayıcı zararsız görünür ama "bu kapı var"
+# yanılsaması üretir — ailenin en pahalı deseninin sahte kopyasıdır.
 
 
 def teslime_hazir_ihlalleri(metin, kok):
@@ -1315,7 +1364,33 @@ def hizli_denetim(metin, kok=None):
                 "üretilemedi; tam denetim için dilekce_denetim.py CLI'ını koş"]
 
 
+def makine_bloklarini_maskele(metin):
+    """B-18 (v0.5.14) — `kaynakca_uret.py`'nin taslağa işlediği makine üretimi
+    `## İÇTİHAT KAYNAKÇASI` bloğu avukatın GÖVDE METNİ DEĞİLDİR; denetim
+    kapıları onu kendi girdileri sayınca zincir İDEMPOTANSINI kaybediyordu.
+
+    Denetim kanıtı (2026-08-31, üç ardışık özdeş koşu, md5 izli):
+    `rc=0 | hash değişti | TESLİME HAZIR` → `rc=1 | TESLİM DURDURULDU` →
+    `rc=1`. Kök neden: bloğun yazdığı `⚠` işaretini ikinci koşuda [C] OCR/
+    alıntı teyidi yakalıyordu. Kapı deterministik olmak ZORUNDADIR — burada
+    cevap koşu sayısına bağlıydı; avukat emin olmak için tekrar koşunca
+    hiçbir şey değiştirmediği hâlde kırmızı görüyor ve kapıya güven çöküyordu.
+
+    Maskeleme mantığı TEK YERDE (`oa-kontrol/scripts/kunye_ortak.py`) yaşar —
+    üretici (kaynakca_uret) ile maskeleyici ayrışamaz. Modül yüklenemezse
+    metin DEĞİŞMEDEN döner (fail-safe: eski, daha SIKI davranış sürer)."""
+    ko = _kunye_ortak_modulu()
+    if ko is None or not hasattr(ko, "makine_blogu_maskele"):
+        return metin
+    try:
+        return ko.makine_blogu_maskele(metin)
+    except Exception:
+        return metin
+
+
 def denetle(metin, tip, taraf):
+    # B-18: makine üretimi kaynakça bloğu denetim girdisi DEĞİLDİR.
+    metin = makine_bloklarini_maskele(metin)
     eksik, uyari = [], []
     unsurlar = TIPLER.get(tip, TIPLER["genel"])
 
@@ -1411,6 +1486,16 @@ def main():
     except Exception as e:
         print(f"HATA: taslak okunamadı ({e})", file=sys.stderr)
         sys.exit(1)
+
+    # B-18 (v0.5.14) — İDEMPOTANS: makine üretimi kaynakça bloğu TÜM kapılar
+    # için denetim dışıdır (sessiz atlama YASAĞI: görünür not basılır).
+    ham_metin = metin
+    metin = makine_bloklarini_maskele(metin)
+    if metin != ham_metin:
+        print("[BİLGİ] Makine üretimi '## İÇTİHAT KAYNAKÇASI' bloğu denetim "
+              "girdisi SAYILMADI (kaynakca_uret.py ürünü; blok içine elle "
+              "yazılmış düz metin maskelenmez ve denetlenmeye devam eder) — "
+              "B-18: zincirin idempotansı bu maskeleme ile korunur.")
 
     eksik, duzen_eksik, ocr_uyari, aleyhe, aleyhe_notu = denetle(metin, a.tip, a.taraf)
     cizgi = "=" * 62

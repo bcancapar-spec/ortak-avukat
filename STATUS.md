@@ -140,14 +140,20 @@ hesap tablosu manifestte okunabilir görünüp ingest'te "desteklenmeyen tür"
 oluyor. Uzantı kümesi üç dosyada yaşıyor ve **ikisi zaten ayrışmış**.
 → Tek kaynağa indir, fark `INGEST_OKUYAMAZ` diye **adlandırılsın** (sessiz değil).
 
-### A2 · Test dağılımı ters — YÜKSEK
-Sahada fiilen koşan altı motorun **kendi mantığı sınanmıyor**: `usul_matris`,
-`vakia_matris`, `kiyas_denetim`, `sozlesme_denetim`, `grafik_denetim` hiçbir
-testte anılmıyor; `antitez_matris` yalnız **bir** testte geçiyor, o da motoru
-değil `teslim_paketi`'nin elle yazılmış matris dosyasını *tüketmesini* sınıyor.
-Yani `--iskelet`/`--dogrula` yolları, sekiz cephe kümesi ve kapalı enum'lar
-doğrulanmamış. Buna karşılık sahada hiç koşmayan defter **24 test dosyalı**.
-Test yazdık ama işin yapıldığı yere değil, kodun yazıldığı yere yazdık.
+### A2 · ~~Test dağılımı ters~~ → **KAPANDI (v0.5.14)** — DÜŞÜK
+İlk kayıt (2026-08-06) altı motoru "hiçbir testte anılmıyor" diye saymıştı;
+o gün doğruydu, ama **defter bayatladı**: dördünün test dosyası 2026-08-11'de
+eklendiği hâlde bu satır aylarca eski hâliyle kaldı ve kapatılmış dört kalemin
+gürültüsü, gerçekten açık olan tek kalemi gizledi (v0.5.14 denetim bulgusu
+B-36).
+
+**Bu satır artık elle tutulmuyor.** Motor kapsamı mekanik olarak denetlenir:
+`tests/test_v0514_vitrin.py::test_b37_testte_hic_yuklenmeyen_motor_defterle_ortusuyor`
+`skills/*/scripts/*.py` altındaki her motoru tarar; hiçbir testte yüklenmeyen
+bir motor kaldığında kırmızı yanar ve borç ADIYLA kapsam defterine yazılır.
+Aynı kapı ters yönde de çalışır: kapatılmış bir borç defterde kalırsa (yani
+bu sayfanın 2026-08 hâli tekrarlanırsa) yine kırmızı yanar. Kapsam defterinin
+son ölçümü **boş**tur.
 
 ### A3 · Resmî okuyucu bacağının kendisi testsiz — ORTA
 `npx_ile_udf_oku` gerçek hâliyle hiçbir testte koşmuyor; tüm testler sahte

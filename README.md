@@ -13,10 +13,10 @@
 > devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
 > ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
-**Sürüm:** 0.5.11 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.14 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
-> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.11'e gelen
+> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.14'e gelen
 > geliştirme zinciri **149 gerçek davada** test edildi; bunların **dokuzu**,
 > sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur:
 > (1) ~200 evraklık istinaf dosyasında ek beyan (ilk tam koşu), (2) 214
@@ -589,8 +589,12 @@ vardır. Protokol beş adımdır ve her koşuda aynıdır:
 Saha, son sınavdır; ama hiçbir kod sahaya test görmeden çıkmaz. Laboratuvar
 tarafının kuralları:
 
-- **1.385 otomatik test** (bu sürüm itibarıyla; ilk paket 57 testle çıkmıştı —
-  her sürüm, sahada bulunan her kusuru önce bir teste çevirir). Testlerin
+- **Otomatik regresyon süiti** (ilk paket 57 sınamayla çıkmıştı — her sürüm,
+  sahada bulunan her kusuru önce bir teste çevirir). Süitin güncel büyüklüğü
+  tek kaynaktan okunur ve mekanik kapıyla doğrulanır:
+  [tests/README.md](tests/README.md) `OA-SUIT-SAYISI` işaretçisi
+  (`tests/test_v0514_vitrin.py` bu sayıyı her koşuda gerçek toplamayla
+  karşılaştırır — belgede duran sayı artık BEYAN değil ÖLÇÜMDÜR). Testlerin
   tamamı **sentetik veriyle** koşar: anayasa m.7 gereği hiçbir gerçek dava
   verisi, kişi adı veya dosya yolu test koduna giremez.
 - **Önce kırmızı, sonra yeşil (TDD):** her düzeltme, önce kusuru yeniden
@@ -613,25 +617,29 @@ tarafının kuralları:
   kapılarla (aile_dogrula Kapı-A/B) doğrulanır — "denetleyen kim denetliyor"
   sorusu açık bırakılmaz.
 
-#### 1.385 test tam olarak nedir — ne, nasıl, neden
+#### Süit tam olarak nedir — ne, nasıl, neden
 
-**Ne:** 107 test dosyasında 1.302 test fonksiyonu; parametreli varyantlarla
-her tam koşuda **1.385 ayrı sınama**. Sayısal anatomi (tema → test sayısı):
+**Ne:** her tam koşuda parametreli varyantlarıyla birlikte toplanan sınama
+kümesi. Sayı burada TEKRARLANMAZ — tek kaynağı ve mekanik kapısı
+[tests/README.md](tests/README.md)'dedir (v0.5.14/B-35: sayı üç ayrı yerde
+üç ayrı ve üçü de yanlış yazılıydı; sayıyı denetleyen kapı yoktu). Tematik
+anatomi (hangi tema, neyi güvence altına alır):
 
-| Tema | Test | Neyi güvence altına alır |
-|---|---|---|
-| Sürüm-reçetesi paketleri | ~515 | Her saha karnesinden doğan onarım paketinin (v0.5.5 → v0.5.11) kendi testleri — sahada bulunan her kusur burada sonsuza dek nöbettedir |
-| UDF hattı | 118 | Üretilen .udf UYAP'ta açılır mı: stil iskeleti, kenar ölçüleri (4×42,52 pt), round-trip okuma, elle-üretim yasağı, atomik mühür |
-| Hook katmanı | 109 | Altı kanalın ateşleme koşulları, kök çözümü, dedup, nabız, enjeksiyon içerikleri, sunum kilidi kararları |
-| Künye / içtihat | 98 | Atıf resmî kaynağa çözülüyor mu, [G6] tam-metin/damga şartı, muhakeme kaydı, yetim alıntı |
-| Pipeline / defter | 83 | Adım zinciri, kanıt şartı, append-only defter bütünlüğü, oturum damgası |
-| Teslim zinciri / makbuz | 80 | Dokuz kapının sırası, RED/yeşil makbuz garantisi, filo tazeliği, 40-UYAP kopyaları |
-| Hafıza / devir | 79 | `_oa` iskeleti, oturum devri, çalışma hafızasının senkronu |
-| Vakıa / antitez / kıyas | 45 | Kronoloji-delil eşlemesi, sekiz cephe bütünlüğü, unsur eşleşme denetimi |
-| Süre hesabı | 38 | Usul ve maddi süreler, adli tatil ayrımı, son-gün hesabı |
-| Ingest / OCR | 38 | Evrak sayımı, metin çıkarımı, OCR damgası, künye/indeks üretimi |
-| Aile / sürüm bütünlüğü | 31 | 20 parçanın manifest-sürüm-hook tutarlılığı, parmak izi, "N skill" sayımı |
-| Usul / kontrol · graf · kit güvenliği · gizlilik · şekil · sözleşme | 92 | Usul matrisi, illiyet grafının yapısal sağlığı, rpm karantinası + kilitli çekirdek, Layer 0 desenleri, şekil standardı, kloz kapsamı |
+| Tema | Neyi güvence altına alır |
+|---|---|
+| Sürüm-reçetesi paketleri (`test_vXYZ_*.py`) | Her saha karnesinden doğan onarım paketinin kendi testleri — sahada bulunan her kusur burada sonsuza dek nöbettedir |
+| UDF hattı | Üretilen .udf UYAP'ta açılır mı: stil iskeleti, kenar ölçüleri (4×42,52 pt), round-trip okuma, elle-üretim yasağı, atomik mühür |
+| Hook katmanı | Altı kanalın ateşleme koşulları, kök çözümü, dedup, nabız, enjeksiyon içerikleri, sunum kilidi kararları |
+| Künye / içtihat | Atıf resmî kaynağa çözülüyor mu, [G6] tam-metin/damga şartı, muhakeme kaydı, yetim alıntı |
+| Pipeline / defter | Adım zinciri, kanıt şartı, append-only defter bütünlüğü, oturum damgası |
+| Teslim zinciri / makbuz | Dokuz kapının sırası, RED/yeşil makbuz garantisi, filo tazeliği, 40-UYAP kopyaları |
+| Hafıza / devir | `_oa` iskeleti, oturum devri, çalışma hafızasının senkronu |
+| Vakıa / antitez / kıyas | Kronoloji-delil eşlemesi, sekiz cephe bütünlüğü, unsur eşleşme denetimi |
+| Süre hesabı | Usul ve maddi süreler, adli tatil ayrımı, son-gün hesabı |
+| Ingest / OCR | Evrak sayımı, metin çıkarımı, OCR damgası, künye/indeks üretimi |
+| Aile / sürüm bütünlüğü | Manifest-sürüm-hook tutarlılığı, parmak izi, "N skill" sayımı, vitrin sürüm damgaları |
+| Usul / kontrol · graf · kit güvenliği · gizlilik · şekil · sözleşme | Usul matrisi, illiyet grafının yapısal sağlığı, rpm karantinası + kilitli çekirdek, Layer 0 desenleri, şekil standardı, kloz kapsamı |
+| Vitrin / test altyapısı | Motor kapsam defteri (testsiz motor kalamaz), mutlak yerel yol yasağı, CI etiket tetiği ve OCR bacağı |
 
 **Nasıl doğar:** hiçbir test "aklımıza geldi" diye yazılmadı. Döngü sabittir:
 saha karnesi bir kusur ölçer → kusur, **geçici klasörde kurulan sentetik bir
@@ -656,7 +664,7 @@ ayrı belgededir: [tests/README.md](tests/README.md).
 
 **Neden ve ne amaçla:** bu sistemin avukata verdiği güvenceler ("makbuzsuz
 teslim olmaz", "aleyhe karar dilekçeye giremez", "elle UDF yazılamaz") birer
-cümle değil, birer KAPIDIR — ve kapının kendisi de bozulabilir. 1.385 test,
+cümle değil, birer KAPIDIR — ve kapının kendisi de bozulabilir. Süit,
 o kapıların her sürümde hâlâ kapandığının makine kanıtıdır: bir güncelleme
 eski bir güvenceyi bozarsa süit kırmızıya döner ve **CI yeşermeden sürüm
 etiketi atılamadığı için** o sürüm yayınlanamaz. Amaç tektir: sahada
@@ -892,9 +900,9 @@ python -m pytest tests -q
 python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
 ```
 
-İlki deterministik denetçilerin regresyonunu (depoda **1.385 test**; son tam
-koşu ölçümü 1385 yeşil / 1 tasarımsal atlama),
-ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm
+İlki deterministik denetçilerin regresyonunu (süitin güncel büyüklüğü ve son
+tam koşu ölçümü [tests/README.md](tests/README.md)'de — depoda tek kaynak
+orasıdır), ikincisi ailenin yapısal sağlığını (frontmatter, name↔klasör, sürüm
 tutarlılığı, manifest "N skill" sayımı, hook kapsamı) denetler. Güncel ölçüm
 ve açık bulgular: [STATUS.md](STATUS.md) · yol haritası:
 [YOL-HARITASI.md](YOL-HARITASI.md) · sürüm zincirinin kök defteri:

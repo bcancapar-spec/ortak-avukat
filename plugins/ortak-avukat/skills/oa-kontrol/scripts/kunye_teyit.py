@@ -171,8 +171,10 @@ OCR_RE = re.compile(r"OCR|⚠")
 # taşıyan metin gerçek içtihat künyesi olabilir → aynen yakalanmaya devam eder.
 # Muafiyet SESSİZ DEĞİLDİR: `_oa/defter/istisna-kayitlari.jsonl` ortak şemasına
 # (zaman/tur/ilgili/gerekce/onay/imza) kayıt düşülür + rapora [BİLGİ] basılır.
-KENDI_DOSYA_SATIR_RE = re.compile(
-    r"^\s*[>*\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
+# v0.5.14 (B-2): tanım `kunye_ortak`a taşındı (tek-yazar kuralı) — hem bu
+# muafiyet hem `ayristirilamayan_atiflar`ın yanlış-pozitif koruması AYNI
+# satır desenine bakar; iki yerde sürüklenip ayrışamaz.
+KENDI_DOSYA_SATIR_RE = ko.KENDI_DOSYA_SATIR_RE
 
 
 def _istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
@@ -557,7 +559,21 @@ def teyit_et(atif, teyit_kaynaklar, bilgi_kaynaklar):
 
 
 # ───────────────────────── RAPOR ─────────────────────────
-def rapor_yaz(atiflar, kutuk_var, kutuk_yolu):
+def _ayristirilamayan_yazdir(izler):
+    """B-2 (v0.5.14) — ayrıştırılamayan atıf iddialarını GÖRÜNÜR kılar."""
+    if not izler:
+        return
+    print(f"\n## AYRIŞTIRILAMAYAN ATIF İDDİASI ({len(izler)}) — MEKANİK TEYİT YAPILAMADI")
+    for iz in izler:
+        print(f"[BLOK]     (satır {iz['satir_no']})  {iz['metin']}")
+        print(f"           ↳ {iz['sebep']}")
+    print("           ↳ Künyeyi TAM biçimde yaz (ör. 'Yargıtay 9. HD, E. 2020/1111, "
+          "K. 2021/2222' ya da AYM için 'B. No: 2019/12345') ve MCP teyidini kütüğe "
+          "işle; ayrıştırılamayan atıf teyit edilemez, teyit edilemeyen atıf çıktıya "
+          "GİREMEZ (fail-closed).")
+
+
+def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
     print("=" * 72)
     print("ATIF/KÜNYE DOĞRULAMA KAPISI — oa-kontrol (deterministik)")
     print("=" * 72)
@@ -571,7 +587,12 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu):
 
     if not atiflar:
         print("Taslakta hukuki atıf (içtihat künyesi / mevzuat maddesi) BULUNAMADI.")
-        print("Doğrulanacak künye yok — kapı AÇIK.")
+        if ayristirilamayan:
+            # B-2: "künye yok" ile "künye AYRIŞTIRILAMADI" artık AYRI şeylerdir.
+            print("ANCAK ayrıştırılamayan atıf iddiası var — kapı KAPALI.")
+            _ayristirilamayan_yazdir(ayristirilamayan)
+        else:
+            print("Doğrulanacak künye yok — kapı AÇIK.")
         return
 
     ictihatlar = [a for a in atiflar if a.tur == "ictihat"]
@@ -619,6 +640,7 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu):
 
     blok("İÇTİHAT KÜNYELERİ", ictihatlar)
     blok("MEVZUAT ATIFLARI", mevzuatlar)
+    _ayristirilamayan_yazdir(ayristirilamayan)
 
     teyitli = sum(1 for a in atiflar if a.durum == "TEYİTLİ")
     teyitsiz = len(atiflar) - teyitli
@@ -632,9 +654,9 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu):
     if cikti_izli:
         print(f"NOT: {cikti_izli} teyitsiz künyenin izi YALNIZ çalışma evrakında "
               "(_oa/cikti) — model çıktısı, TEYİT SAYILMAZ (kendi-kendini-teyit deliği kapalı).")
-    if teyitsiz:
-        print("SONUÇ: TESLİM ENGELİ — teyitsiz atıf giderilecek ya da müvekkile 'açık uç'"
-              " olarak raporlanacak (gömülmez).")
+    if teyitsiz or ayristirilamayan:
+        print("SONUÇ: TESLİM ENGELİ — teyitsiz/ayrıştırılamayan atıf giderilecek ya da "
+              "müvekkile 'açık uç' olarak raporlanacak (gömülmez).")
     else:
         print("SONUÇ: Tüm atıflar kütük/ham döküm izli — mekanik kapı AÇIK. "
               "(İçerik/esas-savunma + doğru daire denetimi oa-kontrol A-listesinindir.)")
@@ -740,7 +762,18 @@ def main():
     with open(args.taslak, encoding="utf-8", errors="replace") as f:
         metin = f.read()
 
+    # B-18 (v0.5.14) — makine üretimi kaynakça bloğu taslağın GÖVDESİ değildir:
+    # kapılar onu kendi girdileri sayınca zincir idempotansını kaybediyordu.
+    metin = ko.makine_blogu_maskele(metin)
+
     atiflar = atiflari_cikar(metin)
+
+    # B-2 (v0.5.14) — AYRIŞTIRILAMAYAN ATIF = FAIL-CLOSED. Merci anılan bir
+    # satırda karar iması var ama künye çıkarılamıyorsa sonuç "atıf yok"
+    # DEĞİLDİR: "mekanik teyit YAPILAMADI"dır. Eski davranışta uydurma
+    # içtihatlı taslak "Doğrulanacak künye yok — kapı AÇIK" ile geçiyordu.
+    ayristirilamayan = ko.ayristirilamayan_atiflar(
+        metin, {a.satir_no for a in atiflar if a.satir_no})
 
     # B1 (v0.5.8.5) — KENDİ-DOSYA-NO İSTİSNASI: başlık/künye bloğundaki kendi
     # dosya numarası satırları içtihat taramasından muaf; muafiyet istisna
@@ -766,8 +799,10 @@ def main():
             teyit_et(a, teyit_kaynaklar, bilgi_kaynaklar)
     # kütük yoksa: hepsi TEYİTSİZ kalır (yapısal blok)
 
-    rapor_yaz(atiflar, kutuk_var, kutuk)
+    rapor_yaz(atiflar, kutuk_var, kutuk, ayristirilamayan)
 
+    if ayristirilamayan:
+        sys.exit(1)  # B-2 — mekanik teyit YAPILAMADI (fail-closed)
     if not atiflar:
         sys.exit(0)  # doğrulanacak künye yok
     if not kutuk_var:

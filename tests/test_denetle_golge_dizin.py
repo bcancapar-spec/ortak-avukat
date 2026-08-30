@@ -56,7 +56,8 @@ def test_onbakis_sonrasi_sozlesme_disi_uyarisi_YOK(tmp_path):
     (tmp_path / "001-evrak.txt").write_text(
         "Test evrakı — yeterince uzun metin örneği burada tekrar eder. " * 2,
         encoding="utf-8")
-    cp = subprocess.run([sys.executable, str(OA_INGEST), "--ocr", "kapali", "--onbakis", "1"],
+    # v0.5.14/B-25: klasör AÇIKÇA verilir (argümansız koşu artık reddedilir).
+    cp = subprocess.run([sys.executable, str(OA_INGEST), ".", "--ocr", "kapali", "--onbakis", "1"],
                          capture_output=True, text=True, encoding="utf-8", errors="replace",
                          cwd=str(tmp_path))
     assert cp.returncode == 4, cp.stdout + cp.stderr

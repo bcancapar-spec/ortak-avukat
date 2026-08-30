@@ -98,9 +98,18 @@ ceza zamanaşımı `oa-sure` ile **deterministik** hesaplanır, `oa-usul` ile de
 - **İstinaf:** CMK m.273 — gerekçeli kararın tebliğinden **iki hafta** (7499 s.K. değişikliği;
   eski "yedi gün" değil — kullanım anında teyit et).
 - **Temyiz:** CMK m.291 — iki hafta; temyiz edilebilirlik sınırları m.286/2 önce kontrol.
-- **HAGB:** CMK m.231/12 — HAGB kararına karşı **istinaf** yolu açıktır ve BAM **usul ve
-  esas** yönünden inceler (7499 s.K.). HAGB beraat değildir: sübutu saptar, denetim süresi
-  ve sonuçlar doğurur — müvekkil beraat istiyorsa istinaf gerekçelidir.
+- **HAGB:** CMK m.231/12 — **Değişik: 16/7/2026-7589/15 md.** Hüküm birebir *"272 nci
+  maddenin üçüncü fıkrası hükümleri saklı kalmak üzere"* diyor: kanun yolu **koşulsuz
+  açık DEĞİLDİR**, önce **m.272/3** kapalılık denetimi (belirli adlî para cezası
+  mahkûmiyetleri · üst sınırı belirli günü geçmeyen adlî para cezası suçlarından
+  beraat · kanunda kesin olduğu yazılı hükümler) yapılır; kapalı yola başvuru süre
+  ve harç kaybıdır. Denetim geçilirse istinaf; BAM kararları için m.286; HAGB'yi ilk
+  derece sıfatıyla BAM/Yargıtay verdiyse (m.272/3 yine saklı) temyiz. İnceleme
+  **usul ve esasa ilişkin hukuka aykırılıklar** yönündendir. **7499 s.K. metni artık
+  yürürlükte değildir** — HAGB rejiminin tamamı (m.231/5-14) 7589 ile yeniden
+  yazılmıştır; ceza sınırı, denetim süresi ve şartlar kullanım anında MCP'den çekilir.
+  HAGB beraat değildir: sübutu saptar, denetim süresi ve sonuçlar doğurur — müvekkil
+  beraat istiyorsa kanun yolu gerekçelidir.
 - **KYOK'a itiraz:** CMK m.173 — iki hafta, Sulh Ceza Hâkimliği.
 - **⛓ TUTUKLU DOSYA KİPİ (v0.5.13 — pratikçi heyeti):** Tutuklulukta geçen her
   gün telafisizdir; m.141 tazminatı özgürlüğü geri vermez. Müvekkil tutukluysa:
@@ -113,6 +122,15 @@ ceza zamanaşımı `oa-sure` ile **deterministik** hesaplanır, `oa-usul` ile de
   **iki senaryolu** ve "nitelendirme içtihat-teyitli" şerhiyle basılır, tek
   kesin tarih ASLA yazılmaz. (Periyodik incelemenin tekrar-alanı şema
   paketine bırakılmıştır — ilk turda tek kayıt olarak işlenir.)
+  (e) **SÜREYİ KESEN KANAL — CMK m.263 (A-12, v0.5.14):** tutuklu şüpheli/sanık,
+  zabıt kâtibine beyanla **veya bulunduğu ceza infaz kurumu ve tutukevi müdürüne**
+  beyanda bulunarak yahut dilekçe vererek kanun yollarına başvurabilir; usulüne
+  uygun işlem yapıldığında kanun yolu süreleri **kesilmiş sayılır** (m.263/4).
+  m.268/1, m.273/1 ve m.291/1'in üçü de "263 üncü madde hükmü saklıdır" der.
+  İki yönlü işletilir: müvekkile bu kanal **ilk görüşmede** anlatılır; "süre doldu"
+  sonucuna varmadan önce kurum kaydı/tutanağı celbedilir. (f) **Adli tatilde de
+  yürür:** CMK **m.331/2-3** — soruşturma, tutuklu işlere ilişkin kovuşturmalar ve
+  ivedi hususlar tatil süresinde de görülür; tutuklu dosyada "tatil bekleme" yoktur.
 - **İtiraz:** CMK m.268 — kural **iki hafta** ("kararı öğrendiği günden itibaren";
   eski "yedi gün" YÜRÜRLÜKTE DEĞİLDİR). **Başlangıç rejimi istinaf/temyizden
   FARKLIDIR:** itirazda başlangıç *öğrenme günüdür* (m.35: yüze karşı verilen
@@ -171,7 +189,7 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **ceza savunmasına** uy
 9. YAZIM       → oa-dilekce (ifade/savunma · iddianameye karşı · istinaf · temyiz · itiraz
                  · KYOK itirazı · AYM bireysel başvuru — kademeli netice-i talep)
 10. KONTROL    → oa-kontrol (atıf denetimi · ifşa kontrolü · müvekkil-aleyhi zaaf taraması)
-10. KAPANIŞ    → oa-usta (kimliksiz ders damıtma; _oa/dersler)
+11. KAPANIŞ    → oa-usta (kimliksiz ders damıtma; _oa/dersler)
 ```
 
 Kalıcı katmanlar (`oa-usul`, `oa-illiyet`, `oa-gizlilik`) her adımda devrededir.

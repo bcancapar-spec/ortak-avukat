@@ -239,7 +239,15 @@ def _sha256_dosya(yol):
 # GÖREV 2 — makbuz garantisi durum kaydı: _makbuz_yaz her yazımda işaretler;
 # main()'in finally kolu, başarısız çıkışta hiç makbuz yazılmamışsa erken-RED
 # makbuzu düşürür (zaman + sebep + argv).
-_MAKBUZ_DURUM = {"yazildi": False, "kok": None, "sebep": None}
+# B-24 (v0.5.14) — `arg_ayristi`: makbuz garantisi ARGÜMANLAR AYRIŞTIKTAN
+# sonra devreye girer. Eskiden argparse hatası (argümansız çağrı, geçersiz
+# --taraf) bile CWD'de `_oa/defter/teslim-makbuz-RED.json` açıyordu: bir YAZIM
+# HATASI dosya sistemini değiştiriyor ve orada SAHTE bir dava kökü işareti
+# bırakıyordu (diğer scriptler `_oa`ya bakıp orayı dava kökü sanabilir).
+# "RED bile damgalı makbuz keser" sözleşmesi KASITLIYDI ve KORUNUR — yalnız
+# ERKEN ÇIKIŞ (kullanım hatası) ile GERÇEK RED birbirinden ayrılır.
+_MAKBUZ_DURUM = {"yazildi": False, "kok": None, "sebep": None,
+                 "arg_ayristi": False}
 
 # 372 A/B hükmünün imzası: yerel motor <elements resolver="hvl-default"> yazar
 # ama styles bloğunda name="hvl-default" STİL TANIMI yoktur → UYAP'ta açılmaz.
@@ -589,9 +597,18 @@ def _uyap_disa_kopya(kok, taslak, udf_cikti, udf_uretildi):
 # geçirir (mühürsüz/bayat → RED) ve TAMAMINI makbuza yazar. `_oa/` altı
 # çalışma nüshaları filo DIŞIDIR (onların denetçisi seçili-aday hattıdır).
 
-def _teslim_sinifi_udf_listesi(kok):
-    """Dava kökü (maxdepth 1) + 40-UYAP/40-uyap altındaki .udf dosyaları —
-    sıralı, tekilleştirilmiş mutlak yollar. Asla fırlatmaz."""
+# B-14 (v0.5.14) — TESLİM SINIFI UZANTILARI TEK SABİTTEN TÜRER.
+# `_uyap_urunler` UDF'in yanında aynı kök-adlı `.pdf`/`.docx`'i de NİHAİ
+# TESLİM ÜRÜNÜ sayıp 40-UYAP'a kopyalıyordu, ama hiçbir mühür/tazelik
+# taraması `.udf` dışına bakmıyordu — makbuz sonrası değişiklik penceresi bir
+# uzantı için tamamen AÇIK kalıyordu (v0.5.10'un kapattığını iddia ettiği
+# pencere). sha karşılaştırması uzantıdan BAĞIMSIZDIR.
+TESLIM_SINIFI_UZANTILAR = (".udf", ".pdf", ".docx")
+
+
+def _teslim_sinifi_udf_listesi(kok, uzantilar=TESLIM_SINIFI_UZANTILAR):
+    """Dava kökü (maxdepth 1) + 40-UYAP/40-uyap altındaki teslim-sınıfı
+    dosyalar — sıralı, tekilleştirilmiş mutlak yollar. Asla fırlatmaz."""
     bulunan = []
     dizinler = [kok,
                 os.path.join(kok, UYAP_DIZIN_ADI),
@@ -604,7 +621,7 @@ def _teslim_sinifi_udf_listesi(kok):
             continue
         for g in girdiler:
             try:
-                if not g.is_file() or not g.name.lower().endswith(".udf"):
+                if not g.is_file() or not g.name.lower().endswith(uzantilar):
                     continue
                 anahtar = os.path.normcase(os.path.abspath(g.path))
                 if anahtar in gorulen:
@@ -617,19 +634,25 @@ def _teslim_sinifi_udf_listesi(kok):
 
 
 def _filo_tazelik_denetimi(kok, haric=()):
-    """K1+K2 çekirdeği: filodaki her UDF için mühür-tazelik hükmü.
+    """K1+K2 çekirdeği: filodaki her teslim-sınıfı ürün için mühür-tazelik
+    hükmü (v0.5.14/B-14: `.udf` + `.pdf` + `.docx`).
     Döner: (sorunlar, uyarilar, kayitlar)
       sorunlar : RED-sınıfı satırlar — yanlış-BLOK İMKÂNSIZ olan sınıflar:
-                 (a) .prov.json'u OLAN dosyada bayat/okunamaz mühür (mühürlü
-                     dosya KESİN bizim ürünümüzdür — 307-K1),
+                 (a) .prov.json'u OLAN dosyada bayat/okunamaz/SHA'SIZ mühür
+                     (mühürlü dosya KESİN bizim ürünümüzdür — 307-K1),
                  (b) 40-UYAP içinde mühürsüz .udf (o dizini yalnız biz kurarız).
-      uyarilar : advisory — dava kökünde mühürsüz .udf (UYAP kaynak evrakı
+      uyarilar : advisory — (i) dava kökünde mühürsüz .udf (UYAP kaynak evrakı
                  OLABİLİR; karşı tarafın dilekçesini RED'lemek yanlış-BLOK
-                 olur — amaç çizgisi: kapı muhakemeyi engellemez).
+                 olur — amaç çizgisi: kapı muhakemeyi engellemez),
+                 (ii) mühürsüz .pdf/.docx (nerede olursa olsun): 40-UYAP'a
+                 kopyalanan PDF/DOCX yoldaşları TANIM GEREĞİ mühürsüzdür
+                 (yalnız UDF mühürlenir) — bunları RED saymak HER yeşil
+                 teslimi bir sonraki koşuda kırardı.
       kayitlar : makbuza girecek TAM kapsam (K2) — [{dosya, sha12, muhur}]
-                 muhur ∈ taze | turev (imzalı) | bayat | yok | okunamadi
+                 muhur ∈ taze | turev (imzalı) | bayat | shasiz | yok | okunamadi
     İmzalı (sign.sgn) dosyada sha uyuşmazlığı TÜREV'dir, sorun değildir
-    (B5b simetrisi). Asla fırlatmaz."""
+    (B5b simetrisi) — yalnız `.udf` için sorulur (e-imza kabı UDF'tir).
+    Asla fırlatmaz."""
     sorunlar, uyarilar, kayitlar = [], [], []
     haric_norm = {os.path.normcase(os.path.abspath(h)) for h in haric if h}
     uyap_on_ek = os.path.normcase(
@@ -643,20 +666,29 @@ def _filo_tazelik_denetimi(kok, haric=()):
             guncel = _sha256_dosya(yol)
         except Exception:
             guncel = None
+        udf_mu = yol.lower().endswith(".udf")
         kayit = {"dosya": goreli, "sha12": (guncel or "?")[:12], "muhur": "yok"}
         prov_yolu = yol + ".prov.json"
         if not os.path.isfile(prov_yolu):
             kayitlar.append(kayit)
-            if uyapta:
+            if uyapta and udf_mu:
                 sorunlar.append(
                     "MÜHÜRSÜZ %s ürünü: %s — o dizine yalnız teslim zinciri "
                     "yazar; mühürsüz ürünle teslim YOK (v0.5.10)."
                     % (UYAP_DIZIN_ADI, goreli))
-            else:
+            elif udf_mu:
                 uyarilar.append(
                     "kökte mühürsüz .udf: %s — bizim ürünümüzse yeniden üret "
                     "(udf_yaz mührü atomik basar); UYAP kaynak evrakıysa "
                     "dokunma (advisory — kapı kapatmaz)." % goreli)
+            else:
+                # B-14: mühürsüz .pdf/.docx advisory'dir (yeşil yolun kendi
+                # 40-UYAP kopyaları mühürsüz doğar; RED etmek yanlış-BLOK olur).
+                uyarilar.append(
+                    "mühürsüz teslim-sınıfı dosya: %s — makbuz sonrası "
+                    "değişikliği MEKANİK olarak saptanamaz; bizim ürünümüzse "
+                    "muhur_yaz.py ile mühürle (advisory — kapı kapatmaz)."
+                    % goreli)
             continue
         try:
             with open(prov_yolu, encoding="utf-8") as f:
@@ -668,9 +700,25 @@ def _filo_tazelik_denetimi(kok, haric=()):
                 "MÜHÜR OKUNAMADI: %s.prov.json — güvenilmez mühürle teslim "
                 "YOK (fail-closed)." % goreli)
             continue
-        if muhur.get("artifact_sha256") == guncel:
+        muhur_sha = muhur.get("artifact_sha256")
+        if not muhur_sha:
+            # B-13 (v0.5.14): `artifact_sha256` alanı OLMAYAN mühür eskiden
+            # sessizce "bayat" etiketiyle yutuluyordu; hook katmanındaki eş
+            # tarama ise onu "mühürlü" SAYIYORDU (fail-OPEN) — mührün içini
+            # silmek, dosyayı hiç mühürlememekten TEMİZ görünüyordu, koruma
+            # tersine dönmüştü. Artık ayrı sınıf + açık gerekçe.
+            kayit["muhur"] = "shasiz"
+            kayitlar.append(kayit)
+            sorunlar.append(
+                "MÜHÜR SHA'SIZ: %s.prov.json — `artifact_sha256` alanı YOK; "
+                "mühür hiçbir şeyi bağlamıyor, tazelik MEKANİK olarak "
+                "doğrulanamaz. Güvenilmez mühürle teslim YOK (fail-closed) — "
+                "ürünü yeniden üret ya da muhur_yaz.py ile yeniden mühürle."
+                % goreli)
+            continue
+        if muhur_sha == guncel:
             kayit["muhur"] = "taze"
-        elif _udf_imzali_mi(yol):
+        elif udf_mu and _udf_imzali_mi(yol):
             kayit["muhur"] = "turev"      # e-imza baytları değiştirir (B5b)
         else:
             kayit["muhur"] = "bayat"
@@ -678,8 +726,7 @@ def _filo_tazelik_denetimi(kok, haric=()):
                 "PROV-BAYAT (307-K1): %s — mühürdeki sha (%s…) güncel "
                 "dosyayla (%s…) uyuşmuyor; ürün mühürden SONRA değişmiş. "
                 "Yeniden üret (udf_yaz mührü atomik tazeler)."
-                % (goreli, str(muhur.get("artifact_sha256", "?"))[:12],
-                   str(guncel or "?")[:12]))
+                % (goreli, str(muhur_sha)[:12], str(guncel or "?")[:12]))
         kayitlar.append(kayit)
     return sorunlar, uyarilar, kayitlar
 
@@ -905,7 +952,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.13"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.14"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -1005,6 +1052,13 @@ def _erken_red_makbuz(exit_kodu):
     simetrik: emniyet katmanı akışı bloklamaz)."""
     try:
         kok = _MAKBUZ_DURUM.get("kok") or os.path.abspath(_argv_kok_tahmini())
+        if not os.path.isdir(kok):
+            # B-24: VAR OLMAYAN kök ağacını makbuz yazmak için KURMA — sahte
+            # dava kökü işareti yaratmak, makbuz izinden daha zararlıdır.
+            print("RED MAKBUZU YAZILMADI: kök klasör yok (%s) — makbuz için "
+                  "dizin AÇILMAZ (B-24: kullanıcı hatası dosya sistemini "
+                  "değiştirmez)." % kok, file=sys.stderr)
+            return
         veri = {
             "zaman": datetime.datetime.now().isoformat(timespec="seconds"),
             "sebep": (_MAKBUZ_DURUM.get("sebep")
@@ -1032,6 +1086,7 @@ def main():
     _MAKBUZ_DURUM["yazildi"] = False
     _MAKBUZ_DURUM["kok"] = None
     _MAKBUZ_DURUM["sebep"] = None
+    _MAKBUZ_DURUM["arg_ayristi"] = False
     kod = 0
     try:
         _zincir()
@@ -1044,7 +1099,8 @@ def main():
             _MAKBUZ_DURUM["sebep"] = "beklenmeyen hata: %r" % (e,)
         raise
     finally:
-        if kod != 0 and not _MAKBUZ_DURUM.get("yazildi"):
+        if (kod != 0 and not _MAKBUZ_DURUM.get("yazildi")
+                and _MAKBUZ_DURUM.get("arg_ayristi")):
             _erken_red_makbuz(kod)
 
 
@@ -1067,6 +1123,9 @@ def _zincir():
                     help="P0-5(c): kurucu kural 'varsayılan çıktı UDF'yi BİLİNÇLİ olarak "
                          "atla — bu tercih makbuza yazılır (varsayılan: UDF ÜRETİLİR).")
     a = ap.parse_args()
+    # B-24: buradan İTİBAREN her başarısız yol RED makbuzu düşürür; argparse
+    # bu satıra gelmeden SystemExit(2) atarsa hiçbir dosya yazılmaz.
+    _MAKBUZ_DURUM["arg_ayristi"] = True
 
     taslak = os.path.abspath(a.taslak)
     kok = os.path.abspath(a.kok)

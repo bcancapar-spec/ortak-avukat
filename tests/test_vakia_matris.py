@@ -16,8 +16,13 @@ tasarım olarak belgelenir ve kilitlenir:
     yazılmaz (karakterizasyon — mevcut tasarım).
   * ispat_durumu alanı hiç yoksa geçersiz sayılır ve mesajda Python'un
     None temsili ("'None'") basılır (karakterizasyon — mevcut tasarım).
-  * JSON kökü sözlük değilse (ör. liste) script AttributeError ile ÇÖKER
-    (traceback + exit 1) — düzeltilmez, çöküş karakterize edilir.
+
+v0.5.14'te BİLİNÇLİ olarak güncellenen üç kilit + bir docstring (gerekçeler
+ilgili testlerin kendi docstring'lerinde): --iskelet stdout'unun saf JSON
+olması (B-26) · boş girdinin 'TAMAM' yerine 'DENETLENEMEDİ' sayılması
+(B-12) · kök tipi hatasında traceback yerine temiz mesaj (B-23) · matris
+satırına `kismi_destek` eklenmesi ve "belgeli" tanımının pozitif beyaz
+listeye çevrilmesi (T5A/B-10).
 
 Girdiler tempfile tabanlı İZOLE dizinlerde üretilir; repo dosyalarına
 dokunulmaz.
@@ -86,18 +91,25 @@ def test_argumansiz_cagri_argparse_hatasi_exit2():
 # ── --iskelet: şablon + ISPAT kümesi ────────────────────────────────────────
 
 def test_iskelet_sablon_ve_ispat_kumesi_exit0():
+    """v0.5.14'te BİLİNÇLİ olarak güncellendi (iki gerekçe):
+    (1) B-26 — `--iskelet` stdout'u artık SAF JSON'dur; banner/açıklama
+        STDERR'e taşındı (SKILL.md'nin öğrettiği `--iskelet > 04-vakia.json`
+        kullanımı bugüne dek ayrıştırılamaz dosya üretiyordu).
+    (2) T5A — ISPAT kümesine `beyan` (ISPAT_KISMI) eklendi; alfabetik satır
+        bu yüzden değişti."""
     kod, out, err = _cli("--iskelet")
     assert kod == 0
-    assert "VAKIA/DELİL MATRİSİ" in out
-    # ISPAT kümesi alfabetik sıralı tek satırda basılır
-    assert ("ispat_durumu değerleri: belgeli, bilirkisi, ikrar, ispatsiz, "
-            "karine, tanik, yemin") in out
-    # Doldurulacak JSON şablonunun anahtarları
-    assert "--- Doldurulacak şablon (JSON) ---" in out
-    assert '"iddialar"' in out and '"olaylar"' in out
-    assert '"YYYY-MM-DD"' in out
-    assert '"I1"' in out
-    assert "Doldurduktan sonra: python vakia_matris.py --dogrula vakia.json" in out
+    assert "VAKIA/DELİL MATRİSİ" in err
+    # ISPAT kümesi alfabetik sıralı tek satırda (stderr'de) basılır
+    assert ("ispat_durumu değerleri: belgeli, beyan, bilirkisi, ikrar, "
+            "ispatsiz, karine, tanik, yemin") in err
+    # STDOUT tek başına geçerli JSON olmalı
+    sablon = json.loads(out)
+    assert set(sablon) == {"taraflar", "iddialar", "olaylar"}
+    assert sablon["iddialar"][0]["id"] == "I1"
+    assert sablon["olaylar"][0]["tarih"] == "YYYY-MM-DD"
+    assert "--- Doldurulacak şablon (JSON — STDOUT) ---" in err
+    assert "Doldurduktan sonra: python vakia_matris.py --dogrula vakia.json" in err
 
 
 def test_iskelet_ile_json_bayragi_sessizce_yoksayilir(izole_dizin):
@@ -177,9 +189,14 @@ def test_ispat_boslugu_belgeli_destegi_olmayan_iddia(izole_dizin):
 
 
 def test_ispatsiz_durumlu_veya_belgesiz_destek_bosluk_sayilir(izole_dizin):
-    """'Belgeli' sayılmak için İKİ koşul birden gerekir: ispat_durumu !=
-    'ispatsiz' VE belge alanı dolu. Biri eksikse destek var görünse de
-    iddia yine boşluktadır (karakterizasyon — mevcut tasarım)."""
+    """'Belgeli' sayılmak için İKİ koşul birden gerekir: ispat_durumu
+    ISPAT_TAM beyaz listesinde VE belge alanı dolu. Biri eksikse destek var
+    görünse de iddia yine boşluktadır.
+
+    v0.5.14 (T5A/B-10): bu docstring GÜNCELLENDİ — eski metin koşulu
+    "ispat_durumu != 'ispatsiz'" diye yazıyordu (NEGATİF liste). Kod pozitif
+    beyaz listeye çevrildiğinde bu sözleşme KIRILMADAN yalan olacaktı;
+    denetim izinin tek koruması docstring'in aynı turda düzeltilmesidir."""
     veri = {
         "iddialar": [
             {"id": "I1", "metin": "Belge var ama ispatsiz"},
@@ -257,13 +274,17 @@ def test_ispat_durumu_alani_yoksa_none_ile_gecersiz_sayilir(izole_dizin):
     assert "Durumsuz olay: 'None'" in out
 
 
-def test_bos_sozluk_girdisi_saglikli_tamam_exit0(izole_dizin):
-    """Karakterizasyon — mevcut tasarım: hiç iddia/olay yoksa hiçbir
-    tespit listesi dolmaz, boş dosya 'TAMAM' sayılır."""
+def test_bos_sozluk_girdisi_denetlenemedi_exit0(izole_dizin):
+    """v0.5.14'te BİLİNÇLİ olarak değiştirildi (B-12): eski karakterizasyon
+    boş dosyanın 'TAMAM' sayılmasını kilitliyordu — yani "0 iddia = kusursuz
+    dosya". Denetlenecek içeriğin yokluğu denetimin GEÇTİĞİ anlamına gelmez;
+    artık ayrı DENETLENEMEDİ sonuç sınıfı basılır. Exit kodu sözleşmesi
+    (sys.exit yokluğu) DEĞİŞMEDİ."""
     yol = _vakia_yaz(izole_dizin, {})
     kod, out, err = _cli("--dogrula", str(yol))
     assert kod == 0
-    assert ">>> Dosya olgu/delil bütünlüğü TAMAM <<<" in out
+    assert ">>> Dosya olgu/delil bütünlüğü TAMAM <<<" not in out
+    assert "DENETLENEMEDİ" in out
     assert "İddia: 0 | belgeli destekli: 0 | ispat boşluğu: 0" in out
     assert "Olay: 0 | tarihsiz: 0 | yetim: 0" in out
 
@@ -311,9 +332,13 @@ def test_json_cikti_semasi_saglikli_dosya(izole_dizin):
     assert sonuc["kronoloji"][0] == {"tarih": "2025-01-10", "olgu": "Sozlesme imzalandi",
                                      "belge": "yazili sozlesme", "ispat_durumu": "belgeli"}
     # matris satırı şeması
+    # v0.5.14 (T5A): matris SATIRINA `kismi_destek` eklendi — `belgeli`
+    # alanının anlamı/tipi değişmedi, ÜST-DÜZEY şema da değişmedi.
     m1 = [s for s in sonuc["iddia_delil_matrisi"] if s["iddia_id"] == "I1"][0]
-    assert set(m1.keys()) == {"iddia_id", "metin", "destekler", "belgeli"}
+    assert set(m1.keys()) == {"iddia_id", "metin", "destekler", "belgeli",
+                              "kismi_destek"}
     assert m1["belgeli"] is True and m1["destekler"] == ["Sozlesme imzalandi"]
+    assert m1["kismi_destek"] is False
 
     assert sonuc["tarihsiz"] == []
     assert sonuc["ispat_bosluklari"] == []
@@ -375,13 +400,14 @@ def test_olmayan_dosya_okunamadi_exit1(izole_dizin):
     assert "❌ JSON okunamadı" in out
 
 
-def test_json_koku_liste_ise_cokus_karakterize(izole_dizin):
-    """Karakterizasyon — mevcut tasarım: JSON kökü sözlük değilse
-    (m.get çağrısı) script AttributeError ile ÇÖKER; try bloğu yalnız
-    okuma/parse'ı kapsar. Çöküş düzeltilmeden kilitlenir."""
+def test_json_koku_liste_ise_temiz_mesaj_exit1(izole_dizin):
+    """v0.5.14'te BİLİNÇLİ olarak değiştirildi (B-23): eski karakterizasyon
+    ham AttributeError traceback'ini kilitliyordu. Girdiyi MODEL üretir;
+    traceback 'araç bozuldu' izlenimi verip asıl mesajı kaybediyordu.
+    Aile standardı (temiz mesaj + exit 1) buraya da uygulandı."""
     yol = izole_dizin / "vakia.json"
     yol.write_text("[]", encoding="utf-8")
     kod, out, err = _cli("--dogrula", str(yol))
-    assert kod != 0
-    assert "Traceback" in err
-    assert "AttributeError" in err
+    assert kod == 1
+    assert "Traceback" not in err
+    assert "JSON kökü sözlük değil (list)" in out

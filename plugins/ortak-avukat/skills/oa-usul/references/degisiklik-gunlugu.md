@@ -26,3 +26,67 @@
   hukuk (HMK m.95), idare/vergi (İYUK'ta eski hâle getirme YOK — AY m.40/2,
   m.10, vergi hatasında düzeltme-şikâyet). Olumsuzsa KESİN dille kapatma zorunlu.
 
+
+## v0.5.14 — USUL + NÖBET paketi (denetim bulguları A-3, A-18, A-21, B-9)
+- **[B-9] `usul_matris.py` yeni [G9] kapısı — kesin dilin SÜRE DAYANAĞI.**
+  Motor `son_gun`'e körlemesine güveniyor, şablonda DURAN `sure_kurali` ve
+  `yargi_kolu` alanlarını HİÇ okumadan "kesin dil" izni veriyordu (kasıtlı
+  yanlış son_gun ile koşturulup doğrulandı: kaçırılmamış bir başvuru
+  "KAÇIRILMIŞ (+5 gün)" ilan edildi, boşluk açılmadı, exit 0). Artık
+  `kesin_dil: true` iki alanın DOLU olmasını ister; iki alan da doluysa kural
+  önekiyle yargı kolu arasında **tutarlılık** denetlenir (çelişki → boşluk,
+  exit 1). Script hukuki NİTELENDİRME YAPMAZ: hangi kuralın uygulanacağına
+  karar vermez, hangisinin doğru olduğunu söylemez — yalnız alanlar dolu mu ve
+  birbirini yalanlıyor mu bakar. Tanınmayan önek/kol değeri "bilinmiyor"
+  sayılır ve boşluk üretmez → alanları hiç taşımayan **eski artefaktlar kapıda
+  DÜŞMEZ**. Önek tablosunun kaynağı `oa-sure/scripts/sure_kurallari.json`
+  anahtarlarıdır (hmk_/iik_/cmk_/iyuk_/amme_/aym_).
+- **[A-21] A-4 "kapıları kapat" ↔ ANAYASA m.6 çatışması giderildi.**
+  Adım "kapatma argümanını hazırla ve itirazla BİRLİKTE sun" diyerek m.6'nın
+  preemptive ifşa yasağıyla birebir zıt bir emir veriyordu. Anayasa
+  DEĞİŞTİRİLMEDİ; oa-usul metni ona uyumlu hâle getirildi: **(a) dahili
+  hazırlık** (öngörülen her kapı + kapatma argümanı iç dosyaya, [G2b] bu
+  katmanı denetler) ↔ **(b) sunulan belge** (yalnız karşı tarafın FİİLEN ileri
+  sürdüğü kapının çürütmesi) ayrımı yazıldı; tek istisna **praeoccupatio,
+  yalnız avukat onayıyla** (`oa-dilekce` konvansiyonu); kendi itirazımızın
+  kurucu unsuru olan tespitlerin sunulan metne gireceği sınırı çizildi.
+  KUSUR→SONUÇ→TALEP notu A-4/(b)'ye çapalandı.
+- **[A-3] Kapı Kataloğu'na K-16 — yürütmenin durdurulması (İYUK m.27).**
+  Ailenin tamamında YD tek kelimeyle geçmiyordu. Cetvel §8'e m.27 blokları
+  (f.1 dava açmak yürütmeyi durdurmaz; f.2 iki şart birlikte; **f.4 tahsilat
+  işleminden doğan davada tahsil DURMAZ, ayrıca YD istenir**; f.6 teminat;
+  f.10 aynı sebeple ikinci istem YOK) ve **f.7 yedi günlük, bir defaya mahsus
+  itiraz** işlendi; **m.20/A-2/e ve m.20/B-1/d istisnası** (ivedi yargılama ve
+  merkezî/ortak sınav davalarında YD kararına itiraz EDİLEMEZ) satıra çapalandı.
+  SKILL.md'ye 3.6 geçici koruma nöbeti adımı eklendi.
+  Tümü Mevzuat MCP'den birebir teyitli (2577 m.27, m.20/A, m.20/B).
+- **[A-18] Kapı Kataloğu'na K-17 — vergide düzeltme-şikâyet (VUK).**
+  Yol iki yerde ADIYLA anılıyor ama norm/şart/süre/mercii dördü de yazılı
+  değildi; ailenin kendi standardı her kapı için bu dörtlüyü şart koşuyor.
+  Cetvele §8.a olarak dörtlü kayıtla girdi: **m.116** vergi hatası tanımı
+  (+ m.117-118 hata türleri), **m.122** yazılı düzeltme talebi, **m.124**
+  şikâyet mercii (Bakanlık / il özel idare vergilerinde valilik / belediye
+  vergilerinde belediye başkanlığı), **m.126** düzeltme zamanaşımı (m.114
+  süresi; a-b-c bentlerinde bir yıldan aşağı olamaz). Keskin şart: yol yalnız
+  **vergi hatası** için açıktır, hukuki uyuşmazlıkta kapalıdır — bu ayrım
+  içtihatla teyit edilmeden "açık" ilan edilmez. Mevzuat MCP'den teyitli.
+- **Değişmeyenler (bilinçli):** `--ornek` şablon şeması, [G1]-[G8] metinleri ve
+  exit sözleşmesi (0 temiz / 1 boşluk / 2 kullanım hatası) AYNEN korundu;
+  kırılan mevcut test YOK.
+- **Devir (bu pakete ait değil):** `iyuk_yd_itiraz` kuralı ve
+  `oa-sure/references/sure-cizelgesi.md` m.27 / VUK düzeltme-şikâyet blokları
+  oa-sure paketinde; ANAYASA m.6'ya praeoccupatio istisnasının YAZILMASI
+  `ortak-avukat/references/anayasa.md` sahibinde.
+- **[B-17] KOMŞU PARÇA NOTU (oa-sure/scripts/sure_nobetci.py — aynı pakette
+  infaz edildi):** süre nöbet defterinde düzeltme/silme yolu yoktu; yanlış
+  tebliğ tarihi düzeltilince eski HAYALET süre defterde kalıyor ve gerçek
+  alarmla eşit ağırlıkta `[!!!]` ile listeleniyordu. Çözüm **APPEND-ONLY**:
+  silme YOK — deftere iptal/düzeltme KAYDI eklenir (`--iptal <kimlik>
+  --gerekce "..."`, ya da kaydın kendi `durum`/`iptal` alanı), nöbetçi
+  kapatılan kaydı `[×]` ile DENETİM İZİ olarak gösterir ama SAYMAZ. Her satır
+  artık deterministik `#xxxxxxxx` kimliği taşır; aynı kural için birden çok
+  aktif ve farklı son gün varsa **ÇELİŞKİ ADAYI** uyarısı basılır (`--uets`
+  karine çifti bilinçli olarak çelişki dışıdır). `GEÇMİŞ` alt dizesi ve exit-3
+  sözleşmesi AYNEN korundu (çelişki de aynı DİKKAT sınıfındadır; yeni çıkış
+  kodu İCAT EDİLMEDİ). Bu kalemin `oa-sure/references/degisiklik-gunlugu.md`
+  kaydı **devir** listesindedir (dosya bu paketin sahipliğinde değil).

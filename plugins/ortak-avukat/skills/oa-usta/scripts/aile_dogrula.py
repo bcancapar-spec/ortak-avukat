@@ -47,9 +47,21 @@ def frontmatter(metin):
     return (ad.group(1) if ad else None), desc
 
 
+KULLANIM = "Kullanım: python aile_dogrula.py <aile-kök-dizini>"
+
+
 def main():
+    # B-27 (v0.5.14): `-h/--help` KULLANIM HATASI DEĞİLDİR. Onarım öncesi
+    # bu script 32 script içinde `--help`e exit 1 dönen TEK araçtı (kullanım
+    # metni stderr'e gidiyordu); otomatik keşif yapan üst katman aracı
+    # "bozuk/yok" sayabiliyordu.
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print(KULLANIM)
+        print()
+        print(__doc__.strip())
+        sys.exit(0)
     if len(sys.argv) != 2 or not os.path.isdir(sys.argv[1]):
-        sys.exit("Kullanım: python aile_dogrula.py <aile-kök-dizini>")
+        sys.exit(KULLANIM)
     kok = sys.argv[1]
     hatalar, uyarilar, surumler = [], [], {}
     parcalar = sorted(d for d in os.listdir(kok)

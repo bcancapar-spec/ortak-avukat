@@ -40,20 +40,48 @@ import re
 
 _YN = r"\d{4}\s*/\s*\d{1,6}"
 
-ESAS_RE = re.compile(
-    r"(?:\bE\.\s*(?:No\.?)?\s*[:.]?\s*|\bEsas\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-    r"|(" + _YN + r")\s*(?:\bE\.|\bEsas\b)"
-)
-KARAR_RE = re.compile(
-    r"(?:\bK\.\s*(?:No\.?)?\s*[:.]?\s*|\bKarar\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-    r"|(" + _YN + r")\s*(?:\bK\.|\bKarar\b)"
-)
-ESAS_TAG_RE = re.compile(
-    r"(?:\bE\.\s*(?:No\.?)?\s*[:.]?\s*|\bEsas\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-)
-KARAR_TAG_RE = re.compile(
-    r"(?:\bK\.\s*(?:No\.?)?\s*[:.]?\s*|\bKarar\b\s*(?:No\.?)?\s*[:.]?\s*)(" + _YN + r")"
-)
+# ── B-2 DÜZELTMESİ (v0.5.14) — DESEN KÖRLÜĞÜ ───────────────────────────────
+# Denetim kanıtı (2026-08-31, her satır ayrı koşturuldu): `E. 2020/1111,
+# K. 2021/2222` BLOK ederken `E:2020/1111` · `E: 2020/1111` · küçük harf
+# `esas … karar …` kapıyı AÇIK bırakıyordu (exit 0) — yani halüsinasyonun EN
+# SIK aldığı biçimlerde koruma yoktu. Eski desende (a) `E`den sonra NOKTA
+# ZORUNLUYDU, (b) `re.IGNORECASE` yoktu.
+# Şimdi: nokta OPSİYONEL, `:` ayracı tanınır, uzun biçim (`esas`/`karar`/`no`)
+# BÜYÜK-KÜÇÜK HARF DUYARSIZ. Tek harflik `E`/`K` etiketi BİLİNÇLİ olarak
+# BÜYÜK HARF kalır: `(?i)` verilseydi düz metindeki bağımsız "e"/"k"
+# kelimeleri sayı komşuluğunda gürültü üretirdi (yanlış-BLOK yasağı).
+_KUYRUK = r"\s*\.?\s*(?:(?i:no)\s*\.?)?\s*[:.]?\s*"   # '.', ':', ' ', 'No:' …
+_E_ONEK = r"(?:\bE" + _KUYRUK + r"|(?i:\besas\b)" + _KUYRUK + r")"
+_K_ONEK = r"(?:\bK" + _KUYRUK + r"|(?i:\bkarar\b)" + _KUYRUK + r")"
+_E_SONEK = r"(?:\bE\.|\bE\b|(?i:\besas\b))"           # '2020/1111 E.' | '… E,'
+_K_SONEK = r"(?:\bK\.|\bK\b|(?i:\bkarar\b))"
+
+ESAS_RE = re.compile(_E_ONEK + r"(" + _YN + r")|(" + _YN + r")\s*" + _E_SONEK)
+KARAR_RE = re.compile(_K_ONEK + r"(" + _YN + r")|(" + _YN + r")\s*" + _K_SONEK)
+ESAS_TAG_RE = re.compile(_E_ONEK + r"(" + _YN + r")")
+KARAR_TAG_RE = re.compile(_K_ONEK + r"(" + _YN + r")")
+
+# ── B-2 (v0.5.14) — AYM / AİHM KÜNYELERİ (yapısal körlük) ──────────────────
+# AYM BİREYSEL BAŞVURUDA E./K. YOKTUR: künye `Başvuru Numarası: YYYY/N`
+# biçimindedir (usul: 6216 s. Kanun m.45-49 — MCP `mevzuat_icinde_ara` ile
+# teyit edildi; canlı AYM verisinde künyeler `BB 2015/53` biçiminde döner —
+# MCP `aym_ictihat_ara` ile teyit edildi). `MERCI_RE` "AYM"/"AİHM"i merci
+# olarak TANIYOR ama künyesini asla ayrıştıramıyordu; `oa-dilekce` ise
+# `aym_bireysel` tipini destekliyor — kapı o tipte tamamen kördü.
+AYM_BB_RE = re.compile(
+    r"(?:\bB\s*\.?\s*(?i:no)\s*\.?\s*[:.]?\s*"
+    r"|(?i:\bbaşvuru\s+(?:numarası|no))\s*\.?\s*[:.]?\s*)(" + _YN + r")")
+# AİHM başvuru numarası ters biçimlidir (sıra/yıl — ör. 1234/05). Yalnız
+# İngilizce `Application no.` kalıbı kullanılır; Türkçe "Başvuru No" AYM'ye
+# aittir (yukarıda) — iki desen çakışmaz.
+AIHM_BASVURU_RE = re.compile(
+    r"(?i:\bapplication\s+no)\s*\.?\s*[:.]?\s*(\d{1,6}\s*/\s*\d{2,4})")
+
+# Dilekçenin KENDİ künye bloğu (Denizli 346 karnesinin tek parser
+# yanlış-pozitifi: scriptin kendi `DOSYA NO:` satırını karşı-atıf sanması).
+# TEK KAYNAK burasıdır; `kunye_teyit.py` bu tanımı kullanır.
+KENDI_DOSYA_SATIR_RE = re.compile(
+    r"^\s*[>*\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
 
 MERCI_RE = re.compile(
     r"(?:Yargıtay|Danıştay|Anayasa\s+Mahkemesi|AYM|Sayıştay|Uyuşmazlık\s+Mahkemesi|"
@@ -154,13 +182,40 @@ def _satir_no(metin, konum):
     return metin.count("\n", 0, konum) + 1
 
 
+def _ozel_kunye_atiflari(metin, dolu_spanlar):
+    """B-2 (v0.5.14) — AYM bireysel başvuru + AİHM künyeleri. Esas/karar
+    çiftiyle ÖRTÜŞMEYEN eşleşmeler atıf olarak döner; `karar` alanı None'dır
+    (bu künye türlerinde karar numarası YOKTUR — 6216 s. K. m.45-49 usulü)."""
+    ekler = []
+    for rx, tur in ((AYM_BB_RE, "aym_bb"), (AIHM_BASVURU_RE, "aihm_basvuru")):
+        for m in rx.finditer(metin):
+            if _cakisir((m.start(), m.end()), dolu_spanlar):
+                continue
+            ekler.append({
+                "esas": norm_no(m.group(1)),
+                "karar": None,
+                "daire_key": None,
+                "kunye_turu": tur,
+                "satir_no": _satir_no(metin, m.start()),
+                "metin": _sikistir(m.group(0)),
+                "bas": m.start(), "son": m.end(),
+            })
+    return ekler
+
+
 def esas_karar_atiflari(metin):
     """Belge-geneli çıkarım: her esas'ı en yakın kararla eşler (nearest-pairing);
-    her atıf için {esas, karar, merci, daire_key, satir_no, metin} sözlüğü döner."""
+    her atıf için {esas, karar, merci, daire_key, satir_no, metin} sözlüğü döner.
+
+    v0.5.14 (B-2): sözlüğe İKİ EK ALAN girdi — `kunye_turu`
+    ('esas_karar' | 'aym_bb' | 'aihm_basvuru') ve ham `bas`/`son` ofsetleri.
+    Alanlar EKLEMELİDİR (eski okuyucular etkilenmez); AYM/AİHM künyeleri de
+    artık bu listeye girer."""
     esaslar, kararlar = _esas_karar_ham_cikar(metin)
 
     kullanilan_k = set()
     atiflar = []
+    dolu_spanlar = []
     for (es, ee, eno) in esaslar:
         en_iyi, en_mesafe = None, 61
         for idx, (ks, ke, kno) in enumerate(kararlar):
@@ -182,14 +237,128 @@ def esas_karar_atiflari(metin):
             bas = max(0, bas - 70) + merci_bulunan[0].start()
         ham_kunye = metin[bas:son]
         dkey = daire_key(ham_kunye)
+        dolu_spanlar.append((bas, son))
         atiflar.append({
             "esas": eno,
             "karar": karar_no,
             "daire_key": dkey,
+            "kunye_turu": "esas_karar",
             "satir_no": _satir_no(metin, es),
             "metin": _sikistir(ham_kunye),
+            "bas": bas, "son": son,
         })
+    atiflar.extend(_ozel_kunye_atiflari(metin, dolu_spanlar))
+    atiflar.sort(key=lambda a: a["bas"])
     return atiflar
+
+
+# ── B-2 (v0.5.14) — VARSAYILAN TERS ÇEVRİLDİ: AYRIŞTIRILAMAYAN ATIF BLOKTUR ─
+# Denetim kanıtı: iki uydurma künye taşıyan istinaf taslağı uçtan uca
+# "TESLİME HAZIR" (rc=0) aldı, çünkü kapı künyeyi ayrıştıramayınca "atıf yok"
+# diyor ve AÇILIYORDU (fail-OPEN). Bu ailenin varlık sebebi tam tersidir:
+# mekanik teyit YAPILAMADIYSA kapı KAPANIR. Kapsam DAR tutulur — yanlış-BLOK
+# muhakemeyi engeller (AMAÇ ÇİZGİSİ): tetik, merci anılan bir SATIRDA bir
+# karar iması bulunup o satırdan HİÇ künye çıkarılamamasıdır.
+_KARAR_IMASI_RE = re.compile(
+    r"\d{4}\s*/\s*\d{1,6}"
+    r"|(?i:say[ıi]l[ıi]\s+karar)"
+    r"|(?i:tarih(?:li|inde)?\s+karar)"
+    r"|(?i:g[üu]nl[üu]\s+karar)")
+
+
+def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
+    """Merci anılan ve karar iması taşıyan ama künyesi ÇIKARILAMAYAN satırlar.
+    Döner: [{"satir_no", "metin", "sebep"}, ...] — çağıran bunları TEYİTSİZ
+    sınıfında değerlendirip kapıyı KAPATIR.
+
+    `dolu_satirlar`: üzerinde ZATEN bir atıf ayrıştırılmış satır numaraları
+    (1-index). Verilmezse bu modülün kendi çıkarımından hesaplanır; çağıran
+    (ör. `kunye_teyit.py`) mevzuat atıflarını da kapsayan kendi kümesini
+    geçebilir.
+
+    YANLIŞ-POZİTİF KORUMALARI (üçü birden):
+      1. Satırda ZATEN bir künye ayrıştırıldıysa satır atlanır (tam künyeli
+         '… E. 2020/1111 K. 2021/2222 sayılı kararı' cümlesi tetiklemez).
+      2. Satır dilekçenin KENDİ künye bloğuysa (`DOSYA NO`/`ESAS NO`/`MERCİ`)
+         atlanır — Denizli 346 karnesinin tek parser yanlış-pozitifi.
+      3. Merci VE karar iması AYNI SATIRDA olmalıdır; yalnız merci anmak
+         ('Yargıtay'ın yerleşik içtihadı') hiçbir zaman tetiklemez."""
+    if dolu_satirlar is None:
+        dolu_satirlar = {a["satir_no"] for a in esas_karar_atiflari(metin)}
+    else:
+        dolu_satirlar = set(dolu_satirlar)
+    izler, gorulen = [], set()
+    for satir_no, satir in enumerate(metin.split("\n"), start=1):
+        if satir_no in dolu_satirlar or satir_no in gorulen:
+            continue
+        if not MERCI_RE.search(satir):
+            continue
+        ima = _KARAR_IMASI_RE.search(satir)
+        if not ima:
+            continue
+        if KENDI_DOSYA_SATIR_RE.match(satir):
+            continue
+        gorulen.add(satir_no)
+        izler.append({
+            "satir_no": satir_no,
+            "metin": _sikistir(satir),
+            "sebep": ("merci anılıyor ve karar iması var (%r) ama künye "
+                      "(esas/karar ya da başvuru numarası) ÇIKARILAMADI — "
+                      "mekanik teyit YAPILAMADI" % _sikistir(ima.group(0), 40)),
+        })
+    return izler
+
+
+# ── B-18 (v0.5.14) — MAKİNE ÜRETİMİ KAYNAKÇA BLOĞU: TEK KAYNAK ─────────────
+# `kaynakca_uret.py` taslağın SONUNA işaretli bir blok yazar. O blok avukatın
+# GÖVDE METNİ DEĞİLDİR; denetim kapıları onu kendi girdileri sanınca zincir
+# İDEMPOTANSINI kaybediyordu (denetim kanıtı: aynı komut aynı dosyada
+# `rc=0 → rc=1 → rc=1`; blok içindeki "⚠" işaretini dilekçe denetiminin [C]
+# OCR/alıntı teyidi yakalıyordu). İşaretler ve üretecin kendi önsöz satırları
+# BURADA tanımlanır — üretici de maskeleyici de aynı kaynaktan okur.
+KAYNAKCA_BLOK_BAS = "<!-- kaynakca:v1 -->"
+KAYNAKCA_BLOK_SON = "<!-- /kaynakca -->"
+KAYNAKCA_BASLIK = "## İÇTİHAT KAYNAKÇASI"
+KAYNAKCA_ONSOZ_SATIRLARI = (
+    "Aşağıdaki kararların tamamı tam metinleriyle okunup kütüğe",
+    "damgalanmıştır; erişim linkleri teyit kaydından gelir (bu blok",
+    "Aşağıdaki listede her kararın TEYİT DURUMU ayrıca gösterilmiştir:",
+    "\"⚠ TEYİT EDİLMEDİ\" işaretli künyeler için tam metin teyidi",
+    "YAPILMAMIŞTIR; erişim linkleri yalnız teyit kaydından gelir (bu blok",
+    "`kaynakca_uret.py` tarafından mekanik üretilir — elle yazılmaz).",
+)
+
+_KAYNAKCA_BLOK_RE = re.compile(
+    re.escape(KAYNAKCA_BLOK_BAS) + r".*?" + re.escape(KAYNAKCA_BLOK_SON), re.S)
+
+
+def makine_blogu_maskele(metin):
+    """Makine üretimi kaynakça bloğunun ÜRETECE AİT satırlarını aynı uzunlukta
+    boşlukla değiştirir (ofsetler ve satır numaraları KORUNUR).
+
+    KÖTÜYE KULLANIM KORUMASI: yalnız işaret satırları, blok başlığı, üretecin
+    kendi önsöz satırları ve `- ` ile başlayan künye maddeleri maskelenir.
+    İşaretler arasına elle sokuşturulan DÜZ METİN maskelenmez — kapı, metne
+    yorum işareti yazarak atlatılamaz."""
+    if KAYNAKCA_BLOK_BAS not in metin:
+        return metin
+    parcalar = []
+    son = 0
+    for m in _KAYNAKCA_BLOK_RE.finditer(metin):
+        parcalar.append(metin[son:m.start()])
+        yeni = []
+        for satir in m.group(0).split("\n"):
+            s = satir.strip()
+            uretece_ait = (
+                not s
+                or s in (KAYNAKCA_BLOK_BAS, KAYNAKCA_BLOK_SON, KAYNAKCA_BASLIK)
+                or s.startswith("- ")
+                or s in KAYNAKCA_ONSOZ_SATIRLARI)
+            yeni.append(" " * len(satir) if uretece_ait else satir)
+        parcalar.append("\n".join(yeni))
+        son = m.end()
+    parcalar.append(metin[son:])
+    return "".join(parcalar)
 
 
 def kunye_normalize(kunye_metin):

@@ -32,6 +32,13 @@ Başarı olasılığı **sayı değildir.** "%72 kazanırsınız" demeyiz. Olas�
    - **Fayda:** beklenen kazanım × dürüst olasılık bandı; icra edilebilirlik (karşı tarafta varlık var mı?); emsal değeri.
    - **Aşağı yön:** kaybedilirse karşı vekâlet + yargılama gideri + tahsil edilemeyen alacak.
 5. **Tahsil/icra edilebilirlik gerçeği:** Haklı olmak ≠ tahsil etmek. Karşı tarafın ödeme gücü/malvarlığı yoksa "kazanan" karar kâğıt kalır — bunu kararın önüne koy.
+   **Aynası — idare/vergi kanadı (v0.5.14):** amme alacağında tehlike terstir; bu kez
+   *karşı taraf* değil **müvekkil** tahsilatla karşı karşıyadır. Dava açmak tahsilatı
+   durdurmaz (İYUK m.27/1; tahsilat işlemleri yönünden m.27/4): ödeme emri (6183 m.58)
+   gibi bir tahsilat işlemine karşı dava açılmışsa **yürütmenin durdurulması** ayrıca
+   istenmedikçe e-haciz ve satış yürür. Strateji kararında "davayı açalım" ile
+   "tahsilatı durduralım" AYRI iki karardır; ikincisi istenmezse müvekkile
+   "dava açtık, rahat olun" denemez.
 6. **Öneri + gerekçe + tetik:** net tavsiye, dürüst olasılık bandı, ve "şu olursa şu yola geç" tetikleri (ör. sulh reddedilirse dava; tahsilat çıkmazsa haciz).
 
 ## Aktif çıkarım refleksi

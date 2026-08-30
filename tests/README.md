@@ -1,4 +1,12 @@
-# Test Mimarisi — mühendisler için (1.385 sınama)
+# Test Mimarisi — mühendisler için
+
+<!-- OA-SUIT-SAYISI: 1688 -->
+
+> **Süit büyüklüğünün TEK kaynağı yukarıdaki `OA-SUIT-SAYISI` işaretçisidir.**
+> `tests/test_v0514_vitrin.py` bu sayıyı her koşuda `pytest --collect-only`
+> ile karşılaştırır; ayrıştığı an kırmızı yanar. Test ekleyen/silen, YALNIZ
+> bu satırı günceller — başka hiçbir belgede süit sayısı yazmaz
+> (v0.5.14/B-35: sayı üç ayrı yerde üç ayrı ve üçü de yanlıştı).
 
 > Bu belge, süiti **geliştirici gözüyle** anlatır: desenler, sözleşmeler,
 > koşum kuralları ve yeni test ekleme disiplini. Avukat-dili özet ana
@@ -6,13 +14,13 @@
 
 ## Şekil
 
-- **107 dosya · 1.302 test fonksiyonu · 1.385 koşum** (parametrize
-  varyantlarıyla) · saf `pytest`, harici test bağımlılığı yok.
+- Saf `pytest`, harici test bağımlılığı yok; parametrize varyantlarıyla
+  toplanan sınama sayısı yukarıdaki işaretçidedir.
 - Tam süit ~7 dk (Windows, tek makine). CI: GitHub Actions matrisi —
   **Windows + Ubuntu × Python 3.12/3.13** + ayrı `aile_dogrula` yapısal
   denetimi. Kural: **CI yeşermeden sürüm etiketi atılamaz.**
 - Adlandırma sözleşmesi: `test_vXYZ_*.py` = bir saha karnesinden doğan
-  **sürüm-reçetesi paketi** (~515 test bu sınıftadır). Dosya docstring'i,
+  **sürüm-reçetesi paketi** (süitin en kalabalık sınıfı). Dosya docstring'i,
   paketi doğuran saha kanıtını atıflar — test, gerekçesiz yaşayamaz.
 
 ## Çekirdek desenler

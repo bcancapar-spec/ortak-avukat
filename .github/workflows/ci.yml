@@ -14,6 +14,12 @@ name: CI
 # UDF hattı YALNIZ avukatın kendi makinesinde (oturum açık) ve sahada
 # doğrulanır. `-rs` bayrağı atlananları her koşuda listeler — sessiz atlama YOK.
 #
+# OCR BACAĞI (v0.5.14 / denetim bulgusu B-39): matris koşucularında Tesseract
+# YOKTUR, bu yüzden uçtan uca OCR testleri `test` işinde GÖRÜNÜR gerekçeyle
+# atlanır. Bu bacak artık ayrı bir işte (`ocr`) Ubuntu üzerinde tesseract-ocr
+# + tesseract-ocr-tur kurularak GERÇEKTEN koşar. Yani `test` işinin yeşili
+# "OCR çalışıyor" DEMEZ; onu söyleyen `ocr` işidir.
+#
 # İki iş AYRI tutulur: `yapi` işi `test` işine bağlı DEĞİLDİR. (2026-08-06
 # bulgusu: yapı denetimi pytest'in ARKASINDA bir ADIM olduğu için, testler
 # kırmızıya döndüğü 11 koşu boyunca HİÇ çalışamadı — bir kapı, başka bir
@@ -22,6 +28,11 @@ name: CI
 on:
   push:
     branches: [main, master]
+    # v0.5.14 / B-39: RELEASE KAPISI, release'in KESİLDİĞİ olayda da
+    # ateşlemelidir. Etiket tetiği yokken `v*` push'u CI'yı hiç çalıştırmıyordu
+    # (main push'u yalnız KISMEN telafi ediyordu: etiket başka bir commit'e
+    # atılabilir).
+    tags: ['v*']
   pull_request:
 
 jobs:
@@ -64,3 +75,29 @@ jobs:
 
       - name: Family structure gate (aile yapı denetimi)
         run: python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak-avukat/skills
+
+  ocr:
+    # v0.5.14 / B-39: OCR bacağı hiçbir platformda koşmuyordu — üç uçtan uca
+    # test her koşuda `skipif(TESSERACT_YOK)` ile sessizce atlanıyordu. Ayrı
+    # bir iş (matrisi ve süresini şişirmesin diye tek platform/tek Python) ve
+    # `-rsfE` ile: atlanan varsa GEREKÇESİYLE görünür.
+    name: OCR bacağı (Ubuntu / tesseract-tur)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Tesseract (Türkçe dil paketiyle)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr tesseract-ocr-tur
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest
+
+      - name: OCR testleri (gerçek tesseract ile)
+        run: pytest -rsfE tests/test_oa_ingest_ocr_nobetci.py

@@ -43,11 +43,47 @@ tahkim şartı: yazılılık · tüketici işlemlerinde TKHK'nın emredici içer
 elektronik ortamda kurulan sözleşmede güvenli e-imza/KEP delil rejimi.
 
 ## Geçerlilik denetim merdiveni
+0. **Ehliyet / temsil** — fiil ehliyeti ve ayırt etme gücü (TMK m.9: "Fiil
+   ehliyetine sahip olan kimse, kendi fiilleriyle hak edinebilir ve borç altına
+   girebilir."; m.15: ayırt etme gücü bulunmayan kimsenin fiilleri hukukî sonuç
+   doğurmaz) + tüzel kişide temsil yetkisinin kapsamı (sicil/imza sirküleri,
+   vekâletname). "Ehliyet klozu" YAZILAMAZ — bu bir kloz değil, metnin altındaki
+   katmandır; `sozlesme.json`'da `gecerlilik_katmani.ehliyet_temsil` alanına işlenir.
 1. Emredici hükme aykırılık → kesin hükümsüzlük (kloz veya sözleşme).
 2. Şekil şartı ihlali → geçersizlik (tipe göre tamamı/kısmı).
 3. Genel işlem koşulu (TBK m.20-25) → yazılmamış sayılma + aleyhe yorum.
+   Çıpalar (Mevzuat MCP teyitli): m.21 — karşı tarafa koşulların varlığı hakkında
+   açıkça bilgi verilip içeriğini öğrenme imkânı sağlanmadıkça ve karşı taraf kabul
+   etmedikçe genel işlem koşulları **yazılmamış sayılır**; "sözleşmenin niteliğine ve
+   işin özelliğine yabancı olan" koşullar da yazılmamış sayılır. m.25 — genel işlem
+   koşullarına dürüstlük kurallarına aykırı olarak karşı tarafın aleyhine veya
+   durumunu ağırlaştırıcı nitelikte hükümler **konulamaz**.
+   `gecerlilik_katmani.genel_islem_kosullari` alanına işlenir.
 4. Cezai şartta indirim (TBK m.182/son; tacirler arası istisna bilinci — m.22 TTK
    çıpası, teyitle).
 5. Ahlaka/kişilik haklarına aykırı aşırı bağlayıcılık (kelepçeleme) → kısmi butlan.
+6. **İptal edilebilirlik (hükümsüzlük DEĞİL — bozulabilirlik) ve onun SÜRESİ.**
+   İmzalanmış bir metinde çoğu zaman tek gerçek çıkış yolu budur ve süreye bağlıdır;
+   süre geçerse kloz tartışması anlamsızlaşır. Çıpalar (Mevzuat MCP teyitli):
+   - **İrade sakatlıkları (TBK m.30-39):** esaslı yanılma (m.30 — "Sözleşme kurulurken
+     esaslı yanılmaya düşen taraf, sözleşme ile bağlı olmaz."), aldatma (m.36 — aldatma
+     sonucu sözleşme yapan taraf, yanılması esaslı olmasa bile bağlı değildir; üçüncü
+     kişinin aldatmasında karşı tarafın bilmesi/bilecek durumda olması aranır),
+     korkutma (m.37 — diğerinin veya üçüncü kişinin korkutması sonucu sözleşme yapan
+     taraf bağlı değildir).
+   - **SÜRE (m.39):** yanılma/aldatmayı öğrendiği ya da korkutmanın etkisinin ortadan
+     kalktığı andan başlayarak **bir yıl** içinde sözleşme ile bağlı olmadığını
+     bildirmez veya verdiği şeyi geri istemezse, **sözleşmeyi onamış sayılır**.
+     Onanmış sayılma, aldatma/korkutmada tazminat hakkını ortadan kaldırmaz (m.39/2).
+   - **Aşırı yararlanma (m.28):** edimler arasında açık oransızlık, zarar görenin zor
+     durumda kalmasından veya düşüncesizliğinden ya da deneyimsizliğinden yararlanılarak
+     gerçekleştirilmişse zarar gören, ya sözleşmeyle bağlı olmadığını bildirip edimin
+     geri verilmesini ya da sözleşmeye bağlı kalarak oransızlığın giderilmesini
+     isteyebilir. **SÜRE:** düşüncesizlik/deneyimsizliği öğrendiği; zor durumda kalmada
+     bu durumun ortadan kalktığı tarihten başlayarak **bir yıl** ve her hâlde
+     sözleşmenin kurulduğu tarihten başlayarak **beş yıl**.
+   → Bu basamak tetiklendiği anda süre hesabı `oa-sure` ile (`--tur maddi`) yapılır;
+   başlangıç anı olgu meselesidir ve `oa-vakia` kronolojisinden çıkarılır.
 
-Her basamak `oa-ictihat` ile güncel içtihattan teyit edilerek uygulanır.
+Her basamak `oa-ictihat` ile güncel içtihattan teyit edilerek uygulanır; yukarıdaki
+madde metinleri kullanım anında Mevzuat MCP'den YENİDEN teyit edilir (ezber yasağı).

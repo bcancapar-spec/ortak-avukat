@@ -27,7 +27,18 @@ for _s in (_sys.stdout, _sys.stderr):
 import argparse, importlib.util, json, os, sys
 from datetime import date
 
-ISPAT = {"belgeli","tanik","bilirkisi","karine","ikrar","yemin","ispatsiz"}
+# ── v0.5.14 (B-10 / T5A) — İSPAT KÜMESİ ÜÇE BÖLÜNDÜ ────────────────────────
+# Eski hesap NEGATİF listeye dayanıyordu (`ispat_durumu != "ispatsiz"`): kapalı
+# kümede HİÇ olmayan bir etiket (ör. "video") dolu bir `belge` ile birleşince
+# iddiayı "belgeli" sayıyor ve `ispat_bosluklari` boş çıkıyordu (fail-open).
+# Artık POZİTİF BEYAZ LİSTE geçerlidir:
+#   ISPAT_TAM   → tek başına iddiayı BELGELİ destekleyebilen ispat araçları
+#   ISPAT_KISMI → beyan: kayda geçer, ama tek başına belgeli destek SAYILMAZ
+#   ISPAT       → adı ve rolü DEĞİŞMEDİ (iskelet basımı + geçersiz-etiket denetimi
+#                 tek küme üzerinden çalışmaya devam eder)
+ISPAT_TAM = {"belgeli", "tanik", "bilirkisi", "karine", "ikrar", "yemin"}
+ISPAT_KISMI = {"beyan"}
+ISPAT = ISPAT_TAM | ISPAT_KISMI | {"ispatsiz"}
 
 
 # ── v0.5.8.4 ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi HİÇBİR akış
@@ -92,8 +103,19 @@ def ozne_eslestirme_kur(m):
     return bulgular, None
 
 def iskelet():
-    print("="*68); print("  VAKIA/DELİL MATRİSİ — kronoloji + iddia↔delil eşleme"); print("="*68)
-    print("ispat_durumu değerleri:", ", ".join(sorted(ISPAT)))
+    """v0.5.14 (B-26): STDOUT yalnız GEÇERLİ JSON taşır; banner ve açıklamalar
+    STDERR'e gider. SKILL.md'nin kendi öğrettiği kullanım
+    `--iskelet > _oa/cikti/04-vakia.json` idi ve bugüne kadar sessizce
+    AYRIŞTIRILAMAZ bir dosya üretiyordu (hata bir sonraki adımda çıkıyordu)."""
+    def _not(*a):
+        print(*a, file=sys.stderr)
+
+    _not("="*68); _not("  VAKIA/DELİL MATRİSİ — kronoloji + iddia↔delil eşleme"); _not("="*68)
+    _not("ispat_durumu değerleri:", ", ".join(sorted(ISPAT)))
+    _not("  · ISPAT_TAM   :", ", ".join(sorted(ISPAT_TAM)),
+         "→ dolu `belge` ile iddiayı BELGELİ destekler")
+    _not("  · ISPAT_KISMI :", ", ".join(sorted(ISPAT_KISMI)),
+         "→ kayda geçer, tek başına belgeli destek SAYILMAZ")
     sablon = {
         "taraflar": ["Taraf/özne adı (opsiyonel — yazım varyantları otomatik taranır, v0.5.8.4)"],
         "iddialar": [{"id":"I1","metin":"İspatlanacak maddi iddia — bir cümle"}],
@@ -102,12 +124,12 @@ def iskelet():
             "ozne":"Olayın öznesi/faili (opsiyonel — özne varyant taramasına girer)",
             "belge":"Dayanak belge/delil (sözleşme, ihtarname, tutanak, tanık...) veya boş",
             "destekler":["I1"],
-            "ispat_durumu":"belgeli|tanik|bilirkisi|karine|ikrar|yemin|ispatsiz"
+            "ispat_durumu":"|".join(sorted(ISPAT))
         }]
     }
-    print("\n--- Doldurulacak şablon (JSON) ---")
+    _not("\n--- Doldurulacak şablon (JSON — STDOUT) ---")
     print(json.dumps(sablon, ensure_ascii=False, indent=2))
-    print("\nDoldurduktan sonra: python vakia_matris.py --dogrula vakia.json")
+    _not("\nDoldurduktan sonra: python vakia_matris.py --dogrula vakia.json")
 
 def _parse_tarih(s):
     try: return date.fromisoformat(s)
@@ -118,8 +140,23 @@ def dogrula(path, json_yol=None):
         with open(path, encoding="utf-8") as f: m = json.load(f)
     except Exception as e:
         print(f"❌ JSON okunamadı: {e}"); sys.exit(1)
-    iddialar = {i.get("id"): i.get("metin","") for i in m.get("iddialar",[])}
-    olaylar = m.get("olaylar",[])
+    # v0.5.14 (B-23): kök tipi denetimi. Girdiyi model üretir; kök sözlük
+    # değilse (null / [] / "dize") eski kod ham AttributeError traceback'i
+    # veriyordu ve asıl mesaj kayboluyordu ("araç bozuldu" izlenimi).
+    if not isinstance(m, dict):
+        print(f"❌ JSON kökü sözlük değil ({type(m).__name__}) — vakia_matris "
+              '{"iddialar": [...], "olaylar": [...]} biçiminde bir nesne bekler '
+              "(şablon: --iskelet).")
+        sys.exit(1)
+    _ham_iddia = m.get("iddialar") or []
+    _ham_olay = m.get("olaylar") or []
+    iddialar = {i.get("id"): i.get("metin","") for i in _ham_iddia if isinstance(i, dict)}
+    olaylar = [o for o in _ham_olay if isinstance(o, dict)]
+    # sessiz atlama yasağı: sözlük olmayan kayıtlar düşürüldüyse GÖRÜNÜR olsun
+    bicimsiz = [("iddialar", sum(1 for i in _ham_iddia if not isinstance(i, dict))),
+                ("olaylar", sum(1 for o in _ham_olay if not isinstance(o, dict)))]
+    bicimsiz = [f"{ad}: {n} kayıt sözlük değil — denetime alınmadı"
+                for ad, n in bicimsiz if n > 0]
 
     tarihli, tarihsiz = [], []
     for o in olaylar:
@@ -145,9 +182,14 @@ def dogrula(path, json_yol=None):
     print("\n--- İDDİA ↔ DELİL MATRİSİ ---")
     bos_iddia = []
     matris = []
+    # v0.5.14 (B-10 / T5A): POZİTİF BEYAZ LİSTE. `belgeli` yalnız ISPAT_TAM
+    # etiketli VE dolu `belge` taşıyan destekten doğar; `beyan` (ISPAT_KISMI)
+    # ayrı sayılır ve tek başına iddiayı belgeli YAPMAZ.
+    _d = lambda o: (o.get("ispat_durumu") or "")
     for iid, metin in iddialar.items():
         destek = [o for o in olaylar if iid in (o.get("destekler") or [])]
-        belgeli = [o for o in destek if (o.get("ispat_durumu") or "")!="ispatsiz" and (o.get("belge") or "")]
+        belgeli = [o for o in destek if _d(o) in ISPAT_TAM and (o.get("belge") or "")]
+        kismi = [o for o in destek if _d(o) in ISPAT_KISMI and (o.get("belge") or "")]
         print(f"  [{iid}] {metin}")
         if destek:
             for o in destek:
@@ -155,10 +197,13 @@ def dogrula(path, json_yol=None):
         if not belgeli:
             bos_iddia.append(iid)
             print("       ⚠ İSPAT BOŞLUĞU: bu iddiayı destekleyen belgeli/somut delil yok")
+            if kismi:
+                print("       ↳ yalnız KISMİ destek (beyan) — tek başına belgeli sayılmaz")
         matris.append({
             "iddia_id": iid, "metin": metin,
             "destekler": [o.get("olgu","") for o in destek],
             "belgeli": bool(belgeli),
+            "kismi_destek": bool(kismi),
         })
 
     # 3) Yetim / eşlenmemiş deliller + geçersiz referans
@@ -181,6 +226,7 @@ def dogrula(path, json_yol=None):
     blok("YETİM DELİLLER (hiçbir iddiaya bağlanmamış olgu)", yetim, "!")
     blok("GEÇERSİZ İDDİA REFERANSI", gecersiz_ref, "!")
     blok("GEÇERSİZ ispat_durumu", gecersiz_durum, "!")
+    blok("BİÇİMSİZ KAYIT (sözlük değil — v0.5.14/B-23)", bicimsiz, "!")
 
     # 4) Özne yazım-varyantı taraması (v0.5.8.4 ÖZNE TETİĞİ — advisory,
     # saglikli hesabına GİRMEZ; "öznenin tüm beyanları" sorgusu varyant
@@ -201,8 +247,19 @@ def dogrula(path, json_yol=None):
     print("\n--- ÖZET ---")
     print(f"  İddia: {n_id} | belgeli destekli: {n_destekli} | ispat boşluğu: {len(bos_iddia)}")
     print(f"  Olay: {len(olaylar)} | tarihsiz: {len(tarihsiz)} | yetim: {len(yetim)}")
-    saglikli = not (bos_iddia or tarihsiz or gecersiz_ref or gecersiz_durum)
-    print(">>> Dosya olgu/delil bütünlüğü " + ("TAMAM <<<" if saglikli else "EKSİK — yukarıdakiler kapatılmalı <<<"))
+    # v0.5.14 (B-12): BOŞ GİRDİ AYRI SONUÇ SINIFI. Eskiden `{}` girdisi hiçbir
+    # tespit listesini doldurmadığı için ">>> ... TAMAM <<<" basıyordu:
+    # "0 iddia = kusursuz dosya". Denetlenecek içerik yokluğu, denetimin
+    # GEÇTİĞİ anlamına gelmez. (Exit kodu sözleşmesi DEĞİŞMEZ — dogrula()
+    # içinde sys.exit yoktur; sağlık sinyali çıktıdan/JSON'dan okunur.)
+    denetlenemez = not iddialar and not olaylar
+    saglikli = (not denetlenemez) and not (
+        bos_iddia or tarihsiz or gecersiz_ref or gecersiz_durum or bicimsiz)
+    if denetlenemez:
+        print(">>> Dosya olgu/delil bütünlüğü DENETLENEMEDİ — girdide ne iddia "
+              "ne olay var; boş matris 'TAMAM' sayılmaz <<<")
+    else:
+        print(">>> Dosya olgu/delil bütünlüğü " + ("TAMAM <<<" if saglikli else "EKSİK — yukarıdakiler kapatılmalı <<<"))
     print("="*68)
 
     if json_yol:

@@ -15,9 +15,15 @@ Model hukuku düşünür; bu script analizin BOŞLUKSUZ olduğunu mekanik garant
   G7  Tespit edilen kamu aykırılığı NİTELENMİŞ (iptal/yokluk/süre-işlemez/delil-yasağı),
       içtihatla teyitli ve bir KAPIYA dönüştürülmüş mü?
   G8  Kasıt deseni iddiası BELGESİZ iken metinde "kasıt" dili engellenmiş mi (ihtiyat kilidi)?
+  G9  Kesin dil izni verilen işlemde son_gun'ün DAYANAĞI yazılmış mı ve kendi
+      içinde tutarlı mı (`sure_kurali` + `yargi_kolu` dolu; kural adının öneki
+      beyan edilen yargı kolunu yalanlamıyor)?
 Boşluk varsa adıyla raporlar ve exit(1) — boşluklu usul analizi teslim edilemez.
 
 Süre HESABI bu scriptin işi değildir → oa-sure/hesapla_sure.py (son_gun oradan gelir).
+[G9] de süre HESAPLAMAZ ve HUKUKİ NİTELENDİRME YAPMAZ (hangi kuralın uygulanacağına
+karar vermez): yalnız alanların DOLU ve BİRBİRİYLE TUTARLI olduğuna bakar. Tanınmayan
+kural öneki / yargı kolu değeri "bilinmiyor" sayılır ve boşluk üretmez.
 
 Kullanım:
   python usul_matris.py --ornek > dosya_usul.json     # girdi şablonu
@@ -63,6 +69,94 @@ ORNEK = {
 
 def _d(s): return date.fromisoformat(s) if s else None
 
+
+# ── [G9] süre dayanağı tutarlılık tablosu (v0.5.14 — denetim bulgusu B-9) ────
+# Bu tablo HUKUKİ NİTELENDİRME DEĞİLDİR: `oa-sure/scripts/sure_kurallari.json`
+# anahtarlarının ÖNEK KONVANSİYONUDUR (hmk_*, iik_*, cmk_*, iyuk_*, amme_*,
+# aym_*). Script hangi kuralın uygulanacağına karar vermez; yalnız "kural adı
+# ile beyan edilen yargı kolu birbirini yalanlıyor mu" sorusunu sorar.
+# Önek tabloda YOKSA hüküm verilmez ("bilinmiyor") — eski/özel kanun kuralları
+# kapıda düşmez (CLAUDE.md: eski dosyada alan yoksa script çökmez, "bilinmiyor" der).
+KURAL_ONEK_KOL = {
+    "hmk": {"hukuk"},
+    "iik": {"hukuk"},
+    "cmk": {"ceza"},
+    "iyuk": {"idari"},
+    "amme": {"idari"},
+    "aym": None,   # AYM bireysel başvuru bir yargı KOLU değildir → kol-bağımsız
+}
+# Yargı kolu için kabul edilen yazımlar (eş anlamlı normalizasyon; kapalı küme).
+KOL_ESANLAM = {"hukuk": "hukuk", "adli": "hukuk", "ozel": "hukuk",
+               "ceza": "ceza",
+               "idari": "idari", "idare": "idari", "vergi": "idari"}
+
+
+def _kol_normalize(ham):
+    """(normalize|None, ham) — kapalı küme dışı değer NİTELENDİRİLMEZ."""
+    h = str(ham or "").strip().lower()
+    return KOL_ESANLAM.get(h), h
+
+
+def _kural_kolu(kural):
+    """(izinli_kol_kumesi|None, onek) — önek tanınmıyorsa (None, onek)."""
+    k = str(kural or "").strip().lower()
+    onek = k.split("_", 1)[0] if k else ""
+    if onek in KURAL_ONEK_KOL:
+        return KURAL_ONEK_KOL[onek], onek
+    return None, onek
+
+
+def _g9_denetle(i, iid, ust_kol, bulgular, bosluklar):
+    """[G9] — kesin dil izninin süre DAYANAĞI denetimi (B-9).
+
+    İki dal:
+      (a) `kesin_dil` TALEP EDİLMİŞSE dayanak alanları DOLU olmalıdır;
+      (b) alanlar dolu ama BİRBİRİNİ YALANLIYORSA (kural öneki ↔ yargı kolu)
+          kesin dil talep edilmese de boşluktur — çelişki gerçek çelişkidir.
+    Alanları hiç taşımayan eski artefakt (b) dalını tetikleyemez → kapıda düşmez.
+    """
+    kesin = bool(i.get("kesin_dil"))
+    kural = str(i.get("sure_kurali") or "").strip()
+    kol_ham = i.get("yargi_kolu") if i.get("yargi_kolu") is not None else ust_kol
+    kol, kol_yazim = _kol_normalize(kol_ham)
+
+    if kesin:
+        if not kural:
+            bosluklar.append(
+                f"[G9] {iid}: kesin_dil=true ama 'sure_kurali' BOŞ — son_gun'ün hangi "
+                f"kurala dayandığı belirsiz; kesin dil izni verilemez (oa-sure ile "
+                f"hesapla ve kural adını yaz).")
+        if not kol_yazim:
+            bosluklar.append(
+                f"[G9] {iid}: kesin_dil=true ama 'yargi_kolu' BOŞ (ne işlemde ne üst "
+                f"düzeyde) — süre rejimi belirsizken kesin dil izni verilemez.")
+
+    if not kural or not kol_yazim:
+        return
+
+    izinli, onek = _kural_kolu(kural)
+    if izinli is None:
+        if onek not in KURAL_ONEK_KOL:
+            bulgular.append(
+                f"  {iid}: süre dayanağı '{kural}' — kural öneki tabloda yok, yargı kolu "
+                f"uyumu bilinmiyor (script nitelendirme yapmaz; teyit avukattadır).")
+        return
+    if kol is None:
+        bulgular.append(
+            f"  {iid}: yargı kolu '{kol_yazim}' kapalı küme dışı — kural/kol uyumu "
+            f"bilinmiyor (script nitelendirme yapmaz).")
+        return
+    if kol not in izinli:
+        bosluklar.append(
+            f"[G9] {iid}: süre dayanağı ÇELİŞKİLİ — '{kural}' kuralı ile beyan edilen "
+            f"yargı kolu '{kol_yazim}' birbirini yalanlıyor; script nitelendirme yapmaz, "
+            f"hangisinin doğru olduğunu oa-sure ile teyit edip düzelt "
+            f"(yanlış rejimde hesaplanmış son_gun kesin dille sunulamaz).")
+    else:
+        bulgular.append(
+            f"  {iid}: süre dayanağı '{kural}' ↔ yargı kolu '{kol}' tutarlı "
+            f"(hesap oa-sure'nindir; script yalnız tutarlılığa bakar).")
+
 def _kamu_denetle(i, iid, bulgular, bosluklar):
     aktor = i.get("aktor", "?")
     # G6 — unsur denetimi (her kamu işleminde standart üçlü soru)
@@ -103,6 +197,7 @@ def _kamu_denetle(i, iid, bulgular, bosluklar):
 
 def denetle(v):
     bulgular, bosluklar = [], []
+    ust_kol = v.get("yargi_kolu")
     for i in v.get("islemler", []):
         kim = i.get("taraf"); iid = i.get("id", "?")
         if kim == "kamu":
@@ -124,6 +219,8 @@ def denetle(v):
         if i.get("kesin_dil") and not i.get("teblig_belgeli"):
             bosluklar.append(f"[G4] {iid}: tebliğ BELGESİZ iken kesin_dil=true — yasak; "
                              f"'teyidi kaydıyla' formülüne dön.")
+        # G9 — kesin dilin süre DAYANAĞI: alanlar dolu mu ve tutarlı mı (B-9)
+        _g9_denetle(i, iid, ust_kol, bulgular, bosluklar)
         if durum and durum.startswith("KAÇIRILMIŞ"):
             if kim == "karsi":
                 # G2 — sonuç + kapı kapatma

@@ -66,6 +66,38 @@ python scripts/kiyas_denetim.py _oa/cikti/05-kiyas.json
 Script raporlar: eksik bileşen, vakıaya eşlenmemiş norm unsuru (= boşluk),
 delile bağlanmamış küçük önerme, içtihatsız büyük önerme.
 
+**Norm unsurlara AYRILMAMIŞSA subsumtion denetimi hiç yapılmamıştır** ve bu
+artık **kritik boşluktur** (v0.5.14): "denetim yapılamadı" ile "denetim geçti"
+aynı hükmü üretemez. Aynı şekilde `karsilar` alanı **tanımsız** bir unsura
+işaret eden vakıa yetim sayılır (eskiden ne eşleşiyor ne yetim sayılıyordu —
+tamamen görünmezdi).
+
+### İSPAT YÜKÜ — boşluk her zaman BİZİM eksiğimiz değildir
+İspat yükü, kanunda özel bir düzenleme bulunmadıkça, iddia edilen vakıaya
+bağlanan hukuki sonuçtan **kendi lehine hak çıkaran** tarafa aittir (HMK
+m.190/1; aynı yönde TMK m.6). Bu yüzden karşılanmamış her unsur otomatik
+olarak bizim ispat boşluğumuz değildir. Unsura **opsiyonel** dört alan
+yazılabilir (eski dosyalarda yoksa script çökmez, "bilinmiyor" sayar):
+
+| Alan | Değer |
+|---|---|
+| `ispat_yuku` | kapalı enum: `bizde · karsi_taraf · resen · bilinmiyor` (varsayılan `bilinmiyor`) |
+| `ispat_yuku_kaynak` | yükü kaydıran normun/karinenin çıpası — kullanım anında Mevzuat MCP'den teyit edilir |
+| `curutme_hazirligi` | karşı taraf yükünü yerine getirirse ne yapacağız — **dolu bir liste** |
+| — | `durum` çıktısı artık **dört değerlidir**: `karsilanan_delilli · karsilanan_delilsiz · karsilanmamis · ispat_yuku_karsida` |
+
+**Carve-out ÜÇ ŞARTLIDIR ve fail-CLOSED'dır.** Bir unsur ancak (1)
+`ispat_yuku == "karsi_taraf"` **ve** (2) `ispat_yuku_kaynak` dolu **ve**
+(3) `curutme_hazirligi` boş olmayan bir liste ise kritik boşluk sayılmaz.
+Üçünden biri eksikse eski yol aynen işler (`✗ KARŞILANMAMIŞ` + kritik) ve
+rapor "carve-out VERİLMEDİ" der — **tek token yazarak yeşil satın alınamaz.**
+Enum dışı bir değer script tarafından **yorumlanmaz**: görünür uyarı basılır
+ve `bilinmiyor` sayılır (model kurar, script denetler).
+
+Carve-out verilen unsurlar raporun `### 5. İSPAT YÜKÜ` bölümünde listelenir;
+bu bölüm **⚠ DAHİLİ — DOSYAYA EKLENMEZ / UYAP'A YÜKLENMEZ** filigranlıdır
+(çürütme hazırlığı bizim cephaneliğimizdir, dilekçeye kopyalanmaz).
+
 ### 4. Sonucu kur ve yorumla
 Tatbiki yaz: her unsur karşılandı mı, karşılanmayan varsa sonuç ne (talep reddine mi
 yol açar, ek ispat mı gerekir). Boşlukları açıkça bildir (anayasa: zaafı söyle).

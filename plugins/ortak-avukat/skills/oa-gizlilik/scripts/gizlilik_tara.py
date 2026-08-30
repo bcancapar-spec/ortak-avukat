@@ -51,13 +51,18 @@ import re
 import sys
 
 # --- MUTLAK DENY desenleri (her mod) ---
-# (Kart no ve IBAN ayrıca algoritmik doğrulanır; aşağıya bakınız.)
+# (Kart no Luhn, IBAN mod-97 ile ayrıca doğrulanır; aşağıya bakınız. Doğrulama
+#  yalnız RAPORLAMAYI zenginleştirir — biçim tutuyorsa engel her hâlde sürer.)
 MUTLAK_DENY = [
     ("UYAP login / oturum akışı", re.compile(r"\buyap\b.{0,40}(giri[sş]|login|oturum|parola|[sş]ifre|kullan[ıi]c[ıi])", re.I)),
     ("e-imza / e-mühür / mobil imza", re.compile(r"\b(e[-\s]?imza|e[-\s]?m[üu]h[üu]r|mobil\s?imza|elektronik\s?imza)\b", re.I)),
     ("PIN / parola", re.compile(r"\b(pin\s?kodu?|parola|[sş]ifre|password|passwd)\b\s*[:=]?\s*\S+", re.I)),
     ("API anahtarı / token", re.compile(r"\b(api[_\s-]?key|token|secret|bearer)\b\s*[:=]?\s*[A-Za-z0-9_\-]{8,}", re.I)),
-    ("IBAN", re.compile(r"\bTR\d{2}[\s]?\d{4}[\s]?\d{4}[\s]?\d{4}[\s]?\d{4}[\s]?\d{2}\b")),
+    # B-15 (v0.5.14, P0): Türk IBAN'ı TR + 2 kontrol hanesi + 22 hane = 26
+    # karakterdir. Eski desen TR\d{2} sonrası yalnız 18 hane bekliyordu →
+    # MUTLAK_DENY kuralı GEÇERLİ HİÇBİR Türk IBAN'ında ateşleyemiyordu
+    # (müvekkilin banka hesabı "yeşil" ile dış araca gidebiliyordu).
+    ("IBAN", re.compile(r"\bTR\d{2}(?:[\s]?\d{4}){5}[\s]?\d{2}\b")),
 ]
 
 # Algoritmik doğrulanan güçlü kimlik desenleri (checksum tutarsa güçlü, tutmazsa 'olası')
@@ -133,10 +138,43 @@ def _mersis_gibi(ham):
     return len(hane) == 16 and hane.startswith("0")
 
 
+# ── A-22 (v0.5.14) KÜNYE BEYAZ LİSTESİ ───────────────────────────────────────
+# Doktrin (`references/gizlilik-desenleri.md`) deseni "Esas/Karar no + TARAF
+# BAĞLAMI" diye tanımlıyor; kod ise taraf içermeyen SAF künyede de ASK üretiyor
+# ve kamuya açık bir içtihat atfını hassas veri sayıyordu. Yanlış-pozitif üreten
+# gizlilik kapısı uzun vadede gerçek pozitifi de geçirtir.
+#
+# Kural: bir künye ancak (a) penceresinde YERLEŞİK İÇTİHAT MERCİİ adı varsa ve
+# (b) penceresinde taraf bağlamı YOKSA kamuya açık atıf sayılır. Merci ile
+# nitelenmemiş çıplak künye (müvekkilin kendi esas numarası olabilir) ve ilk
+# derece mahkemesi künyesi beyaz listeye GİRMEZ — fail-closed.
+KUNYE = re.compile(r"\b(?:19|20)\d{2}\s?/\s?\d{1,6}(?:\s*(?:E|K|Esas|Karar)\.?)?\b", re.I)
+ICTIHAT_MERCI = re.compile(
+    r"(Yarg[ıi]tay|Dan[ıi][şs]tay|Anayasa\s+Mahkemesi|\bAYM\b|A[İIiı]HM|"
+    r"B[öo]lge\s+Adliye\s+Mahkemesi|\bBAM\b|B[öo]lge\s+[İIiı]dare\s+Mahkemesi|\bB[İIiı]M\b|"
+    r"Uyu[şs]mazl[ıi]k\s+Mahkemesi|Hukuk\s+Genel\s+Kurulu|Ceza\s+Genel\s+Kurulu|\bHGK\b|\bCGK\b|"
+    r"[İIiı][çc]tihad[ıi]\s+Birle[şs]tirme)", re.I)
+TARAF_BAGLAMI = re.compile(
+    r"\b(davac[ıi]|daval[ıi]|m[üu]vekkil|[şs][üu]pheli|san[ıi][kğ]|m[üu][şs]teki|ma[gğ]dur|"
+    r"kat[ıi]lan|bor[çc]lu|alacakl[ıi]|taraf|vekil|kar[şs][ıi]\s?yan|kimlik)\w*", re.I)
+_KUNYE_PENCERE = 90
+
+
+def _kunye_ayir(metin):
+    """(taraf_baglamli_var, kamuya_acik_var) — künyeleri iki sınıfa ayırır."""
+    taraf, kamuya_acik = False, False
+    for m in KUNYE.finditer(metin):
+        bas = max(0, m.start() - _KUNYE_PENCERE)
+        pencere = metin[bas:m.end() + _KUNYE_PENCERE]
+        if ICTIHAT_MERCI.search(pencere) and not TARAF_BAGLAMI.search(pencere):
+            kamuya_acik = True
+        else:
+            taraf = True
+    return taraf, kamuya_acik
+
+
 # --- Hassas veri desenleri (mod'a göre deny/ask) ---
 HASSAS = [
-    ("Esas/Karar no (taraf bağlamı olabilir)", "zayif",
-     re.compile(r"\b(?:19|20)\d{2}\s?/\s?\d{1,6}(?:\s*(?:E|K|Esas|Karar)\.?)?\b", re.I)),
     ("Sağlık verisi (KVKK m.6 özel nitelikli)", "guclu",
      _BaglamliSaglikDeseni()),
     ("Telefon numarası (kişisel veri — belge-id bağlamı hariç)", "zayif",
@@ -164,6 +202,27 @@ def tckn_gecerli(s):
     if ((sum(d[0:9:2]) * 7) - sum(d[1:8:2])) % 10 != d[9]:
         return False
     return sum(d[0:10]) % 10 == d[10]
+
+
+def iban_gecerli(s):
+    """IBAN mod-97 (ISO 13616) doğrulaması — B-15 (v0.5.14).
+
+    DİKKAT: bu doğrulama ENGELİ GEVŞETMEZ. Biçimi tutan ama checksum'ı tutmayan
+    dizi de MUTLAK_DENY üretir (OCR ile bozulmuş gerçek IBAN kaçmasın —
+    ailenin fail-closed doktrini). Doğrulama yalnız raporlama etiketini
+    zenginleştirmek ve bu modülün dışından çağrılabilmek için vardır.
+    """
+    ham = "".join(c for c in str(s) if c.isalnum()).upper()
+    if not (15 <= len(ham) <= 34) or not ham[:2].isalpha():
+        return False
+    yeni = ham[4:] + ham[:4]
+    sayi = ""
+    for c in yeni:
+        sayi += str(ord(c) - 55) if c.isalpha() else c
+    try:
+        return int(sayi) % 97 == 1
+    except ValueError:
+        return False
 
 
 def luhn_gecerli(s):
@@ -218,6 +277,20 @@ def tara(metin, mod, bilgi=None):
         deny.append(("MUTLAK", "Kart numarası (Luhn geçerli)"))
     elif kart_hit:
         ask.append(("zayif", "Uzun sayı dizisi (olası hesap/kart — teyit)"))
+
+    # A-22: künye ayrımı — kamuya açık yerleşik içtihat künyesi ASK üretmez,
+    # BİLGİ kanalında görünür (exit kodunu etkilemez); taraf bağlamlı ya da
+    # merci ile nitelenmemiş künye eski davranışını AYNEN korur.
+    kunye_taraf, kunye_kamuya_acik = _kunye_ayir(metin)
+    if kunye_taraf:
+        _kayit = ("zayif", "Esas/Karar no + taraf bağlamı")
+        if mod == "strict":
+            ask.append(_kayit)
+        elif bilgi is not None:
+            bilgi.append(_kayit)
+    if kunye_kamuya_acik and bilgi is not None:
+        bilgi.append(("zayif", "Yerleşik içtihat künyesi (kamuya açık atıf — "
+                               "taraf bağlamı yok, beyaz liste)"))
 
     for ad, siddet, pat in HASSAS:
         if pat.search(metin):
