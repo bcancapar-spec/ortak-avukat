@@ -17,3 +17,11 @@
 - **2026-07 (v3.22 — M2-3):** Sürüm işaretçisi ailenin ortak M2-3 entegrasyon sürümüne hizalandı (`aile_dogrula.py` sürüm tutarlılık uyarısını temizlemek için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M4, Paket D):** Yeni bölüm "UNSUR ŞABLONLARI" — dava türü konumlandıktan sonra devreye giren dava-türü unsur listeleri (`references/unsur-sablonlari/`); `oa-vakia`'nın vakıa matrisi bu şablonlarla unsur-bazlı doldurulur, delilsiz unsur DURUM.md'de kırmızı işaretlenir.
+
+## v0.5.13 — MAL KAÇIRMA KAVŞAĞI (tasarrufun iptali şablonu)
+- Yol seçimi (tasarrufun iptali ↔ muvazaa) üç kavşak sorusuyla; İKİ AYRI TARİH
+  EKSENİ tablosu (şüpheli dönem: haciz/aciz/iflastan GERİYE — m.278/279/280 ·
+  hak düşürücü: tasarruftan dava tarihine İLERİ — m.284); geri eksen
+  `hesapla_sure`'a SOKULMAZ (nitelendirme işi). "Karine YOK" damgası üç karine
+  tipi taranmadan basılamaz; olumsuzsa kesin dille kapatılır.
+

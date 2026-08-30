@@ -204,6 +204,19 @@ def main():
     acil = sayac["GECMIS"] + sayac["BUGUN"] + sayac["YAKLASAN"]
     print()
     print(ALT)
+    # v0.5.13 — "SÜRE KAÇTI" NİHAİ RAPOR DEĞİLDİR (pratikçi heyeti, tez 2):
+    # geçmiş süre görülürse tek satırlık işaretçi basılır. Katalog BURADA
+    # DEĞİLDİR (ikiz-liste yasağı): kurtarma kapıları tek kaynakta —
+    # `usul_matris.py` üç kanallı kapı araştırması (G3/G5) + oa-usul
+    # referansında — yaşar; nöbetçi yalnız oraya işaret eder. `GEÇMİŞ`
+    # alt dizesi ve exit-3 sözleşmesi AYNEN korunur.
+    if sayac["GECMIS"]:
+        print("NOT: geçmiş süre HUKUKEN KESİN DEĞİLDİR — süre hiç işlememiş "
+              "olabilir (usulsüz tebliğ; kanun yolu bildiriminin yapılmaması; "
+              "vekil varken asile tebliğ). Kurtarma kapıları yargı koluna göre "
+              "ayrışır ve İSTİSNAİDİR: `usul_matris.py` kapı araştırmasını "
+              "koştur (oa-usul). Araştırma olumsuzsa sonuç kesin dille kapatılır.")
+        print()
     if acil or bozuk:
         parcalar = []
         if sayac["GECMIS"]:

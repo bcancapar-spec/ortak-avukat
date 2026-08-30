@@ -39,6 +39,11 @@
 - **2026-08-13 — v0.5.8.1:** KOMPAKT-KAPANIŞ KURALI bölümü (pipeline şartsız beşli) + dilekce_denetim [K] m.6 cephanelik bekçisi (muhtemel-savunma analizi dilekçede → UYARI).
 - **2026-08-13 — v0.5.8.3 ŞEKİL STANDARDI v2:** Yönetmelik 2646 m.7/m.8 uyarlaması — 4 kenar 42.52pt, satır aralığı 1,5, linkler parantez+11pt (md_udf_html stil + udf_yaz kenar yaması + yerel motor).
 
+## v0.5.13 — dava dilekçesine dava şartı ön-kontrolü
+- Yazımdan ÖNCE: zorunlu arabuluculuk/başvuru kapsamı + son tutanak dosyada mı
+  (yoksa dilekçe kusursuz olsa da dava usulden reddedilir) + harç/gider avansı
+  teyidi. Tutanak tarihi `oa-sure`'a verilir.
+
 ## v0.5.10 — KUSURSUZ UDF: atomik mühür + çift-uzantı (307 karnesi K1)
 - `udf_yaz.py`: ÜRETİM VE MÜHÜR TEK ATOMİK İŞLEM — her başarılı üretimde
   (html2udf / docx2udf / yerel-riskli) `.prov.json` KOŞULSUZ basılır/tazelenir

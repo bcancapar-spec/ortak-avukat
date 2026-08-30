@@ -49,9 +49,9 @@ _GOMULU_KURALLAR = {
     "hmk_cevap":       (2, "hafta", "HMK m.127 — cevap (kural; uzatma ayrı)"),
     "iik_istinaf":     (2, "hafta", "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL)"),
     "iik_sikayet":     (7, "gun", "İİK m.16 — icra mah. şikâyet; kural 7 gün (süresiz haller ayrık)"),
-    "cmk_itiraz":      (7, "gun", "CMK m.268 — itiraz; karar tebliğ/öğrenilmesinden 7 gün"),
-    "cmk_istinaf":     (2, "hafta", "CMK m.273 — istinaf; DİKKAT '7 GÜN' olabilir — TEYİT ET"),
-    "cmk_temyiz":      (2, "hafta", "CMK m.291 — temyiz; DİKKAT '15 GÜN' olabilir — TEYİT ET"),
+    "cmk_itiraz":      (2, "hafta", "CMK m.268 — itiraz; ÖĞRENME gününden iki hafta (MCP teyit 2026-08-27; eski '7 gün' yürürlükte değil)"),
+    "cmk_istinaf":     (2, "hafta", "CMK m.273/1 — istinaf; GEREKÇELİ kararın tebliğinden iki hafta (MCP teyit 2026-08-27)"),
+    "cmk_temyiz":      (2, "hafta", "CMK m.291/1 — temyiz; GEREKÇELİ kararın tebliğinden iki hafta (MCP teyit 2026-08-27)"),
     "iyuk_dava_idare": (60, "gun", "İYUK m.7 — idare mah./Danıştay dava açma"),
     "iyuk_dava_vergi": (30, "gun", "İYUK m.7 — vergi mah. dava açma"),
     "iyuk_istinaf":    (30, "gun", "İYUK m.45 — BİM istinaf"),
@@ -156,9 +156,39 @@ def aralik_icinde_mi(g):
     return date(g.year,*ARA_BASLANGIC) <= g <= date(g.year,*ARA_BITIS)
 def dini_tanimli_mi(y): return str(y) in DINI and len(DINI[str(y)])>0
 
-def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False):
+# v0.5.13 — BAŞLANGIÇ TÜRÜ (pratikçi hakem heyeti tez 1; MCP teyitli gerekçe):
+# aynı dosyada iki farklı başlangıç rejimi yaşayabilir — CMK m.268 itiraz
+# *öğrenme gününden*, m.273/291 istinaf-temyiz *gerekçeli kararın tebliğinden*
+# işler. Bu alan ARİTMETİĞİ DEĞİŞTİRMEZ; hangi olayın süreyi başlattığını
+# çıktıda GÖRÜNÜR kılar (yanlış olaya bağlanan doğru hesap, yanlış hesaptır).
+# Opsiyoneldir: verilmezse davranış birebir eskisi gibidir.
+BASLANGIC_TURLERI = {
+    "teblig": "tebliğ (evrakın usulüne uygun tebliği)",
+    "tefhim": "tefhim (duruşmada yüze karşı açıklama)",
+    "ogrenme": "öğrenme (fiilen öğrenildiği gün)",
+    "olay": "olay/fiil tarihi (maddi hukuk süreleri)",
+    "belirsiz": "BELİRSİZ — iki senaryo hesaplanmalı",
+}
+
+
+def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
+            baslangic_turu=None):
     rapor, uyarilar = [], []
     bas = teblig + timedelta(days=1)
+    if baslangic_turu is not None:
+        anahtar = str(baslangic_turu).strip().lower()
+        if anahtar in BASLANGIC_TURLERI:
+            rapor.append("Başlangıç türü        : %s" % BASLANGIC_TURLERI[anahtar])
+            if anahtar == "belirsiz":
+                uyarilar.append(
+                    "BAŞLANGIÇ BELİRSİZ: süre hangi olaydan işlediği kesin değil "
+                    "— İKİ senaryo ayrı ayrı hesaplanmalı ve plan ERKEN tarihe "
+                    "göre yapılmalıdır (geç senaryoya güvenmek hak kaybettirir).")
+        else:
+            uyarilar.append(
+                "TANINMAYAN BAŞLANGIÇ TÜRÜ: %r — sessizce 'tebliğ' sayılmadı; "
+                "geçerli değerler: %s" % (baslangic_turu,
+                                          ", ".join(sorted(BASLANGIC_TURLERI))))
     rapor.append(f"Tebliğ/öğrenme tarihi : {teblig.isoformat()} ({_gun_adi(teblig)})")
     rapor.append(f"Süre başlangıcı       : {bas.isoformat()} (tebliğ günü sayılmaz)")
     if birim=="hafta":
@@ -451,6 +481,15 @@ def main():
     p.add_argument("--tur", choices=["usul","maddi"], default="usul",
                    help="usul = kanun yolu/başvuru süresi (adli tatil uygulanır); "
                         "maddi = zamanaşımı/hak düşürücü (TBK/TMK/TTK/6183 vb. — adli tatil uygulanmaz)")
+    p.add_argument("--baslangic-turu", dest="baslangic_turu",
+                   choices=["teblig", "tefhim", "ogrenme", "olay", "belirsiz"],
+                   default=None,
+                   help="v0.5.13 — süreyi başlatan OLAYIN türü (opsiyonel; aritmetiği "
+                        "DEĞİŞTİRMEZ, çıktıda görünür kılar). Aynı dosyada iki rejim "
+                        "yaşayabilir: CMK m.268 itiraz ÖĞRENME gününden, m.273/291 "
+                        "istinaf-temyiz GEREKÇELİ KARARIN TEBLİĞİNDEN işler. "
+                        "'belirsiz' verilirse iki senaryo uyarısı düşer ve plan ERKEN "
+                        "tarihe göre yapılır.")
     p.add_argument("--islem", metavar="YYYY-MM-DD",
                    help="Fiilî işlem/başvuru tarihi (özellikle KARŞI TARAF denetimi): hesaplanan son günle "
                         "karşılaştırılır; süre kaçırılmışsa NET ve KESİN tespit üretilir (çalışmaya eklenecek dille)")
@@ -506,7 +545,8 @@ def main():
         miktar,birim = a.sure,a.birim
     else:
         p.error("Ya --kural ver ya da --sure + --birim birlikte ver.")
-    son,rapor,uyarilar = hesapla(teblig,miktar,birim,a.yargi,a.tur,a.adli_tatil_istisna)
+    son,rapor,uyarilar = hesapla(teblig,miktar,birim,a.yargi,a.tur,a.adli_tatil_istisna,
+                                 getattr(a, "baslangic_turu", None))
     # ── E-TEBLİGAT / UETS (7201 m.7/a): ulaşma+5. gün karine senaryosunu çift hesapla ─
     son_karine = None
     if a.uets:

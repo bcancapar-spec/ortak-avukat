@@ -102,7 +102,22 @@ ceza zamanaşımı `oa-sure` ile **deterministik** hesaplanır, `oa-usul` ile de
   esas** yönünden inceler (7499 s.K.). HAGB beraat değildir: sübutu saptar, denetim süresi
   ve sonuçlar doğurur — müvekkil beraat istiyorsa istinaf gerekçelidir.
 - **KYOK'a itiraz:** CMK m.173 — iki hafta, Sulh Ceza Hâkimliği.
-- **İtiraz:** CMK m.268 — kural yedi gün.
+- **⛓ TUTUKLU DOSYA KİPİ (v0.5.13 — pratikçi heyeti):** Tutuklulukta geçen her
+  gün telafisizdir; m.141 tazminatı özgürlüğü geri vermez. Müvekkil tutukluysa:
+  (a) dosya kimliği `_oa` defterine ve oturum açılışına **tutuklu** damgasıyla
+  düşer (her çıktıya banner BASILMAZ — banner enflasyonu ve dilekçeye iç-analiz
+  sızma riski); (b) tahliye talebi/itiraz penceresi süre nöbetine girer;
+  (c) tutukluluğun **periyodik incelemesi** (CMK m.108) takvime alınır;
+  (d) **azami süre "deterministik hesap" DEĞİLDİR** — suç vasfı, uzatma
+  geçerliliği ve kanun yolu evresine bağlı bir *nitelendirme* işidir: çıktı
+  **iki senaryolu** ve "nitelendirme içtihat-teyitli" şerhiyle basılır, tek
+  kesin tarih ASLA yazılmaz. (Periyodik incelemenin tekrar-alanı şema
+  paketine bırakılmıştır — ilk turda tek kayıt olarak işlenir.)
+- **İtiraz:** CMK m.268 — kural **iki hafta** ("kararı öğrendiği günden itibaren";
+  eski "yedi gün" YÜRÜRLÜKTE DEĞİLDİR). **Başlangıç rejimi istinaf/temyizden
+  FARKLIDIR:** itirazda başlangıç *öğrenme günüdür* (m.35: yüze karşı verilen
+  karar açıklanır; hazır bulunamayana tebliğ olunur) — istinaf/temyizde ise
+  *gerekçeli kararın tebliği*. Aynı dosyada iki süreyi tek formülle hesaplama.
 - **Zamanaşımı:** dava (TCK m.66) ve ceza (m.68) zamanaşımı her dosyada taranır.
 
 Süre kuralı **kullanım anında Mevzuat MCP'den teyit** edilir; hafızadan süre üretilmez.
@@ -140,6 +155,9 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **ceza savunmasına** uy
 ```
 1. ALIM        → oa-interview (ceza: hangi suç, hangi evre, suç/olay tarihi, gözaltı/
                  tutukluluk, tebliğ/tefhim tarihi, müvekkil hedefi) + Layer 0 (oa-gizlilik)
+                 ⛓ ZORUNLU İLK SORU: MÜVEKKİL TUTUKLU MU? Cevap EVET ise dosya
+                 "tutuklu dosya" kipine geçer (aşağı bkz.) — bu soru sorulmadan
+                 alım tamamlanmış sayılmaz.
 2. USUL+SÜRE   → oa-usul + oa-sure (kanun yolu / zamanaşımı nöbeti — esastan ÖNCE)
 3. OLGU/DELİL  → oa-vakia (kronoloji + iddia↔delil + çağdaş/sonraki beyan çelişkisi)
                  + oa-illiyet (köprü aktör, üçüncü kişi fiili, yük taşıyan bağ)

@@ -30,6 +30,13 @@
 - **2026-08-07 (v0.5.7 — [G4] KAYNAK-URL TUTARLILIĞI, Denizli 754 sahası):** `ictihat_muhakeme_denetim.py`'ye [G4] eklendi: (a) künye satırının ±1 satır penceresinde görünen http(s) bağlantısı HİÇBİR muhakeme kaydının `**KAYNAK-URL:**` alanıyla örtüşmüyorsa TESLİM ENGELİ (uydurma bağlantı 'teyit edildi' der — çıplak künyeden DAHA KÖTÜ); (b) teyit anında kaydedilmiş bağlantı dilekçeye işlenmemişse görünür UYARI (bloklamaz — araç URL döndürmemişse künye bağlantısız yazılır, uydurulmaz). `MuhakemeKaydi`ya `kaynak_url` alanı (KAYNAK_URL_LINE_RE) eklendi. Saha gerçeği: 754 koşusunda bayat `oa_hafiza` kopyası `--kaynak-url`'i bilmediğinden 11 teyitli karar dilekçeye bağlantısız girmişti — zincirin dilekçe ucu artık mekanik. Testler: `tests/test_kaynak_url_tutarlilik.py` (4).
 - **2026-08-12 — v0.5.8 fork-prova:** [G5] AŞILMIŞ-İÇTİHAT kapısı (LEHE+aşılmış+atıf=BLOK) + tazelik_denetim.py (P6, graft Sources@hash deseni, advisory) + muhur_yaz.py (P1, PROV-O hizalı oa-muhur/1.0; --dogrula sert, yazım zarif-bozulma). Semantica/graft devşirmesi — m.0 protokolü, Can kararları 2026-08-12.
 
+## v0.5.13 — DAHİLİ SIZINTI KAPISI
+- `_dahili_belge_mi` + `_uyap_urunler` süzgeci: dahili filigranı taşıyan iç
+  analiz belgeleri (celse kartı, cephanelik türevleri) dış-çıktı ürünü olarak
+  KOPYALANAMAZ. İkili ürünler (.udf/.pdf/.docx) etkilenmez; okunamayan dosya
+  güvenli tarafa düşer (dışa çıkarılmaz). Gerekçe: pratikçi hakem heyeti tez 4;
+  mühendis M1/M2 daraltması (yeni parça açılmadı — CI'ın 20-skill kapısı korundu).
+
 ## v0.5.12 — İÇTİHAT KAYNAKÇASI (link zinciri tamamlayıcısı)
 - Avukat kuralı (2026-08-27): çalışmaya giren her kararın linki TÜM
   çıktılarda. Yeni `kaynakca_uret.py`: taslaktaki karar künyelerini

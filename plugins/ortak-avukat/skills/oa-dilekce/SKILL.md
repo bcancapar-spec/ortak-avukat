@@ -177,7 +177,7 @@ VEYA kütükteki) aynen uygulanır.
 
 ## Playbook'lar
 
-**Dava dilekçesi** — Zorunlu (HMK m.119): mahkeme; taraflar+TCKN; vekil; konu ve **değer/miktar** (harç/görev/kesinlik); vakıalar (sıra no); deliller (vakıayla eşli); hukuki sebepler; talep; imza. Sık atlanan: dava değeri, delil-vakıa eşlemesi, yetki/görev.
+**Dava dilekçesi** — Zorunlu (HMK m.119): mahkeme; taraflar+TCKN; vekil; konu ve **değer/miktar** (harç/görev/kesinlik); vakıalar (sıra no); deliller (vakıayla eşli); hukuki sebepler; talep; imza. Sık atlanan: dava değeri, delil-vakıa eşlemesi, yetki/görev. **DAVA ŞARTI ÖN-KONTROLÜ (yazımdan önce):** uyuşmazlık zorunlu arabuluculuk/başvuru kapsamındaysa (iş; ticari alacak TTK m.5/A; kira, komşuluk, kat mülkiyeti vb. — kapsam mevzuat teyitli) **son tutanak dosyada mı** ve ek olarak sunuluyor mu? Yoksa dilekçe yazılsa bile dava usulden reddedilir; tutanak tarihi ayrıca `oa-sure`'a verilir (tutanağa bağlı dava pencereleri). Harç ve gider avansı kalemi de aynı ön-kontrolde teyit edilir.
 
 **Cevap dilekçesi** — Zorunlu (HMK m.129): savunma; karşı vakıalar; deliller; **ilk itirazlar** (süresinde sürülmezse düşer); talep. Süre kural olarak iki hafta. İstihkak (İİK m.97/a): **mülkiyet karinesi** ekseni (istihkak savunmasının taşıyıcı eksenlerinden). Sık atlanan: ilk itirazların süresinde sürülmesi; inkâr edilmeyen vakıanın ikrar sayılması.
 

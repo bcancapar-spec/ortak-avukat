@@ -20,3 +20,12 @@
 - **2026-07 (v3.22 — M2-3):** Sürüm işaretçisi ailenin ortak M2-3 entegrasyon sürümüne hizalandı (`aile_dogrula.py` sürüm tutarlılık uyarısını temizlemek için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07 (v3.23 — M3-3, hafif çapa):** Müşteki/iddia akışına İçtihat Muhakeme Zinciri notu eklendi: 6. adımda çekilen destekleyici içtihat, DAMGA=`LEHE`/`ALEYHE-AYIRT` olmadan iddia metnine giremez; G1-G3 mekanik kapıları `oa-kontrol/scripts/ictihat_muhakeme_denetim.py`'dedir.
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
+
+## v0.5.13 — KATILMA ANI (P0, heyet oybirliği · MCP teyitli)
+- CMK m.237 kalemi eklendi: katılma YALNIZ ilk derece kovuşturmasında ve HÜKÜM
+  VERİLİNCEYE KADAR istenebilir; kanun yolunda İSTENEMEZ (m.237/2). Tek istisna:
+  ilk derecede ileri sürülüp reddedilen/karara bağlanmayan istem, kanun yolu
+  başvurusunda AÇIKÇA belirtilmişse incelenir. Duruşma açılır açılmaz öncelikli
+  işlem; süre nöbetine olay-tetikli kırmızı bayrak. Gerekçe: talep edilmemişse
+  müşteki istinaf-temyiz hakkını telafisiz kaybeder.
+

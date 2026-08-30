@@ -32,6 +32,19 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; müvekki
    - **Roller:** müvekkil hangi sıfatla; karşı taraf kim?
    - **Aşama + merci:** hangi aşama, hangi mahkeme/daire, esas no?
    - **SÜRE:** işleyen süre var mı, tebliğ/öğrenme tarihi? (en kritik — `oa-sure`)
+     Süre soruşunda **başlangıç TÜRÜNÜ** de sor: tebliğ mi, **tefhim (duruşmada
+     yüze karşı okuma)** mı, öğrenme mi, olay tarihi mi? Tefhimle işleyen bir
+     sürede "gerekçeli kararı bekleyelim" refleksi sahanın en sık hak kaybı
+     desenidir; belirsizse İKİ senaryo hesaplanır ve **erken tarihe** göre
+     plan yapılır (`oa-sure` — `--baslangic-turu`).
+   - **DAVA ŞARTI — ARABULUCULUK/ZORUNLU BAŞVURU:** uyuşmazlık zorunlu
+     arabuluculuk kapsamında mı (iş uyuşmazlıkları, ticari alacak — TTK m.5/A,
+     kira/komşuluk/kat mülkiyeti vb.)? Kapsamdaysa **son tutanak dosyada mı,
+     tarihi ne?** Tutanak yoksa dava **usulden reddedilir**; tutanak varsa
+     tarihi `oa-sure`'a verilir (ör. işe iade davası penceresi tutanaktan
+     itibaren işler). Anlaşma tutanağı varsa: **yalnız anlaşma kapsamındaki
+     talepler** için dava açılamaz — kapsam dışı kalemler sessizce
+     zamanaşımına yürümesin; kapsam tereddüdünde mevzuat teyidi + avukata sor.
    - **Belgeler:** elde olanlar / eksikler?
    - **Zaaf (dürüst, erken):** karşı tarafın en güçlü kozu; müvekkilin kendi belgelerindeki zayıf nokta?
 3. **Cevaba göre uyarlan ve derinleş — alanı SINIRLAMA.** Gelen cevapları işle, eksik/çelişki/fırsat için **takip soruları** sor. Alan tespitini **belirli dallarla sınırlama**: meseleyi **tüm Türk hukuku** içinde değerlendir ve hangi dal(lar)a dokunduğunu **anlamaya** çalış — bir uyuşmazlık çoğu zaman **birden fazla** hukuk dalını birden ilgilendirir (ör. bir iş ilişkisi aynı anda iş + ticaret + sosyal güvenlik + ceza boyutu taşıyabilir). Olası tüm bağlantılı dalları aç; körlük yaratacak erken daraltmadan kaçın. Alanı `oa-alan` ile birlikte konumla; alana özgü ek sorular için `references/soru-bankasi.md` bir **başlangıç** kaynağıdır, tahdit değil.

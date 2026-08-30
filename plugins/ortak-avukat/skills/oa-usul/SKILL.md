@@ -47,8 +47,37 @@ Bu eş zamanlılık **her pipeline katmanında** geçerlidir: ALIM'daki usul sor
 
 **A) KARŞI TARAF — TAARRUZ (önce bu tarafa bak):**
 1. **Tara:** karşı tarafın usule bağlı her işlem ve eksikliğini çıkar — süreli işlemler (cevap, ilk itiraz, istinaf/temyiz, bilirkişi itirazı, icra itirazı...), dava şartları, harç, temsil/vekâlet, tebligat geçerliliği, dilekçe zorunlu unsurları.
+   **ZORUNLU ARABULUCULUK / ZORUNLU BAŞVURU (dava şartı — atlanmaz):** uyuşmazlık
+   zorunlu arabuluculuk kapsamındaysa (iş uyuşmazlıkları; ticari alacak — TTK
+   m.5/A; kira, komşuluk, kat mülkiyeti vb. — kapsam **kullanım anında mevzuat
+   teyidiyle** belirlenir, ezberden değil) **son tutanağın dosyada olup
+   olmadığı** ilk taranan kalemdir: yoksa dava **usulden reddedilir** (hem
+   kendi dosyamızda sıfırlanacak zaaf, hem karşı tarafta en ucuz kazanım).
+   Tutanak varsa tarihi `oa-sure`'a verilir (işe iade gibi tutanağa bağlı
+   pencereler oradan hesaplanır). Anlaşma tutanağı varsa etkisi **yalnız
+   anlaşma kapsamındaki taleplerle** sınırlıdır; kapsam dışı kalemler için
+   dava yolu açıktır ve zamanaşımı işlemeye devam eder.
 2. **Deterministik denetle:** süre boyutunu `oa-sure --islem` prensibiyle hesapla (tebliğ → son gün → fiilî tarih → KAÇIRILMIŞ/SÜRESİNDE); diğer eksikleri norm unsurlarına eşle.
 3. **Sonuca bağla:** her eksikliğin **usuli sonucunu** ilgili normdan ve içtihattan (`oa-ictihat`) teyit ederek yaz — ret / inkâr sayılma / dinlenmeme / kesinleşme; genelleme yapma.
+3.5. **KENDİ SÜREMİZ KAÇTIYSA — KURTARMA KAPILARI (tek kaynak; v0.5.13):**
+   "Süre geçti" bir nihai rapor DEĞİLDİR: süre hiç işlememiş olabilir (usulsüz
+   tebliğ; vekil varken asile tebliğ; **kanun yolu bildiriminin yapılmaması**).
+   Kapılar **yargı koluna göre** ayrışır — yanlış kola kapı basmak, sistemin
+   kendi mahkûm ettiği "yanlış rejime yeşil" hatasıdır:
+   - **Ceza (CMK):** eski hâle getirme m.40-42 — *kusursuzluk* şartı; kanun
+     yolu hakkı bildirilmemişse kişi **kusursuz sayılır** (m.40/2). Dilekçe
+     **engelin kalkmasından itibaren iki hafta** içinde verilir ve **asıl usul
+     işlemi aynı dilekçeyle birlikte yapılır** (m.41). Kabul kararı kesin, ret
+     kararı itiraza tabidir (m.42). Ayrıca kanun yararına bozma yolu.
+   - **Hukuk (HMK):** eski hâle getirme m.95 vd. (elde olmayan sebep şartı).
+   - **İdare/vergi:** İYUK'ta eski hâle getirme kurumu **YOKTUR** — bu satır
+     idari dosyaya ASLA basılmaz. Bakılacak yerler: **AY m.40/2** (yasa yolu,
+     mercii ve süresinin bildirilmemiş olması), İYUK m.10 başvuru yolu ve
+     vergide **düzeltme-şikâyet** (yalnız *vergi hatası* varsa; hukuki
+     uyuşmazlıkta bu yol kapalıdır — ayrım keskindir).
+   Araştırma **olumsuz** sonuçlanırsa sonuç **kesin dille kapatılır**
+   ("kurtarma kapısı yoktur, süre kesindir") — umut tacirliği yasaktır.
+
 4. **KAPILARI KAPAT (çökertme adımı):** karşı tarafın başvurabileceği kurtuluş kapılarını ÖNGÖR — eski hâle getirme mi diyecek (mazeret unsuru var mı?), tebliğin usulsüzlüğünü mü ileri sürecek (7201 m.32 öğrenme tarihi?), tamamlanabilir eksiklik mi diyecek? Her öngörülen kapı için **kapatma argümanını** (unsur eksikliği, süre, içtihat) hazırla ve itirazla BİRLİKTE sun. Bu, gizli cephanelik değildir — derhâl ileri sürülecek aktif usul itirazının *sağlamlaştırılmasıdır*.
 5. **Çalışmaya ekle — net/kesin dille:** "süresinden sonra", "usulden reddi gerekir", "dinlenemez". **Kesinlik şartı:** tebliğ/işlem tarihi BELGELİ (şerh/mazbata/UYAP) ise kesin dil; değilse "teyidi kaydıyla" + açık uç işareti.
 

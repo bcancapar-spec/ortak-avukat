@@ -35,6 +35,15 @@ sanık yararlanır" karşı kalkanı devreye girmesin.
   silahıdır (tamamlatma + KYOK itirazı + bireysel başvuru ekseni).
 - **Suçtan zarar görenin hakları** (CMK m.234): delil toplanmasını isteme, vekille temsil,
   soruşturma/kovuşturma işlemlerine erişim; **katılma/müdahillik** (m.237–239).
+- **⏰ KATILMA ANI — TELAFİSİZ (m.237):** katılma **yalnız ilk derece mahkemesindeki
+  kovuşturma evresinde ve HÜKÜM VERİLİNCEYE KADAR** istenebilir (m.237/1).
+  **Kanun yolu muhakemesinde katılma isteğinde BULUNULAMAZ** (m.237/2). Tek
+  çıkış kapısı: ilk derecede **ileri sürülüp** reddedilen veya karara
+  bağlanmayan katılma isteği, kanun yolu başvurusunda **açıkça belirtilmişse**
+  incelenir. Sonuç: duruşma açılır açılmaz katılma talebi **öncelikli
+  işlemdir**; talep edilmemiş/karara bağlanmamışsa müşteki istinaf-temyiz
+  hakkını kaybeder. Bu kalem `oa-sure` nöbetine **kırmızı bayrak** olarak
+  girer (tarih değil, olay tetikli: "kovuşturma açıldı → katılma talebi").
 - **İspat yükü iddia makamındadır — müşteki vekili bu yükü BESLER:** delili getirtir, faili
   unsura bağlar, boşluğu kapatır. Yük bizde olmasa da, kuşkunun lehe doğmaması için ispatı
   fiilen güçlendiririz (savunmanın "ispat etmez" pasifliğinin tam tersi).

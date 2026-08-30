@@ -470,6 +470,29 @@ UYAP_MAKBUZ_KOPYA_AD = "teslim-makbuz-KOPYA.json"
 UYAP_KOPYA_DAMGA = "KOPYA — asil: _oa/defter/teslim-makbuz.json"
 
 
+# v0.5.13 — DAHİLİ BELGE FİLİGRANI (pratikçi heyeti tez 4 daraltması):
+# celse kartı / cephanelik gibi İÇ ANALİZ belgeleri müvekkilin en zehirli
+# evrakıdır; tek yanlış ek telafisiz ifşadır. Filigran taşıyan hiçbir dosya
+# dış-çıktı ürünü olarak kopyalanamaz.
+DAHILI_FILIGRAN_DESENI = re.compile(
+    r"DAHİL[İI]\s*[—\-–]\s*DOSYAYA\s+EKLENMEZ|UYAP'?A\s+YÜKLENMEZ", re.I)
+
+
+def _dahili_belge_mi(yol, oku_bayt=2048):
+    """Dosyanın başında dahili filigranı var mı? METİN dosyaları taranır;
+    ikili ürünler (.udf/.pdf/.docx) filigran taşımaz → False.
+    Okunamayan dosya GÜVENLİ TARAFA düşer (True = dışa çıkarma).
+    ASLA fırlatmaz."""
+    try:
+        if str(yol).lower().endswith((".udf", ".pdf", ".docx", ".png", ".jpg",
+                                      ".jpeg", ".tif", ".tiff", ".zip")):
+            return False
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            return bool(DAHILI_FILIGRAN_DESENI.search(f.read(oku_bayt)))
+    except Exception:
+        return True
+
+
 def _uyap_urunler(taslak, udf_cikti, udf_uretildi):
     """A2 — 40-UYAP'a kopyalanacak nihai teslim ürünleri, SABİT sırayla:
     teslim edilen UDF + (varsa) onunla AYNI kök-adlı .pdf/.docx dosyaları
@@ -479,6 +502,8 @@ def _uyap_urunler(taslak, udf_cikti, udf_uretildi):
     if not udf_uretildi or not os.path.isfile(udf_cikti):
         return urunler
     urunler.append(os.path.abspath(udf_cikti))
+    # v0.5.13 — DAHİLİ SIZINTI KAPISI: celse kartı/cephanelik gibi iç analiz
+    # belgeleri dış-çıktı ürünü OLAMAZ (bkz. _dahili_belge_mi).
     kok_ad = os.path.basename(udf_cikti).split(".")[0]
     dizinler = []
     for d in (os.path.dirname(os.path.abspath(udf_cikti)),
@@ -496,7 +521,7 @@ def _uyap_urunler(taslak, udf_cikti, udf_uretildi):
             if not ad.lower().endswith((".pdf", ".docx")):
                 continue
             y = os.path.abspath(os.path.join(dizin, ad))
-            if os.path.isfile(y) and y not in urunler:
+            if os.path.isfile(y) and y not in urunler and not _dahili_belge_mi(y):
                 urunler.append(y)
     return urunler
 
@@ -880,7 +905,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.12"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.13"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):

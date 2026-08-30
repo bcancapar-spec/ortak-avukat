@@ -16,3 +16,11 @@
 - **2026-07:** Çaba/token düsturu GÜNCELLENDİ (Can yönlendirmesi): tasarruf artık HEDEF — ama yalnız mekanik/temsil katmanında ve VERİ-KAYIPSIZ; muhakemede tasarruf edilmez, derinlik/doğrulama/araştırma asla kısılmaz. Aile geneli anayasal güncelleme; deterministik motor: `oa-ingest`.
 - **2026-07 (v3.22 — M2-3):** Sürüm işaretçisi ailenin ortak M2-3 entegrasyon sürümüne hizalandı (`aile_dogrula.py` sürüm tutarlılık uyarısını temizlemek için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
+
+## v0.5.13 — ilk-tur çekirdeğine iki kalem
+- **Süre başlangıç TÜRÜ** sorusu (tebliğ/tefhim/öğrenme/olay; belirsizde iki
+  senaryo + erken tarih esası) — `oa-sure --baslangic-turu` ile eşleşir.
+- **ZORUNLU ARABULUCULUK/BAŞVURU dava şartı** sorusu: kapsam + son tutanak
+  dosyada mı + tarihi (tutanağa bağlı dava pencereleri `oa-sure`'a verilir).
+  Anlaşma tutanağı yalnız kapsamındaki talepler için engeldir.
+

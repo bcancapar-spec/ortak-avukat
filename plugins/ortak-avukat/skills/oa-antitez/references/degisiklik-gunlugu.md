@@ -20,6 +20,13 @@
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M3, Paket D):** `antitez_matris.py`'ye her cephe kaydında `duyulmus` (bool) alanı eklendi — karşı taraf antitezi FİİLEN ileri sürdü mü; yeni `duyulmus_curutmeler()` yardımcı fonksiyonu yalnız DUYULMUŞ+çürütülmüş cepheleri döndürür, `oa-dilekce/scripts/dilekce_denetim.py`'nin [G] ANTİTEZ-CEVAP-ÇAPASI advisory kapısı bunu tüketir (dış/iç ayrımı: hipotetik antitez cephanelikte kalır).
 
+## v0.5.13 — CELSE KARTI (duruşma ürünü; yeni parça DEĞİL)
+- Cephanelikten türetilen tek sayfalık `_oa/cikti/NN-celse-karti.md`: celse
+  hedefleri, beklenen antiteze sözlü karşılıklar, tutanağa geçirilecek beyanlar,
+  istenecek ara kararlar. DAHİLİ filigranı zorunlu (teslim kapısı bunu mekanik
+  dışlar — oa-kontrol v0.5.13). Celse sonrası tutanak karşılaştırması
+  MODEL-DENETİMLİ CHECKLİST'tir, öneri üretir; düzeltme talebi avukatın takdiri.
+
 ## v0.5.8.5 — 2026-08-16
 
 - **A1 TRİYAJ — ALEYHE'nin adresi CEPHANELİKTİR:** SKILL'e yeni bölüm. ALEYHE damgalı her karar cephanelik ürününe (matris / `07-antitez-cephanelik.md`) FİİLEN İŞLENİR — kütükte damgalı durması yetmez. Mekanik ayna: [G6] TERS DENETİMİ (`ictihat_muhakeme_denetim.py`) kütükte son damgası ALEYHE olup cephanelik ürünlerinde (`07-antitez*`) hiç anılmayan kararı "FARKINDALIK KAYBI" uyarısıyla görünür kılar (advisory — bloklamaz).

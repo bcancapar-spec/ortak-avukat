@@ -47,6 +47,20 @@ Sekiz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
 3. **Her saldırıyı çökert:** çürütmeyi yaz; dayanağı `oa-ictihat`'tan **teyitli** çek. Çürütemiyorsan **artık risk** olarak dürüstçe yaz — boş bırakma. **Aleyhe içtihat buraya akar:** `oa-ictihat` müvekkil aleyhine bulduğu kararları bu parçaya devreder; her birini ayırt etme (somut olayla farklılık), aşılmışlık/içtihat değişikliği, dar yorum veya lehe karşı-içtihatla çökert — ve gizli cephanelikte tut (karşı taraf ileri sürmeden sunma). **R3 (İçtihat Muhakeme Zinciri ile köprü):** DAMGA=`ALEYHE` (ayırt edilmemiş) kararlar burada dahili kalır; DAMGA `ALEYHE-AYIRT`'a yalnız karşı tarafın FİİLEN dayandığı/kararda fiilen değerlendirilmiş — yani **DUYULMUŞ** — aleyhe içtihat yükseltilir ve dilekçede ayırt edilerek karşılanır (bkz. `oa-kiyas/references/ictihat-muhakeme-sablonu.md`). Henüz duyulmamış (yalnız hipotetik) aleyhe içtihadı önden ayırt edip sunulan metne yazmak, bu parçanın "sunulmamış antiteze preemptive çürütme yazma" yasağının içtihat-özel görünümüdür.
 4. **Denetle** (`--dogrula`): kör nokta, çürütülmemiş antitez, teyitsiz dayanak kalmasın.
 5. **Dahili sun:** güçlenmiş konum + cephanelikte hazır çürütmeler + yönetilecek artık riskler — yalnızca müvekkile/Can'a, karar-malzemesi olarak. Çürütmeler, karşı taraf ilgili antitezi ileri sürene dek **sunulan belgeye girmez.**
+6. **CELSE KARTI (duruşma varsa — v0.5.13, pratikçi heyeti):** dosya tutanakta
+   kazanılır; diskteki kusursuz analiz duruşma anında işe yaramaz. Duruşma
+   öncesi cephanelikten **tek sayfalık** kart türetilir:
+   `_oa/cikti/NN-celse-karti.md` (ayrı bir skill/parça DEĞİL — bu parçanın
+   çıktısı). İçerik: (a) bu celsedeki 1-3 somut hedef, (b) karşı taraftan
+   beklenen üç antiteze **sözlü** karşılık cümleleri, (c) tutanağa geçirilmesi
+   şart olan beyanlar, (d) talep edilecek ara kararlar.
+   **GİZLİLİK — mutlak:** kart iç analizdir; başına
+   `⚠ DAHİLİ — DOSYAYA EKLENMEZ / UYAP'A YÜKLENMEZ` filigranı konur, teslim
+   paketine ve 40-UYAP dizinine **asla** girmez.
+   **Celse sonrası:** tutanak, kartla karşılaştırılır — bu bir *model-denetimli
+   checklist*tir, mekanik denetim değildir ve yalnız **öneri** üretir
+   ("şu beyan tutanağa geçmemiş görünüyor"). Düzeltme talebi verilip
+   verilmeyeceği **avukatın takdiridir**; sistem otomatik gündem oluşturmaz.
 
 ## Kompozisyon (iki konum)
 - **Erken (durum farkındalığı):** `oa-interview` ön dava teorisini kurar kurmaz, antitezi o teoriye karşı çalıştır — daha ilk etapta karşı tarafın kozlarını gör.

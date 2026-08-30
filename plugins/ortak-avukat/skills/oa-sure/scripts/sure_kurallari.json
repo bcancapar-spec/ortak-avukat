@@ -34,22 +34,22 @@
       "mcp_teyit_tarihi": ""
     },
     "cmk_itiraz": {
-      "miktar": 7,
-      "birim": "gun",
-      "kaynak": "CMK m.268 — itiraz; karar tebliğ/öğrenilmesinden 7 gün",
-      "mcp_teyit_tarihi": ""
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "CMK m.268 — itiraz; ilgililerin kararı ÖĞRENDİĞİ günden itibaren iki hafta (m.35: yüze karşı açıklama; hazır bulunamayana tebliğ). Eski '7 gün' YÜRÜRLÜKTE DEĞİL.",
+      "mcp_teyit_tarihi": "2026-08-27"
     },
     "cmk_istinaf": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "CMK m.273 — istinaf (hükmün tefhim/tebliğinden). DİKKAT: yürürlükteki metin '7 GÜN' olabilir — Mevzuat MCP'den TEYİT ET.",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "CMK m.273/1 — istinaf; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta. (Hazır bulunmayanlara ilişkin f.2, 7499 s.K. ile MÜLGA — tek başlangıç: gerekçeli karar tebliği. Savcı yönünden: kararın başsavcılığa geliş tarihi.)",
+      "mcp_teyit_tarihi": "2026-08-27"
     },
     "cmk_temyiz": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "CMK m.291 — temyiz (hükmün tefhim/tebliğinden). DİKKAT: yürürlükteki metin '15 GÜN' olabilir — Mevzuat MCP'den TEYİT ET.",
-      "mcp_teyit_tarihi": ""
+      "kaynak": "CMK m.291/1 — temyiz; hükmün GEREKÇESİYLE BİRLİKTE TEBLİĞ edildiği tarihten iki hafta (f.2 7499 ile MÜLGA; m.273 ile simetrik).",
+      "mcp_teyit_tarihi": "2026-08-27"
     },
     "iyuk_dava_idare": {
       "miktar": 60,

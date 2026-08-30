@@ -17,3 +17,12 @@
 - **2026-07 (v3.22 — M2-3):** Sürüm işaretçisi ailenin ortak M2-3 entegrasyon sürümüne hizalandı (`aile_dogrula.py` sürüm tutarlılık uyarısını temizlemek için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (P1-11 doktrin 4 kural — ek paket):** A-cephesine KUSUR→SONUÇ→TALEP ASİMETRİSİ notu eklendi: karşı tarafın usul kusuru TESPİT edilir, SONUÇ (ret/inkâr sayılma/dinlenmeme/kesinleşme) yazılır, ama GİDERİLMESİNE yönelik ara karar talebi KURULMAZ; A-4'teki 'kapıları kapat' adımının kendi itirazımızı sağlamlaştırmak olduğu, karşı tarafa onarma imkânı sunmak OLMADIĞI açıkça ayrıştırıldı.
+
+## v0.5.13 — arabuluculuk dava şartı + kurtarma kapıları (tek kaynak)
+- Tarama adımına ZORUNLU ARABULUCULUK kalemi (son tutanak yoksa usulden ret;
+  çift yönlü: kendi zaafımız + karşı tarafta en ucuz kazanım).
+- Yeni 3.5 adımı — KURTARMA KAPILARI kataloğunun TEK KAYNAĞI: ceza (CMK m.40-42,
+  kanun yolu bildirilmemişse kusursuzluk; iki hafta; asıl işlem birlikte),
+  hukuk (HMK m.95), idare/vergi (İYUK'ta eski hâle getirme YOK — AY m.40/2,
+  m.10, vergi hatasında düzeltme-şikâyet). Olumsuzsa KESİN dille kapatma zorunlu.
+

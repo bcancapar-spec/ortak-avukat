@@ -25,6 +25,22 @@
 - **2026-07 (v3.26 — M3-4 hizalama):** Sürüm işaretçisi ailenin M3 faz-sonu ortak hizalama sürümüne (v3.26) taşındı (`aile_dogrula.py` sürüm tutarlılık uyarısını kapatmak için); bu satırın kendisi dışında bu parçada işlevsel bir değişiklik YOKTUR — gerçek içerik değişiklikleri (varsa) yukarıdaki ayrı kayıtlardadır.
 - **2026-07-28 (v0.5.5 — M5, Paket D):** `hesapla_sure.py`'ye yeni `--pencereler <json>` bayrağı — dosyada AYNI ANDA işleyen birden fazla süreyi (`hesapla()` ile aynı deterministik mantık) çözüp `[teblig+1, son_gün]` pencerelerinin PAIRWISE çakışıp çakışmadığını raporlar; `oa-illiyet`'in zaman katmanına girdi sağlar. Önceliklendirme avukat muhakemesidir, script yalnız çakışmayı gösterir.
 
+## v0.5.13 — heyet infazı: başlangıç türü + MCP düzeltmeleri + kurtarma işaretçisi
+- `--baslangic-turu` (teblig|tefhim|ogrenme|olay|belirsiz) — OPSİYONEL, imzanın
+  SONUNDA, aritmetiği DEĞİŞTİRMEZ; "belirsiz"de iki-senaryo + ERKEN tarih uyarısı;
+  tanınmayan değer sessizce yutulmaz. Gerekçe (MCP teyitli 2026-08-27): CMK m.268
+  itiraz ÖĞRENME gününden, m.273/291 istinaf-temyiz GEREKÇELİ KARARIN TEBLİĞİNDEN.
+- **Kural tablosu düzeltmesi (JSON + gömülü fallback birlikte):** cmk_itiraz
+  7 gün → **iki hafta**; cmk_istinaf/temyiz kaynak metinleri 7499 sonrası
+  gerçeğe göre yenilendi (hazır-bulunmayan fıkraları MÜLGA).
+- Çizelge: İİK m.67 (1 yıl) / m.68-68a (6 ay) / m.72 (takip evresine göre teminat)
+  çıpaları; İYUK m.10 (30 gün + 4 ay bekleme + 60 gün geç-cevap) ve m.11
+  (durma + kalan süre) mekaniği; İYUK'ta eski hâle getirme YOK notu;
+  VUK m.107/A (7587 s.K. ile değişik, beşinci gün kuralı).
+- `sure_nobetci.py`: geçmiş süre çıktısına tek satırlık işaretçi — "GEÇMİŞ
+  hukuken kesin değildir, kapı araştırmasını koştur". Katalog burada DEĞİL
+  (ikiz-liste yasağı); `GEÇMİŞ` alt dizesi ve exit-3 sözleşmesi korundu.
+
 ## v0.5.8.5 — 2026-08-16
 
 - **E4a — SÜRE BAĞI (hesap → defter otomatik):** `hesapla_sure.py` artık hesapladığı son günü `<kok>/_oa` varsa `_oa/sureler.json`'a OTOMATİK flag olarak işler (yeni `--kok` bayrağı; kayıt biçimi `oa_hafiza.py sure-flag` şemasıyla birebir — `sure_nobetci.py` aynı defteri okur; İN-PROCESS yazım, subprocess yok). Saha boşluğu buydu: hesap yapılıyor ama deftere elle işleme adımı atlanıyordu — nöbetçi hiç görmüyordu. `--uets` karine senaryosu AYRI kayıt olur (iki son gün de görünür — kayıpsızlık); aynı (son gün + açıklama) çifti tekrar eklenmez (tekrar koşu defteri şişirmez); `--aciklama` ile açıklama verilebilir, `--flagsiz` yalnız-hesap kipine döndürür. Yazım BLOKLAMAZ: defter hatası hesabı düşürmez, açıkça raporlanır; `_oa` yoksa defter İCAT EDİLMEZ (dava kökü değildir — görünür bilgi satırı). event_create/reminder_create yine ÇAĞRILMAZ; dış takvim eşgüdümü avukatta.

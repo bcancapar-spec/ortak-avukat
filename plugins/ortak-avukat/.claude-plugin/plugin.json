@@ -1,6 +1,6 @@
 {
   "name": "ortak-avukat",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "yargi-pro": {

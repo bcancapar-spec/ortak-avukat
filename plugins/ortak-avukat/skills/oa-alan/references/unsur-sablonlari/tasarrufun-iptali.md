@@ -18,3 +18,40 @@ madde numaraları başlangıç ÇIPASIDIR, hafızadan kesinlenmez.
 **Antitez çapası (M3 köprüsü):** karşı tarafın en olası savunması genellikle
 U5'in (ivazsızlık/kötüniyet) çürütülmesi veya U6 (süre) def'idir — `oa-antitez`
 matrisinde "usul" (süre) ve "ispat_delil" cepheleri bu unsurlarla eşlenir.
+
+---
+
+## MAL KAÇIRMA KAVŞAĞI — yol seçimi ve İKİ AYRI TARİH EKSENİ (v0.5.13)
+
+Saha dersi: bu davanın kader anı **tarih aritmetiğidir** ve iki eksen
+birbirine karıştırılırsa dosya ilk celsede düşer.
+
+**A. Yol seçimi — tasarrufun iptali mi, muvazaa (TBK m.19) mı?** İkisi ayrı
+davadır; birinin şartları diğerininkini karşılamaz. Kavşak sorusu üç
+kalemdir ve **her üçü de** cevaplanmadan yol seçilmez:
+1. Elde **aciz belgesi / kesinleşmiş takip** var mı? (İİK yolunun kapısı)
+2. Tasarruf, İİK'nın şüpheli dönem pencerelerine giriyor mu?
+3. İşlem gerçekte hiç yapılmamış (görünüşte) mi — yoksa gerçek ama alacaklıyı
+   zarara sokan bir işlem mi? Birincisi muvazaa, ikincisi iptal davasıdır.
+Yol kapalıysa **kapalı olduğu yazılır**; "her ikisini de açalım" refleksi
+harç/vekâlet riski üretir, tercih gerekçeli yapılır (`oa-strateji`).
+
+**B. İki tarih ekseni — ASLA tek tabloya sıkıştırılmaz.**
+
+| Eksen | Yön | Ne ölçer | Norm çıpası |
+|---|---|---|---|
+| **Şüpheli dönem** | Haciz / aciz / iflastan **GERİYE** | Tasarruf, kritik ana ne kadar yakın yapılmış | İİK m.278, m.279, m.280 |
+| **Hak düşürücü süre** | Tasarruftan dava tarihine **İLERİ** | Dava süresinde mi açılmış | İİK m.284 (beş yıl) |
+
+Geri eksen bir **niteleme** işidir (hangi pencere, hangi karine); ileri eksen
+takvim hesabıdır. **Geri eksen `hesapla_sure`'a sokulmaz** — o motor süre
+aritmetiği içindir; şüpheli dönem değerlendirmesi unsur analizinde kalır.
+İleri eksen (m.284) `oa-sure`'a hak düşürücü süre olarak verilir.
+
+**C. "Karine YOK" damgası üç tip taranmadan basılamaz.** İİK m.278 (ivazsızlık
+/ bariz oransızlık karineleri), m.279 (aciz hâline yakın dönemde yapılan
+belirli işlemler), m.280 (alacaklıyı zarara sokma kastı — özellikle yakınlar
+arası ve bilme unsuru). Üçü tek tek taranıp sonucu yazılmadan olumsuz hüküm
+verilirse, m.280 hattı açıkken müvekkil davadan vazgeçirilmiş olur. Tarama
+sonucu olumsuzsa **kesin dille kapatılır** ("üç karine tipi de taranmıştır;
+şu sebeple uygulanamaz") — belirsiz bırakmak yasaktır.

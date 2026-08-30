@@ -31,6 +31,23 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
 - **İcra mahkemesi kararlarına karşı istinaf: iki hafta** — tebliğden (İİK m.363). Değer/miktar eşiğinin (teyit et — güncel rakam yeniden değerlemeyle değişir) altı kesindir.
 - BAM kararlarının temyizi: İİK m.364 — süre ve eşik ayrıca teyit edilir.
 - İcra takibinde itiraz, şikâyet (m.16 — 7 gün), istihkak (m.96-97) gibi takip-içi süreler dosya bazında ayrı kontrol edilir.
+- **TAKİP GÖVDESİ — üç çıpa (v0.5.13; aynı olaya bağlı iki ayrı süre):** itiraz üzerine
+  alacaklının önünde İKİ yol ve İKİ farklı süre vardır, ikisi de **itirazın alacaklıya
+  tebliği** tarihinden işler:
+  - **İtirazın iptali davası — BİR YIL** (İİK m.67/1). Kaçırılırsa alacak ölmez: genel
+    hükümlere göre dava hakkı saklıdır (icra inkâr tazminatı hakkı düşer). İnkâr
+    tazminatı **talebe bağlıdır** — dilekçede istenmezse re'sen hükmedilmez (asgari
+    oran m.67'de yazılıdır; kullanım anında teyit).
+  - **İtirazın kaldırılması (icra mahkemesi) — ALTI AY** (İİK m.68, m.68/a geçici
+    kaldırma dahil). Yaptırımı ağır: bu süre içinde istenmezse **aynı alacak için
+    yeniden ilâmsız takip yapılamaz** (m.67 yolu açık kalır).
+- **Menfi tespit — takibin evresi sonucu değiştirir (İİK m.72):** takipten **ÖNCE**
+  açılan davada mahkeme, alacağın **%15'inden az olmamak** üzere teminatla **takibin
+  durdurulması** tedbirini verebilir; takipten **SONRA** açılan davada **takip
+  durdurulamaz** — teminat yalnız **icra veznesindeki paranın alacaklıya
+  ödenmemesi** tedbirini sağlar. Dava borçlu lehine biterse takip derhâl durur;
+  alacaklı lehine biterse tedbir kalkar ve zarar teminattan karşılanır. İstirdat
+  için ödeme tarihinden itibaren **bir yıl**.
 
 ### İdari yargı (İYUK 2577)
 - **Dava açma: idare mahkemesi/Danıştay 60 gün; vergi mahkemesi 30 gün** — yazılı bildirimden (İYUK m.7). Özel kanun süreleri saklı (memur disiplin, ihale vb.).
@@ -39,6 +56,26 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
 - Temyiz/istinaf dilekçesi eksikliği: 15 gün (İYUK m.48).
 - **Karar düzeltme: YOK** — 6545 sayılı Kanunla (2014) yeni istinaf rejimi için kaldırıldı. İdari yargıda kanun yolu zinciri: İlk derece → İstinaf (BİM) → Temyiz (Danıştay) → (tüketme sonrası) AYM.
 - İdari başvuru: İYUK m.10 (idari makama başvuru, 30 gün sükût) ve m.11 (üst makama başvuru, dava süresini durdurur).
+- **BAŞVURU ↔ DAVA SÜRESİ MEKANİĞİ (v0.5.13; MCP teyitli):** iki maddeyi ayır —
+  - **m.10 (idari makama yeni istem):** cevap verilmezse **otuz günün** sonunda
+    istek **reddedilmiş sayılır** ve dava açma süresi işler. Cevap kesin
+    değilse beklenebilir, ama **bekleme başvuru tarihinden itibaren dört ayı
+    geçemez**. Süre geçtikten sonra cevap gelirse dava süresi **cevabın
+    tebliğinden itibaren altmış gündür**.
+  - **m.11 (üst makama itiraz):** başvuru, **işlemeye başlamış dava süresini
+    DURDURUR** (kesmez). Otuz gün içinde cevap yoksa zımni ret; ret veya zımni
+    ret hâlinde süre **yeniden işlemeye başlar ve başvuruya kadar geçmiş süre
+    de hesaba katılır** — yani kalan gün hesabıdır, sıfırdan başlamaz.
+  - Pratikte en sık hata: 30 günü 60 sanmak ve m.11'i "kesme" gibi işleyip
+    süreyi sıfırdan saymaktır. Hesap `oa-sure` ile yapılır, kalan gün yazılır.
+- **İYUK'ta eski hâle getirme kurumu YOKTUR** — kaçırılan sürede bakılacak
+  yerler: AY m.40/2 (yasa yolu/mercii/süre bildiriminin yapılmaması), m.10
+  başvuru yolu, vergide düzeltme-şikâyet (yalnız **vergi hatası** varsa).
+- **Vergide e-tebliğ dayanağı: VUK m.107/A** (7201 s.K. m.7/a DEĞİL). Tebliğ,
+  sistemle **muhatabına iletildiği tarihi izleyen beşinci günün sonunda**
+  yapılmış sayılır. Madde **24/6/2026 tarihli 7587 s.K. ile yeniden
+  düzenlenmiştir** — zorunlu mükellef kapsamı ve sistemden çıkış halleri
+  kullanım anında teyit edilir.
 
 ### Anayasa Mahkemesi — bireysel başvuru (6216)
 - **Süre: otuz gün** — başvuru yollarının tüketildiği tarihten; başvuru yolu öngörülmemişse **ihlalin öğrenildiği tarihten** (6216 m.47/5).
