@@ -17,6 +17,35 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.13 — Heyet Kararlarının İnfazı (2026-08-27)
+**Kanıt türü farklı:** bu sürüm bir saha karnesinden değil, **denetimden**
+doğdu — 20 skill dört turdan geçti (7 mesleki denetçi + puanlama · 5 disiplinli
+hukukçu hakem heyeti · 4 pratikçi avukatın tez/antitez düellosu · 3 yazılım
+mühendisinin kod hükmü). Her hukuki iddia Mevzuat MCP'den madde metniyle
+doğrulandı; ajan transkriptleri SHA-256 manifestli arşive mühürlendi.
+**İki gerçek hata düzeltildi:** katılma anı (CMK m.237 — kanun yolunda
+istenemez; ilk derecede hüküm verilinceye kadar) ve itiraz süresi (m.268:
+"7 gün" → **iki hafta**, öğrenme gününden; JSON + gömülü fallback birlikte).
+**Bir hakem tezi teyitte ÇÜRÜDÜ** ve bu da kayda geçti: "istinaf tefhimden
+işler" iddiası m.273/1'in güncel metniyle yıkıldı (f.2, 7499 ile mülga) —
+dosya doğruydu, değiştirilmedi. Ders: düzeltmenin kendisi de teyide tabidir.
+**Yeni:** süre başlangıç türü çatalı (`--baslangic-turu`; belirsizde iki
+senaryo + erken tarih) · "süre kaçtı" mutlak dilinin kırılması + kurtarma
+kapıları kataloğu (yargı koluna göre; İYUK'ta eski hâle getirme YOK) ·
+tutuklu dosya kipi · celse kartı + **dahili sızıntı kapısı** (iç analiz
+belgesi dış çıktıya kopyalanamaz) · zorunlu arabuluculuk dava şartı dört
+adreste · İİK m.67/68/72 + İYUK m.10/11 + VUK m.107/A çıpaları · mal kaçırma
+kavşağı (iki tarih ekseni). Gerekçeli daraltmalar
+[HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md)'de. Süit **1405**.
+
+## v0.5.12 — İçtihat Kaynakçası (2026-08-27)
+**Avukat kuralı:** dilekçeye giren her Yargıtay/Danıştay kararının **kaynak
+linki** tüm çıktılarda görünsün. Taslağın sonuna idempotent kaynakça bloğu
+üretildi; URL **yalnız** muhakeme kaydının teyitli satırından alınır —
+uydurma yasak, linki olmayan künye görünür notla işaretlenir. UDF üretiminden
+önce işlenir, makbuza kaydı düşer. Ayrıca 40-UYAP adının gerekçesi sözlüğe
+(bant başı = giden evrak) ve tüm token ölçümleri repoya girdi. Süit 1394.
+
 ## v0.5.11 — Kit Güvenlik Katmanı (2026-08-26)
 **Saha kanıtı:** 1865 (çok-oturumlu, müdahaleli-yetkili · [KARNE-1865.md](KARNE-1865.md)).
 Kök düşman adlandırıldı: uygulamanın rpm anlık-görüntüsünden bulaşan bayat
@@ -71,7 +100,7 @@ kodlama çökmesi onarımı (P0).
 Temiz kurulum (tek kaynak: GitHub) · oa-ingest v1.5 paralel çıkarım · Okuma
 Ekonomisi (Gate A-G) · İçtihat Muhakeme Zinciri (G1-G3) · working memory
 (`dosya-analiz.md` doğum anı) · dilekçe playbook · anayasa dedup. İlk paket
-57 testle çıktı; bugün 1385.
+57 testle çıktı; bugün 1405.
 
 ---
 *Daha eski tarih öncesi (v0.4.0 ve öncesi) tek-skill dönemidir; bugünkü
