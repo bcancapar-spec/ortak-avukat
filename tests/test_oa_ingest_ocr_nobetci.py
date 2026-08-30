@@ -121,6 +121,36 @@ def _sayfalari_ayikla(md_metni):
 # (A) BİRİM TESTLERİ — Tesseract/PyMuPDF GEREKMEZ
 # ═════════════════════════════════════════════════════════════════════════
 
+
+def _ocr_okunur_font(boyut=40):
+    """OCR fikstürleri için PLATFORMDAN BAĞIMSIZ, okunur boyutta font.
+
+    `arial.ttf` yalnız Windows'ta vardır; Ubuntu CI'da PIL varsayılan bitmap
+    fontuna düşer (~11px) ve tesseract metni HİÇ okuyamaz — sağlıklı sayfa
+    boş sanılır. Bu yardımcı, sırayla bilinen TrueType yollarını dener;
+    hiçbiri yoksa varsayılan fontu ölçekli ister (Pillow >= 10.1).
+    """
+    from PIL import ImageFont
+    adaylar = (
+        "arial.ttf",                                                    # Windows
+        "DejaVuSans.ttf",                                               # PIL yolu
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",              # Debian/Ubuntu
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",                       # Fedora
+        "/Library/Fonts/Arial.ttf",                                     # macOS
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+    )
+    for aday in adaylar:
+        try:
+            return ImageFont.truetype(aday, boyut)
+        except Exception:
+            continue
+    try:
+        return ImageFont.load_default(size=boyut)   # Pillow >= 10.1
+    except TypeError:
+        return ImageFont.load_default()             # son çare (küçük kalır)
+
+
 def test_cop_skor_bos_metin_tavan_dokunur():
     oi = _oi()
     assert oi._cop_skor("") == 1.0
@@ -223,10 +253,7 @@ def test_saglikli_taranan_pdf_gorsel_uretilmez(tmp_path):
     with tempfile.TemporaryDirectory() as kaynak_dizin:   # tmp_path DIŞINDA — yanlışlıkla ingest edilmesin
         img = Image.new("L", (1600, 300), color=255)
         draw = ImageDraw.Draw(img)
-        try:
-            font = ImageFont.truetype("arial.ttf", 40)
-        except Exception:
-            font = ImageFont.load_default()
+        font = _ocr_okunur_font(40)
         metin = "SAGLIKLI TARANMIS ORNEK BELGE METNI BURADA YAZILIDIR VE OKUNABILIR OLMALIDIR"
         draw.text((20, 20), metin, fill=0, font=font)
         png_yol = pathlib.Path(kaynak_dizin) / "kaynak.png"
@@ -271,10 +298,7 @@ def test_karisik_evrakta_yalniz_bos_sayfa_gorsele_girer_saglikli_sayfa_girmez(tm
     with tempfile.TemporaryDirectory() as kaynak_dizin:
         img = Image.new("L", (1600, 300), color=255)
         draw = ImageDraw.Draw(img)
-        try:
-            font = ImageFont.truetype("arial.ttf", 40)
-        except Exception:
-            font = ImageFont.load_default()
+        font = _ocr_okunur_font(40)
         draw.text((20, 20), "IKINCI SAYFA SAGLIKLI OKUNABILIR METIN ICERIR BURADA", fill=0, font=font)
         png_yol = pathlib.Path(kaynak_dizin) / "kaynak2.png"
         img.save(png_yol)
