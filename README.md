@@ -13,10 +13,10 @@
 > devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
 > ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
-**Sürüm:** 0.5.14 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.15 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
-> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.14'e gelen
+> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.15'e gelen
 > geliştirme zinciri **149 gerçek davada** test edildi; bunların **dokuzu**,
 > sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur:
 > (1) ~200 evraklık istinaf dosyasında ek beyan (ilk tam koşu), (2) 214

@@ -17,6 +17,67 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.15 — UDF Yapılı Okuma (2026-08-31)
+**Soru avukattan geldi:** *"ingest sistemimiz udf2md yapıyor muydu?"* Cevap:
+yapıyordu ama **ham** — ZIP → CDATA → düz metin. Metin kaybolmuyordu, **yapı**
+kayboluyordu. 798 gerçek evrakta ölçüldü: 739 tablo ızgarası · 424 iç içe tablo
+· 548 görsel (20,8 MB mühür/imza — **delil**) · 32.593 alan etiketi · **7.316
+veri düğümü** (düz metnin tamamen dışında; %100 kayıp) · 1.004 liste ögesi ·
+1.487 altı çizili · 461 üst/alt bilgi. Bilirkişi hesap tablosunda tutar
+kaleminden kopuyor, dilekçedeki "1., 2., 3." talep sırası düzleşiyordu.
+
+**Çözüm — temiz oda.** Ticari bir üründe aynı işin çözümü olduğu görüldü;
+avukat "yöntemlerinden faydalanalım" dedi. Sınır çizildi: **formatın kuralları
+olgudur, öğrenilebilir; başkasının kodu ifadedir, kopyalanamaz.** Ajanın
+referans olsun diye çıkardığı üçüncü taraf kaynakları karantinaya alındı;
+üretim modülü yalnız avukatın kendi dosyalarındaki ölçümden ve kendi
+sözlerimizle yazılmış şartnameden türedi. Açık kaynak taraması da kararı
+destekledi: en yakın çözüm **lisanssız** bir depoda (= tüm hakları saklı).
+
+**Ölçülen sonuç:** 796/798 dosya (eski hat 787) · görünür karakter kaybı
+**0 / 6.403.940** — CDATA ham baytlardan **bağımsız** yeniden çıkarılarak
+ölçüldü (modülün kendi beyanına güvenilmedi; ilk ölçümün **döngüsel** olduğu
+sınavda yakalanmıştı) · tablo geometrisi **XML gerçeğine karşı 739/739** ·
+regresyon 0 · salt-okuma ihlali 0/798 · ~4 ms/dosya · 75 yeni test.
+
+**İki katmanlı invaryant (avukat kararı).** Önce "hiçbir karakter değişmeyecek"
+dendi; ölçüm gösterdi ki katı okumada bu **796/796 dosyayı bloklar** ve yeni
+hattı öldürür — çünkü hücre içi satır sonunun hücre ayracına dönüşmesi
+tasarımın kendisidir. Avukat "kuralı esnet, önemli olan sonuca en yüksek
+kesinlikle ulaşmak" dedi. Sonuç bir esneme değil, **doğru tanım** oldu:
+**Katman 1 İÇERİK** katı, eşik 0 (bugün 0/6.403.940 ile tutuyor) ·
+**Katman 2 KAP** tanımlı-esnek (belgeli, deterministik, sürüm damgalı).
+*Katılık kaybolmadı, doğru katmana çekildi.*
+
+**Kapıların huyu maliyet asimetrisinden:** üretim kapısı **işaretle-ve-taşı**
+(bloklamak kayıplı hatta düşürür, değer kaybettirir; eksik karakterler
+*kendileriyle* sapma kaydına yazılır — işaretlemek kaybetmek değildir);
+bütünlük kapısı **blokla-ve-onar** (sha uyuşmazlığı güven iddiasını çökertir,
+onarım ise 3,37 sn'de bedava).
+
+**Künye artık makine-teyitli:** UYAP evrağın içinde mahkeme adını, dosya/karar
+numarasını, tarafı **kendisi etiketliyor**; bugüne kadar bunları düz metinden
+regex'le geri buluyorduk — hata payı bizimdi. Beyaz liste **dosya kapsamına**
+göre seçildi (span sayısına göre değil: `makbuzBilgisi` 3.449 span taşır ama
+yalnız 40 dosyada — o bir makbuz tablosudur). `kunye_kaynak: udf-alan`
+provenansı, değerin tahmin değil kaynak beyanı olduğunu söyler.
+
+**INDEX'e `Yapı` sütunu:** `T:n×m` · `V:n` · `G:n` · `İ` — yalnız ayırt edici
+sinyal. İmzalayan personel sicili künyede kalır, **INDEX'e çıkmaz** (INDEX
+dışa en çok sızan artefakttır).
+
+**Determinizm:** aynı girdi + aynı sürüm → bayt-özdeş (hash-seed, ayrı süreç,
+yol bağımsızlığı, CRLF testleriyle kilitli). `icerik_sha256` renderer'dan
+**bağımsızdır** ve sürümler arası sabit kalmalıdır — değiştiği gün
+"kayıpsızlık tanımımız değişti" demektir ve ayrıca gerekçe ister.
+
+**Belge düzeltmesi:** `udf-ic-yapi.md` "ZIP içinde TEK content.xml" diyordu;
+ölçüm 464 dosyada `documentproperties.xml` buldu (UYAP doğrulama kodu +
+imzalayan sicili) — henüz okunmuyor, ayrı kalem olarak sırada.
+
+**Sözleşme korundu:** `evrak_isle` 6'lı demeti bozulmadı; zenginlik 7. kanaldan
+gider — PDF/OCR/DOCX hatlarına hiç dokunulmadı. Süit **1763** (1688'den).
+
 ## v0.5.14 — Denetimin İnfazı: 62 bulgu (2026-08-31)
 **Kanıt türü:** iki bağımsız denetim turu. (1) Ertelenen dört tez kod üzerinde
 planlandı ve planlar adversarial çürütmeden geçirildi; (2) eklentiyi **fiilen

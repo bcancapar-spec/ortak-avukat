@@ -15,6 +15,53 @@
 - **2026-07-28 (v1.7 — P0-9 OCR-NÖBETÇİSİ, saha kanıtı: saha dosyası A'de 60 OCR evrağının 5'i sessizce boş/çöp kalmıştı, ikisi müvekkil delili):** ① Her OCR sayfası boş-eşik (`OCR_BOS_ESIK_KARAKTER_SAYFA`=50 kar/sayfa) + çöp-skor (alfasayısal oran/tek-karakter kelime oranı) ile denetlenir. ② Yetersizse `OCR_RETRY_ADIMLARI` sırasıyla dener: DPI yükselt → PSM değiştir → 180° yönelim — deterministik, şansa bırakılmaz (görüntülerde DPI yükseltme LANCZOS büyütmeyle taklit edilir). ③ Tüm denemelerden sonra da yetersiz kalan sayfalar İÇİN (yalnız o sayfalar — hedefli, "tüm evrak" değil) son denemenin render'ı `_oa/metin/gorsel/<evrak>/pNN.png` olarak yazılır (yazım tek-yazar EBEVEYNDE kalır — `kaydet_evrak`; işçiler PNG baytlarını yalnız BELLEKTE taşır); künyeye `ocr_durum` ("OCR-BOŞ → GÖRSEL İNCELEME GEREK" — YÜKLENEMEDİ DEĞİL, işlendi de DEĞİL, üçüncü sınıf), `ocr_bos_sayfalar`, `gorsel_klasor` alanları + üst seviyede `ocr_bos_evrak` sayacı eklendi. `00-INDEX.md`'ye 🔴 sütunu + özet sayacı + ayrı "OCR-BOŞ" bölümü; `pipeline_kayit.py`'nin `_oa/DURUM.md` türetimine `_ocr_bos_uyarisi` ile aynı kayıtları görünür kılan bir bölüm eklendi. Metin-katmanlı PDF/UDF/DOCX hattı BYTE-ÖZDEŞ kaldı; şema GENİŞLEDİ, geriye dönük UYUMLU; seri==paralel determinizmi ETKİLENMEDİ (disk yazımı yalnız ebeveyn tek-yazar aşamasında). Yeni testler: `tests/test_oa_ingest_ocr_nobetci.py` (10 test: saf kalite-kapısı birim testleri + saha referansındaki gerçek boş sayfaları yakalama + uçtan uca boş/sağlıklı/karışık evrak senaryoları, gerçek Tesseract ile), `tests/test_durum_md.py`'ye 2 yeni test (DURUM.md OCR-BOŞ bölümü var/yok).
 - **2026-08-07 (v0.5.7.1 — pymupdf kanonik ad, CI bulgusu):** yeni pymupdf sürümleri `import fitz` yolunda STDOUT'a deprecation uyarısı basıyor; oa_ingest modül-seviyesi importu pipeline_kayit'e süreç-içi yüklendiğinden hook'ların sessizlik/JSON sözleşmesini kirletiyordu (CI'da 10 hook testi bu yüzden düştü; yeni-pymupdf'li kullanıcıda UserPromptSubmit enjeksiyonunu da bozabilirdi). Düzeltme: `import pymupdf as fitz` öncelikli, eski kurulum için `fitz` fallback (udf_html2pdf.py'de de aynı). ci.yml pytest bayrağı `-rsfE` oldu (yalın -rs, başarısızlık özetini susturuyordu).
 
+## v0.5.15 — UDF YAPILI OKUMA (A paketi)
+
+`.udf` artık HAM değil YAPISI KORUNARAK okunuyor: yeni `scripts/udf_md.py`
+(stdlib-only, ağsız/npx'siz/oturumsuz, UTF-8 guard'lı, `--denetle` komutlu).
+
+**Neden — 798 gerçek evrakta ölçülen kayıp:** 739 tablo ızgarası (3.291 satır,
+11.984 hücre) · 424 iç içe tablo · 548 görsel (20,8 MB mühür/imza — DELİL) ·
+32.593 alan etiketi · **7.316 veri düğümü (düz metnin TAMAMEN dışında — %100
+kayıp)** · 1.004 liste ögesi · 1.487 altı çizili · 461 üst/alt bilgi bloğu.
+
+**Ölçülen sonuç:** 796/798 dosya (eski hat 787) · görünür karakter kaybı
+**0 / 6.403.940** (CDATA ham baytlardan BAĞIMSIZ yeniden çıkarılarak ölçüldü;
+modülün kendi beyanına güvenilmedi) · tablo geometrisi **XML gerçeğine karşı
+739/739**, iç içe 424/424 · regresyon: eski hattın çıkardığı metni kaybeden
+dosya 0 · salt-okuma ihlali 0/798 · ~4 ms/dosya.
+
+**Dürüst sınır:** kayıpsızlık *görünür metin* içindir. Birebir boşluk sadakati
+YOKTUR ve tasarım gereği olamaz (hücre içi satır sonu → hücre ayracı). Doğru
+ifade: "görünür metnin tamamı, sırası bozulmadan korunuyor."
+
+**İki katmanlı invaryant (avukat kararı):** Katman 1 İÇERİK katı, eşik 0
+(bugün 0/6.403.940 ile tutuyor); Katman 2 KAP tanımlı-esnek (belgeli,
+deterministik, sürüm damgalı). Katılık kaybolmadı, doğru katmana çekildi.
+
+**Yeni künye alanları:** `format_id` · `imzali` · `tablo`/`tablo_en_genis` ·
+`veri_dugumu` · `gorsel` · `liste_ogesi` · `ustbilgi_altbilgi` ·
+`birlesik_hucre_satiri` · `yapi_uyarilari` · **`udf_kunye`** (UYAP'ın kendi
+etiketlediği künye çekirdeği) + **`kunye_kaynak: udf-alan`** provenansı ·
+`udf_modul_surum` · **`icerik_sha256`**.
+
+Beyaz liste SPAN sayısına göre değil **DOSYA KAPSAMINA** göre seçildi:
+`makbuzBilgisi` 3.449 span taşır ama yalnız 40 dosyada (o bir makbuz
+tablosudur, künye değil); `il_Ilce` 442, `mahkemeAdi` 410 dosyada geçer.
+
+**INDEX'e `Yapı` sütunu:** `T:n×m` (tablo/en geniş) · `V:n` (veri kaydı) ·
+`G:n` (görsel) · `İ` (e-imzalı). Yalnız AYIRT EDİCİ sinyal yazılır; alan
+sayısı yazılmaz (her evrakta var, yönlendirme değeri sıfır). İmzalayan
+personel sicili künyede kalır, **INDEX'e çıkmaz** (Layer 0: INDEX dışa en çok
+sızan artefakttır).
+
+**Sözleşme korundu:** `evrak_isle` 6'lı demeti bozulmadı; zenginlik 7. kanaldan
+gider (`_yedi()` normalizasyonu) — PDF/OCR/DOCX hatlarına hiç dokunulmadı.
+
+**Determinizm:** aynı girdi + aynı sürüm → bayt-özdeş (hash-seed ve ayrı-süreç
+testleriyle kilitli). `icerik_sha256` renderer'dan BAĞIMSIZDIR ve sürümler
+arası SABİT kalmalıdır — değiştiği gün "kayıpsızlık tanımı değişti" demektir.
+
 ## v0.5.8.4 — 2026-08-15
 
 - **Gate A dirilişi (oa_ingest v1.7.1 — iki saha ölçümü: binlerce md'ye karşı 0 harita):** kök neden — harita üretimi yalnız çıkarım (önbellek-MISS) yolundaki md_yaz'a bağlıydı; v1.6 öncesi motorla ingest edilmiş korpusta imza (mtime+size) değişmediğinden her koşu %100 HIT oluyor, Gate A o korpusta sonsuza dek ölü kalıyordu. Onarım: FAZ C sonrası `_gate_a_uygula` HER kaydın `buyuk`/`harita` (+eksikse `tur_tahmini`) alanını karakterden yeniden türetir; eşiği aşan kaydın eksik `.harita.json`u üretilmiş .md'den BYTE-ÖZDEŞ geri üretilir (`_md_metin_geri_oku`). `buyuk_esik`/`buyuk_evrak` artık her künyede; onarım önbellek nesnelerine de işler (eski korpus kendini onarır); saf+deterministik — seri==paralel korunur, küçük evrakta ek maliyet yok.

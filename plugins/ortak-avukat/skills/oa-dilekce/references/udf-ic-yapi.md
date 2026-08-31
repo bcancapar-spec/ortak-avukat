@@ -7,6 +7,15 @@
 
 ## 1. Dosya anatomisi — UDF bir ZIP içinde tek XML'dir
 
+> **DÜZELTME (v0.5.15 — 798 gerçek evrakta ölçüldü).** Aşağıdaki "tek
+> `content.xml`" tarifi EKSİKTİR. Ölçüm: 787 dosyada `content.xml`, **567'sinde
+> imza dosyası**, **464'ünde `documentproperties.xml`**. Sonuncusu iki anahtarlı
+> bir `java.util.Properties` XML'idir ve **UYAP doğrulama kodu** ile
+> **imzalayan personel sicilini** taşır — künye/makbuz denetimi için doğrudan
+> kullanılabilecek makine-okunur bir tanıktır ve hattımız onu HENÜZ okumuyor
+> (ayrı kalem olarak sırada). Ayrıca 8 dosya ZIP kabuğu bile taşımaz: çıplak
+> `content.xml`'dir ve `udf_md` bunları kurtarır.
+
 ```
 dilekce.udf  (ZIP arşivi)
 └── content.xml          ← belgenin tamamı; UTF-8 XML

@@ -622,29 +622,143 @@ def goruntu_isle(yol, opts, tmp):
     return metin, "OCR(goruntu)", True, n, None, []
 
 
-def udf_isle(yol):
+_UDF_MD_ONBELLEK = []
+
+
+def _udf_md():
+    """Kardeş `udf_md.py` modülünü İN-PROCESS yükler (npx/ağ/oturum YOK).
+
+    Tembel: yalnız ilk `.udf` görüldüğünde yüklenir; PDF-only külliyatta
+    hiç maliyeti olmaz.
+    """
+    if _UDF_MD_ONBELLEK:
+        return _UDF_MD_ONBELLEK[0]
+    import importlib.util
+    yol = os.path.join(os.path.dirname(os.path.abspath(__file__)), "udf_md.py")
+    spec = importlib.util.spec_from_file_location("oa_udf_md", yol)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    _UDF_MD_ONBELLEK.append(m)
+    return m
+
+
+# ── A PAKETİ (v0.5.15): UDF ALAN ETİKETLERİ → KÜNYE ÇEKİRDEĞİ ─────────────
+# UYAP, evrağın içinde mahkeme adını/dosya no'yu/tarafı KENDİSİ etiketler
+# (`<field fieldName="...">`). Bugüne kadar bunları düz metinden regex/sezgiyle
+# geri buluyorduk — hata payı bizimdi. Artık kaynaktan makine-teyitli alınır.
+#
+# Beyaz liste SPAN SAYISINA göre değil DOSYA KAPSAMINA göre seçildi (798 gerçek
+# evrakta ölçüldü). Fark kritik: `makbuzBilgisi` 3.449 span taşır ama yalnız
+# 40 dosyada görülür — o bir makbuz TABLOSUdur, künye değil. `il_Ilce` ise
+# 442 dosyada geçer. Künye kimliği "çok tekrarlayan" değil "çok dosyada olan"
+# alandır.
+UDF_KUNYE_ALANLARI = {
+    "mahkemeAdi":              "mahkeme",        # 410 dosya
+    "il_Ilce":                 "yer",            # 442 dosya
+    "dosyaNo":                 "dosya_no",       # 353 dosya
+    "kararNo":                 "karar_no",       # 307 dosya
+    "kararTarihi":             "karar_tarihi",   # 137 dosya
+    "sucTuru":                 "suc_turu",       # 255 dosya
+    "davaTuru":                "dava_turu",      #  50 dosya
+    "sanikAdiSoyadi":          "sanik",          # 204 dosya
+    "tarafAdiSoyadi":          "taraf",          #  85 dosya
+    "kesinlesTuru":            "kesinlesme",     # 161 dosya
+    "ilgiliIstinafDairesiAdi": "istinaf_dairesi",# 136 dosya
+}
+
+
+def _udf_kunye_cekirdegi(alan_sozlugu):
+    """UDF alan etiketlerinden künye çekirdeğini süz.
+
+    Değer HAFIZADAN üretilmez, DÜZELTİLMEZ, normalize EDİLMEZ — kaynakta ne
+    yazıyorsa o. Provenans `kunye_kaynak: udf-alan` olarak damgalanır ki
+    `oa-kontrol` bu değerin regex tahmini değil kaynak beyanı olduğunu bilsin.
+    """
+    if not isinstance(alan_sozlugu, dict):
+        return {}
+    cikan = {}
+    for ham_ad, kanonik in UDF_KUNYE_ALANLARI.items():
+        degerler = alan_sozlugu.get(ham_ad)
+        if not degerler:
+            continue
+        if isinstance(degerler, str):
+            degerler = [degerler]
+        # Tekrarları sırayı BOZMADAN ele (aynı alan sayfa başlıklarında yinelenir)
+        gorulen, tekil = set(), []
+        for d in degerler:
+            d = (d or "").strip()
+            if d and d not in gorulen:
+                gorulen.add(d)
+                tekil.append(d)
+        if tekil:
+            cikan[kanonik] = tekil[0] if len(tekil) == 1 else tekil
+    return cikan
+
+
+def _yapi_hucre(k):
+    """INDEX 'Yapı' sütunu — SEÇİCİ OKUMANIN SEÇİM ANINDA lazım olan sinyal.
+
+    Yalnız AYIRT EDİCİ olan yazılır; her evrakta bulunan şey (alan sayısı
+    gibi) yazılmaz — INDEX'i şişirir, yönlendirme değeri sıfırdır.
+      T:n×m  → n tablo, en genişi m sütun   (hesap raporunu ele verir)
+      V:n    → n satır CDATA-dışı veri kaydı (makbuz/reddiyat — 95/798 dosya)
+      G:n    → n gömülü görsel (mühür/imza — delil)
+      İ      → e-imzalı
+    İmzalayan personel sicili KÜNYEDE durur, INDEX'e ÇIKMAZ: INDEX
+    kopyala-yapıştırla dışarı en çok sızan artefakttır (Layer 0).
+    """
+    p = []
+    t = k.get("tablo") or 0
+    if t:
+        en_genis = k.get("tablo_en_genis") or 0
+        p.append("T:%d×%d" % (t, en_genis) if en_genis else "T:%d" % t)
+    v = k.get("veri_dugumu") or 0
+    if v:
+        p.append("V:%d" % v)
+    g = k.get("gorsel") or 0
+    if g:
+        p.append("G:%d" % g)
+    if k.get("imzali"):
+        p.append("İ")
+    return " ".join(p)
+
+
+def udf_isle(yol, gorsel_dizin=None):
+    """UYAP `.udf` → YAPISI KORUNMUŞ Markdown (v0.5.15 — A paketi).
+
+    v0.5.14'e kadar burada HAM okuma vardı: ZIP → content.xml → CDATA → düz
+    metin. Metin kaybolmuyordu ama YAPI kayboluyordu. 798 gerçek evrakta
+    ölçülen kayıp: 739 tablo ızgarası · 424 iç içe tablo · 548 görsel
+    (20,8 MB mühür/imza) · 32.593 alan etiketi · 7.316 veri düğümü (düz
+    metnin TAMAMEN dışında — %100 kayıp) · 1.004 liste ögesi · 1.487 altı
+    çizili · 461 üst/alt bilgi bloğu.
+
+    Yeni hat bunların hepsini taşır ve ölçülmüştür: 796/798 dosya (eski hat
+    787), görünür karakter kaybı 0/6.403.940, tablo geometrisi XML gerçeğine
+    karşı 739/739, salt-okuma ihlali 0/798, dosya başına ~4 ms.
+
+    Sözleşme DEĞİŞMEDİ: 6'lı demet döner (metin, yontem, teyit, sayfa, hata,
+    gorsel_sayfalar) — çağıranlar etkilenmez.
+    """
     try:
-        zf = zipfile.ZipFile(yol)
-    except Exception as e:
-        return "", "hata", True, None, f"UDF açılamadı ({e})", []
-    hedef = next((a for a in zf.namelist() if a.lower().endswith("content.xml")), None)
-    if not hedef:
-        return "", "hata", True, None, "content.xml yok", []
-    ham = zf.read(hedef).decode("utf-8", "replace")
-    m = re.search(r"<content>\s*<!\[CDATA\[(.*?)\]\]>\s*</content>", ham, re.S)
-    if m:
-        return m.group(1), "udf", False, None, None, []
-    try:
-        kok = ET.fromstring(ham)
-        p = [t.strip() for t in kok.itertext() if t and t.strip()]
-        if p:
-            return "\n".join(p), "udf", False, None, None, []
-    except ET.ParseError:
-        pass
-    kaba = re.sub(r"\s{2,}", " ", re.sub(r"<[^>]+>", " ", ham)).strip()
-    if kaba:
-        return "[UYARI: standart UDF çözülemedi — kaba metin]\n" + kaba, "udf(kaba)", True, None, None, []
-    return "", "hata", True, None, "metin yok", []
+        md, kn = _udf_md().udf_markdown_cikar(yol, gorsel_dizin=gorsel_dizin)
+    except Exception as e:      # modül ASLA fırlatmaz; yine de fail-closed
+        return "", "hata", True, None, "udf_md çöktü: %s" % e, [], None
+
+    hata = kn.get("hata")
+    if hata:
+        # K8 — uzantı yalanı: gerçek türü PDF/DOCX ise ÇAĞIRAN yönlendirsin
+        yon = kn.get("yonlendir") or kn.get("gercek_tur")
+        if yon and yon not in ("udf", "bos"):
+            return "", "hata", True, None, "uzantı yalanı: gerçek tür %s" % yon, [], kn
+        return "", "hata", True, None, str(hata), [], kn
+
+    # Uyarılar sessiz geçmez: teyit_gerek bayrağına ve hata alanına taşınır.
+    uyarilar = kn.get("uyarilar") or []
+    yontem = "udf-yapili" if kn.get("yapi_kuruldu") else "udf-duz"
+    teyit = bool(uyarilar) or bool(kn.get("kayip_karakter"))
+    not_ = "; ".join(uyarilar)[:400] if uyarilar else None
+    return md, yontem, teyit, None, not_, [], kn
 
 
 def docx_isle(yol):
@@ -656,21 +770,30 @@ def docx_isle(yol):
     return re.sub(r"[ \t]{2,}", " ", re.sub(r"<[^>]+>", "", ham)).strip(), "docx", False, None, None, []
 
 
+def _yedi(d):
+    """Çıkarıcı dönüşünü 7 elemana normalize eder (A paketi, v0.5.15).
+
+    6'lı sözleşme KORUNUR; 7. eleman zengin künyedir ve yalnız UDF hattında
+    doludur. Böylece diğer çıkarıcılara (PDF/OCR/DOCX) hiç dokunulmaz.
+    """
+    return d if len(d) == 7 else (tuple(d) + (None,))
+
+
 def evrak_isle(yol, uz, opts, tmp_kok):
     with tempfile.TemporaryDirectory(dir=tmp_kok) as t:
         try:
-            if uz in PDF:      return pdf_isle(yol, opts, t)
-            if uz in UDF:      return udf_isle(yol)
-            if uz in DOCX:     return docx_isle(yol)
-            if uz in GORUNTU:  return goruntu_isle(yol, opts, t)
+            if uz in PDF:      return _yedi(pdf_isle(yol, opts, t))
+            if uz in UDF:      return _yedi(udf_isle(yol))
+            if uz in DOCX:     return _yedi(docx_isle(yol))
+            if uz in GORUNTU:  return _yedi(goruntu_isle(yol, opts, t))
             if uz in DUZ:
-                return (open(yol, encoding="utf-8", errors="replace").read(),
-                        "duz-metin", False, None, None, [])
+                return _yedi((open(yol, encoding="utf-8", errors="replace").read(),
+                              "duz-metin", False, None, None, []))
         except subprocess.TimeoutExpired:
-            return "", "zaman-asimi", True, None, "OCR 600 sn aştı", []
+            return _yedi(("", "zaman-asimi", True, None, "OCR 600 sn aştı", []))
         except Exception as e:
-            return "", "hata", True, None, str(e), []
-    return "", "bilinmeyen", True, None, "desteklenmeyen tür", []
+            return _yedi(("", "hata", True, None, str(e), []))
+    return _yedi(("", "bilinmeyen", True, None, "desteklenmeyen tür", []))
 
 
 # ---------------- v1.5: paralel çıkarım altyapısı (SAF İŞÇİ — durum değiştirmez) ----------------
@@ -695,9 +818,10 @@ def _cikar_tekil(yol, uz, opts):
         os._exit(137)
     t0 = time.perf_counter()
     with tempfile.TemporaryDirectory(prefix="oaing_w_") as t:   # with: çökmede %TEMP% sızmaz
-        metin, y, teyit, sf, hata, gorsel = evrak_isle(yol, uz, opts, t)
+        metin, y, teyit, sf, hata, gorsel, udf_kunye = evrak_isle(yol, uz, opts, t)
     return {"metin": metin, "yontem": y, "teyit": teyit, "sayfa": sf, "hata": hata,
-            "gorsel": gorsel, "sure_ms": (time.perf_counter() - t0) * 1000.0}
+            "gorsel": gorsel, "udf_kunye": udf_kunye,
+            "sure_ms": (time.perf_counter() - t0) * 1000.0}
 
 
 def _cikar_arsiv(yol, opts):
@@ -723,9 +847,10 @@ def _cikar_arsiv(yol, opts):
             cikti = []
             for ic, ie, icad in icler:
                 t0 = time.perf_counter()
-                metin, y, teyit, sf, hata, gorsel = evrak_isle(ic, ie, opts, t)
+                metin, y, teyit, sf, hata, gorsel, udf_kunye = evrak_isle(ic, ie, opts, t)
                 cikti.append({"icad": icad, "ie": ie, "metin": metin, "yontem": y,
                               "teyit": teyit, "sayfa": sf, "hata": hata, "gorsel": gorsel,
+                              "udf_kunye": udf_kunye,
                               "sure_ms": (time.perf_counter() - t0) * 1000.0})
             return {"bos": False, "icler": cikti, "hata": None}
     except Exception as e:
@@ -782,7 +907,7 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
 
 
 def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan,
-                 buyuk_esik, gorsel_sayfalar=None, sha_ilk=None):
+                 buyuk_esik, gorsel_sayfalar=None, sha_ilk=None, udf_kunye=None):
     karakter = anlamli(metin)
     sha = hashlib.sha256((metin or "").encode("utf-8", "replace")).hexdigest()[:16]
     kayit = {"no": no, "ad": ad, "tarih": tarih, "kaynak": kaynak, "yontem": yontem,
@@ -792,6 +917,33 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
              "tur_tahmini": tur_tahmin_et(ad, kaynak),
              "buyuk": karakter > buyuk_esik,
              "ocr_durum": None, "ocr_bos_sayfalar": [], "gorsel_klasor": ""}
+    # ---- A PAKETİ (v0.5.15): UDF yapı künyesi + provenans ----------------
+    # Zenginlik SESSİZ gelmez: yapı sayaçları INDEX'e, çekirdek alanlar künye
+    # kimliğine, uyarılar görünür alana yazılır. Değerler DÜZELTİLMEZ —
+    # kaynakta ne yazıyorsa o (`kunye_kaynak: udf-alan` provenansıyla).
+    if isinstance(udf_kunye, dict):
+        for alan in ("format_id", "imzali", "tablo", "satir", "hucre",
+                     "ic_ice_tablo", "gorsel", "liste_ogesi", "ustbilgi_altbilgi",
+                     "veri_dugumu", "birlesik_hucre_satiri", "gorunur_karakter",
+                     "kayip_karakter", "bmp_disi_karakter"):
+            if udf_kunye.get(alan):
+                kayit[alan] = udf_kunye[alan]
+        bicimler = udf_kunye.get("tablo_bicimi") or []
+        if bicimler:
+            try:
+                kayit["tablo_en_genis"] = max(int(x[1]) for x in bicimler if len(x) > 1)
+            except (ValueError, TypeError, IndexError):
+                pass
+        if udf_kunye.get("uyarilar"):
+            kayit["yapi_uyarilari"] = list(udf_kunye["uyarilar"])[:20]
+        cekirdek = _udf_kunye_cekirdegi(udf_kunye.get("alan_degerleri"))
+        if cekirdek:
+            kayit["udf_kunye"] = cekirdek
+            kayit["kunye_kaynak"] = "udf-alan"   # regex tahmini DEĞİL, kaynak beyanı
+        # Provenans — denetlenebilirlik bir kayıt değil bir FİİLDİR (--denetle)
+        kayit["udf_modul_surum"] = udf_kunye.get("surum")
+        if udf_kunye.get("icerik_sha256"):
+            kayit["icerik_sha256"] = udf_kunye["icerik_sha256"]
     # ---- E5 SHA-DEDUP (v0.5.8.5): aynı sha256 içerik bu koşuda İKİNCİ bir ad
     # altında görülürse ikinci metin/harita ÜRETİLMEZ; kayıt SİLİNMEZ, künyeye
     # "ayni_icerik: <ilk kaydın md'si>" işaretiyle girer (kayıpsızlık: hiçbir
@@ -968,7 +1120,7 @@ def _onbakis_calistir(a, opts):
         if it["sinif"] == "tekil":
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
                               gorece, no, temiz, tarih, hedef_ob, kullanilan, a.buyuk_esik,
-                              gorsel_sayfalar=p.get("gorsel"))
+                              gorsel_sayfalar=p.get("gorsel"), udf_kunye=p.get("udf_kunye"))
             kunye.append(k)
             continue
         # arşiv
@@ -986,7 +1138,7 @@ def _onbakis_calistir(a, opts):
             k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
                               f"{gorece}::{ic['icad']}", ic_no,
                               f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef_ob, kullanilan,
-                              a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"))
+                              a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"), udf_kunye=ic.get("udf_kunye"))
             kunye.append(k)
 
     kunye.sort(key=lambda k: (k.get("no") or "999", k.get("kaynak", "")))
@@ -1217,7 +1369,8 @@ def main():
         if it["sinif"] == "tekil":
             k = kaydet_evrak(p["metin"], p["yontem"], p["teyit"], p["sayfa"], p["hata"],
                              gorece, no, temiz, tarih, hedef, kullanilan, a.buyuk_esik,
-                             gorsel_sayfalar=p.get("gorsel"), sha_ilk=sha_ilk)
+                             gorsel_sayfalar=p.get("gorsel"), sha_ilk=sha_ilk,
+                             udf_kunye=p.get("udf_kunye"))
             kunye.append(k); yeni += 1; temsil.add(it["index"])
             # v1.5.1 (a): arıza {hata, atlandı} önbelleğe YAZILMAZ — sonraki koşuda
             # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
@@ -1243,7 +1396,8 @@ def main():
             k = kaydet_evrak(ic["metin"], ic["yontem"], ic["teyit"], ic["sayfa"], ic["hata"],
                              f"{gorece}::{ic['icad']}", ic_no,
                              f"{temiz} (EYP içi: {ic['icad']})", tarih, hedef, kullanilan,
-                             a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"), sha_ilk=sha_ilk)
+                             a.buyuk_esik, gorsel_sayfalar=ic.get("gorsel"), sha_ilk=sha_ilk,
+                             udf_kunye=ic.get("udf_kunye"))
             kunye.append(k); arsiv_kayitlari.append(k); yeni += 1; temsil.add(it["index"])
         # v1.5.1 (a): arşiv içinde arıza {hata, atlandı} taşıyan EN AZ BİR iç kayıt varsa
         # bu arşiv de önbelleğe YAZILMAZ (imza aynı kalır → araç sonradan kurulunca
@@ -1300,8 +1454,8 @@ def main():
            f"bilinmeyen/elle: **{bilinmeyen}** · büyük (>{a.buyuk_esik:,} kar): **{buyuk_sayisi}** · "
            f"🔴 OCR-BOŞ (görsel inceleme gerek): **{ocr_bos_sayisi}** · "
            f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
-           "| # | Evrak | Tarih | Yöntem | ⚠ | 🔴 | Tür~ | Karakter | Harita | Dosya |\n",
-           "|---|-------|-------|--------|---|---|------|----------|--------|-------|\n"]
+           "| # | Evrak | Tarih | Yöntem | ⚠ | 🔴 | Yapı | Tür~ | Karakter | Harita | Dosya |\n",
+           "|---|-------|-------|--------|---|---|------|------|----------|--------|-------|\n"]
     for k in kunye:
         tur_hucre = f"{k['tur_tahmini']} (tahmini)" if k.get("tur_tahmini") else ""
         if k.get("harita"):
@@ -1317,7 +1471,8 @@ def main():
             dosya_hucre = f"`{k.get('md','')}`"
         idx.append(f"| {k.get('no') or '—'} | {k.get('ad','')} | {k.get('tarih') or ''} "
                    f"| {k.get('yontem','')} | {'⚠' if k.get('teyit_gerek') else ''} "
-                   f"| {ocr_bos_hucre} | {tur_hucre} | {k.get('karakter') or 0} | {harita_hucre} "
+                   f"| {ocr_bos_hucre} | {_yapi_hucre(k)} | {tur_hucre} "
+                   f"| {k.get('karakter') or 0} | {harita_hucre} "
                    f"| {dosya_hucre} |\n")
     idx.append("\n> ⚠ = OCR/zayıf çıkarım; künye ve sayısal veriyi orijinalden teyit et. "
                "Orijinal evrak salt-okunur arşivde durur.\n")
