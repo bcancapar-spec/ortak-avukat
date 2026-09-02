@@ -15,7 +15,7 @@ onu kaynağa ve kayda zorlamaktır.
 cümle yeter; metodolojiyi promptla öğretmezsiniz, sistem kendi disiplinini
 işletir.
 
-**Token:** Modelin okuma-yazma ölçü birimi (kabaca hece/kelime parçası).
+**Token:** (kontör) Modelin okuma-yazma ölçü birimi (kabaca hece/kelime parçası).
 "Dosya masrafı"nın buradaki karşılığıdır: aynı işi daha az tokenle yapmak,
 aynı dilekçeyi daha az fotokopi parasıyla çıkarmak gibidir — sistem bunu
 evrakı görüntü yerine metin olarak okuyarak başarır.
