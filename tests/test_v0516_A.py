@@ -503,6 +503,8 @@ JSON_ANAHTARLARI = {
     # v0.5.16/A yeni alanlar
     "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
     "guc_beyansiz_kenarlar", "zincir_uyarisi",
+    # v0.5.16/A-2 (G9, G12): taraf/yön + kanun yolu zinciri
+    "taraf", "yon", "kanun_yolu_zinciri",
 }
 
 
@@ -927,4 +929,7 @@ def test_skill_md_a2_belgesi():
 
 def test_json_anahtar_seti_a2(tmp_path):
     kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
-    assert set(sonuc) == JSON_ANAHTARLARI | {"taraf", "yon", "kanun_yolu_zinciri"}
+    assert {"taraf", "yon", "kanun_yolu_zinciri"} <= JSON_ANAHTARLARI
+    assert set(sonuc) == JSON_ANAHTARLARI
+    assert sonuc["taraf"] is None and sonuc["yon"] is None
+    assert sonuc["kanun_yolu_zinciri"] == []

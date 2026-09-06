@@ -14,6 +14,20 @@ Girdi:  graf.json  (şema aşağıda / references/illiyet-doktrini.md sonunda)
 
 Kullanım:
     python grafik_denetim.py graf.json --json denetim.json
+    python grafik_denetim.py graf.json --json denetim.json --taraf sanik
+    python grafik_denetim.py graf.json --json denetim.json --kok <dava kökü>
+    python grafik_denetim.py --goc eski.json --dal medeni|miras|ceza --cikti yeni.json
+
+v0.5.16/A-2 (G10, G9, G12, avukat kararları #7 #8 #9 #11):
+    - kesme_flag DAL-AYRIMLI (medeni: | miras: | ceza:); eski çıplak değer
+      [ŞEMA UYARISI] + "--goc ile dal etiketle" (exit değişmez — geriye uyum).
+    - --taraf / --kok (pipeline defteri `ceza_dali`): savunma kanadı (sanık/
+      müdafii/davalı/borçlu) için §6/§7/§8 tavsiye yönü TERS ("kur" → "çürüt").
+    - tip: karar | mahkeme; kenar tur: kanun_yolu (+ sonuc ZORUNLU) yalnız
+      karar/mahkeme düğümleri arasında; illiyet zinciri/çevrim/yük hesabına
+      GİRMEZ; §9 KANUN YOLU ZİNCİRİ (JSON kanun_yolu_zinciri).
+    Bu scriptteki doktrin notları (ör. ceza:magdur_kusuru) hukuki HÜKÜM değil,
+    doktrin HATIRLATMASIDIR — model kurar, script denetler; künye kütükten.
 
 ÇIKIŞ KODU SÖZLEŞMESİ (v0.5.16/A — K2+G6, avukat kararı #1: SERT KAPI):
     0  temiz (şema hatası yok, çevrim yok)
@@ -35,6 +49,7 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import difflib
 import json
+import os
 import sys
 import traceback
 from collections import defaultdict
@@ -57,22 +72,70 @@ ARAC_ADI = "grafik_denetim"
 # kodunu değiştirmez.
 DUGUM_ALANLARI = {"id", "tip", "usul_rolu", "ad"}
 KENAR_ALANLARI = {"kaynak", "hedef", "kategori", "tur", "illiyet_tipi", "guc",
-                  "kesme_flag", "dayanak_delil", "dogrulama", "norm"}
-KANONIK = {  # şema: references/illiyet-doktrini.md §6
-    "tip": {"gercek_kisi", "tuzel_kisi", "kamu", "nesne", "delil", "olay", "hak"},
+                  "kesme_flag", "dayanak_delil", "dogrulama", "norm", "sonuc"}
+
+# ── G10 (Hamle 7, avukat kararı #7): kesme_flag DAL-AYRIMLI — şema KIRILDI ──
+# Eski tek liste (mucbir_sebep/magdur_kusuru/ucuncu_kisi_kusuru) medeni hukuk
+# doktriniydi; ceza dosyasında "mağdur kusuru" illiyeti KESMEZ (TCK m.22/4-5:
+# ceza failin kusuruna göre belirlenir — Mevzuat MCP teyit 2026-09-07), miras
+# dosyasında kesme kavramı "paylaştırma kastı / ivaz" ekseninde işler. Aynı
+# etiket üç dalda üç ayrı hukuki sonuç doğurduğundan dal öneki ZORUNLU oldu.
+# Eski çıplak değer kanonik-dışı [ŞEMA UYARISI] + --goc önerisi alır; exit
+# kodu DEĞİŞMEZ (geriye uyum — saha grafları kırılmaz).
+KESME_DALLARI = {
+    "medeni": ("mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"),
+    "miras":  ("paylastirma_kasti", "ivaz"),
+    "ceza":   ("izin_verilen_risk", "kendi_tehlikesine_girme",
+               "hukuka_uygunluk", "magdur_kusuru"),
+}
+ESKI_KESME_FLAGLAR = {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"}
+# §6 sabit DOKTRİN HATIRLATMALARI — hukuki HÜKÜM değildir (model kurar, script
+# denetler); künye KÜTÜKTEN gelir, script hafızadan künye yazmaz.
+KESME_NOTLARI = {
+    "ceza:magdur_kusuru": (
+        "illiyeti KESMEZ — kusur derecesine/ceza miktarına etki eder "
+        "(Yargıtay 12. CD yerleşik hattı; künye KÜTÜKTEN, hafızadan yazılmaz; "
+        "norm çerçevesi TCK m.22/4-5 — Mevzuat MCP teyit 2026-09-07)"),
+    "miras:paylastirma_kasti": (
+        "muris muvazaasında bozma gerekçesi — ispat ölçütü (muvazaa çerçevesi "
+        "TBK m.19 — Mevzuat MCP teyit 2026-09-06; künye KÜTÜKTEN)"),
+}
+
+KANONIK = {  # şema: references/illiyet-doktrini.md §6 (enum tablosu — DOKTRİN↔KOD KİLİDİ:
+             # buradaki HER string değer illiyet-doktrini.md'de literal geçer; aile_dogrula denetler)
+    "tip": {"gercek_kisi", "tuzel_kisi", "kamu", "nesne", "delil", "olay", "hak",
+            "karar", "mahkeme"},                       # G12: karar/mahkeme (kanun yolu katı)
     "kategori": {ILISKI_KATEGORI, ILLIYET_KATEGORI},
     "illiyet_tipi": {"dogal", "uygun", "objektif_isnadiyet"},
     "guc": {"dispozitif", "guclu", "zayif", "tartismali"},
-    "kesme_flag": {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"},
+    "kesme_flag": {f"{dal}:{v}" for dal, vs in KESME_DALLARI.items() for v in vs},
     # "delil": bu ağacın saha/fikstür gerçeğinde yerleşik "teyitli" eşanlamı —
     # uyarıya boğmamak için kabul kümesindedir (gürültü disiplini).
     "dogrulama": {"teyitli", "iddia", "karine", "delil"},
+    # G12 (Hamle 8, avukat kararı #9): kanun_yolu kenarının ZORUNLU sonucu.
+    # HMK m.353 (kaldırma / esastan ret), m.370 (onama); CMK m.280 (esastan ret /
+    # bozma / kaldırma), m.302 (esastan ret / bozma) — Mevzuat MCP teyit 2026-09-07.
+    "sonuc": {"onadi", "bozdu", "kaldirdi", "geri_cevirdi", "esastan_ret", "kesin"},
 }
 
 # G8: mahkeme/karar düğümleri yapıları gereği HER tarafı bağlar — köprü
-# (perde) hesabından muaf. A-2 grubu bu tipleri şemaya ekler; kod tipe göre
-# muaf tutar (KANONIK'te olmasa da).
+# (perde) hesabından muaf. A-2 (G12) bu tipleri KANONIK'e ekledi; muafiyet
+# tipe göredir.
 KOPRU_MUAF_TIPLER = {"karar", "mahkeme"}
+# G12: kanun_yolu kenarı yalnız karar|mahkeme düğümleri arasında; illiyet
+# zinciri / çevrim / yük hesabına GİRMEZ (yargı kademesi neden-sonuç değildir).
+KANUN_YOLU_TUR = "kanun_yolu"
+KANUN_YOLU_TIPLER = KOPRU_MUAF_TIPLER
+KANUN_YOLU_DERINLIK = 12      # kat sırası DFS derinlik freni (çevrimli kanun yolu çökmesin)
+
+# G9 (Hamle 7, avukat kararı #8): taraf → tavsiye YÖNÜ. Savunma/borçlu/davalı
+# kanadı karşı tarafın illiyetini ÇÜRÜTÜR; iddia kanadı KURAR.
+SAVUNMA_TARAFLARI = ("sanik", "mudafii", "davali", "borclu")
+IDDIA_TARAFLARI = ("katilan", "musteki", "davaci", "alacakli")
+TARAFLAR = SAVUNMA_TARAFLARI + IDDIA_TARAFLARI
+# pipeline defteri `ceza_dali` (pipeline_kayit.py --baslat --ceza mudafii|musteki)
+CEZA_DALI_TARAF = {"mudafii": "sanik", "musteki": "musteki", "musteki-vekili": "musteki"}
+DEFTER_DURUM_YOLU = os.path.join("_oa", "defter", "pipeline-durum.json")
 DELIL_TIPI = "delil"
 DELIL_AD_ESIK = 0.6          # G7: serbest metin dayanak ↔ delil adı benzerlik eşiği
 JOHNSON_DUGUM_TAVANI = 200   # G1: bu düğüm sayısına kadar TAM basit çevrim sayımı
@@ -97,6 +160,27 @@ def sozluk_uyarilari(dugumler, kenarlar):
         for alan, kume in KANONIK.items():
             deger = kayit.get(alan)
             if isinstance(deger, str) and deger not in kume:
+                if alan == "kesme_flag" and deger in ESKI_KESME_FLAGLAR:
+                    # G10: eski çıplak değer — dal öneki eksik; göç önerisi
+                    adaylar = " | ".join(f"{d}:{deger}" for d, vs in KESME_DALLARI.items()
+                                         if deger in vs)
+                    uyarilar.append(
+                        f"{etiket}: kanonik-dışı kesme_flag: '{deger}' — eski (dal öneksiz) "
+                        f"değer; `--goc <eski.json> --dal medeni|miras|ceza --cikti "
+                        f"<yeni.json>` ile dal etiketle (aday: {adaylar})")
+                    continue
+                if alan == "kesme_flag":
+                    # yazım hatası → çıplak ada yakın-eşleşme + dal önekli adaylar
+                    ciplak = {v for vs in KESME_DALLARI.values() for v in vs}
+                    govde = deger.split(":", 1)[-1]
+                    yakin = difflib.get_close_matches(govde, sorted(ciplak), n=1, cutoff=0.5)
+                    if yakin:
+                        adaylar = " | ".join(f"{d}:{yakin[0]}" for d, vs in KESME_DALLARI.items()
+                                             if yakin[0] in vs)
+                        uyarilar.append(
+                            f"{etiket}: kanonik-dışı kesme_flag: '{deger}' — kastedilen "
+                            f"'{yakin[0]}' olabilir; dal önekiyle yaz (kanonik: {adaylar})")
+                        continue
                 uyarilar.append(f"{etiket}: kanonik-dışı {alan}: '{deger}'"
                                 f"{_oneri(deger, kume)}"
                                 f" (kanonik: {' | '.join(sorted(kume))})")
@@ -115,6 +199,39 @@ def norm_uyarilari(kenarlar):
     return [f"Kenar #{i}: 'norm' eksik (advisory — kenarı hukuken anlamlı kılan "
             "maddeyi Mevzuat MCP teyidiyle bağla)"
             for i, k in enumerate(kenarlar) if not k.get("norm")]
+
+
+def _kanun_yolu_mu(k):
+    return k.get("tur") == KANUN_YOLU_TUR
+
+
+def _illiyet_kenar_mi(k):
+    """G12: illiyet hesaplarına giren kenar = kategori illiyet VE kanun_yolu
+    DEĞİL (kanun yolu kenarı kategori ne yazılırsa yazılsın zincire girmez)."""
+    return k.get("kategori") == ILLIYET_KATEGORI and not _kanun_yolu_mu(k)
+
+
+def kanun_yolu_uyarilari(dugumler, kenarlar):
+    """G12 (ADVISORY): kanun_yolu kenarı yalnız karar|mahkeme düğümleri arasında
+    anlamlıdır; başka uçta [ŞEMA UYARISI]. Kategori 'illiyet' yazılmışsa
+    uyarılır (kanun yolu neden-sonuç değildir; hesaba zaten girmez)."""
+    uyarilar = []
+    for i, k in enumerate(kenarlar):
+        if not _kanun_yolu_mu(k):
+            continue
+        for uc in ("kaynak", "hedef"):
+            tip = dugumler.get(k.get(uc), {}).get("tip")
+            if tip not in KANUN_YOLU_TIPLER:
+                uyarilar.append(
+                    f"Kenar #{i}: kanun_yolu kenarının {uc} ucu '{k.get(uc)}' "
+                    f"(tip: {tip}) karar | mahkeme değil — kanun_yolu yalnız karar/"
+                    "mahkeme düğümleri arasında geçerli")
+        if k.get("kategori") == ILLIYET_KATEGORI:
+            uyarilar.append(
+                f"Kenar #{i}: kanun_yolu kenarı kategori 'illiyet' taşıyor — yargı "
+                "kademesi neden-sonuç değildir; illiyet zinciri/çevrim/yük hesabına "
+                f"alınmadı (kategori: {ILISKI_KATEGORI} olmalı)")
+    return uyarilar
 
 
 def bosluk_aciklamalari(dugumler, kenarlar):
@@ -204,7 +321,12 @@ def dogrula_sema(dugumler, kenarlar):
             hatalar.append(f"Kenar #{i}: kaynak '{k.get('kaynak')}' tanımsız düğüm")
         if k.get("hedef") not in dugumler:
             hatalar.append(f"Kenar #{i}: hedef '{k.get('hedef')}' tanımsız düğüm")
-        if k.get("kategori") == ILLIYET_KATEGORI:
+        if _kanun_yolu_mu(k):                              # G12: sonuc ZORUNLU
+            # kanun_yolu illiyet DEĞİLDİR: kategori 'illiyet' yazılmışsa
+            # illiyet_tipi/dogrulama istenmez (advisory uyarı ayrıca basılır).
+            if not k.get("sonuc"):
+                hatalar.append(f"Kenar #{i} (kanun_yolu): 'sonuc' eksik (zorunlu)")
+        elif k.get("kategori") == ILLIYET_KATEGORI:
             if "illiyet_tipi" not in k:
                 hatalar.append(f"Kenar #{i} (illiyet): 'illiyet_tipi' eksik")
             if not k.get("dogrulama"):
@@ -300,16 +422,134 @@ def guc_beyansiz_kenarlar(kenarlar):
     """G4 (Hamle 6, avukat kararı #5): `guc` beyan edilmemiş illiyet kenarı
     AYRI SINIF — 'beyan-yok' ağırlığı GUC_VARSAYILAN (0.4 ≤ tartışmalı)."""
     return [(i, k) for i, k in enumerate(kenarlar)
-            if k.get("kategori") == ILLIYET_KATEGORI and not k.get("guc")]
+            if _illiyet_kenar_mi(k) and not k.get("guc")]
 
 
 def kesme_adaylari(kenarlar):
     """kesme_flag dolu illiyet kenarları → oa-antitez beslemesi."""
     out = []
     for i, k in enumerate(kenarlar):
-        if k.get("kategori") == ILLIYET_KATEGORI and k.get("kesme_flag"):
+        if _illiyet_kenar_mi(k) and k.get("kesme_flag"):
             out.append((i, k))
     return out
+
+
+def kesme_dali(flag):
+    """'ceza:magdur_kusuru' → 'ceza'; dal öneksiz (eski) değer → None."""
+    if isinstance(flag, str) and ":" in flag:
+        dal = flag.split(":", 1)[0]
+        return dal if dal in KESME_DALLARI else None
+    return None
+
+
+def kesme_notu(flag):
+    """§6 sabit doktrin hatırlatması (varsa). HÜKÜM değil; künye kütükten."""
+    return KESME_NOTLARI.get(flag)
+
+
+def goc(eski_yol, dal, cikti_yol):
+    """G10 göç: `kesme_flag`leri dal önekiyle yeniden etiketler. Kaynağa
+    DOKUNMAZ; yalnız dal öneksiz VE hedef dalda kanonik olan değer göçer
+    (ör. --dal ceza ile 'ivaz' göçmez → 'atlanan' listesinde, elle düzelt —
+    sahte kanoniklik üretilmez). Zaten dal önekli değer aynen kalır. Kategori
+    ayrımı yok (iliski kenarındaki flag de göçer — veri kaybı yok).
+    Döner: {"degisen": n, "atlanan": [(index, deger)], "kenar": toplam}."""
+    if dal not in KESME_DALLARI:
+        raise ValueError(f"dal '{dal}' tanımsız (medeni | miras | ceza)")
+    with open(eski_yol, "r", encoding="utf-8") as f:
+        g = json.load(f)
+    if not isinstance(g, dict) or not isinstance(g.get("kenarlar", []), list):
+        raise ValueError("graf.json kök nesnesi sözlük değil / 'kenarlar' liste değil")
+    degisen, atlanan = 0, []
+    for i, k in enumerate(g.get("kenarlar", [])):
+        if not isinstance(k, dict):
+            continue
+        flag = k.get("kesme_flag")
+        if not isinstance(flag, str) or not flag:
+            continue
+        if flag in KANONIK["kesme_flag"]:
+            continue                                   # zaten dal önekli
+        if ":" not in flag and flag in KESME_DALLARI[dal]:
+            k["kesme_flag"] = f"{dal}:{flag}"
+            degisen += 1
+        else:
+            atlanan.append((i, flag))
+    with open(cikti_yol, "w", encoding="utf-8") as f:
+        json.dump(g, f, ensure_ascii=False, indent=2)
+    return {"degisen": degisen, "atlanan": atlanan,
+            "kenar": len(g.get("kenarlar", []))}
+
+
+def taraf_yonu(taraf):
+    """G9: taraf → 'kur' (iddia kanadı) | 'curut' (savunma kanadı) | None."""
+    if taraf in SAVUNMA_TARAFLARI:
+        return "curut"
+    if taraf in IDDIA_TARAFLARI:
+        return "kur"
+    return None
+
+
+def defterden_taraf(kok):
+    """G9: `<kok>/_oa/defter/pipeline-durum.json` → (taraf|None, not).
+    Defterin `ceza_dali` alanı (pipeline_kayit.py: mudafii → sanık tarafı,
+    musteki[-vekili] → müşteki tarafı). Dosya yok / bozuk / alan boş →
+    (None, görünür not) — fail-closed, ASLA çökertmez (hukuk dosyasında
+    ceza_dali null olması NORMALDİR)."""
+    yol = os.path.join(kok or ".", DEFTER_DURUM_YOLU)
+    if not os.path.isfile(yol):
+        return None, f"defter yok ({yol})"
+    try:
+        with open(yol, "r", encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception as e:                            # noqa: BLE001 — fail-closed
+        return None, f"defter okunamadı ({type(e).__name__}) — {yol}"
+    if not isinstance(d, dict):
+        return None, f"defter okunamadı (kök nesne sözlük değil) — {yol}"
+    dal = d.get("ceza_dali")
+    if not dal:
+        return None, f"defterde ceza_dali boş (hukuk dosyası?) — {yol}"
+    taraf = CEZA_DALI_TARAF.get(str(dal))
+    if not taraf:
+        return None, f"defterde ceza_dali '{dal}' tanınmadı — {yol}"
+    return taraf, f"defterden: ceza_dali={dal} → taraf {taraf} ({yol})"
+
+
+def kanun_yolu_zinciri(dugumler, kenarlar):
+    """G12 §9: kanun_yolu kenarlarını KAT SIRASIYLA (kaynak → hedef: alt
+    derece kararı → üst derece kararı) izler; köklerden (gelen kanun_yolu
+    kenarı olmayan) başlayan her maksimal yol bir zincirdir. Özyinelemesiz,
+    derinlik frenli; çevrimli kanun yolu (K1→K2→K1) çökertmez, yol kapanır.
+    Döner: [{"yol": [id...], "sonuclar": [sonuc...]}] (JSON kanun_yolu_zinciri)."""
+    ky = [k for k in kenarlar if _kanun_yolu_mu(k)]
+    if not ky:
+        return []
+    giden = defaultdict(list)
+    gelen = set()
+    sira = []
+    for k in ky:
+        a, b = k.get("kaynak"), k.get("hedef")
+        giden[a].append(k)
+        gelen.add(b)
+        for n in (a, b):
+            if n not in sira:
+                sira.append(n)
+    kokler = [n for n in sira if n not in gelen] or sira[:1]   # çevrimde ilk düğüm kök
+    zincirler = []
+    for kok in kokler:
+        yigin = [(kok, [kok], [], {kok})]
+        while yigin and len(zincirler) < YAZIM_TAVANI * 5:
+            dugum, yol, sonuclar, gorulen = yigin.pop()
+            devam = False
+            if len(yol) <= KANUN_YOLU_DERINLIK:
+                for k in reversed(giden.get(dugum, [])):
+                    h = k.get("hedef")
+                    if h in gorulen:
+                        continue
+                    devam = True
+                    yigin.append((h, yol + [h], sonuclar + [k.get("sonuc")], gorulen | {h}))
+            if not devam and len(yol) > 1:
+                zincirler.append({"yol": yol, "sonuclar": sonuclar})
+    return zincirler
 
 
 def _komsuluk(kenarlar, kategori=None, yonsuz=False):
@@ -587,7 +827,7 @@ def cevrimleri_bul(kenarlar):
     raporlanmaz. Döner: (çevrimler, kırpıldı, yöntem)."""
     sira, adj = [], {}
     for k in kenarlar:
-        if k.get("kategori") != ILLIYET_KATEGORI:
+        if not _illiyet_kenar_mi(k):
             continue
         a, b = k.get("kaynak"), k.get("hedef")
         for n in (a, b):
@@ -625,7 +865,7 @@ def _illiyet_kokler(kenarlar):
     """İlliyet alt-grafında gelen kenarı olmayan kaynak düğümler (zincir kökleri)."""
     giden, gelen_var = [], set()
     for k in kenarlar:
-        if k.get("kategori") != ILLIYET_KATEGORI:
+        if not _illiyet_kenar_mi(k):
             continue
         giden.append(k.get("kaynak"))
         gelen_var.add(k.get("hedef"))
@@ -650,7 +890,7 @@ def yuk_tasiyan_kenarlar(dugumler, kenarlar):
     """
     illiyet_kenar = [(k.get("kaynak"), k.get("hedef"), i)
                      for i, k in enumerate(kenarlar)
-                     if k.get("kategori") == ILLIYET_KATEGORI]
+                     if _illiyet_kenar_mi(k)]
     if not illiyet_kenar:
         return []
     adjl = defaultdict(list)
@@ -737,7 +977,7 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
     oa-antitez beslemesi). Ağırlık `guc` alanından türetilir; hukuki niteleme
     değildir, YAPISAL kırılganlık sinyalidir. ADVISORY — hiçbir şeyi bloklamaz.
     G6: DFS özyinelemesiz + açık derinlik sınırı (derinlik)."""
-    ill = [k for k in kenarlar if k.get("kategori") == ILLIYET_KATEGORI]
+    ill = [k for k in kenarlar if _illiyet_kenar_mi(k)]
     giden = {}
     for k in ill:
         giden.setdefault(k.get("kaynak"), []).append(k)
@@ -782,14 +1022,32 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
     return sonuc[:en_cok]
 
 
+def _kesme_ref(dugumler, i, k):
+    """G10: kesme adayı referansı = _kenar_ref + kesme_flag / dal / not.
+    (tests/test_grafik_denetim.py'deki 'kesme_adaylari anahtar seti = kenar
+    ref anahtar seti' karakterizasyonu BİLİNÇLİ değiştirildi — dal ve doktrin
+    notu bekçiye/oa-antitez'e makine-okur gitmeli.)"""
+    ref = _kenar_ref(dugumler, i, k)
+    flag = k.get("kesme_flag")
+    ref["kesme_flag"] = flag
+    ref["dal"] = kesme_dali(flag)
+    ref["not"] = kesme_notu(flag)
+    return ref
+
+
 def json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru, cevrimler, kesme, yuk,
-               baglanmamis=(), guc_beyansiz=(), cikis_kodu=0, blok_sinifi=()):
+               baglanmamis=(), guc_beyansiz=(), cikis_kodu=0, blok_sinifi=(),
+               taraf=None, yon=None, kanun_yolu=()):
     """Denetim sonucunu makine-okur sözlük olarak topla (çapraz-denetçi / B
     grubu bekçisi bunu okur). JSON SÖZLEŞMESİ (alan adları BİREBİR):
     arac="grafik_denetim" sabit; cevrimler, sema_hatalari, denetim_coktu,
     cikis_kodu, blok_sinifi, baglanmamis_deliller, guc_beyansiz_kenarlar,
-    kopru_dugumler[].etiket; eski alanlar korunur."""
+    kopru_dugumler[].etiket; A-2: taraf, yon ("kur"|"curut"|null),
+    kanun_yolu_zinciri, kesme_adaylari[].{kesme_flag,dal,not}; eski alanlar korunur."""
     return {
+        "taraf": taraf,
+        "yon": yon,
+        "kanun_yolu_zinciri": [dict(z) for z in kanun_yolu],
         "arac": ARAC_ADI,
         "ozet": {"dugum": len(dugumler), "kenar": len(kenarlar)},
         "denetim_coktu": False,
@@ -804,7 +1062,7 @@ def json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru, cevrimler, kesme, 
         "kopru_dugumler": [{"id": kid, "ad": _ad(dugumler, kid), "etiket": etiket}
                            for kid, etiket in kopru],
         "cevrimler": [list(c) for c in cevrimler],
-        "kesme_adaylari": [_kenar_ref(dugumler, i, k) for i, k in kesme],
+        "kesme_adaylari": [_kesme_ref(dugumler, i, k) for i, k in kesme],
         "yuk_tasiyan_kenarlar": [_kenar_ref(dugumler, i, k) for i, k in yuk],
         "dugumler": [
             {"id": kid, "tip": d.get("tip"), "ad": d.get("ad", kid),
@@ -822,19 +1080,41 @@ def _tavanli(liste):
     return liste[:YAZIM_TAVANI], len(liste) - YAZIM_TAVANI
 
 
-def _rapor_govde(yol, json_yol=None, zincir=True):
+def _taraf_coz(taraf=None, kok=None):
+    """G9: (taraf, yon, kaynak notu). CLI --taraf defteri EZER; --kok verilirse
+    defterden okunur; ikisi de yoksa/çözülemezse taraf None + görünür not."""
+    if taraf:
+        return taraf, taraf_yonu(taraf), f"--taraf {taraf}"
+    if kok:
+        t, notu = defterden_taraf(kok)
+        if t:
+            return t, taraf_yonu(t), notu
+        return None, None, f"taraf bilinmiyor — --taraf ver ({notu})"
+    return None, None, "taraf bilinmiyor — --taraf ver (veya --kok ile defterden)"
+
+
+def _rapor_govde(yol, json_yol=None, zincir=True, taraf=None, kok=None):
     """Denetimin gövdesi — çıkış kodunu DÖNER (0 temiz / 3 şema-veya-çevrim)."""
     dugumler, kenarlar, on_hatalar = yukle(yol)
+    taraf, yon, taraf_notu = _taraf_coz(taraf, kok)
+    curut = yon == "curut"
     cizgi = "=" * 60
     print(cizgi)
     print("OA-ILLIYET — DETERMİNİSTİK GRAF DENETİM RAPORU")
     print(cizgi)
     print(f"Düğüm: {len(dugumler)}  |  Kenar: {len(kenarlar)}")
+    if yon:
+        print(f"Taraf: {taraf} → tavsiye yönü: "
+              f"{'ÇÜRÜT (karşı tarafın illiyetini çürüt / kesme savunmasını kur)' if curut else 'KUR (kendi illiyetini sağlamlaştır)'}"
+              f"  [{taraf_notu}]")
+    else:
+        print(f"Taraf: {taraf_notu} — §6/§7/§8 tavsiyeleri 'kur' yönünde (varsayılan) yazıldı")
     print()
 
     # v0.5.9 T23/P1 — sözlük + açıklanabilir-boşluk uyarıları (ADVISORY):
     # rapor başında görünür; exit kodunu ve alttaki bölümleri DEĞİŞTİRMEZ.
     uyarilar = sozluk_uyarilari(dugumler, kenarlar) \
+        + kanun_yolu_uyarilari(dugumler, kenarlar) \
         + bosluk_aciklamalari(dugumler, kenarlar)
     if uyarilar:
         for u in uyarilar:
@@ -937,12 +1217,21 @@ def _rapor_govde(yol, json_yol=None, zincir=True):
     kesme = kesme_adaylari(kenarlar)
     if kesme:
         for i, k in kesme:
+            if curut:
+                tavsiye = ("→ karşı tarafın bu bağına karşı kesme savunmasını KUR "
+                           "(oa-antitez: karşı tarafın çürütmesini öngör)")
+            else:
+                tavsiye = "→ oa-antitez ile çürüt veya kabul et"
             print(f"  ⚑ {_ad(dugumler, k.get('kaynak'))} —[{k.get('tur')}]→ "
-                  f"{_ad(dugumler, k.get('hedef'))}  KESME: {k['kesme_flag']} "
-                  f"→ oa-antitez ile çürüt veya kabul et")
+                  f"{_ad(dugumler, k.get('hedef'))}  KESME: {k['kesme_flag']} {tavsiye}")
+            notu = kesme_notu(k.get("kesme_flag"))
+            if notu:                                 # G10: sabit doktrin hatırlatması
+                print(f"      ℹ doktrin hatırlatması (hüküm değil): {notu}")
     else:
-        print("  — Kesme adayı işaretlenmemiş. (mücbir sebep / mağdur / üçüncü kişi "
-              "kusuru ihtimalini elle gözden geçir.)")
+        print("  — Kesme adayı işaretlenmemiş. (medeni: mücbir sebep / mağdur / üçüncü "
+              "kişi kusuru · miras: paylaştırma kastı / ivaz · ceza: izin verilen risk / "
+              "kendi tehlikesine girme / hukuka uygunluk / mağdur kusuru ihtimalini elle "
+              "gözden geçir.)")
     print()
 
     print("### 7. YÜK TAŞIYAN KENAR (→ oa-strateji; ispatlanmazsa zincir kopar)")
@@ -951,9 +1240,12 @@ def _rapor_govde(yol, json_yol=None, zincir=True):
     yuk = yuk_tasiyan_kenarlar(dugumler, kenarlar)
     if yuk:
         dilim, fazla = _tavanli(yuk)
+        yuk_tavsiye = ("→ stratejik hedef: karşı tarafın bu bağını ÇÜRÜT "
+                       "(ispatlanmazsa zinciri kopar)" if curut
+                       else "→ stratejik öncelik: bu bağı sağlamlaştır")
         for i, k in dilim:
             print(f"  ★ {_ad(dugumler, k.get('kaynak'))} —[{k.get('tur')}]→ "
-                  f"{_ad(dugumler, k.get('hedef'))}  → stratejik öncelik: bu bağı sağlamlaştır")
+                  f"{_ad(dugumler, k.get('hedef'))}  {yuk_tavsiye}")
         if fazla:
             print(f"  … +{fazla} kenar daha (tam liste --json 'yuk_tasiyan_kenarlar')")
     else:
@@ -981,13 +1273,29 @@ def _rapor_govde(yol, json_yol=None, zincir=True):
                 print(f"  ◆ [{z['guven']}] {adlar}  ({z['halka']} halka)")
                 ez = z["en_zayif"]
                 if ez:
+                    ez_tavsiye = ("→ karşı tarafın EN ZAYIF halkası; saldırı buraya "
+                                  "(ÇÜRÜT)" if curut
+                                  else "→ karşı taraf buraya saldırır; önce burayı sağlamlaştır")
                     print(f"      en zayıf halka: {_ad(dugumler, ez['kaynak'])} "
                           f"—[{ez['tur']}]→ {_ad(dugumler, ez['hedef'])} "
-                          f"(güç: {ez['guc']}, ağırlık {ez['agirlik']}) "
-                          f"→ karşı taraf buraya saldırır; önce burayı sağlamlaştır")
+                          f"(güç: {ez['guc']}, ağırlık {ez['agirlik']}) {ez_tavsiye}")
         elif zincir_uyarisi is None:
             print("  — İlliyet zinciri bulunamadı (illiyet kategorili kenar yok).")
         print()
+
+    print("### 9. KANUN YOLU ZİNCİRİ (G12 — kat sırası + sonuçlar; illiyet hesabına girmez)")
+    kanun_yolu = kanun_yolu_zinciri(dugumler, kenarlar)
+    if kanun_yolu:
+        dilim, fazla = _tavanli(kanun_yolu)
+        for z in dilim:
+            adlar = " → ".join(_ad(dugumler, x) for x in z["yol"])
+            sonuclar = " · ".join(str(s) for s in z["sonuclar"])
+            print(f"  ⚖ {adlar}  [sonuçlar: {sonuclar}]")
+        if fazla:
+            print(f"  … +{fazla} zincir daha (tam liste --json 'kanun_yolu_zinciri')")
+    else:
+        print("  — kanun_yolu kenarı yok.")
+    print()
 
     blok_sinifi = []
     if hatalar:
@@ -1008,7 +1316,8 @@ def _rapor_govde(yol, json_yol=None, zincir=True):
         sonuc = json_sonuc(dugumler, kenarlar, hatalar, yetim, dk, kopru,
                            cevrimler, kesme, yuk, baglanmamis=baglanmamis,
                            guc_beyansiz=guc_beyansiz, cikis_kodu=cikis_kodu,
-                           blok_sinifi=blok_sinifi)
+                           blok_sinifi=blok_sinifi, taraf=taraf, yon=yon,
+                           kanun_yolu=kanun_yolu)
         sonuc["girdi"] = yol
         sonuc["zincir_uyarisi"] = zincir_uyarisi
         if zincirler is not None:
@@ -1019,7 +1328,7 @@ def _rapor_govde(yol, json_yol=None, zincir=True):
     return cikis_kodu
 
 
-def rapor(yol, json_yol=None, zincir=True):
+def rapor(yol, json_yol=None, zincir=True, taraf=None, kok=None):
     """v0.5.8.4 SÖZLEŞME DEĞİŞİKLİĞİ (bilinçli): `zincir` varsayılanı True —
     372 sahasında --zincir bayrağı 0 kez verildi (opsiyonel kapı = ateşlemeyen
     kapı). Kapatmak isteyen `--zincirsiz` verir; `--zincir` NO-OP.
@@ -1030,7 +1339,7 @@ def rapor(yol, json_yol=None, zincir=True):
     (teşhis), stdout'taki satır bekçi içindir. Çıkış kodunu DÖNER; sys.exit
     __main__'dedir (fonksiyon çağıran testler/araçlar çökmesin)."""
     try:
-        return _rapor_govde(yol, json_yol=json_yol, zincir=zincir)
+        return _rapor_govde(yol, json_yol=json_yol, zincir=zincir, taraf=taraf, kok=kok)
     except Exception as e:                       # noqa: BLE001 — fail-closed kapı
         traceback.print_exc(file=sys.stderr)
         hata = f"{type(e).__name__}: {e}"
@@ -1049,6 +1358,25 @@ def rapor(yol, json_yol=None, zincir=True):
         return 2
 
 
+def goc_komutu(eski_yol, dal, cikti_yol):
+    """CLI --goc: özet basar, çıkış kodunu DÖNER (0 tamam / 2 GÖÇ ÇÖKTÜ).
+    Kaynağa dokunmaz; çökmede çıktı dosyası yazılmaz."""
+    try:
+        ozet = goc(eski_yol, dal, cikti_yol)
+    except Exception as e:                       # noqa: BLE001 — fail-closed
+        print(f"GÖÇ ÇÖKTÜ: {type(e).__name__}: {e}")
+        print("KAPI: exit 2 — göç tamamlanamadı; kaynak dosyaya dokunulmadı")
+        return 2
+    print(f"GÖÇ (kesme_flag → '{dal}:' dal öneki): {eski_yol} → {cikti_yol}")
+    print(f"  değişen kenar: {ozet['degisen']}  (toplam kenar: {ozet['kenar']}; "
+          "kaynağa dokunulmadı)")
+    for i, deger in ozet["atlanan"]:
+        print(f"  ⚠ Kenar #{i}: kesme_flag '{deger}' '{dal}' dalında kanonik değil — "
+              f"göçmedi, elle düzelt (kanonik: "
+              f"{' | '.join(f'{dal}:{v}' for v in KESME_DALLARI[dal])})")
+    return 0
+
+
 if __name__ == "__main__":
     import argparse
     p = argparse.ArgumentParser(description="OA-illiyet deterministik graf denetimi")
@@ -1056,6 +1384,17 @@ if __name__ == "__main__":
     p.add_argument("--json", dest="json_yol", metavar="YOL",
                    help="denetim sonucunu makine-okur JSON olarak bu yola yaz "
                         "(pipeline'da ZORUNLU — bekçi bunu okur)")
+    p.add_argument("--taraf", choices=list(TARAFLAR),
+                   help="G9: temsil edilen taraf — savunma kanadı (sanik/mudafii/davali/"
+                        "borclu) için §6/§7/§8 tavsiye yönü ÇÜRÜT; defteri ezer")
+    p.add_argument("--kok", metavar="DAVA_KÖKÜ",
+                   help="G9: <kök>/_oa/defter/pipeline-durum.json 'ceza_dali' alanından "
+                        "taraf çözümü (mudafii → sanık, musteki → müşteki)")
+    p.add_argument("--goc", metavar="ESKI_JSON",
+                   help="G10: eski (dal öneksiz) kesme_flag'leri --dal önekiyle "
+                        "yeniden etiketle, --cikti'ya yaz (kaynağa dokunmaz)")
+    p.add_argument("--dal", choices=sorted(KESME_DALLARI), help="--goc için dal")
+    p.add_argument("--cikti", metavar="YENI_JSON", help="--goc çıktı yolu")
     p.add_argument("--zincir", action="store_true",
                    help="(geriye uyum — NO-OP) illiyet zinciri güven analizi "
                         "v0.5.8.4'ten beri VARSAYILANDIR (372 sahası: bayrak 0 kez "
@@ -1064,9 +1403,19 @@ if __name__ == "__main__":
                    help="v0.5.8.4: zincir güven analizini (bölüm 8 + json "
                         "'zincirler' alanı) bilinçli olarak KAPATIR")
     a = p.parse_args()
+    if a.goc:
+        if not (a.dal and a.cikti):
+            print("Kullanım: python grafik_denetim.py --goc eski.json --dal medeni|miras|ceza "
+                  "--cikti yeni.json")
+            sys.exit(1)
+        sys.exit(goc_komutu(a.goc, a.dal, a.cikti))
     if not a.graf:
-        print("Kullanım: python grafik_denetim.py graf.json --json out.json [--zincirsiz]")
+        print("Kullanım: python grafik_denetim.py graf.json --json out.json "
+              "[--taraf sanik|...|alacakli | --kok <dava kökü>] [--zincirsiz]")
+        print("          python grafik_denetim.py --goc eski.json --dal medeni|miras|ceza "
+              "--cikti yeni.json")
         print("Çıkış: 0 temiz · 1 kullanım · 2 DENETİM ÇÖKTÜ · 3 çevrim/şema hatası")
         sys.exit(1)
     # --zincir kabul edilir ama okunmaz (no-op) — tek etkili bayrak --zincirsiz.
-    sys.exit(rapor(a.graf, json_yol=a.json_yol, zincir=not a.zincirsiz))
+    sys.exit(rapor(a.graf, json_yol=a.json_yol, zincir=not a.zincirsiz,
+                   taraf=a.taraf, kok=a.kok))

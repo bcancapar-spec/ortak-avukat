@@ -227,4 +227,6 @@ def test_uyarili_grafta_json_anahtar_seti_sabit_kalir(tmp_path):
         "dugumler", "kenarlar", "girdi", "zincirler",
         "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
         "guc_beyansiz_kenarlar", "zincir_uyarisi",
+        # v0.5.16/A-2 (G9 taraf/yön, G12 kanun yolu zinciri) — uyarı değil, sözleşme
+        "taraf", "yon", "kanun_yolu_zinciri",
     }

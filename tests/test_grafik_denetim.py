@@ -54,10 +54,16 @@ JSON_ANAHTARLARI = {
     # v0.5.16/A (K2/G6/G7/G4/G2): bekçi sözleşmesi alanları
     "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
     "guc_beyansiz_kenarlar", "zincir_uyarisi",
+    # v0.5.16/A-2 (G9 taraf/yön, G12 kanun yolu zinciri)
+    "taraf", "yon", "kanun_yolu_zinciri",
 }
 KENAR_REF_ANAHTARLARI = {
     "index", "kaynak", "hedef", "kategori", "tur", "dayanak_delil", "dogrulama",
 }
+# v0.5.16/A-2 G10 (BİLİNÇLİ karakterizasyon değişikliği): kesme adayı referansı
+# artık kesme_flag + dal + not (doktrin hatırlatması) taşır — bekçi ve
+# oa-antitez dal ayrımını makine-okur almalı; genel kenar ref'i DEĞİŞMEDİ.
+KESME_REF_ANAHTARLARI = KENAR_REF_ANAHTARLARI | {"kesme_flag", "dal", "not"}
 
 
 def _cli(*args):
@@ -302,8 +308,10 @@ def test_iliski_kenarlarinin_cevrimi_denetime_girmez(izole_kok):
 
 def test_kesme_flagli_illiyet_kenari_aday_iliski_kenari_yok_sayilir(izole_kok):
     """kesme_flag yalnız kategori=illiyet kenarında görülür; iliski
-    kenarındaki kesme_flag sessizce yok sayılır. JSON kenar referansı
-    kesme_flag alanını TAŞIMAZ (karakterizasyon — mevcut tasarım)."""
+    kenarındaki kesme_flag sessizce yok sayılır. v0.5.16/A-2 G10: kesme adayı
+    referansı artık kesme_flag/dal/not TAŞIR (eski 'taşımaz' kilidi BİLİNÇLİ
+    değiştirildi — dal ayrımı bekçiye makine-okur gitmeli); 'mucbir sebep'
+    dal öneksiz + alt çizgisiz olduğundan dal None, not None."""
     graf = {
         "dugumler": [
             {"id": "A", "tip": "olay", "ad": "Olay A"},
@@ -333,8 +341,9 @@ def test_kesme_flagli_illiyet_kenari_aday_iliski_kenari_yok_sayilir(izole_kok):
     assert len(sonuc["kesme_adaylari"]) == 1
     tek = sonuc["kesme_adaylari"][0]
     assert tek["index"] == 0
-    # _kenar_ref kesme_flag/illiyet_tipi taşımaz — anahtar seti sabit:
-    assert set(tek) == KENAR_REF_ANAHTARLARI
+    # A-2 G10: kesme ref'i = kenar ref + kesme_flag/dal/not (illiyet_tipi yine yok)
+    assert set(tek) == KESME_REF_ANAHTARLARI
+    assert tek["kesme_flag"] == "mucbir sebep" and tek["dal"] is None and tek["not"] is None
 
 
 # ── 7. yük taşıyan kenar (illiyet alt-grafında bridge) ──────────────────────
