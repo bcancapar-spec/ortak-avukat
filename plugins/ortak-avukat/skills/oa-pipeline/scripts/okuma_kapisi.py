@@ -277,11 +277,15 @@ def cmd_sure_adaylari(args):
                   f"{', '.join(a['oneri_kural']) or '—'} | {a['not']} |")
         print()
         print("ÖNERİLEN ADIMLAR (avukat onayıyla — script YAZMAZ):")
+        # `--flagsiz` ZORUNLU: hesapla_sure.py `--kok` varsayılanı '.' ve <kok>/_oa
+        # varsa son günü sureler.json'a OTOMATİK flag yazar (E4a). Aday tarih
+        # orijinalden teyit edilmeden flag'e girmesin — hesap advisory, flag yalnız
+        # avukat onayıyla oa_hafiza.py sure-flag ile.
         for a in adaylar:
             ilk_iso = next((t["iso"] for t in a["tarih_adaylari"] if t.get("iso")), "YYYY-MM-DD")
             kural = a["oneri_kural"][0] if a["oneri_kural"] else "<kural|--sure N --birim gun|hafta>"
             print(f"  - {a['evrak']} [{a['sinif']}]: python oa-sure/scripts/hesapla_sure.py "
-                  f"--kural {kural} --teblig {ilk_iso}  →  HESAPLANAN SON GÜN ile: "
+                  f"--kural {kural} --teblig {ilk_iso} --flagsiz  →  HESAPLANAN SON GÜN ile: "
                   f"python oa_hafiza.py sure-flag --tarih <SON GÜN> --aciklama \"{a['sinif']}: "
                   f"{a['evrak']}\" --kural {kural} (avukat onayıyla)")
     yol = _sure_adaylari_json_yolu(kok)
