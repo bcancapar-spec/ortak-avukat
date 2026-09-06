@@ -306,18 +306,41 @@ blokta (İNGEST-ÖNCE dahil) GEREKÇELİ geçiş sağlar — olay `serh:true` il
 İŞLENİR, `--goster`/`--denetle` bunu HER ZAMAN `⚠ ŞERHLİ UYGULANDI` ile basar
 (sessiz geçiş yok).
 
+**GRAF KAPISI (K2, v0.5.16 — karar #1: SERT):** adım-1/oa-illiyet UYGULANDI
+yazılırken `_oa/cikti/*.json` içinde `arac == grafik_denetim` damgalı bir
+denetim çıktısı `cevrimler` (dairesel illiyet) VEYA `sema_hatalari` VEYA
+`denetim_coktu` taşıyorsa BLOKLEYİCİ RET — dairesel illiyet hukuken imkânsız
+bir nedensellik iddiasıdır, çöken denetim = atlanan kapıdır. Denetim JSON'u
+hiç yoksa RET DEĞİL (graf denetimi koşmamış dosyada kapı sessizdir; ELDEN/
+uyarı katmanı görünür kılar). Dosya ADI önemsizdir — `01-illiyet-denetim.json`
+da, `graf.json` da aynı süzgeçten geçer (K1: bekçiler ve kapı ad sözleşmesinden
+kurtuldu, damga = aracın kendi `arac` alanı).
+
+**ŞERH-KAPI (P1, v0.5.16 — Hamle 9):** `--serh` artık HANGİ kapıyı geçtiğini
+adlandırır: **`--serh-kapi ingest-once|graf|kiyas|kontrol|tumu`**. Şerh yalnız
+adlandırılan kapıyı geçer (`--serh-kapi graf` İNGEST-ÖNCE'yi geçmez — RET
+hangi adın gerektiğini söyler). Çıplak `--serh` geriye uyumludur (tüm kapılar)
+AMA görünür UYARI basar: «--serh-kapi verilmedi — şerh TÜM kapılara uygulandı».
+Olay `serh_kapi` alanını taşır; DURUM.md/--denetle şerh metnini `[kapı: …]`
+ekiyle gösterir. CANLI-SENKRON ve ÇAPRAZ-ADIM (adım-8) ayrı ad almaz — yalnız
+`tumu`/çıplak şerhle geçilir. **ELDEN ⟂ şerh:** C5 ELDEN düşürmesi artık
+şerhten BAĞIMSIZDIR — şerh bir kapının geçildiğini söyler, ELDEN script
+artefaktının diskte olmadığını; ikisi birlikte yazılır (`ELDEN ⚠ŞERHLİ`),
+Avukat Kararı Bekleyen'de `ŞERHLİ ELDEN` olarak görünür.
+
 **Önkoşul-artefakt tablosu (P1-11 doktrin senkronu — kod ile senkron tutulur,
 bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 
 | Adım | Parça | Aranan artefakt | Kademe |
 |---|---|---|---|
-| 1+ (İNGEST-ÖNCE) | (tümü) | `_oa/metin/00-kunye.json` | **BLOKLEYICI** |
+| 1+ (İNGEST-ÖNCE) | (tümü) | `_oa/metin/00-kunye.json` | **BLOKLEYICI** (`--serh-kapi ingest-once`) |
+| adım-1 | oa-illiyet | `_oa/cikti/*.json` (`arac=grafik_denetim`) — `cevrimler`/`sema_hatalari`/`denetim_coktu` BOŞ olmalı; dosya yoksa kapı sessiz | **BLOKLEYICI — GRAF KAPISI** (K2, `--serh-kapi graf`) |
 | adım-3 | oa-ictihat | `_oa/teyit/kunye-teyit.md` (satır) VEYA `_oa/teyit/dokum/` (dolu) | UYARI |
 | adım-4 | oa-vakia | `_oa/cikti/04-vakia*` | UYARI |
-| adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE) | **BLOKLEYICI** |
+| adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
 | adım-6 | oa-strateji | `_oa/cikti/06-strateji*` | UYARI |
 | adım-7 | oa-antitez | `_oa/cikti/07-antitez*` | UYARI |
-| adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** |
+| adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** (`--serh-kapi kontrol`) |
 
 ## Model-bağımsız tetik (P0-7 + P0-B) + DURUM.md (P0-8, v0.5.5)
 Plugin `hooks/hooks.json`'daki Stop/SessionEnd hook'u oturum kapanışında
@@ -352,6 +375,32 @@ hâlde hızlı ve sessiz çıkar. `udf_yaz.py` da kendi üretim anında (`on_den
 kostur`) İçtihat Muhakeme Zinciri + Atıf/Künye Teyit kapılarını İN-PROCESS
 çalıştırır — BLOK bulursa UDF üretimini ENGELLEMEZ (avukat egemen) ama
 `<udf-adi>.denetim.txt` raporu + `_oa/DURUM.md` notu diskte kalır.
+
+**DURUM.md BEKÇİLERİ AD-BAĞIMSIZ (K1, v0.5.16 — Hamle 2):** graf/kıyas/usul
+boşluk bekçileri (`🔴 Graf Yapısal Boşluk` / `Kıyas Boşluk` / `Usul Boşluk`
+bölümleri) artık `_oa/cikti/*.json` içinde aracın kendi `arac` damgasını
+(`grafik_denetim` / `kiyas_denetim` / `usul_matris`) arar — dosya adı
+(`*graf*`, `*kiyas*`, `*usul*`) şart değildir; bu dosyanın kendi örneği olan
+`01-illiyet-denetim.json`daki çevrim bugün 0 uyarı üretiyordu, artık DURUM.md'ye
+ulaşır. Graf bekçisi A grubunun yeni alanlarını taşır: `denetim_coktu` →
+«🔴 graf denetimi ÇÖKTÜ (<hata>) — çöken kapı = atlanan kapı»;
+`baglanmamis_deliller` → «bağlanmamış delil: <ad>»; `guc_beyansiz_kenarlar` →
+advisory satır. Köprü düğüm/`perde` etiketi yine ALINMAZ — karar-malzemesidir
+(oa-strateji/oa-antitez okur), uyarı değil.
+
+**İNLİNE SAYAÇ — 3 TUR KURALI (H1, v0.5.16 — Hamle 11, karar #2: N=3):**
+PostToolUse inline denetimi (`dilekce_denetim.hizli_denetim`) aynı dosyada aynı
+bulgu SINIFINI (satır başındaki `[X]` etiketi; öncelik `[F] > [Y] > [P] > diğer`,
+basılan ilk 5 satırdan seçilir) **3 ARDIŞIK turda** yeniden görürse artık
+yalnız basmakla kalmaz: `_oa/defter/inline-sayac.json` sayacı üzerinden DURUM.md
+«Avukat Kararı Bekleyen»e M7 satırı düşer («inline bulgu 3 turdur kapanmıyor:
+[F] … — avukat kararı: kabul/düzelt») + stdout'ta TEK satır. Bulgu kaybolunca
+(temiz tur) ya da sınıf değişince sayaç sıfırlanır. Throttle YALNIZ basıma
+uygulanır, TESPİTE asla (sayaç her turda işler — mevcut invaryant). Bozuk/eski
+sayaç dosyası hook'u çökertmez: sıfırlanır ve görünür uyarı basar. Bu bir
+hukuki karar DEĞİLDİR — «3 turdur aynı sınıf açık» mekanik gözlemidir; kararı
+avukat verir (`--avukat-karari` ile değil, bulguyu düzelterek/kabul ederek —
+sayaç kendiliğinden düşer).
 
 **AVUKAT KARARI — çözüm komutu (M7, Paket D — v0.5.5):** AVUKAT KARARI BEKLEYEN yalnız GÖSTERİR; bir çatalı KAPATMAK için `pipeline_kayit.py --avukat-karari "<seçilen seçenek/karar metni>" (--adim N --parca oa-x | --katman oa-x) --gerekce "<neden bu seçenek seçildi>"` kullanılır — gerekçesiz kayıt REDDEDİLİR (çatallar gerekçeli seçeneklerle listelenir doktrini: seçim keyfi değil, gerekçeli olmalı). Kayıt append-only'dir (eski BEKLEYEN izi kaybolmaz); DURUM.md'de ayrı bir "Avukat Kararları (Kayıtlı)" bölümünde kalıcı görünür, çözülen çatal artık BEKLEYEN listesinde GÖRÜNMEZ.
 
@@ -447,7 +496,8 @@ işlevsiz bırakır (372 Torbalı bulgusu).
   yazılırken kanıtta `_oa/` altı artefakt yolu YOKSA (ya da yol diskte yoksa)
   statü otomatik **ELDEN**'e düşer — iş yapılmış olabilir ama script
   artefaktı diskte KANITSIZDIR; UYGULANDI ile aynı kefeye konmaz, BLOKLANMAZ
-  da. ŞERHLİ geçişte düşürme yok (şerh zaten görünür istisnadır). `--denetle`
+  da. ~~ŞERHLİ geçişte düşürme yok~~ (v0.5.16/P1: düşürme artık şerhten
+  BAĞIMSIZ — ELDEN + ŞERHLİ birlikte yazılır, bkz. ŞERH-KAPI). `--denetle`
   ELDEN kalemlerini TEK özet satıra indirir; DURUM.md `✋ ELDEN sayacı` ile
   ayrı sayar; ELDEN doğrudan da yazılabilir (dürüst beyan — kanıt yine
   zorunlu). `oa_metrik` ELDEN'i işlenmiş parça sayar (override oranı

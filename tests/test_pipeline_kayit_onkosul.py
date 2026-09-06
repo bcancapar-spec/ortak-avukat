@@ -329,6 +329,12 @@ def test_serh_kisa_gerekce_reddedilir(tmp_path):
 
 
 def test_serh_gecerli_gerekceyle_gecer_ve_goster_serhli_isaretler(tmp_path):
+    """v0.5.16 / P1 [Hamle 9] — BİLİNÇLİ karakterizasyon değişikliği: eskiden
+    şerh, C5 ELDEN düşürmesini bastırıyordu ('ŞERHLİ UYGULANDI'). Artık ELDEN
+    düşürmesi şerhten BAĞIMSIZ: oa-kiyas SCRIPT'li parça, kanıtta `_oa/`
+    artefakt yolu YOK → statü ELDEN; şerh de ayrı ayrı görünür kalır
+    ('ŞERHLİ ELDEN'). Şerh bir kapının geçildiğini söyler, ELDEN script
+    artefaktının diskte olmadığını — biri diğerini gizleyemez."""
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
     gerekce = "Bu dosyada kıyas adımı tek taraflı/basit alacak davası olduğu için atlanıyor."
@@ -338,18 +344,23 @@ def test_serh_gecerli_gerekceyle_gecer_ve_goster_serhli_isaretler(tmp_path):
         cwd=tmp_path,
     )
     assert kod == 0, cikti
-    assert "ŞERHLİ UYGULANDI" in cikti
+    assert "ŞERHLİ ELDEN" in cikti and "→ ELDEN" in cikti
 
     kod_g, cikti_g = _cli(["--goster", "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod_g == 0
-    assert "ŞERHLİ UYGULANDI" in cikti_g
+    assert "ŞERHLİ ELDEN" in cikti_g
 
 
 def test_serh_denetle_de_de_gorunur(tmp_path):
     """Sinav-turu KUCUK-düzeltme: `--goster` ŞERHLİ UYGULANDI'yı zaten
     basıyordu ama `--denetle` (ve dolayısıyla teslim_paketi'nin (d) kapısı +
     _oa/DURUM.md) bunu görmüyordu — bir ŞERH ile atlanmış önkoşul en kritik
-    tüketicide (--denetle) sessiz kalıyordu. Bu artık düzeltilmiştir."""
+    tüketicide (--denetle) sessiz kalıyordu. Bu artık düzeltilmiştir.
+
+    v0.5.16 / P1 [Hamle 9] — BİLİNÇLİ karakterizasyon değişikliği: kanıtta
+    `_oa/` artefakt yolu olmadığından statü ELDEN'e düşer (şerh düşürmeyi
+    artık bastırmaz); --denetle şerhi 'ŞERHLİ ELDEN' olarak yine GÖSTERİR —
+    testin özü (şerhin --denetle'de görünürlüğü) aynen korunur."""
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
     gerekce = "Bu dosyada kıyas adımı tek taraflı/basit alacak davası olduğu için atlanıyor."
@@ -363,7 +374,7 @@ def test_serh_denetle_de_de_gorunur(tmp_path):
     # --denetle diğer BEKLIYOR adım/katmanlar yüzünden exit 1 dönebilir; burada
     # sadece ŞERHLİ satırının GÖRÜNÜR olup olmadığı denetleniyor.
     _kod_d, cikti_d = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
-    assert "ŞERHLİ UYGULANDI" in cikti_d, f"--denetle şerhi göstermeliydi:\n{cikti_d}"
+    assert "ŞERHLİ ELDEN" in cikti_d, f"--denetle şerhi göstermeliydi:\n{cikti_d}"
 
     durum_md = (tmp_path / "_oa" / "DURUM.md").read_text(encoding="utf-8")
     assert "ŞERHLİ" in durum_md

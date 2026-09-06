@@ -79,6 +79,17 @@ def test_graf_bekcisi_desteksiz_kenar_ve_cevrim_uyarir(pk, kok):
     assert "dairesel illiyet — A → B → A" in metin
 
 
+def test_graf_bekcisi_skill_ornegi_ad_sozlesmesinden_bagimsiz(pk, kok):
+    """K1 (v0.5.16, Hamle 2) — bekçi `*graf*.json` ad sözleşmesine bağlıydı;
+    SKILL.md'nin kendi örneği `01-illiyet-denetim.json` süzgeçten geçmiyordu
+    (bugün 0 uyarı). Artık `*.json` + `arac == grafik_denetim` damgası."""
+    _cikti_yaz(kok, "01-illiyet-denetim.json", {
+        "arac": "grafik_denetim", "cevrimler": [["A", "B", "A"]]})
+    uyarilar = pk._graf_yapisal_bosluk_uyarisi(str(kok))
+    assert len(uyarilar) == 1
+    assert "dairesel illiyet — A → B → A" in uyarilar[0]
+
+
 def test_graf_bekcisi_yabanci_ve_bozuk_dosyada_sessiz(pk, kok):
     _cikti_yaz(kok, "02-graf-yabanci.json", {"arac": "baska_arac",
                                              "desteksiz_kenarlar": [{"kaynak": "A"}]})
