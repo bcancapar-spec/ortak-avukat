@@ -494,3 +494,118 @@ def test_skill_ilk_sayfa_uzunluk_testi_b_listesinde():
     assert "İLK SAYFA" in b and "UZUNLUK" in b
     assert "KB" in b and "bölüm sayısı" in b.lower()
     assert "bant" in b.lower()
+
+
+# ═══════════════════ ONARIM TURU (hakem bulguları, 2026-09-07) ═════════════
+#
+# K4 REGRESYON (KRİTİK): `_YN`'nin kurul tire soneki «(?:-\d{1,6}(?!\s*/))?»
+# lookahead'i GERİ İZLEMEYLE kısmi eşleşiyordu — «E. 2020/1111-2021/2222»
+# girdisinde esas «2020/1111-202» (bozuk), karar kaybı, sahte EKSİK KÜNYE.
+# Taban (80ac847) aynı girdide TAM künye veriyordu → geriye gidiş. Düzeltme:
+# «-\d{1,6}\b(?!\s*/)» — kelime sınırı geri izlemeyi keser. Aşağıdaki iki test
+# etiketli birleşik biçimi (K. etiketli / etiketsiz) kilitler.
+
+def test_k4_onarim_etiketli_birlesik_e_k_noktali_tam_kunye():
+    """«E. 2020/1111-2021/2222 K.» — Yargıtay'ın etiketli birleşik biçimi (sahada
+    gerçek varyant). Taban bunu (2020/1111, 2021/2222) diye TAM ayrıştırıyordu;
+    onarım öncesi dal «2020/1111-202» üretiyordu. Kanonik değer tabanla aynı."""
+    metin = "Yargıtay 9. HD E. 2020/1111-2021/2222 K. sayılı kararı emsaldir."
+    atiflar = ko.esas_karar_atiflari(metin)
+    assert [(a["esas"], a["karar"]) for a in atiflar] == [("2020/1111", "2021/2222")], atiflar
+    assert atiflar[0]["daire_key"] == ("9", "HD")
+    assert ko.ayristirilamayan_atiflar(metin) == []
+
+
+def test_k4_onarim_etiketli_birlesik_k_etiketsiz_tam_kunye():
+    """«E. 2020/1111-2021/2222 sayılı» (K. etiketi yok) — esas tabanla aynı
+    («2020/1111», kesik değil); tire sonrası «2021/2222» artık KARAR olarak
+    tamamlanır (etiketli-birleşik yükseltmesi: esas-only atıf + hemen ardında
+    «-YYYY/N» → tam künye; kurul dışı satır)."""
+    metin = "Yargıtay 9. HD, E. 2020/1111-2021/2222 sayılı kararı emsaldir."
+    atiflar = ko.esas_karar_atiflari(metin)
+    assert len(atiflar) == 1, atiflar
+    assert atiflar[0]["esas"] == "2020/1111", atiflar        # taban değeri — kesik DEĞİL
+    assert atiflar[0]["karar"] == "2021/2222", atiflar
+    assert ko.ayristirilamayan_atiflar(metin) == []
+
+
+def test_k4_onarim_kurul_tire_soneki_korunur_cumle_sonu():
+    """Düzeltme kurul biçimini bozmaz: «E. 2020/9-111» tek esas; cümle sonu
+    noktası ve virgülle de."""
+    for metin in ("Yargıtay HGK E. 2020/9-111 K. 2021/222.",
+                  "Yargıtay CGK, E. 2020/9-111, K. 2021/222, T. 01.01.2021"):
+        atiflar = ko.esas_karar_atiflari(metin)
+        assert [(a["esas"], a["karar"]) for a in atiflar] == [("2020/9-111", "2021/222")], metin
+
+
+# Yanlış-BLOK adayı (hakem notu): «Yerel mahkemenin 05.06.2024 tarihli kararı
+# Yargıtay'ın yerleşik içtihadına aykırıdır.» istinaf/temyiz dilekçesinde ÇOK
+# sık cümledir; tarih KENDİ dosyasının kararına aittir, merci yalnız genel
+# içtihat anımıdır. Tarih-only tetiği artık «tarihi merciye ait» ise ateşler:
+# merci tarihten ÖNCE aynı satırda anılmalı ve aradaki metinde başka bir
+# mahkeme iyeliği («yerel mahkemenin», «ilk derece mahkemesinin») olmamalı.
+K4_YEREL_TARIH_TEMIZ = [
+    ("yerel_sonra_merci", "Yerel mahkemenin 05.06.2024 tarihli kararı Yargıtay'ın yerleşik "
+                          "içtihadına aykırıdır."),
+    ("ilk_derece_sonra_daire", "İlk derece mahkemesinin 05.06.2024 tarihli kararı Yargıtay "
+                               "9. HD içtihadıyla bağdaşmaz."),
+    ("merci_once_ama_yerel_arada", "Yargıtay 9. HD'nin bozma ilamına uyan yerel mahkemenin "
+                                   "05.06.2024 tarihli kararı usule aykırıdır."),
+]
+
+
+@pytest.mark.parametrize("ad,metin", K4_YEREL_TARIH_TEMIZ, ids=[t[0] for t in K4_YEREL_TARIH_TEMIZ])
+def test_k4_onarim_yerel_mahkeme_tarihli_karari_blok_degil(ad, metin):
+    assert ko.ayristirilamayan_atiflar(metin) == [], f"{ad}: yanlış-BLOK"
+
+
+def test_k4_onarim_merciye_ait_tarih_only_yine_blok():
+    """Karşı kontrol: tarih GERÇEKTEN merciye aitse EKSİK KÜNYE kalır (Karar #3)."""
+    for metin in ("Yargıtay 9. HD'nin 05.06.2024 tarihli kararı bu yöndedir.",
+                  "İstanbul BAM 12. HD'nin 05.06.2024 tarihli kararı emsaldir.",
+                  "Danıştay 8. Daire'nin 05.06.2024 günlü ilamı uygulanmalıdır."):
+        izler = ko.ayristirilamayan_atiflar(metin)
+        assert izler and izler[0]["sinif"] == "EKSİK KÜNYE" and "tarih-only" in izler[0]["sebep"], metin
+
+
+def test_k4_onarim_yerel_tarih_kunye_teyit_ve_muhakeme_exit0(tmp_path):
+    """Uçtan uca: iki kapı da bu cümleyi BLOK etmez."""
+    cumle = "Yerel mahkemenin 05.06.2024 tarihli kararı Yargıtay'ın yerleşik içtihadına aykırıdır.\n"
+    _teyit_iskelesi(tmp_path, cumle)
+    kod, cikti = _cli(SCRIPTS / "kunye_teyit.py", ["taslak.md", "--kok", tmp_path], tmp_path)
+    assert kod == 0, cikti
+    assert "EKSİK KÜNYE" not in cikti
+    (tmp_path / "_oa" / "cikti").mkdir(parents=True)
+    kod, cikti = _cli(SCRIPTS / "ictihat_muhakeme_denetim.py",
+                      ["taslak.md", "--kok", tmp_path], tmp_path)
+    assert kod == 0, cikti
+    assert "EKSİK KÜNYE" not in cikti
+
+
+# K5 (hakem notu): kütükten okunan AKIBET tokenı da `_akibet_normalize`'dan
+# geçmeli — D grubu Türkçe harfli («kesinleşti», «Geri-Çevrildi») yazarsa enum
+# dışı sayılıp sahte «tanınmayan» uyarısı basılmasın; kayıt/kütük çapraz
+# kontrolü de aynı normalizasyonla karşılaştırılsın.
+
+def test_k5_onarim_kutuk_akibet_turkce_harfli_normalize_sessiz():
+    kok = _akibet_koku(damga="LEHE", akibet="kesinleşti", kutuk_akibet="kesinleşti")
+    kod, out = _muhakeme_cli(kok, ATIFLI)
+    assert "tanınmayan" not in out and "uyuşmuyor" not in out, out
+    assert "[G5-AKIBET]" not in out
+    assert kod == 0, out
+
+
+def test_k5_onarim_kutuk_akibet_tireli_buyuk_harf_normalize_uyari():
+    kok = _akibet_koku(damga="LEHE", kutuk_akibet="Geri-Çevrildi")
+    kod, out = _muhakeme_cli(kok, ATIFLI)
+    assert "tanınmayan" not in out, out
+    assert "[G5-AKIBET]" in out and "geri_cevrildi" in out
+    assert kod == 0, out
+
+
+def test_k5_onarim_kutuk_turkce_bozuldu_blok():
+    """Normalize, BLOK yolunda da çalışır: kütük «AKIBET=Bozuldu» + LEHE + atıf → BLOK."""
+    kok = _akibet_koku(damga="LEHE", kutuk_akibet="Bozuldu")
+    kod, out = _muhakeme_cli(kok, ATIFLI)
+    assert kod == 1, out
+    assert "LEHE dayanak olamaz" in out
