@@ -3,6 +3,7 @@
   "_teyit_notu": "mcp_teyit_tarihi: kuralın Mevzuat MCP'den (veya Resmî Gazete/güncel kanun metninden) en son teyit edildiği tarih (YYYY-MM-DD). BOŞ ise kural HENÜZ teyit edilmemiştir — kullanmadan önce teyit et ve bu alanı doldur. Teyit tarihi YALNIZ bu alanda tutulur; 'kaynak' metnine YAZILMAZ (v0.5.14 / B-21 — ikiz beyan yasağı). Süreler kanun değişiklikleriyle değişebilir (ör. 6183 m.58 7→15 gün, 7061 s.K.); tabloya körlemesine güvenme.",
   "_dikkat_cmk": "CMK kanun yolu süreleri Mevzuat MCP'den TEYİTLİDİR (2026-08-31): istinaf m.273/1 İKİ HAFTA, temyiz m.291/1 İKİ HAFTA, itiraz m.268/1 İKİ HAFTA. Her iki kanun yolu maddesinde de hazır bulunmayanlara ilişkin ikinci fıkralar 2/3/2024 tarihli 7499 s.K. ile MÜLGA edilmiştir; dolayısıyla eski 'istinaf yedi gün / temyiz on beş gün' rejimi YÜRÜRLÜKTE DEĞİLDİR. Tutuklu sanık yönünden CMK m.263 (ceza infaz kurumu müdürüne başvuru — süreleri KESER) her üç maddede de saklıdır. ADLİ TATİL: ceza sürelerine HMK m.104 (bir hafta) DEĞİL, CMK m.331/4 (ÜÇ GÜN) uygulanır — hesap `--yargi ceza` ile koşulur, aksi hâlde script DURUR.",
   "_baslangic_notu": "izinli_baslangic_turleri: kuralın hukuken hangi olaydan işlediği. `--baslangic-turu` bu kümenin DIŞINDA verilirse script UYARI basar (nitelendirme yapmaz, aritmetiği değiştirmez). Boş liste = kısıt kaydedilmemiş.",
+  "_asama_notu": "v0.5.16 / I5 (P1-3 / A-10) — AŞAMA TETİKLİ SÜRE SINIFI: 'asama_kurallari' bölümündeki kurallar takvimle değil yargılamanın bir AŞAMASIYLA kapanır (ilk itiraz cevap dilekçesiyle, delil bildirimi dilekçeler aşamasında, ıslah tahkikat bitene kadar, katılma hüküm verilinceye kadar). miktar/birim YOKTUR; hesapla_sure.py bu kurallarda TARİH ARİTMETİĞİ YAPMAZ (yanlış tarih üretme yasağı), yalnız aşamayı ve bağlı pipeline adımını (oa-pipeline ADIMLAR 0-10; bu adım TAMAMLANMADAN işlem yapılmalı) basar. Defter kaydı {tur:'asama', asama, pipeline_adimi, aciklama, kural} — son_gun YOK; sure_nobetci.py bu kayıtları AYRI blokta gösterir, tarih sayımına katmaz. Ceza kolundaki katılma anı deseni (v0.5.13, CMK m.237) hukuk koluna genellendi. Gömülü tablo (_GOMULU_ASAMA_KURALLAR) ile BİREBİR aynı tutulur (tests/test_v0516_I5.py). Tarih kuralları tablosu ('kurallar', 21 kural) DEĞİŞMEDİ.",
   "kurallar": {
     "hmk_istinaf": {
       "miktar": 2,
@@ -203,6 +204,48 @@
         "teblig",
         "ogrenme"
       ]
+    }
+  },
+  "asama_kurallari": {
+    "hmk_ilk_itiraz": {
+      "tur": "asama",
+      "asama": "cevap dilekçesi (dilekçeler aşaması)",
+      "pipeline_adimi": 8,
+      "kaynak": "HMK m.117/1 — ilk itirazların HEPSİ cevap dilekçesinde ileri sürülmek zorundadır; aksi hâlde DİNLENEMEZ. Katalog m.116/1: (a) kesin yetki kuralı bulunmayan hâllerde yetki itirazı, (b) tahkim itirazı; (c) bendi 7251 s.K. ile MÜLGA. m.117/2-3: dava şartlarından sonra, ön sorun gibi incelenir ve karara bağlanır.",
+      "aciklama": "İlk itiraz takvimle değil CEVAP DİLEKÇESİNİN VERİLMESİYLE kapanır: adım 8 (YAZIM) kapanmadan cevap dilekçesine yazılmış olmalı. Cevap dilekçesinin KENDİ süresi tarih kuralıdır (hmk_cevap, HMK m.127).",
+      "mcp_teyit_tarihi": "2026-09-07"
+    },
+    "hmk_delil_bildirimi": {
+      "tur": "asama",
+      "asama": "dilekçeler aşaması (dava/cevap dilekçesi)",
+      "pipeline_adimi": 8,
+      "kaynak": "HMK m.119/1-f (dava dilekçesi: iddia edilen her vakıanın hangi delillerle ispat edileceği) · m.129/1-e (cevap dilekçesi: savunmanın her vakıası için aynı) · m.145/1 — Kanunda belirtilen süreden sonra delil gösterilemez; İSTİSNA: sonradan ileri sürme yargılamayı geciktirme amacı taşımıyorsa VEYA süresinde sunulamaması tarafın kusurundan kaynaklanmıyorsa mahkeme İZİN VEREBİLİR (takdir).",
+      "aciklama": "Delil bildirimi dilekçeler aşamasında kapanır; sonradan delil m.145 istisnasına ve mahkeme takdirine bağlıdır — ona GÜVENME. Delil listesi adım 4'te (OLGU/DELİL, oa-vakia) kurulur, adım 8 (YAZIM) kapanmadan dilekçeye eksiksiz girer.",
+      "mcp_teyit_tarihi": "2026-09-07"
+    },
+    "hmk_on_inceleme_belge": {
+      "tur": "asama",
+      "asama": "ön inceleme (davetiye ihtarı → belge sunma kesin süresi)",
+      "pipeline_adimi": 4,
+      "kaynak": "HMK m.139/1-ç — ön inceleme davetiyesinin tebliğinden itibaren İKİ HAFTALIK KESİN SÜRE içinde dilekçede gösterilip henüz sunulmayan belgeler sunulur / getirtilecek belgeler için gereken açıklama yapılır; m.140/5 (7251 s.K.) — ihtara rağmen yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ SAYILMA kararı verilir.",
+      "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--teblig <davetiye tebliği> --sure 2 --birim hafta` ile hesapla (m.139/1-ç kesin süre). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
+      "mcp_teyit_tarihi": "2026-09-07"
+    },
+    "hmk_islah": {
+      "tur": "asama",
+      "asama": "tahkikat (sona erene kadar)",
+      "pipeline_adimi": 6,
+      "kaynak": "HMK m.177/1 — ıslah, tahkikatın sona ermesine kadar yapılabilir; m.177/2 (7251 s.K.) — bozma/kaldırma sonrası ilk derece mahkemesi tahkikata ilişkin işlem yaparsa tahkikat sona erinceye kadar yine yapılabilir (bozmaya uymakla oluşan hukuki durum kaldırılamaz); m.177/3 — sözlü veya yazılı; karşı tarafa bildirilir.",
+      "aciklama": "Islah takvimle değil TAHKİKATIN KAPANMASIYLA kapanır; ıslah gerekip gerekmediği adım 6 (STRATEJİ) kapanmadan karara bağlanır — TEK HAK: aynı davada taraflar ancak BİR KEZ ıslah yoluna başvurabilir (m.176/2), yanlış anda harcanan ıslah geri gelmez.",
+      "mcp_teyit_tarihi": "2026-09-07"
+    },
+    "cmk_katilma": {
+      "tur": "asama",
+      "asama": "ilk derece kovuşturması (hüküm verilinceye kadar)",
+      "pipeline_adimi": 1,
+      "kaynak": "CMK m.237/1 — mağdur, suçtan zarar gören gerçek/tüzel kişiler ve malen sorumlular, ilk derece mahkemesindeki kovuşturma evresinin her aşamasında HÜKÜM VERİLİNCEYE KADAR katılabilir; m.237/2 — kanun yolu muhakemesinde katılma İSTENEMEZ; ilk derecede ileri sürülüp reddolunan/karara bağlanmayan istek kanun yolu başvurusunda AÇIKÇA belirtilmişse incelenir.",
+      "aciklama": "Ceza kolu deseni (v0.5.13, oa-musteki-vekili 'olay tetikli kırmızı bayrak'): kovuşturma açıldı → katılma talebi öncelikli işlem; adım 1 (ALIM) kapanmadan talep edilip edilmediği tespit edilir. Talep yoksa müşteki istinaf/temyiz hakkını telafisiz kaybeder.",
+      "mcp_teyit_tarihi": "2026-09-07"
     }
   }
 }

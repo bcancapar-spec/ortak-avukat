@@ -140,9 +140,67 @@ _GOMULU_BASLANGIC = {
     "aym_bireysel":           ["teblig", "ogrenme"],
 }
 
+# ── v0.5.16 / I5 (P1-3 / A-10) — AŞAMA TETİKLİ SÜRE SINIFI ───────────────
+# Bazı usul "süreleri" takvimle değil yargılamanın bir AŞAMASIYLA kapanır: ilk
+# itiraz cevap dilekçesiyle birlikte, delil bildirimi dilekçeler aşamasında,
+# ıslah tahkikat bitene kadar, katılma hüküm verilinceye kadar. Bunlar için
+# "tebliğ + N gün" aritmetiği YOKTUR; tarih üretmek YANLIŞ TARİH üretmektir
+# (nöbetçi onu otorite sayar, defter kalıcılaştırır). Bu yüzden aşama kuralı
+# `hesapla()`ya HİÇ GİRMEZ: script yalnız aşamayı, bağlı pipeline adımını ve
+# dayanağı basar. Ceza kolundaki katılma anı deseni (v0.5.13, oa-musteki-vekili
+# "olay tetikli kırmızı bayrak", CMK m.237) hukuk koluna genellendi.
+# Tablo `sure_kurallari.json` → "asama_kurallari" bölümüyle BİREBİR aynıdır
+# (ikiz kilit: tests/test_v0516_I5.py::test_asama_kurallari_json_ve_gomulu_BIREBIR);
+# tarih kuralları tablosu (`_GOMULU_KURALLAR`, 21 kural) DEĞİŞMEMİŞTİR.
+# Alanlar: asama (hangi aşama kapatır), pipeline_adimi (oa-pipeline ADIMLAR
+# 0-10; bu adım TAMAMLANMADAN işlem yapılmalı), kaynak (MCP teyitli madde),
+# aciklama (saha dersi), mcp_teyit_tarihi. miktar/birim YOK.
+_GOMULU_ASAMA_KURALLAR = {
+    "hmk_ilk_itiraz": {
+        "asama": "cevap dilekçesi (dilekçeler aşaması)",
+        "pipeline_adimi": 8,
+        "kaynak": "HMK m.117/1 — ilk itirazların HEPSİ cevap dilekçesinde ileri sürülmek zorundadır; aksi hâlde DİNLENEMEZ. Katalog m.116/1: (a) kesin yetki kuralı bulunmayan hâllerde yetki itirazı, (b) tahkim itirazı; (c) bendi 7251 s.K. ile MÜLGA. m.117/2-3: dava şartlarından sonra, ön sorun gibi incelenir ve karara bağlanır.",
+        "aciklama": "İlk itiraz takvimle değil CEVAP DİLEKÇESİNİN VERİLMESİYLE kapanır: adım 8 (YAZIM) kapanmadan cevap dilekçesine yazılmış olmalı. Cevap dilekçesinin KENDİ süresi tarih kuralıdır (hmk_cevap, HMK m.127).",
+        "mcp_teyit_tarihi": "2026-09-07",
+    },
+    "hmk_delil_bildirimi": {
+        "asama": "dilekçeler aşaması (dava/cevap dilekçesi)",
+        "pipeline_adimi": 8,
+        "kaynak": "HMK m.119/1-f (dava dilekçesi: iddia edilen her vakıanın hangi delillerle ispat edileceği) · m.129/1-e (cevap dilekçesi: savunmanın her vakıası için aynı) · m.145/1 — Kanunda belirtilen süreden sonra delil gösterilemez; İSTİSNA: sonradan ileri sürme yargılamayı geciktirme amacı taşımıyorsa VEYA süresinde sunulamaması tarafın kusurundan kaynaklanmıyorsa mahkeme İZİN VEREBİLİR (takdir).",
+        "aciklama": "Delil bildirimi dilekçeler aşamasında kapanır; sonradan delil m.145 istisnasına ve mahkeme takdirine bağlıdır — ona GÜVENME. Delil listesi adım 4'te (OLGU/DELİL, oa-vakia) kurulur, adım 8 (YAZIM) kapanmadan dilekçeye eksiksiz girer.",
+        "mcp_teyit_tarihi": "2026-09-07",
+    },
+    "hmk_on_inceleme_belge": {
+        "asama": "ön inceleme (davetiye ihtarı → belge sunma kesin süresi)",
+        "pipeline_adimi": 4,
+        "kaynak": "HMK m.139/1-ç — ön inceleme davetiyesinin tebliğinden itibaren İKİ HAFTALIK KESİN SÜRE içinde dilekçede gösterilip henüz sunulmayan belgeler sunulur / getirtilecek belgeler için gereken açıklama yapılır; m.140/5 (7251 s.K.) — ihtara rağmen yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ SAYILMA kararı verilir.",
+        "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--teblig <davetiye tebliği> --sure 2 --birim hafta` ile hesapla (m.139/1-ç kesin süre). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
+        "mcp_teyit_tarihi": "2026-09-07",
+    },
+    "hmk_islah": {
+        "asama": "tahkikat (sona erene kadar)",
+        "pipeline_adimi": 6,
+        "kaynak": "HMK m.177/1 — ıslah, tahkikatın sona ermesine kadar yapılabilir; m.177/2 (7251 s.K.) — bozma/kaldırma sonrası ilk derece mahkemesi tahkikata ilişkin işlem yaparsa tahkikat sona erinceye kadar yine yapılabilir (bozmaya uymakla oluşan hukuki durum kaldırılamaz); m.177/3 — sözlü veya yazılı; karşı tarafa bildirilir.",
+        "aciklama": "Islah takvimle değil TAHKİKATIN KAPANMASIYLA kapanır; ıslah gerekip gerekmediği adım 6 (STRATEJİ) kapanmadan karara bağlanır — TEK HAK: aynı davada taraflar ancak BİR KEZ ıslah yoluna başvurabilir (m.176/2), yanlış anda harcanan ıslah geri gelmez.",
+        "mcp_teyit_tarihi": "2026-09-07",
+    },
+    "cmk_katilma": {
+        "asama": "ilk derece kovuşturması (hüküm verilinceye kadar)",
+        "pipeline_adimi": 1,
+        "kaynak": "CMK m.237/1 — mağdur, suçtan zarar gören gerçek/tüzel kişiler ve malen sorumlular, ilk derece mahkemesindeki kovuşturma evresinin her aşamasında HÜKÜM VERİLİNCEYE KADAR katılabilir; m.237/2 — kanun yolu muhakemesinde katılma İSTENEMEZ; ilk derecede ileri sürülüp reddolunan/karara bağlanmayan istek kanun yolu başvurusunda AÇIKÇA belirtilmişse incelenir.",
+        "aciklama": "Ceza kolu deseni (v0.5.13, oa-musteki-vekili 'olay tetikli kırmızı bayrak'): kovuşturma açıldı → katılma talebi öncelikli işlem; adım 1 (ALIM) kapanmadan talep edilip edilmediği tespit edilir. Talep yoksa müşteki istinaf/temyiz hakkını telafisiz kaybeder.",
+        "mcp_teyit_tarihi": "2026-09-07",
+    },
+}
+
+# Aşama kaydının defter/JSON şeması — `oa_hafiza.py sure-flag` kaydıyla aynı
+# defterde (`_oa/sureler.json` → "flagler") yaşar; son_gun/tarih alanı YOKTUR.
+ASAMA_TUR = "asama"
+
 # B-21 (v0.5.14) — JSON okunamazsa artık SESSİZ düşülmez: sebep burada saklanır
 # ve hesabın BAŞINDA görünür şekilde raporlanır ("gömülüye düşüldü, çünkü ...").
 _KURAL_TABLO_SEBEP = ""
+_ASAMA_TABLO_SEBEP = ""
 # Kuralın izin verdiği başlangıç türleri (JSON'dan okunur; yoksa gömülüden).
 KURAL_BASLANGIC = {}
 
@@ -176,6 +234,46 @@ def kurallari_yukle():
     return dict(_GOMULU_KURALLAR), dict(_GOMULU_TEYIT), True
 
 KURALLAR, KURAL_TEYIT, _KURAL_TABLO_YOK = kurallari_yukle()
+
+
+def asama_kurallarini_yukle():
+    """v0.5.16 / I5 — `sure_kurallari.json` → "asama_kurallari" bölümünü oku;
+    yoksa/bozuksa gömülüye düş ve sebebi `_ASAMA_TABLO_SEBEP`e yaz (B-21
+    disiplini: sessiz fallback yok). Şema denetimi mekaniktir: her kayıtta
+    `asama` (str) ve `pipeline_adimi` (int 0-10) olmalı; olmayan kayıt
+    ATLANMAZ — bölüm bütünüyle bozuk sayılır (fail-closed: yarım tablo,
+    eksik tablodan tehlikelidir)."""
+    global _ASAMA_TABLO_SEBEP
+    yol = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sure_kurallari.json")
+    if not os.path.exists(yol):
+        _ASAMA_TABLO_SEBEP = "sure_kurallari.json BULUNAMADI"
+    else:
+        try:
+            with open(yol, encoding="utf-8") as f:
+                data = json.load(f)
+            bolum = data.get("asama_kurallari")
+            if not isinstance(bolum, dict) or not bolum:
+                _ASAMA_TABLO_SEBEP = "sure_kurallari.json 'asama_kurallari' bölümü YOK/BOŞ"
+            else:
+                cikan = {}
+                for k, v in bolum.items():
+                    if (not isinstance(v, dict) or not str(v.get("asama") or "").strip()
+                            or not isinstance(v.get("pipeline_adimi"), int)
+                            or isinstance(v.get("pipeline_adimi"), bool)
+                            or not 0 <= v["pipeline_adimi"] <= 10):
+                        raise ValueError("'%s' kaydında asama/pipeline_adimi eksik veya geçersiz" % k)
+                    cikan[k] = {"asama": str(v["asama"]),
+                                "pipeline_adimi": int(v["pipeline_adimi"]),
+                                "kaynak": str(v.get("kaynak") or ""),
+                                "aciklama": str(v.get("aciklama") or ""),
+                                "mcp_teyit_tarihi": str(v.get("mcp_teyit_tarihi") or "")}
+                return cikan, False
+        except Exception as e:
+            _ASAMA_TABLO_SEBEP = ("sure_kurallari.json 'asama_kurallari' OKUNAMADI/BOZUK "
+                                  "(%s: %s)" % (type(e).__name__, e))
+    return {k: dict(v) for k, v in _GOMULU_ASAMA_KURALLAR.items()}, True
+
+ASAMA_KURALLAR, _ASAMA_TABLO_YOK = asama_kurallarini_yukle()
 
 # ── A-1 (P0, v0.5.14) — KURAL ↔ YARGI KOLU MUTABAKATI ─────────────────────
 # Ceza sürelerinde adli tatil rejimi HMK m.104 (bir hafta) DEĞİL, CMK m.331/4
@@ -632,6 +730,7 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
 
     pencereler = []
     atlanan = []  # DÜZELTME (Ş13, v0.5.5 şerh turu): düşen HER kayıt burada iz bırakır
+    asama = []    # v0.5.16 / I5: aşama tetikli kayıtlar — pencere DEĞİL, ama görünür
     for k in kayitlar:
         if not isinstance(k, dict):
             sebep = f"liste öğesi sözlük değil ({type(k).__name__})"
@@ -639,6 +738,17 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
             atlanan.append({"ad": "(bilinmiyor)", "sebep": sebep})
             continue
         ad = k.get("ad") or "(adsız)"
+        # v0.5.16 / I5 — AŞAMA TETİKLİ kural: tarih penceresi YOKTUR; kayıt
+        # SESSİZCE düşmez ("atlandı" da denmez — düşen değil, başka sınıf), ayrı
+        # listede görünür ve bindirme aritmetiğine KATILMAZ (tarih üretilmez).
+        if k.get("kural") in ASAMA_KURALLAR:
+            ak = ASAMA_KURALLAR[k["kural"]]
+            print(f"  ≡ '{ad}': AŞAMA TETİKLİ kural '{k['kural']}' — {ak['asama']}; "
+                  f"pipeline adım {ak['pipeline_adimi']} tamamlanmadan yapılmalı; "
+                  f"tarih penceresi yok, bindirmeye katılmadı")
+            asama.append({"ad": ad, "kural": k["kural"], "asama": ak["asama"],
+                          "pipeline_adimi": ak["pipeline_adimi"]})
+            continue
         teblig_str = k.get("teblig")
         if not teblig_str:
             sebep = "'teblig' alanı eksik"
@@ -698,6 +808,11 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
     print("=" * 68)
     for pe in pencereler:
         print(f"  {pe['ad']}: {pe['bas']} .. {pe['son']}")
+    if asama:
+        print("  --- AŞAMA TETİKLİ (tarih penceresi yok; pipeline adımına bağlı) ---")
+        for ak in asama:
+            print(f"  ≡ {ak['ad']}: {ak['asama']} — adım {ak['pipeline_adimi']} "
+                  f"tamamlanmadan yapılmalı ({ak['kural']})")
 
     bindirmeler = []
     for i in range(len(pencereler)):
@@ -721,8 +836,10 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
     # (c) ≥2 pencere → mevcut hükme (varsa) düşen-kayıt şerhi eklenir.
     print()
     if not pencereler:
-        print(f">>> BİNDİRME DENETLENEMEDİ — hiçbir kayıt çözülemedi "
-              f"({len(atlanan)} kayıt düştü); bu sonuç KANIT SAYILMAZ. <<<")
+        _asama_notu = (f"; {len(asama)} aşama tetikli kayıt tarih penceresi üretmez"
+                       if asama else "")
+        print(f">>> BİNDİRME DENETLENEMEDİ — hiçbir tarih penceresi çözülemedi "
+              f"({len(atlanan)} kayıt düştü{_asama_notu}); bu sonuç KANIT SAYILMAZ. <<<")
         denetlenemedi = True
     elif len(pencereler) == 1:
         print(f">>> Tek pencere ('{pencereler[0]['ad']}') — bindirme yapısal olarak "
@@ -747,6 +864,7 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
             json.dump({"pencereler": pencereler,
                       "bindirmeler": [{"a": x, "b": y} for x, y in bindirmeler],
                       "atlanan": atlanan,
+                      "asama": asama,
                       "denetlenen_kayit": len(pencereler)},
                      f, ensure_ascii=False, indent=2)
         print(f"[JSON] {cikti_yol}")
@@ -800,11 +918,111 @@ def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur):
     return yeni, syol
 
 
+def _asama_flagini_yaz(kok, kural, ak):
+    """v0.5.16 / I5 — aşama kaydını `<kok>/_oa/sureler.json`a yazar (E4a süre
+    bağının aşama kolu). Kayıt şeması: {"tur":"asama","asama","pipeline_adimi",
+    "aciklama","kural","kayit"} — son_gun/tarih alanı YOKTUR (tarih yok demek,
+    boş tarih yazmak değil). `_oa` yoksa defter İCAT EDİLMEZ; aynı (kural, asama)
+    çifti zaten kayıtlıysa tekrar eklenmez. Dönüş: (eklendi_mi|None, bilgi)."""
+    oa = os.path.join(kok, "_oa")
+    if not os.path.isdir(oa):
+        return None, f"{oa} yok — aşama flag'i yazılmadı (dava kökü değil)"
+    syol = os.path.join(oa, "sureler.json")
+    try:
+        with open(syol, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        d = {"flagler": []}
+    if not isinstance(d, dict):
+        d = {"flagler": []}
+    if not isinstance(d.get("flagler"), list):
+        d["flagler"] = []
+    for f_ in d["flagler"]:
+        if (isinstance(f_, dict) and f_.get("tur") == ASAMA_TUR
+                and f_.get("kural") == kural and f_.get("asama") == ak["asama"]):
+            return False, syol
+    d["flagler"].append({
+        "tur": ASAMA_TUR, "asama": ak["asama"], "pipeline_adimi": ak["pipeline_adimi"],
+        "aciklama": ak["aciklama"] or ak["kaynak"], "kural": kural,
+        "kayit": _datetime.datetime.now().isoformat(timespec="seconds")})
+    with open(syol, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+    return True, syol
+
+
+def _asama_raporu(a):
+    """v0.5.16 / I5 — AŞAMA TETİKLİ kural çıktısı: TARİH ARİTMETİĞİ YAPILMAZ.
+    `hesapla()` hiç çağrılmaz; ">>> HESAPLANAN SON GÜN" satırı üretilmez;
+    --teblig/--islem/--uets girildiyse KULLANILMADIĞI görünür yazılır (sessiz
+    yutma yok). `--json` ile {"tur":"asama", ...} basılır (son_gun: null)."""
+    ak = ASAMA_KURALLAR[a.kural]
+    kullanilmayan = [b for b, v in (("--teblig", a.teblig), ("--islem", a.islem),
+                                    ("--uets", a.uets), ("--sure", a.sure),
+                                    ("--baslangic-turu", getattr(a, "baslangic_turu", None)),
+                                    ("--adli-tatil-istisna", a.adli_tatil_istisna)) if v]
+    _kaynak_adi = "gömülü tablo" if _ASAMA_TABLO_YOK else "sure_kurallari.json"
+    if a.json:
+        veri = {"tur": ASAMA_TUR, "kural": a.kural, "asama": ak["asama"],
+                "pipeline_adimi": ak["pipeline_adimi"], "kaynak": ak["kaynak"],
+                "aciklama": ak["aciklama"], "mcp_teyit_tarihi": ak["mcp_teyit_tarihi"],
+                "son_gun": None, "tarih_aritmetigi": False,
+                "kural_kaynagi": _kaynak_adi, "kullanilmayan_girdiler": kullanilmayan}
+        print(json.dumps(veri, ensure_ascii=False, indent=2))
+        return
+    print("=" * 66); print("  SÜRE HESABI — AŞAMA TETİKLİ KURAL (tarih aritmetiği YOK)"); print("=" * 66)
+    if _ASAMA_TABLO_YOK:
+        print("⚠ AŞAMA TABLOSU: gömülü (fallback) tabloya düşüldü — sebep: %s"
+              % (_ASAMA_TABLO_SEBEP or "bilinmiyor"))
+    print(f"Kural                 : {a.kural}  →  {ak['kaynak']}")
+    print(f"Kural kaynağı/teyit   : {_kaynak_adi}; mcp_teyit_tarihi = "
+          f"{ak['mcp_teyit_tarihi'] or 'BOŞ → kuralı Mevzuat MCP ile TEYİT ET'}")
+    print(f"Süre türü             : asama  (aşama tetikli — takvim süresi DEĞİL)")
+    print()
+    print(f">>> AŞAMA TETİKLİ: {ak['asama']} — pipeline adım {ak['pipeline_adimi']}'e bağlı; "
+          f"tarih yok <<<")
+    print(f"    Adım {ak['pipeline_adimi']} tamamlanmadan bu işlem yapılmalı.")
+    if ak["aciklama"]:
+        print(f"    {ak['aciklama']}")
+    if kullanilmayan:
+        print(f"ⓘ Girilen {', '.join(kullanilmayan)} KULLANILMADI: aşama kuralında tarih "
+              "aritmetiği yapılmaz — bir 'son gün' üretmek yanlış tarih üretmek olurdu.")
+    print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")
+    print("  ! Aşamanın kapanıp kapanmadığını (cevap verildi mi / tahkikat bitti mi / hüküm "
+          "verildi mi) DOSYADAN teyit et; script aşamayı bilmez, yalnız kuralı söyler.")
+    print("  ! Aşama bir tebliğle takvime bağlanırsa (ör. ön inceleme davetiyesi, HMK m.139/1-ç) "
+          "o an tarih kuralına geç: --teblig <tebliğ> --sure N --birim ... ile hesapla.")
+    print("=" * 66)
+    if a.flagsiz:
+        print("ⓘ --flagsiz: otomatik sureler.json flag yazımı istekle KAPALI.")
+    else:
+        try:
+            _yeni, _bilgi = _asama_flagini_yaz(a.kok, a.kural, ak)
+        except Exception as _e:
+            print(f"UYARI: aşama flag'i yazılamadı ({_e}) — deftere elle işle.")
+        else:
+            if _yeni is None:
+                print(f"ⓘ SÜRE BAĞI: {_bilgi}; dava kökünde `--kok <klasör>` ile koş.")
+            elif _yeni:
+                print(f"AŞAMA FLAG'İ OTOMATİK İŞLENDİ (tur=asama, son_gun YOK): {_bilgi}")
+                print("(sure_nobetci.py --kok . bu kaydı AYRI blokta gösterir; tarih sayımına katmaz.)")
+            else:
+                print(f"ⓘ SÜRE BAĞI: aynı aşama kaydı defterde ZATEN kayıtlı — tekrar eklenmedi ({_bilgi}).")
+    print("NOT: event_create/reminder_create ÇAĞRILMAZ; aşama takibi pipeline defteri "
+          "(pipeline_kayit.py) ve _oa/dosya.md üzerinden AVUKAT tarafından yürütülür.")
+
+
 def main():
     p = argparse.ArgumentParser(description="Deterministik Türk usul/maddi süre hesaplayıcı (v3)")
     p.add_argument("--teblig", help="Başlangıç tarihi: usulde tebliğ/öğrenme; maddi hukukta muacceliyet/öğrenme/fiil (YYYY-MM-DD)")
     p.add_argument("--sure", type=int); p.add_argument("--birim", choices=["gun","hafta","ay","yil"])
-    p.add_argument("--kural", choices=list(KURALLAR.keys()))
+    p.add_argument("--kural", choices=list(KURALLAR.keys()) + list(ASAMA_KURALLAR.keys()),
+                   help="tarih kuralı (21 gün/hafta kuralı) VEYA aşama tetikli kural "
+                        "(v0.5.16: %s — tarih aritmetiği YAPILMAZ, --teblig gerekmez)"
+                        % ", ".join(ASAMA_KURALLAR))
+    p.add_argument("--json", action="store_true",
+                   help="v0.5.16 — makine-okur çıktı: aşama kuralında YALNIZ JSON "
+                        "({\"tur\":\"asama\",...}); tarih kuralında raporun sonuna "
+                        "'[JSON] {...}' satırı eklenir.")
     p.add_argument("--yargi", choices=["hukuk","idari","ceza"], default="hukuk",
                    help="Yargı kolu — ADLİ TATİL REJİMİNİ belirler: hukuk = HMK m.104 "
                         "(31 Ağu + 1 hafta); idari = İYUK m.8/3 (1 Eylül'den 7 gün); "
@@ -865,6 +1083,11 @@ def main():
             print(f"  ⓘ Tabloda {a.bayram} için RESMÎ kayıt zaten var: {sorted(DINI[str(a.bayram)])}")
         print("UYARI: Bunlar TAHMİNDİR — süre hesabında kullanılmaz. Diyanet/Resmî Gazete'den teyit edip")
         print("tatiller.json 'dini' bölümüne salt-ISO işle; idari izin (CBK/Karar/Genelge) ilanlarını da ayrıca tara.")
+        return
+    # v0.5.16 / I5 — AŞAMA TETİKLİ kural: --teblig zorunluluğundan ve kol
+    # uyuşmazlığı kapısından ÖNCE ayrılır; hesapla() hiç çağrılmaz.
+    if a.kural in ASAMA_KURALLAR:
+        _asama_raporu(a)
         return
     if not a.teblig:
         p.error("--teblig zorunlu (ya da --bayram YYYY kullan)")
@@ -1064,6 +1287,14 @@ def main():
     print("NOT: event_create/reminder_create ÇAĞRILMAZ; dış takvim/hatırlatıcı eşgüdümü AVUKAT")
     print("tarafından ELLE yapılır — araç yoksa/kurulamıyorsa bu açıkça raporlanır (disk pasiftir,")
     print("kimseyi dürtmez). _oa/dosya.md süre özetini de güncelle.")
+    if a.json:
+        # v0.5.16 / I5 — tarih kuralında makine-okur özet (insan-okur rapor korunur;
+        # aşama kuralıyla simetrik alan adları: tur / kural / son_gun).
+        print("[JSON] " + json.dumps(
+            {"tur": a.tur, "kural": a.kural, "yargi": a.yargi, "teblig": teblig.isoformat(),
+             "son_gun": son.isoformat(),
+             "son_gun_uets_karine": son_karine.isoformat() if son_karine else None,
+             "uyarilar": uyarilar}, ensure_ascii=False))
 
 if __name__=="__main__":
     try: main()
