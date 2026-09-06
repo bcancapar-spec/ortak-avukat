@@ -19,7 +19,9 @@ ANONİMLİK (anayasa m.7): bütün fikstürler SENTETİKTİR — «E. 2099/N» s
 numaralar, «Örnek ...» mahkeme adları; gerçek künye/kişi/dosya YOKTUR.
 
 Norm teyitleri (Mevzuat MCP, 2026-09-06): HMK m.341 (istinaf), m.361 (temyiz);
-CMK m.272 (istinaf), m.286 (temyiz); 2797 s. Yargıtay K. m.45 (İBK bağlayıcılığı).
+CMK m.272 (istinaf), m.286 (temyiz); 2797 s. Yargıtay K. m.45 (İBK bağlayıcılığı);
+HMK m.353/1-b-1 (istinaf başvurusunun esastan reddi — BAM fikstür metni).
+Teyit 2026-09-07 oturumunda Mevzuat MCP ile YENİLENDİ (madde metinleri okundu).
 """
 import importlib.util
 import json
@@ -421,3 +423,38 @@ def test_readme_scripti_listeler():
     rd = README.read_text(encoding="utf-8")
     assert "scripts/kanun_yolu_zinciri.py" in rd
     assert "saf metin-disiplinidir" not in rd
+
+
+# ═══════════════════ ENTEGRASYON — önerilen teyit komutu oa_hafiza'da GEÇER ══
+
+OA_HAFIZA = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts" / "oa_hafiza.py"
+
+
+def test_onerilen_teyit_komutu_oa_hafiza_layer0_dan_gecer_ve_kutuge_iz_birakir(tmp_path):
+    """Scriptin STDERR'e bastığı ÖNERİLEN `oa_hafiza.py teyit …` satırı, tek yazar
+    oa_hafiza tarafından REDDEDİLMEMELİ (Layer 0: `--sorgu` mahkeme adı + esas no
+    eş-geçişi RET'tir; bu yüzden künye `--sonuc`'a taşınır) ve kütüğe
+    `SEVİYE=… KÜNYE=… METİN=…` izini bırakmalı. Sentetik künye (m.7)."""
+    import shlex
+    girdi = tmp_path / "_oa" / "teyit" / "dokum" / "ust.md"
+    girdi.parent.mkdir(parents=True)
+    girdi.write_text(YARGITAY_HUKUK_YENI, encoding="utf-8")
+    cp = subprocess.run([sys.executable, str(OA_HAFIZA), "init", "--kok", str(tmp_path)],
+                        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    rc, out, err = _cli(str(girdi), "--kok", str(tmp_path))
+    assert rc == 0, err
+    komutlar = [s.strip() for s in err.splitlines()
+                if "oa_hafiza.py teyit" in s and not s.strip().startswith("[REDAKTE")]
+    assert len(komutlar) == 2  # BAM + ilk derece (ikisi de KÜNYE=tam)
+    for k in komutlar:
+        parcalar = shlex.split(k)
+        assert parcalar[0] == "python"
+        argv = [sys.executable, str(OA_HAFIZA)] + parcalar[2:] + ["--kok", str(tmp_path)]
+        argv = [a.replace("<indekste-var|bulunamadı>", "bulunamadı") for a in argv]
+        cp = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        assert cp.returncode == 0, k + "\n" + cp.stdout + cp.stderr
+    kutuk = (tmp_path / "_oa" / "teyit" / "kunye-teyit.md").read_text(encoding="utf-8")
+    assert "SEVİYE=BAM KÜNYE=tam METİN=bulunamadı" in kutuk
+    assert "SEVİYE=ilk_derece KÜNYE=tam METİN=bulunamadı" in kutuk
+    assert "2099/1" in kutuk and "2099/11" in kutuk
