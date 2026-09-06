@@ -54,14 +54,18 @@ def _kanonik_temiz_graf():
             {"id": "ZARAR", "tip": "olay", "ad": "Netice Zarari"},
         ],
         "kenarlar": [
+            # v0.5.16/A G3: `norm` eksikliği [ŞEMA UYARISI] (advisory) üretir;
+            # "kanonik-temiz" graf doktrinin istediği normu da taşır.
             {"kaynak": "SORUMLU", "hedef": "FIIL", "kategori": "iliski",
              "tur": "faili", "dogrulama": "delil",
-             "dayanak_delil": ["tutanak"]},
+             "dayanak_delil": ["tutanak"], "norm": "çıpa"},
             {"kaynak": "FIIL", "hedef": "ZARAR", "kategori": "illiyet",
              "tur": "fiil_netice", "illiyet_tipi": "dogal", "guc": "guclu",
-             "dogrulama": "teyitli", "dayanak_delil": ["bilirkisi raporu"]},
+             "dogrulama": "teyitli", "dayanak_delil": ["bilirkisi raporu"],
+             "norm": "çıpa"},
             {"kaynak": "SORUMLU", "hedef": "ZARAR", "kategori": "iliski",
-             "tur": "sorumlu", "dogrulama": "karine", "dayanak_delil": []},
+             "tur": "sorumlu", "dogrulama": "karine", "dayanak_delil": [],
+             "norm": "çıpa"},
         ],
     }
 
@@ -216,8 +220,11 @@ def test_uyarili_grafta_json_anahtar_seti_sabit_kalir(tmp_path):
     assert kod == 0
     sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
     # test_grafik_denetim.py ile aynı kilit: uyarılar JSON'a anahtar EKLEMEZ
+    # (v0.5.16/A: bekçi sözleşmesi alanları eklendi — uyarılar değil, kapı)
     assert set(sonuc) == {
         "arac", "ozet", "sema_hatalari", "yetim_dugumler", "desteksiz_kenarlar",
         "kopru_dugumler", "cevrimler", "kesme_adaylari", "yuk_tasiyan_kenarlar",
         "dugumler", "kenarlar", "girdi", "zincirler",
+        "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
+        "guc_beyansiz_kenarlar", "zincir_uyarisi",
     }

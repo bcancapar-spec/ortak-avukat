@@ -105,4 +105,23 @@ somut dosyada **Mevzuat/Yargı Pro ile teyit** edilir. Bu özet yön gösterir, 
 ```
 
 **Kullanım:** Grafı bu şemaya göre `graf.json` yaz, sonra
-`python scripts/grafik_denetim.py graf.json` ile deterministik boşluk denetimi yap.
+`python scripts/grafik_denetim.py graf.json --json denetim.json` ile deterministik
+boşluk denetimi yap (`--json` zorunlu — bekçi okur).
+
+**Şema sertliği (v0.5.16 — grafik_denetim.py kapısı):**
+- Her düğümde `id` zorunlu ve **benzersiz** — mükerrer id şema hatasıdır (ilk kayıt
+  korunur, hata basılır, exit 3).
+- İlliyet kenarında `illiyet_tipi` VE `dogrulama` zorunlu (eksik → exit 3); doğrulanmamış
+  illiyet null kabul edilir, sessizce teyitli sayılmaz.
+- `guc` beyan edilmezse kenar **güç beyansız** sınıfına düşer; zincir analizinde ağırlığı
+  `beyan-yok = 0.4 ≤ tartışmalı` (beyan etmemek ödüllendirilmez).
+- `norm` eksikliği advisory `[ŞEMA UYARISI]`dır (saha grafları kırılmaz); norm yalnız
+  Mevzuat MCP teyitli yazılır.
+- `dayanak_delil` listesi delil düğümünün **id**'sini taşır; serbest metin yazılırsa delil
+  `ad`ıyla ≥0.6 yazım benzerliği bağlı sayar. Hiçbir kenarın dayanağında anılmayan
+  `tip: delil` düğümü **bağlanmamış delil** (§2b) olarak ayrı raporlanır — oa-vakia'nın
+  yetim delil semantiği; ispat yükü çerçevesi HMK m.190 (Mevzuat MCP teyit 2026-09-06).
+- Çevrim (dairesel illiyet) exit 3'tür; çevrimler minimal ve mükerrersiz raporlanır.
+- Köprü düğüm etiketi tip-duyarlıdır: `perde` (gerçek kişi + ayırdığı en az iki parçada
+  tüzel kişi — muvazaa çerçevesi TBK m.19, Mevzuat MCP teyit 2026-09-06) / `yapisal`
+  (nötr). `tip: karar | mahkeme` düğümleri köprü hesabından muaftır.

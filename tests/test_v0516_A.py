@@ -1,0 +1,533 @@
+# -*- coding: utf-8 -*-
+"""v0.5.16 / GRUP A-1 — oa-illiyet grafik_denetim.py: KAPI SERTLİĞİ +
+DEDEKTÖR ONARIMLARI (bütünleşik denetim 2026-09-06: K2, G6, G1, G5, G7,
+G8, G3, G4, G2; hamleler 2/5/6).
+
+Kapatılan açıklar ve yeni sözleşme (BİLİNÇLİ karakterizasyon değişikliği —
+eski "bulguda da exit 0" kilidi kaldırıldı; gerekçe: opsiyonel kapı =
+ateşlemeyen kapı, avukat kararı #1 SERT kapı):
+
+* K2+G6  exit sözleşmesi: 0 temiz · 1 kullanım hatası · 2 DENETİM ÇÖKTÜ
+         (try/except sarmalı; --json'a denetim_coktu:true) · 3 çevrim VEYA
+         şema hatası (blok_sinifi). DFS'ler özyinelemesiz; 5.000 düğümlük
+         zincir çökmez.
+* G1     çevrimler MİNİMAL ve mükerrersiz (Johnson benzeri basit çevrim
+         sayımı ≤200 düğümde): A→B→C→B grafında ["B","C","B"].
+* G5     mükerrer düğüm id → şema hatası (yukle sessizce yutuyordu); ilk
+         kayıt korunur.
+* G7     bağlanmamış delil AYRI SINIF (oa-vakia yetim delil semantiği):
+         dayanak_delil referansı id veya ad-benzerliği (≥0.6) ile bağlar.
+* G8     köprü düğüm: ayırdığı bileşenlerden en az ikisi ≥2 düğümlü;
+         etiket tip-duyarlı ("perde" | "yapisal"); karar/mahkeme muaf.
+* G3     illiyet kenarında dogrulama ZORUNLU (şema hatası); §3 desteksiz
+         = dogrulama yok VEYA (iddia + delilsiz); norm eksik → advisory.
+* G4     GUC_VARSAYILAN 0.4; guc_beyansiz_kenarlar ayrı sınıf.
+* G2     köksüz illiyet grafı → "GÜVENİLMEZ" (sahte-yeşil kapanışı);
+         çevrim varken §7 "çevrimde anlamsız" uyarısı.
+
+Girdiler tempfile/tmp_path tabanlı izole dizinlerde üretilir; fikstürler
+sentetiktir (anayasa m.7); repo dosyalarına dokunulmaz.
+"""
+import importlib.util
+import json
+import pathlib
+import subprocess
+import sys
+
+import pytest
+
+REPO = pathlib.Path(__file__).resolve().parents[1]
+SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-illiyet"
+          / "scripts" / "grafik_denetim.py")
+SKILL_MD = SCRIPT.parents[1] / "SKILL.md"
+
+spec = importlib.util.spec_from_file_location("grafik_denetim_v0516", SCRIPT)
+gd = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gd)
+
+
+def _cli(*args, timeout=120):
+    cp = subprocess.run(
+        [sys.executable, str(SCRIPT)] + [str(a) for a in args],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=timeout,
+    )
+    return cp.returncode, (cp.stdout or ""), (cp.stderr or "")
+
+
+def _graf_yaz(kok, graf, ad="graf.json"):
+    yol = kok / ad
+    yol.write_text(json.dumps(graf, ensure_ascii=False), encoding="utf-8")
+    return yol
+
+
+def _kos_json(tmp_path, graf):
+    yol = _graf_yaz(tmp_path, graf)
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol)
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    return kod, out, err, sonuc
+
+
+def _ill(a, b, **ek):
+    k = {"kaynak": a, "hedef": b, "kategori": "illiyet", "tur": "sebep_zarar",
+         "illiyet_tipi": "uygun", "guc": "guclu", "dogrulama": "teyitli",
+         "dayanak_delil": ["D1"], "norm": "çıpa"}
+    k.update(ek)
+    return k
+
+
+def _ils(a, b, **ek):
+    k = {"kaynak": a, "hedef": b, "kategori": "iliski", "tur": "ortaklik",
+         "dogrulama": "teyitli", "dayanak_delil": ["D1"], "norm": "çıpa"}
+    k.update(ek)
+    return k
+
+
+def _olay(*ids):
+    return [{"id": i, "tip": "olay", "ad": f"Olay {i}"} for i in ids]
+
+
+def _temiz_graf():
+    return {
+        "dugumler": _olay("A", "B", "C") + [
+            {"id": "D1", "tip": "delil", "ad": "Bilirkisi Raporu"}],
+        "kenarlar": [_ill("A", "B"), _ill("B", "C")],
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# K2 + G6 — EXIT SÖZLEŞMESİ (SERT KAPI) + ÇÖKME SARMALI
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_temiz_graf_exit0_ve_json_cikis_kodu_0(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert kod == 0, f"stdout:\n{out}\nstderr:\n{err}"
+    assert sonuc["cikis_kodu"] == 0
+    assert sonuc["denetim_coktu"] is False
+    assert sonuc["blok_sinifi"] == []
+    assert sonuc["arac"] == "grafik_denetim"
+
+
+def test_sema_hatasi_exit3_blok_sinifi_sema(tmp_path):
+    graf = _temiz_graf()
+    graf["dugumler"].append({"id": "N", "ad": "Tipsiz"})  # tip eksik
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3, out
+    assert sonuc["cikis_kodu"] == 3
+    assert sonuc["blok_sinifi"] == ["sema"]
+    assert sonuc["denetim_coktu"] is False
+    assert "✗ Düğüm 'N': 'tip' eksik" in out
+
+
+def test_cevrim_exit3_blok_sinifi_cevrim(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"].append(_ill("C", "A"))
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert sonuc["blok_sinifi"] == ["cevrim"]
+    assert sonuc["cevrimler"] == [["A", "B", "C", "A"]]
+
+
+def test_sema_ve_cevrim_birlikte_iki_sinif(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"].append(_ill("C", "A"))
+    graf["dugumler"].append({"id": "N", "ad": "Tipsiz"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert sonuc["blok_sinifi"] == ["sema", "cevrim"]
+
+
+def test_kullanim_hatasi_exit1_aynen():
+    kod, out, err = _cli()
+    assert kod == 1
+    assert "Kullanım:" in out
+
+
+def test_dosya_yok_denetim_coktu_exit2_json_yazilir(tmp_path):
+    """K2: çökme artık traceback+exit 1 DEĞİL — görünür 'DENETİM ÇÖKTÜ'
+    satırı + exit 2 + --json'a çökme kaydı (bekçi okuyabilsin)."""
+    json_yol = tmp_path / "sonuc.json"
+    yok = tmp_path / "yok.json"
+    kod, out, err = _cli(yok, "--json", json_yol)
+    assert kod == 2
+    assert "DENETİM ÇÖKTÜ: FileNotFoundError" in out
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["arac"] == "grafik_denetim"
+    assert sonuc["denetim_coktu"] is True
+    assert sonuc["cikis_kodu"] == 2
+    assert "FileNotFoundError" in sonuc["hata"]
+    assert sonuc["girdi"] == str(yok)
+
+
+def test_bozuk_json_denetim_coktu_exit2(tmp_path):
+    yol = tmp_path / "graf.json"
+    yol.write_text("{ bozuk json", encoding="utf-8")
+    kod, out, err = _cli(yol)
+    assert kod == 2
+    assert "DENETİM ÇÖKTÜ: JSONDecodeError" in out
+
+
+def test_id_eksik_dugum_traceback_degil_sema_hatasi(tmp_path):
+    """K2: `id` eksik düğüm eskiden yukle() içinde KeyError traceback'iydi."""
+    graf = _temiz_graf()
+    graf["dugumler"].append({"tip": "olay", "ad": "Kimliksiz"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "Traceback" not in err
+    assert any("'id' eksik" in h for h in sonuc["sema_hatalari"]), sonuc["sema_hatalari"]
+    assert "✗ Düğüm #4: 'id' eksik" in out
+
+
+def test_bes_bin_dugumlu_zincir_cokmez(tmp_path):
+    """G6: DFS'ler özyinelemesiz — 5.000 düğümlük doğrusal illiyet zinciri
+    RecursionError ile çökmez, exit 0 döner (çevrim yok, şema temiz)."""
+    n = 5000
+    ids = [f"N{i}" for i in range(n)]
+    graf = {"dugumler": _olay(*ids),
+            "kenarlar": [_ill(ids[i], ids[i + 1]) for i in range(n - 1)]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, f"stderr:\n{err[-2000:]}"
+    assert "RecursionError" not in err
+    assert sonuc["cevrimler"] == []
+    assert sonuc["ozet"] == {"dugum": n, "kenar": n - 1}
+
+
+def test_bes_bin_dugumlu_cevrimli_zincir_exit3_cokmez(tmp_path):
+    """G6+G2: 5.000 düğümlük halka (çevrim) — özyinelemesiz çevrim tespiti
+    çökmez, tek çevrim raporlar, köksüz zincir GÜVENİLMEZ damgası basar."""
+    n = 5000
+    ids = [f"N{i}" for i in range(n)]
+    graf = {"dugumler": _olay(*ids),
+            "kenarlar": [_ill(ids[i], ids[(i + 1) % n]) for i in range(n)]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3, f"stderr:\n{err[-2000:]}"
+    assert len(sonuc["cevrimler"]) == 1
+    assert len(sonuc["cevrimler"][0]) == n + 1
+    assert "GÜVENİLMEZ" in out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G1 — ÇEVRİM: MİNİMAL + MÜKERRERSİZ
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_cevrim_minimal_cevrim_disi_dugum_icermez(tmp_path):
+    """A→B→C→B: eski DFS [A,B,C,B] (A çevrim-dışı) raporluyordu;
+    doğru çevrim tam olarak ["B","C","B"]."""
+    graf = {"dugumler": _olay("A", "B", "C", "D"),
+            "kenarlar": [_ill("A", "B"), _ill("B", "C"), _ill("C", "B"),
+                         _ill("C", "D")]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert sonuc["cevrimler"] == [["B", "C", "B"]]
+    assert "✗ Olay B → Olay C → Olay B" in out
+
+
+def test_iki_ayri_cevrim_iki_kez_raporlanir_mukerrer_yok(tmp_path):
+    graf = {"dugumler": _olay("A", "B", "C", "D", "E"),
+            "kenarlar": [_ill("A", "B"), _ill("B", "A"),
+                         _ill("C", "D"), _ill("D", "E"), _ill("E", "C"),
+                         _ill("B", "C")]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert len(sonuc["cevrimler"]) == 2
+    assert ["A", "B", "A"] in sonuc["cevrimler"]
+    assert ["C", "D", "E", "C"] in sonuc["cevrimler"]
+    # mükerrer yok: aynı çevrim iki rotasyonla iki kez YOK
+    kanonik = {tuple(sorted(c[:-1])) for c in sonuc["cevrimler"]}
+    assert len(kanonik) == 2
+
+
+def test_cevrim_fonksiyonu_deterministik_ve_kucuk_kume():
+    kenarlar = [_ill("A", "B"), _ill("B", "C"), _ill("C", "A"), _ill("C", "B")]
+    c1 = gd.cevrim_var_mi(kenarlar)
+    c2 = gd.cevrim_var_mi(kenarlar)
+    assert c1 == c2
+    assert sorted(len(c) for c in c1) == [3, 4]  # B-C-B ve A-B-C-A
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G5 — MÜKERRER DÜĞÜM ID
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_mukerrer_id_sema_hatasi_ilk_kayit_korunur(tmp_path):
+    graf = _temiz_graf()
+    graf["dugumler"].append({"id": "A", "tip": "tuzel_kisi", "ad": "Ikinci A"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "sema" in sonuc["blok_sinifi"]
+    assert "mükerrer id 'A' (2 kez)" in out
+    assert any("mükerrer id 'A' (2 kez)" in h for h in sonuc["sema_hatalari"])
+    # ilk kayıt korunur, düşürülmez
+    ilk = [d for d in sonuc["dugumler"] if d["id"] == "A"]
+    assert len(ilk) == 1 and ilk[0]["ad"] == "Olay A" and ilk[0]["tip"] == "olay"
+    assert sonuc["ozet"]["dugum"] == 4
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G7 — BAĞLANMAMIŞ DELİL (ayrı sınıf)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_alti_delilden_besi_dayanakla_anilir_yetim_cikmaz(tmp_path):
+    """Avukat kararı #6: delil düğümü kenar ucu olmasa da dayanak_delil ile
+    anılıyorsa BAĞLIDIR (yetim değil). Referans: id (D1..D3), tam ad (D4),
+    benzer serbest metin ≥0.6 (D5). D6 hiçbir yerde anılmıyor → yetim DEĞİL,
+    ayrı sınıf 'baglanmamis_deliller'."""
+    deliller = [
+        {"id": "D1", "tip": "delil", "ad": "Kaza Tutanagi"},
+        {"id": "D2", "tip": "delil", "ad": "Bilirkisi Raporu"},
+        {"id": "D3", "tip": "delil", "ad": "Tanik Beyani"},
+        {"id": "D4", "tip": "delil", "ad": "Hastane Epikrizi"},
+        {"id": "D5", "tip": "delil", "ad": "Trafik Sigorta Policesi"},
+        {"id": "D6", "tip": "delil", "ad": "Banka Dekontu"},
+    ]
+    graf = {
+        "dugumler": _olay("A", "B", "C") + deliller,
+        "kenarlar": [
+            _ill("A", "B", dayanak_delil=["D1", "D2"]),
+            _ill("B", "C", dayanak_delil=["D3", "Hastane Epikrizi"]),
+            _ils("A", "C", dayanak_delil=["trafik sigorta poliçesi"]),
+        ],
+    }
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, out
+    assert sonuc["yetim_dugumler"] == []
+    assert sonuc["baglanmamis_deliller"] == [{"id": "D6", "ad": "Banka Dekontu"}]
+    assert "### 2b. BAĞLANMAMIŞ DELİL" in out
+    assert "Banka Dekontu (D6)" in out
+
+
+def test_delil_disi_yetim_mantigi_degismez(tmp_path):
+    graf = _temiz_graf()
+    graf["dugumler"].append({"id": "Y", "tip": "nesne", "ad": "Bagsiz Nesne"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["yetim_dugumler"] == [{"id": "Y", "ad": "Bagsiz Nesne"}]
+    assert sonuc["baglanmamis_deliller"] == []
+
+
+def test_baglanmamis_delil_temiz_grafta_bos_ve_exit0(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert kod == 0
+    assert sonuc["baglanmamis_deliller"] == []
+    assert "✓ Her delil bir kenara bağlı." in out
+
+
+def test_ad_benzerligi_tr_kucuk_harf_katlamali():
+    assert gd._tr_kucuk("İSTİHKAK Iddia") == "istihkak ıddia"
+    assert gd._delil_eslesir("bilirkişi raporu", "Bilirkişi Raporu")
+    assert gd._delil_eslesir("bilirkisi rapor", "Bilirkişi Raporu")
+    assert not gd._delil_eslesir("banka dekontu", "Bilirkişi Raporu")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G8 — KÖPRÜ DÜĞÜM: ≥2 düğümlü en az iki bileşen + tip-duyarlı etiket
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _halter(orta_tip="gercek_kisi", kanat_tip="tuzel_kisi"):
+    dugumler = [
+        {"id": "S1", "tip": kanat_tip, "ad": "Sirket Bir"},
+        {"id": "O1", "tip": "gercek_kisi", "ad": "Ortak Bir", "usul_rolu": "davali"},
+        {"id": "M", "tip": orta_tip, "ad": "Mudur Kisi", "usul_rolu": "davali"},
+        {"id": "S2", "tip": kanat_tip, "ad": "Sirket Iki"},
+        {"id": "O2", "tip": "gercek_kisi", "ad": "Ortak Iki", "usul_rolu": "davali"},
+    ]
+    ciftler = [("S1", "O1"), ("S1", "M"), ("O1", "M"),
+               ("M", "S2"), ("M", "O2"), ("S2", "O2")]
+    return {"dugumler": dugumler,
+            "kenarlar": [_ils(a, b) for a, b in ciftler]}
+
+
+def test_halter_orta_mudur_perde_etiketi(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _halter())
+    assert kod == 0, out
+    assert sonuc["kopru_dugumler"] == [{"id": "M", "ad": "Mudur Kisi", "etiket": "perde"}]
+    assert "perde/muvazaa sinyali" in out
+
+
+def test_abc_zincirinde_b_isaretlenmez(tmp_path):
+    """Doğrusal A-B-C: B articulation point AMA kalan bileşenler {A} ve {C}
+    tek düğümlü → köprü DEĞİL (yaprak komşusu elenir)."""
+    graf = {"dugumler": _olay("A", "B", "C"),
+            "kenarlar": [_ils("A", "B"), _ils("B", "C")]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"] == []
+    assert "✓ Tek-nokta köprü yok." in out
+
+
+def test_alacakli_gercek_kisi_iki_gercek_kisi_arasinda_yapisal(tmp_path):
+    """Köprü gercek_kisi ama iki kanatta tuzel_kisi yok → nötr 'yapisal'
+    (perde etiketi DEĞİL — sahte muvazaa sinyali üretilmez)."""
+    graf = _halter(orta_tip="gercek_kisi", kanat_tip="gercek_kisi")
+    for d in graf["dugumler"]:
+        d.setdefault("usul_rolu", "alacakli")
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"] == [{"id": "M", "ad": "Mudur Kisi", "etiket": "yapisal"}]
+    assert "yapısal köprü (perde etiketi değil)" in out
+    assert "perde/muvazaa sinyali" not in out
+
+
+def test_tuzel_orta_dugum_yapisal(tmp_path):
+    graf = _halter(orta_tip="tuzel_kisi")
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"][0]["etiket"] == "yapisal"
+
+
+def test_karar_ve_mahkeme_tipi_kopru_hesabindan_muaf(tmp_path):
+    """A-2 grubu 'karar'/'mahkeme' tiplerini şemaya ekler; bugün KANONIK'te
+    olmasa da kod tipe göre muaf tutar (mahkeme her tarafı bağlar — perde
+    değil)."""
+    graf = _halter(orta_tip="mahkeme")
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"] == []
+    graf = _halter(orta_tip="karar")
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"] == []
+
+
+def test_kopru_fonksiyonu_yildiz_grafta_merkez_isaretlenmez():
+    """Yıldız: merkez çıkınca 4 tek-düğümlü bileşen → ≥2 düğümlü bileşen
+    yok → köprü değil."""
+    dugumler = {i: {"id": i, "tip": "olay"} for i in ("M", "A", "B", "C", "D")}
+    kenarlar = [_ils("M", x) for x in ("A", "B", "C", "D")]
+    assert gd.kopru_dugumler(dugumler, kenarlar) == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G3 — dogrulama ZORUNLU (illiyet) + §3 desteksiz + norm advisory
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_illiyet_kenarinda_dogrulama_yoksa_sema_hatasi_exit3(tmp_path):
+    graf = _temiz_graf()
+    del graf["kenarlar"][0]["dogrulama"]
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "✗ Kenar #0 (illiyet): 'dogrulama' eksik (zorunlu)" in out
+    # §3 de yakalar: dogrulama yok
+    assert any(k["index"] == 0 for k in sonuc["desteksiz_kenarlar"])
+
+
+def test_iliski_kenarinda_dogrulama_yoksa_sema_hatasi_degil_ama_desteksiz(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"].append(_ils("A", "C"))
+    del graf["kenarlar"][-1]["dogrulama"]
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, out
+    assert sonuc["sema_hatalari"] == []
+    assert [k["index"] for k in sonuc["desteksiz_kenarlar"]] == [2]
+    assert "dogrulama beyan edilmemiş" in out
+
+
+def test_iddia_ve_delilsiz_hala_desteksiz(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"][1].update({"dogrulama": "iddia", "dayanak_delil": []})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0
+    assert [k["index"] for k in sonuc["desteksiz_kenarlar"]] == [1]
+
+
+def test_norm_eksik_sema_uyarisi_advisory_exit0(tmp_path):
+    graf = _temiz_graf()
+    del graf["kenarlar"][0]["norm"]
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, "norm eksikliği advisory — saha grafları kırılmasın"
+    assert sonuc["sema_hatalari"] == []
+    assert "[ŞEMA UYARISI] Kenar #0: 'norm' eksik" in out
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G4 — GÜÇ BEYANSIZ (ayrı sınıf) + varsayılan 0.4
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_guc_varsayilan_0_4():
+    assert gd.GUC_VARSAYILAN == 0.4
+
+
+def test_guc_beyansiz_kenarlar_ayri_sinif(tmp_path):
+    graf = _temiz_graf()
+    del graf["kenarlar"][1]["guc"]
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0
+    assert [k["index"] for k in sonuc["guc_beyansiz_kenarlar"]] == [1]
+    assert "GÜÇ BEYAN EDİLMEMİŞ (beyan-yok ≤ tartışmalı)" in out
+    assert sonuc["zincirler"][0]["guven"] == round(0.9 * 0.4, 3)
+    assert sonuc["zincirler"][0]["en_zayif"]["guc"] == "beyan-yok"
+    assert sonuc["zincirler"][0]["en_zayif"]["agirlik"] == 0.4
+
+
+def test_guc_beyansiz_yalniz_illiyet_kenarlarini_sayar(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"].append(_ils("A", "C"))  # iliski, guc yok — sayılmaz
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["guc_beyansiz_kenarlar"] == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# G2 — KÖKSÜZ İLLİYET GRAFI / ÇEVRİMDE YÜK TAŞIYAN KENAR
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_koksuz_illiyet_grafi_guvenilmez_damgasi(tmp_path):
+    graf = {"dugumler": _olay("A", "B", "C"),
+            "kenarlar": [_ill("A", "B"), _ill("B", "C"), _ill("C", "A")]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "çevrim nedeniyle kök yok — zincir güven analizi GÜVENİLMEZ" in out
+    assert "İlliyet zinciri bulunamadı" not in out
+    assert sonuc["zincirler"] == []
+    assert sonuc["zincir_uyarisi"]
+
+
+def test_cevrim_varken_yuk_tasiyan_kenar_uyarisi(tmp_path):
+    graf = {"dugumler": _olay("A", "B", "C", "D"),
+            "kenarlar": [_ill("A", "B"), _ill("B", "C"), _ill("C", "B"),
+                         _ill("C", "D")]}
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "yük taşıyan kenar çevrimde anlamsız" in out
+
+
+def test_cevrimsiz_grafta_g2_uyarilari_yok(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert "GÜVENİLMEZ" not in out
+    assert "çevrimde anlamsız" not in out
+    assert sonuc["zincir_uyarisi"] is None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# JSON SÖZLEŞMESİ (B grubu bekçisi) + BELGE
+# ═══════════════════════════════════════════════════════════════════════════
+
+JSON_ANAHTARLARI = {
+    "arac", "ozet", "sema_hatalari", "yetim_dugumler", "desteksiz_kenarlar",
+    "kopru_dugumler", "cevrimler", "kesme_adaylari", "yuk_tasiyan_kenarlar",
+    "dugumler", "kenarlar", "girdi", "zincirler",
+    # v0.5.16/A yeni alanlar
+    "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
+    "guc_beyansiz_kenarlar", "zincir_uyarisi",
+}
+
+
+def test_json_anahtar_seti_v0516(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert set(sonuc) == JSON_ANAHTARLARI
+    assert isinstance(sonuc["denetim_coktu"], bool)
+    assert isinstance(sonuc["cikis_kodu"], int)
+    for anahtar in ("baglanmamis_deliller", "guc_beyansiz_kenarlar",
+                    "kopru_dugumler", "blok_sinifi"):
+        assert isinstance(sonuc[anahtar], list)
+
+
+def test_skill_md_json_zorunlu_ve_exit_tablosu():
+    metin = SKILL_MD.read_text(encoding="utf-8")
+    assert ("python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json "
+            "--json _oa/cikti/01-illiyet-denetim.json") in metin
+    assert "[--json" not in metin, "opsiyonel kapı = ateşlemeyen kapı"
+    for parca in ("exit 2", "exit 3", "BAĞLANMAMIŞ DELİL", "guc_beyansiz_kenarlar",
+                  "perde", "yapisal"):
+        assert parca in metin, parca
+
+
+def test_script_ag_importu_yok():
+    kaynak = SCRIPT.read_text(encoding="utf-8")
+    for yasak in ("import requests", "import urllib", "import socket", "import httpx"):
+        assert yasak not in kaynak
+    assert "__OA_UTF8_GUARD__" in kaynak

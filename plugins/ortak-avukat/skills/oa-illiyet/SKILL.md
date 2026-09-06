@@ -76,19 +76,65 @@ et** — hafızadan norm/künye üretme.
 ### 2. Grafı JSON yaz ve denetle
 
 Grafı `_oa/cikti/01-illiyet-graf.json` olarak yaz (şema `references/illiyet-doktrini.md` sonunda; çalışma evrakı kuralı).
-Sonra deterministik denetimi çalıştır:
+Sonra deterministik denetimi çalıştır (`--json` ZORUNLU — bekçi/B grubu bu
+dosyayı okur; v0.5.16 dersi: köşeli parantezli "opsiyonel" kapı sahada 0 kez
+ateşlenmişti — opsiyonel kapı = ateşlemeyen kapı):
 
 ```bash
-python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json [--json _oa/cikti/01-illiyet-denetim.json]
+python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json --json _oa/cikti/01-illiyet-denetim.json
 ```
 
+**Çıkış kodu sözleşmesi (v0.5.16 — SERT KAPI, avukat kararı #1):**
+
+| exit | anlam | JSON |
+|---|---|---|
+| exit 0 | temiz — şema hatası yok, çevrim yok | `cikis_kodu: 0`, `blok_sinifi: []` |
+| exit 1 | kullanım hatası (argüman yok) | — |
+| exit 2 | **DENETİM ÇÖKTÜ** (dosya yok / bozuk JSON / beklenmeyen istisna) — stdout `DENETİM ÇÖKTÜ: <sınıf>: <mesaj>` | `denetim_coktu: true`, `hata`, `cikis_kodu: 2` |
+| exit 3 | **çevrim VEYA şema hatası** var — temizlenmeden pipeline ilerlemez | `cikis_kodu: 3`, `blok_sinifi: ["sema" \| "cevrim"]` |
+
+Exit 2/3 durdurur; 0 dışındaki her kod avukata görünür (sessiz yeşil yok).
+`--json` alanları (bekçi sözleşmesi, adlar birebir): `arac="grafik_denetim"`,
+`sema_hatalari`, `cevrimler`, `denetim_coktu`, `cikis_kodu`, `blok_sinifi`,
+`yetim_dugumler`, `baglanmamis_deliller`, `desteksiz_kenarlar`,
+`guc_beyansiz_kenarlar`, `kopru_dugumler[].etiket`, `kesme_adaylari`,
+`yuk_tasiyan_kenarlar`, `zincirler`, `zincir_uyarisi`.
+
 Script şunları kesin tespit eder ve raporlar:
-- **Yetim düğüm** — hiçbir kenara bağlı değil (dosyada neden var?)
-- **Desteksiz kenar** — `dogrulama: iddia` ve `dayanak_delil` boş (ispat boşluğu → oa-vakia)
+- **Şema hatası (exit 3)** — eksik `id`/`tip`/`usul_rolu`, **mükerrer düğüm id**
+  (ilk kayıt korunur, hata basılır), tanımsız kaynak/hedef, illiyet kenarında
+  eksik `illiyet_tipi` **ve eksik `dogrulama`** (v0.5.16: doğrulanmamış
+  illiyet sessizce teyitli sayılamaz). `norm` eksikliği `[ŞEMA UYARISI]`
+  (advisory) — saha grafları kırılmaz ama Mevzuat MCP teyitli norm istenir.
+- **Yetim düğüm** — hiçbir kenara bağlı değil (dosyada neden var?). `tip: delil`
+  düğümleri bu sınıfa girmez (aşağıdaki ayrı sınıf).
+- **BAĞLANMAMIŞ DELİL (§2b, ayrı sınıf — v0.5.16)** — hiçbir kenarın
+  `dayanak_delil`inde anılmayan `tip: delil` düğümü: oa-vakia'nın *yetim delil*
+  semantiği — hangi iddiayı/kenarı ispatlıyor? Referans düğüm id'si olabilir;
+  serbest metinse delil `ad`ıyla ≥0.6 yazım benzerliği (tr küçük harf) bağlı
+  sayar. JSON `baglanmamis_deliller: [{id, ad}]`. (ispat yükü çerçevesi:
+  HMK m.190 — Mevzuat MCP teyit 2026-09-06)
+- **Desteksiz kenar** — `dogrulama` beyan edilmemiş VEYA (`dogrulama: iddia` ve
+  `dayanak_delil` boş) (ispat boşluğu → oa-vakia)
+- **GÜÇ BEYAN EDİLMEMİŞ (§3, ayrı sınıf — v0.5.16)** — `guc` verilmemiş illiyet
+  kenarı; zincir analizinde ağırlığı `beyan-yok = 0.4 ≤ tartışmalı` (eski 0.8
+  "beyan etmeyeni zayıf beyan edenden güçlü sayıyordu" — dürüstlük ödülü
+  tersine dönmüştü). JSON `guc_beyansiz_kenarlar`.
 - **Kırık illiyet zinciri** — illiyet kenarları uçtan uca bağlanmıyor (eksik ara halka)
-- **Köprü düğüm** — iki ayrı kümeyi bağlayan tek düğüm (örn. iki şirketi bağlayan
-  müdür → MUVAZAA / tüzel kişilik perdesinin aralanması sinyali)
-- **Çevrim** — dairesel illiyet (mantık hatası)
+- **Köprü düğüm (tip-duyarlı etiket — v0.5.16)** — kaldırılınca grafı en az iki
+  ≥2 düğümlü parçaya bölen tek düğüm (yaprak komşusu ve A-B-C zincirinin orta
+  düğümü ELENİR). Etiket: **`perde`** = köprü `gercek_kisi` ve ayırdığı en az
+  iki parçanın her birinde `tuzel_kisi` var (iki şirketi bağlayan tek müdür →
+  MUVAZAA / tüzel kişilik perdesinin aralanması sinyali; muvazaa çerçevesi
+  TBK m.19 — Mevzuat MCP teyit 2026-09-06); **`yapisal`** = aksi hâlde nötr
+  yapısal köprü (perde etiketi DEĞİL — sahte muvazaa sinyali üretilmez).
+  `tip: karar | mahkeme` düğümleri hesaptan muaf. JSON
+  `kopru_dugumler: [{id, ad, etiket}]`.
+- **Çevrim (exit 3)** — dairesel illiyet (mantık hatası). v0.5.16: çevrimler
+  MİNİMAL (çevrim-dışı düğüm içermez: A→B→C→B → `[B, C, B]`) ve mükerrersiz;
+  ≤200 düğümde tam basit çevrim sayımı, üstünde örneklem (rapor bunu söyler).
+  Çevrim varken §7 yük taşıyan kenar "çevrimde anlamsız", §8 köksüz graf
+  "GÜVENİLMEZ" damgası taşır (sahte-yeşil kapanışı).
 - **Kesme adayları** — `kesme_flag` dolu illiyet kenarları (→ oa-antitez beslemesi)
 - **Yük taşıyan kenar** — çıkarılırsa illiyet zincirini koparan kritik bağ (→ oa-strateji)
 - **Zincir güven analizi** — VARSAYILAN (v0.5.8.4): uçtan uca her illiyet

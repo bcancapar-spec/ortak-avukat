@@ -34,11 +34,15 @@ SKILL.md "ZAMAN KATMANI".)
   tip: uygun illiyet / objektif isnadiyet · güç: ...
   ⚠ KESME ADAYI varsa: mücbir sebep / mağdur kusuru / üçüncü kişi kusuru
 
-### Boşluk / risk denetimi (grafik_denetim.py çıktısından)
+### Boşluk / risk denetimi (grafik_denetim.py çıktısından — exit kodu: 0 temiz / 2 çöktü / 3 şema-çevrim)
+- Şema hatası / çevrim: ... (exit 3 ise graf düzeltilmeden bu blok kapanmaz)
 - Yetim düğüm: ...
-- Köprü düğüm: ... → muvazaa / perdeyi kaldırma sinyali (karşı tarafın hedefi)
+- Bağlanmamış delil (§2b): ... → hangi iddiayı/kenarı ispatlıyor? (oa-vakia yetim delil)
+- Köprü düğüm: ... [etiket: perde → muvazaa / perdeyi kaldırma sinyali (karşı tarafın
+  hedefi) | yapisal → nötr tek bağlantı noktası, perde etiketi değil]
 - Yük taşıyan kenar: ... → ispatlanmazsa zincir kopar (oa-strateji önceliği)
 - Desteksiz kenar: ... adet → oa-vakia
+- Güç beyansız illiyet kenarı: ... adet (beyan-yok ≤ tartışmalı → guc beyan et)
 
 ### oa-antitez beslemesi
 - Karşı tarafın kuracağı kesme/savunma: ...
