@@ -59,7 +59,10 @@ def _teyitli_sekil():
     """B-7 sonrası `sekil_sarti` beyanı MCP teyit izi (madde + sorgu) ister."""
     return {"durum": "VAR", "risk": "orta",
             "not": "Mevzuat MCP teyidi: TBK m.583 sorgusu kosuldu",
-            "onlem": "el yazili azami miktar metne islendi"}
+            "onlem": "el yazili azami miktar metne islendi",
+            # v0.5.16 (I6): TEMİZ eşiği üç senaryoyu da ister (bkz. _dolu).
+            "senaryo_testi": {"normal": "calisir", "gecikme": "calisir",
+                              "fesih": "calisir"}}
 
 
 def _dolu():
