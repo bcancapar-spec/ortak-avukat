@@ -16,6 +16,13 @@ Ailenin yapısal sağlığını deterministik denetler; her yeniden paketlemeden
 - Sürüm işaretçisi ("Güncel sürüm") aile genelinde tutarlı
 - ANAYASA TEK-KAYNAK KAPISI: eski model dayatması metni yok ('Opus-sınıfı'/'High altı');
   yaprak parçalar anayasa.md'ye referans veriyor; ortak-avukat/references/anayasa.md mevcut
+- KİLİT-A (v0.5.16 / Hamle 10 — K1): BEKÇİ↔SKILL SÖZLEŞMESİ — pipeline_kayit.py
+  boşluk bekçilerinin glob desenleri, ilgili parçanın SKILL.md örnek komutundaki
+  `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile EŞLEŞMELİ (HATA)
+- KİLİT-B (v0.5.16 / Hamle 10): KANONİK↔DOKTRİN — oa-illiyet grafik_denetim.KANONIK
+  enum değerlerinin her biri references/illiyet-doktrini.md'de LİTERAL geçmeli (HATA)
+- SÜRÜM İŞARETÇİSİ (v0.5.16 / P2-10, B-3): STATUS.md «**Sürüm:** X» ve YOL-HARITASI.md
+  «## DURUM — son (… · vX)» plugin.json «version» ile eşit değilse UYARI (hata değil)
 
 Kullanım: python aile_dogrula.py <aile-kök-dizini>
 """
@@ -48,6 +55,157 @@ def frontmatter(metin):
 
 
 KULLANIM = "Kullanım: python aile_dogrula.py <aile-kök-dizini>"
+
+
+# ═══════════════ v0.5.16 — YAPISAL KİLİTLER (Hamle 10) + SÜRÜM İŞARETÇİSİ ═══
+# Saha dersi (K1, 2026-09-06 bütünleşik denetim): oa-illiyet SKILL.md örneği
+# denetim çıktısını `01-illiyet-denetim.json` adıyla yazdırıyor, oa-pipeline
+# bekçisi (`_graf_yapisal_bosluk_uyarisi`) ise `*graf*.json` okuyordu → üretilen
+# JSON bekçiye HİÇ girmedi, DURUM.md "boşluk yok" gösterdi (sahte yeşil). İki
+# dosya iki ayrı oturumca yazıldı; göz taraması yakalamadı. Aynı sınıf kopuş
+# (B-28: `05-kiyas*` ↔ `*kiyas*.json`) bir sürüm önce de yaşandı. Çözüm
+# mekanik: bekçi deseni ile SKILL örneği aynı kapıda karşılaştırılır.
+# Script hukuki yorum YAPMAZ; yalnız iki metin arasındaki adlandırma
+# sözleşmesini fnmatch ile denetler.
+
+# bekçi fonksiyonu → tüketilen JSON'u üreten parça (SKILL.md sahibi)
+BEKCI_PARCA = {
+    "_graf_yapisal_bosluk_uyarisi": "oa-illiyet",
+    "_kiyas_bosluk_uyarisi": "oa-kiyas",
+    "_usul_bosluk_uyarisi": "oa-usul",
+}
+
+_BEKCI_GLOB_RE = re.compile(
+    r"""glob\.glob\(\s*os\.path\.join\(\s*cdiz\s*,\s*["']([^"']+)["']\s*\)\s*\)""")
+_SKILL_JSON_CIKTI_RE = re.compile(r"--json\s+\[?_oa/cikti/([\w\-.]+\.json)")
+
+
+def _fonksiyon_govdesi(kaynak, ad):
+    """`def <ad>(` satırından bir sonraki üst-düzey `def`/`class` satırına
+    kadar olan metin; fonksiyon yoksa None. AST yerine metin: bekçi gövdesi
+    değişse de desen literalini yakalamak yeter (mekanik denetim)."""
+    m = re.search(r"^def %s\s*\(" % re.escape(ad), kaynak, re.M)
+    if not m:
+        return None
+    son = re.search(r"^(?:def|class)\s", kaynak[m.end():], re.M)
+    return kaynak[m.start(): m.end() + (son.start() if son else len(kaynak))]
+
+
+def bekci_skill_sozlesmesi(kok):
+    """KİLİT-A (K1): pipeline_kayit.py bekçi glob desenleri ↔ parça SKILL.md
+    örnek `--json _oa/cikti/<ad>.json` çıktı adları.
+
+    Döner: (hatalar, uyarilar). Depo-dışı kopyada (pipeline_kayit.py yok)
+    SESSİZ atlanır — VENDOR deseni: kural depoyu bağlar, kopyayı değil.
+    Bekçi fonksiyonu/deseni bulunamazsa UYARI (kilit kör kaldı, gizlenmez);
+    SKILL.md'de `--json` örneği yoksa denetlenecek sözleşme yoktur (sessiz).
+    """
+    import fnmatch
+    hatalar, uyarilar = [], []
+    pk_yol = os.path.join(kok, "oa-pipeline", "scripts", "pipeline_kayit.py")
+    if not os.path.isfile(pk_yol):
+        return hatalar, uyarilar
+    try:
+        pk_metin = open(pk_yol, encoding="utf-8", errors="replace").read()
+    except OSError as e:
+        uyarilar.append(f"bekçi–skill sözleşmesi denetlenemedi ({e})")
+        return hatalar, uyarilar
+    for fonk, parca in BEKCI_PARCA.items():
+        govde = _fonksiyon_govdesi(pk_metin, fonk)
+        if govde is None:
+            uyarilar.append(f"bekçi–skill sözleşmesi: pipeline_kayit.py'de "
+                            f"'{fonk}' yok — {parca} kilidi kör")
+            continue
+        desenler = _BEKCI_GLOB_RE.findall(govde)
+        if not desenler:
+            uyarilar.append(f"bekçi–skill sözleşmesi: '{fonk}' gövdesinde "
+                            f"glob deseni çıkarılamadı — {parca} kilidi kör")
+            continue
+        skill_yol = os.path.join(kok, parca, "SKILL.md")
+        if not os.path.isfile(skill_yol):
+            continue
+        skill_metin = open(skill_yol, encoding="utf-8", errors="replace").read()
+        for ad in sorted(set(_SKILL_JSON_CIKTI_RE.findall(skill_metin))):
+            if not any(fnmatch.fnmatch(ad, d) for d in desenler):
+                hatalar.append(
+                    f"bekçi–skill sözleşme kopuşu (K1): {parca} örneği '{ad}' "
+                    f"bekçi deseni {' / '.join(repr(d) for d in desenler)} "
+                    f"ile eşleşmiyor ({fonk} bu çıktıyı hiç okumaz — sahte yeşil)")
+    return hatalar, uyarilar
+
+
+def kanonik_doktrin_uyum(kok):
+    """KİLİT-B: oa-illiyet/scripts/grafik_denetim.py `KANONIK` enum
+    değerlerinin her biri oa-illiyet/references/illiyet-doktrini.md'de LİTERAL
+    geçmeli. Enum (kod) ile doktrin (metin) ayrışırsa model doktrini okuyup
+    kanonik-dışı değer üretir, script "kanonik-dışı" uyarısı basar — iki
+    kaynak birbirini yalanlar. Döner: (hatalar, uyarilar); script yoksa sessiz,
+    yüklenemezse UYARI (sessiz atlama yasağı)."""
+    hatalar, uyarilar = [], []
+    gd_yol = os.path.join(kok, "oa-illiyet", "scripts", "grafik_denetim.py")
+    if not os.path.isfile(gd_yol):
+        return hatalar, uyarilar
+    try:
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location("_oa_grafik_denetim_kilit", gd_yol)
+        gd = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(gd)
+        kanonik = gd.KANONIK
+    except Exception as e:
+        uyarilar.append(f"KANONİK↔doktrin denetlenemedi (grafik_denetim.py "
+                        f"yüklenemedi: {e})")
+        return hatalar, uyarilar
+    dok_yol = os.path.join(kok, "oa-illiyet", "references", "illiyet-doktrini.md")
+    if not os.path.isfile(dok_yol):
+        hatalar.append("enum↔doktrin ayrışması: oa-illiyet/references/"
+                       "illiyet-doktrini.md yok (KANONIK'in doktrin karşılığı yok)")
+        return hatalar, uyarilar
+    dok = open(dok_yol, encoding="utf-8", errors="replace").read()
+    for alan in sorted(kanonik):
+        for deger in sorted(kanonik[alan]):
+            if isinstance(deger, str) and deger not in dok:
+                hatalar.append(f"enum↔doktrin ayrışması: {alan} '{deger}' "
+                               "doktrinde yok (illiyet-doktrini.md)")
+    return hatalar, uyarilar
+
+
+_STATUS_SURUM_RE = re.compile(r"\*\*Sürüm:\*\*\s*v?([\d.]+\d)")
+_YOL_DURUM_SURUM_RE = re.compile(r"^## DURUM — son \([^)\n]*·\s*v([\d.]+\d)\)", re.M)
+
+
+def surum_isaretcileri(kok):
+    """P2-10 / B-3: STATUS.md başlığındaki «**Sürüm:** X» ve YOL-HARITASI.md
+    «## DURUM — son (… · vX)» satırı plugin.json «version» ile eşit olmalı.
+    UYARI sınıfı (hata değil): vitrin bayatlığı paketlemeyi durdurmaz ama
+    görünür kalır. Depo kökü = kok/../../.. ; dosya yoksa sessiz atlanır
+    (depo-dışı kopya). Döner: uyarilar listesi."""
+    uyarilar = []
+    try:
+        import json as _json
+        pj = os.path.join(kok, "..", ".claude-plugin", "plugin.json")
+        depo = os.path.normpath(os.path.join(kok, "..", "..", ".."))
+        if not os.path.isfile(pj):
+            return uyarilar
+        pv = _json.load(open(pj, encoding="utf-8")).get("version")
+        if not pv:
+            return uyarilar
+        for dosya, rx, etiket in (
+                ("STATUS.md", _STATUS_SURUM_RE, "STATUS.md «**Sürüm:**»"),
+                ("YOL-HARITASI.md", _YOL_DURUM_SURUM_RE,
+                 "YOL-HARITASI.md «## DURUM — son (… · vX)»")):
+            yol = os.path.join(depo, dosya)
+            if not os.path.isfile(yol):
+                continue
+            m = rx.search(open(yol, encoding="utf-8", errors="replace").read())
+            if not m:
+                uyarilar.append(f"sürüm işaretçisi: {etiket} satırı bulunamadı "
+                                f"(plugin.json={pv})")
+            elif m.group(1) != pv:
+                uyarilar.append(f"sürüm işaretçisi bayat: {etiket} = {m.group(1)} "
+                                f"↔ plugin.json = {pv} (P2-10/B-3)")
+    except Exception as e:
+        uyarilar.append(f"sürüm işaretçisi denetimi yapılamadı ({e})")
+    return uyarilar
 
 
 def main():
@@ -268,6 +426,13 @@ def main():
                         f"({', '.join(sorted(olaylar_js))}) eşit değil")
     except Exception as e:
         uyarilar.append(f"hook kapsam denetimi yapılamadı ({e})")
+
+    # v0.5.16 — Hamle 10 yapısal kilitler + P2-10 sürüm işaretçisi
+    h_, u_ = bekci_skill_sozlesmesi(kok)
+    hatalar += h_; uyarilar += u_
+    h_, u_ = kanonik_doktrin_uyum(kok)
+    hatalar += h_; uyarilar += u_
+    uyarilar += surum_isaretcileri(kok)
 
     if len(surumler) > 1:
         detay = "; ".join(f"{s}: {', '.join(pl[:4])}{'...' if len(pl) > 4 else ''}"
