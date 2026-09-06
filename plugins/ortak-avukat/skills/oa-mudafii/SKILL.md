@@ -65,6 +65,71 @@ Detaylı unsur-denetim şablonu ve evreye göre kontrol listeleri için:
 **`references/savunma-kontrol-listesi.md`** (soruşturma · kovuşturma · kanun yolu + unsur
 matrisi + argüman bankası).
 
+## 2/A. EN AVANTAJLI SONUÇ HARİTASI — müzakereli çıkışlar (unsur denetiminden SONRA, strateji ÖNCE)
+
+**Saha dersi (P1-6/A-25, v0.5.16):** müvekkilin **en avantajlı sonucu çoğu dosyada beraat değildir.**
+Beraat en yüksek kazanım ama en düşük olasılıklı ve en uzun yoldur; unsur
+denetimi (§2) "unsur boşluğu var/yok" cevabını verdikten sonra, strateji adımına (§6 →
+`oa-strateji`) girmeden ÖNCE sekiz çıkış yolu **tek tabloda** karşılaştırılır. Bu tablo
+**karar materyalidir; karar avukatındır** — sistem hangi yolun seçileceğini söylemez,
+her yolun kim/ne zaman/koşul/sonuç/maliyet dörtgenini müvekkille konuşulacak biçimde
+döşer. Her norm kullanım anında Mevzuat MCP'den yeniden çekilir (aşağıdaki çıpalar
+2026-09-06 tarihli madde metinlerinden okunmuştur; tarife/rakam içermez).
+
+| Yol | Kim · Ne zaman | Koşul | Sonuç | Müvekkile maliyet | Norm (teyit) |
+|---|---|---|---|---|---|
+| **Beraat** | Mahkeme · kovuşturma sonu (soruşturmada karşılığı KYOK, m.172) | Fiilin sanık tarafından işlenmediği / suç oluşturmadığı / unsur yokluğu / sübut yokluğu (m.223/2) | Tam aklanma; adli sicil yok; m.141 tazminat kapısı | En uzun süre, en yüksek belirsizlik, yargılama boyunca tedbir/tutukluluk riski; "ya mahkûmiyet" senaryosu tabloya yazılır | CMK m.223/2 (Mevzuat MCP teyit 2026-09-06) |
+| **Uzlaştırma** | Savcılık uzlaştırma bürosu (soruşturma, m.253) veya mahkeme (kovuşturma, m.254) · iddianame öncesi ya da kovuşturmada kapsam anlaşılınca | Şikâyete bağlı suçlar + m.253/1-b listesi (kasten yaralama, taksirle yaralama, tehdit m.106/1, konut dokunulmazlığı, hırsızlık, dolandırıcılık, güveni kötüye kullanma vb.) — **kapsam dışı m.253/3:** cinsel dokunulmazlık, ısrarlı takip (m.123/A), hakaret (m.125); kapsam dışı suçla birlikte aynı mağdura işlenmişse uygulanmaz; teklife yedi gün içinde cevap yoksa ret sayılır (m.253/4); sonuçsuz kalırsa tekrar yok (m.253/18) | Edim def'aten yerine getirilirse **KYOK** (soruşturma) / **düşme** (kovuşturma, m.254/2); taksitliyse kamu davasının açılmasının ertelenmesi / durma; müzakere beyanları hiçbir yerde delil olamaz (m.253/20); uzlaşan tazminat davasından kurtulur (m.253/19); zamanaşımı müzakere boyunca durur (m.253/21); yalnız uzlaşan yararlanır (m.255) | Edim bedeli (parasal/manevi); ikrar değildir ama müzakere pozisyonu; edim yerine getirilmezse rapor ilam niteliği kazanır (m.253/19) | CMK m.253, m.254, m.255 (Mevzuat MCP teyit 2026-09-06) |
+| **Etkin pişmanlık** | Fail/azmettiren/yardım eden · suça göre soruşturma-kovuşturma-hüküm öncesi kademeleri | **TCK'da suça özgüdür — genel hüküm yoktur;** suç tipine göre madde teyit edilir (örnek çıpa: malvarlığı suçlarında m.168 — kovuşturma öncesi zararın tamamen giderilmesi → cezanın üçte ikisine kadar, kovuşturma sonrası hüküm öncesi → yarısına kadar indirim; kısmi iadede mağdur rızası m.168/4) | Ceza indirimi (bazı suçlarda cezasızlık — suça özgü) | Zararın giderilmesi = fiilin kabulüne yaklaşan pozisyon; beraat tezinin gücüyle **ters orantılı** — unsur boşluğu güçlüyse pişmanlık teklifi tezi zayıflatır (iç analizde açıkça yazılır) | TCK m.168 örnek çıpa (Mevzuat MCP teyit 2026-09-06); diğer suç tipleri: uygulama anında ilgili madde teyit edilir |
+| **Seri muhakeme usulü** | C. savcısı teklif eder · soruşturma evresi sonunda (kamu davasının açılmasının ertelenmesi verilmemişse) · şüpheli **müdafi huzurunda** kabul ederse | Yalnız m.250/1 sayılı suçlar (hakkı olmayan yere tecavüz, trafik güvenliğini tehlikeye sokma, mühür bozma, resmi belgenin düzenlenmesinde yalan beyan, başkasına ait kimlik kullanma, 6136 s.K. bazı fıkraları vb.); iştirakte biri kabul etmezse ve kapsam dışı suçla birlikte işlenmişse uygulanmaz (m.250/11); yaş küçüklüğü/akıl hastalığında uygulanmaz | Temel cezadan **yarı oranında** indirim (m.250/4); savcı m.50 (seçenek yaptırım) / m.51 (erteleme) / m.231 (HAGB) kıyasen uygulayabilir (m.250/5-6); mahkeme talepten ağır hüküm kuramaz (m.250/9); hükme itiraz (m.250/14) | Mahkûmiyet hükmüdür (sicil); usul tamamlanamazsa kabul beyanı ve belgeler sonraki soruşturmada **delil olamaz** (m.250/10) — bu güvence müvekkile anlatılır; mazeretsiz gelmeyen usulden vazgeçmiş sayılır | CMK m.250 (Mevzuat MCP teyit 2026-09-06) |
+| **Basit yargılama usulü** | Asliye ceza mahkemesi karar verir · iddianamenin kabulünden sonra, duruşma günü belirlenmeden önce (m.251/1) | Adlî para cezası ve/veya üst sınırı iki yıl veya daha az hapis gerektiren suçlar; iddianame tebliğinden itibaren **iki hafta** yazılı savunma (m.251/2); izne/talebe bağlı suçlarda ve kapsam dışı suçla birlikte işlenmişse uygulanmaz (m.251/7-8) | Duruşmasız hüküm; mahkûmiyette sonuç ceza **dörtte bir** indirilir (m.251/3); m.50/m.51 uygulanabilir; HAGB ancak **sanık yazılı olarak karşı çıkmazsa** (m.251/4); hükme itiraz (m.251/5) | Yüz yüzelik/duruşma hakkından feragat benzeri etki — tanık sınama fırsatı yok (§3 delil cephesi bu usulde daralır); mahkeme her aşamada duruşma açabilir (m.251/6) | CMK m.251 (Mevzuat MCP teyit 2026-09-06) |
+| **Erteleme** | Mahkeme · hükümle birlikte | İki yıl veya daha az hapis (fiil tarihinde on sekiz yaşını doldurmamış / altmış beş yaşını bitirmiş için üç yıl); daha önce kasıtlı suçtan üç aydan fazla hapis mahkûmiyeti yok; pişmanlık kanaati (m.51/1); zararın giderilmesi koşuluna bağlanabilir (m.51/2) | Denetim süresi (bir yıldan az, üç yıldan fazla değil; ceza süresinden az olamaz — m.51/3) iyi hâlle geçerse ceza **infaz edilmiş sayılır** (m.51/8) | Mahkûmiyet + sicil kaydı; denetim süresinde kasıtlı suç/yükümlülük ihlali → infaz (m.51/7); HAGB verilen hükümde ertelenemez (m.231/7) | TCK m.51 (Mevzuat MCP teyit 2026-09-06) |
+| **HAGB** | Mahkeme · hükümle birlikte (basit yargılamada m.251/4; seri muhakemede savcı kıyasen m.250/6) | **GÜNCEL REJİM — 7589 s.K. (16/7/2026) ile m.231/5-14 yeniden yazıldı; 7499 s.K. (2024) metni artık yürürlükte değil.** Ceza iki yıl veya daha az hapis / adlî para (m.231/5); daha önce kasıtlı suçtan mahkûm olmamış olma + yeniden suç işlemeyeceği kanaati + **zararın tamamen giderilmesi** (m.231/6-a/b/c; derhal giderilemiyorsa taksitle m.231/9); işkence-eziyet ve kamu görevlisinin kötü muamele suçlarında uygulanmaz (m.231/14). **Sanığın kabulü / karşı çıkmaması şartı 7589 metninde (m.231/6) görünmüyor** — kabul rejimi ve 2023 AYM iptalinin etkisi **uygulama anında teyit** edilir | Hüküm hukukî sonuç doğurmaz (müsadere hariç); **beş yıl** denetim (m.231/8); denetim iyi geçerse **düşme** (m.231/10); ihlalde hüküm açıklanır — açıklanan hükme itiraz (m.231/11); kanun yolu: **istinaf, m.272/3 saklı** (kapalı hükümlerde başvuru süre/harç kaybı); BAM/Yargıtay ilk derece sıfatıyla verdiyse temyiz (m.231/12) | **Beraat değildir:** sübutu saptar; denetim süresinde dava zamanaşımı durur; HAGB'de ceza ertelenemez / seçenek yaptırıma çevrilemez (m.231/7); özel kayıt sistemi (m.231/13); beş yıl "temiz kalma" yükü | CMK m.231 (Mevzuat MCP teyit 2026-09-06 — 7589 metni) |
+| **Kısa süreli hapsin seçenek yaptırıma çevrilmesi** | Mahkeme · hükümle birlikte | Kısa süreli hapis (m.49/2 — teyit); adlî para / zararın giderilmesi / eğitim kurumu / yer-etkinlik yasağı / ehliyet-ruhsat geri alma / kamuya yararlı iş (m.50/1); seçenekli suç tipinde hapse hükmedilmişse artık paraya çevrilmez (m.50/2); otuz gün ve altı hapis ile on sekiz yaş altı / altmış beş yaş üstü için bir yıl ve altı → **zorunlu** çevrilir (m.50/3); taksirli suçta uzun süreli de olsa paraya çevrilebilir, bilinçli taksir hariç (m.50/4) | Asıl mahkûmiyet çevrilen yaptırımdır (m.50/5) | Mahkûmiyet + sicil; tedbir yerine getirilmezse infaz hâkimliği hapsi infaz eder (m.50/6); adlî para → gün-para hesabı (m.52 — teyit) | TCK m.50 (Mevzuat MCP teyit 2026-09-06) |
+
+**Haritayı okuma disiplini:**
+- Tablo yolları **birbirini dışlamaz**: seri muhakeme + HAGB, basit yargılama + erteleme
+  gibi bileşimler mümkündür; unsur boşluğu (§2) güçlüyse beraat hattı ile "kabule
+  yaklaşan" yollar (etkin pişmanlık, uzlaştırma edimi) **iç analizde** çelişki olarak
+  yazılır — dış çıktıya (dilekçe) sızmaz (§ Sunum disiplini).
+- Her satır için müvekkile üç şey söylenir: **en iyi / en kötü / en olası** senaryo ve
+  yolun **geri dönüşsüz** olup olmadığı (uzlaştırma tekrar edilemez m.253/18; seri
+  muhakemede mazeretsiz gelmeme vazgeçme sayılır m.250/9).
+- Uzlaştırma masasında **şikâyetten vazgeçmenin karşı taraf için fiyatı** (TCK m.73/4-7)
+  bilinir: müştekinin pazarlık pozisyonunu `oa-musteki-vekili` § CEZA YOLU NE İÇİN?
+  aynalar — aynı normlar iki kutuptan okunur.
+- Tarife/parasal veri yazılmaz; süre hesabı `oa-sure` ile deterministiktir; her çıpa
+  kullanım anında yeniden çekilir; "— teyit" etiketli çıpalar (m.49/2, m.52) bu turda
+  okunmamıştır, kullanım anında okunur.
+- **Kademeli netice-i talep** (§5-7) bu haritadan üretilir: beraat → bozma → lehe
+  hükümler → (varsa) HAGB / erteleme / seçenek yaptırım.
+
+## 2/B. SUSMA / BEYAN ZAMANLAMASI — karar protokolü (sistem KARAR VERMEZ)
+
+**Susma hakkı:** şüpheli/sanığa yüklenen suç hakkında açıklamada bulunmamasının kanunî
+hakkı olduğu söylenir — CMK **m.147/1-e** (Mevzuat MCP teyit 2026-09-06); m.147/1-f ile
+lehe delil toplanmasını isteme hakkı aynı maddededir. Susma müvekkilin
+**aleyhine yorumlanamaz** (§1 ispat yükü). Beyanın **bizzat** verilmesi ve ifade/sorguda hazır
+bulunma münhasıran avukata/müvekkile aittir (Layer 0, `oa-gizlilik`); bu protokol beyan
+metni YAZMAZ, karar materyali üretir.
+
+Bu protokol **ne zaman / ne kadar** beyan verileceğine dair **seçenekleri ve risklerini**
+listeler; **sistem KARAR VERMEZ, karar avukatındır.** Çıktı, `_oa` defterine ve devir
+paketine DURUM = **«Avukat Kararı Bekleyen»** notuyla düşer; karar verilmeden strateji
+adımı (§6-8) "beyan pozisyonu belirsiz" şerhiyle ilerler.
+
+| Seçenek | Ne kazandırır | Riski | Ne zaman düşünülür (örneklem) |
+|---|---|---|---|
+| **Tam susma** (soruşturma boyunca) | Kilitlenme yok; iddia makamı kendi ispat yükünü kendi taşır; dosya görülmeden pozisyon verilmez | Lehe delil toplatma fırsatı (m.147/1-f) kullanılmamış olur; tutukluluk değerlendirmesinde "şüpheyi giderme" imkânı kaçar; kovuşturmada ilk kez konuşmanın **inandırıcılık** maliyeti ("neden şimdi?") | Dosyada kısıtlama varken (m.153 — teyit) ve isnat belirsizken; müvekkilin anlatımı iç tutarsızken |
+| **Sınırlı / erken beyan** (kimlik + tek çekirdek olgu) | Tutukluluk / adli kontrolde şüphe giderme; çağdaş beyanın güvenilirlik primi (§5-1: sonradan genişleyen beyan kuşku doğurur) | **Kilitlenme:** erken verilen anlatım, sonradan öğrenilen delille çelişirse geri alınamaz; her ek ayrıntı yeni cephe açar | Fiili başkasının işlediği açıkça belgelenebiliyorsa; alibi belgesi elde hazırsa |
+| **Tam beyan erken** | Etkin pişmanlık / uzlaştırma / seri muhakeme kapılarını (§2/A) açar; iş birliği görünümü | En yüksek kilitlenme; beraat tezini fiilen kapatabilir; ikrarın kanun yolunda geri alınması güç | Unsur boşluğu zayıf, delil güçlü ve müzakereli çıkış hedefleniyorsa |
+| **Geç beyan** (dosya açıldıktan sonra, kovuşturmada) | Tüm delili görerek, çelişkisiz ve tam savunma; tanık sınamasından sonra konuşma | **İnandırıcılık:** "neden soruşturmada susup şimdi konuşuyor" sorusu; çağdaş beyan primi kaybı | Delil zinciri eksik/çelişkili ve savunmanın gücü dosya görülünce artacaksa |
+
+Her seçenek için iç analizde yazılacak dört kalem: (1) müvekkilin anlatımının iç
+tutarlılığı, (2) eldeki belge/alibi'nin gücü, (3) tutukluluk / adli kontrol baskısı,
+(4) hedeflenen çıkış yolunun (§2/A) beyan gerektirip gerektirmediği. Sonuç satırı daima:
+**"Karar: avukat — DURUM: Avukat Kararı Bekleyen."**
+
 ## 3. Delil cephesi disiplinleri
 
 Mahkûmiyet dayanağı her delil şu süzgeçlerden geçirilir:
@@ -185,7 +250,8 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **ceza savunmasına** uy
                  aranamıyorsa Yargıtay içinde gömülü BAM kararından çek)
 7. ANTİTEZ     → oa-antitez (iddia makamı/mahkeme tezleri; GİZLİ CEPHANELİK — sunulmamış
                  antiteze preemptive savunma yazma)
-8. STRATEJİ    → oa-strateji (savunma/uzlaşma/etkin pişmanlık; hangi kanun yolu, hangi sıra)
+8. STRATEJİ    → oa-strateji (§2/A sonuç haritası + §2/B beyan kararı girdi; savunma/
+                 uzlaşma/etkin pişmanlık; hangi kanun yolu, hangi sıra)
 9. YAZIM       → oa-dilekce (ifade/savunma · iddianameye karşı · istinaf · temyiz · itiraz
                  · KYOK itirazı · AYM bireysel başvuru — kademeli netice-i talep)
 10. KONTROL    → oa-kontrol (atıf denetimi · ifşa kontrolü · müvekkil-aleyhi zaaf taraması)

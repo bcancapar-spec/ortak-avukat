@@ -28,6 +28,37 @@ pasif şikâyetçi değildir; soruşturmanın bıraktığı **ispat boşluğunu 
 soruşturmayı **tamamlatır** ve giderilemeyen kuşku doğmadan delili tamamlar — ki "şüpheden
 sanık yararlanır" karşı kalkanı devreye girmesin.
 
+## 0. CEZA YOLU NE İÇİN? — stratejik ilk soru (ceza ↔ hukuk köprüsü)
+
+**Saha dersi (P1-7/A-26, v0.5.16):** müşteki vekili ceza yolunu **kendi başına amaç**
+sanmaz. Müvekkilin gerçek hedefi çoğu dosyada tazminat/alacak, malvarlığının geri
+alınması, bir hukuk davasında ispat üstünlüğü ya da pazarlık gücüdür; ceza dosyası bu
+hedefe **araçtır.** Bu yüzden §1'e (iddia duruşu) girmeden ÖNCE şu beş eksen tek tabloda
+cevaplanır ve `oa-strateji`'ye girdi olur. Üretilen şey **karar materyalidir;
+karar avukatındır** — hangi yolun (ceza / hukuk / ikisi birlikte / önce hangisi) seçileceğini
+sistem söylemez, her eksenin kazancını ve fiyatını döşer. Aşağıdaki çıpalar 2026-09-06
+tarihli Mevzuat MCP madde metinlerinden okunmuştur; kullanım anında yeniden çekilir.
+
+| Eksen | Soru | Norm (teyit) | Ne kazandırır | Fiyatı / riski |
+|---|---|---|---|---|
+| **(a) Bekletici mesele** | Hukuk davasında hüküm, ceza dosyasının sonucuna bağlı mı? | HMK m.165 (Mevzuat MCP teyit 2026-09-06): hüküm başka bir davaya kısmen/tamamen bağlıysa mahkeme o davanın sonucuna kadar yargılamayı **bekletebilir** (takdirî — "bekletilebilir"); m.165/2: bağlı sorun için tarafa süre verilir, süresinde başvurulmazsa iddiadan vazgeçmiş sayılır | Ceza dosyasındaki bilirkişi/keşif/tespit hukuk davasına hazır gelir; hukuk hâkimi çelişkili sonuç riskinden kaçınır | Hukuk davası **yıllarca durabilir** (tazminat gecikir, faiz dışında telafi yok); bekletme takdirîdir, talep reddedilebilir; m.165/2 süresi kaçırılırsa iddia düşer — `oa-sure` nöbeti |
+| **(b) Ceza hükmünün hukuk hâkimini bağlaması** | Ceza dosyasını kazanırsak hukuk davası "otomatik" kazanılır mı? | TBK m.74 (Mevzuat MCP teyit 2026-09-06) — metin: hukuk hâkimi, kusur ve ayırt etme gücü hakkında karar verirken ceza hukukunun sorumluluk hükümleriyle **bağlı değildir**; ceza hâkiminin **beraat** kararıyla da bağlı değildir; ceza hâkiminin **kusur değerlendirmesi ve zarar belirlemesi** de hukuk hâkimini **bağlamaz**. Yerleşik Yargıtay uygulaması (Yargı MCP künye teyidi 2026-09-06, snippet düzeyi — kullanım anında tam metin muhakemesi, `oa-kiyas` DAMGA): kesinleşen **mahkûmiyet** hükmüyle saptanan **maddi olgu** (fiilin işlendiği, illiyet) hukuk hâkimini bağlar — örnek künyeler: Yargıtay 3. HD E. 2018/3527 K. 2018/6337; 4. HD E. 2015/11693 K. 2015/13705; 1. HD E. 2019/128 K. 2021/664 | Kesinleşen mahkûmiyet = maddi olgu tartışması hukuk davasında **kapanır**; ispat yükü fiilen hafifler | **Beraat hukuk davasını kapatmaz** ama pratikte moral/psikolojik ağırlık taşır; kusur oranı ve zarar miktarı hukuk davasında **yeniden** ispatlanır — ceza dosyasına yaslanıp hukuk davasının delilini ihmal etmek tuzaktır; "ceza hükmü hukuk hâkimini bağlar" cümlesi **mutlak yazılmaz** |
+| **(c) Tazminat zamanaşımına etkisi** | Haksız fiil tazminatının süresi ceza yoluyla uzar mı? | TBK m.72/1 (Mevzuat MCP teyit 2026-09-06): zarar ve tazminat yükümlüsünün öğrenilmesinden **iki yıl**, her hâlde fiilden **on yıl**; **ancak** tazminat, ceza kanunlarının **daha uzun** bir zamanaşımı öngördüğü cezayı gerektiren bir fiilden doğmuşsa **o (uzun) zamanaşımı uygulanır**. Ceza dava zamanaşımı süreleri TCK m.66 (üst sınıra göre kademeli); uzlaştırma müzakeresi ve HAGB denetim süresi boyunca dava zamanaşımı durur (CMK m.253/21; m.231/8) | Ceza zamanaşımı daha uzunsa tazminat davası için **ek süre**; fiilin suç niteliği hukuk davasında zamanaşımı def'ine karşı kalkan | Uzatılmış süre **suçun doğru nitelendirilmesine** bağlıdır (yanlış nitelendirme → yanlış süre); "ceza davası açıldı, zamanaşımı dert değil" rehaveti telafisizdir — `oa-sure --tur maddi` ile iki senaryolu hesap |
+| **(d) Delil fabrikası** | Ceza dosyası hukuk davasında elde edemeyeceğimiz delili üretir mi? | CMK m.234 (suçtan zarar görenin delil toplanmasını isteme hakkı — §1) ve m.253/8 (uzlaşma teklifi delil toplanmasına engel değil) (Mevzuat MCP teyit 2026-09-06); soruşturmada resen bilirkişi, keşif, HTS/iletişim, banka/MASAK, kamera, ifade tutanağı, adli tıp | Savcılık **kamu gücüyle** delil toplar (hukuk davasında masraf/erişim engeli olan kayıtlar); şüpheli/sanık ifadesi yazılı olgu kaynağıdır; dosya hukuk davasına celp edilir | Soruşturmanın gizliliği/kısıtlama (m.153 — teyit) erişimi geciktirebilir; ceza dosyasında toplanan delil hukuk davasında **yeniden tartışılır** (b ekseni); delil fabrikası için ceza yolu seçmek "şikâyet hakkının kötüye kullanılması" savunmasını ve iftira riskini (TCK m.267 — teyit) doğurur — isnat desteksiz olamaz |
+| **(e) Uzlaştırma masası ve vazgeçmenin fiyatı** | Müştekinin pazarlık pozisyonu nedir; şikâyetten vazgeçmek/uzlaşmak neye mal olur? | TCK m.73 ve CMK m.253 (Mevzuat MCP teyit 2026-09-06). **Şikâyet süresi** altı ay, fail ve fiilin öğrenilmesinden (m.73/1-2; hakaret için fiilden itibaren iki yılı geçemez). **Vazgeçme:** şikâyete bağlı suçlarda vazgeçme davayı **düşürür**; hükmün kesinleşmesinden sonraki vazgeçme **infaza engel olmaz** (m.73/4); iştirakte bir sanık hakkındaki vazgeçme **diğerlerini de kapsar** (m.73/5); vazgeçme onu **kabul etmeyen sanığı etkilemez** (m.73/6); vazgeçerken **şahsi haklardan da vazgeçildiği** ayrıca açıklanmışsa hukuk mahkemesinde **dava açılamaz** (m.73/7). **Uzlaşma:** müzakere beyanları hiçbir davada delil olamaz (m.253/20); uzlaşma gerçekleşirse suç nedeniyle **tazminat davası açılamaz**, açılmış dava feragat edilmiş sayılır — uzlaşma anında bilinmeyen/sonradan çıkan zarar hariç (m.253/19); edim yerine getirilmezse uzlaşma raporu **ilam niteliğinde** belgedir (m.253/19); birden çok mağdurda hepsinin kabulü gerekir (m.253/7); sonuçsuz kalırsa tekrar yok (m.253/18) | Uzlaştırma kapsamındaki suçta müşteki **masanın anahtarıdır**: edim (tazmin, iade, özür, hizmet) pazarlığı; ilam niteliğinde belge = icra gücü; kabul etmeme → kamu davası devam eder | **Şahsi haklardan vazgeçme cümlesi tek satırla hukuk davasını kapatır** (m.73/7) — vazgeçme dilekçesi bu ayrımla yazılır; uzlaşma = tazminat davasından feragat (m.253/19) — edim, hukuk davasında alınabilecek tutarla **karşılaştırılmadan** kabul edilmez (tutar/tarife yazılmaz, `oa-strateji` maliyet-fayda); vazgeçme iştirakte tüm sanıkları kapsar (m.73/5) — "yalnız birinden vazgeçme" mümkün değildir; şikâyet süresi (altı ay) kaçarsa masa hiç kurulmaz |
+
+**Köprüyü okuma disiplini:**
+- Beş eksen birlikte tek soruya cevap verir: **"Ceza yolu bu dosyada müvekkile ne
+  kazandırır, neye mal olur, hukuk yoluyla nasıl sıralanır?"** Cevap `oa-strateji`'ye
+  (8. adım) girdi; sıra kararı (önce ceza / önce hukuk / paralel / yalnız biri) avukatın.
+- Aynı normlar `oa-mudafii` § EN AVANTAJLI SONUÇ HARİTASI'nda **karşı kutuptan** okunur
+  (uzlaştırma, vazgeçme, etkin pişmanlık) — antitez turunda (7. adım) müdafiin masaya ne
+  getireceği oradan öngörülür.
+- Norm çıpaları tarife/parasal veri içermez; "— teyit" etiketli çıpalar (m.153, m.267)
+  bu turda okunmamıştır, kullanım anında Mevzuat MCP'den okunur. İçtihat künyeleri
+  yalnız varlık teyididir (m.5: teyit ≠ muhakeme) — dilekçeye girmeden önce tam metin
+  çekilip DAMGA'lanır.
+
 ## 1. İddia/müşteki duruşu (her ceza dosyasında kalıcı)
 
 - **Etkili soruşturma hakkı** (AY m.40, AİHS m.13; AYM/AİHM içtihadı): devletin etkili,
@@ -170,7 +201,8 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **müşteki/iddia taraf�
                  lehine teyitli içtihat; tam künye + ilgili kısmın aynen alıntısı)
 7. ANTİTEZ     → oa-antitez (şüpheli/müdafi savunmasını öngör; GİZLİ CEPHANELİK — sunulmamış
                  savunmaya preemptive cevap yazma; ama ispat boşluğunu önden kapat)
-8. STRATEJİ    → oa-strateji (suç duyurusu / katılma / tedbir / uzlaşma değerlendirmesi; sıra)
+8. STRATEJİ    → oa-strateji (§0 CEZA YOLU NE İÇİN? köprüsü girdi; suç duyurusu / katılma /
+                 tedbir / uzlaşma değerlendirmesi; ceza-hukuk sırası)
 9. YAZIM       → oa-dilekce (suç duyurusu/şikâyet · katılma · KYOK itirazı · delil-tedbir talebi
                  · esas hakkında beyan — kademeli netice-i talep)
 10. KONTROL    → oa-kontrol (atıf denetimi · ifşa kontrolü · müvekkil-aleyhi zaaf taraması)
