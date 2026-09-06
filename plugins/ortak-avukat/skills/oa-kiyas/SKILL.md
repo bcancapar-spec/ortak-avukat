@@ -98,6 +98,29 @@ Carve-out verilen unsurlar raporun `### 5. İSPAT YÜKÜ` bölümünde listeleni
 bu bölüm **⚠ DAHİLİ — DOSYAYA EKLENMEZ / UYAP'A YÜKLENMEZ** filigranlıdır
 (çürütme hazırlığı bizim cephaneliğimizdir, dilekçeye kopyalanmaz).
 
+### 3.a YARIŞAN NORMLAR — birden çok büyük önerme (P1-4/A-15, v0.5.16)
+Aynı vakıa çoğu zaman **birden çok norma** bağlanabilir: **sözleşme/haksız
+fiil talep yarışması** (TBK m.112 ↔ m.49), **özel/genel kanun** (TKHK ↔ TBK;
+TTK ↔ TBK; 2918 KTK ↔ TBK), sebepsiz zenginleşme ↔ sözleşme. Kural
+**TBK m.60** (Mevzuat MCP teyit 2026-09-06): sorumluluk birden çok sebebe
+dayandırılabiliyorsa hâkim, zarar gören aksini istememişse veya kanunda aksi
+öngörülmemişse, *"zarar görene **en iyi giderim** imkânı sağlayan sorumluluk
+sebebine göre karar verir"* — ama "en iyi giderim" hangisidir sorusu **bizim
+seçimimiz ve gerekçemizdir**; hâkime bırakılmaz, terditli/alternatif kurgunun
+sırası bilinçle belirlenir.
+
+Karşılaştırma dört ölçütte yapılır — **zamanaşımı uzunluğu · kusur şartı
+(karine mi, ispat bizde mi) · ispat kolaylığı · faiz (başlangıcı/türü)**.
+Kıyas JSON'unda büyük önerme **tekil `buyuk_onerme` yerine `buyuk_onermeler`
+listesi** olarak yazılır (şema `references/kiyas-rehberi.md` → "Yarışan
+normlar"); her öğe {norm, unsurlar, ictihat, zamanasimi, kusur_sarti,
+ispat_kolayligi, faiz, secim_gerekcesi}; seçilen öğe `secili: true`. Script
+(§2.a **YARIŞAN NORMLAR** tablosu) adayları yan yana koyar ve seçilen
+önermede **`secim_gerekcesi`** arar — boşsa «yarışan norm seçimi gerekçesiz»
+kritik boşluğu (exit 0 sözleşmesi korunur). Script hangi normun daha iyi
+olduğuna KARAR VERMEZ; seçim ve gerekçe modelin/avukatın muhakemesidir.
+Zamanaşımı/faiz madde çıpaları kullanım anında Mevzuat MCP'den teyit edilir.
+
 ### 4. Sonucu kur ve yorumla
 Tatbiki yaz: her unsur karşılandı mı, karşılanmayan varsa sonuç ne (talep reddine mi
 yol açar, ek ispat mı gerekir). Boşlukları açıkça bildir (anayasa: zaafı söyle).

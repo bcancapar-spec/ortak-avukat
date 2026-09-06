@@ -13,6 +13,15 @@ Unsurun hukuken gerçekten oluşup oluşmadığı avukatın muhakemesidir.
 Girdi:  kiyas.json  (şema references/kiyas-rehberi.md)
 Kullanım: python kiyas_denetim.py kiyas.json
 
+YARIŞAN NORMLAR (v0.5.16 — P1-4/A-15): büyük önerme tekil sözlük
+(`buyuk_onerme`, eski şema — aynen çalışır) VEYA liste (`buyuk_onermeler`)
+olabilir. Listede ≥2 aday varsa rapor §2.a'da karşılaştırma tablosu
+(zamanaşımı / kusur şartı / ispat kolaylığı / faiz — TBK m.60 "en iyi giderim"
+ölçütü, Mevzuat MCP teyit 2026-09-06) basılır ve seçilen önermede
+`secim_gerekcesi` aranır; boşsa «yarışan norm seçimi gerekçesiz» kritik
+boşluğu. `secili: true` işaretli (yoksa ilk) önerme subsumtion denetimine
+esas alınır. JSON'a `yarisan_normlar` listesi eklendi (tekil şemada boş).
+
 ÇIKIŞ KODU KARARI (2026-08-12, Av. Bayram Can Çapar — semantica-uyarlama karar
 sorusu #1): kritik boşlukta dahi exit 0 BİLİNÇLİ TASARIMDIR ve öyle kalır.
 Gerekçe: kıyas boşluğu bazen stratejik tercihtir (terditli/alternatif savunma
@@ -92,11 +101,94 @@ def _liste(x):
     return x if isinstance(x, list) else []
 
 
+# ── v0.5.16 (P1-4/A-15) — YARIŞAN NORMLAR ───────────────────────────────────
+# Aynı vakıa birden çok norma bağlanabilir (sözleşme ↔ haksız fiil talep
+# yarışması; özel ↔ genel kanun). TBK m.60 (Mevzuat MCP teyit 2026-09-06):
+# "Bir kişinin sorumluluğu, birden çok sebebe dayandırılabiliyorsa hâkim,
+# zarar gören aksini istemiş olmadıkça veya kanunda aksi öngörülmedikçe,
+# zarar görene en iyi giderim imkânı sağlayan sorumluluk sebebine göre karar
+# verir." — "en iyi giderim" seçimi zamanaşımı uzunluğu, kusur şartı, ispat
+# kolaylığı ve faiz başlangıcı üzerinden yapılır. Model seçer ve GEREKÇELER;
+# script yalnız (a) adayları tablo hâlinde yan yana koyar, (b) seçilen
+# önermede `secim_gerekcesi` yazılı mı diye bakar. Gerekçesiz seçim kritik
+# boşluktur; exit 0 sözleşmesi KORUNUR (2026-08-12 Can kararı).
+KARSILASTIRMA_ALANLARI = ("zamanasimi", "kusur_sarti", "ispat_kolayligi", "faiz")
+
+
+def _buyuk_onermeyi_sec(k, rapor):
+    """(esas büyük önerme sözlüğü, yarışan aday listesi[dict], yarışma var mı).
+
+    `buyuk_onermeler` listesi varsa: `secili: true` işaretli öğe, yoksa ilk
+    geçerli öğe esas alınır; sözlük olmayan öğe görünür uyarıyla atlanır
+    (sessiz atlama yok). Liste yoksa eski tekil `buyuk_onerme` aynen işler
+    (geriye uyum — eski 05-kiyas.json dosyaları değişmeden çalışır)."""
+    liste = k.get("buyuk_onermeler")
+    if not isinstance(liste, list) or not liste:
+        return _sozluk(k.get("buyuk_onerme")), [], False
+    if k.get("buyuk_onerme"):
+        rapor.append("  ⚠ Hem 'buyuk_onerme' hem 'buyuk_onermeler' var — "
+                     "buyuk_onermeler esas alındı (tekil alan yok sayıldı)")
+    adaylar = []
+    for idx, o in enumerate(liste):
+        if not isinstance(o, dict):
+            rapor.append(f"  ⚠ buyuk_onermeler[{idx}] sözlük değil "
+                         f"({type(o).__name__}) — denetime alınamadı; şemaya göre yaz")
+            continue
+        adaylar.append(o)
+    secililer = [o for o in adaylar if o.get("secili") is True]
+    if len(secililer) > 1:
+        rapor.append("  ⚠ Birden çok önerme 'secili: true' — ilki esas alındı; "
+                     "tek seçim yaz")
+    esas = secililer[0] if secililer else (adaylar[0] if adaylar else {})
+    return esas, adaylar, len(adaylar) >= 2
+
+
+def _yarisan_kaydi(o, esas):
+    def _s(ad):
+        v = o.get(ad)
+        return v.strip() if isinstance(v, str) else ("" if v is None else str(v))
+    return {"norm": o.get("norm"),
+            "zamanasimi": _s("zamanasimi"),
+            "kusur_sarti": _s("kusur_sarti"),
+            "ispat_kolayligi": _s("ispat_kolayligi"),
+            "faiz": _s("faiz"),
+            "secim_gerekcesi": _s("secim_gerekcesi"),
+            "secili": o is esas}
+
+
+def _yarisan_normlar_bolumu(adaylar, esas, rapor, veri):
+    """§2.a — karşılaştırma tablosu + gerekçe denetimi. Kritik boşluk döner."""
+    kritik = False
+    rapor.append("### 2.a YARIŞAN NORMLAR — talep yarışması karşılaştırması (TBK m.60 ölçütü)")
+    rapor.append("  | norm | zamanaşımı | kusur şartı | ispat kolaylığı | faiz | seçili |")
+    rapor.append("  |---|---|---|---|---|---|")
+    for o in adaylar:
+        kayit = _yarisan_kaydi(o, esas)
+        veri["yarisan_normlar"].append(kayit)
+        hucre = [kayit[a] or "—" for a in KARSILASTIRMA_ALANLARI]
+        rapor.append(f"  | {kayit['norm'] or '(norm yok)'} | " + " | ".join(hucre)
+                     + f" | {'✓' if kayit['secili'] else ''} |")
+        bos = [a for a in KARSILASTIRMA_ALANLARI if not kayit[a]]
+        if bos:
+            rapor.append(f"  ⚠ [{kayit['norm'] or '(norm yok)'}] karşılaştırma alanı boş: "
+                         f"{', '.join(bos)} — tablo eksik; yorum avukatındır")
+    gerekce = _yarisan_kaydi(esas, esas)["secim_gerekcesi"] if esas else ""
+    if gerekce:
+        rapor.append(f"  ✓ Seçim gerekçesi ({esas.get('norm')}): {gerekce}")
+    else:
+        rapor.append("  ✗ yarışan norm seçimi gerekçesiz — seçilen önermede "
+                     "'secim_gerekcesi' boş; TBK m.60 'en iyi giderim' ölçütüyle "
+                     "(zamanaşımı/kusur/ispat/faiz) gerekçele")
+        kritik = True
+    rapor.append("")
+    return kritik
+
+
 def denetle(k):
     rapor = []
     eksik_kritik = False
 
-    buyuk = _sozluk(k.get("buyuk_onerme"))
+    buyuk, adaylar, yarisma = _buyuk_onermeyi_sec(k, rapor)
     kucuk = _sozluk(k.get("kucuk_onerme"))
     sonuc = k.get("sonuc")
 
@@ -112,6 +204,7 @@ def denetle(k):
         "teyitsiz_ictihat": [],
         "unsur_vakia_eslesme": [],
         "yetim_vakialar": [],
+        "yarisan_normlar": [],   # v0.5.16 — yalnız ≥2 aday varsa dolar
     }
 
     # 1. Üç bileşen var mı
@@ -149,8 +242,14 @@ def denetle(k):
                 veri["teyitsiz_ictihat"].append(ic.get("kunye", "(künye yok)"))
     rapor.append("")
 
+    # 2.a Yarışan normlar (v0.5.16 — yalnız birden çok büyük önerme varsa)
+    if yarisma:
+        if _yarisan_normlar_bolumu(adaylar, buyuk, rapor, veri):
+            eksik_kritik = True
+
     # 3. Unsur ↔ vakıa eşleşmesi (kıyasın kalbi)
-    rapor.append("### 3. UNSUR ↔ VAKIA EŞLEŞMESİ (subsumtion boşluğu)")
+    rapor.append("### 3. UNSUR ↔ VAKIA EŞLEŞMESİ (subsumtion boşluğu)"
+                 + (f" — esas alınan norm: {buyuk.get('norm')}" if yarisma else ""))
     unsurlar = _liste(buyuk.get("unsurlar"))
     tanimli_unsurlar = set()
     yuk_karsida = []   # rapor §5 için (unsur adı, kaynak, çürütme hazırlığı)

@@ -22,6 +22,18 @@
 - **Harç eksikliği:** nispi harca tabi davada eksik harç **ikmal edilebilir** (492 m.30-32 rejimi; verilen kesin sürede yatırılmazsa dosya işlemden kaldırılır/müteakip sonuçlar) — eksiklik tek başına derhal ret sebebi değildir → müvekkil kapısı K-5; karşı tarafta eksikse kesin süre işletilmesi izlenir.
 - **Gider avansı (HMK m.114/1-g + m.120):** dava şartı; tamamlatma kesin süreye tabidir.
 
+## 4.a Tamamlanabilir × tamamlanamaz kusur — `usul_matris.py` zamanlama alanları (v0.5.16, P2-3/A-8)
+Karşı tarafın usul kusuru iki sınıftır; SKILL A-6 kuralı: **tamamlanamazda "derhâl", tamamlanabilirde AVUKAT KARARI.** Çıpalar (Mevzuat MCP teyit 2026-09-06): **HMK m.115/2** (giderilebilir dava şartında kesin süre), **m.119/2** (dilekçenin (a)(d)(e)(f)(g) dışı eksikleri — bir haftalık kesin süre; tamamlanmazsa dava açılmamış sayılır), **m.77** (vekâletnamesiz işlem — kesin süre; verilmezse işlem yapılmamış sayılır); harç ikmali **492 m.30-32** (çıpa — teyit edilmedi).
+
+`islemler[]` kaydında (yalnız `taraf: "karsi"`) iki **opsiyonel** alan — ADVISORY, boşluk üretmez, exit sözleşmesi korunur:
+
+| Alan | Değer | Motor davranışı |
+|---|---|---|
+| `tamamlanabilir` | `true` \| `false` | `false` → "TAMAMLANAMAZ kusur → derhâl kuralı" bulgu satırı; zamanlama sorulmaz. `true` → zamanlama aranır. Bool dışı değer → görünür uyarı, alan yok sayılır. |
+| `zamanlama` | `simdi` \| `sonra` \| `avukat_karari` (kapalı enum) | `tamamlanabilir: true` iken **boşsa** bulgu satırı: **«tamamlanabilir kusurda zamanlama kararı yok»** (BOŞLUK değil). Enum dışı değer → görünür uyarı + `bilinmiyor` → aynı satır. Doluysa `zamanlama=<değer>` kaydı. |
+
+Alan hiç yoksa (eski dosya) hiçbir satır basılmaz. `taraf: "biz"`/`"kamu"` kaydında verilirse görünür "yalnız karşı taraf kusurunda anlamlı — yok sayıldı" satırı (sessiz atlama yok). Script hangi zamanlamanın doğru olduğuna KARAR VERMEZ; yalnız kararın yazılıp yazılmadığına bakar (model kurar, script denetler).
+
 ## 5. Taraf, ehliyet, temsil
 - **Vekâletname eksikliği (HMK m.77):** kesin süre içinde giderilebilir; verilmezse dava açılmamış / işlem yapılmamış sayılır → giderilebilir kapı, ama süre kesindir.
 - **Taraf ehliyeti / sıfat (husumet):** sıfat yokluğu esasa ilişkin ret doğurur; taraf değişikliği m.124 (kabul/iyiniyet şartları) → sınırlı kapı.

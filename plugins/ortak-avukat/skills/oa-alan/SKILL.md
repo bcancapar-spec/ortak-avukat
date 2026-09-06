@@ -36,8 +36,37 @@ Meseleyi önceden seçilmiş birkaç dala (iş/ticaret/icra/idare...) **hapsetme
 - **Daire kaymalarına dikkat:** istihkak 8. HD → 12. HD (BGK 18/01/2024).
 - **Bedesten kapsama boşlukları** (4. HD kısa onama, BAM Ceza yok) bir doktrinin "yok" sanılmasına yol açabilir; yokluğu kesinlemeden alternatif rota dene (`oa-ictihat`).
 
+## FORUM SEÇİMİ — birden fazla yetkili mahkeme varsa (P2-2/A-7, v0.5.16)
+
+Görev/yetki katmanı "hangi mahkeme **bakabilir**" sorusunu kapatır; forum seçimi "**hangisinde açmalıyız**" sorusudur ve ayrı bir adımdır. Yetki kuralları çoğu zaman **seçimlik** yetki verir — o zaman seçim **müvekkil menfaatine** göre yapılır, alışkanlığa göre değil.
+
+**Norm haritası (Mevzuat MCP teyit 2026-09-06 — kullanım anında yeniden teyit):**
+- **HMK m.6 genel yetki:** davalının dava tarihindeki yerleşim yeri mahkemesi (her davada açık).
+- **m.7:** davalı birden fazlaysa **birinin** yerleşim yeri (m.7/2: sırf forum getirmek için davalı eklenmişse itiraz üzerine ayırma/yetkisizlik — tuzak).
+- **m.9-16 özel yetki:** m.9 Türkiye'de yerleşim yeri yoksa mutad mesken / malvarlığı yeri; **m.10 sözleşme → ifa yeri de**; **m.11 miras → son yerleşim yeri KESİN**; **m.12 taşınmazın aynı → taşınmaz yeri KESİN**; m.13 karşı dava; **m.14/1 şube → şube yeri de**, m.14/2 ortaklık/üyelik → merkez KESİN; **m.15/1 zarar sigortası → mal/riziko yeri de**, m.15/2 can sigortası → yerleşim yeri KESİN; **m.16 haksız fiil → fiil yeri / zarar yeri / zarar görenin yerleşim yeri de**. Ayrıca özel kanunlardaki yetki hükümleri ve yetki sözleşmesi (m.17-18 — çıpa) taranır.
+- **Kural:** "**de** açılabilir" yazan madde **seçimlik** yetkidir (m.6 + özel yetki birlikte açık) → forum seçimi vardır. "**kesin yetkilidir**" yazan madde (m.11, m.12, m.14/2, m.15/2 — örneklem) → **seçim yoktur**, tek forum; yanlış forum dava şartı eksikliğidir (HMK m.114/1-ç — çıpa) ve mahkemece re'sen gözetilir.
+
+**Müvekkile uygun forum ölçütleri (NİTEL — sayı/olasılık yüzdesi uydurulmaz):** dört ana ölçüt — mesafe, iş yükü, bilirkişi havuzu, BAM/daire eğilimi — artı iki taktik ölçüt:
+- **Mesafe / erişim:** müvekkilin, tanıkların ve vekilin duruşmaya/keşfe erişimi; SEGBİS imkânı; masraf.
+- **İş yükü / hız:** mahkemenin ve bağlı BAM'ın bilinen tempo/dosya yoğunluğu (nitel gözlem, kütükten; sayı yok).
+- **Bilirkişi havuzu:** uyuşmazlığın teknik alanında o yargı çevresinde bilirkişi/uzman bulunup bulunmadığı (ör. denizcilik, inşaat, tıp, yazılım).
+- **BAM/daire eğilimi:** o yer BAM'ının ilgili dairesinin konu hakkındaki bilinen içtihat eğilimi — `oa-ictihat` ile **teyitli** kararlardan; hafızadan "şu BAM lehe" denmez.
+- **Karşı tarafın avantajı:** karşı tarafın "ev sahası" (yerleşim yeri forumu) mu; m.7/2 itiraz riski var mı.
+- **Usul kaldıracı:** tahkim/yetki sözleşmesi, zorunlu arabuluculuk merkezi, ihtiyati tedbir/haciz uygulanacak yer (m.390 ve İİK — çıpa) hangi forumda kolay.
+
+**Soru listesi (avukata / müvekkile — her dosyada sorulur):**
+1. Uyuşmazlıkta hangi yetki kuralları açık: yalnız m.6 mı, seçimlik özel yetki var mı, **kesin yetki** var mı?
+2. Seçimlik ise aday forumlar hangileri (yerleşim yeri / ifa yeri / fiil-zarar yeri / şube / riziko yeri)?
+3. Müvekkil, tanıklar ve deliller fiziken nerede; keşif gerekir mi?
+4. Teknik bilirkişi gerektiren bir alan mı; hangi forumda havuz var?
+5. Aday BAM dairelerinin konu hakkındaki eğilimi teyitli olarak nedir (`oa-ictihat`)?
+6. Yetki sözleşmesi / tahkim şartı / özel kanun yetki hükmü var mı?
+7. Karşı tarafın yetki itirazı (ilk itiraz — cevap dilekçesiyle, HMK m.116-117) ihtimali ve maliyeti nedir?
+
+**Çıktı:** konumlama çıktısına (`_oa/cikti/` konumlama kaydı ve DEVİR PAKETİ) tek satırlık **«forum»** satırı eklenir: `forum: <seçilen mahkeme> — dayanak: <yetki maddesi, MCP teyit> — alternatifler: <...> — gerekçe: <nitel ölçüt(ler)>`; kesin yetki varsa `forum: <tek forum> — kesin yetki (<madde>) — seçim yok`. Seçim **karar materyalidir**; nihai forum kararı avukatındır. Yetki itirazı süresi ve dava şartı boyutu `oa-usul`/`oa-sure`'ye devredilir.
+
 ## Kompozisyon
-Alan tespit edilir → sorgu `oa-ictihat`, yazım `oa-dilekce`, süre `oa-sure`.
+Alan tespit edilir → forum seçilir → sorgu `oa-ictihat`, yazım `oa-dilekce`, süre `oa-sure`, usul/yetki denetimi `oa-usul`.
 
 ## UNSUR ŞABLONLARI — dava türü konumlandıktan sonra devreye giren kısayol (M4, Paket D — v0.5.5)
 Dava türü konumlandıktan **hemen sonra** `references/unsur-sablonlari/` altındaki

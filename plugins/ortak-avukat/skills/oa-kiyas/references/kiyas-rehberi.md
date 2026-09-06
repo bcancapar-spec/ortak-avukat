@@ -81,6 +81,67 @@ yoksa unsur eskisi gibi karşılanmamış ve **kritik** sayılır; rapor "carve-
 VERİLMEDİ" der. `curutme_hazirligi` DAHİLİdir — raporun 5. bölümü filigranlıdır,
 dilekçeye kopyalanmaz.
 
+## Yarışan normlar — `buyuk_onermeler` listesi (opsiyonel — v0.5.16, P1-4/A-15)
+
+Aynı vakıa birden çok norma bağlanabiliyorsa (sözleşme ↔ haksız fiil talep
+yarışması; özel ↔ genel kanun) büyük önerme **tekil sözlük yerine liste**
+yazılır. Ölçüt **TBK m.60** (Mevzuat MCP teyit 2026-09-06): *"Bir kişinin
+sorumluluğu, birden çok sebebe dayandırılabiliyorsa hâkim, zarar gören aksini
+istemiş olmadıkça veya kanunda aksi öngörülmedikçe, zarar görene en iyi giderim
+imkânı sağlayan sorumluluk sebebine göre karar verir."* "En iyi giderim"
+karşılaştırması dört sütunda yapılır: **zamanaşımı uzunluğu · kusur şartı ·
+ispat kolaylığı · faiz** (başlangıcı/türü).
+
+```json
+{
+  "buyuk_onermeler": [
+    {
+      "norm": "TBK m.112 (sözleşmeye aykırılık — Mevzuat MCP teyitli)",
+      "secili": true,
+      "unsurlar": [{"id": "borc", "ad": "Borç"}, {"id": "ihlal", "ad": "İhlal"},
+                   {"id": "kusur", "ad": "Kusur (karine)"}, {"id": "zarar", "ad": "Zarar"}],
+      "ictihat": [{"kunye": "…", "dogrulama": "teyitli"}],
+      "zamanasimi": "TBK m.146 — 10 yıl (kullanımda teyit)",
+      "kusur_sarti": "kusur karinesi — borçlu kusursuzluğunu ispatlar",
+      "ispat_kolayligi": "borç ilişkisi ve ihlal belgeli",
+      "faiz": "temerrüt tarihinden",
+      "secim_gerekcesi": "daha uzun zamanaşımı + kusur karinesi; en iyi giderim (TBK m.60)"
+    },
+    {
+      "norm": "TBK m.49 (haksız fiil — Mevzuat MCP teyitli)",
+      "unsurlar": [{"id": "fiil", "ad": "Fiil"}, {"id": "kusur", "ad": "Kusur"},
+                   {"id": "zarar", "ad": "Zarar"}, {"id": "illiyet", "ad": "İlliyet"}],
+      "ictihat": [],
+      "zamanasimi": "TBK m.72 — 2 / 10 yıl (kullanımda teyit)",
+      "kusur_sarti": "davacı ispatlar",
+      "ispat_kolayligi": "kusur ve illiyet ispatı bizde",
+      "faiz": "zarar (olay) tarihinden"
+    }
+  ],
+  "kucuk_onerme": { "vakialar": [ "…" ] },
+  "sonuc": "…"
+}
+```
+
+Kurallar:
+- Her öğe **{norm, unsurlar, ictihat, zamanasimi, kusur_sarti, ispat_kolayligi,
+  faiz, secim_gerekcesi}** alanlarını taşır; `secili: true` işaretli öğe
+  (yoksa listenin **ilki**) subsumtion denetimine (§3) esas alınır.
+- **≥2 aday varsa** rapor §2.a'da **YARIŞAN NORMLAR** karşılaştırma tablosu
+  basılır ve seçilen önermede `secim_gerekcesi` **zorunludur**; boşsa
+  «✗ yarışan norm seçimi gerekçesiz» satırı + kritik boşluk (exit yine 0 —
+  2026-08-12 Can kararı: kapı değil karar-malzemesi).
+- Karşılaştırma alanı boş kalırsa tabloda `—` + görünür uyarı (kritik DEĞİL —
+  yorum avukatındır). Sözlük olmayan öğe görünür uyarıyla atlanır.
+- Tek öğeli liste yarışma sayılmaz (tablo ve gerekçe aranmaz). Hem
+  `buyuk_onerme` hem `buyuk_onermeler` yazılmışsa liste esas alınır, görünür
+  uyarı basılır.
+- JSON çıktısına **`yarisan_normlar`** listesi eklendi (her öğe: norm ·
+  zamanasimi · kusur_sarti · ispat_kolayligi · faiz · secim_gerekcesi ·
+  secili); tekil şemada boş liste — eski dosyalar değişmeden çalışır.
+- Zamanaşımı/faiz madde çıpaları bu tabloda **iddia**dır; kullanım anında
+  Mevzuat MCP'den teyit edilir, hafızadan yazılmaz.
+
 ## Kullanım
 `kiyas.json` yaz, `python scripts/kiyas_denetim.py kiyas.json` çalıştır. Script
 karşılanmamış unsuru, delilsiz vakıayı, teyitsiz içtihadı ve yetim vakıayı yakalar.
