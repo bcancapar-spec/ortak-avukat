@@ -436,3 +436,310 @@ def test_h1_skill_md_anlatimi_var():
     txt = SKILL_MD.read_text(encoding="utf-8")
     assert "inline-sayac.json" in txt
     assert "3 turdur kapanmıyor" in txt or "3 ARDIŞIK" in txt
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GRUP B-2 — HAT SIRASI (P0-3 / A-2) + MÜVEKKİL KARARI (P1-9 / A-3) + AVUKAT
+# HÜKMÜ SENSÖRÜ (A-28 / P2-8, SICRAMA-NOTU §3(A)+§5).
+#
+# - P0-3: ADIMLAR 6↔7 yer değişir — 6 = ANTİTEZ (oa-antitez), 7 = STRATEJİ
+#   (oa-strateji). Gerekçe: karşı tarafın en güçlü tezi görülmeden dava/sulh
+#   kararı verilmez (oa-strateji §2 antitezi girdi sayar). Eski defterlerdeki
+#   (6, oa-strateji)/(7, oa-antitez) olayları «derle»'de hata değil — yeni
+#   sıraya EŞLENİR ve DURUM.md'de «(eski hat sırası ≤v0.5.15 — adım eşlendi)»
+#   notu düşer; YENİ yazımda eski çift RET.
+# - P1-9: `--muvekkil-karari "<konu>" --secenekler "a|b|c"` (≥2 seçenek) açar,
+#   `--muvekkil-karari-kapat "<konu>" --karar "<seçim>" --gerekce "<…>"`
+#   kapatır (gerekçesiz RET — M7 disiplini). Kapanmamış müvekkil kararı varken
+#   adım-10 KAPANIŞ UYGULANDI → görünür UYARI (bloklamaz).
+# - A-28: `--avukat-hukmu KABUL|REVIZYONLA|RET --sebep <kapalı liste> --urun
+#   <yol> [--not "…"]` → defter olayı + `_oa/defter/avukat-hukmu.jsonl`
+#   (append-only) + DURUM.md «## Avukat Hükümleri» sayaç satırı. YALNIZ
+#   ÖLÇER — hiçbir kapıyı/brifi değiştirmez ("enjeksiyon yapmaz").
+# ═══════════════════════════════════════════════════════════════════════════
+
+REFS = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "references"
+SABLON_MD = REFS / "pipeline-durum-sablonu.md"
+MUVEKKIL_SABLON_MD = REFS / "muvekkil-bilgilendirme-sablonu.md"
+
+
+def _olaylar(kok):
+    yol = kok / "_oa" / "defter" / "pipeline-olaylar.jsonl"
+    return [json.loads(s) for s in yol.read_text(encoding="utf-8").splitlines() if s.strip()]
+
+
+def _isle(kok, adim, parca, ek=()):
+    return _cli(["--isle", "--adim", str(adim), "--parca", parca, "--durum", "UYGULANDI",
+                 "--kanit", UZUN_KANIT + " script koştu", "--kok", str(kok)] + list(ek), cwd=kok)
+
+
+# ─────────────────────────── P0-3 — hat sırası ────────────────────────────
+
+def test_p03_adimlar_6_antitez_7_strateji(pk):
+    assert pk.ADIMLAR[6] == ("ANTİTEZ", ["oa-antitez"])
+    assert pk.ADIMLAR[7] == ("STRATEJİ", ["oa-strateji"])
+    assert (6, "oa-antitez") in pk.ONKOSUL_UYARI and (7, "oa-strateji") in pk.ONKOSUL_UYARI
+    assert (6, "oa-strateji") not in pk.ONKOSUL_UYARI and (7, "oa-antitez") not in pk.ONKOSUL_UYARI
+    assert "adım-6 (ANTİTEZ)" in pk.ONKOSUL_UYARI[(6, "oa-antitez")]
+    assert "adım-7 (STRATEJİ)" in pk.ONKOSUL_UYARI[(7, "oa-strateji")]
+
+
+def test_p03_eski_ciftle_yeni_isle_ret(tmp_path):
+    """Yeni yazımda eski (≤v0.5.15) çift RET — sessiz eşleme YOK: yazan
+    taraf yeni sırayı bilmek zorunda (geriye uyum yalnız OKUMA tarafındadır)."""
+    _baslat(tmp_path); _kunye_kur(tmp_path)
+    kod, cikti = _isle(tmp_path, 6, "oa-strateji")
+    assert kod != 0 and "RET" in cikti and "v0.5.16" in cikti and "STRATEJİ adım 7" in cikti
+    kod, cikti = _isle(tmp_path, 7, "oa-antitez")
+    assert kod != 0 and "RET" in cikti and "ANTİTEZ adım 6" in cikti
+    assert all(o.get("tip") != "adim" for o in _olaylar(tmp_path))  # hiçbiri deftere girmedi
+
+
+def test_p03_yeni_sira_isle_gecer_ve_artefakt_bekcisi_iki_adi_kabul_eder(tmp_path):
+    """06-antitez* (yeni ad) VE 07-antitez* (≤v0.5.15 adı) ikisi de adım-6
+    UYARI bekçisini susturur — komşu parçaların (oa-antitez SKILL/dilekce_
+    denetim) dosya adı sözleşmesi bu sürümde değişmek zorunda değil."""
+    _baslat(tmp_path); _kunye_kur(tmp_path)
+    yol = _cikti_yaz(tmp_path, "06-antitez-matris.json", {"arac": "antitez_matris", "x": "y" * 100})
+    kod, cikti = _isle(tmp_path, 6, "oa-antitez",
+                       ["--kanit", UZUN_KANIT + " script _oa/cikti/06-antitez-matris.json"])
+    assert kod == 0, cikti
+    assert "adım 6 / oa-antitez → UYGULANDI" in cikti and "UYARI: adım-6" not in cikti
+    assert "adım 6 (ANTİTEZ) / oa-antitez: UYGULANDI" in _durum_md(tmp_path)
+    yol.unlink()
+    _cikti_yaz(tmp_path, "07-antitez-matris.json", {"arac": "antitez_matris", "x": "y" * 100})
+    kod, cikti = _isle(tmp_path, 6, "oa-antitez",
+                       ["--kanit", UZUN_KANIT + " script _oa/cikti/07-antitez-matris.json"])
+    assert kod == 0 and "UYARI: adım-6" not in cikti
+    # Strateji: artefakt yok → UYARI (bloklamaz), yeni numarayla.
+    kod, cikti = _isle(tmp_path, 7, "oa-strateji")
+    assert kod == 0 and "adım-7 (STRATEJİ)" in cikti and "07-strateji*" in cikti
+    assert "adım 7 (STRATEJİ) / oa-strateji: UYGULANDI" in _durum_md(tmp_path)
+
+
+def test_p03_eski_defter_yeni_siraya_eslenir(pk, tmp_path):
+    """Geriye uyum: ≤v0.5.15 defterindeki (6, oa-strateji) / (7, oa-antitez)
+    olayları derle'de HATA değil — yeni (7, oa-strateji) / (6, oa-antitez)
+    hücrelerine eşlenir; DURUM.md eşlemeyi görünür not düşer; hayalet
+    'oa-strateji' hücresi adım-6'da, 'oa-antitez' hücresi adım-7'de DOĞMAZ."""
+    defter = tmp_path / "_oa" / "defter"
+    defter.mkdir(parents=True)
+    satirlar = [
+        {"zaman": "2026-08-01T10:00:00", "tip": "baslat", "dosya": "Eski Sentetik E. 2099/2"},
+        {"zaman": "2026-08-01T10:01:00", "tip": "adim", "adim": 6, "parca": "oa-strateji",
+         "durum": "UYGULANDI", "kanit": UZUN_KANIT, "surum": "0.5.15"},
+        {"zaman": "2026-08-01T10:02:00", "tip": "adim", "adim": 7, "parca": "oa-antitez",
+         "durum": "GEREKSIZ", "kanit": "GEREKÇE: sentetik", "surum": "0.5.15"},
+        {"zaman": "2026-08-01T10:03:00", "tip": "avukat-karari", "adim": 6, "parca": "oa-strateji",
+         "karar": "sulh", "gerekce": "sentetik gerekçe ≥15 kr"},
+    ]
+    (defter / "pipeline-olaylar.jsonl").write_text(
+        "\n".join(json.dumps(s, ensure_ascii=False) for s in satirlar) + "\n", encoding="utf-8")
+    d = pk.derle(str(defter / "pipeline-olaylar.jsonl"))
+    assert d["adimlar"]["7"]["parcalar"]["oa-strateji"]["durum"] == "UYGULANDI"
+    assert d["adimlar"]["7"]["parcalar"]["oa-strateji"].get("eski_hat_eslendi") is True
+    assert d["adimlar"]["6"]["parcalar"]["oa-antitez"]["durum"] == "GEREKSIZ"
+    assert "oa-strateji" not in d["adimlar"]["6"]["parcalar"]
+    assert "oa-antitez" not in d["adimlar"]["7"]["parcalar"]
+    assert str(d["avukat_kararlari"][0]["adim"]) == "7"   # karar da eşlenir → çatal çözülmüş sayılır
+    kod, cikti = _cli(["--goster", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod == 0, cikti
+    md = _durum_md(tmp_path)
+    assert "adım 7 (STRATEJİ) / oa-strateji: UYGULANDI" in md
+    assert "(eski hat sırası ≤v0.5.15 — adım eşlendi)" in md
+    kod, cikti = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert "adım 6 (ANTİTEZ) / oa-strateji" not in cikti  # hayalet hücre yok
+
+
+def test_p03_skill_md_sablon_ve_zincir_metni():
+    txt = SKILL_MD.read_text(encoding="utf-8")
+    assert "6. ANTİTEZ" in txt and "7. STRATEJİ" in txt
+    assert "6. STRATEJİ" not in txt and "7. ANTİTEZ" not in txt
+    assert "KIYAS → ANTİTEZ → STRATEJİ → YAZIM" in txt
+    assert "KIYAS → STRATEJİ → ANTİTEZ" not in txt
+    assert "| adım-6 | oa-antitez |" in txt and "| adım-7 | oa-strateji |" in txt
+    sablon = SABLON_MD.read_text(encoding="utf-8")
+    assert "| 6 | ANTİTEZ | oa-antitez" in sablon and "| 7 | STRATEJİ | oa-strateji" in sablon
+
+
+# ─────────────────────── P1-9 — müvekkil kararı ───────────────────────────
+
+def _mk_ac(kok, konu="Sulh teklifi", secenekler="kabul|ret|karşı teklif", ek=()):
+    return _cli(["--muvekkil-karari", konu, "--secenekler", secenekler, "--kok", str(kok)]
+                + list(ek), cwd=kok)
+
+
+def _mk_kapat(kok, konu="Sulh teklifi", karar="ret",
+              gerekce="müvekkil alacağın tamamında ısrarlı — sentetik"):
+    args = ["--muvekkil-karari-kapat", konu, "--karar", karar, "--kok", str(kok)]
+    if gerekce is not None:
+        args += ["--gerekce", gerekce]
+    return _cli(args, cwd=kok)
+
+
+def test_p19_muvekkil_karari_acilir_durum_md_bolumu(tmp_path):
+    _baslat(tmp_path)
+    kod, cikti = _mk_ac(tmp_path, ek=["--adim", "7", "--parca", "oa-strateji"])
+    assert kod == 0, cikti
+    assert "MÜVEKKİL KARARI" in cikti and "Sulh teklifi" in cikti
+    md = _durum_md(tmp_path)
+    assert "## Müvekkil Kararı Bekleyen" in md
+    assert "Sulh teklifi" in md and "kabul | ret | karşı teklif" in md and "adım 7 / oa-strateji" in md
+    olay = [o for o in _olaylar(tmp_path) if o.get("tip") == "muvekkil_karari"]
+    assert len(olay) == 1 and olay[0]["secenekler"] == ["kabul", "ret", "karşı teklif"]
+    assert olay[0].get("imza")  # araç-imzalı
+
+
+def test_p19_tek_secenek_ret_ve_defter_yoksa_hata(tmp_path):
+    kod, cikti = _mk_ac(tmp_path)
+    assert kod != 0 and "defter" in cikti.lower()
+    _baslat(tmp_path)
+    kod, cikti = _mk_ac(tmp_path, secenekler="kabul")
+    assert kod != 0 and "RET" in cikti and "2" in cikti
+    kod, cikti = _mk_ac(tmp_path, secenekler="kabul|  |kabul")
+    assert kod != 0 and "RET" in cikti
+
+
+def test_p19_kapat_gerekcesiz_ret_gerekceli_gecer(tmp_path):
+    _baslat(tmp_path); _mk_ac(tmp_path)
+    kod, cikti = _mk_kapat(tmp_path, gerekce=None)
+    assert kod != 0 and "RET" in cikti and "gerekçe" in cikti.lower()
+    kod, cikti = _mk_kapat(tmp_path, gerekce="kısa")
+    assert kod != 0 and "RET" in cikti
+    kod, cikti = _mk_kapat(tmp_path)
+    assert kod == 0, cikti
+    md = _durum_md(tmp_path)
+    bekleyen = md.split("## Müvekkil Kararı Bekleyen")[1].split("##")[0]
+    assert "(yok)" in bekleyen
+    assert "## Müvekkil Kararları (Kayıtlı" in md and "Sulh teklifi" in md and "**ret**" in md
+    # append-only: açılış olayı silinmedi
+    tipler = [o.get("tip") for o in _olaylar(tmp_path)]
+    assert tipler.count("muvekkil_karari") == 1 and tipler.count("muvekkil_karari_kapat") == 1
+
+
+def test_p19_kapat_acik_olmayan_konu_uyari_ama_bloklamaz(tmp_path):
+    _baslat(tmp_path)
+    kod, cikti = _mk_kapat(tmp_path, konu="Hiç açılmamış konu")
+    assert kod == 0 and "UYARI" in cikti and "AÇIK" in cikti
+
+
+def test_p19_kapanmamis_kararla_adim10_kapanis_uyari_bloklamaz(tmp_path):
+    _baslat(tmp_path); _kunye_kur(tmp_path)
+    _mk_ac(tmp_path, konu="Tedbir teminatı", secenekler="yatır|yatırma")
+    kod, cikti = _isle(tmp_path, 10, "oa-usta")
+    assert kod == 0, cikti
+    assert "UYARI" in cikti and "MÜVEKKİL KARARI" in cikti and "Tedbir teminatı" in cikti
+    kod, cikti = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert "Tedbir teminatı" in cikti and "kapanmamış müvekkil kararı" in cikti
+    assert "Tedbir teminatı" in _durum_md(tmp_path).split("## Kapı Durumu")[1].split("##")[0]
+    _mk_kapat(tmp_path, konu="Tedbir teminatı", karar="yatır")
+    kod, cikti = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert "kapanmamış müvekkil kararı" not in cikti
+
+
+def test_p19_adim10_disinda_uyari_yok(tmp_path):
+    _baslat(tmp_path); _kunye_kur(tmp_path)
+    _mk_ac(tmp_path)
+    kod, cikti = _isle(tmp_path, 2, "oa-alan")
+    assert kod == 0 and "MÜVEKKİL KARARI" not in cikti
+
+
+def test_p19_sablon_ve_skill_md():
+    assert MUVEKKIL_SABLON_MD.is_file()
+    s = MUVEKKIL_SABLON_MD.read_text(encoding="utf-8")
+    assert "m.34" in s and "Mevzuat MCP teyit 2026-09-06" in s
+    assert "m.6" in s and "Layer 0" in s and "aleyhe" in s
+    txt = SKILL_MD.read_text(encoding="utf-8")
+    assert "--muvekkil-karari" in txt and "--muvekkil-karari-kapat" in txt
+    for konu in ("sulh teklifi", "dava değeri", "risk kabulü", "tedbir teminatı"):
+        assert konu in txt.lower()
+    assert "muvekkil-bilgilendirme-sablonu.md" in txt
+
+
+# ─────────────────────── A-28 — avukat hükmü sensörü ──────────────────────
+
+def _hukum(kok, hukum, urun="_oa/cikti/08-dilekce-taslak-v1.md", ek=()):
+    return _cli(["--avukat-hukmu", hukum, "--urun", urun, "--kok", str(kok)] + list(ek), cwd=kok)
+
+
+def _hukum_defteri(kok):
+    yol = kok / "_oa" / "defter" / "avukat-hukmu.jsonl"
+    return [json.loads(s) for s in yol.read_text(encoding="utf-8").splitlines() if s.strip()]
+
+
+def test_a28_kabul_kaydi_iki_deftere_ve_durum_md_sayaca(tmp_path):
+    _baslat(tmp_path)
+    kod, cikti = _hukum(tmp_path, "KABUL")
+    assert kod == 0, cikti
+    assert "AVUKAT HÜKMÜ" in cikti and "KABUL" in cikti
+    olay = [o for o in _olaylar(tmp_path) if o.get("tip") == "avukat_hukmu"]
+    assert len(olay) == 1 and olay[0]["hukum"] == "KABUL"
+    assert olay[0]["urun"].endswith("08-dilekce-taslak-v1.md")
+    assert olay[0].get("imza")
+    h = _hukum_defteri(tmp_path)
+    assert len(h) == 1 and h[0]["hukum"] == "KABUL" and h[0]["urun"] and h[0]["zaman"]
+    md = _durum_md(tmp_path)
+    assert "## Avukat Hükümleri" in md
+    assert "KABUL 1 / REVİZYONLA 0 / RET 0" in md
+
+
+def test_a28_ret_revizyon_sebep_zorunlu_kapali_liste(tmp_path):
+    _baslat(tmp_path)
+    kod, cikti = _hukum(tmp_path, "RET")
+    assert kod != 0 and "RET" in cikti and "--sebep" in cikti
+    kod, cikti = _hukum(tmp_path, "REVIZYONLA")
+    assert kod != 0 and "--sebep" in cikti
+    kod, cikti = _hukum(tmp_path, "RET", ek=["--sebep", "keyfi"])
+    assert kod != 0
+    kod, cikti = _hukum(tmp_path, "KABULX")
+    assert kod != 0
+    kod, cikti = _cli(["--avukat-hukmu", "RET", "--sebep", "usul", "--kok", str(tmp_path)], cwd=tmp_path)
+    assert kod != 0 and "--urun" in cikti
+    assert not (tmp_path / "_oa" / "defter" / "avukat-hukmu.jsonl").exists()
+
+
+def test_a28_sayac_ve_sebep_dagilimi_append_only(tmp_path):
+    _baslat(tmp_path)
+    assert _hukum(tmp_path, "KABUL")[0] == 0
+    assert _hukum(tmp_path, "REVIZYONLA", ek=["--sebep", "usul", "--not", "tebliğ tarihi eksik"])[0] == 0
+    assert _hukum(tmp_path, "RET", ek=["--sebep", "olgu"])[0] == 0
+    assert _hukum(tmp_path, "RET", urun="_oa/cikti/08-dilekce-taslak-v2.md", ek=["--sebep", "olgu"])[0] == 0
+    h = _hukum_defteri(tmp_path)
+    assert [x["hukum"] for x in h] == ["KABUL", "REVIZYONLA", "RET", "RET"]
+    assert h[1]["not"] == "tebliğ tarihi eksik" and h[1]["sebep"] == "usul"
+    md = _durum_md(tmp_path)
+    assert "KABUL 1 / REVİZYONLA 1 / RET 2" in md
+    assert "olgu: 2" in md and "usul: 1" in md
+
+
+def test_a28_yalniz_olcer_kapi_ve_denetle_degismez(tmp_path):
+    """SICRAMA-NOTU §5 şartı: sensör ölçer, ENJEKSİYON yapmaz — RET hükmü
+    --denetle exit kodunu/sorun listesini değiştirmez, hiçbir adımı bloklamaz."""
+    _baslat(tmp_path); _kunye_kur(tmp_path)
+    kod0, cikti0 = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    sorun0 = [s for s in cikti0.splitlines() if s.strip().startswith("✗")]
+    assert _hukum(tmp_path, "RET", ek=["--sebep", "hukuk"])[0] == 0
+    kod1, cikti1 = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
+    sorun1 = [s for s in cikti1.splitlines() if s.strip().startswith("✗")]
+    assert kod1 == kod0 and sorun1 == sorun0
+    assert "hük" not in cikti1.lower()          # denetle çıktısına hüküm satırı sızmaz
+    kod, cikti = _isle(tmp_path, 2, "oa-alan")
+    assert kod == 0 and "hük" not in cikti.lower()
+
+
+def test_a28_defter_yoksa_hata_bozuk_hukum_defteri_cokertmez(tmp_path):
+    kod, cikti = _hukum(tmp_path, "KABUL")
+    assert kod != 0 and "defter" in cikti.lower()
+    _baslat(tmp_path)
+    (tmp_path / "_oa" / "defter" / "avukat-hukmu.jsonl").write_text("{bozuk\n", encoding="utf-8")
+    assert _hukum(tmp_path, "KABUL")[0] == 0
+    md = _durum_md(tmp_path)
+    assert "KABUL 1 / REVİZYONLA 0 / RET 0" in md and "bozuk" in md.lower()
+
+
+def test_a28_skill_md_sensor_anlatimi():
+    txt = SKILL_MD.read_text(encoding="utf-8")
+    assert "--avukat-hukmu" in txt and "avukat-hukmu.jsonl" in txt
+    assert "kapanışta avukat hükmü kaydı önerilir" in txt
+    assert "enjeksiyon yapmaz" in txt
+    assert "Avukat Hükümleri" in txt
