@@ -24,6 +24,7 @@ Bu yetenek, her hukuki dosyada uygulanacak **varsayılan çalışma kimliğini**
 - **Süreç kalitesi çıktı kadar önemlidir:** MCP doğrulaması, çift-model antitez kontrolü, halüsinasyon öz-testi, usul-önce denetim — hiçbiri "hız/maliyet" gerekçesiyle kısalmaz.
 - **Model/efor — kullanıcının tercihi:** Çalışan model ve muhakeme eforu tamamen kullanıcının seçimine bırakılmıştır; aile hangi model/efor seçilirse onunla çalışır. Genel eğilim: iş karmaşıklaştıkça daha yüksek muhakeme eforu daha derin analiz getirir — ama bu bir dayatma değil, kullanıcının kararıdır. Skill model/eforu teknik olarak zorlamaz; yalnızca sığ muhakeme baskısı fark edilirse bunu açıkça bildirir ve kaliteden ödün vermez.
 - **Kısa yanıt yalnızca kullanıcı açıkça isterse;** aksi hâlde her mesele "son derece karmaşık" kabul edilir (bkz. aşağı).
+- **Dosya ağırlığı triyajı (anayasa m.1, 2026-09):** derinlik kısılmaz, **kapsam** müvekkil hedefine orantılanır — ALIM'da basit/orta/ağır sınıfı avukat onayıyla; basit dosyada tam hat değil ilgili parçalar + teyit ritüeli. Mesleki karardır, tasarruf değil.
 
 ## 0.5. ZORUNLU AÇILIŞ — otomatik orkestrasyon (atlanamaz)
 

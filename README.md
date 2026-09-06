@@ -26,14 +26,15 @@
 > taraması, (7) 307 sahası — tasarrufun iptalinde ikinci cevap (devralmalı),
 > (8) 923 sahası — vergi/gümrük, ödeme emri + ek tahakkuk (ilk organik yeşil
 > makbuz), (9) 1865 sahası — idari yüksek yargıda soruşturma-izni itirazı
-> (çok oturumlu, iki müvekkil). Ayrıntılar aşağıdaki tabloda ve karnelerdedir. yapılmış teste alınmayanşekilde sistemin ilk çalışmasında sonuca ulaşıldığı davalar görmezden gelinmiş ve teste yansıtılmamıştır. Test için ayrılan davalarda ise başarı sağlanmıştır. 
+> (çok oturumlu, iki müvekkil). Ayrıntılar aşağıdaki tabloda ve karnelerdedir. Belgeli koşu sayımına yalnız sensörlü izlenen dosyalar alındı; ilk denemede sonuca ulaşan ama izlenmeyen dosyalar sayıma girmedi.
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
-> prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir  davalının istinaf dilekçesine
-> geçerli UDF'e dönüştü (dünyadaki şimdilik en güçlü kabul edilen en pahalı token tüketen modelde plug in sayesinde en ucuz token tüketimi ve en yüksek çıktı kalitesi yakalanmıştır. ( Plug in öncesi Claude Fable 5, max efor ile önceden yaklaşık 1,2m+ token tüketiliyordu 1m token 50$ test için özellikle en pahalımodel seçildi ve test edildi tasarruf maddiyatla görülerek gerçekleşti. ) ; evraklar
-> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile pdf olarak indirilmiş ve bu plug in ile .md .json formatlarına otonom olarak çevrilmiştir. 
- Sayılar, dürüst kayıp listesiyle birlikte:
-> **[SAHA-SONUCU.md](SAHA-SONUCU.md)** ·  > **[BASARI.md](BASARI.md)**. dosyalarında raporla sunulmuştur. Dosya kimlikleri projenin anayasası m.7 gereği daima
-> anonimdir. Hukuk erişilebilir olmalıdır. su ve nefes gibi..
+> prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir bir istinafa cevap
+> dilekçesine ve geçerli UDF'e dönüştü. Aynı sınıf iş, eklenti öncesi aynı model ve
+> eforla (Fable 5, max) yaklaşık 1,2M token tüketiyordu; fark ölçülmüştür, iddia
+> değildir (ölçüm ve kayıp listesi: [SAHA-SONUCU.md](SAHA-SONUCU.md)). Evraklar
+> [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile PDF olarak indirilmiş, bu eklentiyle `.md`/`.json` biçimine otonom çevrilmiştir.
+> Sayılar ve dürüst kayıp listesi: **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
+> anonimdir. Hukuk erişilebilir olmalıdır — su ve nefes gibi.
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır.** Bu eserin fikri mülkiyeti ile tüm mali ve manevi hakları münhasıran Av. Bayram Can Çapar'a aittir.Ticari amaçla klonlanıp/tersine mühendislik kullanılmadığı müddetçe ücretsizdir.Ticari ürün olarak kullanılamaz.   (5846 sayılı FSEK). Depo kamuya açıktır; izinsiz kopyalama/dağıtma/türev/maddi amaç yasaktır. Beta sürümleri tamamlanana kadar avukatlar ve geliştiriciler geliştirmeye ve kullanmaya yetkilidir.  Bkz. [LICENSE](LICENSE) ve [NOTICE](NOTICE).
 

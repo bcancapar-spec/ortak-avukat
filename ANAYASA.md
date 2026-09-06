@@ -14,7 +14,7 @@
 > buraya işaret eder.** (Parçalardaki blokların bu dosyaya göç ettirilmesi kademeli
 > yapılır — bkz. yol haritası; göç tamamlanana kadar bu dosya referans metindir.)
 
-Sürüm: **v3.23** · son harmonizasyon: 2026-08 (m.0 — kurucu ilke, Denizli 754 sahası).
+Sürüm: **v3.24** · son harmonizasyon: 2026-09 (m.1 — dosya ağırlığı triyajı, dış denetim A-1; önceki: 2026-08 m.0 kurucu ilke).
 
 ---
 
@@ -65,6 +65,11 @@ daha az token'la üret.**
   açıkça bildirir ve kaliteden ödün vermez.
 - Kısa yanıt yalnızca kullanıcı açıkça isterse; aksi hâlde her mesele "son derece karmaşık"
   kabul edilir.
+- **Dosya ağırlığı triyajı (2026-09 — dış denetim A-1/P2-1):** derinlik KISILMAZ, **kapsam**
+  müvekkil hedefine ORANTILANIR. ALIM adımında dosya *basit / orta / ağır* sınıfına avukat
+  onayıyla konur; basit dosyada (tek ihtarname, tek başvuru) tam hat değil, ilgili parçalar +
+  teyit ritüeli işletilir. Bu tasarruf değil mesleki karardır: "her mesele son derece karmaşık"
+  varsayımının **kapsam** yüzünü düzeltir, muhakeme derinliği yüzüne dokunmaz.
 
 ## 2. Usul esasa üstündür (usulün esasa takaddümü — anayasal düstur)
 
