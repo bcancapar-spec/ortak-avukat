@@ -333,8 +333,10 @@ def test_sure_adaylari_liste_ve_json(tmp_path):
     # varsayılanı '.' ve <kok>/_oa varsa son günü sureler.json'a OTOMATİK flag yazar
     # (E4a). Öneri satırı bu bayrağı taşımazsa "avukat onayıyla sure-flag" kapısı
     # fiilen aşılır — hesap advisory kalmalı, flag yalnız oa_hafiza.py ile yazılmalı.
-    oneri_satirlari = [s for s in cikti.splitlines() if "hesapla_sure.py" in s]
-    assert oneri_satirlari and all("--flagsiz" in s for s in oneri_satirlari), oneri_satirlari
+    oneri_satirlari = [s for s in cikti.splitlines()
+                       if s.startswith("  - ") and "hesapla_sure.py --kural" in s]
+    assert len(oneri_satirlari) == 3, oneri_satirlari
+    assert all("--flagsiz" in s for s in oneri_satirlari), oneri_satirlari
     # sure-flag YAZILMADI
     assert sureler.read_text(encoding="utf-8") == '{"flagler": []}'
 
