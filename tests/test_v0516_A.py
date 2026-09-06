@@ -531,3 +531,400 @@ def test_script_ag_importu_yok():
     for yasak in ("import requests", "import urllib", "import socket", "import httpx"):
         assert yasak not in kaynak
     assert "__OA_UTF8_GUARD__" in kaynak
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# A-2 — ŞEMA GENİŞLETME + DAL + TARAF (G10, G9, G12, karar #11, doktrin kilidi)
+# ═══════════════════════════════════════════════════════════════════════════
+
+DOKTRIN_MD = SCRIPT.parents[1] / "references" / "illiyet-doktrini.md"
+CIKTI_BLOGU_MD = SCRIPT.parents[1] / "references" / "cikti-blogu.md"
+
+KESME_DAL_LISTESI = {
+    "medeni:mucbir_sebep", "medeni:magdur_kusuru", "medeni:ucuncu_kisi_kusuru",
+    "miras:paylastirma_kasti", "miras:ivaz",
+    "ceza:izin_verilen_risk", "ceza:kendi_tehlikesine_girme",
+    "ceza:hukuka_uygunluk", "ceza:magdur_kusuru",
+}
+
+
+# ── G10: kesme_flag dal-ayrımlı + göç ──────────────────────────────────────
+
+def test_g10_kanonik_kesme_flag_dal_ayrimli():
+    assert gd.KANONIK["kesme_flag"] == KESME_DAL_LISTESI
+
+
+def test_g10_eski_ciplak_deger_sema_uyarisi_goc_onerisi_exit_degismez(tmp_path):
+    """Eski çıplak 'magdur_kusuru' kanonik-dışı [ŞEMA UYARISI] + '--goc ile dal
+    etiketle' önerisi; exit kodu DEĞİŞMEZ (geriye uyum — saha grafları kırılmaz)."""
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "magdur_kusuru"
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, out
+    assert "[ŞEMA UYARISI]" in out
+    assert "kanonik-dışı kesme_flag: 'magdur_kusuru'" in out
+    assert "--goc" in out and "dal etiketle" in out
+    # kesme adayı yine raporlanır (eski değer yok sayılmaz)
+    assert "KESME: magdur_kusuru" in out
+    assert len(sonuc["kesme_adaylari"]) == 1
+
+
+def test_g10_ceza_magdur_kusuru_sabit_not(tmp_path):
+    """ceza:magdur_kusuru için §6'da SABİT doktrin hatırlatması: illiyeti
+    KESMEZ, kusur derecesine/ceza miktarına etki eder. Bu hukuki HÜKÜM değil
+    doktrin hatırlatmasıdır; künye kütükten (hafızadan yazılmaz)."""
+    graf = _temiz_graf()
+    graf["kenarlar"][0].update({"kesme_flag": "ceza:magdur_kusuru",
+                                "illiyet_tipi": "objektif_isnadiyet"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, out
+    assert "KESME: ceza:magdur_kusuru" in out
+    assert "illiyeti KESMEZ" in out
+    assert "kusur derecesine/ceza miktarına etki eder" in out
+    assert "künye KÜTÜKTEN" in out
+    aday = sonuc["kesme_adaylari"][0]
+    assert aday["kesme_flag"] == "ceza:magdur_kusuru"
+    assert aday["dal"] == "ceza"
+    assert "illiyeti KESMEZ" in aday["not"]
+
+
+def test_g10_miras_paylastirma_kasti_notu(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "miras:paylastirma_kasti"
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert "muris muvazaasında bozma gerekçesi" in out
+    assert "ispat ölçütü" in out
+    assert sonuc["kesme_adaylari"][0]["dal"] == "miras"
+
+
+def test_g10_medeni_flag_notsuz_ve_uyarisiz(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "medeni:mucbir_sebep"
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0
+    assert "kanonik-dışı kesme_flag" not in out
+    assert sonuc["kesme_adaylari"][0]["not"] is None
+    assert sonuc["kesme_adaylari"][0]["dal"] == "medeni"
+
+
+def test_g10_goc_kaynaga_dokunmaz_degisen_sayisini_basar(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "magdur_kusuru"        # göç eder
+    graf["kenarlar"][1]["kesme_flag"] = "ceza:hukuka_uygunluk"  # zaten dal önekli — dokunulmaz
+    graf["kenarlar"].append(_ils("A", "C", kesme_flag="mucbir_sebep"))  # iliski kenarı da göçer
+    eski = _graf_yaz(tmp_path, graf, "eski.json")
+    eski_metin = eski.read_text(encoding="utf-8")
+    yeni = tmp_path / "yeni.json"
+    kod, out, err = _cli("--goc", eski, "--dal", "medeni", "--cikti", yeni)
+    assert kod == 0, f"{out}\n{err}"
+    assert eski.read_text(encoding="utf-8") == eski_metin, "kaynağa dokunulmaz"
+    g2 = json.loads(yeni.read_text(encoding="utf-8"))
+    assert g2["kenarlar"][0]["kesme_flag"] == "medeni:magdur_kusuru"
+    assert g2["kenarlar"][1]["kesme_flag"] == "ceza:hukuka_uygunluk"
+    assert g2["kenarlar"][2]["kesme_flag"] == "medeni:mucbir_sebep"
+    assert "değişen kenar: 2" in out
+    # göçmüş graf artık uyarısız
+    kod2, out2, err2 = _cli(yeni)
+    assert "kanonik-dışı kesme_flag" not in out2
+
+
+def test_g10_goc_dal_disi_deger_gocmez_ve_gorunur(tmp_path):
+    """'ivaz' ceza dalında yok → 'ceza:ivaz' kanonik olmaz; göç ETMEZ, uyarı basar
+    (sahte kanoniklik üretilmez)."""
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "ivaz"
+    eski = _graf_yaz(tmp_path, graf, "eski.json")
+    yeni = tmp_path / "yeni.json"
+    kod, out, err = _cli("--goc", eski, "--dal", "ceza", "--cikti", yeni)
+    assert kod == 0, out
+    assert "değişen kenar: 0" in out
+    assert "elle düzelt" in out and "'ivaz'" in out
+    g2 = json.loads(yeni.read_text(encoding="utf-8"))
+    assert g2["kenarlar"][0]["kesme_flag"] == "ivaz"
+
+
+def test_g10_goc_eksik_arguman_exit1_ve_dosya_yok_exit2(tmp_path):
+    kod, out, err = _cli("--goc", tmp_path / "x.json")     # --dal / --cikti yok
+    assert kod == 1
+    yeni = tmp_path / "yeni.json"
+    kod, out, err = _cli("--goc", tmp_path / "yok.json", "--dal", "ceza", "--cikti", yeni)
+    assert kod == 2
+    assert "GÖÇ ÇÖKTÜ" in out
+    assert not yeni.exists()
+
+
+def test_g10_goc_fonksiyonu_python_api(tmp_path):
+    graf = _temiz_graf()
+    graf["kenarlar"][0]["kesme_flag"] = "paylastirma_kasti"
+    eski = _graf_yaz(tmp_path, graf, "eski.json")
+    yeni = tmp_path / "yeni.json"
+    ozet = gd.goc(str(eski), "miras", str(yeni))
+    assert ozet["degisen"] == 1 and ozet["atlanan"] == []
+    assert json.loads(yeni.read_text(encoding="utf-8"))["kenarlar"][0]["kesme_flag"] \
+        == "miras:paylastirma_kasti"
+
+
+# ── G9: taraf → yön (kur | çürüt) ──────────────────────────────────────────
+
+def _yuk_graf():
+    """A→B→C→D: B→C yük taşıyan kenar; A→B kesme adayı."""
+    graf = {"dugumler": _olay("A", "B", "C", "D") + [
+                {"id": "D1", "tip": "delil", "ad": "Bilirkisi Raporu"}],
+            "kenarlar": [_ill("A", "B", kesme_flag="medeni:ucuncu_kisi_kusuru"),
+                         _ill("B", "C"), _ill("C", "D", guc="zayif")]}
+    return graf
+
+
+@pytest.mark.parametrize("taraf", ["sanik", "mudafii", "davali", "borclu"])
+def test_g9_savunma_kanadi_yon_curut(tmp_path, taraf):
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--taraf", taraf)
+    assert kod == 0, out
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] == taraf and sonuc["yon"] == "curut"
+    assert "karşı tarafın bu bağını ÇÜRÜT" in out            # §7
+    assert "kesme savunmasını KUR" in out                     # §6
+    assert "bu bağı sağlamlaştır" not in out
+    assert "önce burayı sağlamlaştır" not in out
+    assert "taraf bilinmiyor" not in out
+
+
+@pytest.mark.parametrize("taraf", ["katilan", "musteki", "davaci", "alacakli"])
+def test_g9_iddia_kanadi_yon_kur(tmp_path, taraf):
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--taraf", taraf)
+    assert kod == 0, out
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] == taraf and sonuc["yon"] == "kur"
+    assert "stratejik öncelik: bu bağı sağlamlaştır" in out
+    assert "oa-antitez ile çürüt veya kabul et" in out
+    assert "ÇÜRÜT" not in out
+
+
+def test_g9_taraf_yoksa_mevcut_metin_ve_not(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _yuk_graf())
+    assert sonuc["taraf"] is None and sonuc["yon"] is None
+    assert "taraf bilinmiyor — --taraf ver" in out
+    assert "stratejik öncelik: bu bağı sağlamlaştır" in out
+
+
+def _defter_yaz(kok, ceza_dali):
+    defter = kok / "_oa" / "defter"
+    defter.mkdir(parents=True)
+    (defter / "pipeline-durum.json").write_text(
+        json.dumps({"dosya": "E. 2099/1 sentetik", "ceza_dali": ceza_dali,
+                    "adimlar": {}, "katmanlar": {}}), encoding="utf-8")
+    return defter
+
+
+def test_g9_kok_defterden_mudafii_sanik_tarafi(tmp_path):
+    _defter_yaz(tmp_path, "mudafii")
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path)
+    assert kod == 0, out
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] == "sanik" and sonuc["yon"] == "curut"
+    assert "defter" in out.lower()
+
+
+def test_g9_kok_defterden_musteki(tmp_path):
+    _defter_yaz(tmp_path, "musteki")
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path)
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] == "musteki" and sonuc["yon"] == "kur"
+
+
+def test_g9_kok_defter_yok_veya_dal_bos_taraf_bilinmiyor(tmp_path):
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path)
+    assert kod == 0, out
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] is None and sonuc["yon"] is None
+    assert "taraf bilinmiyor — --taraf ver" in out
+    _defter_yaz(tmp_path, None)                       # hukuk dosyası: ceza_dali null
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path)
+    assert kod == 0
+    assert json.loads(json_yol.read_text(encoding="utf-8"))["taraf"] is None
+    assert "taraf bilinmiyor — --taraf ver" in out
+
+
+def test_g9_bozuk_defter_cokertmez_fail_closed(tmp_path):
+    defter = tmp_path / "_oa" / "defter"
+    defter.mkdir(parents=True)
+    (defter / "pipeline-durum.json").write_text("{ bozuk", encoding="utf-8")
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path)
+    assert kod == 0, out
+    assert "taraf bilinmiyor" in out and "okunamadı" in out
+
+
+def test_g9_taraf_cli_defteri_ezer(tmp_path):
+    _defter_yaz(tmp_path, "mudafii")
+    yol = _graf_yaz(tmp_path, _yuk_graf())
+    json_yol = tmp_path / "sonuc.json"
+    kod, out, err = _cli(yol, "--json", json_yol, "--kok", tmp_path, "--taraf", "katilan")
+    sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
+    assert sonuc["taraf"] == "katilan" and sonuc["yon"] == "kur"
+
+
+def test_g9_taraf_yonu_fonksiyonu():
+    assert gd.taraf_yonu("sanik") == "curut"
+    assert gd.taraf_yonu("alacakli") == "kur"
+    assert gd.taraf_yonu(None) is None
+    assert gd.taraf_yonu("bilinmeyen") is None
+
+
+# ── G12: karar / mahkeme tipi + kanun_yolu kenarı + §9 ─────────────────────
+
+def _kanun_yolu_graf():
+    dugumler = _olay("A", "B") + [
+        {"id": "D1", "tip": "delil", "ad": "Bilirkisi Raporu"},
+        {"id": "K1", "tip": "karar", "ad": "Ilk Derece Karari"},
+        {"id": "K2", "tip": "karar", "ad": "BAM Karari"},
+        {"id": "K3", "tip": "karar", "ad": "Yargitay Karari"},
+    ]
+    kenarlar = [
+        _ill("A", "B"),
+        _ils("B", "K1", tur="islem_sonuc"),
+        {"kaynak": "K1", "hedef": "K2", "kategori": "iliski", "tur": "kanun_yolu",
+         "sonuc": "esastan_ret", "dogrulama": "teyitli", "dayanak_delil": ["D1"],
+         "norm": "çıpa"},
+        {"kaynak": "K2", "hedef": "K3", "kategori": "iliski", "tur": "kanun_yolu",
+         "sonuc": "bozdu", "dogrulama": "teyitli", "dayanak_delil": ["D1"],
+         "norm": "çıpa"},
+    ]
+    return {"dugumler": dugumler, "kenarlar": kenarlar}
+
+
+def test_g12_kanonik_tip_ve_sonuc():
+    assert {"karar", "mahkeme"} <= gd.KANONIK["tip"]
+    assert gd.KANONIK["sonuc"] == {"onadi", "bozdu", "kaldirdi", "geri_cevirdi",
+                                   "esastan_ret", "kesin"}
+    assert "sonuc" in gd.KENAR_ALANLARI
+
+
+def test_g12_karar_tipi_artik_sema_uyarisi_degil_ve_kopru_muaf(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _kanun_yolu_graf())
+    assert kod == 0, out
+    assert "kanonik-dışı tip" not in out
+    assert "bilinmeyen alan: 'sonuc'" not in out
+    # A-1 doğrulaması: karar/mahkeme köprüden muaf (kod tipe göre)
+    graf = _halter(orta_tip="karar")
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["kopru_dugumler"] == [] and "kanonik-dışı tip: 'karar'" not in out
+
+
+def test_g12_kanun_yolu_zinciri_bolum9_ve_json(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _kanun_yolu_graf())
+    assert kod == 0, out
+    assert "### 9. KANUN YOLU ZİNCİRİ" in out
+    assert "Ilk Derece Karari → BAM Karari → Yargitay Karari" in out
+    assert "esastan_ret" in out and "bozdu" in out
+    assert sonuc["kanun_yolu_zinciri"] == [
+        {"yol": ["K1", "K2", "K3"], "sonuclar": ["esastan_ret", "bozdu"]}]
+
+
+def test_g12_kanun_yolu_illiyet_zincirine_cevrime_yuke_girmez(tmp_path):
+    """kanun_yolu kenarları kategori 'illiyet' yazılsa bile çevrim/yük/zincir
+    hesabına GİRMEZ (yargı kademesi neden-sonuç değildir)."""
+    graf = _kanun_yolu_graf()
+    for k in graf["kenarlar"]:
+        if k["tur"] == "kanun_yolu":
+            k["kategori"] = "illiyet"
+    # K3 → K1 kanun_yolu geri kenarı: illiyet sayılsaydı çevrim olurdu
+    graf["kenarlar"].append({"kaynak": "K3", "hedef": "K1", "kategori": "illiyet",
+                             "tur": "kanun_yolu", "sonuc": "kesin",
+                             "dogrulama": "teyitli", "dayanak_delil": ["D1"],
+                             "norm": "çıpa"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert sonuc["cevrimler"] == []
+    assert kod == 0, out
+    assert all("K" not in z["yol"][0] for z in sonuc["zincirler"])
+    assert all(k["tur"] != "kanun_yolu" for k in sonuc["yuk_tasiyan_kenarlar"])
+    assert "[ŞEMA UYARISI]" in out and "kanun_yolu" in out  # illiyet kategorisi uyarılır
+
+
+def test_g12_kanun_yolu_karar_disi_dugumde_sema_uyarisi(tmp_path):
+    graf = _kanun_yolu_graf()
+    graf["kenarlar"].append({"kaynak": "A", "hedef": "K1", "kategori": "iliski",
+                             "tur": "kanun_yolu", "sonuc": "onadi",
+                             "dogrulama": "teyitli", "dayanak_delil": ["D1"],
+                             "norm": "çıpa"})
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0, "uç tipi uyarıdır, hata değil"
+    assert "[ŞEMA UYARISI] Kenar #4" in out and "karar | mahkeme" in out
+
+
+def test_g12_kanun_yolu_sonuc_zorunlu_exit3(tmp_path):
+    graf = _kanun_yolu_graf()
+    del graf["kenarlar"][2]["sonuc"]
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 3
+    assert "✗ Kenar #2 (kanun_yolu): 'sonuc' eksik (zorunlu)" in out
+
+
+def test_g12_kanonik_disi_sonuc_uyarilir(tmp_path):
+    graf = _kanun_yolu_graf()
+    graf["kenarlar"][2]["sonuc"] = "onandi"
+    kod, out, err, sonuc = _kos_json(tmp_path, graf)
+    assert kod == 0
+    assert "kanonik-dışı sonuc: 'onandi'" in out and "'onadi'" in out
+
+
+def test_g12_kanun_yolu_yoksa_bolum9_bos(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert "### 9. KANUN YOLU ZİNCİRİ" in out
+    assert sonuc["kanun_yolu_zinciri"] == []
+
+
+def test_g12_kanun_yolu_cevrimi_cokertmez_uyarir():
+    dugumler = {"K1": {"id": "K1", "tip": "karar"}, "K2": {"id": "K2", "tip": "karar"}}
+    kenarlar = [{"kaynak": "K1", "hedef": "K2", "kategori": "iliski", "tur": "kanun_yolu",
+                 "sonuc": "bozdu"},
+                {"kaynak": "K2", "hedef": "K1", "kategori": "iliski", "tur": "kanun_yolu",
+                 "sonuc": "kesin"}]
+    zincir = gd.kanun_yolu_zinciri(dugumler, kenarlar)
+    assert zincir and all(len(z["yol"]) <= 3 for z in zincir)
+
+
+# ── Karar #11 + doktrin kilidi + belge ─────────────────────────────────────
+
+def test_kanonik_her_deger_doktrinde_literal_gecer():
+    """DOKTRİN ↔ KOD KİLİDİ: KANONIK sözlüğündeki HER string değer
+    references/illiyet-doktrini.md'de literal geçmeli (G grubu aile_dogrula'ya
+    aynı kilidi mekanik olarak ekliyor)."""
+    metin = DOKTRIN_MD.read_text(encoding="utf-8")
+    eksik = [f"{alan}:{deger}" for alan, kume in gd.KANONIK.items()
+             for deger in sorted(kume) if deger not in metin]
+    assert not eksik, eksik
+    for alan in gd.KANONIK:
+        assert f"`{alan}`" in metin, alan
+
+
+def test_karar11_ticaret_modelleme_sablonu_belgelerde():
+    for yol in (DOKTRIN_MD, CIKTI_BLOGU_MD):
+        metin = yol.read_text(encoding="utf-8")
+        assert "organik bağ" in metin and "perde" in metin, yol.name
+        assert "AYRI" in metin and "hak" in metin, yol.name
+        assert "alternatif değil, birlikte" in metin, yol.name
+        assert "kütükten teyitli karar ile" in metin, yol.name
+
+
+def test_skill_md_a2_belgesi():
+    metin = SKILL_MD.read_text(encoding="utf-8")
+    for parca in ("--taraf", "--goc", "--kok", "ceza:magdur_kusuru",
+                  "miras:paylastirma_kasti", "kanun_yolu", "kanun_yolu_zinciri",
+                  "karar", "mahkeme", "doktrin hatırlatması"):
+        assert parca in metin, parca
+
+
+def test_json_anahtar_seti_a2(tmp_path):
+    kod, out, err, sonuc = _kos_json(tmp_path, _temiz_graf())
+    assert set(sonuc) == JSON_ANAHTARLARI | {"taraf", "yon", "kanun_yolu_zinciri"}
