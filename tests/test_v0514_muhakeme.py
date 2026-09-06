@@ -201,8 +201,12 @@ def test_vakia_ust_duzey_json_semasi_DEGISMEDI(izole_dizin):
         "ispat_bosluklari", "yetim_deliller", "gecersiz_referans",
         "gecersiz_ispat_durumu", "ozne_eslestirme", "ozet", "saglikli",
     }
+    # v0.5.16 (A-13 / GRUP F): matris SATIRI `tur`, `yuk_kaydiran`,
+    # `tanik_caizlik_belirsiz` ile genişledi (ispat ontolojisi); bu kilidin
+    # asıl konusu olan ÜST-DÜZEY anahtar kümesi (yukarıda) DEĞİŞMEDİ.
     assert set(sonuc["iddia_delil_matrisi"][0].keys()) == {
-        "iddia_id", "metin", "destekler", "belgeli", "kismi_destek"}
+        "iddia_id", "metin", "tur", "destekler", "belgeli", "kismi_destek",
+        "yuk_kaydiran", "tanik_caizlik_belirsiz"}
 
 
 def test_vakia_kronoloji_satir_semasi_degismedi_regresyon(izole_dizin):
