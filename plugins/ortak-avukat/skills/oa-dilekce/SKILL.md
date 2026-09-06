@@ -159,6 +159,95 @@ EKLEDİ** — yani çıkarılanlar hacim, eklenenler isabetti. Damıtılan kural
    sonucunu okurun çıkarmasına bırakma. (Bu, M8 SONUÇ ANATOMİSİ modülünün
    saha kanıtıdır.)
 
+## NETİCE-İ TALEP PLAYBOOK'U (v0.5.16 — P0-4/A-22; mekanik göz: `dilekce_denetim.py` [P])
+Talep bloğu, dilekçenin HÜKME dönüşen tek parçasıdır: hâkim istenmeyeni
+veremez (taleple bağlılık). Gerekçe ne kadar güçlü olursa olsun eksik kalem
+hükme girmez. Aşağıdaki diziliş ve kalemler her para/edim talebinde
+denetlenir; madde çıpaları **Mevzuat MCP teyit 2026-09-06** damgalıdır
+(aksi yazılmadıkça).
+
+1. **Diziliş — asıl önce, fer'i sonra, numaralı.** (1) asıl talep (hükmün
+   konusu: tahsil/tespit/iptal/iade …), (2) fer'i talepler bu sırayla: faiz →
+   fazlaya ilişkin haklar → yargılama gideri + vekâlet ücreti → tedbir/geçici
+   koruma. Her kalem AYRI numaralı satırdır; iki talebi tek cümleye gömmek
+   hâkime eksik yazdırır (B6 numaralı SONUÇ/İSTEM kuralıyla aynı kök).
+2. **Meşru terdit ↔ kendini yenen terdit.** Terditli dava HMK m.111'de
+   meşrudur: davacı, aynı davalıya karşı birden fazla talebini **aslilik-
+   ferîlik** ilişkisi kurarak ileri sürebilir; talepler arasında hukuki veya
+   ekonomik bağlantı şarttır ve mahkeme asli talebi **esastan reddetmedikçe**
+   ferî talebi inceleyemez (m.111/1-2 — Mevzuat MCP teyit 2026-09-06). Meşru
+   terdit, **seçimlik/alternatif hukuki nitelendirme**dir: "öncelikle X
+   sebebiyle, olmadığı takdirde Y sebebiyle aynı sonuca" (aynı menfaat, iki
+   dayanak). **Kendini yenen terdit** ise mahkemeden kendi yenilgini varsayan
+   bir ara çözüm istemektir ("aksi kanaatte sorumluluğun … ile sınırlı
+   tutulmasına") — yukarıdaki YEDİ KURAL'ın 2. kuralı: **terditli SAVUNMA
+   kurulur, terditli TALEP kurulmaz**; davalı tarafta esasa ilişkin savunma
+   "kabul anlamına gelmemek kaydıyla" ihtiyaten kurulabilir ama hâkime hazır
+   orta yol sunan talep yazılmaz (m.6 taktik yüzü).
+3. **Faiz — TÜRÜ ve BAŞLANGICI açıkça yazılır.** Türü ya da başlangıcı
+   yazılmayan faiz talebi mahkemeyi yorumla baş başa bırakır (taleple
+   bağlılık — istenmeyen tür/başlangıç hükme giremez; bunun içtihattaki
+   sonuçları bu turda teyit edilmedi, `oa-ictihat`). Çıpalar (3095 s.K. — Mevzuat MCP teyit
+   2026-09-06): **m.1 kanuni faiz** *(Değişik 16/7/2026-7589/10)* — TBK/TTK'ya
+   göre faiz ödenmesi gereken hâllerde, sözleşmeyle miktar belirlenmemişse
+   TCMB'nin önceki yılın 31 Aralık günü kısa vadeli kredi işlemlerinde
+   uyguladığı **reeskont oranının yüzde sekseni** (30 Haziran'da beş puan+
+   fark varsa yılın ikinci yarısında 30 Haziran oranının %80'i); **m.2
+   temerrüt faizi** — sözleşmeyle aksi kararlaştırılmadıkça m.1 oranı;
+   **ticari işlerde** TCMB kısa vadeli **avans** faiz oranı daha yüksekse
+   sözleşme olmasa bile o oran istenebilir; sözleşmede temerrüt faizi yoksa ve
+   akdi faiz bu oranların üstündeyse temerrüt faizi akdi faizden az olamaz.
+   Faiz türü seçimi (kanuni / avans / akdi) avukat kararıdır; [P] kapısı
+   yalnız yokluğunu söyler. **Başlangıç:** temerrüt tarihi — TBK m.117
+   (Mevzuat MCP teyit 2026-09-06): muaccel borcun borçlusu alacaklının
+   **ihtarıyla** temerrüde düşer; ifa günü birlikte belirlenmiş/usulüne uygun
+   bildirimle belirlenmişse o günün geçmesiyle; **haksız fiilde fiil tarihi**,
+   sebepsiz zenginleşmede zenginleşme tarihi (iyiniyetli zenginleşende
+   bildirim şart). Belgeli ihtar/temerrüt yoksa başlangıç dava tarihinden
+   istenir (dava dilekçesinin temerrüt hükmü doğurup doğurmadığı içtihat
+   meselesidir — bu turda teyit edilmedi; `oa-ictihat`). Kalıp: "… TL'nin
+   [temerrüt tarihi gg.aa.yyyy / dava tarihinden] itibaren işleyecek [avans /
+   kanuni] faiziyle birlikte davalıdan tahsiline".
+4. **Fazlaya ilişkin haklar saklı — kısmi dava kalıbı.** HMK m.109/1: talep
+   konusu bölünebilirse bir kısmı dava edilebilir; **m.109/3**: dava açılırken
+   kalan kısımdan açıkça feragat edilmedikçe kısmi dava kalan kısımdan feragat
+   anlamına gelmez (Mevzuat MCP teyit 2026-09-06) — yine de "fazlaya ilişkin
+   haklarımız saklı kalmak kaydıyla şimdilik … TL" kaydı sahada standarttır
+   ([P] bunu arar). **m.109/4 (Ek 16/7/2026-7589/20):** alacağın bir kısmının
+   dava edildiği hâllerde talep konusu, **aynı davada bir defaya mahsus** olmak
+   üzere iddianın genişletilmesi yasağına tabi olmaksızın **tahkikatın sona
+   ermesine kadar artırılabilir**; zamanaşımı artırılan kısım bakımından da
+   **dava tarihinden** itibaren kesilmiş sayılır. **HMK m.107 belirsiz alacak
+   davası MÜLGA (16/7/2026-7589/19)**; 7589 s.K. yürürlük m.26/1-c: bu
+   maddeler yayımı tarihinde yürürlükte (RG 31.07.2026 — sayı bu turda teyit edilmedi); **7589
+   geçici m.1/10:** mülga m.107, kaldırılma tarihinden **önce açılan davalar**
+   bakımından uygulanmaya devam olunur (derdest davalar — Mevzuat MCP teyit
+   2026-09-06). Yeni davada "belirsiz alacak" kalıbı KURULMAZ; kısmi dava +
+   m.109/4 bir defalık artırım kullanılır (artırım dilekçesi tahkikat
+   bitmeden — `oa-sure`).
+5. **Yargılama gideri + vekâlet ücreti — ayrı kalem.** HMK m.323/1-ğ: vekille
+   takip edilen davalarda kanun gereğince takdir olunacak vekâlet ücreti
+   yargılama giderindendir; m.326/1: yargılama giderleri aleyhine hüküm verilen
+   taraftan alınır, /2: kısmen haklılıkta haklılık oranına göre paylaştırılır
+   (Mevzuat MCP teyit 2026-09-06). Kalıp: "yargılama giderleri ile vekâlet
+   ücretinin davalıya yükletilmesine". Tarifeye göre ücret tutarı YAZILMAZ
+   (AAÜT sayısal verisi bu parçada teyit edilmez — uydurma yasak, m.4).
+6. **Tedbir talebi.** HMK m.389/1: mevcut durumdaki değişme nedeniyle hakkın
+   elde edilmesinin önemli ölçüde zorlaşacağı/imkânsızlaşacağı veya gecikme
+   sebebiyle sakınca/ciddi zarar endişesi hâlinde uyuşmazlık konusu hakkında
+   ihtiyati tedbir (Mevzuat MCP teyit 2026-09-06). Tedbir netice-i talepte
+   ayrı ve ÖNCELİKLİ satırdır ("öncelikle … üzerine ihtiyati tedbir konulmasına")
+   ve gerekçesi açıklamalarda ayrı başlıkla kurulur; teminat/itiraz usulü
+   maddeleri bu turda teyit edilmedi (`oa-usul` + Mevzuat MCP).
+7. **Mekanik göz — [P] NETİCE-İ TALEP (advisory, ASLA bloklamaz):**
+   `dilekce_denetim.py` (CLI + `hizli_denetim`) talep bloğunu (NETİCE-İ TALEP
+   / SONUÇ VE İSTEM / NETİCE VE TALEP / TALEP başlığından metnin sonuna) bulur;
+   para ifadesi varken faiz türü VE başlangıcı, 'kısmi dava/belirsiz alacak/
+   şimdilik' varken 'fazlaya ilişkin', 'yargılama gideri/vekâlet ücreti'
+   yokluğunu uyarır; blok yoksa "bulunamadı" der (yalnız CLI — hızlı kip yarım
+   taslakta susar). Script hukuki yorum yapmaz; hangi kalemin isabetli olduğu
+   avukat kararıdır.
+
 ## İÇTİHAT PORTFÖYÜ — gövde vs kütük ayrımı (M6, Paket D — v0.5.5)
 Muhakeme edilmiş (LEHE/ALEYHE-AYIRT) kararların SAYISI arttıkça hepsini gövdeye
 5 adımla işlemek dilekçeyi ŞİŞİRİR ve en güçlü argümanı gürültüye gömer.
@@ -223,6 +312,8 @@ Süre satırı için `oa-sure`; her atıf `oa-ictihat`'tan teyitli; alan tespiti
 
 **ALTIN KURAL — UDF ELLE YAZILMAZ (GÖREV D, B5 + 372 dersi 10-D — bağlayıcı):** UDF, yalnız `udf-cli`'nin üretebildiği/okuyabildiği opak bir UYAP biçimidir; içyapısı hakkında varsayımda bulunulmaz, zip/`content.xml` elle kurulmaz, `.udf` elle düzenlenmez, ve **`md2udf` ASLA kullanılmaz — daima `html2udf`**. Ayrıntılı operasyonel referans: `references/uyap-belge-formatlari.md` (Yargı Pro `udf_tiff_pdf_guide` rehberinin ailedeki klonu — güncel sürüm için daima o dosyaya/rehbere bakılır). Saha kanıtı (372 sahası A/B ölçümü, KRİTİK): elle kurulan `content.xml`'li UDF'ler **UYAP editöründe açılmadı** (7 dosya karantina); A/B testi re-zip'i ve kenar yamasını AKLADI — suçlu `content.xml`'in kendisidir. Bu yüzden **`--yerel-motor` EMEKLİDİR: artık HATA verir.** Geçerli tek üretim yolu html2udf hattıdır; bilinçli risk için `--yerel-motor-riskli` vardır (resmî okuyucu doğrulaması zorunlu denenir; OK gelmezse çıktının yanına `<ad>.DOGRULANMADI` işaret dosyası düşer — o dosya silinmeden UDF yüklenmez).
 
+**UDF hattı kesintisi (udf-cli servisi düştüğünde iş sürekliliği — B-6/P2-12):** `references/udf-hatti-kesinti-plani.md` (PDF ile `udf_html2pdf.py`, UYAP editörüne yapıştırma yolu, `teslim_paketi --udf-yok` bilinçli atlama, pin seçenekleri — avukat kararı).
+
 Akış: taslak metin (md) → `python scripts/udf_yaz.py --girdi taslak.md --cikti dilekce.udf` — bu komut md'yi UDF-HTML'e çevirir (`md_udf_html.py`) ve rehberin ZORUNLU kıldığı gerçek yazıcıyı (`npx -y udf-cli@latest html2udf`, ağ+oturum ister) çağırır; opsiyonel `--pdf dilekce.pdf` ile aynı ara HTML'den A4 PDF de üretir (`udf_html2pdf.py`, ağsız — UDF üretimi başarısız olsa BİLE denenir). **npx/udf-cli bulunamazsa veya oturum gerekiyorsa script FAIL-CLOSED çıkar: hiçbir `.udf` yazılmaz, exit != 0, stderr'de net talimat** (`npx -y udf-cli@latest login` insan varsa; başsız ortamda `issue_cli_login_code` MCP aracı) — eski elle-zip yoluna SESSİZCE düşülmez. Ardından aşağıdaki **UDF GEÇERLİLİK KAPISI**. Yalnız kullanıcı açıkça md/docx istediğinde bu akış atlanır; hazır bir `.docx`/`.pdf` varsa `docx2udf` (login-gated) kullanılabilir (bkz. referans §5).
 
 **TESLİM tanımı tekildir (P1-11 — bağlayıcı doktrin):** bir taslak ancak
@@ -242,10 +333,11 @@ bu adı erken vermek makbuz kapısını yanlış zamanda tetikler.
 3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
 4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri — B listesine eklenen **"üslup playbook'a uygun mu?"** maddesi dahil (aşağıya bkz.).
 
-Aynı `dilekce_denetim.py` çağrısı (madde 2) iki ADVISORY kapıyı da (ASLA
+Aynı `dilekce_denetim.py` çağrısı (madde 2) üç ADVISORY kapıyı da (ASLA
 bloklamaz, exit koduna dokunmaz) tek raporda basar: **[H] GÖRÜNMEZ İSKELET
-TARAMASI** (yukarıdaki "GÖRÜNMEZ İSKELET" kuralı) ve **[I] KUSUR→SONUÇ→TALEP
-ASİMETRİSİ TARAMASI** (yukarıdaki "KUSUR→SONUÇ→TALEP ASİMETRİSİ" kuralı).
+TARAMASI** (yukarıdaki "GÖRÜNMEZ İSKELET" kuralı), **[I] KUSUR→SONUÇ→TALEP
+ASİMETRİSİ TARAMASI** (yukarıdaki "KUSUR→SONUÇ→TALEP ASİMETRİSİ" kuralı) ve
+**[P] NETİCE-İ TALEP** (yukarıdaki "NETİCE-İ TALEP PLAYBOOK'U" — v0.5.16).
 Teslim öncesi son avukat gözünde bu iki uyarı da — **üslup playbook'a uygun
 mu?** sorusuyla birlikte — okunur; bloklamadıkları için elle görülmezlerse
 sessizce geçilebilirler.
@@ -366,6 +458,17 @@ uyarısı basar (advisory) — kararı `oa-antitez` cephaneliğine işlet.
   ilk geçişte açılır ("Açılım (KISALTMA)"); birebir alıntı içi MUAF (alıntı
   metnine müdahale edilemez), yaygın hukuki kısaltmalar beyaz listesi (HMK,
   TTK, TBK, TMK, CMK, İYUK, AYM, BAM… — örneklemdir) uyarı üretmez.
+  **v0.5.16 (H2):** başlık bloğundaki TARAF/ROL etiketleri (SANIK, ŞÜPHELİ,
+  HÜKÜMLÜ, MAĞDUR, MÜŞTEKİ, KATILAN, MÜDAHİL, DAVACI, DAVALI, ALACAKLI,
+  BORÇLU, VEKİLİ/VEKİL, MÜVEKKİL, TANIK, İDARE, DAVA, KARAR, ESAS, MADDE —
+  örneklem) kısaltma DEĞİLDİR, [N] üretmez.
+- **[F] HAFİF KİP (v0.5.16 — K3, yalnız `hizli_denetim`/inline zincir):** tam
+  [F] kapısı ayrı süreçte ve teslimde yetkili kalır; taslak yazılırken koşan
+  hızlı kip, künyeleri `kunye_ortak` ile çıkarıp `_oa/teyit/kunye-teyit.md`
+  kütüğündeki SON DAMGA'yı okur: ALEYHE → "m.6 teslim engeli adayı", NÖTR →
+  "dilekçeye giremez", kütükte izi yok → "çıplak künye adayı"; LEHE/ALEYHE-
+  AYIRT sessiz. Kütük/kardeş modül yoksa GÖRÜNÜR bilgi satırı. [F] satırları
+  inline bulgu listesinin EN BAŞINDA gelir (hook ilk 5'i gösterir).
 - **[T] MAKBUZSUZ "TESLİME HAZIR" (BLOK):** taslakta ya da `_oa/` belgelerinde
   "TESLİME HAZIR" ibaresi geçiyor ama `_oa/defter/teslim-makbuz.json`
   (exit_kodu=0) yok/geçersizse "makbuzsuz hazır-beyanı" ihlali — R2: tek

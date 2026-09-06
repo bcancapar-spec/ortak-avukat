@@ -149,6 +149,29 @@ tek-cümle kanonik tanımı taşır: yeşil makbuz = YALNIZ
 _oa/defter/teslim-makbuz.json (exit_kodu=0); stdout dökümü/txt makbuz
 DEĞİLDİR.
 
+── [F] HAFİF KİP (v0.5.16 — K3, Hamle 1; yalnız `hizli_denetim`) ─────────
+Tam [F] kapısı ayrı süreçte kalır (teslimde yetkili). Hızlı kip (inline
+PostToolUse zinciri, 2 sn) in-process ve yalnız yerel kütükle koşar:
+`kunye_ortak.esas_karar_atiflari` ile künyeleri çıkarır, `_oa/teyit/
+kunye-teyit.md`'de SON DAMGA'yı `kunye_ortak.kutukten_son_damga` ile okur.
+ALEYHE → "m.6 teslim engeli adayı", NOTR → "dilekçeye giremez", kütükte
+satır yok → "çıplak künye adayı", damgasız satır → "muhakeme edilmemiş";
+LEHE/ALEYHE-AYIRT sessiz. kunye_ortak/kütük yoksa GÖRÜNÜR bilgi satırı
+(yalnız künye varken). [F] satırları bulgu listesinin EN BAŞINDA gelir.
+
+── [P] NETİCE-İ TALEP (v0.5.16 — P0-4/A-22, advisory — ASLA bloklamaz) ────
+Talep bloğunu (NETİCE-İ TALEP / SONUÇ VE İSTEM / NETİCE VE TALEP / TALEP
+başlığından metnin sonuna) bulur; para ifadesi varken faiz türü VE
+başlangıcı, 'kısmi dava/belirsiz alacak/şimdilik' varken 'fazlaya ilişkin',
+'yargılama gideri/vekâlet ücreti' yokluğunu uyarır; blok yoksa 'bulunamadı'
+(CLI'da; hızlı kip yarım taslakta bu satırı basmaz). Hukuki yorum YOK —
+faiz türü seçimi avukat kararı (SKILL.md NETİCE-İ TALEP PLAYBOOK'U).
+
+── [N] TARAF/ROL BEYAZ LİSTESİ (v0.5.16 — H2, Hamle 11) ────────────────────
+SANIK/ŞÜPHELİ/HÜKÜMLÜ/MAĞDUR/MÜŞTEKİ/KATILAN/MÜDAHİL/DAVACI/DAVALI/ALACAKLI/
+BORÇLU/VEKİL(İ)/MÜVEKKİL/TANIK/İDARE/DAVA/KARAR/ESAS/MADDE (+KONU/MÜDAFİ(İ)/
+TARİH) etiketleri kısaltma DEĞİLDİR — [N] üretmez (örneklem, m.3).
+
 ── İSTİSNA DEFTERİ (ortak şema, append-only) ───────────────────────────────
 `--istisna-gerekce METİN` verilirse [Y]/[T] BLOK bulguları avukat onayıyla
 görünür UYARIYA düşer (exit'e yansımaz) ve `_oa/defter/istisna-kayitlari.jsonl`
@@ -1099,6 +1122,23 @@ _N_BEYAZ_LISTE = {
     "HD", "CD", "HGK", "CGK", "TCK", "İİK", "IIK", "AİHM", "AIHM", "KVKK",
     "TC", "UYAP", "OCR", "UDF", "RG",
 }
+# H2 (v0.5.16, Hamle 11): TARAF/ROL ETİKETLERİ — dilekçe başlık bloğunda
+# 'SANIK : Ayşe Örnek', 'İDARE : …', 'KONU : …' biçiminde büyük harfle yazılan
+# taraf/rol/alan etiketleri KISALTMA DEĞİL, sözcüğün kendisidir; [N] bunları
+# "açılımsız kısaltma" diye uyarıyordu (saha: her ceza dilekçesinde 'SANIK'/
+# 'TANIK' gürültüsü). Liste ÖRNEKLEMDİR (anayasa m.3) — aynı sınıftan
+# (rol/alan etiketi) sözcük aynı muameleyi görür.
+_N_TARAF_ROL_ETIKETLERI = {
+    "SANIK", "ŞÜPHELİ", "HÜKÜMLÜ", "MAĞDUR", "MÜŞTEKİ", "KATILAN", "MÜDAHİL",
+    "DAVACI", "DAVALI", "ALACAKLI", "BORÇLU", "VEKİLİ", "VEKİL", "MÜVEKKİL",
+    "TANIK", "İDARE", "DAVA", "KARAR", "ESAS", "MADDE",
+    # aynı sınıftan başlık-bloğu alan etiketleri (örneklem uzantısı)
+    "KONU", "MÜDAFİ", "MÜDAFİİ", "TARİH",
+    # para birimi simgesi — açılım beklenmez; her para talepli taslakta [N]
+    # gürültüsü üretip gerçek kısaltmayı gömüyordu (v0.5.16 smoke bulgusu)
+    "TL",
+}
+_N_BEYAZ_LISTE |= _N_TARAF_ROL_ETIKETLERI
 _N_KISALTMA_RE = re.compile(r"(?<!\w)[A-ZÇĞİÖŞÜ]{2,5}(?!\w)")
 _N_ROMEN_RE = re.compile(r"[IVXLCDM]+")
 _N_KUCUK_HARF_RE = re.compile(r"[a-zçğıöşü]")
@@ -1288,12 +1328,190 @@ def istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="avukat"):
     return yol
 
 
+# ── [F] HAFİF KİP (v0.5.16 — K3, Hamle 1) ──────────────────────────────────
+# Tam [F] kapısı (`ictihat_muhakeme_denetim.py`) AYRI SÜREÇTE koşar ve
+# teslimde (teslim_paketi (b2) / CLI) yetkili kalır. Hızlı kip (PostToolUse
+# inline zincir, 2 sn sınırı) bu süreci açamaz — 777/372 karneleri: taslak
+# yazılırken ALEYHE künye inline bulgu listesine HİÇ düşmüyordu, model bunu
+# ancak teslim anında görüyordu. Hafif kip in-process, yalnız YEREL dosya
+# (kütük) okur, MCP/ağ/alt-süreç YOK: künyeleri `kunye_ortak.
+# esas_karar_atiflari` ile çıkarır, `<kok>/_oa/teyit/kunye-teyit.md`'de SON
+# DAMGA'yı `kunye_ortak.kutukten_son_damga` ile okur (kütük satır biçimi TEK
+# YERDE ayrıştırılır — burada regex TEKRARLANMAZ; son damga geçerlidir,
+# oa_hafiza `--damga-degistir` ritüeliyle simetrik). Muhakeme kaydı
+# (`_oa/cikti/*ictihat-muhakeme*`) alan denetimi, KAYNAK-URL/[G4], G6 tam-
+# metin sınıfı vb. hafif kipin KONUSU DEĞİLDİR — o tam kapının işidir.
+# Sessiz atlama yasağı: kunye_ortak yüklenemedi / kütük yok → GÖRÜNÜR bilgi
+# satırı (yalnız taslakta künye VARKEN — künyesiz yarım taslak gürültü
+# üretmez). `kok` yoksa hiç koşmaz ([T] ile aynı ilke).
+_F_HAFIF_AZAMI = 8
+
+
+def _f_hafif_kunye_metni(atif):
+    """Bulgu satırında künyeyi kısa ve okunur göster (satır no ile)."""
+    return f"{atif.get('metin') or ''} (satır {atif.get('satir_no')})".strip()
+
+
+def ictihat_hafif_kip_bulgulari(metin, kok):
+    """[F] HAFİF KİP — list[str] döner ("[F] " öneki ÇAĞIRAN tarafından
+    eklenir). Sınıflar: ALEYHE → 'anayasa m.6 teslim engeli adayı';
+    NOTR → 'dilekçeye giremez'; kütükte satır yok → 'çıplak künye adayı';
+    satır var ama damgasız (ARAMA sınıfı) → 'muhakeme edilmemiş';
+    LEHE / ALEYHE-AYIRT → satır YOK. Aynı esas/karar TEKİLLEŞTİRİLİR.
+    Bu bir hüküm DEĞİLDİR — tam kapı ([F] ayrı süreç) teslimde yetkilidir;
+    hafif kip yalnız GÖRÜNÜRLÜK üretir (sahte kesinlik yok)."""
+    if not kok:
+        return []
+    # B-18 simetrisi: makine üretimi kaynakça bloğu gövde metni DEĞİLDİR.
+    metin = makine_bloklarini_maskele(metin or "")
+    ko = _kunye_ortak_modulu()
+    if ko is None:
+        return ["hafif kip: kunye_ortak yüklenemedi (oa-kontrol/scripts/ — "
+                "kardeş skill kurulu mu?) — künyeler DENETLENMEDİ; tam kapı "
+                "teslimde koşar"]
+    try:
+        atiflar = ko.esas_karar_atiflari(metin)
+    except Exception as e:
+        return [f"hafif kip: künye çıkarımı koşamadı ({type(e).__name__}) — "
+                "tam kapı teslimde koşar"]
+    atiflar = [a for a in atiflar if a.get("esas") or a.get("karar")]
+    if not atiflar:
+        return []
+    kutuk = os.path.join(kok, "_oa", "teyit", "kunye-teyit.md")
+    if not os.path.isfile(kutuk):
+        return [f"hafif kip: künye teyit kütük dosyası bulunamadı ({os.path.relpath(kutuk, kok)}) — "
+                f"taslaktaki {len(atiflar)} künyenin DAMGA'sı okunamadı (çıplak künye "
+                "adayı); tam kapı teslimde koşar"]
+    bulgular, gorulen = [], set()
+    for a in atiflar:
+        anahtar = (a.get("esas"), a.get("karar"), a.get("daire_key"))
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        kunye = _f_hafif_kunye_metni(a)
+        daire = a.get("daire_key")
+        damga = ko.kutukten_son_damga(kutuk, a.get("esas"), a.get("karar"), daire)
+        if damga is None:
+            satir_var = ko.kutukte_esas_karar_satiri_var_mi(
+                kutuk, a.get("esas"), a.get("karar"), daire)
+            if satir_var:
+                bulgular.append(
+                    f"damgasız künye (kütükte satır var, DAMGA yok — ARAMA sınıfı?): "
+                    f"{kunye} — muhakeme edilmemiş, çıplak künye adayı; tam kapı "
+                    "teslimde karar verir")
+            else:
+                bulgular.append(
+                    f"kütükte izi yok: {kunye} — çıplak künye adayı (teyit --damga "
+                    "ile kütüğe işlenmemiş); tam kapı teslimde karar verir")
+        elif damga == "ALEYHE":
+            bulgular.append(
+                f"ALEYHE künye taslakta: {kunye} — anayasa m.6 teslim engeli adayı "
+                "(salt-ALEYHE dış çıktıya GİREMEZ; cephanelikte işlenir)")
+        elif damga == "NOTR":
+            bulgular.append(
+                f"NÖTR künye: {kunye} — dilekçeye giremez (muhakeme edilmemiş; "
+                "damga LEHE/ALEYHE-AYIRT olmadan dış çıktıya girmez)")
+        elif damga in ("LEHE", "ALEYHE-AYIRT"):
+            continue
+        else:
+            bulgular.append(
+                f"tanınmayan damga '{damga}': {kunye} — enum dışı (fail-closed: "
+                "geçerli sayılmaz); tam kapı teslimde karar verir")
+        if len(bulgular) >= _F_HAFIF_AZAMI:
+            bulgular.append(f"(+ daha fazla künye var — hafif kip {_F_HAFIF_AZAMI} "
+                            "kalemle sınırlı; tam kapı teslimde hepsini denetler)")
+            break
+    return bulgular
+
+
+# ── [P] NETİCE-İ TALEP (v0.5.16 — P0-4 / A-22, advisory — ASLA bloklamaz) ──
+# Talep bloğu, dilekçenin hükme dönüşen tek parçasıdır (taleple bağlılık —
+# hâkim istenmeyeni veremez). Saha: para talebi var ama faiz türü/başlangıcı
+# yok (faizsiz hüküm), 'kısmi dava/şimdilik' var ama 'fazlaya ilişkin haklar
+# saklı' yok, yargılama gideri + vekâlet ücreti istenmemiş. Script HUKUKİ
+# YORUM YAPMAZ — yalnız blok içinde MEKANİK var/yok söyler; hangi faiz
+# türünün doğru olduğu (3095 s.K. m.1 kanuni / m.2 avans) avukat kararıdır
+# (SKILL.md "NETİCE-İ TALEP PLAYBOOK'U"). Blok = başlık satırından METNİN
+# SONUNA kadar (imza bloğu dahil — zararsız).
+_P_BASLIK_RE = re.compile(
+    r"^(?:NET[İIi]CE[-\s]*[İIi]?\s*TALEP|NET[İIi]CE\s+VE\s+TALEP|"
+    r"SONU[ÇC]\s+VE\s+[İIi]STEM|SONU[ÇC]\s+VE\s+TALEP|TALEP)\s*:?\s*$", re.I)
+_P_PARA_RE = re.compile(r"\bTL\b|₺|\d[\d.]*,\d{2}")
+_P_FAIZ_TURU_RE = re.compile(
+    r"(?:yasal|kanuni|kanunî|avans|ticari|ticarî|temerrüt|reeskont|akdi|akdî|sözleşme)\s*faiz", re.I)
+_P_FAIZ_BASLANGIC_RE = re.compile(
+    r"\d{1,2}[./]\d{1,2}[./]\d{4}|tarihinden|tarihinden\s+itibaren|"
+    r"temerrüt\s+tarih|dava\s+tarih|ıslah\s+tarih|ihtar\s+tarih", re.I)
+_P_FAZLAYA_RE = re.compile(r"fazlaya\s+(?:ilişkin|dair)", re.I)
+_P_KISMI_RE = re.compile(r"kısmi\s+dava|kısmî\s+dava|belirsiz\s+alacak|\bşimdilik\b", re.I)
+_P_BELIRSIZ_RE = re.compile(r"belirsiz\s+alacak", re.I)
+_P_GIDER_RE = re.compile(r"yargılama\s+gider|vek[âa]let\s+ücret", re.I)
+
+
+def _p_talep_blogu(metin):
+    """Talep başlığı satırını (markdown/bold/numara işaretleri temizlenmiş)
+    arar; SON eşleşmeden metnin sonuna kadar olan bloğu döner, yoksa None."""
+    satirlar = (metin or "").splitlines()
+    bas = None
+    for i, satir in enumerate(satirlar):
+        temiz = re.sub(r"^[\s#>*\-\d.)_]+", "", satir)
+        temiz = re.sub(r"[*_]+", "", temiz).strip()
+        if temiz and _P_BASLIK_RE.match(temiz):
+            bas = i
+    if bas is None:
+        return None
+    return "\n".join(satirlar[bas:])
+
+
+def netice_talep_uyarilari(metin):
+    """[P] NETİCE-İ TALEP advisory — uyarı listesi (boş = sinyal yok).
+    Blok yoksa TEK satır 'bulunamadı' döner (CLI bunu basar; hızlı kip
+    yarım taslakta bu satırı ATLAR — bkz. `hizli_denetim`)."""
+    blok = _p_talep_blogu(metin)
+    if blok is None:
+        return ["netice-i talep bloğu bulunamadı (NETİCE-İ TALEP / SONUÇ VE İSTEM / "
+                "NETİCE VE TALEP / TALEP başlığı yok) — talep bölümü başlıksız ya da "
+                "eksik olabilir; hâkim istenmeyeni veremez (taleple bağlılık)"]
+    uyarilar = []
+    if _P_PARA_RE.search(blok):
+        eksik = []
+        if not _P_FAIZ_TURU_RE.search(blok):
+            eksik.append("faiz türü (yasal/kanuni · avans · ticari · temerrüt · reeskont)")
+        if not _P_FAIZ_BASLANGIC_RE.search(blok):
+            eksik.append("faiz başlangıcı (temerrüt/dava tarihi ya da gg.aa.yyyy)")
+        if eksik:
+            uyarilar.append(
+                "para talebi var ama " + " ve ".join(eksik) + " görünmüyor — faizsiz/"
+                "başlangıçsız talep faizsiz hükme yol açar; 3095 s.K. m.1 (kanuni) / m.2 "
+                "(temerrüt·avans) seçimi avukat kararıdır (playbook: NETİCE-İ TALEP)")
+    tum = metin or ""
+    if _P_KISMI_RE.search(tum) and not _P_FAZLAYA_RE.search(tum):
+        ek = ""
+        if _P_BELIRSIZ_RE.search(tum):
+            ek = (" · NOT: HMK m.107 belirsiz alacak davası 7589/19 ile mülga (RG "
+                  "31.07.2026); önce açılan davalarda uygulanmaya devam (7589 geçici "
+                  "m.1/10) — Mevzuat MCP teyit 2026-09-06")
+        uyarilar.append(
+            "'kısmi dava / belirsiz alacak / şimdilik' geçiyor ama 'fazlaya ilişkin "
+            "haklar saklı' kaydı yok — HMK m.109/3 feragat karinesini dışlar ama açık "
+            "kayıt sahada standarttır; m.109/4 (7589/20) bir defalık talep artırımı "
+            "playbook'ta" + ek)
+    if not _P_GIDER_RE.search(blok):
+        uyarilar.append(
+            "talep bloğunda 'yargılama gideri' / 'vekâlet ücreti' istemi görünmüyor — "
+            "HMK m.323/ğ + m.326 gereği istenmeyen kalem hükme girmeyebilir")
+    return uyarilar
+
+
 # ── HIZLI KİP (v0.5.9 — inline zincirin giriş noktası, İÇ API) ─────────────
 # YALNIZ metin-tabanlı hızlı denetimler koşar: [Y] havada-kalan alıntı,
 # [M] madde sürekliliği/mükerrerlik, [N] çıplak kısaltma, [K] cephanelik-
-# ifşa, [T] teslime-hazır/yeşil-makbuz beyanı (YALNIZ kok verilmişse) ve
-# [L] kaynak-bloğu ilk-satır yokluğu. .udf/zip/npx/resmî-okuyucu bacaklarına
-# ASLA girmez (hız şartı: tipik 50KB taslakta < 1 sn). CLI davranışı
+# ifşa, [T] teslime-hazır/yeşil-makbuz beyanı (YALNIZ kok verilmişse),
+# [F] HAFİF KİP künye/damga taraması (v0.5.16 — YALNIZ kok verilmişse, yerel
+# kütük), [P] netice-i talep (v0.5.16 — blok varsa) ve [L] kaynak-bloğu
+# ilk-satır yokluğu. .udf/zip/npx/resmî-okuyucu bacaklarına
+# ASLA girmez (hız şartı: tipik 50KB taslakta < 1 sn; [F] hafif kiple < 2 sn
+# — pipeline_kayit INLINE_DENETIM_ZAMAN_SINIRI_SN). CLI davranışı
 # DEĞİŞMEZ — main() bu fonksiyonu KULLANMAZ; dört ilke izdüşümü:
 # DETERMİNİSTİK (aynı metin → aynı bulgu listesi) · TAMAMLAYICI (denetler,
 # muhakeme üretmez) · KESİNTİSİZ (bulgular tek listede akar) · SÜRTÜNMESİZ
@@ -1307,9 +1525,10 @@ def hizli_denetim(metin, kok=None):
     """Metin-tabanlı HIZLI denetimlerin tek-çağrılık iç API'si.
 
     list[str] döndürür; her bulgu "[X] kısa metin" biçimindedir ve EN KRİTİK
-    ÖNCE sıralanır: BLOK sınıfı ([T] makbuz kapısı, [Y] b/c havada-kalan/
-    kapanmayan alıntı) uyarı sınıfından ([Y] d, [K], [M], [N], [L]) önce
-    gelir. `kok` verilmemişse [T] HİÇ koşulmaz (hızlı kip dosya sistemine
+    ÖNCE sıralanır: [F] hafif kip (ALEYHE/NÖTR/kütükte-izi-yok künye — K3,
+    v0.5.16) EN BAŞTA, sonra BLOK sınıfı ([T] makbuz kapısı, [Y] b/c havada-
+    kalan/kapanmayan alıntı), sonra uyarı sınıfı ([Y] d, [K], [M], [N], [P],
+    [L]). `kok` verilmemişse [T] ve [F] HİÇ koşulmaz (hızlı kip dosya sistemine
     CWD üzerinden tırmanmaz). Hiçbir koşulda exception sızdırmaz: bozuk
     girdide boş bulgu yerine TEK görünür "[!]" uyarısı döner (boş liste
     'temiz' demektir, 'denetlenemedi' demek DEĞİLDİR — ikisi karışmaz)."""
@@ -1331,25 +1550,37 @@ def hizli_denetim(metin, kok=None):
 
         y = _kos("[Y]", lambda: havada_kalan_alinti_denetle(metin))
         y_blok, y_uyari = ([], []) if y is _HIZLI_KOSAMADI else y
-        t_ihlal = []
+        t_ihlal, f_hafif = [], []
         if kok:
             t = _kos("[T]", lambda: teslime_hazir_ihlalleri(metin, kok))
             t_ihlal = [] if t is _HIZLI_KOSAMADI else t
+            # v0.5.16 K3: [F] HAFİF KİP — yalnız kok verilmişse (yerel kütük).
+            f = _kos("[F]", lambda: ictihat_hafif_kip_bulgulari(metin, kok))
+            f_hafif = [] if f is _HIZLI_KOSAMADI else f
         k_uyari = _kos("[K]", lambda: cephanelik_ifsa_uyarilari(metin))
         m_uyari = _kos("[M]", lambda: madde_numara_uyarilari(metin))
         n_uyari = _kos("[N]", lambda: ciplak_kisaltma_uyarilari(metin))
+        # v0.5.16 P0-4: [P] — hızlı kipte 'blok bulunamadı' satırı BASILMAZ
+        # (taslak yazılırken talep bölümü henüz doğmamış olabilir; her Write'ta
+        # gürültü üretmek advisory'yi kör eder) — o satır CLI'nın işidir.
+        p_uyari = _kos("[P]", lambda: (
+            [] if _p_talep_blogu(metin) is None else netice_talep_uyarilari(metin)))
         l_uyari = _kos("[L]", lambda: kaynak_blogu_uyarilari(metin))
 
         def _liste(x):
             return [] if x is _HIZLI_KOSAMADI else list(x)
 
-        # BLOK sınıfı önce ([T] teslim yalanı, [Y] b/c alıntı), sonra uyarılar.
-        bulgular = ["[T] " + b for b in t_ihlal]
+        # [F] hafif kip EN BAŞA (K3: inline hook ilk 5 bulguyu gösterir —
+        # ALEYHE künye asla 6. sıraya düşüp görünmez kalmasın), sonra BLOK
+        # sınıfı ([T] teslim yalanı, [Y] b/c alıntı), sonra uyarılar.
+        bulgular = ["[F] " + b for b in f_hafif]
+        bulgular += ["[T] " + b for b in t_ihlal]
         bulgular += ["[Y] " + b for b in y_blok]
         bulgular += ["[Y] " + b for b in y_uyari]
         bulgular += ["[K] " + b for b in _liste(k_uyari)]
         bulgular += ["[M] " + b for b in _liste(m_uyari)]
         bulgular += ["[N] " + b for b in _liste(n_uyari)]
+        bulgular += ["[P] " + b for b in _liste(p_uyari)]
         if l_uyari is None:
             # kaynak_blogu_uyarilari sözleşmesi: None = tazelik_denetim
             # yüklenemedi → 'denetlenemedi' GÖRÜNÜR kılınır (yeşil değildir).
@@ -1665,6 +1896,16 @@ def main():
             print(f"   [UYARI] {u}")
     else:
         print("   [OK] karşı-taraf-kusuru bağlamında onarma-talebi sinyali bulunamadı (heuristik)")
+
+    print("\n[P] NETİCE-İ TALEP (advisory — v0.5.16 P0-4/A-22, ASLA bloklamaz; "
+          "faiz türü/başlangıcı · fazlaya ilişkin · gider+vekâlet ücreti)")
+    p_uyarilar = netice_talep_uyarilari(metin)
+    if p_uyarilar:
+        for u in p_uyarilar:
+            print(f"   [UYARI] {u}")
+    else:
+        print("   [OK] talep bloğunda mekanik eksik sinyali yok (faiz türü seçimi ve "
+              "talep dizilişi avukat kararıdır — playbook: NETİCE-İ TALEP)")
 
     print("\n[J] SAYI/TARİH HARİTASI (advisory — BAĞIMSIZ İÇERİK HAKEMİ'nin gözü, ASLA bloklamaz)")
     j_kalemler, j_atlanan = _sayi_haritasi(metin)
