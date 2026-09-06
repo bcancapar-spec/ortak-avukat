@@ -42,8 +42,9 @@ SKILL.md "ZAMAN KATMANI".)
 - [hak] Organik bağ talebi —[organik_bag]→ Şirket A / Şirket B   [doğrulama] (norm)
 - [hak] Tüzel kişilik perdesinin aralanması talebi —[hakimiyet/muvazaa]→ ...   [doğrulama]
   (İki talep AYRI `hak` düğümleridir, ayrı ispat zinciriyle; Yargıtay iki yolu
-  "alternatif değil, birlikte" sayar — künye burada yazılmaz, dilekçeye **kütükten
-  teyitli karar ile** girer. Köprü `perde` etiketi bu iki düğümü kurmanın tetiğidir.)
+  "alternatif değil, birlikte" sayar — künye burada yazılmaz, dilekçeye
+  **kütükten teyitli karar ile** girer. Köprü `perde` etiketi bu iki düğümü kurmanın
+  tetiğidir.)
 
 ### Kanun yolu zinciri (§9, v0.5.16 — kat sırası + sonuçlar)
 - [karar] İlk derece → [karar] BAM (sonuc: esastan_ret | kaldirdi | ...) → [karar] Yargıtay (onadi | bozdu | ...)
