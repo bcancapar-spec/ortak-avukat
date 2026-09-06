@@ -232,6 +232,13 @@ def _satir_metni(metin, konum):
     return metin[bas:(son if son != -1 else len(metin))]
 
 
+def _pencere_basi(metin, bas, genislik=70):
+    """K4 — merci geri-bakış penceresinin başlangıcı: en fazla `genislik`
+    karakter geriye, ama SATIR BAŞINI aşmadan (bir önceki satırın mercisi bu
+    künyeye yapışmasın — künye ile mercisi aynı satırda anılır)."""
+    return max(0, bas - genislik, metin.rfind("\n", 0, bas) + 1)
+
+
 def _birlesik_ek_atiflari(metin, dolu_spanlar):
     """K4 — etiketsiz birleşik «YYYY/N-N» / «YYYY/N-YYYY/N» çiftlerini esas+karar
     olarak döndürür (merci anılan, kurul olmayan satırlarda; dolu spanlarla
@@ -246,10 +253,11 @@ def _birlesik_ek_atiflari(metin, dolu_spanlar):
         esas = f"{m.group(1)}/{m.group(2)}"
         karar = f"{m.group(3) or m.group(1)}/{m.group(4)}"
         bas, son = m.start(), m.end()
-        pencere = metin[max(0, bas - 70):bas]
+        pencere_bas = _pencere_basi(metin, bas)
+        pencere = metin[pencere_bas:bas]
         merci_bulunan = list(MERCI_RE.finditer(pencere))
         if merci_bulunan:
-            bas = max(0, bas - 70) + merci_bulunan[0].start()
+            bas = pencere_bas + merci_bulunan[0].start()
         ham_kunye = metin[bas:son]
         ekler.append({
             "esas": esas,
@@ -296,10 +304,16 @@ def esas_karar_atiflari(metin):
             ks, ke, kno = kararlar[en_iyi]
             karar_no = kno
             bas, son = min(bas, ks), max(son, ke)
-        pencere = metin[max(0, bas - 70):bas]
+        # K4 (v0.5.16) — merci geri-bakış penceresi SATIRLA sınırlı: eskiden
+        # 70 karakterlik pencere satır sonunu aşıyor, bir önceki satırdaki
+        # başka bir künyenin mercisini («9. HD») bu künyeye yapıştırıyordu —
+        # hem daire_key yanlış oluyor hem de `dolu_spanlar` önceki satırın
+        # (birleşik) künyesini örtüp onu sahte «EKSİK KÜNYE» yapıyordu.
+        pencere_bas = _pencere_basi(metin, bas)
+        pencere = metin[pencere_bas:bas]
         merci_bulunan = list(MERCI_RE.finditer(pencere))
         if merci_bulunan:
-            bas = max(0, bas - 70) + merci_bulunan[0].start()
+            bas = pencere_bas + merci_bulunan[0].start()
         ham_kunye = metin[bas:son]
         dkey = daire_key(ham_kunye)
         dolu_spanlar.append((bas, son))

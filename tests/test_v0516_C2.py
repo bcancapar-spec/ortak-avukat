@@ -133,6 +133,43 @@ def test_k4_eksik_kunye_sinifi(ad, metin, alt):
     assert alt in iz["sebep"], iz
 
 
+def test_k4_ardisik_satirlarda_birlesik_ve_hgk_kunye_karismaz():
+    """Regresyon (K4 entegrasyonu, 2026-09-07 saha koşusu): birleşik künye
+    satırının hemen ardından gelen HGK künyesi, 70 karakterlik merci
+    geri-bakış penceresi satır sonunu aştığı için önceki satırın «9. HD»
+    mercisini alıyor, spanı önceki satıra taşıyor ve birleşik künyeyi örtüp
+    onu sahte «EKSİK KÜNYE» yapıyordu. Pencere artık SATIRLA sınırlı: iki
+    künye ayrı ayrı, doğru daire ile ayrışır; hiçbiri EKSİK değildir."""
+    metin = ("Yargıtay 9. HD'nin 2020/1111-2021/2222 sayılı kararı emsaldir.\n"
+             "Yargıtay HGK, E. 2020/9-111, K. 2021/222 sayılı kararı da aynı yöndedir.")
+    atiflar = ko.esas_karar_atiflari(metin)
+    assert [(a["esas"], a["karar"], a["satir_no"]) for a in atiflar] == [
+        ("2020/1111", "2021/2222", 1), ("2020/9-111", "2021/222", 2)], atiflar
+    assert atiflar[0]["daire_key"] == ("9", "HD")
+    assert atiflar[1]["daire_key"] is None          # HGK — daire yok, «9. HD» sızmaz
+    assert ko.ayristirilamayan_atiflar(metin) == []
+    # ters sıra da simetrik
+    ters = metin.split("\n")[1] + "\n" + metin.split("\n")[0]
+    assert [(a["esas"], a["karar"]) for a in ko.esas_karar_atiflari(ters)] == [
+        ("2020/9-111", "2021/222"), ("2020/1111", "2021/2222")]
+    assert ko.ayristirilamayan_atiflar(ters) == []
+
+
+def test_k4_ardisik_satir_kunye_teyit_ikisi_de_teyitli(tmp_path):
+    """Uçtan uca: iki ardışık künye kütükte varsa ikisi de TEYİTLİ, exit 0."""
+    _teyit_iskelesi(
+        tmp_path,
+        "Yargıtay 9. HD'nin 2020/1111-2021/2222 sayılı kararı emsaldir.\n"
+        "Yargıtay HGK, E. 2020/9-111, K. 2021/222 sayılı kararı da aynı yöndedir.\n",
+        kutuk_satiri="| 2026-09-06T10:00:00 | ictihat_getir | s | Yargıtay 9. HD E. 2020/1111 "
+                     "K. 2021/2222 DAMGA=LEHE | [döküm](_oa/teyit/dokum/k.md) |\n"
+                     "| 2026-09-06T10:01:00 | ictihat_getir | s | Yargıtay HGK E. 2020/9-111 "
+                     "K. 2021/222 DAMGA=LEHE | [döküm](_oa/teyit/dokum/h.md) |")
+    kod, cikti = _cli(SCRIPTS / "kunye_teyit.py", ["taslak.md", "--kok", tmp_path], tmp_path)
+    assert kod == 0, cikti
+    assert "TEYİTLİ 2" in cikti and "EKSİK KÜNYE" not in cikti
+
+
 def test_k4_hgk_etiketsiz_birlesik_e_k_diye_bolunmez():
     """Kurul (HGK/CGK/İBK…) mercisinde «YYYY/N-N» daire-sıra biçimli TEK esas
     numarasıdır; E-K birleşik sanılıp bölünmez (yanlış-teyit yasağı)."""
