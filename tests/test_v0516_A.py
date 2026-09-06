@@ -25,6 +25,17 @@ ateşlemeyen kapı, avukat kararı #1 SERT kapı):
 * G2     köksüz illiyet grafı → "GÜVENİLMEZ" (sahte-yeşil kapanışı);
          çevrim varken §7 "çevrimde anlamsız" uyarısı.
 
+A-2 (aynı dosyanın sonunda — G10, G9, G12, karar #11, doktrin kilidi):
+* G10    kesme_flag DAL-AYRIMLI (medeni:/miras:/ceza:); eski çıplak değer
+         [ŞEMA UYARISI] + --goc önerisi (exit değişmez); §6 sabit doktrin
+         hatırlatması (ceza:magdur_kusuru / miras:paylastirma_kasti); --goc
+         alt komutu kaynağa dokunmaz, değişen kenar sayısını basar.
+* G9     --taraf / --kok (defter ceza_dali) → yon "kur" | "curut"; savunma
+         kanadında §6/§7/§8 tavsiyeleri ters; bilinmiyorsa görünür not.
+* G12    tip karar|mahkeme; tur kanun_yolu (+ sonuc zorunlu) yalnız karar/
+         mahkeme arasında; illiyet/çevrim/yük hesabına girmez; §9 zinciri.
+* Kilit  KANONIK'teki her değer illiyet-doktrini.md'de literal.
+
 Girdiler tempfile/tmp_path tabanlı izole dizinlerde üretilir; fikstürler
 sentetiktir (anayasa m.7); repo dosyalarına dokunulmaz.
 """
