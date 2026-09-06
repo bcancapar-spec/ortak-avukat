@@ -21,6 +21,10 @@ Kullanım (çalışılan klasörün kökünden — ya da mutlak --kok ile):
       --damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR --bag "...(≥40 karakter)..." \
       --ilgili-kisim "...(döküm içinde VERBATİM geçen alıntı)..." --dokum-icerik @ham.md \
       [--ayirt "...(yalnız ALEYHE-AYIRT'ta ≥20 karakter)..."] [--damga-degistir "...(≥40 karakter gerekçe)..."]
+      [--akibet kesinlesti|kesinlesmedi|bozuldu|kaldirildi|geri_cevrildi --akibet-kaynak "arac:<ad>|<künye/beyan>"]
+  # v0.5.16 (K5) — AKIBET: --akibet verilirse --akibet-kaynak ZORUNLU; kaynak "arac:<ad>" ise
+  # sınıf «araç», aksi «avukat beyanı» (etiket kütükte ve kayıtta GÖRÜNÜR). Yalnız GETİR + --damga.
+  # --akibet verilmezse --sonuc'taki KESİNLEŞTİ/KESİNLEŞMEDİ ifadesi otomatik alınır ([BİLGİ] basılır).
   # v0.5.8.6 (G1) — serbest-format triyaj/okuma-muhakemesi belgesini kütüğe alma:
   python oa_hafiza.py triyaj-ice-al --dosya okuma-muhakemesi.md [--ham-dizin _oa/teyit/ham]
   python oa_hafiza.py sure-flag --tarih 2026-08-14 --aciklama "istinaf son günü" --kural hmk_istinaf
@@ -81,9 +85,79 @@ def kontrol():
         sys.exit("HATA: _oa kökü yok — önce `oa_hafiza.py init` çalıştır.")
 
 
+# ── v0.5.16 P1-8 (A-11, B-5) — SENKRON KLASÖR UYARISI ────────────────────────
+# Saha dersi (2026-09-06 denetimi): meslek sırrının en sık sızma yolu dış
+# araç çağrısı DEĞİL, `_oa/` kökünün (müvekkil verisi + cephanelik) bir bulut
+# senkron klasöründe yaşamasıdır — Layer 0 dış çağrıyı süzer, cihazı/klasörü
+# korumaz; senkron istemcisi `_oa/` altındaki her dosyayı süzgeçsiz yurt dışı
+# buluta taşır (Av.K. m.36 sır saklama; KVKK m.6 özel nitelikli veri, m.9 yurt
+# dışına aktarım — Mevzuat MCP teyit 2026-09-06). Script hukuki yorum yapmaz:
+# yalnız YOL DESENİNİ mekanik tanır, görünür uyarır ve deftere iz bırakır
+# (`_oa/defter/senkron-uyari.json`); DURUM.md türetimi pipeline_kayit.py'dedir.
+# Desen listesi ÖRNEKLEMDİR (anayasa m.3) — büyük/küçük harf duyarsız, yol
+# PARÇASI (segment) düzeyinde eşleşir: 'OneDrive', 'OneDrive - Şirket',
+# 'Dropbox (Personal)' yakalanır; 'onedrivelike' gibi bitişik türevler
+# yakalanmaz (yanlış-pozitif uyarı, gerçek uyarının değerini düşürür).
+_SENKRON_DESENLERI = ("OneDrive", "Google Drive", "GoogleDrive", "My Drive", "Dropbox",
+                      "iCloudDrive", "iCloud Drive", "Box Sync", "Nextcloud", "Syncthing")
+_SENKRON_SEGMENT_RE = re.compile(
+    r"^(" + "|".join(re.escape(d) for d in _SENKRON_DESENLERI) + r")(?:$|[\s\-_(])",
+    re.I)
+
+
+def _senkron_desen_bul(mutlak_yol):
+    """Mutlak yolun HERHANGİ bir parçası bulut senkron desenine uyuyorsa
+    eşleşen parçayı (orijinal yazımıyla) döndürür; yoksa None. Yalnız yol
+    metnine bakar — dizin içeriği/işletim sistemi ayarı OKUNMAZ (ucuz,
+    deterministik, çevrimdışı)."""
+    if not mutlak_yol:
+        return None
+    for parca in re.split(r"[\\/]+", mutlak_yol):
+        if parca and _SENKRON_SEGMENT_RE.match(parca):
+            return parca
+    return None
+
+
+def _senkron_uyari_isle(kok_mutlak):
+    """`init` içinde: kök senkron desenindeyse stdout'a GÖRÜNÜR uyarı basar ve
+    `_oa/defter/senkron-uyari.json` {yol, desen, zaman} yazar (bloklamaz —
+    karar avukatındır). Desen yoksa ve önceki init'ten BAYAT bir JSON kaldıysa
+    [BİLGİ] ile kaldırır (bayat uyarı, yanlış defter kaydıdır — sessiz kalmaz)."""
+    json_yolu = yol("defter", "senkron-uyari.json")
+    desen = _senkron_desen_bul(kok_mutlak)
+    if not desen:
+        if os.path.isfile(json_yolu):
+            try:
+                os.remove(json_yolu)
+                print(f"[BİLGİ] kök artık senkron deseninde değil — bayat "
+                      f"_oa/defter/senkron-uyari.json kaldırıldı.")
+            except OSError as e:
+                print(f"[BİLGİ] bayat senkron-uyari.json kaldırılamadı ({e}).")
+        return None
+    os.makedirs(os.path.dirname(json_yolu), exist_ok=True)
+    kayit = {"yol": kok_mutlak, "desen": desen, "zaman": ts()}
+    with open(json_yolu, "w", encoding="utf-8") as f:
+        json.dump(kayit, f, ensure_ascii=False, indent=2)
+    print("=" * 72)
+    print(f"UYARI (SENKRON KLASÖR — P1-8/A-11/B-5): çalışma kökü bulut senkron "
+          f"deseninde: '{desen}'")
+    print(f"  {kok_mutlak}")
+    print("  `_oa/` müvekkil verisi + cephanelik (antitez/zaaf analizi) içerir; senkron "
+          "istemcisi bunları Layer 0 süzgecinden GEÇMEDEN yurt dışı buluta taşır.")
+    print("  Hukuki temel: 1136 s. Avukatlık Kanunu m.36 (sır saklama), KVKK m.6 (özel "
+          "nitelikli veri) ve m.9 (yurt dışına aktarım) — Mevzuat MCP teyit 2026-09-06.")
+    print("  Öneri: dosyayı senkron DIŞI bir klasöre taşıyın ya da şifreli konteyner "
+          "(VeraCrypt / BitLocker klasörü) kullanın; ayrıntı: oa-gizlilik SKILL.md "
+          "'Senkron klasör riski'. Karar avukatındır — bu uyarı bloklamaz.")
+    print(f"  İz: {json_yolu}")
+    print("=" * 72)
+    return desen
+
+
 def cmd_init(args):
     for d in DIZINLER:
         os.makedirs(yol(d), exist_ok=True)
+    _senkron_uyari_isle(os.path.abspath(_calisma_koku()))
     if not os.path.exists(yol("README.md")):
         with open(yol("README.md"), "w", encoding="utf-8") as f:
             f.write(f"""# _oa — Ortak Avukat yerel hafıza kökü
@@ -534,6 +608,41 @@ _ARAC_PARANTEZ_EK_RE = re.compile(r"\s*\([^)]*\)\s*$")
 _GUVENLI_ARAC_TOKEN_RE = re.compile(r"[A-Za-z0-9_.-]{1,64}")
 DAMGA_ENUM = {"LEHE", "ALEYHE", "ALEYHE-AYIRT", "NOTR"}
 
+# ── v0.5.16 K5 (Hamle 4) — AKIBET ÜRETİCİSİ ─────────────────────────────────
+# Saha dersi (2026-09-06 denetimi): `ictihat_muhakeme_denetim.py` [G5] kapısı
+# AŞILMIŞLIĞI okur, ama kararın AKIBETİNİ (kesinleşti / bozuldu / kaldırıldı)
+# yazan ÜRETİCİ adım yoktu → bozulmuş bir karar LEHE damgalanıp dilekçeye
+# girebiliyordu. Karar #4: ARAÇ birincil, AVUKAT BEYANI görünür — kaynak
+# 'arac:<ad>' ise sınıf «araç», aksi «avukat beyanı»; sınıf etiketi hem kütük
+# hücresinde (AKIBET-KAYNAK=<sınıf>: …) hem muhakeme kaydında
+# (**AKIBET-KAYNAK:** <sınıf>: …) GÖRÜNÜR. Script akıbetin DOĞRULUĞUNU
+# bilemez (hukuki yorum yapmaz): yalnız beyanı, kaynağını ve sınıfını
+# mekanik olarak kaydeder; [G5-AKIBET] kapısı (oa-kontrol, C2 grubu) okur.
+AKIBET_ENUM = ("kesinlesti", "kesinlesmedi", "bozuldu", "kaldirildi", "geri_cevrildi")
+_AKIBET_ARAC_ONEK_RE = re.compile(r"^\s*ara[cç]\s*:", re.I)
+# --sonuc metninden otomatik akıbet: KESİNLEŞMEDİ önce denenir ('kesinleşmedi'
+# içinde 'kesinleşti' GEÇMEZ ama sıra yine de açıkça sabitlenir). İ/I ve Ş/S
+# katlamalı: 'KESİNLEŞTİ', 'Kesinleşti', 'KESINLESTI' aynı sinyaldir.
+_AKIBET_SEZGI_SIRASI = (("kesinlesmedi", "kesinlesmedi"), ("kesinlesti", "kesinlesti"))
+
+
+def _akibet_kaynak_sinifla(kaynak):
+    """Kaynak metni 'arac:<ad>' (büyük/küçük harf ve 'araç:' yazımı toleranslı)
+    ise «araç», aksi hâlde «avukat beyanı» sınıfı."""
+    return "araç" if _AKIBET_ARAC_ONEK_RE.match(kaynak or "") else "avukat beyanı"
+
+
+def _sonuc_akibet_sezgisi(sonuc):
+    """--sonuc metninde büyük/küçük harf duyarsız (İ→i, I→ı, ş→s katlamalı)
+    KESİNLEŞTİ / KESİNLEŞMEDİ geçiyorsa ilgili enum'u, yoksa None döndürür."""
+    if not sonuc:
+        return None
+    katli = _ad_fold(_tr_kucuk(sonuc))
+    for anahtar, enum in _AKIBET_SEZGI_SIRASI:
+        if anahtar in katli:
+            return enum
+    return None
+
 
 def _arac_normalize_ve_dogrula(arac_ham):
     """--arac değerini doğrular/normalize eder. Döner: (kanonik_arac, hata)
@@ -797,7 +906,10 @@ def _hucre(s):
 # v0.5.8.5 (A1a): DAMGA= yanına DOKUM-SINIFI= ve DUYULMUS= tokenları da
 # eklendi — kullanıcı-kontrolündeki metin, script'in kendi yazdığı doğrulanmış
 # sınıf/duyulmuş tokenlarıyla da KARIŞAMAZ (aynı ikinci-katman savunma).
-_DAMGA_ENJEKSIYON_RE = re.compile(r"(DAMGA|DOKUM-SINIFI|DUYULMUS)\s*=")
+# v0.5.16 (K5): AKIBET= ve AKIBET-KAYNAK= tokenları da aynı katmandan geçer —
+# serbest --akibet-kaynak/--sonuc metni, script'in kendi yazdığı doğrulanmış
+# akıbet tokenıyla karışamaz (kütükte kalan TEK 'AKIBET=' izi script'indir).
+_DAMGA_ENJEKSIYON_RE = re.compile(r"(DAMGA|DOKUM-SINIFI|DUYULMUS|AKIBET-KAYNAK|AKIBET)\s*=")
 
 
 def _sonuc_damga_ize_karismasin(s):
@@ -830,8 +942,11 @@ def _sonuc_damga_ize_karismasin(s):
     return _DAMGA_ENJEKSIYON_RE.sub(lambda m: m.group(1) + "∶", s or "")
 
 
+# v0.5.16 (K5): **AKIBET:** / **AKIBET-KAYNAK:** satır-başı belirteçleri de
+# kaçışlanır — serbest --akibet-kaynak metni hayalet akıbet satırı üretemez.
 _MUHAKEME_YAPISAL_RE = re.compile(
-    r"(?m)^(\*\*(?:KUNYE|KAYNAK-IZI|DAMGA|DÖKÜM-SINIFI|GEÇERSİZ-KILINDI):\*\*|#{1,6}\s)"
+    r"(?m)^(\*\*(?:KUNYE|KAYNAK-IZI|DAMGA|DÖKÜM-SINIFI|GEÇERSİZ-KILINDI|"
+    r"AKIBET|AKIBET-KAYNAK):\*\*|#{1,6}\s)"
 )
 
 
@@ -1135,6 +1250,59 @@ def cmd_teyit(args):
                  "çağrıda alanların SESSİZCE düşmesi yasaktır (fail-closed, "
                  "sessiz atlama yasağı).")
 
+    # v0.5.16 K5 (Hamle 4) — AKIBET alanları. Ucuz (IO'suz) denetimler dosya
+    # yazımından ÖNCE: bir RET yetim döküm/kütük satırı bırakmaz. Kurallar:
+    # (1) --akibet → --akibet-kaynak ZORUNLU; (2) --akibet-kaynak tek başına
+    # sessizce düşmez (RET); (3) yalnız GETİR + --damga (ARAMA/mevzuat kaydında
+    # RET — sessiz düşme yok; damgasız GETİR zaten yukarıda RET); (4) --akibet
+    # verilmemişse --sonuc'taki KESİNLEŞTİ/KESİNLEŞMEDİ otomatik alınır
+    # (kaynak arac:<arac>, [BİLGİ] görünür). `getattr` — in-process Namespace
+    # çağrıları yeni alanın yokluğunda çökmez.
+    _akibet = getattr(args, "akibet", None)
+    _akibet_kaynak = _ws_norm(getattr(args, "akibet_kaynak", None))
+    _akibet_otomatik = False
+    if _akibet_kaynak and not _akibet:
+        sys.exit("RET: --akibet-kaynak yalnız --akibet ile birlikte verilebilir — "
+                 "akıbetsiz kaynak beyanı SESSİZCE düşürülemez (fail-closed, sessiz "
+                 "atlama yasağı). Ne yapmalı: --akibet kesinlesti|kesinlesmedi|"
+                 "bozuldu|kaldirildi|geri_cevrildi ekleyin ya da --akibet-kaynak'ı "
+                 "kaldırın.")
+    if _akibet:
+        if _akibet not in AKIBET_ENUM:
+            sys.exit(f"RET: --akibet geçersiz enum ('{_akibet}') — "
+                     + "|".join(AKIBET_ENUM) + " olmalı.")
+        if not _akibet_kaynak:
+            sys.exit("RET: --akibet verildiğinde --akibet-kaynak ZORUNLUDUR — kaynaksız "
+                     "akıbet beyanı halüsinasyon yüzeyidir (m.4/m.5). Ne yapmalı: "
+                     "akıbeti araçtan öğrendiysen --akibet-kaynak \"arac:<araç adı>\" "
+                     "(sınıf: araç), UYAP/ilam/dosya kapağından biliyorsan "
+                     "--akibet-kaynak \"<künye veya beyan>\" (sınıf: avukat beyanı — "
+                     "kütükte ve kayıtta GÖRÜNÜR etiketlenir) verin.")
+        if not is_getir:
+            sys.exit("RET: --akibet yalnız GETİR sınıfı araçlarla (ictihat_getir/"
+                     "kurum_karari_getir) ve --damga ile birlikte yazılabilir — ARAMA "
+                     "tam metin döndürmez, mevzuat/kurum kaydında akıbet alanı yoktur; "
+                     "akıbet muhakeme kaydında yaşar, kayıt yalnız --damga ile üretilir "
+                     "(fail-closed, sessiz düşme yasağı — K5).")
+        if not args.damga:
+            sys.exit("RET: --akibet yalnız --damga ile birlikte yazılabilir — akıbet "
+                     "satırı muhakeme kaydında yaşar, kayıt yalnız --damga ile üretilir "
+                     "(fail-closed, sessiz atlama yasağı — K5).")
+    elif is_getir and args.damga:
+        _sezgi = _sonuc_akibet_sezgisi(args.sonuc)
+        if _sezgi:
+            _akibet = _sezgi
+            _akibet_kaynak = f"arac:{args.arac}"
+            _akibet_otomatik = True
+    elif _sonuc_akibet_sezgisi(args.sonuc):
+        # ARAMA/mevzuat kaydında akıbet ifadesi işlenmez — ama SESSİZCE de
+        # geçilmez: GETİR + --damga ritüeline yönlendiren görünür bilgi.
+        print("[BİLGİ] --sonuc metninde akıbet ifadesi (KESİNLEŞTİ/KESİNLEŞMEDİ) var "
+              f"ama {args.arac} kaydında akıbet İŞLENMEZ — akıbet yalnız GETİR + "
+              "--damga ritüelinde (--akibet/--akibet-kaynak ya da otomatik akış) "
+              "kütüğe girer (K5).")
+    _akibet_sinif = _akibet_kaynak_sinifla(_akibet_kaynak) if _akibet else None
+
     if args.damga:
         if args.damga not in DAMGA_ENUM:
             sys.exit(f"RET: --damga geçersiz enum ('{args.damga}') — LEHE|ALEYHE|"
@@ -1334,6 +1502,13 @@ def cmd_teyit(args):
             # ESKİ satırlar okur tarafında 'ilgili-kisim' sayılır (geriye uyum).
             if _dokum_sinifi:
                 sonuc_yazilan += f" DOKUM-SINIFI={_dokum_sinifi}"
+            # v0.5.16 K5 — AKIBET=<enum> hücresi DAMGA= ile AYNI düzende (C2
+            # grubu kütükte `AKIBET=` ile okur); sınıf etiketi GÖRÜNÜR. Kaynak
+            # metni kullanıcı-kontrolündedir → `_sonuc_damga_ize_karismasin`
+            # (tek doğrulanmış AKIBET=/DAMGA= izi script'indir).
+            if _akibet:
+                sonuc_yazilan += (f" AKIBET={_akibet} AKIBET-KAYNAK={_akibet_sinif}: "
+                                  + _sonuc_damga_ize_karismasin(_akibet_kaynak))
             if (args.damga_degistir and ko_mod is not None and son_damga_kutukte is not None
                     and son_damga_kutukte != args.damga):
                 # DÜZELTME (v0.5.5 şerh turu 2 — YENİ-3, KÜÇÜK): gerekçe de
@@ -1381,6 +1556,19 @@ def cmd_teyit(args):
                       "lehte dayanak olamaz; dilekçede atfı varsa ictihat_muhakeme_"
                       "denetim [G5] kapısı TESLİM ENGELİ üretir (damga gözden "
                       "geçirilmeli: --damga-degistir).")
+            # v0.5.16 K5 — akıbet görünürlüğü: otomatik akış SESSİZ değildir;
+            # bozulmuş/kaldırılmış karar LEHE damgalanmışsa kayıt yine yazılır
+            # (kapı oa-kontrol [G5-AKIBET]'tedir, üretici bloklamaz) ama
+            # dilekçede BLOK olacağı şimdiden görünür kılınır.
+            if _akibet_otomatik:
+                print(f"[BİLGİ] akıbet arama sonucundan otomatik alındı: AKIBET={_akibet} "
+                      f"(kaynak {_akibet_sinif}: {_akibet_kaynak}) — yanlışsa --akibet/"
+                      "--akibet-kaynak ile açıkça verin.")
+            if _akibet in ("bozuldu", "kaldirildi") and args.damga == "LEHE":
+                print(f"[BİLGİ] bozulmuş/kaldırılmış karar LEHE damgalandı (AKIBET="
+                      f"{_akibet}) — [G5-AKIBET] kapısı dilekçede BLOKLAR; kayıt yazıldı, "
+                      "damga gözden geçirilmeli (--damga-degistir) ya da karar yalnız "
+                      "iç analizde tutulmalı.")
             if (ko_mod is not None and args.damga_degistir and son_damga_kutukte is not None
                     and son_damga_kutukte != args.damga):
                 degisen = _eski_bolumleri_gecersiz_kil(
@@ -1447,6 +1635,16 @@ def cmd_teyit(args):
                     f.write(f"**AŞILMA-TARİHİ:** {_muhakeme_kacis(_g5_asilma)}\n")
                 if _g5_bitis:
                     f.write(f"**GEÇERLİLİK-BİTİŞ:** {_muhakeme_kacis(_g5_bitis)}\n")
+                # v0.5.16 K5 — AKIBET satırları: KUNYE/KAYNAK-IZI/DAMGA ile
+                # AYNI blokta, TEK satır (`_ws_norm`), biçim C2 okuyucusunun
+                # `^\*\*AKIBET:\*\*\s*(.+)$` deseniyle BİREBİR round-trip;
+                # sınıf etiketi (araç / avukat beyanı) kaynak satırının başında
+                # GÖRÜNÜR. Kaynak metni `_muhakeme_kacis`'ten geçer (komşu
+                # alanlar gibi — tek istisna bırakılmaz).
+                if _akibet:
+                    f.write(f"**AKIBET:** {_akibet}\n")
+                    f.write(f"**AKIBET-KAYNAK:** {_akibet_sinif}: "
+                            f"{_muhakeme_kacis(_ws_norm(_akibet_kaynak))}\n")
                 f.write("\n")
                 f.write("## İLGİLİ-KISIM\n" + _muhakeme_kacis(args.ilgili_kisim.strip()) + "\n\n")
                 f.write("## DAVAYA-BAĞ\n" + _muhakeme_kacis(args.bag.strip()) + "\n\n")
@@ -2150,6 +2348,17 @@ def main():
                          "[G6] triyaj istisnası (duyulmuş + ayırt/çürütme bağlamı) "
                          "bu işareti arar — işaretsiz aleyhe karara preemptive "
                          "ifşa yasağı uygulanır (anayasa m.6)")
+    s.add_argument("--akibet", default=None, choices=list(AKIBET_ENUM),
+                    help="v0.5.16 K5 — kararın AKIBETİ (kesinlesti|kesinlesmedi|bozuldu|"
+                         "kaldirildi|geri_cevrildi); yalnız GETİR + --damga ile; "
+                         "--akibet-kaynak ZORUNLU. Verilmezse --sonuc'taki "
+                         "KESİNLEŞTİ/KESİNLEŞMEDİ otomatik alınır ([BİLGİ] basılır). "
+                         "Kütüğe AKIBET=<enum>, muhakeme kaydına **AKIBET:** yazılır; "
+                         "[G5-AKIBET] kapısı (oa-kontrol) okur")
+    s.add_argument("--akibet-kaynak", dest="akibet_kaynak", default=None,
+                    help="v0.5.16 K5 — akıbetin kaynağı: \"arac:<araç adı>\" → sınıf "
+                         "«araç» (birincil); aksi (künye/UYAP kapağı/ilam beyanı) → sınıf "
+                         "«avukat beyanı» — sınıf etiketi kütükte ve kayıtta GÖRÜNÜR")
     s.add_argument("--sorgu-onayli", dest="sorgu_onayli", action="store_true",
                     help="Layer-0 ucuz sorgu taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN) "
                          "bilinçli biçimde geçer")

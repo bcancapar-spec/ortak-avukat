@@ -61,6 +61,36 @@ uygulamasıdır.
 Okuma çağrıları geçer; durum-değiştiren çağrılar (gönder/değiştir/sil/taşı/paylaş)
 onay ister; UYAP'ta sil ve dışa-paylaş **bloklu**. Bu grid `references/gizlilik-desenleri.md`'de.
 
+## Senkron klasör riski (v0.5.16 — P1-8 / A-11 / B-5)
+
+Meslek sırrının en sık sızma yolu **dış araç çağrısı değil, senkron klasördür.**
+Layer 0 dış çağrıyı süzer; **cihazı ve klasörü korumaz.** Çalışma kökü bir bulut
+senkron klasöründe (OneDrive, "OneDrive - Şirket", Google Drive / My Drive, Dropbox,
+iCloud Drive, Box Sync, Nextcloud, Syncthing) yaşıyorsa `_oa/` (müvekkil verisi,
+künye kütüğü, oturum notları) **ve cephanelik** (antitez/zaaf analizi — anayasa m.6
+iç katman) senkron istemcisi tarafından **hiçbir süzgeçten geçmeden** yurt dışı buluta
+kopyalanır; DENY/ASK kararı o kopyayı görmez bile.
+
+- **Hukuki temel:** 1136 s. Avukatlık Kanunu m.36 — avukatın görevi dolayısıyla
+  öğrendiği hususları açığa vurması yasaktır (sır saklama); KVKK m.6 — sağlık/ceza
+  mahkûmiyeti gibi özel nitelikli veriler ancak sayılı şartlarla işlenebilir; KVKK m.9
+  — kişisel verinin yurt dışına aktarımı yeterlilik kararı / uygun güvence şartına
+  bağlıdır. (Mevzuat MCP teyit 2026-09-06.) Senkron istemcisinin sunucusu çoğu zaman
+  yurt dışındadır; "yalnız yedekliyorum" beyanı aktarım şartını kaldırmaz.
+- **Mekanik uyarı (üretici uç — oa-pipeline):** `oa_hafiza.py init`, çalışma kökünün
+  mutlak yolunu senkron desenlerine karşı tarar; eşleşirse stdout'a görünür UYARI basar
+  ve `_oa/defter/senkron-uyari.json` `{yol, desen, zaman}` bırakır (bloklamaz — karar
+  avukatındır; DURUM.md türetimi `pipeline_kayit.py`'dedir). Desen listesi
+  `references/gizlilik-desenleri.md`'dedir ve **örneklemdir** (anayasa m.3).
+- **Öneri — şifreli konteyner (P2 → P1):** dosya klasörünü senkron dışına taşımak ilk
+  seçenektir; taşınamıyorsa **VeraCrypt konteyneri** ya da **BitLocker ile şifrelenmiş
+  klasör/sürücü** içinde çalışılır — senkron yalnız şifreli kabı görür. Bu, Layer 0'ın
+  boşluğunu (cihaz katmanı) kapatan tek mekanik önlemdir; "dikkatli olurum" beyanı
+  önlem değildir.
+- **Modelin işi:** uyarıyı görünce işi durdurmaz; avukata riski ve öneriyi bir kez açıkça
+  söyler, avukat kararını devir notuna yazar. Script hukuki yorum yapmaz — yalnız yol
+  desenini tanır.
+
 ## Anayasal süzgeç
 Privacy Layer 0 foundational: yerel veri, KVKK + meslek sırrı önce. Bu parça
 **engelleyici** rol oynar; şüphede daima daha kısıtlayıcı kararı seç. UYAP/e-imza
