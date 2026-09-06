@@ -51,8 +51,23 @@ Kullanım (Windows/PowerShell — 'python'):
     deftere APPEND-ONLY iptal/düzeltme kaydı ekler (silme YOK). Kimlik nöbet
     listesindeki `#xxxxxxxx` değeridir; gerekçe zorunludur (denetim izi).
 
+AŞAMA TETİKLİ KAYITLAR (v0.5.16 / I5 — P1-3 / A-10)
+Bazı usul süreleri takvimle değil yargılamanın bir AŞAMASIYLA kapanır (ilk
+itiraz cevap dilekçesiyle — HMK m.117/1; delil bildirimi dilekçeler aşamasında
+— m.119/1-f, m.129/1-e, m.145; ıslah tahkikat bitene kadar — m.177/1; katılma
+hüküm verilinceye kadar — CMK m.237). Bunlar deftere `{"tur": "asama",
+"asama": ..., "pipeline_adimi": N, "aciklama": ..., "kural": ...}` olarak
+girer — son_gun/tarih alanı YOKTUR (hesapla_sure.py --kural <asama_kurali>
+--kok . yazar). Nöbetçi bu kayıtları AYRI blokta `[≡]` işaretiyle gösterir,
+TARİH SAYIMINA VE ACİL SINIFINA KATMAZ, bozuk da saymaz; yalnız aşama kaydı
+varsa exit 0'dır (exit sözleşmesi değişmedi). Aşama sınıfı YALNIZ açık
+`tur: asama` ile tanınır — tarihsiz ve tur'suz kayıt yine BOZUK'tur
+(fail-closed). Ceza kolundaki katılma anı deseni (v0.5.13, oa-musteki-vekili
+"olay tetikli kırmızı bayrak") hukuk koluna bu sınıfla genellendi.
+
 İşaretçiler (ASCII):
   [!!!] GEÇMİŞ veya BUGÜN (son gün) · [!] yaklaşan (D-1..D-7) · [ ] ileri
+  [≡] AŞAMA TETİKLİ (pipeline adımına bağlı; tarih yok — sayılmaz)
   [×] iptal edilmiş / düzeltilmiş (nöbet dışı — sayılmaz) · [?] okunamayan
 Çıkış kodu:
   0 = defter yok / boş ya da hiçbir süre acil değil (ve --iptal başarılı)
@@ -104,13 +119,32 @@ def _kayitlari_al(veri):
     return None
 
 
+ASAMA_TUR = "asama"   # v0.5.16 / I5 — hesapla_sure.py ASAMA_TUR ile aynı değer
+
+
 def _tur_etiketi(kayit):
     tur = ""
     if isinstance(kayit, dict):
         tur = str(kayit.get("tur") or "").strip().lower()
-    if tur in ("usul", "maddi"):
+    if tur in ("usul", "maddi", ASAMA_TUR):
         return "[%s]" % tur
     return "[—]"
+
+
+def _asama_mi(kayit):
+    """v0.5.16 / I5 — kayıt AŞAMA TETİKLİ mi? YALNIZ açık `tur: asama` ile
+    (fail-closed: tarihsiz ama tur'suz kayıt aşama SAYILMAZ, bozuk kalır)."""
+    return (isinstance(kayit, dict)
+            and str(kayit.get("tur") or "").strip().lower() == ASAMA_TUR)
+
+
+def _asama_bilgi(kayit):
+    """(asama_metni, pipeline_adimi|None) — eksik alan görünür '?' olur, çökmez."""
+    asama = str(kayit.get("asama") or "").strip() or "(aşama belirtilmemiş)"
+    adim = kayit.get("pipeline_adimi")
+    if isinstance(adim, bool) or not isinstance(adim, int):
+        adim = None
+    return asama, adim
 
 
 def _aciklama(kayit):
@@ -356,8 +390,8 @@ def main():
     for kayit in kayitlar:
         kapatilan.update(_iptal_hedefleri(kayit))
 
-    # ── ayrıştır: aktif / kapatılmış / bozuk-tarihsiz / saf düzeltme ───────
-    gecerli, bozuk, kapali, duzeltme = [], [], [], []
+    # ── ayrıştır: aktif / kapatılmış / bozuk-tarihsiz / saf düzeltme / AŞAMA ─
+    gecerli, bozuk, kapali, duzeltme, asama = [], [], [], [], []
     for kayit in kayitlar:
         kimlik = _kayit_kimligi(kayit)
         gun, ham = _son_gun(kayit)
@@ -371,6 +405,11 @@ def main():
                 continue
         if kimlik in kapatilan or _kendi_kapali_mi(kayit):
             kapali.append((kimlik, ham, _tur_etiketi(kayit), _aciklama(kayit)))
+            continue
+        if _asama_mi(kayit):
+            # v0.5.16 / I5 — AŞAMA TETİKLİ: tarih yok → sayılmaz, bozuk değil,
+            # acil değil; ayrı blokta görünür (sessiz kaçış yok).
+            asama.append((kimlik, _asama_bilgi(kayit), _aciklama(kayit), _kural(kayit)))
             continue
         if gun is None:
             bozuk.append((kimlik, ham, _tur_etiketi(kayit), _aciklama(kayit)))
@@ -396,6 +435,8 @@ def main():
         ekler.append("%d bozuk" % len(bozuk))
     if kapali:
         ekler.append("%d iptal/düzeltildi" % len(kapali))
+    if asama:
+        ekler.append("%d aşama tetikli (tarih sayımı dışı)" % len(asama))
     print("Özet: %d GEÇMİŞ · %d BUGÜN · %d YAKLAŞAN · %d İLERİ  (toplam %d kayıt%s)"
           % (sayac["GECMIS"], sayac["BUGUN"], sayac["YAKLASAN"], sayac["ILERI"],
              len(kayitlar), (", " + ", ".join(ekler)) if ekler else ""))
@@ -405,6 +446,20 @@ def main():
     for g in gecerli:
         _yaz_kayit(g["isaret"], g["gun"].isoformat(), g["etiket"], g["tur"],
                    g["aciklama"], g["kimlik"])
+
+    if asama:
+        # v0.5.16 / I5 — AYRI BLOK: takvim listesine karışmaz, sayılmaz.
+        print()
+        print("AŞAMA TETİKLİ — tarih yok; pipeline adımına bağlı (sayılmaz, acil sınıfı dışı):")
+        for kimlik, (asama_metni, adim), aciklama, kural in sorted(
+                asama, key=lambda x: (x[1][1] if x[1][1] is not None else 99, x[2])):
+            adim_metni = ("adım %d tamamlanmadan" % adim) if adim is not None \
+                else "pipeline adımı BELİRSİZ (kaydı düzelt) —"
+            print("[≡]   AŞAMA TETİKLİ — %s bu işlem yapılmalı: %s  [%s] #%s %s"
+                  % (adim_metni, aciklama, asama_metni, kimlik,
+                     ("(%s)" % kural) if kural else ""))
+        print("      Aşamanın kapanıp kapanmadığı DOSYADAN teyit edilir; kapandıysa "
+              "`--iptal <kimlik> --gerekce \"...\"` ile nöbetten düşür (append-only).")
 
     if kapali:
         print()
@@ -462,7 +517,11 @@ def main():
         print("DİKKAT: " + ", ".join(parcalar) + " — derhâl kontrol et; dış takvimle eşgüdümü doğrula.")
         print(CIZGI)
         sys.exit(3)
-    print("Acil süre yok — tüm kayıtlar ileri tarihli. (Yine de dış takvimle eşgüdümü koru.)")
+    if asama and not gecerli:
+        print("Acil takvim süresi yok — yalnız aşama tetikli kayıt var (yukarıdaki blok; "
+              "dosyanın aşamasına göre takip et).")
+    else:
+        print("Acil süre yok — tüm kayıtlar ileri tarihli. (Yine de dış takvimle eşgüdümü koru.)")
     print(CIZGI)
     sys.exit(0)
 

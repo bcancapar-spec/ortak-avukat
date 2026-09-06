@@ -146,7 +146,8 @@ def test_asama_kurali_teblig_verilse_bile_tarih_uretmez(tmp_path):
     assert kod == 0, metin
     assert "HESAPLANAN SON GÜN" not in metin
     assert "2026-06-03" not in metin and "2026-05-21" not in metin
-    assert "kullanılmadı" in metin.lower() or "kullanılmaz" in metin.lower(), metin
+    # not: .lower() Türkçe 'I'→'i' verir (ı değil) — büyük harfle doğrudan ara
+    assert "KULLANILMADI" in metin or "kullanılmadı" in metin, metin
 
 
 def test_asama_kurali_json_ciktisi(tmp_path):
