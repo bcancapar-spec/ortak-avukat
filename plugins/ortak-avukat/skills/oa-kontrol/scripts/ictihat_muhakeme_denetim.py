@@ -86,6 +86,10 @@ G6 (ENGEL — TRİYAJ, v0.5.8.5/A1): dilekçedeki HER künye için üç şart �
    anılmıyorsa "FARKINDALIK KAYBI" uyarısı. Ayrıntı: `triyaj_denetimi` /
    `farkindalik_denetimi` docstring/yorumları.
 
+v0.5.16 EKLERİ: G2 EKSİK KÜNYE (K4 — tarih-only/K-only/E-only atıf BLOK,
+`eksik_kunye_bloklari`), [G5-AKIBET] (K5 — bozulmuş/kaldırılmış karar LEHE
+dayanak olamaz, `akibet_denetimi`), G11 (örtüşme sayacı «(1)…;(2)…;(3)…»).
+
 Paylaşımlı `kunye_normalize()` — bkz. `kunye_ortak.py` (M2-3'te `kunye_teyit.py`
 ile PAYLAŞILMASI planlanan ortak yardımcı; esas/karar normalizasyon mantığı).
 
@@ -169,6 +173,17 @@ GECERLILIK_BITIS_LINE_RE = re.compile(r"^\*\*GEÇERLİLİK-BİTİŞ:\*\*\s*(.+)$
 # tokenı yazar. Satır/token YOKSA kayıt geriye-uyumla 'ilgili-kisim' sayılır
 # (sınıfsız eski kayıt = ilgili-kisim; tam-okuma iddiası VARSAYILMAZ).
 DOKUM_SINIFI_LINE_RE = re.compile(r"^\*\*DÖKÜM-SINIFI:\*\*\s*(.+)$", re.M)
+# v0.5.16 [G5-AKIBET] (K5, Hamle 4) — kararın AKIBETİ: D grubunun
+# `oa_hafiza.py teyit --akibet` bayrağı muhakeme kaydına «**AKIBET:**» +
+# «**AKIBET-KAYNAK:**» satırlarını (ASAN_KAYNAK_LINE_RE ile aynı biçim),
+# kütük hücresine «AKIBET=<enum>» tokenını yazar. Bu script yalnız OKUR:
+# bozulmuş/kaldırılmış bir karar LEHE dayanak olamaz (HMK m.371 bozma,
+# m.353/1-a kaldırma — Mevzuat MCP teyit 2026-09-06); kesinleşmemiş karar
+# dayanak olabilir ama akıbeti İZLENMELİDİR (kanun yolu açık).
+AKIBET_LINE_RE = re.compile(r"^\*\*AKIBET:\*\*\s*(.+)$", re.M)
+AKIBET_KAYNAK_LINE_RE = re.compile(r"^\*\*AKIBET-KAYNAK:\*\*\s*(.+)$", re.M)
+AKIBET_ENUM = {"kesinlesti", "kesinlesmedi", "bozuldu", "kaldirildi", "geri_cevrildi"}
+_AKIBET_OLU = {"bozuldu", "kaldirildi"}   # LEHE dayanak OLAMAZ sınıfı
 _DOKUM_SINIFI_TOKEN_RE = re.compile(r"DOKUM-SINIFI=([A-Za-zçğıöşüÇĞİÖŞÜ-]+)")
 _DUYULMUS_TOKEN_RE = re.compile(r"DUYULMUS=EVET")
 # Kütük hücresindeki DAMGA tokenı — `kunye_ortak._DAMGA_TOKEN_RE` ile aynı
@@ -201,12 +216,25 @@ def _bolum_al(metin, baslik):
 
 GECERSIZ_KILINDI_RE = re.compile(r"^\*\*GEÇERSİZ-KILINDI:\*\*", re.M)
 
+_AKIBET_FOLD = str.maketrans("çÇğĞıİöÖşŞüÜ", "cCgGiIoOsSuU")
+
+
+def _akibet_normalize(ham):
+    """K5 — «kesinleşti»/«Kesinleşmedi»/«geri çevrildi» gibi yazımları enum
+    biçimine indirger (Türkçe harf katlama + boşluk/tire → alt çizgi). Enum
+    dışı değer olduğu gibi (katlanmış) döner; çağıran görünür uyarı basar."""
+    if ham is None:
+        return None
+    s = ham.strip().translate(_AKIBET_FOLD).lower()
+    s = re.sub(r"[\s-]+", "_", s)
+    return s or None
+
 
 class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
                  "gecersiz", "kaynak_url", "asan_kaynak", "asilma_tarihi",
-                 "gecerlilik_bitis", "dokum_sinifi")
+                 "gecerlilik_bitis", "dokum_sinifi", "akibet", "akibet_kaynak")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -246,6 +274,13 @@ class MuhakemeKaydi:
         # 'ilgili-kisim' (sınıfsız eski kayıt tam-okuma İDDİA EDEMEZ).
         m = DOKUM_SINIFI_LINE_RE.search(metin)
         self.dokum_sinifi = m.group(1).strip().lower() if m else "ilgili-kisim"
+
+        # v0.5.16 [G5-AKIBET] — ikisi de opsiyonel; satır yoksa None
+        # (geriye uyum: AKIBET'siz eski kayıt kapıyı hiç ateşlemez).
+        m = AKIBET_LINE_RE.search(metin)
+        self.akibet = _akibet_normalize(m.group(1)) if m else None
+        m = AKIBET_KAYNAK_LINE_RE.search(metin)
+        self.akibet_kaynak = m.group(1).strip() if m else None
 
         self.ilgili_kisim = _bolum_al(metin, "İLGİLİ-KISIM")
         # R4: eski "İLLİYET" alanı DAVAYA-BAĞ oldu (oa-illiyet nedensellik
@@ -506,7 +541,13 @@ def ortusme_zenginligi_uyarisi(kayit):
         return None
     madde_sayisi = len(re.findall(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+\S", metin))
     cumle_sayisi = len([s for s in re.split(r"(?<=[.!?])\s+", metin) if s.strip()])
-    nokta = max(madde_sayisi, cumle_sayisi)
+    # G11 (v0.5.16, Hamle 11) — «(1)…; (2)…; (3)…» parantezli iç sıralama ve
+    # «;» ayraçlı sıralama da SAYILIR: tek paragrafa sıkıştırılmış üç somut
+    # nokta 'tek cümle' sanılıp «yüzeysel» uyarısı almıyor artık (saha: model
+    # ÖRTÜŞME'yi çoğu kez tek satırda parantezli yazıyor — sayaç körüydü).
+    parantez_sayisi = len(re.findall(r"\(\s*(?:\d{1,2}|[a-zçğıöşü])\s*\)", metin))
+    nv_parca_sayisi = len([p for p in metin.split(";") if p.strip()]) if ";" in metin else 0
+    nokta = max(madde_sayisi, cumle_sayisi, parantez_sayisi, nv_parca_sayisi)
     if nokta < ORTUSME_MIN_NOKTA:
         return (f"DAVAYA-BAĞ (ÖRTÜŞME) yalnız ~{nokta} somut nokta içeriyor gibi görünüyor "
                 f"(önerilen ≥{ORTUSME_MIN_NOKTA}) — yüzeysel/tek-cümlelik örtüşme beyanı "
@@ -531,6 +572,28 @@ def taslaktaki_atiflari_bul(metin):
         gorulen.add(anahtar)
         tekil.append(a)
     return tekil
+
+
+def eksik_kunye_bloklari(metin):
+    """K4 (v0.5.16, Hamle 3 / Karar #3) — G2 EKSİK KÜNYE: merci anılan bir
+    satırda tarih-only («12.03.2019 tarihli kararı») ya da K-only/E-only
+    («K. 2021/2222 sayılı kararı») atıf varsa bu bir 'atıf yok' değil,
+    ESAS+KARAR ÇİFTİ EKSİK bir atıftır — muhakeme kaydıyla eşleştirilemez,
+    dolayısıyla G2 anlamında ÇIPLAKTIR → BLOK. Genel 'ayrıştırılamayan'
+    sınıf da (karar iması var, hiçbir kalıp tanınmadı) aynı gerekçeyle BLOK
+    (kunye_teyit.py B-2 ile simetrik — fail-closed). Döner: [str]."""
+    bloklar = []
+    for iz in ko.ayristirilamayan_atiflar(metin):
+        if iz.get("sinif") == ko.SINIF_EKSIK_KUNYE:
+            bloklar.append(
+                f"(satır {iz['satir_no']}) EKSİK KÜNYE — tarih-only/K-only atıf; "
+                "esas+karar tamamlanmalı (Yargıtay birleşik biçimi kullanır, "
+                f"tanıyıcı artık görür): {iz['metin']}  ↳ {iz['sebep']}")
+        else:
+            bloklar.append(
+                f"(satır {iz['satir_no']}) AYRIŞTIRILAMAYAN ATIF — künye çıkarılamadı, "
+                f"muhakeme kaydıyla eşleştirilemez: {iz['metin']}  ↳ {iz['sebep']}")
+    return bloklar
 
 
 def _daire_goster(daire_key):
@@ -672,7 +735,7 @@ def _atif_denetle(atif, kayitlar, kok, dokum_dizin, kutuk_yolu=None):
 
 
 def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk_bos_mu,
-              tip=None, gecersiz_sayisi=0, kutuk_kullanimda_mi=True):
+              tip=None, gecersiz_sayisi=0, kutuk_kullanimda_mi=True, eksik_bloklar=()):
     print("=" * 72)
     print("İÇTİHAT MUHAKEME DENETİMİ — oa-kontrol (deterministik, YAPISAL)")
     print("=" * 72)
@@ -737,10 +800,20 @@ def rapor_yaz(taslak_yolu, atiflar, sonuclar, muhakeme_dizin, dokum_dizin, kutuk
             for u in uyarilar:
                 print(f"       ⚠ {u}")
 
+    # K4 (v0.5.16) — G2 EKSİK KÜNYE: tarih-only/K-only/E-only atıf da çıplak
+    # atıftır; muhakeme kaydıyla eşleşemeyeceğinden G2 anlamında BLOK.
+    if eksik_bloklar:
+        print("\n" + "-" * 72)
+        print(f"[G2] EKSİK/AYRIŞTIRILAMAYAN KÜNYE ({len(eksik_bloklar)}) — K4, fail-closed")
+        print("-" * 72)
+        for b in eksik_bloklar:
+            print(f"[BLOK] ✗ {b}")
+            genel_engel = True
+
     print("\n" + "-" * 72)
-    blok_sayisi = sum(1 for (d, *_r) in sonuclar if d == "BLOK")
-    ok_sayisi = len(sonuclar) - blok_sayisi
-    print(f"ÖZET: {len(atiflar)} atıf  |  OK {ok_sayisi}  |  BLOK {blok_sayisi}")
+    ok_sayisi = sum(1 for (d, *_r) in sonuclar if d == "OK")
+    blok_sayisi = (len(sonuclar) - ok_sayisi) + len(eksik_bloklar)   # K4: eksik künyeler de BLOK
+    print(f"ÖZET: {len(atiflar) + len(eksik_bloklar)} atıf  |  OK {ok_sayisi}  |  BLOK {blok_sayisi}")
     if genel_engel:
         print("SONUÇ: TESLİM ENGELİ — çıplak/eksik/ALEYHE atıf(lar) giderilmeden dilekçe "
               "teslime hazır sayılamaz.")
@@ -835,6 +908,80 @@ def asilmis_ictihat_denetimi(atiflar, kayitlar):
                 f"{k.kunye_ham or k.dosya}: AŞILMIŞ içtihat (damga: "
                 f"{k.damga or 'yok'}; aşan: {asan}) — bilgi: karşı tarafça "
                 f"ileri sürülürse aşan kaynak cephanelik kozudur.")
+    return bloklar, uyarilar
+
+
+def akibet_denetimi(atiflar, kayitlar, kutuk):
+    """v0.5.16 [G5-AKIBET] (K5, Hamle 4) — AKIBET TÜKETİCİSİ.
+
+    Kaynak: muhakeme kaydının «**AKIBET:**» satırı VE/VEYA kütükteki
+    (append-only) SON «AKIBET=» tokenı (`kunye_ortak.kutukten_son_akibet`);
+    kütük varsa kütük ESAS alınır (damga çapraz kontrolüyle simetrik — elle
+    düzenlenen kayıt kütüğü ezemez), ikisi çelişiyorsa görünür UYARI.
+
+    Kural (G5 ile aynı exit sözleşmesi — bloklar → engel):
+      DAMGA=LEHE ∧ AKIBET∈{bozuldu,kaldirildi} ∧ dilekçede atıf → BLOK
+        («bozulmuş/kaldırılmış karar LEHE dayanak olamaz» — HMK m.371 bozma,
+        m.353/1-a kaldırma; Mevzuat MCP teyit 2026-09-06);
+      LEHE ∧ {bozuldu,kaldirildi} ∧ dilekçede YOK → UYARI (kütük hijyeni);
+      LEHE ∧ kesinlesmedi → UYARI («kesinleşmemiş — akıbet izlenmeli, kanun
+        yolu açık»); LEHE ∧ geri_cevrildi → UYARI (esasa ilişkin hüküm yok,
+        akıbet belirsiz — izlenmeli);
+      ALEYHE/ALEYHE-AYIRT ∧ {bozuldu,kaldirildi} → UYARI (cephanelik bilgisi:
+        aleyhe kararın bozulmuş olması karşı tarafın dayanağını zayıflatır);
+      kesinlesti → sessiz; AKIBET hiç yoksa kapı ateşlemez (geriye uyum);
+      enum dışı değer → görünür UYARI, BLOK değil (script yorum yapmaz).
+    Döner: (bloklar, uyarilar) — her ikisi [str]."""
+    bloklar, uyarilar = [], []
+    for k in kayitlar:
+        kutuk_akibet = ko.kutukten_son_akibet(kutuk, k.esas, k.karar, k.daire) if kutuk else None
+        akibet = kutuk_akibet or k.akibet
+        if not akibet:
+            continue
+        etiket = k.kunye_ham or k.dosya
+        kaynak = k.akibet_kaynak or "akıbet kaynağı belirtilmemiş"
+        if kutuk_akibet and k.akibet and kutuk_akibet != k.akibet:
+            uyarilar.append(
+                f"{etiket}: muhakeme kaydındaki AKIBET ('{k.akibet}') kütükteki son "
+                f"AKIBET ('{kutuk_akibet}') ile uyuşmuyor — kütük esas alındı; kayıt "
+                "yeni bir `teyit --akibet` satırıyla güncellenmeli.")
+        if akibet not in AKIBET_ENUM:
+            uyarilar.append(
+                f"{etiket}: tanınmayan AKIBET değeri ('{akibet}') — enum "
+                "{kesinlesti|kesinlesmedi|bozuldu|kaldirildi|geri_cevrildi} dışı; "
+                "akıbet MEKANİK denetlenemedi (bloklamaz; avukat gözü).")
+            continue
+        atifta_var = any(k.eslesir(a["esas"], a["karar"], a.get("daire_key"))
+                         for a in atiflar)
+        akibet_tr = {"bozuldu": "bozulmuş", "kaldirildi": "kaldırılmış"}.get(akibet, akibet)
+        if k.damga == "LEHE":
+            if akibet in _AKIBET_OLU:
+                if atifta_var:
+                    bloklar.append(
+                        f"{etiket}: DAMGA=LEHE ama karar {akibet_tr.upper()} "
+                        f"(AKIBET={akibet}; kaynak: {kaynak}) — bozulmuş/kaldırılmış "
+                        "karar LEHE dayanak olamaz; dilekçeden çıkarın ya da "
+                        "bozma/kaldırma sonrası kesinleşen kararı teyit edip onu kullanın.")
+                else:
+                    uyarilar.append(
+                        f"{etiket}: kütükte LEHE damgalı ama {akibet_tr} "
+                        f"(AKIBET={akibet}) — dilekçede kullanılmamış; damga gözden "
+                        "geçirilmeli (--damga-degistir).")
+            elif akibet == "kesinlesmedi":
+                uyarilar.append(
+                    f"{etiket}: LEHE dayanak KESİNLEŞMEMİŞ (AKIBET=kesinlesmedi; kaynak: "
+                    f"{kaynak}) — kesinleşmemiş — akıbet izlenmeli, kanun yolu açık; "
+                    "bozulursa dayanak düşer (bloklamaz).")
+            elif akibet == "geri_cevrildi":
+                uyarilar.append(
+                    f"{etiket}: LEHE dayanağın son akıbeti GERİ ÇEVİRME (AKIBET="
+                    "geri_cevrildi) — esasa ilişkin bir hüküm değildir, kesinleşme "
+                    "durumu belirsiz; akıbet izlenmeli (bloklamaz).")
+        elif akibet in _AKIBET_OLU:
+            uyarilar.append(
+                f"{etiket}: {k.damga or 'damgasız'} karar {akibet_tr} (AKIBET={akibet}; "
+                f"kaynak: {kaynak}) — cephanelik bilgisi: karşı taraf bu karara "
+                "dayanırsa bozma/kaldırma kozdur (bloklamaz).")
     return bloklar, uyarilar
 
 
@@ -1086,16 +1233,22 @@ def main():
     with open(args.taslak, encoding="utf-8", errors="replace") as f:
         metin = f.read()
 
+    # B-18 (v0.5.14) — makine üretimi kaynakça bloğu taslağın GÖVDESİ değildir
+    # (kunye_teyit.py ile simetrik; K4 EKSİK KÜNYE taraması da bloğu görmez).
+    metin = ko.makine_blogu_maskele(metin)
+
     atiflar = taslaktaki_atiflari_bul(metin)
     kayitlar, gecersiz_sayisi = muhakeme_kayitlarini_yukle(muhakeme_dizin)
 
     sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin, kutuk_yolu) for a in atiflar]
+    eksik_bloklar = eksik_kunye_bloklari(metin)   # K4 (v0.5.16) — G2 EKSİK KÜNYE
 
     kutuk_kullanimda = ko.kutuk_gercek_veri_var_mi(kutuk_yolu)
     engel_var = rapor_yaz(args.taslak, atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
                            kutuk_bos_mu=not kayitlar and not gecersiz_sayisi, tip=args.tip,
                            gecersiz_sayisi=gecersiz_sayisi,
-                           kutuk_kullanimda_mi=kutuk_kullanimda)
+                           kutuk_kullanimda_mi=kutuk_kullanimda,
+                           eksik_bloklar=eksik_bloklar)
 
     url_bloklar, url_uyarilar = kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar)
     if url_bloklar or url_uyarilar:
@@ -1124,6 +1277,21 @@ def main():
             engel_var = True
             print("SONUÇ-EK: TESLİM ENGELİ — İBK/kanun değişikliği/daire "
                   "kaymasıyla aşılmış içtihat LEHE dayanak olarak kullanılamaz.")
+
+    ak_bloklar, ak_uyarilar = akibet_denetimi(atiflar, kayitlar, kutuk_yolu)
+    if ak_bloklar or ak_uyarilar:
+        print("\n" + "-" * 72)
+        print("[G5-AKIBET] KARAR AKIBETİ (v0.5.16 — bozulmuş/kaldırılmış karar LEHE "
+              "dayanak olamaz; kesinleşmemiş karar izlenir)")
+        print("-" * 72)
+        for b in ak_bloklar:
+            print(f"  ✗ {b}")
+        for u in ak_uyarilar:
+            print(f"  ⚠ {u}")
+        if ak_bloklar:
+            engel_var = True
+            print("SONUÇ-EK: TESLİM ENGELİ — bozulmuş/kaldırılmış karar LEHE dayanak "
+                  "olarak dilekçede kalamaz (HMK m.371 bozma / m.353 kaldırma).")
 
     g6_bloklar, g6_uyarilar, g6_bilgiler = triyaj_denetimi(
         metin, atiflar, sonuclar, kutuk_yolu, kutuk_kullanimda)

@@ -38,7 +38,13 @@ for _s in (_sys.stdout, _sys.stderr):
 import os
 import re
 
-_YN = r"\d{4}\s*/\s*\d{1,6}"
+# ── K4 (v0.5.16, Hamle 3) — KURUL ESAS BİÇİMİ ────────────────────────────
+# Yargıtay HGK/CGK (ve İBK) esas numarası «YYYY/<daire>-<sıra>» biçimlidir
+# (ör. «E. 2020/9-111»). Eski `_YN` bunu «2020/9» diye KESİYORDU — künye
+# yanlış kanonikleşince kütük/döküm eşleşmesi de yanlış oluyordu. Tire
+# soneki artık sayının parçasıdır; ama «-YYYY/N» (E-K birleşik ikinci
+# yarısı) yutulmasın diye tire sonrasının «/» ile devam etmemesi şart.
+_YN = r"\d{4}\s*/\s*\d{1,6}(?:-\d{1,6}(?!\s*/))?"
 
 # ── B-2 DÜZELTMESİ (v0.5.14) — DESEN KÖRLÜĞÜ ───────────────────────────────
 # Denetim kanıtı (2026-08-31, her satır ayrı koşturuldu): `E. 2020/1111,
@@ -203,6 +209,61 @@ def _ozel_kunye_atiflari(metin, dolu_spanlar):
     return ekler
 
 
+# ── K4 (v0.5.16, Hamle 3 / Karar #4) — BİRLEŞİK E-K BİÇİMİ ─────────────────
+# Yargıtay künyesi sahada sık «2020/1111-2021/2222» ya da aynı yılda
+# «2019/4444-5555» (esas-karar tireyle birleşik, etiketsiz) yazılır. Eski
+# tanıyıcı bu biçimi ne ayrıştırıyor ne de EKSİK sayıyordu — «sayılı» iması
+# yüzünden yalnız 'ayrıştırılamadı' bloğuna düşüyordu. Şimdi TAM künyeye
+# (esas+karar) AYRIŞTIRILIR. İki koruma: (1) merci anılan satırla sınırlı
+# (mercisiz sayı çifti tarih/telefon/tutar olabilir — yanlış-teyit yasağı);
+# (2) KURUL mercilerinde (HGK/CGK/İBK/İDDK/VDDK) «YYYY/N-N» daire-sıra
+# biçimli TEK esas numarasıdır (bkz. `_YN`), E-K diye BÖLÜNMEZ — o satır
+# etiketsizse EKSİK KÜNYE sınıfına düşer (fail-closed).
+_KURUL_MERCI_RE = re.compile(
+    r"\b(?:HGK|CGK|[İI]BK|[İI]DDK|VDDK|Hukuk\s+Genel\s+Kurulu|Ceza\s+Genel\s+Kurulu|"
+    r"[İI]çtihad[ıi]\s+Birle[şs]tirme)\b")
+BIRLESIK_EK_RE = re.compile(
+    r"(?<![\d/.-])(\d{4})\s*/\s*(\d{1,6})\s*[-–]\s*(?:(\d{4})\s*/\s*)?(\d{1,6})(?![\d/.-])")
+
+
+def _satir_metni(metin, konum):
+    bas = metin.rfind("\n", 0, konum) + 1
+    son = metin.find("\n", konum)
+    return metin[bas:(son if son != -1 else len(metin))]
+
+
+def _birlesik_ek_atiflari(metin, dolu_spanlar):
+    """K4 — etiketsiz birleşik «YYYY/N-N» / «YYYY/N-YYYY/N» çiftlerini esas+karar
+    olarak döndürür (merci anılan, kurul olmayan satırlarda; dolu spanlarla
+    örtüşmeyen eşleşmeler)."""
+    ekler = []
+    for m in BIRLESIK_EK_RE.finditer(metin):
+        if _cakisir((m.start(), m.end()), dolu_spanlar):
+            continue
+        satir = _satir_metni(metin, m.start())
+        if not MERCI_RE.search(satir) or _KURUL_MERCI_RE.search(satir):
+            continue
+        esas = f"{m.group(1)}/{m.group(2)}"
+        karar = f"{m.group(3) or m.group(1)}/{m.group(4)}"
+        bas, son = m.start(), m.end()
+        pencere = metin[max(0, bas - 70):bas]
+        merci_bulunan = list(MERCI_RE.finditer(pencere))
+        if merci_bulunan:
+            bas = max(0, bas - 70) + merci_bulunan[0].start()
+        ham_kunye = metin[bas:son]
+        ekler.append({
+            "esas": esas,
+            "karar": karar,
+            "daire_key": daire_key(ham_kunye),
+            "kunye_turu": "esas_karar",
+            "bicim": "birlesik",
+            "satir_no": _satir_no(metin, m.start()),
+            "metin": _sikistir(ham_kunye),
+            "bas": bas, "son": son,
+        })
+    return ekler
+
+
 def esas_karar_atiflari(metin):
     """Belge-geneli çıkarım: her esas'ı en yakın kararla eşler (nearest-pairing);
     her atıf için {esas, karar, merci, daire_key, satir_no, metin} sözlüğü döner.
@@ -210,7 +271,11 @@ def esas_karar_atiflari(metin):
     v0.5.14 (B-2): sözlüğe İKİ EK ALAN girdi — `kunye_turu`
     ('esas_karar' | 'aym_bb' | 'aihm_basvuru') ve ham `bas`/`son` ofsetleri.
     Alanlar EKLEMELİDİR (eski okuyucular etkilenmez); AYM/AİHM künyeleri de
-    artık bu listeye girer."""
+    artık bu listeye girer.
+
+    v0.5.16 (K4): etiketsiz BİRLEŞİK «YYYY/N-N sayılı» biçimi de esas+karar
+    olarak girer (`_birlesik_ek_atiflari`; `bicim='birlesik'` ek alanı);
+    kurul (HGK/CGK) «YYYY/N-N» esas numarası tek sayı olarak korunur."""
     esaslar, kararlar = _esas_karar_ham_cikar(metin)
 
     kullanilan_k = set()
@@ -247,6 +312,9 @@ def esas_karar_atiflari(metin):
             "metin": _sikistir(ham_kunye),
             "bas": bas, "son": son,
         })
+    birlesik = _birlesik_ek_atiflari(metin, dolu_spanlar)
+    dolu_spanlar.extend((a["bas"], a["son"]) for a in birlesik)
+    atiflar.extend(birlesik)
     atiflar.extend(_ozel_kunye_atiflari(metin, dolu_spanlar))
     atiflar.sort(key=lambda a: a["bas"])
     return atiflar
@@ -261,32 +329,87 @@ def esas_karar_atiflari(metin):
 # karar iması bulunup o satırdan HİÇ künye çıkarılamamasıdır.
 _KARAR_IMASI_RE = re.compile(
     r"\d{4}\s*/\s*\d{1,6}"
-    r"|(?i:say[ıi]l[ıi]\s+karar)"
-    r"|(?i:tarih(?:li|inde)?\s+karar)"
-    r"|(?i:g[üu]nl[üu]\s+karar)")
+    r"|(?i:say[ıi]l[ıi]\s+(?:karar|ilam))"
+    r"|(?i:tarih(?:li|inde)?\s+(?:karar|ilam))"
+    r"|(?i:g[üu]nl[üu]\s+(?:karar|ilam))")
+
+# ── K4 (v0.5.16, Hamle 3 / Karar #3) — «EKSİK KÜNYE» SINIFI ───────────────
+# İki alt biçim: (a) TARİH-ONLY «<merci> … dd.mm.yyyy tarihli kararı/ilamı»
+# (tarih tek başına künye DEĞİLDİR — aynı gün aynı daire onlarca karar verir);
+# (b) K-ONLY / E-ONLY «<merci>'nin YYYY/N sayılı kararı» (tek sayı; etiketli
+# «K. 2021/2222» ya da «E. 2020/1111» dahil). Bunlar 'ayrıştırılamadı' değil,
+# 'EKSİK' künyedir: yazar hangi kararı kastettiğini biliyor ama esas+karar
+# çiftini yazmamış — mesaj tamamlatmaya yöneltir (Yargıtay birleşik biçimi
+# «YYYY/N-YYYY/N» artık tanınır, bkz. `_birlesik_ek_atiflari`).
+# «tarihli» kelimesi mevzuat tarihiyle («28.02.2018 tarihli Resmî Gazete»)
+# karışmasın: tetik MERCİ ANILAN SATIRLA sınırlıdır ve «tarihli/günlü» ancak
+# «karar/ilam» ile bitişikse imadır (yanlış-BLOK yasağı).
+SINIF_EKSIK_KUNYE = "EKSİK KÜNYE"
+SINIF_AYRISTIRILAMAYAN = "AYRIŞTIRILAMAYAN"
+_TARIH_ONLY_RE = re.compile(
+    r"\d{1,2}[./]\d{1,2}[./]\d{4}\s*(?i:tarih(?:li|inde)?|g[üu]nl[üu])\s+(?i:karar|ilam)")
+_YN_SADE_RE = re.compile(r"\d{4}\s*/\s*\d{1,6}")
+
+
+def _satir_tamlik(metin):
+    """K4 — satır başına künye TAMLIĞI: (tam_satirlar, eksik_satirlar).
+    'Tam' = esas+karar çifti ya da AYM/AİHM başvuru numarası ayrışmış satır;
+    'eksik' = yalnız esas-only/karar-only atıf ayrışmış (tam künyesiz) satır."""
+    tam, eksik = set(), set()
+    for a in esas_karar_atiflari(metin):
+        if a.get("kunye_turu") != "esas_karar" or (a["esas"] and a["karar"]):
+            tam.add(a["satir_no"])
+        else:
+            eksik.add(a["satir_no"])
+    return tam, eksik - tam
+
+
+def _eksik_alt_bicim(satir):
+    """K4 — EKSİK KÜNYE alt biçimi: 'K-only' | 'E-only' | 'E/K belirsiz' |
+    'tarih-only' | None (eksik-künye kalıbı yok → genel ayrıştırılamayan)."""
+    if _YN_SADE_RE.search(satir):
+        k_var = bool(KARAR_RE.search(satir))
+        e_var = bool(ESAS_RE.search(satir))
+        if k_var and not e_var:
+            return "K-only"
+        if e_var and not k_var:
+            return "E-only"
+        return "E/K belirsiz"
+    if _TARIH_ONLY_RE.search(satir):
+        return "tarih-only"
+    return None
 
 
 def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
-    """Merci anılan ve karar iması taşıyan ama künyesi ÇIKARILAMAYAN satırlar.
-    Döner: [{"satir_no", "metin", "sebep"}, ...] — çağıran bunları TEYİTSİZ
-    sınıfında değerlendirip kapıyı KAPATIR.
+    """Merci anılan ve karar iması taşıyan ama künyesi ÇIKARILAMAYAN ya da
+    EKSİK kalan satırlar. Döner: [{"satir_no", "metin", "sebep", "sinif"},
+    ...] — çağıran bunları TEYİTSİZ sınıfında değerlendirip kapıyı KAPATIR.
+
+    `sinif` (v0.5.16/K4, EKLEMELİ alan): `SINIF_EKSIK_KUNYE` (tarih-only /
+    K-only / E-only / etiketsiz tek sayı — künye eksik, tamamlanmalı) ya da
+    `SINIF_AYRISTIRILAMAYAN` (karar iması var, hiçbir kalıp tanınmadı).
 
     `dolu_satirlar`: üzerinde ZATEN bir atıf ayrıştırılmış satır numaraları
     (1-index). Verilmezse bu modülün kendi çıkarımından hesaplanır; çağıran
     (ör. `kunye_teyit.py`) mevzuat atıflarını da kapsayan kendi kümesini
-    geçebilir.
+    geçebilir. K4: yalnız esas-only/karar-only atıf ayrışmış (tam künyesiz)
+    satırlar 'dolu' SAYILMAZ — merci anılan bir satırdaki «E. 2020/1111
+    sayılı kararı» artık EKSİK KÜNYE'dir (eskiden esas-only atıf kütükte
+    tek sayı eşleşmesiyle TEYİTLİ geçebiliyordu — fail-open).
 
     YANLIŞ-POZİTİF KORUMALARI (üçü birden):
-      1. Satırda ZATEN bir künye ayrıştırıldıysa satır atlanır (tam künyeli
+      1. Satırda ZATEN TAM bir künye ayrıştırıldıysa satır atlanır (tam künyeli
          '… E. 2020/1111 K. 2021/2222 sayılı kararı' cümlesi tetiklemez).
       2. Satır dilekçenin KENDİ künye bloğuysa (`DOSYA NO`/`ESAS NO`/`MERCİ`)
          atlanır — Denizli 346 karnesinin tek parser yanlış-pozitifi.
       3. Merci VE karar iması AYNI SATIRDA olmalıdır; yalnız merci anmak
-         ('Yargıtay'ın yerleşik içtihadı') hiçbir zaman tetiklemez."""
+         ('Yargıtay'ın yerleşik içtihadı') hiçbir zaman tetiklemez; «tarihli»
+         ancak «karar/ilam» ile bitişikse imadır (RG/ihtarname tarihi değil)."""
+    tam_satirlar, eksik_satirlar = _satir_tamlik(metin)
     if dolu_satirlar is None:
-        dolu_satirlar = {a["satir_no"] for a in esas_karar_atiflari(metin)}
+        dolu_satirlar = set(tam_satirlar)
     else:
-        dolu_satirlar = set(dolu_satirlar)
+        dolu_satirlar = set(dolu_satirlar) - eksik_satirlar
     izler, gorulen = [], set()
     for satir_no, satir in enumerate(metin.split("\n"), start=1):
         if satir_no in dolu_satirlar or satir_no in gorulen:
@@ -299,12 +422,23 @@ def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
         if KENDI_DOSYA_SATIR_RE.match(satir):
             continue
         gorulen.add(satir_no)
+        alt = _eksik_alt_bicim(satir)
+        if alt:
+            sinif = SINIF_EKSIK_KUNYE
+            sebep = (f"EKSİK KÜNYE — {alt} atıf (%r); esas+karar çifti tamamlanmalı "
+                     "(Yargıtay birleşik biçimi «YYYY/N-YYYY/N» de tanınır) — "
+                     "tek tarih/tek sayı ile mekanik teyit YAPILAMAZ"
+                     % _sikistir(ima.group(0), 40))
+        else:
+            sinif = SINIF_AYRISTIRILAMAYAN
+            sebep = ("merci anılıyor ve karar iması var (%r) ama künye "
+                     "(esas/karar ya da başvuru numarası) ÇIKARILAMADI — "
+                     "mekanik teyit YAPILAMADI" % _sikistir(ima.group(0), 40))
         izler.append({
             "satir_no": satir_no,
             "metin": _sikistir(satir),
-            "sebep": ("merci anılıyor ve karar iması var (%r) ama künye "
-                      "(esas/karar ya da başvuru numarası) ÇIKARILAMADI — "
-                      "mekanik teyit YAPILAMADI" % _sikistir(ima.group(0), 40)),
+            "sebep": sebep,
+            "sinif": sinif,
         })
     return izler
 
@@ -451,6 +585,30 @@ def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
       olarak geçmesi şart koşulur (`esas_var OR karar_var` gevşekliği, yalnız
       TEK bir sayısı çakışan alakasız bir satırın damgasını 'son damga'
       sanabiliyordu — fail-open bug)."""
+    return _kutukten_son_token(kutuk_yolu, esas, karar, daire, _DAMGA_TOKEN_RE,
+                               "kutukten_son_damga")
+
+
+# ── K5 (v0.5.16, Hamle 4) — AKIBET TOKENI ────────────────────────────────────
+# D grubu (`oa_hafiza.py teyit --akibet`) kütük sonuç hücresine, DAMGA=
+# hücresi gibi, «AKIBET=<enum>» yazar (enum: kesinlesti | kesinlesmedi |
+# bozuldu | kaldirildi | geri_cevrildi). Okuyucu burada; yazıcı D grubunda.
+_AKIBET_TOKEN_RE = re.compile(r"AKIBET=([A-Za-zçğıöşüÇĞİÖŞÜ_-]+)")
+
+
+def kutukten_son_akibet(kutuk_yolu, esas, karar, daire=None):
+    """K5 — kütükteki bir esas/karar (+ opsiyonel daire) için SON `AKIBET=`
+    tokenını döndürür (küçük harf); yoksa None. Satır eşleşme kuralı
+    `kutukten_son_damga` ile BİREBİR aynıdır (tek-yazar kuralı — ortak
+    `_kutukten_son_token`)."""
+    sonuc = _kutukten_son_token(kutuk_yolu, esas, karar, daire, _AKIBET_TOKEN_RE,
+                                "kutukten_son_akibet")
+    return sonuc.lower() if sonuc else None
+
+
+def _kutukten_son_token(kutuk_yolu, esas, karar, daire, token_re, etiket):
+    """`kutukten_son_damga` / `kutukten_son_akibet` ortak gövdesi (v0.5.16 —
+    davranış bit düzeyinde aynı; yalnız token deseni parametreleşti)."""
     if not (esas or karar) or not kutuk_yolu or not os.path.isfile(kutuk_yolu):
         return None
     try:
@@ -465,7 +623,7 @@ def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
         hucreler = satir.split("|")
         if len(hucreler) != 7:
             _sys.stderr.write(
-                "UYARI (kunye_ortak.kutukten_son_damga): kütük satırı beklenen "
+                f"UYARI (kunye_ortak.{etiket}): kütük satırı beklenen "
                 f"5-sütun biçiminde değil ({len(hucreler)} hücre, 7 beklenirdi) — "
                 "BOZUK sayılıp fail-CLOSED atlandı: " + satir.strip()[:160] + "\n")
             continue
@@ -487,7 +645,7 @@ def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
             satir_daire = daire_key(sonuc_hucresi)
             if satir_daire is not None and satir_daire != daire:
                 continue
-        m = _DAMGA_TOKEN_RE.search(sonuc_hucresi)
+        m = token_re.search(sonuc_hucresi)
         if m:
             son_damga = m.group(1).upper()
     return son_damga

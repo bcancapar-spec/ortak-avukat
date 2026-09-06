@@ -563,13 +563,18 @@ def _ayristirilamayan_yazdir(izler):
     """B-2 (v0.5.14) — ayrıştırılamayan atıf iddialarını GÖRÜNÜR kılar."""
     if not izler:
         return
-    print(f"\n## AYRIŞTIRILAMAYAN ATIF İDDİASI ({len(izler)}) — MEKANİK TEYİT YAPILAMADI")
+    print(f"\n## AYRIŞTIRILAMAYAN / EKSİK ATIF İDDİASI ({len(izler)}) — MEKANİK TEYİT YAPILAMADI")
     for iz in izler:
-        print(f"[BLOK]     (satır {iz['satir_no']})  {iz['metin']}")
+        # K4 (v0.5.16): EKSİK KÜNYE (tarih-only / K-only / E-only) sınıfı
+        # TEYİTSİZ etiketiyle görünür — tek tarih/tek sayı ile teyit yapılamaz.
+        sinif = iz.get("sinif") or ko.SINIF_AYRISTIRILAMAYAN
+        etiket = "[TEYİTSİZ]" if sinif == ko.SINIF_EKSIK_KUNYE else "[BLOK]    "
+        print(f"{etiket} (satır {iz['satir_no']})  {iz['metin']}  [{sinif}]")
         print(f"           ↳ {iz['sebep']}")
     print("           ↳ Künyeyi TAM biçimde yaz (ör. 'Yargıtay 9. HD, E. 2020/1111, "
-          "K. 2021/2222' ya da AYM için 'B. No: 2019/12345') ve MCP teyidini kütüğe "
-          "işle; ayrıştırılamayan atıf teyit edilemez, teyit edilemeyen atıf çıktıya "
+          "K. 2021/2222', birleşik 'Yargıtay 9. HD 2020/1111-2021/2222' ya da AYM "
+          "için 'B. No: 2019/12345') ve MCP teyidini kütüğe işle; eksik/"
+          "ayrıştırılamayan atıf teyit edilemez, teyit edilemeyen atıf çıktıya "
           "GİREMEZ (fail-closed).")
 
 
