@@ -26,6 +26,31 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
 - **Temyiz başvuru süresi: iki hafta** — BAM kararının tebliğinden (HMK m.361).
 - **Karar düzeltme: YOK** — istinaf rejimiyle hukuk yargısından kaldırıldı.
 - Eski hâle getirme: iki hafta — engelin kalkmasından (HMK m.96).
+- **AŞAMA TETİKLİ SÜRELER (v0.5.16 / I5; Mevzuat MCP teyit 2026-09-07) — takvim değil, AŞAMA kapatır:**
+  "kaç gün" sorusunun cevabı YOKTUR; tarih üretmek yanlış tarih üretmektir. Script bu
+  kurallarda aritmetik yapmaz (`--kural <asama_kurali>` → "AŞAMA TETİKLİ … tarih yok").
+  - **İlk itirazlar — cevap dilekçesiyle birlikte (HMK m.117/1):** *"İlk itirazların hepsi
+    cevap dilekçesinde ileri sürülmek zorundadır; aksi hâlde dinlenemez."* Katalog m.116/1:
+    (a) kesin yetki kuralı bulunmayan hâllerde yetki itirazı, (b) tahkim itirazı; (c) bendi
+    7251 s.K. ile mülga. m.117/2-3: dava şartlarından sonra, ön sorun gibi incelenir.
+    (`hmk_ilk_itiraz`). Cevap dilekçesinin kendi süresi ayrı ve takvimlidir (m.127 → `hmk_cevap`).
+  - **Delil bildirimi — dilekçeler aşamasında (m.119/1-f · m.129/1-e); sonradan delil
+    yasağı (m.145/1):** *"Taraflar, Kanunda belirtilen süreden sonra delil gösteremezler."*
+    İstisna: geciktirme amacı yoksa VEYA süresinde sunulamaması tarafın kusurundan
+    kaynaklanmıyorsa mahkeme **izin verebilir** (takdir — güvenme). (`hmk_delil_bildirimi`)
+  - **Ön inceleme belge sunma — davetiye ihtarı (m.139/1-ç) → vazgeçmiş sayılma (m.140/5):**
+    davetiyenin tebliğinden itibaren **iki haftalık kesin süre** içinde dilekçede gösterilip
+    sunulmayan belgeler sunulur / getirtme açıklaması yapılır; yapılmazsa o delile dayanmaktan
+    **vazgeçmiş sayılma** kararı (m.140/5, 7251 s.K.). **ÇATAL:** davetiye tebliğ edilene kadar
+    aşama tetikli; tebliğle takvime bağlanır → o an `--teblig <davetiye tebliği> --sure 2
+    --birim hafta`. (`hmk_on_inceleme_belge`)
+  - **Islah — tahkikat sona erene kadar (m.177/1);** bozma/kaldırma sonrası ilk derece
+    tahkikata ilişkin işlem yaparsa yine tahkikat bitene kadar (m.177/2, 7251); **tek hak:**
+    aynı davada ancak **bir kez** (m.176/2). (`hmk_islah`)
+  - **Ceza kolundaki öncül desen — katılma anı (CMK m.237):** ilk derece kovuşturmasında
+    hüküm verilinceye kadar; kanun yolunda istenemez (m.237/2). v0.5.13'te
+    `oa-musteki-vekili` "olay tetikli kırmızı bayrak" olarak kurmuştu; bu sınıf onu hukuk
+    koluna genelleştirir. (`cmk_katilma`)
 
 ### İcra-iflas (İİK 2004)
 - **İcra mahkemesi kararlarına karşı istinaf: iki hafta** — tebliğden (İİK m.363).

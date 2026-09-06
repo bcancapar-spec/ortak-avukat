@@ -17,7 +17,7 @@ description: >-
 Bu, **sök-tak (composable)** bir parçadır. Tek başına da çalışır, `ortak-avukat` çekirdek kimliğiyle birlikte de. Görevi tek ve nettir: **süre, dosyadaki telafisi olmayan tek hatadır** — onu deterministik hesaplar, usul tuzaklarını işaretler.
 
 ## Ne zaman tetiklenir
-Kanun yolu/başvuru/süre içeren her durumda: istinaf, temyiz, AYM bireysel başvuru, itiraz, şikâyet, cevap, dava açma, eski hâle getirme; "süre ne kadar", "ne zaman doluyor", "kaçırdım mı".
+Kanun yolu/başvuru/süre içeren her durumda: istinaf, temyiz, AYM bireysel başvuru, itiraz, şikâyet, cevap, dava açma, eski hâle getirme; "süre ne kadar", "ne zaman doluyor", "kaçırdım mı". **Ayrıca takvimsiz, AŞAMA TETİKLİ süreler** (ilk itiraz, delil bildirimi, ıslah, ön inceleme belge sunma, ceza katılma) — bkz. 4e: bunlarda tarih hesaplanmaz, aşama nöbete alınır.
 
 ## Yönetici ilke
 Süreyi **karar tipini ve tebliğ/öğrenme tarihini teyit etmeden** beyan etme. Süre miktarı (kaç gün/hafta) ve parasal kesinlik sınırı **resmî kaynaktan (Mevzuat MCP)** doğrulanır; script yalnızca **deterministik aritmetiği** yapar. Otomasyon muhakemeyi besler, yerine geçmez.
@@ -94,6 +94,25 @@ Süre yalnızca bizim riskimiz değildir. **Bir dava/dosya/ihtilaf incelenirken 
 4d. **İdari/vergi kanadında iki kör nokta — çizelgeden oku (v0.5.14):**
    - **Yürütmenin durdurulması (İYUK m.27):** dava açmak yürütmeyi **durdurmaz** (f.1); **ödeme emri bir TAHSİLAT işlemidir** ve açılan dava tahsili durdurmaz (f.4) → ayrıca YD istenir, yoksa dava sürerken haciz/satış yürür. YD reddine **itiraz 7 gün, bir defaya mahsus** (f.7 — `iyuk_yd_itiraz`); aynı sebeple ikinci istem yok (f.10). **İvedi yargılama (m.20/A-2/e) ve merkezî sınav (m.20/B-1/d) davalarında YD kararına itiraz EDİLEMEZ.**
    - **Özel yargılama usulleri:** dava m.20/A (ihale, **acele kamulaştırma**, ÖYK, turizm, ÇED, 6306) veya m.20/B (MEB-ÖSYM merkezî/ortak sınav) kapsamındaysa süre 60 gün DEĞİL, **30** (`iyuk_dava_ivedi`) veya **10** (`iyuk_dava_sinav`) gündür; ivedide **istinaf yolu kapalıdır (m.45/8)** ve her ikisinde **m.11 uygulanmaz**.
+4e. **AŞAMA TETİKLİ SÜRELER — takvim değil, aşama kapatır (v0.5.16 / I5; P1-3 / A-10; Mevzuat MCP teyit 2026-09-07):**
+   Bazı usul "süreleri" için "tebliğ + N gün" sorusunun cevabı YOKTUR; işlem, yargılamanın bir **aşaması** kapanmadan yapılmalıdır. Bunlara tarih üretmek **yanlış tarih üretmektir** (nöbetçi o tarihi otorite sayar, defter kalıcılaştırır). Bu yüzden aşama kuralı `hesapla()`ya hiç girmez: script yalnız aşamayı, bağlı **pipeline adımını** (oa-pipeline ADIMLAR 0-10 — bu adım TAMAMLANMADAN işlem yapılmalı) ve dayanağı basar; `--teblig` gerekmez, verilirse "KULLANILMADI" diye görünür yazılır.
+   ```bash
+   python scripts/hesapla_sure.py --kural hmk_ilk_itiraz            # → "AŞAMA TETİKLİ: cevap dilekçesi … — pipeline adım 8'e bağlı; tarih yok"
+   python scripts/hesapla_sure.py --kural hmk_islah --json          # → {"tur": "asama", "asama": "...", "pipeline_adimi": 6, "son_gun": null, ...}
+   python scripts/hesapla_sure.py --kural hmk_delil_bildirimi --kok . # _oa varsa deftere tur=asama kaydı (son_gun YOK)
+   ```
+   | Kural | Aşama (kapatan olay) | Pipeline adımı | Dayanak (MCP teyit 2026-09-07) |
+   |---|---|---|---|
+   | `hmk_ilk_itiraz` | cevap dilekçesi | 8 (YAZIM) | HMK m.117/1 — ilk itirazların hepsi cevap dilekçesinde; aksi hâlde dinlenemez (katalog m.116/1; (c) mülga) |
+   | `hmk_delil_bildirimi` | dilekçeler aşaması | 8 (YAZIM) — liste adım 4'te kurulur | HMK m.119/1-f · m.129/1-e; sonradan delil yasağı m.145/1 (istisna mahkeme takdirinde — güvenme) |
+   | `hmk_on_inceleme_belge` | ön inceleme davetiyesi ihtarı | 4 (OLGU/DELİL) | HMK m.139/1-ç — tebliğden iki haftalık kesin süre; m.140/5 vazgeçmiş sayılma. **ÇATAL:** davetiye tebliğ edilince takvime bağlanır → `--teblig <tebliğ> --sure 2 --birim hafta` |
+   | `hmk_islah` | tahkikat sona erene kadar | 6 (STRATEJİ) | HMK m.177/1 (m.177/2 bozma sonrası; m.176/2 tek hak) |
+   | `cmk_katilma` | ilk derece kovuşturması, hüküm verilinceye kadar | 1 (ALIM) | CMK m.237/1-2 — kanun yolunda katılma istenemez |
+   - **Ceza deseninin genellenmesi:** `cmk_katilma`, v0.5.13'te `oa-musteki-vekili`nin "katılma anı — olay tetikli kırmızı bayrak" olarak kurduğu kalemin (CMK m.237) ta kendisidir; bu sınıf aynı deseni hukuk koluna (ilk itiraz / delil / ıslah / ön inceleme) taşır. Ceza dosyasında `oa-musteki-vekili` katılma bayrağını bu kuralla deftere işler.
+   - **Kol uyuşmazlığı kapısı (A-1) aşama kuralına UYGULANMAZ:** adli tatil aritmetiği olmadığı için `cmk_katilma` `--yargi` değerinden bağımsız çalışır.
+   - **`--pencereler`:** aşama kaydı bindirme aritmetiğine katılmaz ama **görünür** atlanır ("≡ … tarih penceresi yok, bindirmeye katılmadı"); JSON çıktısında `asama` listesinde durur. Yalnız aşama kaydı varsa "DENETLENEMEDİ" (exit 1) — kanıt sayılmaz.
+   - **Deftere yazım — `_oa/sureler.json` aşama kaydı şeması (`oa_hafiza.py sure-flag` ile AYNI defter/`flagler` listesi):** `son_gun`/`tarih` alanı **YOKTUR** — alanlar: `"tur": "asama"`, `"asama"` (kapatan aşama), `"pipeline_adimi"` (0-10), `"aciklama"`, `"kural"`, `"kayit"`. Örnek: `{"tur": "asama", "asama": "cevap dilekçesi (dilekçeler aşaması)", "pipeline_adimi": 8, "aciklama": "İlk itiraz … cevap dilekçesiyle (HMK m.117/1)", "kural": "hmk_ilk_itiraz"}`. Yazım yolu: `hesapla_sure.py --kural <asama_kurali> --kok <dava kökü>` (in-process, `_oa` yoksa defter icat edilmez; aynı kural+aşama ikinci kez eklenmez). **Not:** `oa_hafiza.py sure-flag` bu sürümde `--tarih` zorunlu tutar; aşama kaydı için `--tarih` VERİLMEZ — boş/uydurma tarih yazmak aşama kaydını takvim kaydına çevirir (yanlış alarm). Elle yazım gerekiyorsa JSON'a yukarıdaki şemayla doğrudan eklenir; `oa_hafiza`ya `--asama` desteği `oa-pipeline`'ın sahasındadır (entegratör notu).
+   - **Nöbetçi:** `sure_nobetci.py` aşama kayıtlarını `[≡] AŞAMA TETİKLİ — adım N tamamlanmadan bu işlem yapılmalı: …` ayrı bloğunda gösterir; **tarih sayımına ve acil sınıfına katmaz**, bozuk saymaz; yalnız aşama kaydı varsa exit 0 (exit sözleşmesi 0/3/1 değişmedi). Aşama kapandıysa (cevap verildi / tahkikat bitti / hüküm verildi) `--iptal <kimlik> --gerekce "..."` ile append-only düşürülür. Aşama sınıfı YALNIZ açık `"tur": "asama"` ile tanınır — tarihsiz ve tur'suz eski kayıt yine BOZUK'tur (fail-closed; eski defterler çökmez).
 5. **Maddi hukuk uyarısı:** Script zamanaşımının **kesilmesini/durmasını** (TBK m.153-158) ve hak düşürücü sürenin durmazlığını **hesaplamaz** — bunları elle değerlendir. Zamanaşımı mı hak düşürücü mü olduğunu teyit et (sonuçları farklı: hak düşürücü süre def'i değil, re'sen dikkate alınır).
 5b. **Süre pencere bindirme (M5, Paket D — v0.5.5):** dosyada AYNI ANDA işleyen birden fazla süre varsa (ör. cevap süresi + karşı tarafın istinaf süresi + bilirkişi rapor itiraz süresi aynı döneme denk geliyorsa), her birini kaydeden bir JSON (`[{"ad":..., "teblig":..., "kural":... | "sure"+"birim":...}, ...]`) hazırlanıp `python scripts/hesapla_sure.py --pencereler <json>` çalıştırılır — script HER kaydı `hesapla()` ile (aynı deterministik mantık) çözer ve `[teblig+1, son_gün]` pencerelerinin PAIRWISE çakışıp çakışmadığını raporlar; `oa-illiyet`'in zaman katmanındaki tetikleyici olaylar bu JSON'un girdisidir. Çakışma tespit edilirse ÖNCELİKLENDİRME avukat muhakemesidir — script yalnız çakışmayı gösterir.
 6. **Tatil tablosu (`scripts/tatiller.json`) güncellenebilir:** sabit ulusal tatiller hazır; **kayan dini bayramları (Ramazan/Kurban)** resmî kaynaktan (Diyanet/Resmî Gazete) yıl bazında ekle — tabloya tahmin YAZMA. **Gelecek yıllar (ör. 2032) tablodan bağımsız çalışır:** script, tanımsız yıllarda aritmetik hicri hesapla (1-3 Şevval / 10-13 Zilhicce) TAHMİNİ bayram penceresi üretir ve son gün bu pencereye bitişikse uyarır — tahmine dayanarak kaydırma yapmaz; herhangi bir yılın tahminleri `--bayram YYYY` ile listelenir, Diyanet teyidi sonrası tabloya işlenir.
@@ -114,7 +133,7 @@ Süreyi edilgen hesaplamakla bitirme. **Zamanlamanın kendisi bir kaldıraçtır
 
 ## Öğrenme günlüğü — bu parça nasıl gelişir
 Bu dosya **dosya tecrübesiyle büyür.** Yeni bir süre kuralı, daire kayması, mevzuat değişikliği veya tuzak öğrenildiğinde:
-1. `references/sure-cizelgesi.md`'ye ekle (gerekirse `scripts/hesapla_sure.py`'deki `KURALLAR` tablosunu güncelle).
+1. `references/sure-cizelgesi.md`'ye ekle (gerekirse `scripts/sure_kurallari.json` + `scripts/hesapla_sure.py`'deki gömülü tabloyu **birlikte** güncelle — tarih kuralı `kurallar`/`_GOMULU_KURALLAR`, aşama kuralı `asama_kurallari`/`_GOMULU_ASAMA_KURALLAR`; ikiz kilit testleri yeşil kalmalı).
 2. Aşağıdaki **Değişiklik Günlüğü**'ne tek satır işle.
 3. Parçayı yeniden paketle.
 
