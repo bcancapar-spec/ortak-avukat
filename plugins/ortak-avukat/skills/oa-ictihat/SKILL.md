@@ -55,6 +55,7 @@ Bir kararın uyuşmazlıkla **ilgili** olması yetmez; dilekçeye girecek içtih
 3. **Lehe olanı kullan:** dilekçede ve lehe argümanda yalnızca **müvekkil lehine** kararlara dayan (`oa-dilekce`).
 4. **Aleyhe olanı `oa-antitez`'e devret:** müvekkil aleyhine kararlar **atılmaz** — gizli cephanelikte dahili tutulur; karşı taraf ileri sürerse ayırt etme (distinguishing), aşılmışlık, somut olayla farklılık veya lehe yorumla çürütmek için `oa-antitez`'e taşınır. Aleyhe içtihadı sunulan belgeye proaktif yazma.
 5. **Dürüstlük sınırı:** "lehe seçmek" ≠ aleyhe/bağlayıcı otoriteyi mahkemeden gizlemek. Doğrudan uygulanabilir bağlayıcı bir içtihat aleyhe ise, stratejiyi (ayırt etme/uzlaşma) buna göre kur; yok sayıp riski müvekkile bildirmemek olmaz (HMK dürüstlük + `oa-kontrol`).
+6. **Erken durma yasağı (v0.5.16 — A-14 / P2-5):** **üç lehe karar bulununca DURULMAZ** — yerleşik hattın yönü haritada (aşağıdaki "İÇTİHAT HARİTASI" adımı) görülmeden lehe seçimi yapılmaz; hiyerarşi (**İBK > HGK > daire**) yalnız dilekçe sıralamasında değil, **araştırma aşamasında da** uygulanır. Üç lehe daire kararı, aksi yönde bir İBK/HGK varken lehe hat değil AZINLIK hattıdır; ona dayanan dilekçe karşı tarafın tek atfıyla çöker.
 
 Bu 2-3 adımdaki lehe/aleyhe ayrımı, İçtihat Muhakeme Zinciri'nde biçimsel bir
 karşılık bulur: her karar `oa-kiyas`/`oa-kontrol`'de **DAMGA** alanıyla
@@ -197,6 +198,94 @@ girer, kalanı kütükte (`_oa/cikti/03-ictihat-muhakeme.md`) yedek durur (bkz.
 `oa-dilekce/SKILL.md` "İÇTİHAT PORTFÖYÜ"). CEK adımında bu sıralamayı
 kolaylaştırmak için her künyenin merci+daire+tarihi (HGK/İBK ayrımı dahil)
 KAYNAK-IZI'yla birlikte açıkça not edilir.
+
+## İÇTİHAT HARİTASI (A-14 / P2-5 — triajdan ÖNCE, v0.5.16)
+A1 triajı (tam-okuma + LEHE/ALEYHE damgası) TEK TEK kararı değerlendirir;
+tek tek değerlendirme, bulunan üç lehe kararın **yerleşik hattın kendisi mi,
+azınlık görüşü mü, daireler/BAM'lar arası bir ayrışma tarafı mı** olduğunu
+söyleyemez. Bu yüzden CEK adımından sonra ve
+triajdan ÖNCE, konu başına kısa bir **harita** çıkarılır (`_oa/cikti/03-ictihat-muhakeme.md`
+başına "HARİTA" paragrafı ya da ayrı `_oa/cikti/03-ictihat-haritasi.md`):
+
+| Sütun | Ne yazılır | Nasıl bulunur |
+|---|---|---|
+| **Yerleşik hat** | konuda ihtisas dairesinin süregelen yönü (tarih bandıyla) | `ictihat_ara` + `birimAdi` (ihtisas dairesi `oa-alan`), `kararTarihiStart/End` ile son 3-5 yıl |
+| **Azınlık / karşı hat** | aksi yönde daire kararı ya da karşı oy var mı | aynı sorgu, ters terim; snippet'te "karşı oy"/"muhalefet" |
+| **Ayrışma** | daireler arası ya da BAM'lar arası çelişki var mı | farklı `birimAdi` ile aynı sorgu; BAM için `--suzgec` (D3) |
+| **HGK / İBK varlığı** | konuda HGK kararı ya da İBK var mı; varsa hattın yönü | `birimAdi="HGK"`; İBK için tırnaklı "içtihadı birleştirme" + konu terimi |
+
+**Hiyerarşi araştırmada da uygulanır:** İBK kararları benzer hukuki konularda
+Yargıtay Genel Kurullarını, dairelerini ve adliye mahkemelerini bağlar
+(2797 s. Yargıtay Kanunu m.45 — Mevzuat MCP teyit 2026-09-06); HGK kararı
+daire kararının üstünde fiilî ağırlık taşır. Harita, lehe seçimin ZEMİNİDİR:
+yerleşik hat aleyhe ise "üç lehe daire kararı" LEHE dayanak değil, `oa-antitez`
+cephaneliğine giden risk kaydıdır ve `oa-strateji`'ye "hat aleyhe" olarak
+devredilir. Harita boş bırakılamaz; sütun doldurulamıyorsa "bulunamadı
+(≠ yok)" yazılır (D2). Model kurar, script denetlemez: haritanın hukuki yönü
+modelin muhakemesidir; script yalnız BAM/daire/yıl süzgecini (aşağıda) sağlar.
+
+## İNİŞ RİTÜELİ (Yargıtay → BAM → ilk derece) — v0.5.16 (D1-D3, Hamle 8)
+Kanun yolu zinciri yukarıdan aşağı okunur: ilk derece nihai kararına karşı
+istinaf (HMK m.341; ceza: CMK m.272), BAM dairesi kararına karşı temyiz
+(HMK m.361; ceza: CMK m.286 — bozma dışı hükümler) [Mevzuat MCP teyit
+2026-09-06]. Bir Yargıtay kararı bulununca "altındaki BAM ve ilk derece
+kararlarını da çekelim" refleksi doğrudur — ama **hipotez kata bağlıdır**:
+
+- **D1 — "üst karar alt künyeyi içerir" hipotezi kata göre değişir.**
+  Yargıtay kararı alt künyeleri KORUR (yeni biçim başlık: `MAHKEMESİ : … /
+  SAYISI : YYYY/N E., YYYY/N K.` + `İLK DERECE MAHKEMESİ / SAYISI`; eski biçim
+  gövde: `… Mahkemesince verilen dd.mm.yyyy tarih ve YYYY/N E., YYYY/N K.
+  sayılı`). **BAM ise KENDİ dosyasının ilk derece künyesini REDAKTE eder**
+  (`NUMARASI : ... Esas, ... Karar`) — gövdede andığı EMSAL kararların
+  künyelerini korur. Yani BAM'dan ilk dereceye iniş çoğu zaman KÖRDÜR; bunu
+  "ilk derece kararı yok" diye değil, "künye redakte — iniş kör" diye yaz.
+  Ceza yeni biçimde ilk derece mahkemesinin **ilçe adı** da redakte olabilir
+  (`... 1. Asliye Ceza Mahkemesi`): esas/karar dolu olsa bile mahkeme kimliği
+  yoktur → iniş BAM'a kadar.
+- **D2 — kapsama: "bulunamadı ≠ yok".** İlk derece kararları ve **ceza BAM /
+  İDM korpusu** Bedesten/Yargı Pro indeksinde bulunamayabilir ("BAM Ceza
+  Daireleri indekste yok" — Bilinen sınırlar). Künye tam olsa bile metin
+  indekste yoksa bu, kararın YOKLUĞU değil indeksin sınırıdır; kütüğe
+  `METİN=bulunamadı` yazılır, "karar yok" yazılmaz; metin kanonik kaynaktan
+  (UYAP) avukatça çekilir.
+- **D3 — esas_no BAM'lar arası TEKİL DEĞİLDİR.** Her BAM kendi esas sırasını
+  tutar; `2024/123 E.` bir BAM'da hukuk, ötekinde ceza dosyası olabilir. MCP
+  `ictihat_ara` BAM/daire filtresi sunmaz → bulunan alt kararı **daire + BAM
+  adı + tarih** üçlüsüyle doğrula; sonuç listesini `--suzgec` ile istemci
+  tarafında süz (aşağıda). Yalnız esas_no eşleşen karar "bulundu" SAYILMAZ.
+
+**Script (mekanik — yorum yapmaz):** `scripts/kanun_yolu_zinciri.py`
+- `python oa-ictihat/scripts/kanun_yolu_zinciri.py _oa/teyit/dokum/<üst-karar>.md --json --kok .`
+  → üst künye + alt katlar (`seviye: BAM|ilk_derece`, `esas/karar/tarih`,
+  `redakte`) + **iniş kararı** (`inis_mumkun`, `inis_kati`, `gerekce`).
+  Karar MEKANİKTİR: alt katta esas VE karar dolu VE redakte değil → iniş
+  mümkün; aksi gerekçeyle HAYIR ("künye redakte — iniş kör (D1)" / "ilçe adı
+  redakte"). Bir kat kör olunca daha aşağısı da kördür (zincir kopar).
+  Künye çıkarımı `oa-kontrol/scripts/kunye_ortak.py`'den (tek kaynak); modül
+  yoksa yerel minimal regex + görünür uyarı (fail-closed).
+- `--kok` verilince **`_oa/cikti/03-kanun-yolu-zinciri.json`** yazılır — bu
+  dosya pipeline **adım-3 (ARAŞTIRMA) kanıtıdır** — ve kat başına ÖNERİLEN
+  `oa_hafiza.py teyit …` komut satırı STDERR'e basılır. Script kütüğe
+  **YAZMAZ** (tek yazar `oa_hafiza`); `METİN=<…>` alanını sen MCP sonucuna
+  göre doldurursun.
+- `python oa-ictihat/scripts/kanun_yolu_zinciri.py --suzgec arama.json --bam "<BAM adı>" --daire "11. HD" --yil-min 2020 --json`
+  → `ictihat_ara` sonuçlarını (modelin JSON'a döktüğü liste) BAM adı + daire
+  + en küçük yıl ile süzer; **süzülen/elenen sayıları basılır, elenen her
+  kayıt nedeniyle listelenir** — sessiz kırpma yok; tarihi/karar no'su olmayan
+  kayıt "yıl belirsiz" ile elenir (fail-closed, elle bak).
+
+**Kat başına kütük satırı (oa_hafiza `teyit` ile — kütüğe TEK YAZAR odur):**
+`--sonuc "SEVİYE=<Yargıtay|BAM|ilk_derece> KÜNYE=<tam|redakte> METİN=<indekste-var|bulunamadı> | <künye>"`
+— `KÜNYE=redakte` katta arama YAPILMAZ (aranacak künye yok; "bulunamadı"
+demek de yanlıştır); `METİN=bulunamadı` "yok" değildir (D2). `--sorgu`
+alanına ilk derece mahkeme adı + esas no BİRLİKTE yazılmaz (`oa_hafiza`
+Layer 0 taraması reddeder) — künye `--sonuc`'ta taşınır.
+
+**Sınırlar (anayasal):** yer/mahkeme adları kamu bilgisidir (karar #12) ama
+kişi/dosya verisi YOKTUR — iniş hedefi MÜVEKKİLİN KENDİ dosyasıysa künyesi
+dış MCP'ye hiç gönderilmez; **UYAP'ta iniş (dosyayı UYAP'tan çekme, e-imza/
+login) münhasıran avukata aittir (Layer 0, anayasa m.10)** — bu parça UYAP
+için kod yazmaz, yalnız "hangi kata inilebilir" haritasını verir.
 
 ## Aktif çıkarım refleksi
 Edilgen "getir-koy" yapma. Bulduğun her teyitli kararı **müvekkil lehine bir argümana bağla**; aleyhe bir içtihat çıkarsa onu **ayırt etmenin (distinguishing)** yolunu ara; ve nötr aramanın yanı sıra müvekkilin konumunu **güçlendirecek** aramayı da kendiliğinden kur. İçtihat bir liste değil, lehe inşa edilecek malzemedir.
