@@ -17,6 +17,10 @@ Ortak Avukat sisteminin ÇIKARIM / AI KATMANI parçası ve 0. MANİFEST adımın
   - Windows: UB-Mannheim kurucusu (kurulumda "Turkish" + "Add to PATH")
   - Linux: `apt-get install tesseract-ocr tesseract-ocr-tur`
 - Tesseract yoksa metin PDF/UDF/DOCX yine işlenir; taranmışlar "YÜKLENEMEDİ ⚠" damgalanır.
+- Tesseract var ama `tur` dil paketi yoksa (v0.5.16/E — P0-2): OCR gerektiren evraklar
+  **"OCR YAPILAMADI — dil paketi/araç hatası (ortam hatası, evrak özelliği DEĞİL)"**
+  damgası alır (`ocr_durum: "arac-hatasi"`), görsel yazılmaz, INDEX'te ayrı bölüm; paketi
+  kurup yeniden koş. PATH dışı kurulum: `OA_TESSERACT_YOL=<tesseract yolu>`.
 
 ## Referanslar
 

@@ -78,6 +78,31 @@ SAHA_VAKALARI = _saha_vakalari()
 TESSERACT_YOK = shutil.which("tesseract") is None
 
 
+def _tur_paketi_yok():
+    """v0.5.16/E (P0-2/B-8): uçtan uca OCR testleri yalnız İKİLİYİ değil 'tur'
+    DİL PAKETİNİ de ister. Linux denetiminde tesseract kurulu ama tur.traineddata
+    yokken bu testler 'OCR-BOŞ' yerine (artık) 'arac-hatasi' üretir ve haklı
+    olarak kırmızıya düşerdi — oysa sınanan şey P0-9 kalite kapısıdır, ortam
+    değil. Paket yoksa GEREKÇELİ atlanır (sessiz değil); araç-hatası davranışının
+    kendisi tests/test_v0516_E.py'de sahte tesseract ile ayrıca sınanır."""
+    if TESSERACT_YOK:
+        return True
+    try:
+        r = subprocess.run(["tesseract", "--list-langs"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+    except Exception:
+        return True
+    diller = {s.strip() for s in (r.stdout or "").splitlines() + (r.stderr or "").splitlines()}
+    return "tur" not in diller
+
+
+TUR_PAKETI_YOK = _tur_paketi_yok()
+OCR_ATLAMA_GEREKCE = ("Tesseract PATH'te değil ya da 'tur' dil paketi (tur.traineddata) kurulu "
+                      "değil (`tesseract --list-langs`) — P0-9 uçtan uca testleri gerçek OCR "
+                      "ister; araç-hatası yolu tests/test_v0516_E.py'de sahte ikiliyle sınanır. "
+                      "Kur: UB-Mannheim (Win) / apt tesseract-ocr-tur (Linux).")
+
+
 def _oi():
     """oa_ingest.py'yi doğrudan içe aktarır (birim testleri için — Tesseract/
     subprocess gerektirmez, yalnız saf Python fonksiyonlarını çağırır)."""
@@ -211,7 +236,7 @@ def test_kalite_kapisi_saha_referansindaki_bos_sayfalari_yakalar(dosya, boyle_sa
 # (B) UÇTAN UCA — gerçek Tesseract + PyMuPDF/Pillow gerekir
 # ═════════════════════════════════════════════════════════════════════════
 
-@pytest.mark.skipif(TESSERACT_YOK, reason="Tesseract PATH'te değil")
+@pytest.mark.skipif(TUR_PAKETI_YOK, reason=OCR_ATLAMA_GEREKCE)
 def test_bos_taranan_pdf_ocr_bos_damgalanir_ve_gorsel_uretilir(tmp_path):
     fitz = pytest.importorskip("fitz")
     doc = fitz.open()
@@ -244,7 +269,7 @@ def test_bos_taranan_pdf_ocr_bos_damgalanir_ve_gorsel_uretilir(tmp_path):
     assert "## 🔴 OCR-BOŞ — GÖRSEL İNCELEME GEREK" in idx
 
 
-@pytest.mark.skipif(TESSERACT_YOK, reason="Tesseract PATH'te değil")
+@pytest.mark.skipif(TUR_PAKETI_YOK, reason=OCR_ATLAMA_GEREKCE)
 def test_saglikli_taranan_pdf_gorsel_uretilmez(tmp_path):
     fitz = pytest.importorskip("fitz")
     PIL = pytest.importorskip("PIL")
@@ -287,7 +312,7 @@ def test_saglikli_taranan_pdf_gorsel_uretilmez(tmp_path):
     assert "## 🔴 OCR-BOŞ" not in idx
 
 
-@pytest.mark.skipif(TESSERACT_YOK, reason="Tesseract PATH'te değil")
+@pytest.mark.skipif(TUR_PAKETI_YOK, reason=OCR_ATLAMA_GEREKCE)
 def test_karisik_evrakta_yalniz_bos_sayfa_gorsele_girer_saglikli_sayfa_girmez(tmp_path):
     """Aynı evrak içinde bir sayfa boş bir sayfa sağlıklıysa: yalnız boş sayfa
     görsele girer (hedefli — 'tüm evrak' değil, 'çöken sayfa')."""
