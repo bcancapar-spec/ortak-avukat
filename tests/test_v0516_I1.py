@@ -375,6 +375,12 @@ def test_P2_3_usul_zamanlama_tamamlanabilir_vs_tamamlanamaz_ve_gecikme_satiri():
     assert "TAMAMLANABİLİR" in blok and "TAMAMLANAMAZ" in blok
     for norm in ("492 s.K. m.30", "HMK m.119/2", "HMK m.115", "HMK m.20"):
         assert norm in blok, f"{norm} çıpası yok"
+    # Vekâletname eksiği m.119/2'nin değil m.77/1'in konusudur (2026-09-07 yeniden
+    # teyitte düzeltildi): m.119/2 dilekçe İÇERİK eksiğidir; m.77 vekâletname ibrazı.
+    duz = blok.replace("\n  ", " ")
+    assert "m.77/1" in duz, "vekâletname eksiği için HMK m.77/1 çıpası yok"
+    assert "vekâletname/dilekçe eksiği (HMK m.119/2" not in duz, \
+        "vekâletname eksiği yanlış maddeye (m.119/2) bağlanmış"
     assert "görevsizlik" in blok.lower() and "yetkisizlik" in blok.lower()
     assert "sıfırdan" in blok
     assert "1. satır" in blok

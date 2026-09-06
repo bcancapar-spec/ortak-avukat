@@ -1,7 +1,7 @@
 {
   "_aciklama": "oa-strateji maliyet_cetveli.py tarife dosyası (P1-11 / A-18, v0.5.16). SAYI UYDURMA YASAK: her rakam resmî kaynaktan (Mevzuat MCP / Resmî Gazete aracı) okunarak yazılır; okunamayan alan null bırakılır ve script o kalemi hesaplamaz (fail-closed). 'mcp_teyit_tarihi' boş ya da 'yil' hesap yılından farklıysa script hiç hesap yapmaz (exit 2). Yıl değişince bu dosya yeniden teyit edilip yeniden damgalanır.",
   "yil": 2026,
-  "mcp_teyit_tarihi": "2026-09-06",
+  "mcp_teyit_tarihi": "2026-09-07",
   "kaynak": "492 s. Harçlar Kanunu (1) sayılı tarife — 2026 tutarları: Harçlar Kanunu Genel Tebliği (Seri No: 98), RG 31.12.2025 / 33124 (5. mükerrer) — resmi_gazete_getir 'resmi_gazete:20251231M5/28.pdf' + mevzuat.gov.tr (1) sayılı tarife 'Uygulanan Miktar' sütunu (mevzuat_getir mevzuatgov:kanun:5:492); peşin oran: 492 s.K. m.28/a (Mevzuat MCP teyit 2026-09-06). AAÜT: RG 04.11.2025 / 33067 (değ. 08.01.2026/33131 ve 28.03.2026/33207) — genel hükümler MCP'den okundu, ancak ikinci/üçüncü kısım EK TABLOLARI (maktu ücretler ve nispi dilimler) MCP/RG araçlarından çekilemedi → null.",
   "harc": {
     "basvuru_maktu": 732.0,
@@ -13,7 +13,7 @@
     "istinaf_basvuru_maktu": 2002.0,
     "temyiz_basvuru_maktu": 3608.5,
     "kesif": 5188.0,
-    "_not": "Asliye/idare mahkemeleri satırı (I-2). Sulh/icra mahkemesi başvurma harcı (335,20 TL) ve diğer satırlar bu şemada yok; gerekirse ayrı anahtarla teyitli eklenir. 'nispi_asgari': (1) sayılı tarife III-1 'Nispi harçlar ... aşağı olamaz' haddi (Seri No:98 metni). Bakiye karar harcı kararın tebliğinden itibaren bir ay içinde ödenir (m.28/a)."
+    "_not": "Asliye/idare mahkemeleri satırı (I-2). Sulh/icra mahkemesi başvurma harcı (335,20 TL) ve diğer satırlar bu şemada yok; gerekirse ayrı anahtarla teyitli eklenir. 'nispi_asgari': (1) sayılı tarife III-1 'Nispi harçlar ... aşağı olamaz' haddi (Seri No:98 metni: 732 TL). ÇIPA — KAYNAK ÇELİŞKİSİ (2026-09-07 yeniden teyit): mevzuat.gov.tr konsolide (1) sayılı tarifede aynı satır 'Uygulanan Miktar' sütununda 427,60 TL görünmektedir (mevzuat_icinde_ara snippet); 2026 tutarlarının asli kaynağı RG 31.12.2025/33124 (5. mük.) Seri No:98 olduğundan 732 esas alındı — yalnız çok küçük dava değerinde (nispi harç < asgari had) etkilidir; avukat teyit etsin. Diğer tutarlar (732 başvuru asliye, binde 68,31, 1.206 tedbir/haciz, 3.608,50 temyiz, 2.002 istinaf, 5.188 keşif, 732 maktu karar) hem RG hem mevzuat.gov metninde birebir doğrulandı (2026-09-07). Bakiye karar harcı kararın tebliğinden itibaren bir ay içinde ödenir (m.28/a)."
   },
   "aaut": {
     "maktu_asliye": null,

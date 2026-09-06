@@ -147,8 +147,10 @@ eder (anayasal düstur). Ama her usul kusuru aynı değerde değildir; strateji 
 sınıfı ayırır (norm metinleri Mevzuat MCP teyit 2026-09-06):
 - **TAMAMLANABİLİR kusur** — karşı taraf düzeltebilir, kazanım GEÇİCİDİR:
   harç eksiği (492 s.K. m.30 — noksan harç tamamlanmadıkça davaya devam
-  olunmaz, ama tamamlanınca devam eder), vekâletname/dilekçe eksiği (HMK m.119/2
-  — bir haftalık kesin süre; giderilirse dava yürür), giderilebilir dava şartı
+  olunmaz, ama tamamlanınca devam eder), dilekçe içerik eksiği (HMK m.119/2
+  — bir haftalık kesin süre; giderilirse dava yürür), vekâletname eksiği (HMK
+  m.77/1 — gecikmesinde zarar doğabilecek hâlde mahkemenin verdiği kesin süre
+  içinde ibraz; ibraz edilmezse dava açılmamış sayılır), giderilebilir dava şartı
   (HMK m.115/2 — kesin süre verilir; m.115/3 — hüküm anında giderilmişse usulden
   ret yok). Bu kusurları ileri sürmek dosyayı KAPATMAZ, yalnız **geciktirir**;
   gecikme müvekkilin hedefine göre kazanç da kayıp da olabilir.
