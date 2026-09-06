@@ -32,15 +32,33 @@ SKILL.md "ZAMAN KATMANI".)
 ### İlliyet kenarları (neden-sonuç)
 - Olay/fiil —[sebep_zarar/fiil_netice]→ sonuç
   tip: uygun illiyet / objektif isnadiyet · güç: ...
-  ⚠ KESME ADAYI varsa: mücbir sebep / mağdur kusuru / üçüncü kişi kusuru
+  ⚠ KESME ADAYI varsa (DAL ÖNEKLİ — v0.5.16): medeni: mücbir sebep / mağdur kusuru /
+  üçüncü kişi kusuru · miras: paylaştırma kastı / ivaz · ceza: izin verilen risk /
+  kendi tehlikesine girme / hukuka uygunluk / mağdur kusuru
+  ℹ ceza:magdur_kusuru → doktrin hatırlatması (hüküm değil): illiyeti KESMEZ, kusur
+  derecesine/ceza miktarına etki eder (künye KÜTÜKTEN)
 
-### Boşluk / risk denetimi (grafik_denetim.py çıktısından — exit kodu: 0 temiz / 2 çöktü / 3 şema-çevrim)
+### Ticaret modelleme — organik bağ + perde (avukat kararı #11, v0.5.16)
+- [hak] Organik bağ talebi —[organik_bag]→ Şirket A / Şirket B   [doğrulama] (norm)
+- [hak] Tüzel kişilik perdesinin aralanması talebi —[hakimiyet/muvazaa]→ ...   [doğrulama]
+  (İki talep AYRI `hak` düğümleridir, ayrı ispat zinciriyle; Yargıtay iki yolu
+  "alternatif değil, birlikte" sayar — künye burada yazılmaz, dilekçeye **kütükten
+  teyitli karar ile** girer. Köprü `perde` etiketi bu iki düğümü kurmanın tetiğidir.)
+
+### Kanun yolu zinciri (§9, v0.5.16 — kat sırası + sonuçlar)
+- [karar] İlk derece → [karar] BAM (sonuc: esastan_ret | kaldirdi | ...) → [karar] Yargıtay (onadi | bozdu | ...)
+  (JSON `kanun_yolu_zinciri`; illiyet zincirine GİRMEZ)
+
+### Boşluk / risk denetimi (grafik_denetim.py çıktısından — exit kodu: 0 temiz / 2 çöktü / 3 şema-çevrim; taraf/yön: `--taraf` veya `--kok` → JSON `yon: kur | curut`)
 - Şema hatası / çevrim: ... (exit 3 ise graf düzeltilmeden bu blok kapanmaz)
 - Yetim düğüm: ...
 - Bağlanmamış delil (§2b): ... → hangi iddiayı/kenarı ispatlıyor? (oa-vakia yetim delil)
 - Köprü düğüm: ... [etiket: perde → muvazaa / perdeyi kaldırma sinyali (karşı tarafın
   hedefi) | yapisal → nötr tek bağlantı noktası, perde etiketi değil]
-- Yük taşıyan kenar: ... → ispatlanmazsa zincir kopar (oa-strateji önceliği)
+- Yük taşıyan kenar: ... → ispatlanmazsa zincir kopar (oa-strateji önceliği;
+  yön `kur` → "bu bağı sağlamlaştır", yön `curut` → "karşı tarafın bu bağını ÇÜRÜT")
+- Kesme adayı: ... [dal önekli flag + varsa doktrin hatırlatması; yön `curut` →
+  "kesme savunmasını KUR"; taraf bilinmiyorsa "--taraf ver" notu]
 - Desteksiz kenar: ... adet → oa-vakia
 - Güç beyansız illiyet kenarı: ... adet (beyan-yok ≤ tartışmalı → guc beyan et)
 

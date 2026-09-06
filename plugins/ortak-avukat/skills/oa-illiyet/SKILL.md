@@ -48,21 +48,41 @@ davacı/davalı/müdahil · alacaklı/borçlu/üçüncü kişi · tanık/bilirki
 `tuzel_kisi` (şirket/ticari işletme/adi ortaklık), `kamu` (idare/SGK/icra/mahkeme/
 kolluk), `nesne` (taşınmaz/taşınır/araç/ziynet/senet/para), `delil`
 (belge/tanık/bilirkişi/keşif/dijital), `olay` (fiil/işlem/sözleşme/haciz/tebligat),
-`hak` (mülkiyet/alacak/talep).
+`hak` (mülkiyet/alacak/talep), `karar` (ilk derece/BAM/Yargıtay kararı) ve `mahkeme`
+(v0.5.16 — kanun yolu katı; köprü/perde hesabından muaf, çünkü mahkeme yapısı gereği
+her tarafı bağlar). Ticaret dosyasında organik bağ ve tüzel kişilik perdesi için AYRI
+`hak` düğümleri kur (şablon: `references/cikti-blogu.md`, doktrin §4).
 
 Kenarları İKİ kategoride çıkar:
 
 **(A) İlişki kenarı (statik bağ):** `ortaklik`, `temsil`, `vekalet`, `akrabalik`,
 `isci_isveren`, `asil_alt_isveren`, `alacakli_borclu`, `mulkiyet`, `zilyetlik`,
 `muvazaa`, `organik_bag`, `hakimiyet`, `kefalet`, `sozlesme_tarafi`,
-`istirak` (TCK m.37-39: faillik/azmettirme/yardım).
+`istirak` (TCK m.37-39: faillik/azmettirme/yardım), `kanun_yolu` (v0.5.16 — YALNIZ
+`karar | mahkeme` düğümleri arasında, kat sırasıyla alt derece → üst derece; `sonuc`
+ZORUNLU: `onadi | bozdu | kaldirdi | geri_cevirdi | esastan_ret | kesin`; illiyet
+zincirine/çevrime/yük hesabına GİRMEZ — §9 "KANUN YOLU ZİNCİRİ" + JSON
+`kanun_yolu_zinciri`).
 
 **(B) İlliyet kenarı (neden-sonuç):** `fiil_netice`, `sebep_zarar`, `ihlal_sonuc`,
 `kusur_zarar`, `islem_sonuc`. Her illiyet kenarı şu nitelikleri taşır:
 - `illiyet_tipi`: `dogal` (conditio sine qua non) / `uygun` (medeni, hakim teori) /
   `objektif_isnadiyet` (ceza)
 - `guc`: `dispozitif` / `guclu` / `zayif` / `tartismali`
-- `kesme_flag`: yoksa boş; varsa `mucbir_sebep` / `magdur_kusuru` / `ucuncu_kisi_kusuru`
+- `kesme_flag`: yoksa boş; varsa **DAL ÖNEKLİ** (v0.5.16 — şema kırıldı, avukat
+  kararı #7): medeni → `medeni:mucbir_sebep` / `medeni:magdur_kusuru` /
+  `medeni:ucuncu_kisi_kusuru`; miras → `miras:paylastirma_kasti` / `miras:ivaz`;
+  ceza → `ceza:izin_verilen_risk` / `ceza:kendi_tehlikesine_girme` /
+  `ceza:hukuka_uygunluk` / `ceza:magdur_kusuru`. Aynı etiket üç dalda üç ayrı
+  hukuki sonuç doğurur; eski çıplak değer (`magdur_kusuru` vb.) `[ŞEMA UYARISI]`
+  alır ve `--goc` ile dal etiketlenir (exit değişmez — geriye uyum).
+  **Doktrin hatırlatması (hukuki HÜKÜM değil):** `ceza:magdur_kusuru` için script §6'da
+  sabit not basar — "illiyeti KESMEZ, kusur derecesine/ceza miktarına etki eder
+  (Yargıtay 12. CD yerleşik hattı; künye KÜTÜKTEN, hafızadan yazılmaz; TCK m.22/4-5 —
+  Mevzuat MCP teyit 2026-09-07)"; `miras:paylastirma_kasti` için "muris muvazaasında
+  bozma gerekçesi — ispat ölçütü". Bu satırlar doktrin hatırlatmasıdır, hukuki hüküm
+  değil: kesip kesmediğine script DEĞİL avukat karar verir (model kurar, script
+  denetler; script hukuki yorum yapmaz, sadece hatırlatır).
 
 **Her kenarın zorunlu meta verisi** (eksikse script yakalar):
 - `dayanak_delil`: hangi delil düğümü kanıtlıyor (liste; boş olabilir ama o zaman boşluk)
@@ -84,6 +104,27 @@ ateşlenmişti — opsiyonel kapı = ateşlemeyen kapı):
 python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json --json _oa/cikti/01-illiyet-denetim.json
 ```
 
+**Taraf → tavsiye yönü (v0.5.16 G9, avukat kararı #8 — defterden, CLI override):**
+`--taraf sanik|mudafii|katilan|musteki|davaci|davali|alacakli|borclu` VEYA `--kok <dava kökü>`
+ver; `--kok` verilirse `<kök>/_oa/defter/pipeline-durum.json` `ceza_dali` alanı okunur
+(`mudafii` → sanık tarafı, `musteki` → müşteki tarafı; hukuk dosyasında alan boştur).
+Taraf savunma/borçlu/davalı kanadındaysa §6/§7/§8 tavsiye yönü TERSİNE döner:
+"bu bağı sağlamlaştır" → "karşı tarafın bu bağını ÇÜRÜT / kesme savunmasını KUR"
+(JSON `taraf`, `yon: "kur" | "curut"`). Taraf bilinmiyorsa mevcut "kur" metni +
+"taraf bilinmiyor — --taraf ver" notu; `--taraf` defteri ezer.
+
+```bash
+python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json --json _oa/cikti/01-illiyet-denetim.json --kok .
+python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json --json _oa/cikti/01-illiyet-denetim.json --taraf sanik
+```
+
+**Göç (v0.5.16 G10):** eski (dal öneksiz) grafı yeniden etiketle — kaynağa dokunmaz,
+değişen kenar sayısını basar; hedef dalda kanonik olmayan değer göçmez ("elle düzelt"):
+
+```bash
+python scripts/grafik_denetim.py --goc _oa/cikti/01-illiyet-graf.json --dal medeni --cikti _oa/cikti/01-illiyet-graf.v2.json
+```
+
 **Çıkış kodu sözleşmesi (v0.5.16 — SERT KAPI, avukat kararı #1):**
 
 | exit | anlam | JSON |
@@ -91,14 +132,18 @@ python scripts/grafik_denetim.py _oa/cikti/01-illiyet-graf.json --json _oa/cikti
 | exit 0 | temiz — şema hatası yok, çevrim yok | `cikis_kodu: 0`, `blok_sinifi: []` |
 | exit 1 | kullanım hatası (argüman yok) | — |
 | exit 2 | **DENETİM ÇÖKTÜ** (dosya yok / bozuk JSON / beklenmeyen istisna) — stdout `DENETİM ÇÖKTÜ: <sınıf>: <mesaj>` | `denetim_coktu: true`, `hata`, `cikis_kodu: 2` |
-| exit 3 | **çevrim VEYA şema hatası** var — temizlenmeden pipeline ilerlemez | `cikis_kodu: 3`, `blok_sinifi: ["sema" \| "cevrim"]` |
+| exit 3 | **çevrim VEYA şema hatası** var — temizlenmeden pipeline ilerlemez (şema: eksik id/tip/usul_rolu, mükerrer id, illiyet kenarında `illiyet_tipi`/`dogrulama`, `kanun_yolu` kenarında `sonuc`) | `cikis_kodu: 3`, `blok_sinifi: ["sema" \| "cevrim"]` |
 
+`--goc` alt komutu: 0 tamam · 1 eksik argüman · 2 `GÖÇ ÇÖKTÜ` (çıktı yazılmaz).
 Exit 2/3 durdurur; 0 dışındaki her kod avukata görünür (sessiz yeşil yok).
+`[ŞEMA UYARISI]` satırları (eski çıplak `kesme_flag`, karar-dışı uçlu `kanun_yolu`,
+kanonik-dışı `sonuc`) advisory'dir — exit'i değiştirmez.
 `--json` alanları (bekçi sözleşmesi, adlar birebir): `arac="grafik_denetim"`,
 `sema_hatalari`, `cevrimler`, `denetim_coktu`, `cikis_kodu`, `blok_sinifi`,
 `yetim_dugumler`, `baglanmamis_deliller`, `desteksiz_kenarlar`,
-`guc_beyansiz_kenarlar`, `kopru_dugumler[].etiket`, `kesme_adaylari`,
-`yuk_tasiyan_kenarlar`, `zincirler`, `zincir_uyarisi`.
+`guc_beyansiz_kenarlar`, `kopru_dugumler[].etiket`,
+`kesme_adaylari[].{kesme_flag, dal, not}`, `yuk_tasiyan_kenarlar`, `zincirler`,
+`zincir_uyarisi`, `taraf`, `yon`, `kanun_yolu_zinciri[].{yol, sonuclar}`.
 
 Script şunları kesin tespit eder ve raporlar:
 - **Şema hatası (exit 3)** — eksik `id`/`tip`/`usul_rolu`, **mükerrer düğüm id**
@@ -135,8 +180,13 @@ Script şunları kesin tespit eder ve raporlar:
   ≤200 düğümde tam basit çevrim sayımı, üstünde örneklem (rapor bunu söyler).
   Çevrim varken §7 yük taşıyan kenar "çevrimde anlamsız", §8 köksüz graf
   "GÜVENİLMEZ" damgası taşır (sahte-yeşil kapanışı).
-- **Kesme adayları** — `kesme_flag` dolu illiyet kenarları (→ oa-antitez beslemesi)
-- **Yük taşıyan kenar** — çıkarılırsa illiyet zincirini koparan kritik bağ (→ oa-strateji)
+- **Kesme adayları** — `kesme_flag` dolu illiyet kenarları (→ oa-antitez beslemesi);
+  dal önekli flag + `ceza:magdur_kusuru` / `miras:paylastirma_kasti` için sabit doktrin
+  hatırlatması (hüküm değil); yön `curut` ise "kesme savunmasını KUR"
+- **Yük taşıyan kenar** — çıkarılırsa illiyet zincirini koparan kritik bağ (→ oa-strateji);
+  yön `kur` → "bu bağı sağlamlaştır", yön `curut` → "karşı tarafın bu bağını ÇÜRÜT"
+- **Kanun yolu zinciri (§9 — v0.5.16)** — `kanun_yolu` kenarlarının kat sırası + sonuçları
+  (JSON `kanun_yolu_zinciri`); illiyet hesaplarına girmez, çevrim sayılmaz
 - **Zincir güven analizi** — VARSAYILAN (v0.5.8.4): uçtan uca her illiyet
   zinciri için `confidence_decay` + **en zayıf halka** (advisory —
   oa-antitez/oa-strateji beslemesi). 372 sahasında `--zincir` bayrağı 0 kez
