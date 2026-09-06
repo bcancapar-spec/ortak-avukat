@@ -315,12 +315,13 @@ def test_yetim_vakia_uyari_ve_jsona_yazilir(izole_dizin):
 # ── --json çıktısı: şema anahtarları + içerik ───────────────────────────────
 
 def test_json_cikti_sema_anahtarlari_ve_icerik(izole_dizin):
-    """v0.5.16 (P1-4/A-15) — BİLİNÇLİ karakterizasyon güncellemesi: ÜST-DÜZEY
-    JSON anahtar kümesine `yarisan_normlar` (liste) EKLENDİ. Gerekçe: yarışan
-    norm karşılaştırması (sözleşme/haksız fiil talep yarışması, TBK m.60)
-    aşağı-akış (DURUM.md advisory) tarafından makine-okur olmalı; tekil
-    `buyuk_onerme` şemasında liste BOŞ döner — eski dosyaların davranışı
-    değişmez. Diğer anahtarlar ve exit-0 sözleşmesi KORUNDU."""
+    """v0.5.16 (P1-4/A-15) — BİLİNÇLİ karakterizasyon güncellemesi:
+    `buyuk_onerme` nesnesine `yarisan_normlar` (liste) EKLENDİ. Gerekçe:
+    yarışan norm karşılaştırması (sözleşme/haksız fiil talep yarışması, TBK
+    m.60) makine-okur olmalı; ÜST-DÜZEY anahtar kümesi K1 ileri koruması
+    (test_v0514_muhakeme) gereği DEĞİŞTİRİLMEDİ — kayıt büyük önermenin
+    içinde taşınır. Tekil şemada liste BOŞ döner — eski dosyaların davranışı
+    değişmez. Exit-0 sözleşmesi KORUNDU."""
     yol = _kiyas_yaz(izole_dizin, _tam_kiyas())
     json_yol = izole_dizin / "sonuc.json"
     kod, out, _ = _cli(yol, "--json", json_yol)
@@ -333,13 +334,14 @@ def test_json_cikti_sema_anahtarlari_ve_icerik(izole_dizin):
     assert set(veri.keys()) == {
         "arac", "buyuk_onerme", "kucuk_onerme", "sonuc",
         "teyitsiz_ictihat", "unsur_vakia_eslesme", "yetim_vakialar",
-        "kritik_bosluk", "girdi", "yarisan_normlar",
+        "kritik_bosluk", "girdi",
     }
-    assert veri["yarisan_normlar"] == []   # tekil şema → yarışma yok
     assert veri["arac"] == "kiyas_denetim"
     assert veri["girdi"] == str(yol)
     assert veri["kritik_bosluk"] is False
-    assert set(veri["buyuk_onerme"].keys()) == {"norm", "ictihat", "unsurlar"}
+    assert set(veri["buyuk_onerme"].keys()) == {"norm", "ictihat", "unsurlar",
+                                                "yarisan_normlar"}
+    assert veri["buyuk_onerme"]["yarisan_normlar"] == []   # tekil şema → yarışma yok
     assert veri["buyuk_onerme"]["norm"].startswith("TBK m.49")
     assert set(veri["kucuk_onerme"].keys()) == {"vakialar"}
     assert len(veri["kucuk_onerme"]["vakialar"]) == 2

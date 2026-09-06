@@ -20,7 +20,8 @@ olabilir. Listede ≥2 aday varsa rapor §2.a'da karşılaştırma tablosu
 ölçütü, Mevzuat MCP teyit 2026-09-06) basılır ve seçilen önermede
 `secim_gerekcesi` aranır; boşsa «yarışan norm seçimi gerekçesiz» kritik
 boşluğu. `secili: true` işaretli (yoksa ilk) önerme subsumtion denetimine
-esas alınır. JSON'a `yarisan_normlar` listesi eklendi (tekil şemada boş).
+esas alınır. JSON'da `buyuk_onerme.yarisan_normlar` listesi (tekil şemada
+boş) — ÜST-DÜZEY anahtar kümesi DEĞİŞMEZ (K1 ileri koruması, v0.5.14).
 
 ÇIKIŞ KODU KARARI (2026-08-12, Av. Bayram Can Çapar — semantica-uyarlama karar
 sorusu #1): kritik boşlukta dahi exit 0 BİLİNÇLİ TASARIMDIR ve öyle kalır.
@@ -164,7 +165,7 @@ def _yarisan_normlar_bolumu(adaylar, esas, rapor, veri):
     rapor.append("  |---|---|---|---|---|---|")
     for o in adaylar:
         kayit = _yarisan_kaydi(o, esas)
-        veri["yarisan_normlar"].append(kayit)
+        veri["buyuk_onerme"]["yarisan_normlar"].append(kayit)
         hucre = [kayit[a] or "—" for a in KARSILASTIRMA_ALANLARI]
         rapor.append(f"  | {kayit['norm'] or '(norm yok)'} | " + " | ".join(hucre)
                      + f" | {'✓' if kayit['secili'] else ''} |")
@@ -198,13 +199,17 @@ def denetle(k):
             "norm": buyuk.get("norm"),
             "ictihat": _liste(buyuk.get("ictihat")),
             "unsurlar": _liste(buyuk.get("unsurlar")),
+            # v0.5.16 — yalnız ≥2 aday varsa dolar. ÜST-DÜZEYE DEĞİL buraya
+            # konur: K1 ileri koruması (v0.5.14) yeni üst-düzey anahtar yasaklar
+            # (tüketici pipeline_kayit.py tam-küme okur); yarışma büyük önermenin
+            # bir özelliğidir, üst-düzey küme DEĞİŞMEZ.
+            "yarisan_normlar": [],
         },
         "kucuk_onerme": {"vakialar": _liste(kucuk.get("vakialar"))},
         "sonuc": sonuc,
         "teyitsiz_ictihat": [],
         "unsur_vakia_eslesme": [],
         "yetim_vakialar": [],
-        "yarisan_normlar": [],   # v0.5.16 — yalnız ≥2 aday varsa dolar
     }
 
     # 1. Üç bileşen var mı

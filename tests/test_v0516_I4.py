@@ -303,7 +303,7 @@ def test_kiyas_yarisan_normlar_gerekcesiz_bosluk_satiri_exit0_korunur(izole):
     assert "KRİTİK BOŞLUK var" in out
     v = json.loads((izole / "s.json").read_text(encoding="utf-8"))
     assert v["kritik_bosluk"] is True
-    assert len(v["yarisan_normlar"]) == 2
+    assert len(v["buyuk_onerme"]["yarisan_normlar"]) == 2
 
 
 def test_kiyas_gerekce_yalniz_bosluk_karakteri_ise_gerekcesiz_sayilir(izole):
@@ -327,7 +327,7 @@ def test_kiyas_secili_onerme_unsur_denetimine_esas_alinir(izole):
     v = json.loads((izole / "s.json").read_text(encoding="utf-8"))
     assert v["buyuk_onerme"]["norm"] == "NORM-B"
     assert [u["unsur_id"] for u in v["unsur_vakia_eslesme"]] == ["ozel_unsur"]
-    assert any(y["secili"] for y in v["yarisan_normlar"] if y["norm"] == "NORM-B")
+    assert any(y["secili"] for y in v["buyuk_onerme"]["yarisan_normlar"] if y["norm"] == "NORM-B")
 
 
 def test_kiyas_tek_ogeli_liste_yarisma_yok_gerekce_aranmaz(izole):
@@ -339,19 +339,20 @@ def test_kiyas_tek_ogeli_liste_yarisma_yok_gerekce_aranmaz(izole):
     assert "yarışan norm seçimi gerekçesiz" not in out
     assert "SONUÇ: Yapı bütün." in out
     v = json.loads((izole / "s.json").read_text(encoding="utf-8"))
-    assert v["yarisan_normlar"] == []
+    assert v["buyuk_onerme"]["yarisan_normlar"] == []
 
 
 def test_kiyas_eski_tekil_buyuk_onerme_aynen_calisir_yarisan_bos(izole):
     """Geriye uyum: mevcut tekil `buyuk_onerme` şeması değişmeden çalışır;
-    JSON'da `yarisan_normlar` boş liste."""
+    JSON'da `buyuk_onerme.yarisan_normlar` boş liste. Üst-düzey anahtar
+    kümesi DEĞİŞMEZ (K1 ileri koruması — test_v0514_muhakeme)."""
     veri = {"buyuk_onerme": _onerme("TBK m.49"), "kucuk_onerme": _kucuk(),
             "sonuc": "x"}
     _, kod, out = _kiyas(izole, veri, "--json", izole / "s.json")
     assert kod == 0
     assert "SONUÇ: Yapı bütün." in out
     v = json.loads((izole / "s.json").read_text(encoding="utf-8"))
-    assert v["yarisan_normlar"] == []
+    assert v["buyuk_onerme"]["yarisan_normlar"] == []
     assert "YARIŞAN NORMLAR" not in out
 
 
@@ -397,7 +398,7 @@ def test_kiyas_yarisan_json_kaydi_alanlari():
     izole = pathlib.Path(tempfile.mkdtemp())
     _, kod, out = _kiyas(izole, veri, "--json", izole / "s.json")
     v = json.loads((izole / "s.json").read_text(encoding="utf-8"))
-    n1 = [y for y in v["yarisan_normlar"] if y["norm"] == "N1"][0]
+    n1 = [y for y in v["buyuk_onerme"]["yarisan_normlar"] if y["norm"] == "N1"][0]
     assert set(n1.keys()) == {"norm", "zamanasimi", "kusur_sarti",
                               "ispat_kolayligi", "faiz", "secim_gerekcesi", "secili"}
     assert n1["zamanasimi"] == "z1" and n1["secili"] is True

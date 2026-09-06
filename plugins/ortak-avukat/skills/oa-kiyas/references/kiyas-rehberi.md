@@ -136,9 +136,10 @@ Kurallar:
 - Tek öğeli liste yarışma sayılmaz (tablo ve gerekçe aranmaz). Hem
   `buyuk_onerme` hem `buyuk_onermeler` yazılmışsa liste esas alınır, görünür
   uyarı basılır.
-- JSON çıktısına **`yarisan_normlar`** listesi eklendi (her öğe: norm ·
+- JSON çıktısında **`buyuk_onerme.yarisan_normlar`** listesi (her öğe: norm ·
   zamanasimi · kusur_sarti · ispat_kolayligi · faiz · secim_gerekcesi ·
   secili); tekil şemada boş liste — eski dosyalar değişmeden çalışır.
+  ÜST-DÜZEY anahtar kümesi değişmez (K1 ileri koruması, v0.5.14).
 - Zamanaşımı/faiz madde çıpaları bu tabloda **iddia**dır; kullanım anında
   Mevzuat MCP'den teyit edilir, hafızadan yazılmaz.
 
