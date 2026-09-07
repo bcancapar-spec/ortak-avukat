@@ -18,6 +18,14 @@ Model hukuku düşünür; bu script analizin BOŞLUKSUZ olduğunu mekanik garant
   G9  Kesin dil izni verilen işlemde son_gun'ün DAYANAĞI yazılmış mı ve kendi
       içinde tutarlı mı (`sure_kurali` + `yargi_kolu` dolu; kural adının öneki
       beyan edilen yargı kolunu yalanlamıyor)?
+  Z   (v0.5.16 — P2-3/A-8, ADVISORY) Karşı taraf kusurunda opsiyonel
+      `tamamlanabilir: true|false` + `zamanlama: simdi|sonra|avukat_karari`:
+      tamamlanabilir kusurda (harç, vekâletname, dilekçe eksiği — HMK m.119/2,
+      m.115/2, m.77) "ne zaman ileri sür" AVUKAT KARARIDIR — erken ileri
+      sürülürse karşı taraf kesin sürede tamamlar. Zamanlama yazılmamışsa
+      bulgu satırı «tamamlanabilir kusurda zamanlama kararı yok» basılır;
+      BOŞLUK DEĞİLDİR (exit sözleşmesi korunur). Tamamlanamaz kusurda (süre)
+      "derhâl" kuralı (anayasa m.2) işler; zamanlama sorusu sorulmaz.
 Boşluk varsa adıyla raporlar ve exit(1) — boşluklu usul analizi teslim edilemez.
 
 Süre HESABI bu scriptin işi değildir → oa-sure/hesapla_sure.py (son_gun oradan gelir).
@@ -50,7 +58,8 @@ ORNEK = {
      "sonuc_norm": "HMK m.346/352 — süreden ret", "sonuc_ictihat_teyit": True,
      "kapi_kapatma": [{"kapi": "K-1 eski hâle getirme", "kapatma": "mazeret iddiası yok; 2 hafta da geçti"},
                         {"kapi": "K-2 usulsüz tebliğ", "kapatma": "e-tebligat UETS kaydı belgeli (7201 m.7/a)"}],
-     "kesin_dil": True},
+     "kesin_dil": True,
+     "tamamlanabilir": False, "zamanlama": "simdi"},
     {"id": "I2", "taraf": "biz", "islem": "cevap", "sure_kurali": "hmk_cevap",
      "teblig": "2026-03-02", "teblig_belgeli": False,
      "son_gun": "2026-03-16", "fiili_tarih": "2026-03-20",
@@ -157,6 +166,61 @@ def _g9_denetle(i, iid, ust_kol, bulgular, bosluklar):
             f"  {iid}: süre dayanağı '{kural}' ↔ yargı kolu '{kol}' tutarlı "
             f"(hesap oa-sure'nindir; script yalnız tutarlılığa bakar).")
 
+
+# ── [Z] tamamlanabilir kusur × zamanlama (v0.5.16 — P2-3/A-8, ADVISORY) ──────
+# Karşı tarafın usul kusuru iki sınıftır:
+#   TAMAMLANAMAZ (süre kaçırma): sonucu kesindir → "derhâl" ileri sürülür
+#     (anayasa m.2: kaçırılmış süre en ucuz kazanımdır, gizli tutulmaz).
+#   TAMAMLANABİLİR (harç ikmali 492; vekâletname HMK m.77; dilekçe eksiği HMK
+#     m.119/2; giderilebilir dava şartı m.115/2 — Mevzuat MCP teyit 2026-09-06):
+#     erken ileri sürülürse mahkeme kesin süre verir ve karşı taraf TAMAMLAR;
+#     "ne zaman ileri sür" bu yüzden AVUKAT KARARIDIR. Script karar vermez,
+#     yalnız kararın YAZILIP YAZILMADIĞINA bakar (advisory; boşluk üretmez —
+#     exit sözleşmesi korunur). Saha dersi: karşı tarafın vekâletname eksiğini
+#     ilk celsede ileri süren, ona ikinci celseye kadar tamamlama süresi
+#     kazandırır; sessiz kalıp kesin sürenin kaçmasını izleyen, dosyayı kapatır.
+ZAMANLAMA_ENUM = {"simdi", "sonra", "avukat_karari"}
+
+
+def _zamanlama_denetle(i, iid, kim, bulgular):
+    """[Z] — advisory; hiçbir dalı `bosluklar`a yazmaz."""
+    if "tamamlanabilir" not in i and "zamanlama" not in i:
+        return                      # eski artefakt: alan yok → satır yok
+    if kim != "karsi":
+        bulgular.append(
+            f"  {iid}: 'tamamlanabilir/zamanlama' alanı yalnız karşı taraf kusurunda "
+            f"(A-cephesi) anlamlıdır — '{kim}' kaydında yok sayıldı.")
+        return
+    t = i.get("tamamlanabilir")
+    if not isinstance(t, bool):
+        bulgular.append(
+            f"  {iid}: 'tamamlanabilir' değeri bool değil ({t!r}) — script "
+            f"nitelendirme yapmaz; alan yok sayıldı (true/false yaz).")
+        return
+    if t is False:
+        bulgular.append(
+            f"  {iid}: TAMAMLANAMAZ kusur (süre) → 'derhâl' kuralı: sonuç kesin, "
+            f"zamanlama sorusu yok (anayasa m.2).")
+        return
+    z_ham = i.get("zamanlama")
+    z = str(z_ham).strip() if isinstance(z_ham, str) else ""
+    if z and z not in ZAMANLAMA_ENUM:
+        bulgular.append(
+            f"  {iid}: 'zamanlama' değeri kapalı enum dışı ('{z_ham}') — script "
+            f"nitelendirme yapmaz; 'bilinmiyor' sayıldı "
+            f"(simdi|sonra|avukat_karari).")
+        z = ""
+    if not z:
+        bulgular.append(
+            f"  {iid}: TAMAMLANABİLİR kusur — tamamlanabilir kusurda zamanlama kararı "
+            f"yok: erken ileri sürülürse karşı taraf kesin sürede tamamlar; "
+            f"'ne zaman' AVUKAT KARARIDIR (zamanlama=simdi|sonra|avukat_karari yaz).")
+        return
+    bulgular.append(
+        f"  {iid}: TAMAMLANABİLİR kusur — zamanlama={z} (kayıtlı; karar avukatındır, "
+        f"script yalnız kararın yazıldığına bakar).")
+
+
 def _kamu_denetle(i, iid, bulgular, bosluklar):
     aktor = i.get("aktor", "?")
     # G6 — unsur denetimi (her kamu işleminde standart üçlü soru)
@@ -221,6 +285,9 @@ def denetle(v):
                              f"'teyidi kaydıyla' formülüne dön.")
         # G9 — kesin dilin süre DAYANAĞI: alanlar dolu mu ve tutarlı mı (B-9)
         _g9_denetle(i, iid, ust_kol, bulgular, bosluklar)
+        # [Z] — tamamlanabilir kusur × zamanlama (advisory; süre durumundan
+        # bağımsız: vekâletname/harç eksiği süresinde de "kusur"dur)
+        _zamanlama_denetle(i, iid, kim, bulgular)
         if durum and durum.startswith("KAÇIRILMIŞ"):
             if kim == "karsi":
                 # G2 — sonuç + kapı kapatma
