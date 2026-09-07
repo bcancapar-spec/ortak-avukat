@@ -227,3 +227,61 @@ aynen mevcuttur** (yukarıdaki kontrollü karşılaştırma). Depo kodu bu oturu
 | `MUTALAA-TTK-MUDUR-ORTAK.md` | Ana mütalaa (10 bölüm: kategori ayrımı, yönetsel haklar, meşru zorlama matrisi, blöf listesi, 13 saha kalıbı, ortağın savunma protokolü, AŞ karşılaştırması, müdürün risk haritası, illiyet şeması, sonuç) |
 | `kaynak-kutugu.md` | 50 madde + 43 içtihat künyesi, `source_url`'li; teyit dereceleri (TAM/SNIPPET/KÜNYE/ATIF); aşılmışlık taraması; teyit edilemeyenler |
 | `status.md` | Bu oturum kaydı (anlık + atomik) |
+
+---
+
+## 10. Faz-6 (plan dışı) — CI teşhisi ve ayrı düzeltme dalı
+
+PR #2 açıldıktan sonra CI'nın `test (ubuntu-latest / py3.12)` ve `py3.13`
+ayakları düştü. Teşhis zinciri:
+
+1. **Düşük bu PR'ın mı?** `git diff --stat origin/main...HEAD` → yalnız 3
+   markdown dosyası; `plugin.json` dahil hiçbir koda dokunulmamış.
+2. **`main`'de de var mı?** `origin/main` ayrı ve temiz bir worktree'ye
+   çıkarıldı, bu oturumun hiçbir dosyası ortada yokken aynı testler koşuldu
+   → **3 failed, 17 passed**. Aynı düşükler. ⇒ Düşük `main`'in kendi ucunda.
+3. **Kök neden:** `main` ucu `08441f5` ("manifestteki yinelenen hooks
+   bildirimini kaldir") `plugin.json`'dan `"hooks": "./hooks/hooks.json"`
+   satırını **haklı gerekçeyle** sildi (standart yol zaten otomatik
+   yükleniyor; ikinci bildirim `Duplicate hooks file detected` verip 20
+   skill'in tamamını düşürüyordu) — ama o satırı **zorunlu** sayan 4 iddiayı
+   güncellemedi.
+4. **Çarpışan iki saha dersi:** (a) v0.5.6 — kayıt hiç yoksa tetikler ölür;
+   (b) 08441f5 — iki kez bildirilirse eklenti hiç yüklenmez. **(a)'nın
+   çaresi (b)'nin arızasıdır**; ikisi eski iddia biçimiyle aynı anda
+   sağlanamaz.
+5. **Mevcut yama var mı?** Depoda başka açık PR yok (PR #1 Temmuz'da
+   kapanmış) ⇒ taşınabilecek bir düzeltme yok.
+
+**Yapılanlar:**
+- PR #2'ye **tek** gerekçe yorumu bırakıldı (düşen kontroller, neden bu PR'ın
+  olmadığı, temiz `main` üzerindeki birebir üretim, önerilen yama).
+  Deterministik bir `assert` hatası olduğu için CI dakikası harcayan tekrar
+  koşum yapılmadı; gerekçesi yorumda yazılı.
+- **Doktrin değişikliği olduğu için karar avukata soruldu** (karar verici:
+  Bayram Can ÇAPAR). Onay üzerine ayrı dal açıldı:
+  `claude/hook-manifest-tek-kez-degismezi` → **PR #3**.
+- Yeni değişmez: **hook katmanı TAM BİR KEZ yüklenebilir olmalıdır** —
+  dosya standart yolda durmalı, manifest onu tekrar bildirmemeli.
+  Dokunulan: `tools/hook_doktor.py` (üç dallı kontrol),
+  `tests/test_hooks_wiring.py`, `tests/test_devir_zorlayici.py`.
+- **Sürüm damgalarına dokunulmadı** (0.5.16.1 aynen); kodda uydurma sürüm
+  etiketi yazılmadı, yorumlar commit sha'sına atıf yapıyor.
+
+**Ölçüm (yerel, py3.11; py3.12+ isteyen 3 `tam_tur` dosyası hariç):**
+
+| | fail | pass | skip | error |
+|---|---|---|---|---|
+| önce (`origin/main`) | 20 | 2229 | 24 | 2 |
+| sonra (PR #3 dalı) | **16** | **2233** | 24 | 2 |
+
+Tam 4 düzelme, yeni düşük yok. `python tools/hook_doktor.py --servis-atla`
+→ exit 0, `SONUÇ: TÜM MEKANİK KONTROLLER GEÇTİ ✓`.
+
+**Muhakeme notu (salt-belge PR neden genişletilmedi):** Düzeltme, deponun
+kodlanmış doktrinine dokunuyor; salt-belge bir mütalaa PR'ına iliştirilirse
+hem inceleme birimi bulanır hem de doktrin değişikliği bir mütalaa commit'inin
+içinde görünmez hâle gelir. Ayrı dal, ayrı PR — inceleme birimi temiz kalır.
+
+**Açık:** PR #2, PR #3 birleşene kadar kırmızı kalacaktır; kırmızının sebebi
+bu PR değildir ve PR'da yazılıdır. İki PR de izlemede.
