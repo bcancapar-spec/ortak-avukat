@@ -17,6 +17,48 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.16 — İki Denetimin İnfazı (ARA DURUM — 2026-09-07 03:10, devam ediyor)
+**Kanıt türü:** iki bağımsız dış denetim raporu (6 Eylül 2026): (1) *bütünleşik
+analiz* — döngü/graf/hook mimarisi + üç dalda saha sınaması + Yargıtay→BAM→ilk
+derece dikey inişi; **22 bulgu** (K1–K5 kesişim, G1–G12 graf, H/P hook-pipeline,
+D1–D4 kaynak) ve **12 hamle**; (2) *dış denetim* — 20 parçanın hukuki metodolojisi
+ve müvekkil menfaati; **A-1..A-28 + B-1..B-8**, P0/P1/P2 reçetesi. Kaynak belgeler
+`_gorus/denetim-2026-09-06-*.md` altında aynen saklanır.
+
+**Yöntem:** reçete 15 sahiplik grubuna bölündü; her grup kendi git dalında
+(`v0516/<grup>`) uygula → adversarial hakem → onarım zincirinden geçiyor; her
+norm Mevzuat/Yargı Pro MCP'den madde metniyle teyit ediliyor (m.4), fikstürler
+sentetik (m.7), önce-kırmızı TDD. Ana ajan hiçbir grubun dosyasına dokunmadı;
+birleştirme tek entegratörde.
+
+**Bu ana kadar (dallarda, main'e henüz birleştirilmedi):** 13 grup nihai
+commit'te (A, C1, C2, E, F, G, H, I1, I2, I3, I4, I5, I6); 2 grup son alt adımda (B, D);
+hakem turlarında bugüne dek 10 onay / 1 ret (onarımda). main'de yalnız hazırlık
+commit'i var: anayasa m.1 "dosya ağırlığı triyajı" (A-1/P2-1), README ölçüm
+dili (B-7/P2-13), denetim belgeleri. Sürüm damgaları **henüz 0.5.15** — bu kayıt
+sürüm etiketi DEĞİLDİR (kural: CI yeşermeden etiket atılamaz).
+
+**Kapatılan/kapatılmakta olan başlıklar (dal bazında):** graf kapısı sert + exit
+sözleşmesi + delil/köprü/güç sınıfları + dal-ayrımlı kesme_flag + taraf yönü +
+karar/mahkeme tipi (A); bekçi damgaya bağlandı, graf kapısı, --serh-kapi, inline
+sayaç, ANTİTEZ↔STRATEJİ sırası, müvekkil kararı düğümü, avukat hükmü sensörü (B);
+[F] hafif kip + netice-i talep playbook/[P] + [N] beyaz liste + udf-cli kesinti
+planı (C1); tarih-only/K-only atıf → EKSİK KÜNYE BLOK, [G5-AKIBET], örtüşme
+sayacı, hâkim lensi (C2); teyit --akibet + senkron klasör uyarısı (D); OCR araç
+hatası teşhisi + süre adayı (E); ispat ontolojisi (tanık caizliği, hukuki iddia,
+karine yük kaydırır) (F); aile_dogrula yapısal kilitler + sürüm işaretçisi (G);
+kanun_yolu_zinciri.py + iniş ritüeli + içtihat haritası (H); koruma tedbiri,
+zaman ekseni, risk toleransı, maliyet cetveli (fail-closed tarife) (I1);
+bilirkişi/teknik cephesi + hâkim lensi (I2); müzakereli çıkışlar + beyan
+protokolü, ceza↔hukuk köprüsü (I3); merci tayini notu, usul zamanlama, forum
+seçimi, yarışan norm (I4); aşama tetikli süre sınıfı (I5); ifa senaryo testi (I6).
+
+**Sırada (bu kayıt güncellenecek):** Yargı Pro denetim turu → birleştirme →
+sürüm damgaları 0.5.16 → tam süit → gerçek dava kopyalarında "sonra" ölçümü
+(önce/sonra tablosu) → belge bayatlık taraması → DENETIM-v0516.md → push.
+
+---
+
 ## v0.5.15 — UDF Yapılı Okuma (2026-08-31)
 **Soru avukattan geldi:** *"ingest sistemimiz udf2md yapıyor muydu?"* Cevap:
 yapıyordu ama **ham** — ZIP → CDATA → düz metin. Metin kaybolmuyordu, **yapı**
