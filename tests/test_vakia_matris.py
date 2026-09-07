@@ -24,6 +24,17 @@ olması (B-26) · boş girdinin 'TAMAM' yerine 'DENETLENEMEDİ' sayılması
 satırına `kismi_destek` eklenmesi ve "belgeli" tanımının pozitif beyaz
 listeye çevrilmesi (T5A/B-10).
 
+v0.5.16'da BİLİNÇLİ olarak güncellenen kilitler (A-13 / P0-1 — İSPAT
+ONTOLOJİSİ, gerekçeler ilgili testlerin docstring'lerinde): "tanık = tam
+ispat" karakterizasyonu bir KATEGORİ HATASIYDI (tanık HMK m.200-203 altında
+şartlı delildir; karine HMK m.190/2 gereği ispat etmez, yükü kaydırır;
+hukuki iddia delille ispatlanmaz — HMK m.266 sınırı; madde metinleri Mevzuat
+MCP'den 2026-09-06'da okundu). Matris satırı `tur`/`yuk_kaydiran`/
+`tanik_caizlik_belirsiz`, `ozet` ise `hukuki_iddia`/`yuk_kaydiran_karine`
+ile genişledi; üst-düzey şema ve exit sözleşmesi değişmedi. Tanık dayanaklı
+fikstürler bu dosyada YALNIZ tarihsiz/yetim/belgesiz senaryolarda geçer (o
+senaryolarda tanığın TAM sayılıp sayılmaması sonucu etkilemez).
+
 Girdiler tempfile tabanlı İZOLE dizinlerde üretilir; repo dosyalarına
 dokunulmaz.
 """
@@ -334,11 +345,16 @@ def test_json_cikti_semasi_saglikli_dosya(izole_dizin):
     # matris satırı şeması
     # v0.5.14 (T5A): matris SATIRINA `kismi_destek` eklendi — `belgeli`
     # alanının anlamı/tipi değişmedi, ÜST-DÜZEY şema da değişmedi.
+    # v0.5.16 (A-13): satıra `tur` / `yuk_kaydiran` / `tanik_caizlik_belirsiz`
+    # eklendi (ispat ontolojisi); üst-düzey şema yine değişmedi.
     m1 = [s for s in sonuc["iddia_delil_matrisi"] if s["iddia_id"] == "I1"][0]
-    assert set(m1.keys()) == {"iddia_id", "metin", "destekler", "belgeli",
-                              "kismi_destek"}
+    assert set(m1.keys()) == {"iddia_id", "metin", "tur", "destekler", "belgeli",
+                              "kismi_destek", "yuk_kaydiran",
+                              "tanik_caizlik_belirsiz"}
     assert m1["belgeli"] is True and m1["destekler"] == ["Sozlesme imzalandi"]
     assert m1["kismi_destek"] is False
+    assert m1["tur"] == "vakia"  # tur alanı yok → vakia varsayılır (v0.5.16)
+    assert m1["yuk_kaydiran"] is False and m1["tanik_caizlik_belirsiz"] is False
 
     assert sonuc["tarihsiz"] == []
     assert sonuc["ispat_bosluklari"] == []
@@ -346,8 +362,10 @@ def test_json_cikti_semasi_saglikli_dosya(izole_dizin):
     assert sonuc["gecersiz_referans"] == []
     assert sonuc["gecersiz_ispat_durumu"] == []
     assert sonuc["ozne_eslestirme"] == []  # taraf/ozne alanı yok → sessiz boş liste
+    # v0.5.16 (A-13): ozet `hukuki_iddia` + `yuk_kaydiran_karine` ile genişledi
     assert sonuc["ozet"] == {"iddia": 2, "belgeli_destekli": 2, "ispat_boslugu": 0,
-                             "olay": 2, "tarihsiz": 0, "yetim": 0}
+                             "olay": 2, "tarihsiz": 0, "yetim": 0,
+                             "hukuki_iddia": 0, "yuk_kaydiran_karine": 0}
 
 
 def test_json_cikti_semasi_eksik_dosya_tum_tespit_listeleri(izole_dizin):
@@ -380,8 +398,10 @@ def test_json_cikti_semasi_eksik_dosya_tum_tespit_listeleri(izole_dizin):
     assert sonuc["yetim_deliller"] == ["Tarihsiz yetim olay"]
     assert sonuc["gecersiz_referans"] == ["Sorunlu olay → bilinmeyen iddia 'I9'"]
     assert sonuc["gecersiz_ispat_durumu"] == ["Sorunlu olay: 'video'"]
+    # v0.5.16 (A-13): ozet `hukuki_iddia` + `yuk_kaydiran_karine` ile genişledi
     assert sonuc["ozet"] == {"iddia": 2, "belgeli_destekli": 1, "ispat_boslugu": 1,
-                             "olay": 3, "tarihsiz": 1, "yetim": 1}
+                             "olay": 3, "tarihsiz": 1, "yetim": 1,
+                             "hukuki_iddia": 0, "yuk_kaydiran_karine": 0}
 
 
 # ── bozuk/eksik girdi ───────────────────────────────────────────────────────
@@ -411,3 +431,28 @@ def test_json_koku_liste_ise_temiz_mesaj_exit1(izole_dizin):
     assert kod == 1
     assert "Traceback" not in err
     assert "JSON kökü sözlük değil (list)" in out
+
+
+# ── v0.5.16 (A-13): "tanık = tam ispat" karakterizasyonu BİLİNÇLİ kırıldı ───
+
+def test_tanik_tek_delil_artik_tam_ispat_sayilmaz_a13(izole_dizin):
+    """v0.5.16'da BİLİNÇLİ olarak değiştirildi (A-13 / P0-1 — KATEGORİ
+    HATASI): v0.5.14 kilidi `tanik`i ISPAT_TAM'da tutuyor, dolu `belge` ile
+    yalnız tanığa dayanan iddia 'belgeli destekli' çıkıp dosya TAMAM basıyordu
+    («yeşil matris, dinlenmeyen delil»). Tanık HMK m.200-203 altında ŞARTLI
+    delildir (senetle ispat zorunluluğu / senede karşı tanık yasağı / delil
+    başlangıcı / istisnalar — Mevzuat MCP teyit 2026-09-06); caizliği model
+    belirler, etiket yoksa script fail-closed 'bilinmiyor' sayar. Exit
+    sözleşmesi (sys.exit yokluğu) yine DEĞİŞMEDİ. Ayrıntılı senaryolar:
+    tests/test_v0516_F.py."""
+    veri = {"iddialar": [{"id": "I1", "metin": "Sozlu anlasma yapildi"}],
+            "olaylar": [{"tarih": "2025-02-01", "olgu": "Tanik beyani",
+                         "belge": "tanik listesi", "destekler": ["I1"],
+                         "ispat_durumu": "tanik"}]}
+    yol = _vakia_yaz(izole_dizin, veri)
+    kod, out, err = _cli("--dogrula", str(yol))
+    assert kod == 0
+    assert ">>> Dosya olgu/delil bütünlüğü TAMAM <<<" not in out
+    assert "✗ I1" in out
+    assert "tanık caizliği belirsiz" in out
+    assert "İddia: 1 | belgeli destekli: 0 | ispat boşluğu: 1" in out
