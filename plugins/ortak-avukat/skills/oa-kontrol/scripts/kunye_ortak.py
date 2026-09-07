@@ -44,7 +44,13 @@ import re
 # yanlış kanonikleşince kütük/döküm eşleşmesi de yanlış oluyordu. Tire
 # soneki artık sayının parçasıdır; ama «-YYYY/N» (E-K birleşik ikinci
 # yarısı) yutulmasın diye tire sonrasının «/» ile devam etmemesi şart.
-_YN = r"\d{4}\s*/\s*\d{1,6}(?:-\d{1,6}(?!\s*/))?"
+# ONARIM (hakem, 2026-09-07 — K4 REGRESYON): «(?!\s*/)» tek başına YETMEZ —
+# regex motoru «-2021» reddedilince GERİ İZLEYİP «-202»de durur ve
+# «E. 2020/1111-2021/2222» girdisinde esas «2020/1111-202» (bozuk), karar
+# kaybı, sahte EKSİK KÜNYE üretirdi (taban aynı girdide TAM künye veriyordu).
+# «\b» kelime sınırı geri izlemeyi keser: tire soneki ya TAM sayı olarak
+# eşleşir (kurul: «2020/9-111») ya da hiç eşleşmez (birleşik: «2020/1111»).
+_YN = r"\d{4}\s*/\s*\d{1,6}(?:-\d{1,6}\b(?!\s*/))?"
 
 # ── B-2 DÜZELTMESİ (v0.5.14) — DESEN KÖRLÜĞÜ ───────────────────────────────
 # Denetim kanıtı (2026-08-31, her satır ayrı koşturuldu): `E. 2020/1111,
@@ -224,6 +230,15 @@ _KURUL_MERCI_RE = re.compile(
     r"[İI]çtihad[ıi]\s+Birle[şs]tirme)\b")
 BIRLESIK_EK_RE = re.compile(
     r"(?<![\d/.-])(\d{4})\s*/\s*(\d{1,6})\s*[-–]\s*(?:(\d{4})\s*/\s*)?(\d{1,6})(?![\d/.-])")
+# ONARIM (hakem, 2026-09-07) — ETİKETLİ birleşik biçim «E. 2020/1111-2021/2222
+# [K.] sayılı»: `_YN` tire sonekini «-YYYY/N» önünde bırakınca esas «2020/1111»
+# olarak ayrışır (tabanla aynı); K. etiketi yoksa tirenin ardındaki «YYYY/N»
+# bu kuyruk deseniyle KARAR olarak tamamlanır (kurul dışı satırda). Aynı-yıl
+# «E. 2019/4444-5555» ise `_YN` tarafından bütün olarak yakalanır; satırda
+# kurul anılmıyor VE numaralı daire varsa (kurul esasında daire olmaz) E-K
+# diye bölünür; ne kurul ne daire varsa belirsizdir → bütün kalır (E-only →
+# EKSİK KÜNYE, fail-closed).
+_ETIKETLI_BIRLESIK_KUYRUK_RE = re.compile(r"\s*[-–]\s*(\d{4})\s*/\s*(\d{1,6})(?![\d/.-])")
 
 
 def _satir_metni(metin, konum):
@@ -299,11 +314,23 @@ def esas_karar_atiflari(metin):
                 en_iyi, en_mesafe = idx, mesafe
         bas, son = es, ee
         karar_no = None
+        bicim = None
         if en_iyi is not None:
             kullanilan_k.add(en_iyi)
             ks, ke, kno = kararlar[en_iyi]
             karar_no = kno
             bas, son = min(bas, ks), max(son, ke)
+        elif not _KURUL_MERCI_RE.search(_satir_metni(metin, es)):
+            # ONARIM (hakem, 2026-09-07) — etiketli birleşik yükseltmesi
+            # (bkz. `_ETIKETLI_BIRLESIK_KUYRUK_RE` açıklaması).
+            m_kuyruk = _ETIKETLI_BIRLESIK_KUYRUK_RE.match(metin, ee)
+            if m_kuyruk:
+                karar_no = f"{m_kuyruk.group(1)}/{m_kuyruk.group(2)}"
+                son, bicim = m_kuyruk.end(), "birlesik"
+            elif "-" in eno and daire_key(_satir_metni(metin, es)):
+                e_parca, k_parca = eno.split("-", 1)
+                eno, karar_no = e_parca, f"{e_parca.split('/')[0]}/{k_parca}"
+                bicim = "birlesik"
         # K4 (v0.5.16) — merci geri-bakış penceresi SATIRLA sınırlı: eskiden
         # 70 karakterlik pencere satır sonunu aşıyor, bir önceki satırdaki
         # başka bir künyenin mercisini («9. HD») bu künyeye yapıştırıyordu —
@@ -317,7 +344,7 @@ def esas_karar_atiflari(metin):
         ham_kunye = metin[bas:son]
         dkey = daire_key(ham_kunye)
         dolu_spanlar.append((bas, son))
-        atiflar.append({
+        atif = {
             "esas": eno,
             "karar": karar_no,
             "daire_key": dkey,
@@ -325,7 +352,10 @@ def esas_karar_atiflari(metin):
             "satir_no": _satir_no(metin, es),
             "metin": _sikistir(ham_kunye),
             "bas": bas, "son": son,
-        })
+        }
+        if bicim:
+            atif["bicim"] = bicim
+        atiflar.append(atif)
     birlesik = _birlesik_ek_atiflari(metin, dolu_spanlar)
     dolu_spanlar.extend((a["bas"], a["son"]) for a in birlesik)
     atiflar.extend(birlesik)
@@ -363,6 +393,53 @@ SINIF_AYRISTIRILAMAYAN = "AYRIŞTIRILAMAYAN"
 _TARIH_ONLY_RE = re.compile(
     r"\d{1,2}[./]\d{1,2}[./]\d{4}\s*(?i:tarih(?:li|inde)?|g[üu]nl[üu])\s+(?i:karar|ilam)")
 _YN_SADE_RE = re.compile(r"\d{4}\s*/\s*\d{1,6}")
+
+# ONARIM (hakem, 2026-09-07 — yanlış-BLOK adayı): «Yerel mahkemenin 05.06.2024
+# tarihli kararı Yargıtay'ın yerleşik içtihadına aykırıdır.» istinaf/temyiz
+# dilekçesinde ÇOK sık cümledir; tarih KENDİ dosyasının kararına aittir, merci
+# yalnız genel içtihat anımıdır. Tarih-only iması ancak tarih MERCİYE AİTSE
+# geçerlidir (yapısal ölçüt, hukuki yorum değil): merci tarihten ÖNCE aynı
+# satırda anılmış VE aradaki metinde başka bir mahkeme iyeliği («yerel
+# mahkemenin», «ilk derece mahkemesinin», «… hâkimliğinin») yok. «Bölge
+# Adliye Mahkemesinin 05.06.2024 tarihli kararı» yine imadır (merci sözcüğü
+# mahkeme adının kendisidir; arada iyelik yoktur).
+_ARA_MAHKEME_IYELIGI_RE = re.compile(
+    r"(?i)\bmahkeme(?:si)?n[iı]n\b|\bilk\s+derece\b|\byerel\b|\bh[âa]kimli[ğg]i(?:nin)?\b")
+_TARIH_IMASI_BAS_RE = re.compile(r"(?i)^(?:tarih|g[üu]nl[üu])")
+
+
+def _tarih_merciye_ait(satir):
+    """K4 onarım — satırdaki «dd.mm.yyyy tarihli/günlü karar/ilam» tarihlerinden
+    en az biri anılan merciye ait mi (merci tarihten önce, arada mahkeme
+    iyeliği yok)?"""
+    for m in _TARIH_ONLY_RE.finditer(satir):
+        onceki = list(MERCI_RE.finditer(satir, 0, m.start()))
+        if not onceki:
+            continue
+        ara = satir[onceki[-1].end():m.start()]
+        if _ARA_MAHKEME_IYELIGI_RE.search(ara):
+            continue
+        return True
+    return False
+
+
+def _gecerli_karar_imasi(satir):
+    """K4 onarım — satırdaki İLK geçerli karar iması (re.Match) ya da None.
+    Sayı («2020/1111») ve «sayılı karar» imaları daima geçerlidir; «tarihli/
+    günlü karar» iması, satırda tarihli-karar kalıbı varsa ancak tarih
+    merciye aitse geçerlidir (tarih kalıbı hiç yoksa eski davranış korunur —
+    fail-closed)."""
+    ilk_tarih_imasi = None
+    for m in _KARAR_IMASI_RE.finditer(satir):
+        if not _TARIH_IMASI_BAS_RE.match(m.group(0)):
+            return m
+        if ilk_tarih_imasi is None:
+            ilk_tarih_imasi = m
+    if ilk_tarih_imasi is None:
+        return None
+    if _TARIH_ONLY_RE.search(satir) and not _tarih_merciye_ait(satir):
+        return None
+    return ilk_tarih_imasi
 
 
 def _satir_tamlik(metin):
@@ -418,7 +495,10 @@ def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
          atlanır — Denizli 346 karnesinin tek parser yanlış-pozitifi.
       3. Merci VE karar iması AYNI SATIRDA olmalıdır; yalnız merci anmak
          ('Yargıtay'ın yerleşik içtihadı') hiçbir zaman tetiklemez; «tarihli»
-         ancak «karar/ilam» ile bitişikse imadır (RG/ihtarname tarihi değil)."""
+         ancak «karar/ilam» ile bitişikse imadır (RG/ihtarname tarihi değil).
+      4. (onarım, 2026-09-07) Tarih-only iması ancak tarih MERCİYE AİTSE
+         geçerlidir — «Yerel mahkemenin 05.06.2024 tarihli kararı Yargıtay'ın
+         yerleşik içtihadına aykırıdır» tetiklemez (bkz. `_tarih_merciye_ait`)."""
     tam_satirlar, eksik_satirlar = _satir_tamlik(metin)
     if dolu_satirlar is None:
         dolu_satirlar = set(tam_satirlar)
@@ -430,7 +510,7 @@ def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
             continue
         if not MERCI_RE.search(satir):
             continue
-        ima = _KARAR_IMASI_RE.search(satir)
+        ima = _gecerli_karar_imasi(satir)   # onarım: tarih merciye ait değilse ima yok
         if not ima:
             continue
         if KENDI_DOSYA_SATIR_RE.match(satir):

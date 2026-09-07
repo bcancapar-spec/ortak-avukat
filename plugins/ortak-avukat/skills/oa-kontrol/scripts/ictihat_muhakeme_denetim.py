@@ -934,7 +934,12 @@ def akibet_denetimi(atiflar, kayitlar, kutuk):
     Döner: (bloklar, uyarilar) — her ikisi [str]."""
     bloklar, uyarilar = [], []
     for k in kayitlar:
-        kutuk_akibet = ko.kutukten_son_akibet(kutuk, k.esas, k.karar, k.daire) if kutuk else None
+        # ONARIM (hakem, 2026-09-07): kütük tokenı da kayıt satırıyla AYNI
+        # normalizasyondan geçer — D grubu «kesinleşti»/«Geri-Çevrildi» yazarsa
+        # enum dışı sayılıp sahte «tanınmayan» uyarısı ya da kayıt/kütük
+        # çelişkisi üretilmez (tek-yazar kuralı: `_akibet_normalize`).
+        kutuk_akibet = (_akibet_normalize(ko.kutukten_son_akibet(kutuk, k.esas, k.karar, k.daire))
+                        if kutuk else None)
         akibet = kutuk_akibet or k.akibet
         if not akibet:
             continue

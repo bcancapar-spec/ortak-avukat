@@ -609,3 +609,23 @@ def test_k5_onarim_kutuk_turkce_bozuldu_blok():
     kod, out = _muhakeme_cli(kok, ATIFLI)
     assert kod == 1, out
     assert "LEHE dayanak olamaz" in out
+
+
+def test_k4_onarim_ayni_yil_etiketli_birlesik_daireli_bolunur_dairesiz_kalir():
+    """«E. 2019/4444-5555» (aynı-yıl, etiketli): satırda kurul yok VE numaralı
+    daire varsa (kurul esasında daire olmaz) esas/karar diye bölünür; ne kurul
+    ne daire varsa belirsizdir → bütün kalır ve E-only EKSİK KÜNYE olur
+    (fail-closed; taban bu biçimde esas-only 2019/4444 verip kapıyı AÇIK
+    bırakıyordu — bilinçli sıkılaştırma, hakem K4 onarımı)."""
+    daireli = "Yargıtay 9. HD, E. 2019/4444-5555 sayılı kararı emsaldir."
+    atiflar = ko.esas_karar_atiflari(daireli)
+    assert [(a["esas"], a["karar"], a.get("bicim")) for a in atiflar] == [
+        ("2019/4444", "2019/5555", "birlesik")], atiflar
+    assert ko.ayristirilamayan_atiflar(daireli) == []
+    dairesiz = "Yargıtay'ın E. 2019/4444-5555 sayılı kararı emsaldir."
+    atiflar = ko.esas_karar_atiflari(dairesiz)
+    assert [(a["esas"], a["karar"]) for a in atiflar] == [("2019/4444-5555", None)], atiflar
+    izler = ko.ayristirilamayan_atiflar(dairesiz)
+    assert izler and izler[0]["sinif"] == "EKSİK KÜNYE" and "E-only" in izler[0]["sebep"]
+    kurul = "Yargıtay HGK, E. 2019/4-555 sayılı kararı emsaldir."
+    assert [(a["esas"], a["karar"]) for a in ko.esas_karar_atiflari(kurul)] == [("2019/4-555", None)]
