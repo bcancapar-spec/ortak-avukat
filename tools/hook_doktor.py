@@ -314,13 +314,26 @@ def main():
         hata = 1
 
     pj = json.loads((plugin_kok / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    hooks_yol = plugin_kok / "hooks" / "hooks.json"
+    # DEĞİŞMEZ: hook katmanı TAM BİR KEZ yüklenebilir olmalı. İki yönlü arıza:
+    #   (a) v0.5.6 — hiç kayıt yoksa üç tetik birden ölür;
+    #   (b) 08441f5 — Claude Code standart yolu (hooks/hooks.json) ZATEN
+    #       kendiliğinden yükler; manifest onu ikinci kez bildirirse kurulumda
+    #       "Duplicate hooks file detected" doğar ve eklentinin tamamı (20
+    #       skill dahil) hiç yüklenmez.
     if pj.get("hooks"):
-        print("    plugin.json hooks: ✓ %s" % pj["hooks"])
+        print("    plugin.json hooks: ✗ YİNELENEN bildirim (%s) — standart yol "
+              "zaten otomatik yükleniyor; kurulumda 'Duplicate hooks file "
+              "detected' ile eklentinin tamamı düşer" % pj["hooks"])
+        hata = 1
+    elif hooks_yol.is_file():
+        print("    plugin.json hooks: ✓ bildirim YOK — standart yol "
+              "(hooks/hooks.json) otomatik yükleniyor")
     else:
-        print("    plugin.json hooks: ✗ YOK — hook katmanı hiç kaydolmaz (v0.5.6 arızası)")
+        print("    plugin.json hooks: ✗ ne manifest kaydı ne standart yol "
+              "dosyası var — hook katmanı hiç kaydolmaz (v0.5.6 arızası)")
         hata = 1
 
-    hooks_yol = plugin_kok / "hooks" / "hooks.json"
     veri = json.loads(hooks_yol.read_text(encoding="utf-8"))
     ic = veri.get("hooks", {})
     olaylar = hooks_olaylari(hooks_yol)  # DİNAMİK envanter (v0.5.9 T2)

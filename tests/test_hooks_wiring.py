@@ -77,23 +77,30 @@ def test_hook_postwrite_bayragi_pipeline_kayit_scriptinde_tanimli():
 
 
 def test_plugin_json_var_ve_gecerli_json():
+    """08441f5 saha vakası: manifest, standart yolu İKİNCİ kez
+    bildirmemelidir. Claude Code `<plugin kökü>/hooks/hooks.json`'u zaten
+    kendiliğinden yükler; ayrıca `"hooks": "./hooks/hooks.json"` yazmak
+    kurulumda `Duplicate hooks file detected` doğurur ve eklentinin tamamı
+    (20 skill dahil) hiç yüklenmez."""
     assert PLUGIN_JSON.is_file(), f"plugin.json bulunamadı: {PLUGIN_JSON}"
     with open(PLUGIN_JSON, encoding="utf-8") as f:
         veri = json.load(f)
     assert isinstance(veri, dict)
-    assert veri.get("hooks") == "./hooks/hooks.json"
+    assert "hooks" not in veri, (
+        "plugin.json otomatik yüklenen standart yolu (hooks/hooks.json) ikinci "
+        "kez bildiriyor; kurulumda 'Duplicate hooks file detected' → eklenti "
+        "hiç yüklenmez (08441f5).")
 
 
-def test_plugin_json_hooks_alani_diskte_cozulebilir():
-    """plugin.json'daki './hooks/hooks.json' göreli yolu FİİLEN diskte var mı?
-    (Claude Code kuralı: plugin.json'daki göreli yollar `.claude-plugin/`ın
-    BİR ÜST klasörüne — plugin paket köküne — göre çözülür, plugin.json'ın
-    KENDİ bulunduğu `.claude-plugin/` klasörüne göre DEĞİL.)"""
-    with open(PLUGIN_JSON, encoding="utf-8") as f:
-        veri = json.load(f)
-    goreli = veri["hooks"]
-    hedef = (PLUGIN_ROOT / goreli).resolve()
-    assert hedef.is_file(), f"plugin.json'ın işaret ettiği hooks dosyası yok: {hedef}"
+def test_hooks_json_standart_yolda_ve_otomatik_yuklenebilir():
+    """Manifest kaydı kalkınca hook katmanının kablosu TEK dayanağa iner:
+    dosyanın standart yolda durması. Bu yüzden artık denetlenen şey odur.
+    (Claude Code kuralı: plugin paket kökünün altındaki `hooks/hooks.json`
+    otomatik yüklenir; göreli yollar `.claude-plugin/`ın BİR ÜST klasörüne —
+    plugin paket köküne — göre çözülür, plugin.json'ın KENDİ bulunduğu
+    `.claude-plugin/` klasörüne göre DEĞİL.)"""
+    hedef = (PLUGIN_ROOT / "hooks" / "hooks.json").resolve()
+    assert hedef.is_file(), f"standart yolda hooks.json yok: {hedef}"
     assert hedef == HOOKS_JSON.resolve()
 
 

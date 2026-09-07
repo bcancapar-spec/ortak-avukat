@@ -14,6 +14,15 @@ diye sormasa fark edilmeyecekti.
    `test_hooks_wiring.py` bunu YAKALAYAMADI: dosyanın VARLIĞINI sınıyordu,
    manifeste KAYITLI olduğunu değil.
 
+   DÜZELTME (08441f5 — ikinci saha vakası): teşhisin çaresi
+   fazla ileri gitti. Claude Code `<plugin kökü>/hooks/hooks.json`'u ZATEN
+   kendiliğinden yüklüyor; manifeste `"hooks": "./hooks/hooks.json"` yazmak
+   onu İKİNCİ kez bildirdiği için kurulumda `Duplicate hooks file detected`
+   doğuruyor ve eklentinin TAMAMI (20 skill dahil) hiç yüklenmiyordu. Yani
+   (1)'in çaresi yeni bir arızaydı. Bugünkü değişmez ikisini birden kilitler:
+   **hook katmanı TAM BİR KEZ yüklenebilir olmalıdır** — dosya standart yolda
+   durmalı, manifest onu tekrar bildirmemeli (bkz. aşağıdaki (1) testi).
+
 2) Hooks çalışsa bile sessiz kalırdı: hem `_hook_postwrite_tetikle_mi` hem
    `_hook_govde_calistir` işe "`_oa/defter` var mı" diye başlıyordu. Hat hiç
    açılmadıysa defter de yoktur → nöbetçi, tam da nöbet tutması gereken vakada
@@ -58,21 +67,34 @@ def _kos(args, kok):
 
 # ── (1) MANİFEST KABLOSU — kaydı düşen hook, olmayan hooktur ────────────────
 
-def test_plugin_json_hooks_KAYDINI_tasimak_ZORUNDA():
-    """ASIL REGRESYON: v0.5.6'da bu satır silindi ve üç tetiğin üçü birden
-    öldü. `hooks.json`'un diskte durması YETMEZ — manifest onu kaydetmelidir."""
+def test_hook_katmani_TAM_BIR_KEZ_kayitli_olmak_ZORUNDA():
+    """ASIL REGRESYON İKİ YÖNLÜDÜR — değişmez: hook katmanı TAM BİR KEZ
+    yüklenebilir olmalıdır.
+
+    (a) v0.5.6 saha vakası — kayıt HİÇ yoksa PostToolUse/Stop/SessionEnd/
+        UserPromptSubmit tetiklerinin hepsi ölür ve model bir adımı atladığında
+        hiçbir şey uyarmaz.
+    (b) 08441f5 saha vakası — Claude Code `<plugin kökü>/hooks/hooks.json`'u
+        ZATEN kendiliğinden yükler; manifest onu ikinci kez bildirirse kurulumda
+        `Duplicate hooks file detected` doğar ve eklentinin tamamı (20 skill
+        dahil) hiç yüklenmez. Yani (a)'nın çaresi (b)'nin arızasıdır.
+
+    Bu yüzden testin bugünkü iddiası: dosya standart yolda DURMALI, manifest
+    onu TEKRAR BİLDİRMEMELİ."""
     veri = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))
 
-    assert "hooks" in veri, (
-        "plugin.json'da `hooks` kaydı YOK. hooks.json diskte dursa bile "
-        "Claude Code onu YÜKLEMEZ; PostToolUse/Stop/SessionEnd/UserPromptSubmit "
-        "tetiklerinin HEPSİ ölür ve model bir adımı atladığında hiçbir şey "
-        "uyarmaz (v0.5.6 saha vakası).")
-    assert veri["hooks"] == "./hooks/hooks.json", veri["hooks"]
+    # (a) kablo gerçekten var mı — standart yol, otomatik yükleme dayanağı.
+    standart = (PLUGIN_JSON.parent.parent / "hooks" / "hooks.json").resolve()
+    assert standart.is_file(), (
+        f"standart yolda hooks.json YOK: {standart}. Otomatik yükleme dayanağı "
+        "düştüğü için hook katmanı hiç kaydolmaz (v0.5.6 saha vakası).")
+    assert standart == HOOKS_JSON.resolve()
 
-    # Kayıt, gerçekten var olan bir dosyayı göstermeli (kırık yol da ölü hooktur).
-    hedef = (PLUGIN_JSON.parent.parent / veri["hooks"].lstrip("./")).resolve()
-    assert hedef.is_file(), f"manifest kaydı var olmayan dosyayı gösteriyor: {hedef}"
+    # (b) ikinci kez bildirilmiş mi — yinelenme, katmanı değil eklentiyi öldürür.
+    assert "hooks" not in veri, (
+        "plugin.json otomatik yüklenen standart yolu ikinci kez bildiriyor → "
+        "kurulumda 'Duplicate hooks file detected'; eklenti (20 skill dahil) "
+        "hiç yüklenmez (08441f5 saha vakası).")
 
 
 def test_dort_hook_olayi_da_kayitli():
