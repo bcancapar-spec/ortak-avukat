@@ -131,6 +131,10 @@ def test_tolerans_ici_fark_yanlis_pozitif_uretmez(tmp_path):
 
 
 def test_serh_ile_gecilir_ve_olayda_gorunur(tmp_path):
+    """v0.5.16 / P1 [Hamle 9] (GRUP B, en küçük düzeltme) — ELDEN düşürmesi
+    artık şerhten BAĞIMSIZ: oa-vakia SCRIPT'li parça, kanıtta `_oa/` artefakt
+    yolu YOK → statü ELDEN; şerh ayrıca görünür ('ŞERHLİ ELDEN'). Testin özü
+    (şerhle CANLI-SENKRON geçilir ve olayda görünür) aynen korunur."""
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
     _analiz_kur(tmp_path)
@@ -139,7 +143,7 @@ def test_serh_ile_gecilir_ve_olayda_gorunur(tmp_path):
     serh = "Avukat bilinçli olarak elden devam ediyor, senkron sonra koşulacak"
     kod, cikti = _isle(tmp_path, ek_args=["--serh", serh])
     assert kod == 0, cikti
-    assert "ŞERHLİ UYGULANDI" in cikti
+    assert "ŞERHLİ ELDEN" in cikti
     assert "CANLI-SENKRON ŞERH ile geçildi" in cikti
 
 

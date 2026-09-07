@@ -28,6 +28,8 @@ Kullanım:
   python pipeline_kayit.py --isle --adim 3 --parca oa-ictihat --durum UYGULANDI \
       --kanit "Skill çağrısı yapıldı; ictihat_ara 'istihkak muvazaa' 12.HD → 3 künye teyitli"
   python pipeline_kayit.py --isle --adim 5 --parca oa-kiyas --durum GEREKSIZ --gerekce "..."
+  python pipeline_kayit.py --isle --adim 1 --parca oa-illiyet --durum UYGULANDI \\
+      --kanit "..." --serh "gerekçe (>=30 kr)" --serh-kapi graf     # K2 graf kapısı şerhi
   python pipeline_kayit.py --katman oa-gizlilik --durum UYGULANDI --kanit "gizlilik_tara.py 2 çağrıda ALLOW"
   python pipeline_kayit.py --goster [--kok KLASÖR]
   python pipeline_kayit.py --denetle [--kok KLASÖR]        # teslim öncesi; boşluk varsa exit 1
@@ -79,13 +81,44 @@ ADIMLAR = {
     3:  ("ARAŞTIRMA",  ["oa-ictihat"]),
     4:  ("OLGU/DELİL", ["oa-vakia"]),
     5:  ("KIYAS",      ["oa-kiyas"]),
-    6:  ("STRATEJİ",   ["oa-strateji"]),
-    7:  ("ANTİTEZ",    ["oa-antitez"]),
+    # P0-3 (v0.5.16, dış denetim A-2) — 6↔7 YER DEĞİŞTİ: karşı tarafın en
+    # güçlü tezi (ANTİTEZ) görülmeden dava/sulh kararı (STRATEJİ) verilmez;
+    # oa-strateji §2 antitezi GİRDİ sayar, oa-antitez "erken konum" tanımlar.
+    # ≤v0.5.15 defterlerindeki (6, oa-strateji)/(7, oa-antitez) olayları
+    # `derle`'de HATA değil — `_ESKI_HAT_ESLEME` ile yeni hücreye eşlenir ve
+    # DURUM.md görünür not düşer; YENİ yazımda eski çift RET (bkz. `isle`).
+    6:  ("ANTİTEZ",    ["oa-antitez"]),
+    7:  ("STRATEJİ",   ["oa-strateji"]),
     8:  ("YAZIM",      ["oa-dilekce"]),
     9:  ("KONTROL",    ["oa-kontrol"]),
     10: ("KAPANIŞ",    ["oa-usta"]),
 }
 KATMANLAR = ["oa-usul", "oa-illiyet", "oa-gizlilik"]
+# P0-3 — GERİYE UYUM EŞLEMESİ (yalnız OKUMA tarafı): eski (adım, parça) →
+# yeni adım. `derle` bu tabloyu tip=adim / avukat-karari / muvekkil_karari /
+# avukat_hukmu olaylarına uygular; `isle` aynı çifti YENİ yazımda REDDEDER
+# (sessiz eşleme yazan tarafı yeni sıradan habersiz bırakırdı).
+_ESKI_HAT_ESLEME = {(6, "oa-strateji"): 7, (7, "oa-antitez"): 6}
+_ESKI_HAT_RET = {
+    (6, "oa-strateji"): "v0.5.16: STRATEJİ adım 7'dir (P0-3 — ANTİTEZ artık adım 6; "
+                        "karşı tez görülmeden yol kararı verilmez).",
+    (7, "oa-antitez"): "v0.5.16: ANTİTEZ adım 6'dır (P0-3 — STRATEJİ artık adım 7).",
+}
+
+
+def _eski_hat_esle(adim, parca):
+    """P0-3 — (adım, parça) ≤v0.5.15 çiftiyse yeni adım numarasını ve
+    `True` döndürür; değilse (adım, False). ASLA fırlatmaz."""
+    try:
+        a = int(adim)
+    except (TypeError, ValueError):
+        return adim, False
+    yeni = _ESKI_HAT_ESLEME.get((a, parca))
+    if yeni is None:
+        return adim, False
+    return yeni, True
+
+
 SCRIPTLI = {"oa-sure", "oa-usul", "oa-vakia", "oa-antitez", "oa-kiyas",
             "oa-illiyet", "oa-gizlilik", "oa-sozlesme", "manifest"}
 # C5 (v0.5.8.5) — ELDEN: yeni resmî statü. SCRIPT'li bir parça UYGULANDI
@@ -277,9 +310,46 @@ ONKOSUL_UYARI = {
                        "'_oa/teyit/dokum/' boş — içtihat araştırması yapıldığına dair "
                        "diskte iz yok.",
     (4, "oa-vakia"): "adım-4 (OLGU/DELİL): '_oa/cikti/04-vakia*' yok.",
-    (6, "oa-strateji"): "adım-6 (STRATEJİ): '_oa/cikti/06-strateji*' yok.",
-    (7, "oa-antitez"): "adım-7 (ANTİTEZ): '_oa/cikti/07-antitez*' yok.",
+    # P0-3 (v0.5.16): 6 = ANTİTEZ, 7 = STRATEJİ. Çalışma evrakı ön eki adım
+    # numarasını izler (06-antitez*, 07-strateji*); ≤v0.5.15 adları
+    # (07-antitez*, 06-strateji*) da bekçiyi susturur — komşu parçaların dosya
+    # adı sözleşmesi bu sürümde değişmek zorunda değil (geriye uyum).
+    (6, "oa-antitez"): "adım-6 (ANTİTEZ): '_oa/cikti/06-antitez*' (≤v0.5.15: 07-antitez*) yok.",
+    (7, "oa-strateji"): "adım-7 (STRATEJİ): '_oa/cikti/07-strateji*' (≤v0.5.15: 06-strateji*) yok.",
 }
+# P0-3 — UYARI bekçisinin dosya desenleri (yeni ad ÖNCE, eski ad geriye uyum).
+_ONKOSUL_UYARI_DESENLERI = {
+    (4, "oa-vakia"): ("04-vakia*",),
+    (6, "oa-antitez"): ("06-antitez*", "07-antitez*"),
+    (7, "oa-strateji"): ("07-strateji*", "06-strateji*"),
+}
+# K2 (v0.5.16, karar #1 SERT) — GRAF KAPISI: adım-1/oa-illiyet UYGULANDI
+# yazılırken `arac == grafik_denetim` damgalı bir denetim çıktısı (`_oa/cikti/
+# *.json`, ad-bağımsız — bkz. `_denetim_jsonlari`) `cevrimler` VEYA
+# `sema_hatalari` VEYA `denetim_coktu` taşıyorsa BLOKLEYİCİ RET. Dairesel
+# illiyet (A→B→A) hukuken imkânsız bir nedensellik iddiasıdır, şema hatası
+# grafın kendisinin geçersizliğidir, çöken denetim = atlanan kapıdır (sessiz
+# atlama yasağının script tarafı). Denetim JSON'u HİÇ YOKSA RET DEĞİL — mevcut
+# ELDEN/uyarı katmanı zaten görünür kılar (ateşlemeyen kapı eklenmez ilkesi;
+# graf denetimi koşmamış dosyada bu kapı sessizdir). Şerh: `--serh --serh-kapi
+# graf` (P1). ONKOSUL_BLOKLEYICI'den AYRI tutulur: oradaki kapılar "artefakt
+# VAR mı" sorar (DURUM.md FİZİKSEL etiketi bundan türetilir), bu kapı "var
+# olan artefakt SAĞLAM mı" sorar — iki farklı soru, iki farklı tablo.
+ONKOSUL_GRAF_KAPISI = {
+    (1, "oa-illiyet"): "adım-1 (ALIM/oa-illiyet): graf denetimi (arac=grafik_denetim) "
+                       "dairesel illiyet / şema hatası / çökme taşıyor.",
+}
+
+# P1 (v0.5.16, Hamle 9) — ŞERH-KAPI: `--serh` artık HANGİ kapıyı geçtiğini
+# adlandırır (`--serh-kapi`). Adlandırılan kapı dışındaki kapılar şerhle
+# GEÇİLMEZ. Çıplak `--serh` (kapı adsız) geriye uyum için TÜM kapılara
+# uygulanır ama görünür UYARI basar — tek şerhle beş kapıdan geçmek sessiz
+# olamaz. 'tumu' = bilinçli olarak tüm kapılar (uyarısız). CANLI-SENKRON ve
+# ÇAPRAZ-ADIM (adım-8) kapıları bu sürümde ayrı ad almaz: yalnız 'tumu' veya
+# çıplak --serh ile geçilir (RET mesajı bunu söyler).
+SERH_KAPILARI = ("ingest-once", "graf", "kiyas", "kontrol", "tumu")
+_SERH_KAPI_BLOKLEYICI = {(5, "oa-kiyas"): "kiyas", (9, "oa-kontrol"): "kontrol"}
+
 # Sözleşme dizinleri (P0-8 sözleşme-dışı-dizin bekçisi + genel referans) —
 # oa_hafiza.DIZINLER (defter/devir/cikti/teyit/oturum/arsiv-yerel) EKSİK
 # bırakıyordu: 'metin' (oa_ingest ana hattı), 'metin-onbakis' (oa_ingest
@@ -666,6 +736,49 @@ _ONKOSUL_FONK = {
 }
 
 
+def _graf_kapisi_sorunu(kok):
+    """K2 — GRAF KAPISI sorgusu. Döner: None (kapı açık) | 'GRAF KAPISI: <dosya>:
+    <sebepler> — ...' metni. Yalnız `arac == grafik_denetim` damgalı `_oa/cikti/
+    *.json` okur (bekçiyle AYNI süzgeç — ikinci bir kural kümesi İCAT EDİLMEZ);
+    dosya yoksa None (RET DEĞİL). ASLA fırlatmaz."""
+    try:
+        for yol, m in _denetim_jsonlari(kok, "grafik_denetim"):
+            sebepler = []
+            if any(isinstance(c, list) and c for c in (m.get("cevrimler") or [])):
+                sebepler.append("dairesel illiyet")
+            if m.get("sema_hatalari"):
+                sebepler.append("şema hatası")
+            cokme = _graf_cokme_metni(m)
+            if cokme:
+                sebepler.append(f"denetim çöktü ({cokme})")
+            if sebepler:
+                ad = os.path.relpath(yol, kok or ".").replace(os.sep, "/")
+                return (f"GRAF KAPISI: {ad}: " + " / ".join(sebepler)
+                        + " — --serh --serh-kapi graf ile gerekçeli geçiş "
+                          "(ya da grafı düzeltip grafik_denetim.py'yi yeniden koş)")
+    except Exception:
+        return None
+    return None
+
+
+def _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, kapi):
+    """P1 — geçerli şerh BU kapıyı geçer mi? Kapı adsız (çıplak --serh) veya
+    'tumu' → evet (geriye uyum); adlandırılmışsa yalnız eşleşen kapı."""
+    if not serh_gecerli:
+        return False
+    return serh_kapi in (None, "", "tumu", kapi)
+
+
+def _serh_ret_ipucu(serh_gecerli, serh_kapi, kapi):
+    """RET mesajının kuyruğu: şerh hiç yoksa nasıl verileceği; şerh var ama
+    başka kapıyı adlandırıyorsa HANGİ adın gerektiği (görünür yönlendirme)."""
+    if serh_gecerli and serh_kapi and serh_kapi != kapi:
+        return (f" [şerh '{serh_kapi}' kapısına verildi, bu kapı '{kapi}' — "
+                f"--serh-kapi {kapi} (ya da tumu) gerekir]")
+    return (f' (Bilerek geçmek için: --serh "gerekçe (>={SERH_GEREKCE_MIN} kr)" '
+            f"--serh-kapi {kapi})")
+
+
 def _ingest_once_saglam_mi(kok):
     """İNGEST-ÖNCE (kullanıcı ilkesi): adım 1+ UYGULANDI, '_oa/metin/00-kunye.
     json' diskte YOKSA yazılamaz — evrak hiç ingest edilmeden pipeline
@@ -705,13 +818,11 @@ def _onkosul_uyari_var_mi(kok, anahtar):
         kutuk_var = os.path.isfile(kutuk) and os.path.getsize(kutuk) > 0
         dokum_var = os.path.isdir(dokum) and any(True for _ in os.scandir(dokum))
         return kutuk_var or dokum_var
-    desen_map = {(4, "oa-vakia"): "04-vakia*", (6, "oa-strateji"): "06-strateji*",
-                 (7, "oa-antitez"): "07-antitez*"}
-    desen = desen_map.get(anahtar)
-    if not desen:
+    desenler = _ONKOSUL_UYARI_DESENLERI.get(anahtar)
+    if not desenler:
         return True
     import glob as _glob
-    return bool(_glob.glob(os.path.join(kok or ".", "_oa", "cikti", desen)))
+    return any(_glob.glob(os.path.join(kok or ".", "_oa", "cikti", desen)) for desen in desenler)
 
 
 def _adim_artefakt_var_mi(kok, adim, parca):
@@ -794,7 +905,7 @@ def _dokum_muhakeme_makbuz_sayaclari(kok):
     return dokum_n, len(muhakeme_dosyalar), makbuz_durum
 
 
-def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None):
+def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kapi=None):
     """P0-6 — bir (adım,parça) UYGULANDI yazılmadan ÖNCE fiziksel artefaktı
     sorgular. Döner: (izin:bool, sorun:str|None, uyari:str|None, serh_mesaj:str|False)
     — `serh_mesaj` GERÇEK bir dize İSE bu çağrı şerh ile geçildi demektir
@@ -803,12 +914,19 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None):
     (`derle()` çıktısı); yalnız ÇAPRAZ-ADIM kontrolünde (adım-8) kullanılır.
     `serh` GEREKÇELİ (>=SERH_GEREKCE_MIN karakter) verilmişse BLOKLEYICI küme
     (ve İNGEST-ÖNCE) dahi GEÇİLİR — sessiz değil, olay 'serh:true' ile
-    İŞLENİR (--denetle/--goster HER ZAMAN '⚠ ŞERHLİ UYGULANDI' basar).
+    İŞLENİR (--denetle/--goster HER ZAMAN '⚠ ŞERHLİ <statü>' basar —
+    v0.5.16/P1: statü UYGULANDI ya da ELDEN olabilir, şerh ELDEN'i gizlemez).
     `kanit` — GÖREV C(2): artefakt bulunamayan (BLOKLEYICI/UYARI) dallarda,
     kanıt metni KENDİNE-ATIF bir kalıp taşıyorsa (bkz. `_kendine_atif_var_mi`)
     ilgili sorun/uyarı metni `_KENDINE_ATIF_NOTU` ile zenginleştirilir —
-    BLOKLAMA KÜMESİ DEĞİŞMEZ, yalnız mesaj netleşir."""
+    BLOKLAMA KÜMESİ DEĞİŞMEZ, yalnız mesaj netleşir.
+    `serh_kapi` — P1 (v0.5.16): şerhin geçtiği kapının adı (SERH_KAPILARI);
+    None = çıplak --serh (tüm kapılar, geriye uyum — çağıran UYARI basar).
+    Şerh mesajı '[kapı: <ad>]' ekiyle döner ki DURUM.md/--denetle hangi kapının
+    geçildiğini göstersin. K2 (v0.5.16): adım-1/oa-illiyet için GRAF KAPISI
+    (bkz. ONKOSUL_GRAF_KAPISI / _graf_kapisi_sorunu)."""
     serh_gecerli = bool(serh and len(serh.strip()) >= SERH_GEREKCE_MIN)
+    kapi_eki = f" [kapı: {serh_kapi or 'TÜMÜ (adsız şerh)'}]"
     try:
         adim_i = int(adim)
     except (TypeError, ValueError):
@@ -817,24 +935,24 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None):
     if adim_i is not None and adim_i >= 1 and not _ingest_once_saglam_mi(kok):
         sorun = ("İNGEST-ÖNCE: _oa/metin/00-kunye.json yok — evrak hiç ingest "
                  f"edilmeden adım {adim} UYGULANDI yazılamaz (önce oa_ingest koş).")
-        if serh_gecerli:
-            # P1-9 KUCUK-DÜZELTME (sinav bulgusu) — kısmi-okuma gerçeği (--onbakis
-            # ile geçilen İNGEST-ÖNCE) modelin kendi yazdığı şerh METNİNE değil,
-            # DETERMİNİSTİK bir ön-eke bağlanır: "KISMI INGEST: N/M" HER ZAMAN
-            # görünür, model şerhinde bunu anmayı unutsa/atlasa BİLE.
+        # P1-9 KUCUK-DÜZELTME (sinav bulgusu) — kısmi-okuma gerçeği (--onbakis
+        # ile geçilen İNGEST-ÖNCE) modelin kendi yazdığı şerh METNİNE değil,
+        # DETERMİNİSTİK bir ön-eke bağlanır: "KISMI INGEST: N/M" HER ZAMAN
+        # görünür, model şerhinde bunu anmayı unutsa/atlasa BİLE.
+        if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "ingest-once"):
             kismi, n, m = _kismi_ingest_durumu(kok)
             onek = f"KISMI INGEST: {n}/{m} — " if kismi and n is not None and m is not None else ""
-            return True, None, None, (onek + "İNGEST-ÖNCE ŞERH ile geçildi: " + sorun)
-        return False, sorun, None, False
+            return True, None, None, (onek + "İNGEST-ÖNCE ŞERH ile geçildi: " + sorun + kapi_eki)
+        return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "ingest-once"), None, False
 
     # P1-10 — CANLI-SENKRON KAPISI: tam_tur akışı kullanılıyorsa (dosya-analiz.
     # json var) working-memory bayatken yeni bir UYGULANDI yazılamaz.
     if adim_i is not None and adim_i >= 1:
         senkron_sorun = _canli_senkron_bayat_mi(kok)
         if senkron_sorun:
-            if serh_gecerli:
-                return True, None, None, ("CANLI-SENKRON ŞERH ile geçildi: " + senkron_sorun)
-            return False, senkron_sorun, None, False
+            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "tumu"):
+                return True, None, None, ("CANLI-SENKRON ŞERH ile geçildi: " + senkron_sorun + kapi_eki)
+            return False, senkron_sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "tumu"), None, False
 
     anahtar = (adim_i, parca)
 
@@ -851,9 +969,17 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None):
             sorun = ("adım-8 (YAZIM/oa-dilekce) UYGULANDI ama adım-5 (KIYAS/oa-kiyas) "
                      "hâlâ BEKLIYOR — kıyas hiç değerlendirilmeden (UYGULANDI/GEREKSIZ "
                      "dahi denmeden) yazım adımına geçilemez.")
-            if serh_gecerli:
-                return True, None, None, ("ŞERH ile geçildi: " + sorun)
-            return False, sorun, None, False
+            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "tumu"):
+                return True, None, None, ("ŞERH ile geçildi: " + sorun + kapi_eki)
+            return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "tumu"), None, False
+
+    # K2 (v0.5.16, karar #1 SERT) — GRAF KAPISI: yalnız adım-1/oa-illiyet.
+    if anahtar in ONKOSUL_GRAF_KAPISI:
+        graf_sorun = _graf_kapisi_sorunu(kok)
+        if graf_sorun:
+            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "graf"):
+                return True, None, None, ("GRAF KAPISI ŞERH ile geçildi: " + graf_sorun + kapi_eki)
+            return False, graf_sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "graf"), None, False
 
     if anahtar in ONKOSUL_BLOKLEYICI:
         fonk = _ONKOSUL_FONK[anahtar]
@@ -862,9 +988,10 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None):
             sorun = ONKOSUL_BLOKLEYICI[anahtar] + " Eksik: " + (eksik or "?")
             if _kendine_atif_var_mi(kanit):
                 sorun += _KENDINE_ATIF_NOTU
-            if serh_gecerli:
-                return True, None, None, ("ŞERH ile geçildi: " + sorun)
-            return False, sorun, None, False
+            kapi = _SERH_KAPI_BLOKLEYICI.get(anahtar, "tumu")
+            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, kapi):
+                return True, None, None, ("ŞERH ile geçildi: " + sorun + kapi_eki)
+            return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, kapi), None, False
 
     if anahtar in ONKOSUL_UYARI and not _onkosul_uyari_var_mi(kok, anahtar):
         uyari_mesaj = ONKOSUL_UYARI[anahtar]
@@ -971,8 +1098,11 @@ def _uygula_adim(d, o, sira=None):
     """`sira` (YENİ-3, Paket D DÜZELTME) — append-only defterdeki MONOTON olay
     indeksi; bu parçanın EN SON güncellemesinin defter sırasını taşır.
     `_avukat_karari_cozulmus_mu` beraberliksiz kıyas için bunu kullanır (saniye
-    çözünürlüklü `zaman` yerine)."""
-    no = str(o.get("adim"))
+    çözünürlüklü `zaman` yerine). P0-3 (v0.5.16): ≤v0.5.15 çifti
+    (6, oa-strateji)/(7, oa-antitez) yeni hücreye EŞLENİR — hayalet hücre
+    doğmaz, kayıt `eski_hat_eslendi: True` taşır (DURUM.md notu)."""
+    adim_esli, eslendi = _eski_hat_esle(o.get("adim"), o.get("parca"))
+    no = str(adim_esli)
     a = d["adimlar"].get(no)
     if a is None:
         try:
@@ -986,11 +1116,16 @@ def _uygula_adim(d, o, sira=None):
     guncelleme = {"durum": o.get("durum"), "kanit": o.get("kanit"),
                   "zaman": o.get("zaman"), "serh": bool(o.get("serh")),
                   "serh_metni": o.get("serh_metni"), "_sira": sira,
+                  "serh_kapi": o.get("serh_kapi"),
                   "arac_imzali": _olay_arac_imzali_mi(o)}
     if o.get("pas_yolu"):
         guncelleme["pas_yolu"] = o.get("pas_yolu")  # M1 PAS PROTOKOLÜ — verilmemişse ESKİ değer KORUNUR
+    if eslendi:
+        guncelleme["eski_hat_eslendi"] = True
+    else:
+        a["parcalar"][parca].pop("eski_hat_eslendi", None)  # yeni sıralı kayıt notu düşürür
     a["parcalar"][parca].update(guncelleme)
-    d["gunluk"].append({"zaman": o.get("zaman"), "adim": o.get("adim"),
+    d["gunluk"].append({"zaman": o.get("zaman"), "adim": adim_esli,
                         "parca": parca, "durum": o.get("durum"),
                         "pas_yolu": o.get("pas_yolu")})
     if o.get("surum"):
@@ -1064,14 +1199,184 @@ def _uygula_avukat_karari(d, o, sira=None):
     KALICI olarak işler (append-only — önceki BEKLEYEN kaydı SİLİNMEZ,
     yalnız 'çözüldü' sayılır; kayıpsızlık invaryantı: geçmiş görünür kalır).
     `sira` (YENİ-3, Paket D DÜZELTME) — append-only defterdeki MONOTON olay
-    indeksi; `_avukat_karari_cozulmus_mu` bunu zaman damgası yerine kullanır."""
+    indeksi; `_avukat_karari_cozulmus_mu` bunu zaman damgası yerine kullanır.
+    P0-3: eski (6, oa-strateji)/(7, oa-antitez) hedefi de yeni adıma eşlenir —
+    eski defterde çözülmüş çatal yeni sırada da çözülmüş kalır."""
+    adim_esli, _eslendi = _eski_hat_esle(o.get("adim"), o.get("parca"))
     d.setdefault("avukat_kararlari", []).append({
-        "zaman": o.get("zaman"), "adim": o.get("adim"), "parca": o.get("parca"),
+        "zaman": o.get("zaman"), "adim": adim_esli, "parca": o.get("parca"),
         "katman": o.get("katman"), "karar": o.get("karar"), "gerekce": o.get("gerekce"),
         "_sira": sira,
     })
     d["gunluk"].append({"zaman": o.get("zaman"), "avukat_karari": o.get("karar"),
-                        "adim": o.get("adim"), "parca": o.get("parca"), "katman": o.get("katman")})
+                        "adim": adim_esli, "parca": o.get("parca"), "katman": o.get("katman")})
+
+
+# ── P1-9 (v0.5.16, dış denetim A-3) — MÜVEKKİL KARARI BEKLEYEN ─────────────
+# Avukat kararı (M7) ile müvekkil kararı farklı egemenlik alanlarıdır: sulh
+# teklifi, dava değeri, risk kabulü, tedbir teminatı gibi kavşaklarda karar
+# müvekkilindir (Av.K. m.34 özen/doğruluk yükümü — bilgilendirme, bkz.
+# references/muvekkil-bilgilendirme-sablonu.md). Defter bu kavşağı yalnız
+# GÖRÜNÜR kılar ve kapanışta hatırlatır — karar vermez, BLOKLAMAZ.
+# Olaylar append-only: `muvekkil_karari` (açılış, ≥2 seçenek) ve
+# `muvekkil_karari_kapat` (karar + gerekçe zorunlu — M7 ile aynı disiplin).
+MUVEKKIL_KARARI_GEREKCE_MIN = 15   # karakter — M7 (AVUKAT_KARARI_GEREKCE_MIN) ile aynı eşik
+
+
+def _konu_normalize(konu):
+    return " ".join(str(konu or "").strip().casefold().split())
+
+
+def _secenekleri_ayristir(metin):
+    """'a|b|c' → ['a','b','c'] (boşlar atılır, tekrarlar sırayı koruyarak
+    tekilleştirilir). Ayraç '|' — ';' de kabul edilir (klavye kolaylığı)."""
+    ham = re.split(r"[|;]", str(metin or ""))
+    gorulen, secenekler = set(), []
+    for s in ham:
+        s = s.strip()
+        if not s or s.casefold() in gorulen:
+            continue
+        gorulen.add(s.casefold())
+        secenekler.append(s)
+    return secenekler
+
+
+def _uygula_muvekkil_karari(d, o, sira=None):
+    adim_esli, _e = _eski_hat_esle(o.get("adim"), o.get("parca"))
+    d.setdefault("muvekkil_kararlari", []).append({
+        "zaman": o.get("zaman"), "konu": o.get("konu"),
+        "secenekler": list(o.get("secenekler") or []),
+        "adim": adim_esli, "parca": o.get("parca"), "katman": o.get("katman"),
+        "_sira": sira, "kapanis": None,
+    })
+    d["gunluk"].append({"zaman": o.get("zaman"), "muvekkil_karari": o.get("konu")})
+
+
+def _uygula_muvekkil_karari_kapat(d, o, sira=None):
+    """Aynı konudaki EN SON AÇIK kaydı kapatır; açık kayıt yoksa kapanış
+    yine listeye 'yetim' olarak düşer (append-only, kayıpsız — CLI bunu
+    yazmadan önce görünür UYARI basmıştır)."""
+    hedef = _konu_normalize(o.get("konu"))
+    kapanis = {"zaman": o.get("zaman"), "karar": o.get("karar"),
+               "gerekce": o.get("gerekce"), "_sira": sira}
+    for k in reversed(d.setdefault("muvekkil_kararlari", [])):
+        if _konu_normalize(k.get("konu")) == hedef and not k.get("kapanis"):
+            k["kapanis"] = kapanis
+            break
+    else:
+        d["muvekkil_kararlari"].append({
+            "zaman": o.get("zaman"), "konu": o.get("konu"), "secenekler": [],
+            "adim": None, "parca": None, "katman": None, "_sira": sira,
+            "kapanis": kapanis, "yetim": True})
+    d["gunluk"].append({"zaman": o.get("zaman"), "muvekkil_karari_kapat": o.get("konu"),
+                        "karar": o.get("karar")})
+
+
+def _muvekkil_karari_bekleyen(d):
+    """Kapanmamış (kapanis=None) müvekkil kararı kayıtları — MEKANİK liste."""
+    return [k for k in (d or {}).get("muvekkil_kararlari") or [] if not k.get("kapanis")]
+
+
+def _muvekkil_karari_satiri(k):
+    hedef = ""
+    if k.get("katman"):
+        hedef = f" [katman {k['katman']}]"
+    elif k.get("adim") is not None or k.get("parca"):
+        hedef = f" [adım {k.get('adim')} / {k.get('parca')}]"
+    secenekler = " | ".join(k.get("secenekler") or []) or "—"
+    return f"{k.get('konu')}{hedef} — seçenekler: {secenekler}  _({k.get('zaman')})_"
+
+
+def _muvekkil_karari_kapanis_uyarisi(d):
+    """P1-9 — adım-10 (KAPANIŞ) UYGULANDI iken kapanmamış müvekkil kararı
+    varsa tek satır UYARI metni, yoksa None. BLOKLAMAZ."""
+    try:
+        adim10 = (d or {}).get("adimlar", {}).get("10", {}).get("parcalar", {}) or {}
+        kapanis_var = any((p or {}).get("durum") == "UYGULANDI" for p in adim10.values())
+        if not kapanis_var:
+            return None
+        acik = _muvekkil_karari_bekleyen(d)
+        if not acik:
+            return None
+        return ("MÜVEKKİL KARARI: adım 10 (KAPANIŞ) UYGULANDI ama kapanmamış müvekkil kararı var — "
+                + "; ".join(str(k.get("konu")) for k in acik)
+                + " (--muvekkil-karari-kapat ile karar+gerekçe işlenmeli; bloklamaz).")
+    except Exception:
+        return None
+
+
+# ── A-28 (v0.5.16, SICRAMA-NOTU §3(A) + §5) — AVUKAT HÜKMÜ SENSÖRÜ ────────
+# Makine kalite skoru üretemez; meşru tek kalite sinyali avukatın kayıt altına
+# alınmış hükmüdür. Teslimden sonra ürün başına tek satır: KABUL / REVIZYONLA /
+# RET + kapalı listeden sebep. YALNIZ ÖLÇER: hiçbir kapıyı, brifi, denetimi
+# değiştirmez ("enjeksiyon yapmaz" — SICRAMA §5 şartı). İki iz: defter olayı
+# (`avukat_hukmu`) + `_oa/defter/avukat-hukmu.jsonl` (append-only; oa-usta
+# damıtma tetiğinin TEK kaynağı). Ateşlemeyen kapı kuralı: avukat refleksle
+# KABUL basmaya başlarsa sinyal ölür — başarı ölçütü kaç teslime gerçekten
+# hüküm düştüğüdür; oran düşükse üstüne katman inşa edilmez.
+HUKUMLER = ("KABUL", "REVIZYONLA", "RET")
+HUKUM_SEBEPLERI = ("usul", "olgu", "hukuk", "uslup", "talep", "ictihat", "diger")
+AVUKAT_HUKMU_ADI = "avukat-hukmu.jsonl"
+_HUKUM_ETIKET = {"KABUL": "KABUL", "REVIZYONLA": "REVİZYONLA", "RET": "RET"}
+
+
+def _uygula_avukat_hukmu(d, o, sira=None):
+    d.setdefault("avukat_hukumleri", []).append({
+        "zaman": o.get("zaman"), "hukum": o.get("hukum"), "sebep": o.get("sebep"),
+        "urun": o.get("urun"), "not": o.get("not"), "_sira": sira,
+    })
+    d["gunluk"].append({"zaman": o.get("zaman"), "avukat_hukmu": o.get("hukum"),
+                        "urun": o.get("urun")})
+
+
+def _avukat_hukmu_sayaci(kok):
+    """`_oa/defter/avukat-hukmu.jsonl`'den (TEK kaynak) sayaç: (hüküm→n,
+    sebep→n, bozuk satır n). Dosya yoksa (None, None, 0). Bozuk satır hook'u/
+    DURUM.md'yi çökertmez — sayılır ve görünür not düşer (fail-closed)."""
+    yol = os.path.join(kok or ".", "_oa", "defter", AVUKAT_HUKMU_ADI)
+    if not os.path.isfile(yol):
+        return None, None, 0
+    hukum_n = {h: 0 for h in HUKUMLER}
+    sebep_n = {}
+    bozuk = 0
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            for satir in f:
+                satir = satir.strip()
+                if not satir:
+                    continue
+                try:
+                    o = json.loads(satir)
+                except json.JSONDecodeError:
+                    bozuk += 1
+                    continue
+                h = str((o or {}).get("hukum") or "")
+                if h not in hukum_n:
+                    bozuk += 1
+                    continue
+                hukum_n[h] += 1
+                s = (o or {}).get("sebep")
+                if s:
+                    sebep_n[str(s)] = sebep_n.get(str(s), 0) + 1
+    except OSError:
+        return None, None, 0
+    return hukum_n, sebep_n, bozuk
+
+
+def _avukat_hukmu_satirlari(kok):
+    """DURUM.md «## Avukat Hükümleri» gövdesi (liste). Salt ÖLÇER."""
+    hukum_n, sebep_n, bozuk = _avukat_hukmu_sayaci(kok)
+    if hukum_n is None:
+        return ["- (henüz hüküm kaydı yok — kapanışta `--avukat-hukmu KABUL|REVIZYONLA|RET "
+                "--urun <yol>` önerilir; kapı değildir)"]
+    satirlar = ["- " + " / ".join(f"{_HUKUM_ETIKET[h]} {hukum_n[h]}" for h in HUKUMLER)
+                + f"  (toplam {sum(hukum_n.values())} — kaynak: _oa/defter/{AVUKAT_HUKMU_ADI})"]
+    if sebep_n:
+        satirlar.append("- sebep dağılımı: "
+                        + ", ".join(f"{s}: {n}" for s, n in sorted(sebep_n.items(), key=lambda x: (-x[1], x[0]))))
+    if bozuk:
+        satirlar.append(f"- ⚠ {bozuk} bozuk/tanınmayan satır atlandı (dosya elle mi yazıldı?)")
+    return satirlar
 
 
 def _zaman_once_mi(erken, gec):
@@ -1201,6 +1506,18 @@ def derle(olaylar_yol, durum_yol=None):
             if d is None:
                 d = _iskelet(None, o.get("zaman"), None)
             _uygula_avukat_karari(d, o, sira)
+        elif tip == "muvekkil_karari":
+            if d is None:
+                d = _iskelet(None, o.get("zaman"), None)
+            _uygula_muvekkil_karari(d, o, sira)
+        elif tip == "muvekkil_karari_kapat":
+            if d is None:
+                d = _iskelet(None, o.get("zaman"), None)
+            _uygula_muvekkil_karari_kapat(d, o, sira)
+        elif tip == "avukat_hukmu":
+            if d is None:
+                d = _iskelet(None, o.get("zaman"), None)
+            _uygula_avukat_hukmu(d, o, sira)
     return d
 
 
@@ -1361,6 +1678,11 @@ def isle(args):
         sys.exit("HATA: --adim gerekli (0-10).")
     if str(args.adim) not in {str(k) for k in ADIMLAR}:
         sys.exit(f"HATA: adım {args.adim} yok (0-10).")
+    # P0-3 (v0.5.16) — eski hat çifti YENİ yazımda RET (geriye uyum yalnız
+    # `derle` okuma tarafındadır; yazan taraf yeni sırayı bilmek zorunda).
+    eski_ret = _ESKI_HAT_RET.get((int(args.adim), args.parca))
+    if eski_ret:
+        sys.exit("RET: " + eski_ret)
     if not _defter_var(olaylar_yol, durum_yol):
         sys.exit(f"HATA: defter bulunamadı: {olaylar_yol} — önce --baslat ile aç.")
     _pas_yolu_izin_denetle(getattr(args, "kok", None), getattr(args, "pas_yolu", None))
@@ -1368,15 +1690,21 @@ def isle(args):
     # P0-6 — KADEMELİ ÖNKOŞUL-ARTEFAKT KAPISI (yalnız UYGULANDI'da; GEREKSIZ/
     # BILGI-EKSIK/YUKLENEMEDI gerekçeli serbesttir — mevcut davranış).
     serh_bayrak, serh_metni, ek_uyari = False, None, ""
+    serh_kapi = getattr(args, "serh_kapi", None)
+    # P1 — --serh-kapi tek başına anlamsızdır: hangi şerh? (sessiz yutulmaz)
+    if serh_kapi and not getattr(args, "serh", None):
+        sys.exit("HATA: --serh-kapi yalnız --serh ile birlikte anlamlıdır "
+                 f"(--serh \"gerekçe (>={SERH_GEREKCE_MIN} kr)\" --serh-kapi {serh_kapi}).")
+    if serh_kapi and serh_kapi not in SERH_KAPILARI:
+        sys.exit(f"HATA: --serh-kapi geçersiz: {serh_kapi}. Geçerli: {', '.join(SERH_KAPILARI)}")
     if args.durum == "UYGULANDI":
         kok = getattr(args, "kok", None)
         onceki_d = derle(olaylar_yol, durum_yol)  # bu olay eklenmeden ÖNCEKİ durum (çapraz-adım için)
         izin, sorun, onkosul_uyari, serh_mesaj = _onkosul_kontrol(
             kok, args.adim, args.parca, getattr(args, "serh", None), mevcut_d=onceki_d,
-            kanit=kanit)
+            kanit=kanit, serh_kapi=serh_kapi)
         if not izin:
-            sys.exit("RET: " + sorun +
-                      f' (Bilerek geçmek için: --serh "gerekçe (>={SERH_GEREKCE_MIN} kr)")')
+            sys.exit("RET: " + sorun)
         if serh_mesaj:
             serh_bayrak, serh_metni = True, serh_mesaj
         elif onkosul_uyari:
@@ -1388,10 +1716,14 @@ def isle(args):
     # eder: iş yapılmış olabilir ama script artefaktı diskte KANITSIZDIR).
     durum = args.durum
     elden_notu = ""
-    # ŞERHLİ geçişte düşürme YOK: şerh, gerekçeli/AVUKATA görünür bir istisna
-    # olarak zaten işaretlidir (Avukat Kararı Bekleyen hattı ŞERHLİ UYGULANDI
-    # semantiğine bağlıdır) — ikinci bir yeniden-etiketleme onu gölgelerdi.
-    if durum == "UYGULANDI" and args.parca in ELDEN_KAPSAM and not serh_bayrak:
+    # P1 (v0.5.16, Hamle 9) — ELDEN düşürmesi ŞERHTEN BAĞIMSIZDIR. Eski
+    # davranış ("ŞERHLİ geçişte düşürme YOK") iki ayrı gerçeği birleştiriyordu:
+    # şerh, bir KAPININ gerekçeli geçildiğini söyler; ELDEN, script
+    # ARTEFAKTININ diskte olmadığını söyler. Şerh ikincisini gizleyemez —
+    # ELDEN + ŞERHLİ birlikte yazılır, DURUM.md/--denetle/Avukat Kararı
+    # Bekleyen ikisini de ayrı ayrı gösterir (oa_metrik zaten şerhli ELDEN'i
+    # sayıyordu). Karakterizasyon değişikliği bilinçlidir (bkz. test_v0516_B).
+    if durum == "UYGULANDI" and args.parca in ELDEN_KAPSAM:
         yol_var, disk_var = _kanit_artefakt_yolu_var_mi(getattr(args, "kok", None), kanit)
         if not (yol_var and disk_var):
             durum = "ELDEN"
@@ -1411,6 +1743,7 @@ def isle(args):
     if serh_bayrak:
         olay["serh"] = True
         olay["serh_metni"] = serh_metni
+        olay["serh_kapi"] = serh_kapi or "tumu"   # P1 — adsız şerh = tümü (kayıtta görünür)
     olay["imza"] = _imza_hesapla(olay)
     olay_ekle(olaylar_yol, olay)
     d_sonra = derle(olaylar_yol)
@@ -1421,7 +1754,11 @@ def isle(args):
         uyari = ("\nUYARI: bu parça SCRIPT'lidir; kanıtta script çıktısına iz yok — "
                  "gerçek script koştuysa kanıta yaz, koşmadıysa statü sahte olur.")
     if serh_bayrak:
-        uyari += "\n⚠ ŞERHLİ UYGULANDI: " + serh_metni
+        uyari += f"\n⚠ ŞERHLİ {durum}: " + serh_metni
+        if not serh_kapi:
+            uyari += ("\nUYARI: --serh-kapi verilmedi — şerh TÜM kapılara uygulandı "
+                      "(geriye uyum). Tek kapı için: --serh-kapi "
+                      + "|".join(SERH_KAPILARI[:-1]) + " (bilinçli tümü: tumu).")
     for pas_uyari in _pas_yolu_uyarilari(getattr(args, "kok", None), getattr(args, "pas_yolu", None)):
         uyari += "\n" + pas_uyari
     # GÖREV C(1) — DAL UYUŞMAZLIĞI: bu ÇAĞRIDA yazılan parça dosyanın dalına
@@ -1434,6 +1771,13 @@ def isle(args):
             dal_mesaj = _dal_uyusmazlik_tek(dal_tek, args.parca)
             if dal_mesaj:
                 uyari += "\nUYARI: DAL UYUŞMAZLIĞI: " + dal_mesaj
+    # P1-9 (v0.5.16) — KAPANIŞ (adım 10) UYGULANDI yazılırken kapanmamış
+    # müvekkil kararı varsa GÖRÜNÜR UYARI (bloklamaz; kalıcı görünürlük
+    # --denetle/DURUM.md'de AYNI kaynak fonksiyonla — _muvekkil_karari_kapanis_uyarisi).
+    if d_sonra is not None and int(args.adim) == 10 and durum == "UYGULANDI":
+        mk_uyari = _muvekkil_karari_kapanis_uyarisi(d_sonra)
+        if mk_uyari:
+            uyari += "\n⚠ UYARI — " + mk_uyari
     print(f"İşlendi: adım {args.adim} / {args.parca} → {durum}{uyari}{ek_uyari}")
     _durum_md_yaz(getattr(args, "kok", None))
 
@@ -1469,7 +1813,8 @@ def adim_batch(args):
             kok=getattr(args, "kok", None), yol=getattr(args, "yol", None),
             adim=k.get("adim"), parca=k.get("parca"), durum=k.get("durum"),
             kanit=k.get("kanit"), gerekce=k.get("gerekce"), eksik=k.get("eksik"),
-            serh=k.get("serh"), pas_yolu=k.get("pas_yolu"))
+            serh=k.get("serh"), pas_yolu=k.get("pas_yolu"),
+            serh_kapi=k.get("serh_kapi"))
         isle(alt)   # RET/HATA hâlinde sys.exit — sonraki kayıtlar işlenmez
     print(f"BATCH: {len(kayitlar)} kayıt işlendi — tümü araç-imzalı "
           "(kanıt/önkoşul kuralları tek-kayıt --isle ile AYNEN uygulandı).")
@@ -1579,6 +1924,128 @@ def avukat_karari_kaydet(args):
     _durum_md_yaz(getattr(args, "kok", None))
 
 
+def muvekkil_karari_ac(args):
+    """P1-9 (v0.5.16) — MÜVEKKİL KARARI BEKLEYEN kaydı AÇAR: konu + ≥2
+    seçenek zorunlu; hedef (--adim+--parca | --katman) opsiyoneldir (konu
+    düzeyi de meşru). Append-only olay `muvekkil_karari`; DURUM.md'de
+    «Müvekkil Kararı Bekleyen» bölümüne düşer. BLOKLAMAZ, karar vermez."""
+    olaylar_yol, durum_yol = _yollar(args)
+    if not _defter_var(olaylar_yol, durum_yol):
+        sys.exit(f"HATA: defter bulunamadı: {olaylar_yol} — önce --baslat ile aç.")
+    konu = (args.muvekkil_karari or "").strip()
+    if not konu:
+        sys.exit("HATA: --muvekkil-karari için konu metni boş olamaz.")
+    secenekler = _secenekleri_ayristir(getattr(args, "secenekler", None))
+    if len(secenekler) < 2:
+        sys.exit("RET: müvekkil kararı en az 2 FARKLI seçenekle açılır — "
+                 "--secenekler \"a|b|c\" (çatallar gerekçeli seçeneklerle listelenir doktrini; "
+                 f"verilen: {secenekler or 'yok'}).")
+    if args.katman and (args.adim is not None or args.parca):
+        sys.exit("HATA: hedef ya (--adim + --parca) ya --katman — ikisi birden değil.")
+    if (args.adim is None) != (not args.parca):
+        sys.exit("HATA: --adim ve --parca birlikte verilir.")
+    if args.adim is not None and _ESKI_HAT_RET.get((int(args.adim), args.parca)):
+        sys.exit("RET: " + _ESKI_HAT_RET[(int(args.adim), args.parca)])
+    olay = {"zaman": simdi(), "tip": "muvekkil_karari", "konu": konu,
+            "secenekler": secenekler, "adim": args.adim, "parca": args.parca,
+            "katman": args.katman, "surum": OA_SURUM}
+    olay["imza"] = _imza_hesapla(olay)
+    olay_ekle(olaylar_yol, olay)
+    _durum_yaz(durum_yol, derle(olaylar_yol))
+    hedef = (f" [katman {args.katman}]" if args.katman
+             else (f" [adım {args.adim} / {args.parca}]" if args.parca else ""))
+    print(f"MÜVEKKİL KARARI BEKLEYEN AÇILDI — {konu}{hedef}: " + " | ".join(secenekler))
+    print("Karar müvekkilindir; kapatma: --muvekkil-karari-kapat \"<konu>\" --karar \"<seçim>\" "
+          "--gerekce \"…\" (gerekçesiz RET). Bilgilendirme notu iskeleti: "
+          "references/muvekkil-bilgilendirme-sablonu.md (dış çıktı — m.6/Layer 0).")
+    _durum_md_yaz(getattr(args, "kok", None))
+
+
+def muvekkil_karari_kapat(args):
+    """P1-9 — açık müvekkil kararını KAPATIR: --karar + --gerekce
+    (≥MUVEKKIL_KARARI_GEREKCE_MIN kr) ZORUNLU — M7 ile aynı disiplin. Konu
+    açık kayıt olarak bulunamazsa BLOKLAMAZ (append-only/önden karar), yalnız
+    görünür UYARI (M7 Ş14 deseni). Seçenek listesi dışı karar da UYARI
+    (müvekkil 'hiçbiri' diyebilir — kapalı liste değildir)."""
+    olaylar_yol, durum_yol = _yollar(args)
+    if not _defter_var(olaylar_yol, durum_yol):
+        sys.exit(f"HATA: defter bulunamadı: {olaylar_yol} — önce --baslat ile aç.")
+    konu = (args.muvekkil_karari_kapat or "").strip()
+    if not konu:
+        sys.exit("HATA: --muvekkil-karari-kapat için konu metni boş olamaz.")
+    karar = (getattr(args, "karar", None) or "").strip()
+    if not karar:
+        sys.exit("RET: --muvekkil-karari-kapat için --karar \"<seçim>\" zorunlu.")
+    gerekce = (args.gerekce or "").strip()
+    if len(gerekce) < MUVEKKIL_KARARI_GEREKCE_MIN:
+        sys.exit("RET: müvekkil kararı GEREKÇESİZ kapatılamaz — --gerekce "
+                 f"(≥{MUVEKKIL_KARARI_GEREKCE_MIN} karakter) ZORUNLU (M7 ile aynı disiplin; "
+                 "gerekçe müvekkilin bilgilendirilmiş kararının izidir).")
+    d_onceki = derle(olaylar_yol)
+    acik = [k for k in _muvekkil_karari_bekleyen(d_onceki)
+            if _konu_normalize(k.get("konu")) == _konu_normalize(konu)] if d_onceki else []
+    olay = {"zaman": simdi(), "tip": "muvekkil_karari_kapat", "konu": konu,
+            "karar": karar, "gerekce": gerekce, "surum": OA_SURUM}
+    olay["imza"] = _imza_hesapla(olay)
+    olay_ekle(olaylar_yol, olay)
+    _durum_yaz(durum_yol, derle(olaylar_yol))
+    mesaj = f"MÜVEKKİL KARARI KAYDEDİLDİ — {konu}: {karar} (gerekçe: {gerekce})"
+    if not acik:
+        mesaj += (f"\n⚠ UYARI: '{konu}' defterde AÇIK bir müvekkil kararı olarak bulunamadı — "
+                  "konu yazımı farklı olabilir; DURUM.md > Müvekkil Kararı Bekleyen bölümünü teyit et "
+                  "(kayıt yine düştü — append-only).")
+    else:
+        secenekler = [s.casefold() for s in (acik[-1].get("secenekler") or [])]
+        if secenekler and karar.casefold() not in secenekler:
+            mesaj += (f"\n⚠ UYARI: karar '{karar}' açılıştaki seçenek listesinde yok "
+                      f"({' | '.join(acik[-1].get('secenekler') or [])}) — bilinçliyse sorun değil.")
+    print(mesaj)
+    _durum_md_yaz(getattr(args, "kok", None))
+
+
+def avukat_hukmu_kaydet(args):
+    """A-28 (v0.5.16, SICRAMA-NOTU §3(A)+§5) — AVUKAT HÜKMÜ SENSÖRÜ: teslimden
+    sonra ürün başına KABUL | REVIZYONLA | RET (+ kapalı listeden sebep;
+    REVIZYONLA/RET için ZORUNLU, KABUL'de opsiyonel). İki iz: defter olayı
+    `avukat_hukmu` + `_oa/defter/avukat-hukmu.jsonl` (append-only, oa-usta
+    damıtma tetiğinin TEK kaynağı). YALNIZ ÖLÇER — hiçbir kapıyı/brifi/
+    denetimi değiştirmez (enjeksiyon yapmaz)."""
+    olaylar_yol, durum_yol = _yollar(args)
+    if not _defter_var(olaylar_yol, durum_yol):
+        sys.exit(f"HATA: defter bulunamadı: {olaylar_yol} — önce --baslat ile aç.")
+    hukum = args.avukat_hukmu
+    if hukum not in HUKUMLER:
+        sys.exit(f"HATA: --avukat-hukmu geçersiz: {hukum}. Geçerli: {' | '.join(HUKUMLER)}")
+    urun = (getattr(args, "urun", None) or "").strip()
+    if not urun:
+        sys.exit("HATA: --avukat-hukmu için --urun <yol> zorunlu (hüküm bir ÜRÜNE düşer).")
+    sebep = getattr(args, "sebep", None)
+    if sebep is not None and sebep not in HUKUM_SEBEPLERI:
+        sys.exit(f"HATA: --sebep geçersiz: {sebep}. Kapalı liste: {' | '.join(HUKUM_SEBEPLERI)}")
+    if hukum in ("REVIZYONLA", "RET") and not sebep:
+        sys.exit(f"RET: {hukum} hükmü SEBEPSİZ kaydedilemez — --sebep "
+                 f"{'|'.join(HUKUM_SEBEPLERI)} zorunlu (sebepsiz hüküm ölçüm değildir).")
+    notu = (getattr(args, "hukum_notu", None) or "").strip() or None
+    kok = getattr(args, "kok", None) or "."
+    urun_tam = urun if os.path.isabs(urun) else os.path.join(kok, urun)
+    urun_var = os.path.isfile(urun_tam)
+    olay = {"zaman": simdi(), "tip": "avukat_hukmu", "hukum": hukum, "sebep": sebep,
+            "urun": urun, "not": notu, "surum": OA_SURUM}
+    olay["imza"] = _imza_hesapla(olay)
+    olay_ekle(olaylar_yol, olay)
+    # İkinci iz — tek-kaynak sensör dosyası (append-only; olay_ekle atomik).
+    hukum_yol = os.path.join(os.path.dirname(olaylar_yol), AVUKAT_HUKMU_ADI)
+    olay_ekle(hukum_yol, {k: olay[k] for k in ("zaman", "hukum", "sebep", "urun", "not", "surum")})
+    _durum_yaz(durum_yol, derle(olaylar_yol))
+    print(f"AVUKAT HÜKMÜ KAYDEDİLDİ — {_HUKUM_ETIKET[hukum]}"
+          + (f" (sebep: {sebep})" if sebep else "") + f" · ürün: {urun}"
+          + (f" · not: {notu}" if notu else ""))
+    if not urun_var:
+        print(f"UYARI: ürün diskte bulunamadı ({urun}) — yol yazım hatası olabilir (kayıt yine düştü).")
+    print(f"Sensör yalnız ÖLÇER (kapı değildir); kaynak: _oa/defter/{AVUKAT_HUKMU_ADI}.")
+    _durum_md_yaz(getattr(args, "kok", None))
+
+
 def goster(args):
     olaylar_yol, durum_yol = _yollar(args)
     d = derle(olaylar_yol, durum_yol)
@@ -1592,7 +2059,7 @@ def goster(args):
             isaret = {"UYGULANDI": "✓", "GEREKSIZ": "−", "BILGI-EKSIK": "?",
                       "YUKLENEMEDI": "!", "BEKLIYOR": "⬜",
                       "ELDEN": "✋"}.get(p["durum"], "?")
-            serh_notu = "  ⚠ ŞERHLİ UYGULANDI" if p.get("serh") else ""
+            serh_notu = f"  ⚠ ŞERHLİ {p['durum']}" if p.get("serh") else ""
             pas_notu = f"  [PAS: {p.get('pas_yolu')}]" if p.get("pas_yolu") else ""
             print(f"{isaret} {no:>2}. {a['ad']:<11} {parca:<18} {p['durum']}"
                   + (f" — {p['kanit'][:90]}" if p["kanit"] else "") + serh_notu + pas_notu)
@@ -1940,7 +2407,9 @@ def _denetle_hesapla(kok, olaylar_yol, durum_yol, gate_g_atla=False, makbuz_kont
                 # üretilmez; hepsi aşağıda TEK özet satırda toplanır.
                 elden_kalemler.append(f"{no}/{parca}")
                 if p.get("serh"):
-                    uyarilar.append(f"adım {no} / {parca}: ⚠ ŞERHLİ — "
+                    # P1 (v0.5.16): ELDEN + ŞERHLİ birlikte yazılabilir —
+                    # etiket gerçek statüyü söyler (ŞERHLİ ELDEN).
+                    uyarilar.append(f"adım {no} / {parca}: ⚠ ŞERHLİ ELDEN — "
                                      f"{p.get('serh_metni') or ''}")
             elif p["durum"] == "YUKLENEMEDI":
                 uyarilar.append(f"adım {no} / {parca}: fiziken yüklenemedi — çıktıda açıkça belirtilmeli")
@@ -2021,6 +2490,11 @@ def _denetle_hesapla(kok, olaylar_yol, durum_yol, gate_g_atla=False, makbuz_kont
     # AYNI kaynak fonksiyon üzerinden kalıcı görünürlük (--denetle/--goster/
     # DURUM.md hepsi buradan geçer) — advisory, sorunlar'a DEĞİL uyarilar'a.
     uyarilar.extend(_dal_uyusmazlik_uyarilari(kok, d))
+    # P1-9 (v0.5.16) — kapanmamış müvekkil kararıyla KAPANIŞ: advisory,
+    # sorunlar'a DEĞİL uyarilar'a (bloklamaz; karar müvekkilindir).
+    mk_uyari = _muvekkil_karari_kapanis_uyarisi(d)
+    if mk_uyari:
+        uyarilar.append(mk_uyari)
     return d, sorunlar, uyarilar
 
 
@@ -2181,25 +2655,61 @@ def _advisory_tavanla(uyarilar):
         f"… +{fazla} uyarı daha (tam liste ilgili _oa/cikti/*.json dosyasında)"]
 
 
-def _graf_yapisal_bosluk_uyarisi(kok):
-    """oa-illiyet/scripts/grafik_denetim.py `--json <yol>` çıktısındaki yapısal
-    boşluklar (`sema_hatalari`, `desteksiz_kenarlar`, `cevrimler`)
-    `_oa/cikti/*graf*.json` dosyalarından toplanır. Hukuki değerlendirme
-    DEĞİLDİR — köprü düğüm/kesme adayı gibi STRATEJİ sinyalleri bilerek
-    alınmaz (onlar uyarı değil karar-malzemesidir, oa-strateji/oa-antitez okur)."""
-    cdiz = os.path.join(kok, "_oa", "cikti")
+def _denetim_jsonlari(kok, arac):
+    """K1 (v0.5.16, Hamle 2) — `_oa/cikti/*.json` içinden `arac == <arac>`
+    damgalı denetim çıktılarını (sıralı, deterministik) verir: [(yol, dict)].
+    Üç bekçi (graf/kıyas/usul) ve GRAF KAPISI (K2) TEK bu süzgeçten geçer —
+    dosya-ADI sözleşmesi (`*graf*`/`*kiyas*`/`*usul*`) KALDIRILDI: SKILL.md'nin
+    kendi örneği `01-illiyet-denetim.json` süzgeçten geçmiyordu (saha: bugün
+    0 uyarı). Damga = aracın kendi yazdığı `arac` alanı (tek kaynak). Bozuk/
+    yabancı/damgasız dosya SESSİZCE atlanır; ASLA fırlatmaz."""
+    cdiz = os.path.join(kok or ".", "_oa", "cikti")
     if not os.path.isdir(cdiz):
         return []
-    uyarilar = []
-    for yol in sorted(glob.glob(os.path.join(cdiz, "*graf*.json"))):
+    sonuc = []
+    for yol in sorted(glob.glob(os.path.join(cdiz, "*.json"))):
         try:
             with open(yol, encoding="utf-8", errors="replace") as f:
                 m = json.load(f)
         except Exception:
             continue
-        if not isinstance(m, dict) or m.get("arac") != "grafik_denetim":
+        if not isinstance(m, dict) or m.get("arac") != arac:
             continue
+        sonuc.append((yol, m))
+    return sonuc
+
+
+def _graf_cokme_metni(m):
+    """`denetim_coktu` alanı (A grubu, v0.5.16) — str ise hatanın kendisi,
+    truthy-bool ise `hata` alanı, o da yoksa '?'. Falsy → None (çökme yok)."""
+    coktu = m.get("denetim_coktu")
+    if not coktu:
+        return None
+    if isinstance(coktu, str):
+        return coktu
+    return str(m.get("hata") or "?")
+
+
+def _graf_yapisal_bosluk_uyarisi(kok):
+    """oa-illiyet/scripts/grafik_denetim.py `--json <yol>` çıktısındaki yapısal
+    boşluklar (`sema_hatalari`, `desteksiz_kenarlar`, `cevrimler`) `arac ==
+    grafik_denetim` damgalı `_oa/cikti/*.json` dosyalarından toplanır (K1:
+    ad-bağımsız, bkz. `_denetim_jsonlari`). Hukuki değerlendirme DEĞİLDİR —
+    köprü düğüm/kesme adayı gibi STRATEJİ sinyalleri (`kopru_dugumler`,
+    'perde' etiketi dahil) bilerek alınmaz (onlar uyarı değil karar-
+    malzemesidir, oa-strateji/oa-antitez okur).
+
+    v0.5.16 (A grubunun yeni alanları): `denetim_coktu` → '🔴 graf denetimi
+    ÇÖKTÜ' (çöken kapı = atlanan kapı — sessiz atlama yasağının script
+    tarafı); `baglanmamis_deliller` → 'bağlanmamış delil: <ad>';
+    `guc_beyansiz_kenarlar` → advisory satır (ispat gücü beyan edilmemiş)."""
+    uyarilar = []
+    for yol, m in _denetim_jsonlari(kok, "grafik_denetim"):
         ad = os.path.relpath(yol, kok)
+        cokme = _graf_cokme_metni(m)
+        if cokme:
+            uyarilar.append(f"{ad}: 🔴 graf denetimi ÇÖKTÜ ({cokme}) — çöken kapı = "
+                            "atlanan kapı (grafik_denetim.py'yi onarıp yeniden koş)")
         for h in (m.get("sema_hatalari") or []):
             uyarilar.append(f"{ad}: şema hatası — {h}")
         for k in (m.get("desteksiz_kenarlar") or []):
@@ -2210,27 +2720,33 @@ def _graf_yapisal_bosluk_uyarisi(kok):
             if isinstance(c, list) and c:
                 uyarilar.append(f"{ad}: dairesel illiyet — "
                                 + " → ".join(str(x) for x in c))
+        for dl in (m.get("baglanmamis_deliller") or []):
+            if isinstance(dl, dict):
+                dl_ad = dl.get("ad") or dl.get("id") or "?"
+            else:
+                dl_ad = str(dl)
+            uyarilar.append(f"{ad}: bağlanmamış delil: {dl_ad} — hiçbir kenara/iddiaya "
+                            "bağlı değil (yetim delil)")
+        for k in (m.get("guc_beyansiz_kenarlar") or []):
+            if isinstance(k, dict):
+                uyarilar.append(f"{ad}: güç beyansız kenar {k.get('kaynak')}→"
+                                f"{k.get('hedef')} ({k.get('tur')}) — ispat gücü "
+                                "beyan edilmemiş (advisory)")
+            else:
+                uyarilar.append(f"{ad}: güç beyansız kenar {k} — ispat gücü beyan "
+                                "edilmemiş (advisory)")
     return _advisory_tavanla(uyarilar)
 
 
 def _kiyas_bosluk_uyarisi(kok):
     """oa-kiyas/scripts/kiyas_denetim.py `--json <yol>` çıktısındaki subsumtion
-    boşlukları `_oa/cikti/*kiyas*.json` dosyalarından toplanır: karşılanmamış
-    unsur, teyitsiz içtihat, kritik_bosluk bayrağı. kiyas_denetim bilinçli
+    boşlukları `arac == kiyas_denetim` damgalı `_oa/cikti/*.json` dosyalarından
+    (K1 v0.5.16: ad-bağımsız) toplanır: karşılanmamış unsur, teyitsiz
+    içtihat, kritik_bosluk bayrağı. kiyas_denetim bilinçli
     olarak exit 0 döner ("kapı değil karar-malzemesi") — bu bekçi o tasarımı
     DEĞİŞTİRMEZ, yalnız DURUM.md'de görünür kılar."""
-    cdiz = os.path.join(kok, "_oa", "cikti")
-    if not os.path.isdir(cdiz):
-        return []
     uyarilar = []
-    for yol in sorted(glob.glob(os.path.join(cdiz, "*kiyas*.json"))):
-        try:
-            with open(yol, encoding="utf-8", errors="replace") as f:
-                m = json.load(f)
-        except Exception:
-            continue
-        if not isinstance(m, dict) or m.get("arac") != "kiyas_denetim":
-            continue
+    for yol, m in _denetim_jsonlari(kok, "kiyas_denetim"):   # K1: ad-bağımsız
         ad = os.path.relpath(yol, kok)
         bulundu = False
         for u in (m.get("unsur_vakia_eslesme") or []):
@@ -2248,20 +2764,11 @@ def _kiyas_bosluk_uyarisi(kok):
 
 def _usul_bosluk_uyarisi(kok):
     """oa-usul/scripts/usul_matris.py `--json <yol>` çıktısındaki G1-G8
-    boşlukları `_oa/cikti/*usul*.json` dosyalarından toplanır (usul_matris
+    boşlukları `arac == usul_matris` damgalı `_oa/cikti/*.json` dosyalarından
+    (K1 v0.5.16: ad-bağımsız) toplanır (usul_matris
     boşlukta zaten exit 1 döner; burası yalnız DURUM.md kalıcı görünürlüğü)."""
-    cdiz = os.path.join(kok, "_oa", "cikti")
-    if not os.path.isdir(cdiz):
-        return []
     uyarilar = []
-    for yol in sorted(glob.glob(os.path.join(cdiz, "*usul*.json"))):
-        try:
-            with open(yol, encoding="utf-8", errors="replace") as f:
-                m = json.load(f)
-        except Exception:
-            continue
-        if not isinstance(m, dict) or m.get("arac") != "usul_matris":
-            continue
+    for yol, m in _denetim_jsonlari(kok, "usul_matris"):     # K1: ad-bağımsız
         ad = os.path.relpath(yol, kok)
         for b in (m.get("bosluklar") or []):
             uyarilar.append(f"{ad}: {b}")
@@ -2608,7 +3115,9 @@ def _avukat_karari_bekleyen(d):
             if p["durum"] == "BILGI-EKSIK":
                 kalemler.append(f"adım {no} ({a['ad']}) / {parca}: BİLGİ EKSİK — {p.get('kanit') or ''}")
             elif p.get("serh"):
-                kalemler.append(f"adım {no} ({a['ad']}) / {parca}: ŞERHLİ UYGULANDI — "
+                # P1 (v0.5.16): ELDEN + ŞERHLİ birlikte yazılabilir — etiket
+                # gerçek statüyü söyler (ŞERHLİ UYGULANDI / ŞERHLİ ELDEN).
+                kalemler.append(f"adım {no} ({a['ad']}) / {parca}: ŞERHLİ {p['durum']} — "
                                  f"{p.get('serh_metni') or ''}")
     for k, p in d["katmanlar"].items():
         if _avukat_karari_cozulmus_mu(kararlar, katman=k, zaman=p.get("zaman"), sira=p.get("_sira")):
@@ -2770,8 +3279,10 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
                 if _elden_turetilmis_mi(kok, parca, p):
                     durum_goster = "UYGULANDI (ELDEN-türetilmiş)"
                     elden_turetilmis_n += 1
+                # P0-3 — ≤v0.5.15 defterinden eşlenen kayıt görünür not taşır.
+                eski_hat = " (eski hat sırası ≤v0.5.15 — adım eşlendi)" if p.get("eski_hat_eslendi") else ""
                 satirlar.append(f"- {isaret} adım {no} ({a['ad']}) / {parca}: {durum_goster}"
-                                 f"{serh_bayrak}{imza_etiket}{fiziksel_etiket}")
+                                 f"{serh_bayrak}{eski_hat}{imza_etiket}{fiziksel_etiket}")
         # C5 (v0.5.8.5) — ELDEN ayrı sayılır: UYGULANDI ile aynı kefede değil.
         elden_n = sum(1 for a in d["adimlar"].values()
                       for p in (a.get("parcalar") or {}).values()
@@ -2868,7 +3379,39 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
             for u in nobetci:
                 satirlar.append(f"- 🔴 {u}")
             satirlar.append("")
-        akb = _avukat_karari_bekleyen(d)
+        # P1-9 (v0.5.16) — MÜVEKKİL KARARI BEKLEYEN: avukat kararından AYRI
+        # egemenlik alanı (sulh teklifi / dava değeri / risk kabulü / tedbir
+        # teminatı). Yalnız GÖSTERİR; karar müvekkilindir, kapı değildir.
+        # «Avukat Kararı Bekleyen»den ÖNCE basılır — o bölümün «## Sıradaki»ya
+        # kadar uzandığını varsayan mevcut okuyucular (test_durum_md) bozulmaz.
+        mk_bekleyen = _muvekkil_karari_bekleyen(d)
+        satirlar.append("## Müvekkil Kararı Bekleyen")
+        if mk_bekleyen:
+            for k in mk_bekleyen:
+                satirlar.append(f"- {_muvekkil_karari_satiri(k)}")
+            satirlar.append("- _Kapatma: `--muvekkil-karari-kapat \"<konu>\" --karar \"<seçim>\" "
+                             "--gerekce \"…\"` — bilgilendirme notu: references/"
+                             "muvekkil-bilgilendirme-sablonu.md_")
+        else:
+            satirlar.append("- (yok)")
+        satirlar.append("")
+        mk_kapali = [k for k in (d.get("muvekkil_kararlari") or []) if k.get("kapanis")]
+        if mk_kapali:
+            satirlar.append("## Müvekkil Kararları (Kayıtlı — P1-9, v0.5.16)")
+            for k in mk_kapali:
+                kp = k.get("kapanis") or {}
+                satirlar.append(f"- {k.get('konu')}: **{kp.get('karar')}**"
+                                 + (f" — gerekçe: {kp.get('gerekce')}" if kp.get("gerekce") else "")
+                                 + (" ⚠ (açılış kaydı yok — yetim kapanış)" if k.get("yetim") else "")
+                                 + f"  _({kp.get('zaman')})_")
+            satirlar.append("")
+        # A-28 (v0.5.16) — AVUKAT HÜKÜMLERİ sayacı: yalnız ÖLÇER (SICRAMA §5).
+        satirlar.append("## Avukat Hükümleri (A-28 sensörü — ölçer, kapı değildir)")
+        satirlar.extend(_avukat_hukmu_satirlari(kok))
+        satirlar.append("")
+        # H1 (v0.5.16) — inline sayaç M7 satırları (defter çatalları + inline
+        # bulgu çatalları AYNI bölümde; kaynak `_oa/defter/inline-sayac.json`).
+        akb = _avukat_karari_bekleyen(d) + _inline_sayac_bekleyen(kok)
         satirlar.append("## Avukat Kararı Bekleyen")
         if akb:
             for k in akb:
@@ -4210,6 +4753,10 @@ def _zincir_durumu_ozeti(kok):
             bekleyen = len(_avukat_karari_bekleyen(d))
         except Exception:
             bekleyen = 0
+        try:
+            mk_bekleyen = len(_muvekkil_karari_bekleyen(d))   # P1-9 — müvekkil egemenliği
+        except Exception:
+            mk_bekleyen = 0
         muhursuz_sayi = len([x for x in _muhursuz_teslim_listesi(kok)
                              if x.get("durum") in ("muhursuz", "bayat")])
         m, _hata = _makbuz_oku(kok)
@@ -4222,8 +4769,9 @@ def _zincir_durumu_ozeti(kok):
         return "\n".join([
             "ZİNCİR DURUMU (v0.5.9 — pipeline-durum.json'dan mekanik özet):",
             f"  son UYGULANDI: {son or 'henüz yok'} · sıradaki: {siradaki}",
-            f"  bekleyen avukat kararı: {bekleyen} · mühürsüz teslim ürünü: "
-            f"{muhursuz_sayi} · teslim makbuzu: {makbuz}",
+            f"  bekleyen avukat kararı: {bekleyen}"
+            + (f" · bekleyen MÜVEKKİL kararı: {mk_bekleyen}" if mk_bekleyen else "")
+            + f" · mühürsüz teslim ürünü: {muhursuz_sayi} · teslim makbuzu: {makbuz}",
         ])
     except Exception:
         return None
@@ -4362,8 +4910,9 @@ def hook_prompt(kok=None):
             "sorulur; aşılmışsa kayda **AŞAN-KAYNAK:** işlenir; (2) dilekçedeki her "
             "künyenin YANINA kütükteki KAYNAK-URL erişim linki yazılır (linksiz künye "
             "EKSİK atıftır); (3) karşı tarafın MUHTEMEL savunmalarının analizi "
-            "DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/07-antitez-cephanelik.md` iç "
-            "dosyasına yazılır (m.6: savunma hattı karşı tarafa hediye edilmez); "
+            "DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/06-antitez-cephanelik.md` iç "
+            "dosyasına yazılır (adım 6 = ANTİTEZ, v0.5.16/P0-3; ≤v0.5.15 adı "
+            "`07-antitez-*` de kabul edilir; m.6: savunma hattı karşı tarafa hediye edilmez); "
             "(4) her ürünün İLK satırlarına KAYNAK-BLOĞU yazılır "
             "(`<!-- kaynaklar: yol@sha8 -->`); (5) üretimden sonra "
             "`oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdi>` ve "
@@ -4956,6 +5505,126 @@ def _inline_bulgu_listesi(sonuc):
     return [str(sonuc)] if str(sonuc).strip() else []
 
 
+# ── H1 (v0.5.16, Hamle 11 + karar #2: N=3) — İNLİNE SAYAÇ ──────────────────
+# Saha deseni: aynı inline bulgu ([F] faiz başlangıcı, [Y] havada kalan alıntı
+# ...) her Write/Edit turunda yeniden basılıyor ama KAPANMIYORDU — hook
+# çıktısı modele geri akıyor, model "gördüm" deyip geçiyordu; bulgu tur tur
+# eskiyor, kimse karar vermiyordu. Sayaç (dosya, bulgu SINIFI) çifti için
+# ARDIŞIK tur sayar; N=3'te DURUM.md 'Avukat Kararı Bekleyen'e M7 satırı +
+# stdout'ta TEK satır düşer — bu bir HUKUKİ karar değil, "3 turdur aynı sınıf
+# açık" MEKANİK gözlemidir; kararı (kabul/düzelt) avukat verir. Bulgu
+# kaybolunca (temiz tur / sınıf değişimi) sayaç sıfırlanır. Throttle YALNIZ
+# BASIMA uygulanır, TESPİTE asla (mevcut invaryant): sayaç her turda işler.
+INLINE_SAYAC_ADI = "inline-sayac.json"
+INLINE_SAYAC_ESIK = 3                       # karar #2: N=3 ardışık tur
+_INLINE_SINIF_ONCELIK = ("[F]", "[Y]", "[P]")   # [F] > [Y] > [P] > diğer
+_INLINE_ETIKET_RE = re.compile(r"^\s*(\[[^\]]+\])")
+
+
+def _inline_bulgu_sinifi(bulgular, ilk_n=5):
+    """Basılan ilk `ilk_n` bulgu satırından SAYILACAK sınıfı seçer (satır başı
+    `[X]` etiketi): [F] > [Y] > [P] > diğer (diğerde ilk etiketli satır).
+    Etiketsiz liste → None (sayılmaz). Etiket sözleşmesi: dilekce_denetim.
+    hizli_denetim '[X] …' (C1 grubu [F] hafif kip / [P] netice-i talep)."""
+    etiketler = []
+    for b in list(bulgular or [])[:ilk_n]:
+        m = _INLINE_ETIKET_RE.match(str(b))
+        if m:
+            etiketler.append(m.group(1))
+    if not etiketler:
+        return None
+    for oncelik in _INLINE_SINIF_ONCELIK:
+        if oncelik in etiketler:
+            return oncelik
+    return etiketler[0]
+
+
+def _inline_sayac_yolu(kok):
+    return os.path.join(kok or ".", "_oa", "defter", INLINE_SAYAC_ADI)
+
+
+def _inline_sayac_oku(kok):
+    """(sayac:dict, uyari:str|None). Dosya yoksa ({}, None); bozuk/yabancı
+    şemalıysa ({}, 'sıfırlandı' uyarısı) — fail-closed + GÖRÜNÜR (eski/bozuk
+    dosya hook'u ASLA çökertmez, sessizce de yutulmaz)."""
+    yol = _inline_sayac_yolu(kok)
+    if not os.path.isfile(yol):
+        return {}, None
+    try:
+        with open(yol, encoding="utf-8") as f:
+            veri = json.load(f)
+        if not isinstance(veri, dict):
+            raise ValueError("sözlük değil")
+        return veri, None
+    except Exception as e:
+        return {}, (f"UYARI: _oa/defter/{INLINE_SAYAC_ADI} bozuk/okunamadı ({type(e).__name__}) "
+                    "— sayaç sıfırlandı (H1 inline sayacı yeniden başlar).")
+
+
+def _inline_sayac_yaz(kok, sayac):
+    """Atomik yaz (tmp + os.replace). `_oa/defter` yoksa yazmaz (defter yok =
+    hat yok; sayaç tutulmaz). ASLA fırlatmaz."""
+    try:
+        yol = _inline_sayac_yolu(kok)
+        if not os.path.isdir(os.path.dirname(yol)):
+            return
+        tmp = f"{yol}.tmp.{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(sayac, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, yol)
+    except Exception:
+        pass
+
+
+def _inline_sayac_guncelle(kok, dosya_rel, sinif, ornek=None):
+    """H1 çekirdeği. Döner: (tur, onceki_tur, uyari). `sinif` None (temiz tur
+    veya etiketsiz) → kayıt SİLİNİR (sayaç sıfır). Aynı sınıf → tur+1; sınıf
+    değişti → 1 (ardışıklık bozuldu). `ornek` = seçilen sınıfın ilk bulgu
+    satırı (DURUM.md'de avukata bağlam verir; ≤160 kr). ASLA fırlatmaz."""
+    try:
+        sayac, uyari = _inline_sayac_oku(kok)
+        onceki = sayac.get(dosya_rel) if isinstance(sayac.get(dosya_rel), dict) else None
+        onceki_tur = int((onceki or {}).get("tur") or 0)
+        if sinif is None:
+            if dosya_rel in sayac:
+                del sayac[dosya_rel]
+                _inline_sayac_yaz(kok, sayac)
+            return 0, onceki_tur, uyari
+        tur = onceki_tur + 1 if (onceki and onceki.get("sinif") == sinif) else 1
+        sayac[dosya_rel] = {"sinif": sinif, "tur": tur,
+                            "ornek": str(ornek or "")[:160], "zaman": simdi()}
+        _inline_sayac_yaz(kok, sayac)
+        return tur, onceki_tur, uyari
+    except Exception:
+        return 0, 0, None
+
+
+def _inline_sayac_bekleyen(kok, esik=INLINE_SAYAC_ESIK):
+    """DURUM.md 'Avukat Kararı Bekleyen' için M7 satırları: sayaçta `tur >=
+    esik` olan (dosya, sınıf) çiftleri. Salt-okur; dosya yok/bozuksa boş."""
+    try:
+        sayac, _uyari = _inline_sayac_oku(kok)
+        satirlar = []
+        for dosya_rel in sorted(sayac):
+            k = sayac[dosya_rel]
+            if not isinstance(k, dict):
+                continue
+            tur = int(k.get("tur") or 0)
+            if tur < esik:
+                continue
+            satirlar.append(_inline_sayac_m7_satiri(dosya_rel, k.get("sinif"), tur, k.get("ornek")))
+        return satirlar
+    except Exception:
+        return []
+
+
+def _inline_sayac_m7_satiri(dosya_rel, sinif, tur, ornek):
+    ornek = str(ornek or "").strip()
+    govde = f"{sinif} {ornek}" if ornek and not ornek.startswith(str(sinif)) else (ornek or str(sinif))
+    return (f"inline bulgu {tur} turdur kapanmıyor: {govde} ({dosya_rel}) — "
+            "avukat kararı: kabul/düzelt")
+
+
 def _hook_inline_dilekce_denetim(kok, veri, zaman_siniri_sn=None):
     """A2 gövdesi: payload'daki YENİ yazılan dosya dilekçe-taslak sınıfıysa
     `hizli_denetim(metin, kok)`'u İN-PROCESS + zaman sınırlı koşar; bulgu
@@ -5009,15 +5678,38 @@ def _hook_inline_dilekce_denetim(kok, veri, zaman_siniri_sn=None):
         if is_ipligi.is_alive() or kutu.get("hata") or "sonuc" not in kutu:
             return                          # zaman aşımı/çökme — vazgeç
         bulgular = _inline_bulgu_listesi(kutu["sonuc"])
+        # H1 — sayaç anahtarı: köke göreli yol (ayırıcı normalize; aynı adlı
+        # dosya farklı alt dizinde karışmaz).
+        try:
+            dosya_rel = os.path.relpath(tam, kok).replace(os.sep, "/")
+        except Exception:
+            dosya_rel = os.path.basename(str(dosya))
         if not bulgular:
             print("inline denetim: temiz")
             _hook_olay_yaz(kok, "inline-denetim", "0 bulgu")
+            _tur, onceki_tur, sayac_uyari = _inline_sayac_guncelle(kok, dosya_rel, None)
+            if sayac_uyari:
+                print(sayac_uyari)
+            if onceki_tur >= INLINE_SAYAC_ESIK:
+                _durum_md_yaz(kok)      # M7 satırı DURUM.md'den düşsün (kapandı)
             return
         print(f"İNLİNE DENETİM ({os.path.basename(str(dosya))} — "
               f"dilekce_denetim.hizli_denetim): {len(bulgular)} bulgu")
         for b in bulgular[:5]:
             print("  " + b[:200])
         _hook_olay_yaz(kok, "inline-denetim", f"{len(bulgular)} bulgu")
+        # H1 — (dosya, sınıf) sayacı: TESPİT her turda işler (throttle yalnız
+        # basıma). N. ardışık turda TEK satır M7 + DURUM.md türetimi.
+        sinif = _inline_bulgu_sinifi(bulgular)
+        ornek = next((b for b in bulgular[:5] if str(b).lstrip().startswith(str(sinif))), None)
+        tur, _onceki_tur, sayac_uyari = _inline_sayac_guncelle(kok, dosya_rel, sinif, ornek)
+        if sayac_uyari:
+            print(sayac_uyari)
+        if sinif is not None and tur >= INLINE_SAYAC_ESIK:
+            print("⚠ M7 AVUKAT KARARI BEKLEYEN: "
+                  + _inline_sayac_m7_satiri(dosya_rel, sinif, tur, ornek))
+            _hook_olay_yaz(kok, "inline-sayac", f"{sinif} tur {tur} — {dosya_rel}")
+            _durum_md_yaz(kok)
     except Exception:
         pass                                # sessiz başarısızlık — asla bloklamaz
 
@@ -5476,8 +6168,14 @@ def main():
     ap.add_argument("--denetle", action="store_true")
     ap.add_argument("--serh",
                      help="P0-6: önkoşul-artefakt kapısı (adım-5/9) VEYA İNGEST-ÖNCE "
-                          f"BLOKLU'yken GEREKÇELİ geçiş (>={SERH_GEREKCE_MIN} karakter) — "
-                          "olay 'serh:true' ile İŞLENİR, sessiz geçilmez.")
+                          f"VEYA GRAF KAPISI BLOKLU'yken GEREKÇELİ geçiş (>={SERH_GEREKCE_MIN} "
+                          "karakter) — olay 'serh:true' ile İŞLENİR, sessiz geçilmez. "
+                          "Hangi kapı: --serh-kapi (verilmezse TÜM kapılar + görünür UYARI).")
+    ap.add_argument("--serh-kapi", dest="serh_kapi", default=None, choices=list(SERH_KAPILARI),
+                     help="P1 (v0.5.16): şerhin geçtiği KAPI — ingest-once | graf (K2, "
+                          "adım-1/oa-illiyet) | kiyas (adım-5) | kontrol (adım-9) | tumu. "
+                          "Şerh yalnız adlandırılan kapıyı geçer; CANLI-SENKRON/ÇAPRAZ-ADIM "
+                          "yalnız 'tumu' (veya adsız --serh) ile geçilir.")
     ap.add_argument("--arac-hata", action="store_true", dest="arac_hata",
                     help="D5: bir MCP/araç çağrısı çöktüğünde deftere 'ARAÇ ÇÖKTÜ' işler")
     ap.add_argument("--arac", help="--arac-hata: çöken aracın adı (ör. ictihat_getir)")
@@ -5517,6 +6215,28 @@ def main():
                      help="M7 (Paket D): AVUKAT KARARI BEKLEYEN'deki bir çatalı "
                           "((--adim+--parca) VEYA --katman ile hedeflenir) NİHAİ "
                           "karar metniyle kaydeder — --gerekce ZORUNLU.")
+    ap.add_argument("--muvekkil-karari", dest="muvekkil_karari", default=None, metavar="KONU",
+                     help="P1-9 (v0.5.16): MÜVEKKİL KARARI BEKLEYEN kaydı açar — "
+                          "--secenekler \"a|b|c\" (≥2) zorunlu; hedef (--adim+--parca | "
+                          "--katman) opsiyonel. Tipik konular: sulh teklifi, dava değeri, "
+                          "risk kabulü, tedbir teminatı. Bloklamaz.")
+    ap.add_argument("--secenekler", default=None,
+                     help="--muvekkil-karari: '|' ile ayrılmış ≥2 seçenek.")
+    ap.add_argument("--muvekkil-karari-kapat", dest="muvekkil_karari_kapat", default=None,
+                     metavar="KONU",
+                     help="P1-9: açık müvekkil kararını kapatır — --karar \"<seçim>\" + "
+                          "--gerekce (≥15 kr) ZORUNLU (gerekçesiz RET).")
+    ap.add_argument("--karar", default=None, help="--muvekkil-karari-kapat: müvekkilin seçimi.")
+    ap.add_argument("--avukat-hukmu", dest="avukat_hukmu", default=None, choices=list(HUKUMLER),
+                     help="A-28 (v0.5.16): teslim sonrası AVUKAT HÜKMÜ sensörü — "
+                          "KABUL|REVIZYONLA|RET; --urun zorunlu; REVIZYONLA/RET için "
+                          "--sebep zorunlu. Defter olayı + _oa/defter/avukat-hukmu.jsonl. "
+                          "YALNIZ ÖLÇER — kapı değildir, brif değiştirmez.")
+    ap.add_argument("--sebep", default=None, choices=list(HUKUM_SEBEPLERI),
+                     help="--avukat-hukmu: kapalı liste sebep.")
+    ap.add_argument("--urun", default=None, help="--avukat-hukmu: hükmün düştüğü ürün yolu.")
+    ap.add_argument("--not", dest="hukum_notu", default=None,
+                     help="--avukat-hukmu: (opsiyonel) serbest not — anonim tut (m.7).")
     args = ap.parse_args()
 
     if args.hook_acilis:
@@ -5534,6 +6254,12 @@ def main():
         sys.exit(hook_postwrite(args.kok))
     elif args.avukat_karari is not None:
         avukat_karari_kaydet(args)
+    elif args.muvekkil_karari is not None:
+        muvekkil_karari_ac(args)
+    elif args.muvekkil_karari_kapat is not None:
+        muvekkil_karari_kapat(args)
+    elif args.avukat_hukmu is not None:
+        avukat_hukmu_kaydet(args)
     elif args.baslat:
         baslat(args)
     elif args.adim_batch:

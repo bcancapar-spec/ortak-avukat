@@ -18,13 +18,21 @@ Güncelleme: [tarih]
 | 3 | ARAŞTIRMA | oa-ictihat/arsiv | ⏳ sürüyor | 3 emsal teyitli, 1 bekliyor |
 | 4 | OLGU/DELİL | oa-vakia | ⬜ başlamadı | — |
 | 5 | KIYAS | oa-kiyas | ⬜ | — |
-| 6 | STRATEJİ | oa-strateji | ⬜ | — |
-| 7 | ANTİTEZ | oa-antitez | ⬜ | — |
+| 6 | ANTİTEZ | oa-antitez | ⬜ | — |
+| 7 | STRATEJİ | oa-strateji | ⬜ | — |
 | 8 | YAZIM | oa-dilekce | ⬜ | — |
 | 9 | KONTROL | oa-kontrol | ⬜ | — |
 
 ## Bekleyen avukat kararı (kritik kavşak)
 - [ ] [Kavşak açıklaması — ör. "zilyetlik delili zayıf, dava mı sulh mu?"]
+
+## Bekleyen müvekkil kararı (P1-9, v0.5.16 — karar müvekkilindir)
+- [ ] [Konu — seçenekler: a | b | c] (`pipeline_kayit.py --muvekkil-karari "<konu>" --secenekler "a|b|c"`;
+      kapatma `--muvekkil-karari-kapat "<konu>" --karar "<seçim>" --gerekce "…"`; bilgilendirme notu:
+      `muvekkil-bilgilendirme-sablonu.md`)
+
+## Avukat hükümleri (A-28 sensörü — teslim sonrası, ölçer; kapı değildir)
+- KABUL n / REVİZYONLA n / RET n — kaynak `_oa/defter/avukat-hukmu.jsonl`
 
 ## Açık riskler / süre uyarıları
 - ⏰ İstinaf süresi: [son gün]
@@ -41,3 +49,8 @@ Güncelleme: [tarih]
 - **Süre üstünlüğü:** süre uyarısı varsa diğer adımların önüne geçer.
 - **Kavşak onayı:** "bekleyen avukat kararı" kutusu doluyken pipeline kendiliğinden
   ilerlemez; avukat işaretler.
+- **Hat sırası (v0.5.16/P0-3):** 6 = ANTİTEZ, 7 = STRATEJİ — karşı tarafın en güçlü tezi
+  görülmeden yol kararı verilmez. ≤v0.5.15 defterlerindeki eski sıra `pipeline_kayit.py`
+  tarafından yeni hücreye eşlenir («eski hat sırası ≤v0.5.15 — adım eşlendi» notu).
+- **Müvekkil kararı:** avukat kararından ayrı egemenlik alanıdır; kapanmamış müvekkil
+  kararı varken KAPANIŞ görünür UYARI üretir (bloklamaz).
