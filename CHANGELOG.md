@@ -17,6 +17,31 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.16.1 — Saha Yan-Bulguları (2026-09-07)
+
+**Ne:** v0.5.16'nın gerçek dava kopyalarında yapılan saha ölçümünün bulduğu iki
+kusur onarıldı (dal `v0516/yan-bulgular`; test `tests/test_v0516_yan_bulgular.py`,
+17 sınama; süit 2318).
+
+- **Kütük ayrıştırıcısı sütun toleransı (oa-kontrol `kunye_ortak.py` + `ictihat_
+  muhakeme_denetim.py` + `kunye_teyit.py`):** kütük okuyucuları satırı `len != 7`
+  ise «BOZUK» sayıyordu; saha kütüklerinde satırlar 17 hücreli → 26/33 taslakta
+  her künye «damgasız» göründü, [F] hafif kip ve kütük teyidi kör kaldı. Okuyucu
+  artık sütun sayısından bağımsız: esas+karar ve `DAMGA=`/`AKIBET=` tokenları
+  satırın tamamında (sonuncusu geçerli), daire künyeyi taşıyan hücreden; BOZUK
+  yalnız gerçekten ayrıştırılamayan satıra. Yazıcı simetrisi (oa-pipeline
+  `oa_hafiza.py`): `--sorgu` hücresi de DAMGA=/künye-izi kaçışından geçer.
+- **Şerh zinciri kapı atlatması (oa-pipeline `pipeline_kayit.py`):** 00-kunye.json
+  yokken `--serh --serh-kapi ingest-once` erken dönüp K2 GRAF KAPISI'nı hiç
+  sormuyordu → çevrimli graf şerhsiz geçiyordu. Şerhli geçiş artık biriktirilir,
+  kalan kapılar (senkron/çapraz-adım/graf/kiyas/kontrol) da sorulur; kapsanmayan
+  bloklu kapı RET (hangi kapı, hangi ad; iki kapı için `tumu`); şerh mesajı
+  geçilen kapıların hepsini listeler.
+
+**Neden/kanıt:** saha ölçümü (gerçek dosyalar, anonim); ayrıntı parça
+günlüklerinde (`oa-kontrol`, `oa-pipeline` `references/degisiklik-gunlugu.md`).
+Plugin sürüm damgası 0.5.16'da kalır (yama, ayrı etiket entegratörün kararı).
+
 ## v0.5.16 — İki Denetimin İnfazı (2026-09-07)
 **Kanıt türü:** iki bağımsız dış denetim raporu (6 Eylül 2026): (1) *bütünleşik
 analiz* — döngü/graf/hook mimarisi + üç dalda saha sınaması + Yargıtay→BAM→ilk

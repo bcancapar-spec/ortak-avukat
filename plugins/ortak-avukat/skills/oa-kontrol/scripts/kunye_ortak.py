@@ -651,38 +651,6 @@ def bolumlere_ayir(metin):
 
 _DAMGA_TOKEN_RE = re.compile(r"DAMGA=([A-ZÇĞİÖŞÜa-zçğıöşü-]+)")
 
-
-def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
-    """Künye teyit kütüğündeki (append-only, `| Zaman | Araç | Sorgu | Sonuç |
-    Döküm |` satırları) bir esas/karar (+ opsiyonel `daire`) için SON `DAMGA=`
-    tokenını döndürür; kütük yoksa/okunamazsa/eşleşme yoksa None.
-
-    PAYLAŞIMLI (P0-2 DÜZELTME d, v0.5.5): hem `ictihat_muhakeme_denetim.py`
-    (okuma-zamanı çapraz kontrol — muhakeme bölümü elle değiştirilmiş mi) HEM
-    `oa_hafiza.py` (YAZMA-ÖNCESİ çapraz kontrol — aynı künyeye ikinci bir
-    `teyit --damga` ile SESSİZCE farklı damga vurulması engellenir) bu
-    fonksiyonu çağırır; kütük satır biçimi tek yerde ayrıştırılır (tek-yazar
-    kuralı — iki script arasında sürüklenip ayrışmaz).
-
-    DÜZELTME (v0.5.5 düzeltme turu — DAİRE-KÖR + fail-open bug'ları):
-    - `daire` verilirse VE kütük satırının sonuç hücresinden bir daire
-      çıkarılabiliyorsa (`daire_key`), İKİSİ DE tanınıyorken FARKLIYSA satır
-      eşleşme SAYILMAZ — esas/karar no'ları her dairede yılda sıfırdan
-      başladığından, GERÇEKTEN FARKLI bir dairenin aynı numaralı kararı bu
-      künyenin 'son damgası' sanılmaz (eski daire-kör davranış, MuhakemeKaydi.
-      eslesir'in aynı ilkesiyle simetrik hâle getirilir).
-    - Satırın hücre sayısı beklenen 5-sütun biçimine (tam 6 `|`, split→7
-      eleman) uymuyorsa satır BOZUK sayılıp GÖRÜNÜR bir uyarıyla fail-CLOSED
-      atlanır (eski `len(hucreler) < 5` gevşekliği, kaçmamış bir `|` ile
-      kolon kaymasını SESSİZCE yutuyordu — sessiz atlama yasağı).
-    - `esas` VE `karar` her ikisi de biliniyorsa satırda İKİSİNİN DE dize
-      olarak geçmesi şart koşulur (`esas_var OR karar_var` gevşekliği, yalnız
-      TEK bir sayısı çakışan alakasız bir satırın damgasını 'son damga'
-      sanabiliyordu — fail-open bug)."""
-    return _kutukten_son_token(kutuk_yolu, esas, karar, daire, _DAMGA_TOKEN_RE,
-                               "kutukten_son_damga")
-
-
 # ── K5 (v0.5.16, Hamle 4) — AKIBET TOKENI ────────────────────────────────────
 # D grubu (`oa_hafiza.py teyit --akibet`) kütük sonuç hücresine, DAMGA=
 # hücresi gibi, «AKIBET=<enum>» yazar (enum: kesinlesti | kesinlesmedi |
@@ -690,59 +658,40 @@ def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
 _AKIBET_TOKEN_RE = re.compile(r"AKIBET=([A-Za-zçğıöşüÇĞİÖŞÜ_-]+)")
 
 
-def kutukten_son_akibet(kutuk_yolu, esas, karar, daire=None):
-    """K5 — kütükteki bir esas/karar (+ opsiyonel daire) için SON `AKIBET=`
-    tokenını döndürür (küçük harf); yoksa None. Satır eşleşme kuralı
-    `kutukten_son_damga` ile BİREBİR aynıdır (tek-yazar kuralı — ortak
-    `_kutukten_son_token`)."""
-    sonuc = _kutukten_son_token(kutuk_yolu, esas, karar, daire, _AKIBET_TOKEN_RE,
-                                "kutukten_son_akibet")
-    return sonuc.lower() if sonuc else None
-
-
-def _kutukten_son_token(kutuk_yolu, esas, karar, daire, token_re, etiket):
-    """`kutukten_son_damga` / `kutukten_son_akibet` ortak gövdesi (v0.5.16 —
-    davranış bit düzeyinde aynı; yalnız token deseni parametreleşti)."""
-    if not (esas or karar) or not kutuk_yolu or not os.path.isfile(kutuk_yolu):
-        return None
-    try:
-        with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
-            satirlar = f.readlines()
-    except OSError:
-        return None
-    son_damga = None
-    for satir in satirlar:
-        if not satir.startswith("|"):
-            continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            _sys.stderr.write(
-                f"UYARI (kunye_ortak.{etiket}): kütük satırı beklenen "
-                f"5-sütun biçiminde değil ({len(hucreler)} hücre, 7 beklenirdi) — "
-                "BOZUK sayılıp fail-CLOSED atlandı: " + satir.strip()[:160] + "\n")
-            continue
-        sonuc_hucresi = hucreler[4]
-        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
-        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
-        if esas and karar:
-            if not (esas_var and karar_var):
-                continue
-        elif esas:
-            if not esas_var:
-                continue
-        elif karar:
-            if not karar_var:
-                continue
-        else:
-            continue
-        if daire is not None:
-            satir_daire = daire_key(sonuc_hucresi)
-            if satir_daire is not None and satir_daire != daire:
-                continue
-        m = token_re.search(sonuc_hucresi)
-        if m:
-            son_damga = m.group(1).upper()
-    return son_damga
+# ── v0.5.16.1 — KÜTÜK SATIR OKUYUCU: SÜTUN SAYISINDAN BAĞIMSIZ ──────────────
+# SAHA YAN-BULGUSU (gerçek dava kopyalarında v0.5.16 ölçümü): kütük okuyucular
+# satırı `split("|")` ile bölüp `len != 7` ise «BOZUK, fail-CLOSED atlandı»
+# diyordu. Gerçek kütüklerde satırlar 17 hücreli (genişletilmiş düzen —
+# `oa_hafiza.py teyit` 5 sütun = 7 hücre yazar; ölçüldü) → 26/33 taslakta her
+# künye «damgasız» göründü, [F] hafif kip ve kütük teyidi kör kaldı. Sessiz
+# atlama yasağı görünür uyarıyla yerine getiriliyordu ama uyarı metni yanlış
+# teşhis koyuyordu: satır bozuk değil, düzen genişti.
+#
+# YENİ SÖZLEŞME (tek yerde, tüm okuyucular buradan geçer — tek-yazar kuralı):
+# - VERİ SATIRI: `|` ile başlayan, en az bir hücre kurabilen, başlık (ilk
+#   hücre «Zaman») ya da ayraç (`|---|---|`) olmayan satır. `|` ile başlamayan
+#   düz metin SESSİZ atlanır (kütük şablonunun kural/ipucu satırları).
+# - BOZUK: `|` ile başlayıp TEK BİR hücre bile kuramayan satır (kapanmamış `|`)
+#   — GÖRÜNÜR uyarıyla fail-CLOSED atlanır; aynı satır için uyarı süreç
+#   boyunca bir kez basılır (okuyucular aynı kütüğü üst üste tarar).
+# - KÜNYE EŞLEŞMESİ: esas+karar dizeleri satırın TAMAMINDA aranır (`sayi_var`
+#   komşu rakamdan izole eder); daire, künyeyi TAŞIYAN hücreden okunur
+#   (`kutuk_satiri_dairesi`) — sorgu hücresinde anılan başka bir daire
+#   künyenin dairesi sanılmaz; künye hücresinde daire yoksa satırdaki TEK
+#   daire kullanılır, birden çok/hiç yoksa None (daire-kör değil, belirsizde
+#   reddetmez — eski `daire_key(sonuc_hucresi)` ile aynı fail-open sınırı).
+# - TOKENLAR (`DAMGA=` / `AKIBET=` / `DOKUM-SINIFI=` / `DUYULMUS=`): hücre
+#   konumundan bağımsız, satırın tamamında; birden çok `DAMGA=` varsa
+#   SONUNCUSU geçerli (append-only «son damga» semantiğinin satır-içi izdüşümü
+#   — `--damga-degistir` gerekçesi de aynı kuralla okunur).
+# - Satır-geneli aramanın açtığı kapı YAZICIDA kapanır: `oa_hafiza.py teyit`
+#   kullanıcı-kontrolündeki `--sorgu` hücresini de `_sonuc_damga_ize_
+#   karismasin` katmanından geçirir ve içindeki «YYYY/N» künye izini görsel
+#   eşdeğerle (`⁄`) nötrleştirir — kütükte kalan TEK gerçek `DAMGA=`/künye izi
+#   script'in doğruladığı sonuc hücresininkidir (bkz. oa_hafiza
+#   `_sorgu_kutuk_ize_karismasin`; test: test_v0516_yan_bulgular).
+_KUTUK_AYRAC_HUCRE_RE = re.compile(r"^:?-+:?$")
+_KUTUK_BOZUK_UYARILDI = set()
 
 
 def _kutuk_satirlarini_oku(kutuk_yolu):
@@ -758,39 +707,172 @@ def _kutuk_satirlarini_oku(kutuk_yolu):
         return []
 
 
+def kutuk_satir_hucreleri(satir):
+    """Satırı hücrelere böler: baştaki/sondaki `|` atılır, hücreler kırpılır.
+    Sütun sayısı SORULMAZ — 5 sütunlu yazıcı satırı da, 15 sütunlu saha
+    düzeni de aynı yoldan geçer."""
+    return [h.strip() for h in satir.strip().strip("|").split("|")]
+
+
+def kutuk_satiri_veri_mi(satir, etiket=None, kutuk_yolu=None):
+    """Satır bir VERİ satırı mı? Başlık/ayraç/düz metin → False (sessiz);
+    BOZUK (kapanmamış `|`, tek hücre bile yok) → False + GÖRÜNÜR uyarı
+    (`etiket` çağıran okuyucunun adı; aynı satır bir kez uyarılır)."""
+    s = satir.strip()
+    if not s.startswith("|"):
+        return False
+    if s.count("|") < 2:
+        anahtar = (kutuk_yolu, s)
+        if anahtar not in _KUTUK_BOZUK_UYARILDI:
+            _KUTUK_BOZUK_UYARILDI.add(anahtar)
+            _sys.stderr.write(
+                f"UYARI (kunye_ortak.{etiket or 'kutuk'}): kütük satırı tek bir hücre "
+                "bile kuramıyor (kapanmamış `|`) — BOZUK sayılıp fail-CLOSED atlandı: "
+                + s[:160] + "\n")
+        return False
+    hucreler = kutuk_satir_hucreleri(s)
+    dolu = [h for h in hucreler if h]
+    if not dolu:
+        return False
+    if all(_KUTUK_AYRAC_HUCRE_RE.match(h) for h in dolu):
+        return False  # markdown ayraç satırı (|---|---|...|)
+    if hucreler[0].casefold() == "zaman":
+        return False  # başlık satırı
+    return True
+
+
+def kutuk_veri_satirlari(kutuk_yolu, etiket=None):
+    """Kütükteki VERİ satırlarını (ham satır metni) sırayla verir — tüm kütük
+    okuyucularının TEK giriş kapısı (kunye_ortak, ictihat_muhakeme_denetim,
+    kunye_teyit)."""
+    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
+        if kutuk_satiri_veri_mi(satir, etiket, kutuk_yolu):
+            yield satir
+
+
+def kutuk_satiri_dairesi(satir, esas, karar):
+    """Satırdaki künyenin dairesi: önce esas/karar'ı TAŞIYAN hücre(ler)deki
+    ilk daire; yoksa satırdaki TEK daire; birden çok/hiç yoksa None."""
+    for h in kutuk_satir_hucreleri(satir):
+        if (esas and sayi_var(h, esas)) or (karar and sayi_var(h, karar)):
+            d = daire_key(h)
+            if d is not None:
+                return d
+    kume = daire_kumesi(satir)
+    if len(kume) == 1:
+        return next(iter(kume))
+    return None
+
+
+def kutuk_satiri_kunyeyle_eslesir(satir, esas, karar, daire=None):
+    """Bu VERİ satırı verilen esas/karar (+ opsiyonel daire) ile eşleşir mi?
+    `esas` VE `karar` biliniyorsa İKİSİ DE satırda geçmeli (tek sayısı çakışan
+    alakasız satır eşleşmez — v0.5.5 fail-open kapatması korunur); daire
+    verilmişse ve satırdan bir daire çıkarılabiliyorsa FARKLI daire eşleşmez
+    (daire-kör değil)."""
+    if not (esas or karar):
+        return False
+    esas_var = bool(esas) and sayi_var(satir, esas)
+    karar_var = bool(karar) and sayi_var(satir, karar)
+    if esas and karar:
+        if not (esas_var and karar_var):
+            return False
+    elif esas and not esas_var:
+        return False
+    elif karar and not karar_var:
+        return False
+    if daire is not None:
+        satir_daire = kutuk_satiri_dairesi(satir, esas, karar)
+        if satir_daire is not None and satir_daire != daire:
+            return False
+    return True
+
+
+def kutuk_satiri_kunyesi(satir):
+    """Satırın (esas, karar, daire) künyesi — DAMGA/AKIBET tokenı taşıyan TAM
+    künye hücresi öncelikli, sonra tam künye taşıyan ilk hücre, en son satırın
+    tamamı (künye parçaları ayrı sütunlara dağılmış olabilir). Yoksa
+    (None, None, None)."""
+    tam = None
+    for h in kutuk_satir_hucreleri(satir):
+        e, k = kunye_normalize(h)
+        if e is None or k is None:
+            continue
+        if _DAMGA_TOKEN_RE.search(h) or _AKIBET_TOKEN_RE.search(h):
+            return e, k, daire_key(h)
+        if tam is None:
+            tam = (e, k, daire_key(h))
+    if tam is not None:
+        return tam
+    e, k = kunye_normalize(satir)
+    if e is None and k is None:
+        return None, None, None
+    return e, k, kutuk_satiri_dairesi(satir, e, k)
+
+
+def kutukten_son_damga(kutuk_yolu, esas, karar, daire=None):
+    """Künye teyit kütüğündeki (append-only markdown tablosu) bir esas/karar
+    (+ opsiyonel `daire`) için SON `DAMGA=` tokenını döndürür; kütük yoksa/
+    okunamazsa/eşleşme yoksa None.
+
+    PAYLAŞIMLI (P0-2 DÜZELTME d, v0.5.5): hem `ictihat_muhakeme_denetim.py`
+    (okuma-zamanı çapraz kontrol — muhakeme bölümü elle değiştirilmiş mi) HEM
+    `oa_hafiza.py` (YAZMA-ÖNCESİ çapraz kontrol — aynı künyeye ikinci bir
+    `teyit --damga` ile SESSİZCE farklı damga vurulması engellenir) HEM
+    `dilekce_denetim.py` ([F] hafif kip) bu fonksiyonu çağırır; kütük satır
+    biçimi tek yerde ayrıştırılır (tek-yazar kuralı).
+
+    v0.5.5 düzeltmeleri korunur: daire-kör değil (FARKLI daire eşleşmez);
+    esas VE karar biliniyorsa ikisi de satırda geçmeli (fail-open kapalı).
+    v0.5.16.1 (saha yan-bulgusu): sütun sayısına BAĞLI DEĞİL — bkz. modül
+    yorumu «KÜTÜK SATIR OKUYUCU: SÜTUN SAYISINDAN BAĞIMSIZ»; eski 5-sütun/
+    7-hücre satırlar değişmeden okunur, 15-sütun/17-hücre saha düzeni de.
+    Birden çok `DAMGA=` → sonuncusu."""
+    return _kutukten_son_token(kutuk_yolu, esas, karar, daire, _DAMGA_TOKEN_RE,
+                               "kutukten_son_damga")
+
+
+def kutukten_son_akibet(kutuk_yolu, esas, karar, daire=None):
+    """K5 — kütükteki bir esas/karar (+ opsiyonel daire) için SON `AKIBET=`
+    tokenını döndürür (küçük harf); yoksa None. Satır eşleşme kuralı
+    `kutukten_son_damga` ile BİREBİR aynıdır (tek-yazar kuralı — ortak
+    `_kutukten_son_token`)."""
+    sonuc = _kutukten_son_token(kutuk_yolu, esas, karar, daire, _AKIBET_TOKEN_RE,
+                                "kutukten_son_akibet")
+    return sonuc.lower() if sonuc else None
+
+
+def _kutukten_son_token(kutuk_yolu, esas, karar, daire, token_re, etiket):
+    """`kutukten_son_damga` / `kutukten_son_akibet` ortak gövdesi: eşleşen
+    VERİ satırlarında tokenı satırın TAMAMINDA arar; satır içinde ve satırlar
+    arasında SONUNCUSU geçerlidir."""
+    if not (esas or karar):
+        return None
+    son = None
+    for satir in kutuk_veri_satirlari(kutuk_yolu, etiket):
+        if not kutuk_satiri_kunyeyle_eslesir(satir, esas, karar, daire):
+            continue
+        eslesmeler = token_re.findall(satir)
+        if eslesmeler:
+            son = eslesmeler[-1].upper()
+    return son
+
+
 def kutuk_gercek_veri_var_mi(kutuk_yolu):
     """DÜZELTME (v0.5.5 şerh turu — Ş2, HAYALET MUHAKEME ikinci katman):
-    kütük dosyasının fiilen EN AZ BİR gerçek (7 hücreli, `kutukten_son_damga`
-    ile AYNI biçim şartı) veri satırı taşıyıp taşımadığını söyler. Dosya hiç
-    yoksa, boşsa ya da yalnız başlık/ayraç satırları içeriyorsa 'kütük fiilen
-    kullanılmıyor' sayılır — bu durumda `kutuk_son_damga_engeli` (mevcut,
-    DOKUNULMAZ) ve `kutukte_esas_karar_satiri_var_mi` (yeni) SESSİZCE
-    atlanır: elle kurulmuş test iskeletleri / 'derin yol' (doğrudan dosya
-    yazımıyla muhakeme kaydı oluşturma — P1-11 playbook'u) davranışı BOZULMAZ
-    (bkz. `test_kutuk_yoksa_denetim_sessizce_atlanir_geriye_uyum` — bit
-    düzeyinde korunan geriye-uyum invaryantı). Kütük FİİLEN kullanılıyorsa
-    (≥1 gerçek satır — yani bu kökte gerçek `teyit` çağrıları YAPILMIŞ),
-    'bu künyenin kütükte hiç izi yok' denetimi anlamlı ve fail-closed hâle
-    gelir.
+    kütük dosyasının fiilen EN AZ BİR gerçek veri satırı taşıyıp taşımadığını
+    söyler. Dosya hiç yoksa, boşsa ya da yalnız başlık/ayraç satırları
+    içeriyorsa 'kütük fiilen kullanılmıyor' sayılır — bu durumda
+    `kutuk_son_damga_engeli` ve `kutukte_esas_karar_satiri_var_mi` SESSİZCE
+    atlanır: elle kurulmuş test iskeletleri / 'derin yol' (P1-11) davranışı
+    BOZULMAZ (bkz. `test_kutuk_yoksa_denetim_sessizce_atlanir_geriye_uyum`).
+    Kütük FİİLEN kullanılıyorsa (≥1 gerçek satır) 'bu künyenin kütükte hiç izi
+    yok' denetimi anlamlı ve fail-closed hâle gelir.
 
-    DİKKAT: `oa_hafiza.py init`'in yazdığı BOŞ kütük şablonu da (başlık +
-    `|---|---|---|---|---|` ayraç satırı) tesadüfen 7-hücreye böler — bu
-    İKİ satır 'gerçek veri' SAYILMAZ (aksi hâlde hiç `teyit` çağrısı
-    yapılmamış TAZE bir `_oa` kökünde bile derin-yol/elle-yazım BLOKLANIRDI).
-    Ayırt edici: gerçek bir satırın ZAMAN hücresi `ts()`'ten gelir (ISO
-    tarih-saat), başlık hücresi 'Zaman' sabit metnidir, ayraç hücresi yalnız
-    `-` karakterlerinden oluşur."""
-    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
-        if not satir.startswith("|"):
-            continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            continue
-        ilk_hucre = hucreler[1].strip()
-        if not ilk_hucre or ilk_hucre.casefold() == "zaman":
-            continue  # başlık satırı
-        if set(ilk_hucre) <= {"-"}:
-            continue  # markdown ayraç satırı (|---|---|...|)
+    `oa_hafiza.py init`'in yazdığı BOŞ şablon (başlık + ayraç) veri SAYILMAZ
+    (`kutuk_satiri_veri_mi` başlık/ayracı eler). v0.5.16.1: 'gerçek satır'
+    tanımı sütun sayısına bağlı değildir (bkz. `kutuk_veri_satirlari`)."""
+    for _ in kutuk_veri_satirlari(kutuk_yolu, "kutuk_gercek_veri_var_mi"):
         return True
     return False
 
@@ -799,97 +881,41 @@ def kutukte_esas_karar_satiri_var_mi(kutuk_yolu, esas, karar, daire=None):
     """DÜZELTME (v0.5.5 şerh turu — Ş2, t3 HAYALET MUHAKEME BLOKERİ): künye
     teyit kütüğünde bu esas/karar (+ opsiyonel daire) için EN AZ BİR gerçek
     satır (DAMGA'lı olsun olmasın) bulunup bulunmadığını söyler.
-    `kutukten_son_damga` ile AYNI 7-hücre/esas-karar-daire eşleşme mantığını
-    kullanır (tek-yazar kuralı) ama yalnız 'satır var mı' sorusuna cevap
-    verir — DAMGA tokenı ARANMAZ; bu fonksiyonun amacı damga çapraz kontrolü
-    DEĞİL, kaydın FİİLEN bir `teyit` çağrısına dayandığının doğrulanmasıdır.
-    Yalnız `kutuk_gercek_veri_var_mi` True dönerken (kütük fiilen
-    kullanılıyorken) çağrılması amaçlanır (bkz. `ictihat_muhakeme_denetim.
-    kutuk_dayanagi_denetle`)."""
+    `kutukten_son_damga` ile AYNI eşleşme mantığı (`kutuk_satiri_kunyeyle_
+    eslesir` — tek-yazar kuralı); DAMGA tokenı ARANMAZ. Yalnız
+    `kutuk_gercek_veri_var_mi` True dönerken çağrılması amaçlanır."""
     if not (esas or karar):
         return False
-    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
-        if not satir.startswith("|"):
-            continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            continue
-        sonuc_hucresi = hucreler[4]
-        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
-        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
-        if esas and karar:
-            if not (esas_var and karar_var):
-                continue
-        elif esas:
-            if not esas_var:
-                continue
-        elif karar:
-            if not karar_var:
-                continue
-        else:
-            continue
-        if daire is not None:
-            satir_daire = daire_key(sonuc_hucresi)
-            if satir_daire is not None and satir_daire != daire:
-                continue
-        return True
-    return False
+    return any(kutuk_satiri_kunyeyle_eslesir(satir, esas, karar, daire)
+               for satir in kutuk_veri_satirlari(kutuk_yolu, "kutukte_esas_karar_satiri_var_mi"))
 
 
 def kutukte_damgali_dayanak_satiri_var_mi(kutuk_yolu, esas, karar, damga, kaynak_izi=None, daire=None):
     """DÜZELTME (v0.5.5 düzeltme turu — Ş2/t3-B, HAYALET MUHAKEME İKİNCİ
-    KATMAN): `kutukte_esas_karar_satiri_var_mi` yalnız 'bu esas/karar no
-    kütükte HERHANGİ bir satırda geçiyor mu' sorusuna cevap verir — DAMGA
-    tokenı ARANMAZ. Bu, damgasız/tam-metinsiz UCUZ bir ARAMA teyidinin
-    (`teyit --arac ictihat_ara --sonuc "<uydurma künye>"`, döküm-icerik'siz,
-    --damga'sız, kod=0) bir HAYALET muhakeme bölümünü meşrulaştırmasına izin
-    veriyordu (canlı kanıt: sb6 — sıfır elle dosya düzenlemesi, yalnız 3 CLI
-    çağrısıyla uydurma bir karar `[OK]`/`DAMGA: LEHE` ile G2/G3'ten geçti).
+    KATMAN): `kutukte_esas_karar_satiri_var_mi` yalnız 'bu esas/karar kütükte
+    HERHANGİ bir satırda geçiyor mu' sorusuna cevap verir — DAMGA tokenı
+    ARANMAZ. Bu, damgasız/tam-metinsiz UCUZ bir ARAMA teyidinin bir HAYALET
+    muhakeme bölümünü meşrulaştırmasına izin veriyordu (canlı kanıt: sb6).
 
     Bu fonksiyon DAHA SIKI bir dayanak arar: kütükte bu esas/karar (+daire)
-    için (a) muhakeme bölümündeki DAMGA ile AYNI `DAMGA=` tokenını taşıyan
-    VE (b) `kaynak_izi` verildiyse döküm hücresinin bu KAYNAK-IZI dosyasını
-    (dize olarak) işaret ettiği EN AZ BİR satır bulunmalıdır. Damgasız bir
-    ARAMA satırı hiçbir zaman bu denetimi geçemez (ARAMA sınıfına `--damga`
-    zaten YASAK olduğundan `DAMGA=` tokenı hiç taşımaz) — damgalı bir
-    muhakeme bölümünün dayanağı da damgasız bir ARAMA satırı OLAMAZ (mevcut
-    ARAMA/GETİR ayrımıyla simetrik). `damga` None/boşsa (DAMGA alanı zaten
-    başka bir denetimde eksik sayılıp engellenir) False döner — çağıran
-    taraf bu durumda çağırmayı atlayabilir."""
+    için (a) muhakeme bölümündeki DAMGA ile AYNI `DAMGA=` tokenını (satırdaki
+    SON token) taşıyan VE (b) `kaynak_izi` verildiyse bu KAYNAK-IZI dosyasını
+    (dize olarak, satırın herhangi bir hücresinde — Döküm sütunu konumu
+    sorulmaz, v0.5.16.1) işaret eden EN AZ BİR satır bulunmalıdır. Damgasız
+    bir ARAMA satırı bu denetimi geçemez. `damga` None/boşsa False."""
     if not (esas or karar) or not damga:
         return False
     damga_u = damga.strip().upper()
     if not damga_u:
         return False
-    for satir in _kutuk_satirlarini_oku(kutuk_yolu):
-        if not satir.startswith("|"):
+    iz = (kaynak_izi or "").strip()
+    for satir in kutuk_veri_satirlari(kutuk_yolu, "kutukte_damgali_dayanak_satiri_var_mi"):
+        if not kutuk_satiri_kunyeyle_eslesir(satir, esas, karar, daire):
             continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
+        tokenlar = _DAMGA_TOKEN_RE.findall(satir)
+        if not tokenlar or tokenlar[-1].upper() != damga_u:
             continue
-        sonuc_hucresi = hucreler[4]
-        dokum_hucresi = hucreler[5]
-        esas_var = bool(esas) and sayi_var(sonuc_hucresi, esas)
-        karar_var = bool(karar) and sayi_var(sonuc_hucresi, karar)
-        if esas and karar:
-            if not (esas_var and karar_var):
-                continue
-        elif esas:
-            if not esas_var:
-                continue
-        elif karar:
-            if not karar_var:
-                continue
-        else:
-            continue
-        if daire is not None:
-            satir_daire = daire_key(sonuc_hucresi)
-            if satir_daire is not None and satir_daire != daire:
-                continue
-        m = _DAMGA_TOKEN_RE.search(sonuc_hucresi)
-        if not m or m.group(1).upper() != damga_u:
-            continue
-        if kaynak_izi and kaynak_izi.strip() and kaynak_izi.strip() not in dokum_hucresi:
+        if iz and iz not in satir:
             continue
         return True
     return False
