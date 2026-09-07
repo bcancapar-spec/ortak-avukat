@@ -78,7 +78,7 @@ daha değerlidir: ürün ↔ revize farkı, modelin bilmediği bir kuralın ilk 
 kanıtıdır.
 
 **Kaynak (B grubu, v0.5.16):** `oa-pipeline/scripts/pipeline_kayit.py --avukat-hukmu
-KABUL|REVIZYONLA|RET --sebep <olgu|uslup|strateji|eksik|fazla>` teslim sonrası
+KABUL|REVIZYONLA|RET --sebep <usul|olgu|hukuk|uslup|talep|ictihat|diger>` teslim sonrası
 `_oa/defter/avukat-hukmu.jsonl` dosyasına **append-only** tek satır yazar (kapı
 DEĞİLDİR — hükümsüz kapanış engellenmez, yalnız görünür sayaç düşer; bkz.
 `SICRAMA-NOTU.md` §5). Çırak bu defteri KAPANIŞ adımında okur.
@@ -89,7 +89,7 @@ DEĞİLDİR — hükümsüz kapanış engellenmez, yalnız görünür sayaç dü
 2. Aday için ürün (teslim edilen taslak, `_oa/cikti/…`) ile avukatın revize nüshası
    yan yana konur; **diff** çıkarılır. Diff'teki her anlamlı değişiklik (eklenen
    ihtirazi kayıt, silinen ikrar, değişen talep sırası, düzeltilen künye, çıkarılan
-   paragraf) bir **aday kural** olarak yazılır: `[sebep] → [ürün ne yaptı] → [avukat
+   paragraf) bir **aday kural** olarak yazılır: `[sebep: usul|olgu|hukuk|uslup|talep|ictihat|diger] → [ürün ne yaptı] → [avukat
    ne yaptı] → [kural cümlesi] → [hangi parçaya ait]`.
 3. Aday kural `_oa/dersler/` kaydına anonim örüntü olarak işlenir (m.7 — kişi/dosya
    adı yok; örnekler soyutlanır). Aynı sebep kodu ikinci kez görünürse kural,
@@ -112,7 +112,7 @@ diff'ten KURAL çıkarmak yargıdır (model yapar, avukat onaylar). Script "bu b
 kuraldır" demez; "şurada fark var, şu sebep koduyla" der.
 
 ## Aile yapı denetimi — bakım kuralı (Çırak'ın deterministik görevi)
-Ailenin yapısal sağlığı Çırak'ın işidir ve deterministiktir: `python scripts/aile_dogrula.py <aile-kök-dizini>` tüm parçalarda frontmatter geçerliliğini, name↔klasör eşleşmesini, description uzunluğunu (1024 paketleme sınırı — 900 üstü uyarı), fiziksel aktivasyon bloğunu, günlük işaretçisini, SKILL.md'de anılan scriptlerin gerçekten var olduğunu ve sürüm işaretçisi tutarlılığını denetler. **v0.5.16 yapısal kilitler (Hamle 10):** (a) **bekçi↔skill sözleşmesi (K1)** — `oa-pipeline/scripts/pipeline_kayit.py` boşluk bekçilerinin (`_graf_yapisal_bosluk_uyarisi` / `_kiyas_bosluk_uyarisi` / `_usul_bosluk_uyarisi`) glob desenleri, ilgili parçanın (oa-illiyet / oa-kiyas / oa-usul) SKILL.md örnek komutundaki `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile eşleşmezse HATA — üretilen JSON'u bekçinin hiç okumadığı 'sahte yeşil' bir daha doğmasın; (b) **KANONİK↔doktrin** — `oa-illiyet/scripts/grafik_denetim.py` `KANONIK` enum değerlerinin her biri `oa-illiyet/references/illiyet-doktrini.md`'de literal geçmezse HATA (kod ile doktrin birbirini yalanlamasın); (c) **sürüm işaretçisi (P2-10/B-3)** — `STATUS.md` «**Sürüm:** X» ve `YOL-HARITASI.md` «## DURUM — son (… · vX)» plugin.json sürümüyle eşit değilse UYARI (hata değil; vitrin bayatlığı görünür kalır). Depo-dışı kopyada bu kilitler sessiz atlanır (VENDOR deseni: kural depoyu bağlar, kopyayı değil). **Bakım kuralı (kritik):** yeni içerik daima GÖVDEYE eklenir, description'a DEĞİL — description tetikleme vitrinidir, sınıra yaklaştıkça kırılganlaşır. Her yeniden paketlemeden önce bu denetim koşulur; hata varken paketleme yapılmaz.
+Ailenin yapısal sağlığı Çırak'ın işidir ve deterministiktir: `python scripts/aile_dogrula.py <aile-kök-dizini>` tüm parçalarda frontmatter geçerliliğini, name↔klasör eşleşmesini, description uzunluğunu (>1024 HATA — paketleme sınırı; >850 HATA — Fable tıraş sınırı), fiziksel aktivasyon bloğunu, günlük işaretçisini, SKILL.md'de anılan scriptlerin gerçekten var olduğunu ve sürüm işaretçisi tutarlılığını denetler. **v0.5.16 yapısal kilitler (Hamle 10):** (a) **bekçi↔skill sözleşmesi (K1)** — `oa-pipeline/scripts/pipeline_kayit.py` boşluk bekçilerinin (`_graf_yapisal_bosluk_uyarisi` / `_kiyas_bosluk_uyarisi` / `_usul_bosluk_uyarisi`) glob desenleri, ilgili parçanın (oa-illiyet / oa-kiyas / oa-usul) SKILL.md örnek komutundaki `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile eşleşmezse HATA — üretilen JSON'u bekçinin hiç okumadığı 'sahte yeşil' bir daha doğmasın; (b) **KANONİK↔doktrin** — `oa-illiyet/scripts/grafik_denetim.py` `KANONIK` enum değerlerinin her biri `oa-illiyet/references/illiyet-doktrini.md`'de literal geçmezse HATA (kod ile doktrin birbirini yalanlamasın); (c) **sürüm işaretçisi (P2-10/B-3)** — `STATUS.md` «**Sürüm:** X» ve `YOL-HARITASI.md` «## DURUM — son (… · vX)» plugin.json sürümüyle eşit değilse UYARI (hata değil; vitrin bayatlığı görünür kalır). Depo-dışı kopyada bu kilitler sessiz atlanır (VENDOR deseni: kural depoyu bağlar, kopyayı değil). **Bakım kuralı (kritik):** yeni içerik daima GÖVDEYE eklenir, description'a DEĞİL — description tetikleme vitrinidir, sınıra yaklaştıkça kırılganlaşır. Her yeniden paketlemeden önce bu denetim koşulur; hata varken paketleme yapılmaz.
 
 ## Anayasal süzgeç
 Üretilen her skill aile anayasasına uymak zorundadır: otomasyon muhakemeyi besler,

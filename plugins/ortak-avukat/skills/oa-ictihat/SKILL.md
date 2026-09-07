@@ -37,9 +37,9 @@ Sök-tak parça. Görevi: her hukuki argümanı **doğrulanmış, resmî kaynağ
 | Araç | Rol | Künye otoritesi? |
 |---|---|---|
 | **Yargı/Bedesten** (`ictihat_ara`, `semantik_ictihat_ara`, `ictihat_getir`) | İçtihat (Yargıtay, BAM Hukuk, Danıştay, yerel, KYB) — Pro varsayılan | **Evet** |
-| **AYM** (`search_anayasa_unified`, `get_anayasa_document_unified`) | AYM norm + bireysel başvuru | **Evet** |
+| **AYM** (`aym_ictihat_ara`; yedek kip: `search_anayasa_unified` / `get_anayasa_document_unified`) | AYM norm + bireysel başvuru | **Evet** |
 | **Pro — ek kurum kararları** (`search_rekabet_kurumu_decisions`, `search_kvkk_decisions`, `search_sayistay_unified`, `search_bddk_decisions`, `search_kik_v2_decisions`, `search_uyusmazlik_decisions`, `search_emsal_detailed_decisions`, `search_gib_ozelge` + ilgili `get_*` araçları) | Kurum içtihadı: Rekabet, KVKK, Sayıştay, BDDK, KİK, Uyuşmazlık, Emsal/UYAP, GİB özelge | **Evet** (ilgili kurum için) |
-| **Mevzuat** (`search_mevzuat`, `search_within_mevzuat`, `get_mevzuat_document`) | Norm | **Evet** |
+| **Mevzuat** (`mevzuat_ara`, `mevzuat_icinde_ara`, `mevzuat_getir`) | Norm | **Evet** |
 | **Literatür** (`search_articles`) | Doktrin — makale | Hayır |
 | **YokTez** | Doktrin — tez | Hayır |
 | **Gemini** | Muhakeme / antitez | **Asla** |
@@ -74,9 +74,9 @@ hangi biçimde tutulursa tutulsun bu iki alan atlanamaz.
 Türk hukukundaki uyuşmazlığa dönük içtihadı üç düzeyde ara: **İstinaf (BAM hukuk/ceza, BİM idare/vergi)**, **Yargıtay**, **Danıştay**. İstinaf içtihadı özellikle güncel eğilim ve henüz Yargıtay/Danıştay'a taşınmamış meselelerde değerlidir; üçünü birden tara, ihtisas dairesini `oa-alan` ile hedefle.
 
 ## Üç arama dialect'i — operatör kuralları farklı (en sık hata)
-- **`search_mevzuat.phrase` (Mevzuat Solr):** `+zorunlu`, `-hariç`, `"tam ifade"`, `kelime*`, `kelime~`. ⚠️ AND/OR/NOT yazıları parser'ı **bozar**; bitişik iki kelime zaten AND.
+- **`mevzuat_ara.phrase`:** operatör YOK — tırnak, `+`, `-`, wildcard, AND/OR/NOT harfiyen eşleşir (araç şeması); 2-5 anahtar terim yaz; önce tam ifade, sonra kelimeler AND'lenir.
 - **`ictihat_ara.phrase` (Bedesten Solr):** AND/OR/NOT **çalışır** (BÜYÜK HARF), `"tam ifade"` çalışır. ⚠️ Wildcard/fuzzy **yok**; en çok iki terimli AND en isabetli.
-- **`search_within_mevzuat.query` (tek kanun, yerel boolean):** AND/OR/NOT (BÜYÜK HARF) **gerçekten** çalışır, `( )` gruplama, `"tam ifade"`.
+- **`mevzuat_icinde_ara.query` (tek kanun, yerel boolean):** AND/OR/NOT (BÜYÜK HARF) **gerçekten** çalışır, `( )` gruplama, `"tam ifade"`.
 Tüm dialect'lerde Türkçe diakritikleri koru (ç ş ğ ı İ ö ü).
 
 ## Kurum kararları ve TEK BELGE İÇİNDE arama (v0.5.6.1 — rehber sadeleştirmesi)
@@ -120,16 +120,16 @@ araştırma disiplini iki yerde yaşayamaz (ikiz-liste yasağı) — rehberi oku
 
 ## Sunucu çağrı sırası (varsayılan — kolay akış)
 Norm önce, içtihat sonra:
-1. **Mevzuat** taraması (Mevzuat MCP / `search_mevzuat`) — norm katmanı.
+1. **Mevzuat** taraması (Mevzuat MCP / `mevzuat_ara`) — norm katmanı.
 2. **İçtihat:** **Yargı Pro**'yu çağır — **semantik arama** (`semantik_ictihat_ara`) burada açıktır. Semantik korpus güncel değilse **canlı `ictihat_ara`** uç noktasıyla teyit et.
 - **Semantik ne zaman:** kelime tutmayan, kavramsal/anlam bazlı emsal ararken kullan. **Güncel karar veya tam künye** gerekiyorsa canlı `ictihat_ara` kullan — semantik korpus ~1 yıl eski (son ~12 ayın kararı yok).
 
 ## Yerleşik kalıplar
 - **Bedesten:** `birimAdi` + `court_types` + tırnaklı `phrase`; çoğu iş `ictihat_ara` ile. HGK için `birimAdi="HGK"`. Tarih bandı (`kararTarihiStart/End`) ile içtihat değişikliğini izole et. Künyeyi alıp gerekçeyi `ictihat_getir` ile çek — snippet yetmez.
-- **Mevzuat:** numara → `mevzuat_no` (6100 HMK, 2577 İYUK, 2004 İİK, 6216 AYM, 6098 TBK); `mevzuat_id` → `outline`/`search_within_mevzuat`/`get_mevzuat_document`. Büyük metinler `chunk` ile.
+- **Mevzuat:** numara → `mevzuat_no` (6100 HMK, 2577 İYUK, 2004 İİK, 6216 AYM, 6098 TBK); `mevzuat_id` → `mevzuat_getir` (`outline`/`madde`/`mevzuat`) / `mevzuat_icinde_ara`. Büyük metinler `chunk` ile.
 - **Mevzuat — yönetmelik araması:** yönetmelikler **birden çok alt tipe** dağılır (YONETMELIK / CB_YONETMELIK / KKY / UY); tek tiple arayıp "yok" deme. Önce **tipsiz başlık araması**, bulunamazsa alt tipleri sırayla tara. (Çocuk Teslimi Yönetmeliği dosyasında öğrenildi.)
 - **Mevzuat — torba/değişiklik kanunu bulma:** `mevzuat_adi` ile jenerik torba başlığı araması **güvenilmezdir** (başlıklar uzun ve standart dışı). Güvenilir kalıp: **tarih-aralıklı kanun araması** (RG tarihi biliniyorsa banda daralt) → listeden numarayla seç. (7579 sayılı Kanun böyle bulundu — RG 22.05.2026, mevzuatId 352551; başlık araması başarısızdı.)
-- **AYM:** `search_anayasa_unified` + `get_anayasa_document_unified`; bireysel başvuruda yalnızca AYM-teyitli kararlar.
+- **AYM:** birincil `aym_ictihat_ara` (yedek kip: `search_anayasa_unified` + `get_anayasa_document_unified`); bireysel başvuruda yalnızca AYM-teyitli kararlar.
 
 ## Bilinen sınırlar — baştan hazırlıklı gir
 - **Bedesten gerçek phrase-search yapmaz:** uzun/çok terimli ifadede kelime bazında eşleştirir, şişkin sayı döndürür (TBK m.71'de 1.082.645 "kayıt"). Kısa 1-2 ayırt edici terim + daire/tarih filtresi kullan.
@@ -145,7 +145,7 @@ Norm önce, içtihat sonra:
 - **Mevzuat MCP timeout →** `mevzuat.gov.tr` `web_fetch` (PDF: `web_fetch_pdf_extract_text=True`); birden çok kaynaktan teyit. (5510 m.21/4'te kullanıldı.)
 - **Literatür MCP timeout →** kısa bekle + retry; ısrarlıysa web_search ile DergiPark, künyeyi ayrı doğrula.
 - **Bedesten şişmesi →** terimi kısalt + daire/tarih; gerekirse Lexpera/Kazancı/UYAP Emsal (Can'ın erişimi).
-- **Genel:** resmî kaynağa erişilemiyorsa **açıkça raporla**, sessizce hafızadan doldurma. Sağlık: `check_government_servers_health`.
+- **Genel:** resmî kaynağa erişilemiyorsa **açıkça raporla**, sessizce hafızadan doldurma. Sağlık: Pro'da ayrı sağlık aracı yok — `legal_research_guide` ya da küçük bir deneme çağrısı; `check_government_servers_health` yalnız yedek `yargi-mcp`'de.
 
 ## Araç keşfi ve sahte-teyit yasağı (kritik)
 Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işlevin Türkçe adlı araçları: `ictihat_ara`, `semantik_ictihat_ara`, `mevzuat_ara`, `mevzuat_getir`). Sorgudan önce oturumda MEVCUT araç listesine bak ve gerçekte var olan aracı kullan; adı tutmuyor diye işlevi atlamak da, var olmayan bir araca çağrı yapılmış gibi sonuç yazmak da yasaktır. **"Teyitli" etiketi yalnızca fiilen yapılmış bir çağrıya konur** ve üçlü kayıtla yazılır: araç + sorgu + dönen künye/metin. Araç gerçekten yoksa veya erişilemiyorsa: fallback zinciri + açık beyan ("şu araç kapalı; bu künye teyit edilemedi").

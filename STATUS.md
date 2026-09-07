@@ -22,7 +22,7 @@ bir satır ölçülmeden buraya girmez.
   adversarial hakem → onarım → Yargı Pro hakem (49 MCP çağrısı; kritik 0) → `--no-ff`
   birleşim → entegrasyon hizalamaları H1–H5 (`tests/test_v0516_entegrasyon.py`).
 - **Ölçüm (2026-09-07):** süit toplama **2301** (`pytest --collect-only`; OA-SUIT-SAYISI
-  aynı) · tam süit: __TAMSUIT__ · `aile_dogrula` **TEMİZ** (20 parça; kör kilit yok; sürüm
+  aynı) · tam süit: **2300 yeşil / 1 atlama / 0 kırmızı** (`python -m pytest tests -q -p no:cacheprovider`, 2026-09-07, 8 dk 11 sn; bayatlık taraması sonrası koşu) · `aile_dogrula` **TEMİZ** (20 parça; kör kilit yok; sürüm
   işaretçisi uyarısı 0) · `tools/hook_doktor.py`: depo tarafı temiz, kurulu kanal **0.5.9.1
   BAYAT** (§11 yerel kurulum güncellemesi bekliyor) · 15/15 dal main'de (merge-base teyidi).
 - **Damgalar:** plugin.json / marketplace.json / iki README / `pipeline_kayit.py` +
@@ -144,7 +144,7 @@ testidir; `OA_SAHA_REFERANS` tanımlanınca o da koşar (§6c).
 | `v0.5.6` | Yükleme hatası düzeltmesi + Yargı Pro MCP işlem rehberleri | 22→20 parça sayımı ve yükleme kırığı |
 | `v0.5.6.1` | **P0 — `hooks` kaydı geri kondu** + devir zorlayıcı + iki rehber sadeleştirildi | v0.5.6 `plugin.json`'dan `hooks` satırını düşürmüştü: dört hook olayı da ölüydü |
 | *(sürümsüz)* | **CI onarımı — release kapısı 11 koşudur ölüydü** | §6b |
-| `v0.5.7`–`v0.5.7.5` | Bayat-tohum aşısı · [G4] link kapısı · yerel motor v2 · anayasa m.0 · araç-adı hizalaması · bağlantı katmanı (Pro birincil + `yargi-mcp` yedek) · davadan gelen atıflar da link zinciri | Denizli saha koşusunun bulguları + kullanıcı kuralları |
+| `v0.5.7`–`v0.5.7.5` | Bayat-tohum aşısı · [G4] link kapısı · yerel motor v2 · anayasa m.0 · araç-adı hizalaması · bağlantı katmanı (Pro birincil + `yargi-mcp` yedek) · davadan gelen atıflar da link zinciri | ilk tam koşunun (SAHA-SONUCU) bulguları + kullanıcı kuralları |
 | `v0.5.8` | Semantica+Graft **desen** devşirmesi: [G5] · KAYNAK-BLOĞU · oa-mühür (PROV-O) · özne eşleştirici · `--zincir` · yasak-nöbetçisi | kod alınmadı, desen alındı (m.0 protokolü) |
 | `v0.5.8.1` | Tetik paketi: kompakt-kapanış kuralı + [K] cephanelik bekçisi + Stop mühür nöbetçisi | 447 provası: 22 parçadan 1'i çağrılmıştı — desenler ateşleyemedi |
 | `v0.5.8.2` | **Hook yapısal onarımı:** polyglot `run-hook.cmd`, `\|\|` zinciri yasak | masaüstü hook'u kabuksuz koşturuyor; üç sahada sıfır-ateşlemenin kökü |

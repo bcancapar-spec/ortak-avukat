@@ -1,6 +1,6 @@
 # oa-antitez
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin ANTİTEZ/KRİTİK parçası. Bir dava, dosya, dilekçe veya tezin analiz edildiği her durumda — karşı tarafın bizi kapatacak savunma ve iddialarını DURUM FARKINDALIĞI için işin ilk etabında ortaya çıkar, sonra her birini ÇÖKERT. "Karşı taraf ne der", "zayıf yanlar neler", "bu argüman nereden çatlar", risk değerlendirmesi, şeytanın avukatı, teslimden önce sağlamlık kontrolü → kullanıcı açıkça istemese bile esaslı bir tez kurulduğunda tetikle. Deterministik motor (bundled script) cephe eksiksizliğini ve çürütme bütünlüğünü garanti eder. Bağımsız çalışır; `oa-interview` (ön teori), `oa-ictihat` (çürütme dayanağı) ve `oa-kontrol` (teslim denetimi) ile takım oynar.
 

@@ -1,7 +1,7 @@
 # TEST-KULLANIM — bu fork'u ana ortak-avukat'tan AYRI nasıl kullanırsınız
 
-> **GÜNCEL DURUM (2026-08-26):** prova dönemi kapandı — ana depo
-> (`bcancapar-spec/ortak-avukat`) v0.5.11'dedir ve KANONİKTİR; fork artık
+> **GÜNCEL DURUM (2026-09-07):** prova dönemi kapandı — ana depo
+> (`bcancapar-spec/ortak-avukat`) v0.5.16'dadır (kanonik sürüm: `plugin.json`) ve KANONİKTİR; fork artık
 > yalnız AYNA olarak eşit tutulur. Aşağıdaki anahtarlamalı-kullanım tarifi,
 > ileride yeniden bir aday-paket prova dönemi açılırsa geçerli olacak
 > TARİHÎ prosedürdür.
@@ -45,10 +45,12 @@ claude plugin install ortak-avukat@ortak-avukat
 ```
 ls ~/.claude/plugins/cache
 ```
+> **TARİHÎ (v0.5.8 prova dönemi):** aşağıdaki kanıtlar o güne aittir.
+
 Test sürümünün kanıtı: `cache/ortak-avukat/ortak-avukat/0.5.8/` klasörü
-(sürüm damgası 0.5.8 = fork-prova; ana en çok 0.5.7.5'tir). İkinci kanıt:
-test sürümünde şu dosya vardır, ana sürümde YOKTUR:
-`.../skills/oa-kontrol/scripts/muhur_yaz.py`
+(sürüm damgası 0.5.8 = fork-prova; o gün ana en çok 0.5.7.5'ti; bugün ana 0.5.16).
+İkinci kanıt o gün şuydu: `.../skills/oa-kontrol/scripts/muhur_yaz.py` yalnız test
+sürümünde vardı — **bugün her iki kanalda da var**, ayırt edici değildir.
 
 ## Test koşusunda neye bakılır (v0.5.8 karne kalemleri)
 

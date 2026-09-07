@@ -215,12 +215,15 @@ def test_gorunmez_iskelet_h_kapisi_dilekce_denetimde_uygulanmis():
     assert "İddiamız" in src and "Norm" in src and "Somut" in src
 
 
-def test_omeralp_uslup_baglamasi_dogrini_oa_dilecede_var():
-    """P1-11 ek kural #3 — ÖMERALP ÜSLUP BAĞLAMASI: oa-dilekce yazım
+def test_uslup_baglamasi_dogrini_oa_dilecede_var():
+    """P1-11 ek kural #3 — ÜSLUP BAĞLAMASI: oa-dilekce yazım
     disiplini kanun-yolu-mimari-playbook.md üslubuna ZORUNLU referansla
-    bağlanır; teslim kontrol listesine 'üslup playbook'a uygun mu' maddesi."""
+    bağlanır; teslim kontrol listesine 'üslup playbook'a uygun mu' maddesi.
+    (2026-09-07 bayatlık taraması: başlıktaki kişi adı anayasa m.7 gereği
+    kaldırıldı — tasarımcı dışında kişi adı skill metninde geçemez.)"""
     txt = (SKILLS / "oa-dilekce" / "SKILL.md").read_text(encoding="utf-8")
-    assert "ÖMERALP ÜSLUP BAĞLAMASI" in txt
+    assert "## ÜSLUP BAĞLAMASI" in txt
+    assert "ÖMERALP" not in txt.upper()
     assert "kanun-yolu-mimari-playbook.md" in txt
     assert "tez-omurgalı" in txt
     assert "üslup playbook'a uygun mu" in txt

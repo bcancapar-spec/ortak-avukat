@@ -15,7 +15,7 @@ Güncelleme: [tarih]
 |---|------|-------|-------|-------|
 | 1 | ALIM | oa-interview/illiyet/sure | ✓ bitti | illiyet grafı + süre: istinaf 2 hafta |
 | 2 | KONUMLAMA | oa-alan | ✓ bitti | İİK m.97; İcra Hukuk Mah. |
-| 3 | ARAŞTIRMA | oa-ictihat/arsiv | ⏳ sürüyor | 3 emsal teyitli, 1 bekliyor |
+| 3 | ARAŞTIRMA | oa-ictihat | ⏳ sürüyor | 3 emsal teyitli, 1 bekliyor |
 | 4 | OLGU/DELİL | oa-vakia | ⬜ başlamadı | — |
 | 5 | KIYAS | oa-kiyas | ⬜ | — |
 | 6 | ANTİTEZ | oa-antitez | ⬜ | — |

@@ -1,6 +1,6 @@
 # Ticaret Sicili Desenleri — TTSG'yi delil olarak kullanmak
 
-> Kaynak: 2026/307 (tasarrufun iptali, davalı cevabı) saha vakası. Burada
+> Kaynak: bir tasarrufun iptali (davalı cevabı) saha vakası. Burada
 > anlatılan **desendir**, o dosyaya özgü olgular değil. Her yeni dosyada
 > olgular yeniden okunur, künyeler yeniden teyit edilir.
 
@@ -18,8 +18,8 @@ Bu, bir dilekçe yazarı için üç şey demektir:
 - **Zamanlama ilişkisi sicilden okunur.** Farklı şirketlere ait işlemlerin
   **aynı noterlikte ardışık yevmiye numaralarıyla** tasdik edilmiş olması,
   bunların bağımsız işlemler değil **tek bir karşılıklı anlaşmanın parçaları**
-  olduğunun sicilden okunan göstergesidir. (2026/307'de üç devrin genel kurul
-  kararları 4576 → 4591 → 4698 ardışık yevmiyelerle tasdikliydi; bu, "takas"
+  olduğunun sicilden okunan göstergesidir. (saha vakasında üç devrin genel kurul
+  kararları ardışık üç yevmiyeyle — n, n+15, n+122 gibi — tasdikliydi; bu, "takas"
   tezinin omurgası oldu.) Muvazaa/ivazsızlık tartışmalarında yeniden
   kullanılabilir desendir.
 - **Aleniyet karşı tarafa bağlanır.** TTK m.36/3 uyarınca tescil ve ilan
@@ -57,7 +57,7 @@ edilmişse, davacının "bilmiyorduk / gizlendi" hattı kapanır.
 **AKTİFİNİ AZALTAN** işlemdir; bu bir **DAVA ŞARTIdır**. Aktifi azaltmayan —
 hatta artıran — bir işlemde dava, esasa girilmeden **dava şartı yokluğundan**
 reddedilir.
-> ⚠ **ÇIPLAK KÜNYE YASAĞI BURADA DA GEÇERLİDİR.** 2026/307'de bu ilke
+> ⚠ **ÇIPLAK KÜNYE YASAĞI BURADA DA GEÇERLİDİR.** Bir saha dosyasında bu ilke
 > Yargıtay 17. HD'nin bir kararıyla teyit edilip tam metni döküme alınmıştı.
 > Kalıbı yeni bir dosyada kullanırken **künyeyi yeniden çek, tam metni oku,
 > davaya bağını kur ve damgala** (`oa_hafiza.py teyit --damga …`). Buradaki

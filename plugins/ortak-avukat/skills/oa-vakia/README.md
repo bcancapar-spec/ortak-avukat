@@ -1,12 +1,13 @@
 # oa-vakia
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin VAKIA/DELİL YÖNETİM parçası. Bir dosyanın olgu ve delil tarafını disipline eder: olayların kronolojisini kurar, her iddiayı dayandığı delile eşler, ispat boşluklarını ve hiçbir iddiaya bağlanmamış (yetim) delilleri yakalar, dosyayı tasnif eder. "Olayları sıralayalım", "kronoloji çıkar", "hangi delil neyi ispatlıyor", "ispat yükü", "dosyayı düzenle/tasnif et", "elimizde ne var" → kullanıcı açıkça istemese bile bir dosya analiz edilirken veya dilekçe öncesi tetikle. Hukukta güçlü olan sistemin olgu/delil yarısını tamamlar. Deterministik motor (bundled script) kronoloji + iddia↔delil matrisini ve boşluk denetimini üretir. Bağımsız çalışır; `oa-interview` (olgu toplama), `oa-dilekce` (vakıa anlatımı/deliller), `oa-antitez` (ispat/delil cephesi) ile takım oynar.
 
 ## Deterministik scriptler
 
 - `scripts/vakia_matris.py`
+- `scripts/ozne_eslestirici.py` (özne eşleştirme — Jaro-Winkler ≥0.92 / 0.80 bantları)
 
 > Scriptler modelin muhakemesini **denetler** (eksiksizlik/tutarlılık); model kurar, script sağlamasını yapar.
 

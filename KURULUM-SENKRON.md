@@ -1,5 +1,9 @@
 # Kurulum Senkronu — repo ≠ çalışan araç (Fable K1)
 
+> **TARİHÎ BELGE (v0.5.0 dönemi).** Aşağıdaki yol ve sürüm damgaları o günün ölçümüdür.
+> **Güncel (2026-09-07):** depo **0.5.16**, kurulu kanal **0.5.9.1 BAYAT** —
+> ölçüm: `python tools/hook_doktor.py --kurulu` (bkz. STATUS.md §0).
+
 > **Sorun:** Bu depo (`~/.claude/plug-in/ortak-avukat-main`) **kaynaktır**. Claude'un
 > fiilen çalıştırdığı **kurulu** eklenti başka yerdedir ve **bayat**: PATH'te
 > `~/.claude/plugins/cache/ortak-avukat/ortak-avukat/**0.3.20**/` görünüyor ve skill
@@ -33,7 +37,7 @@ Alternatif: `releases` altındaki `.plugin` dosyasını sohbete bırakıp onayla
 - **Mükerrer `anthropic-skills:oa-*` ailesi:** skill listesinde ikinci bir kopya olarak görünüyor — `/plugin` yönetiminden kaldır ki iki farklı (biri bayat) aile aynı anda tetiklenmesin.
 
 ### 5. Doğrula
-Reinstall sonrası skill listesinde: **tek** `ortak-avukat` ailesi · **`oa-arsiv` YOK** · 22 skill · v0.5.6. `oa-arsiv` hâlâ görünüyorsa bayat kopya kalmıştır.
+Reinstall sonrası skill listesinde: **tek** `ortak-avukat` ailesi · **`oa-arsiv` YOK** · 20 skill · v0.5.16 (güncel plugin.json sürümü). `oa-arsiv` hâlâ görünüyorsa bayat kopya kalmıştır.
 
 ## Neden önemli
 `aile_dogrula`/`pytest` **depoyu** denetler; ama Claude **kurulu kopyayı** çalıştırır.
@@ -47,8 +51,8 @@ m.6 genişletmesi, kunye_teyit deliği, İYUK m.8/3 fix...) masandaki araçta **
 
 Eklenti güncellemesinden sonra Claude Code masaüstü uygulaması **TAM kapatılıp
 açılmalıdır** (ya da oturum içinde `/reload-plugins`). Aksi hâlde çalışan
-süreç hook kaydını ESKİ sürümden miras alır ve dört hook olayı
-(`UserPromptSubmit`, `PostToolUse`, `Stop`, `SessionEnd`) hiç ateşlemez —
+süreç hook kaydını ESKİ sürümden miras alır ve altı hook olayı
+(`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `SessionEnd`) hiç ateşlemez —
 sahada katman sağlamken 50 dakikalık bir koşu tam bu yüzden hook'suz geçti.
 
 Doğrulama (ağsız, deterministik):

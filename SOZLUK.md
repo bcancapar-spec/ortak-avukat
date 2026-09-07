@@ -202,7 +202,7 @@ neden değiştirdi — hepsi geriye doğru izlenebilir
 ([CHANGELOG.md](CHANGELOG.md)).
 
 **Test / regresyon testi / TDD:** Sistemin her güvencesini otomatik sınayan
-1.385 senaryo. "Regresyon" = bir kez düzeltilen kusurun sessizce geri
+senaryolar (güncel sayı tek kaynakta: `tests/README.md` OA-SUIT-SAYISI). "Regresyon" = bir kez düzeltilen kusurun sessizce geri
 gelmesi; her kusurun testi süitte nöbette kaldığı için gelemez. TDD = önce
 kusuru yeniden üreten test yazılır (KIRMIZI görülür), sonra onarım
 (YEŞİL). Ayrıntı: [tests/README.md](tests/README.md).

@@ -1,6 +1,6 @@
 # oa-mudafii
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin CEZA MÜDAFİLİĞİ (sanık/şüpheli savunması) kimlik ve orkestra parçası. Bir ceza soruşturması, kovuşturması veya kanun yolunda sanık/şüpheli müdafiliği üstlenildiğinde DEVREYE GİR: savunma duruşunu (masumiyet karinesi, şüpheden sanık yararlanır, ispat yükü iddia makamında) kur; suçun MADDİ ve MANEVİ unsurlarını tek tek denetle; delil cephesini (doğrudan doğruyalık/CMK m.217, hukuka aykırı delil, eksik inceleme, atfı cürüm beyanı, dijital/ses aidiyeti) tara; kanun yolu süresini nöbette tut. "Sanık/şüpheli müdafiiyiz", "savunma dilekçesi", "iddianameye karşı", "istinaf/temyiz/itiraz", "ifade/sorgu", "gözaltı/tutukluluk", "beraat", "HAGB", "unsurları oluşmadı", "ceza dosyası" türü her işte — kullanıcı açıkça "müdafii" demese bile bir ceza dosyasında sanık/şüpheli temsil edildiği belli olduğunda — tetikle. ortak-avukat ve oa-pipeline ile takım oynar; oa- parçalarını savunma merceğiyle çağırır.
 

@@ -175,6 +175,21 @@ OA-SUIT-SAYISI = **2301** (`pytest --collect-only`). Tam süit sonucu STATUS §0
   (C2, advisory); Linux'ta tur paketi yokken OCR yolu yalnız sahte ikiliyle sınandı (E).
 - Belge bayatlık taraması (DEVAM-PLANI §9) bu sürümde H2 kalemi + sürüm/tarih damgaları
   ile SINIRLI yapıldı; satır satır tam tarama açık iş.
+- **Belge bayatlık taraması — infaz (2026-09-07, ayrı commit):** 83 bulgu koda karşı
+  doğrulandı, 82'si düzeltildi (1'i «bayatlık yok» bilgi notu). Sınıflar: script sayıları
+  diskle eşitlendi (ingest 2 / kontrol 8 / ictihat 1 / strateji 1 / vakia 2); «sekiz cephe»
+  → dokuz; 19 README damgası v3.20 → v3.26; «18 oa- parçası» → 19; eski MCP araç adları
+  (`search_mevzuat*`, `search_cb*`, `search_anayasa_unified` birincil) → `mevzuat_ara` /
+  `mevzuat_icinde_ara` / `mevzuat_getir` / `aym_ictihat_ara`; CLI enum/bayrak bayatlıkları
+  (`--tip yemin|idari-kanal`, `--taraf` 6 değer, `--sebep` 7 değer, `--json` ZORUNLU
+  kıyas, `sure-flag --asama`, `--muvekkil-karari`); DAMGA=NOTR G6'da BLOK; anayasa m.7
+  kimlik soyutlamaları (yer adı + dosya no → «saha bulgusu»); Yönetmelik 2646 m.8 kenar
+  notu (MCP teyit: üst/sol/sağ 1,5 cm — alt kenar maddede yok); 6 changelog'daki literal
+  `
+` yapıştırmaları gerçek satırlara açıldı ve yabancı parça blokları ayıklandı;
+  KURULUM-SENKRON / TEST-KULLANIM «TARİHÎ» damgalandı; çekirdek günlüğündeki kesik satır
+  (v3.14–v3.16 kayıp — git geçmişinde de yok) şerhlendi. Dokunulmayan: referans
+  günlüklerindeki tarihî saha kimlikleri (ayrı karar), B-4 `git filter-repo`.
 
 ---
 

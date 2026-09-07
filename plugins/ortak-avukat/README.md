@@ -24,8 +24,7 @@ denetleyen katmanı bilinçli olarak ayırır: **model kurar, script denetler.**
 Aile **20 parçadan** oluşur: bir çekirdek (`ortak-avukat`) ve 19 `oa-*` parça.
 Mimari kasıtlı olarak *Lego*'dur — her parça tek başına da çalışır, `oa-pipeline`
 ise onları uçtan uca bir hatta dizer. Parçaların bir kısmı **muhakeme parçasıdır**
-(saf yöntem: `oa-alan`, `oa-ictihat`, `oa-strateji`, `oa-mudafii`,
-`oa-musteki-vekili`, `oa-interview`), bir kısmı ise yanında **deterministik
+(saf yöntem: `oa-alan`, `oa-mudafii`, `oa-musteki-vekili`, `oa-interview`), bir kısmı ise yanında **deterministik
 denetim motoru** taşır (süre aritmetiği, illiyet grafı, antitez matrisi, usul
 matrisi, kloz cetveli, teslim kapıları). Bu ayrımı bilerek okuyun: makineyle
 denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yöntem.
@@ -216,7 +215,7 @@ dengeli, zayıf, belirsiz) ve o bandın gerekçesi verilir. Ayrıca "şu olursa 
 geç" tetikleri kurulur, böylece karar tek seferlik değil izlenebilir olur.
 
 #### `oa-antitez` — gizli cephanelik
-Müvekkilin tezine gelebilecek saldırıları sekiz sabit cephede eksiksiz çıkarır ve
+Müvekkilin tezine gelebilecek saldırıları dokuz sabit cephede eksiksiz çıkarır ve
 her birini çürütür; çürütülemeyeni dürüstçe **artık risk** diye işaretler. Cephe
 gücü ve dayanak durumu serbest metin olarak yazılamaz, kapalı değerlerle
 işaretlenir; değerlendirilmemiş bir cephe "kör nokta" olarak yakalanır. Bu parçanın
@@ -374,21 +373,21 @@ adımları için depo kökündeki [README](../../README.md) dosyasına bakın.
 |---|---|---|
 | [`ortak-avukat`](skills/ortak-avukat/) | Çekirdek kimlik + anayasa | — |
 | [`oa-pipeline`](skills/oa-pipeline/) | Başbakan: uçtan uca hat + defter | 8 script |
-| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili) | 1 script |
+| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili) | 2 script |
 | [`oa-interview`](skills/oa-interview/) | İlk inceleme / mülakat | — |
 | [`oa-alan`](skills/oa-alan/) | Norm + ihtisas dairesi konumlama | — |
 | [`oa-usul`](skills/oa-usul/) | Usul denetimi (kesişen katman) | 1 script |
 | [`oa-sure`](skills/oa-sure/) | Süre / zamanaşımı nöbetçisi | 2 script |
 | [`oa-gizlilik`](skills/oa-gizlilik/) | Layer 0 gizlilik süzgeci | 1 script |
 | [`oa-illiyet`](skills/oa-illiyet/) | Nedensellik / ilişki grafı | 1 script |
-| [`oa-vakia`](skills/oa-vakia/) | Kronoloji + iddia↔delil matrisi | 1 script |
-| [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi | — |
+| [`oa-vakia`](skills/oa-vakia/) | Kronoloji + iddia↔delil matrisi | 2 script |
+| [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi | 1 script |
 | [`oa-kiyas`](skills/oa-kiyas/) | Açık kıyas + içtihat muhakemesi | 1 script |
-| [`oa-strateji`](skills/oa-strateji/) | Yol seçimi + maliyet-fayda | — |
+| [`oa-strateji`](skills/oa-strateji/) | Yol seçimi + maliyet-fayda | 1 script |
 | [`oa-antitez`](skills/oa-antitez/) | Dokuz cephe + gizli cephanelik | 1 script |
 | [`oa-dilekce`](skills/oa-dilekce/) | Dilekçe yazımı + UDF üretimi | 4 script |
 | [`oa-sozlesme`](skills/oa-sozlesme/) | Sözleşme tahrir / redline | 1 script |
-| [`oa-kontrol`](skills/oa-kontrol/) | Teslim kapıları + makbuz | 4 script |
+| [`oa-kontrol`](skills/oa-kontrol/) | Teslim kapıları + makbuz | 8 script |
 | [`oa-mudafii`](skills/oa-mudafii/) | Ceza müdafiliği (savunma) | — |
 | [`oa-musteki-vekili`](skills/oa-musteki-vekili/) | Müşteki/mağdur vekilliği (iddia) | — |
 | [`oa-usta`](skills/oa-usta/) | Ders damıtma + aile yapı denetimi | 1 script |

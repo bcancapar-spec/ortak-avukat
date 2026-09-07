@@ -16,7 +16,7 @@
 **Sürüm:** 0.5.16 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
-> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.15'e gelen
+> derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
 > geliştirme zinciri **149 gerçek davada** test edildi; bunların **dokuzu**,
 > sensörlü izleme + karne + adli analizle BELGELİ büyük saha koşusudur:
 > (1) ~200 evraklık istinaf dosyasında ek beyan (ilk tam koşu), (2) 214
@@ -399,7 +399,7 @@ kararının açık olduğunu bilir.
 ### Dosyayı ele alma
  v0.5.11 ile **kit güvenlik katmanı** geldi: araç kopyaları yalnız güvenilir kaynaktan doğar (uygulamanın rpm anlık-görüntü yolu karantinada), tam-nesil çekirdek scriptler salt-okunur kilitlenir, tazelik uyarısı yön bilir (bayat / kanaldan-yeni / özdeş) ve her defter olayı ile makbuz, hangi oturumun ürünü olduğunu söyleyen **oturum damgası** taşır — çok oturumlu çalışmada (aynı dosyada 5-6 paralel oturum sahada ölçüldü) kim-ne-yaptı sorusu artık cevaplıdır.
 
-#### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 1 script
+#### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 2 script
 UYAP klasöründeki her evrağın metnini **bir kez** ve en ucuz doğru yoldan
 çıkarır: metin PDF'ten doğrudan, taranmış olandan OCR ile, UDF/EYP/DOCX'ten
 açarak; belge başına metin dosyası + künye + indeks üretir. İndirilen evrak
@@ -467,7 +467,7 @@ dayandığı delile eşler. İki tür boşluğu mekanik yakalar: **delilsiz iddi
 eşleştirici, farklı evraklarda farklı yazılmış aynı kişiyi/şirketi benzerlik
 ölçüsüyle eşler — kesin değilse karar vermez, "avukata sor" damgası basar.
 
-#### [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) — teyit ve mutlak triyaj
+#### [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) — teyit ve mutlak triyaj · 1 script
 Her argümanın normunu ve künyesini resmî kaynaktan (Yargı Pro, AYM, Mevzuat MCP)
 **fiilen** çeker; kararın tam metnini diske ham döküm olarak yazar — dilekçeye
 giren her alıntı hafızadan değil o dosyadan gelir. v0.5.8.5'ten beri **mutlak
@@ -475,7 +475,8 @@ triyaj [G6]** geçerlidir: MCP'den çekilen **her karar istisnasız baştan sona
 okunur**; LEHE ise dilekçeye, ALEYHE ise cephaneliğe gider; okunmamış veya
 damgasız künye dilekçede **kalamaz**. Kaynak bağlantısı yalnız teyit anında
 kaydedilir: kayıt yoksa dilekçede parantez hiç açılmaz — uydurma bağlantı,
-çıplak künyeden daha kötüdür.
+çıplak künyeden daha kötüdür. `kanun_yolu_zinciri.py` (v0.5.16) bir kararın
+Yargıtay → BAM → ilk derece kanun yolu zincirini deterministik çıkarır.
 
 #### [`oa-kiyas`](plugins/ortak-avukat/skills/oa-kiyas/) — açık kıyas · 1 script
 Hukuki sonucu örtük sezgiden çıkarıp denetlenebilir üçlüye oturtur: büyük önerme
@@ -487,16 +488,17 @@ türetilir**, beyan edilmez.
 
 ### Karar ve savunma
 
-#### [`oa-strateji`](plugins/ortak-avukat/skills/oa-strateji/) — yol seçimi
+#### [`oa-strateji`](plugins/ortak-avukat/skills/oa-strateji/) — yol seçimi · 1 script
 Analizi karara dönüştürür: en az iki gerçek alternatif kurar (dava, sulh, icra,
 idari başvuru, bekleme) ve her birini maliyet, fayda ve **tahsil edilebilirlik**
 boyutuyla tartar — kazanılan ama tahsil edilemeyen karar müvekkile masraftır.
 Başarı olasılığı **sayı değildir**: "%72 kazanırsınız" denmez; nitel bant
 (güçlü/dengeli/zayıf/belirsiz) ve gerekçesi verilir. "Şu olursa şu yola geç"
-tetikleri kurulur.
+tetikleri kurulur. `maliyet_cetveli.py` (v0.5.16) harç/vekâlet/gider kalemlerini
+`tarife.json`'dan hesaplar; tarife boşsa **fail-closed** (uydurma rakam yerine durur).
 
 #### [`oa-antitez`](plugins/ortak-avukat/skills/oa-antitez/) — gizli cephanelik · 1 script
-Müvekkilin tezine gelebilecek saldırıları sekiz sabit cephede eksiksiz çıkarır
+Müvekkilin tezine gelebilecek saldırıları dokuz sabit cephede eksiksiz çıkarır
 ve çürütür; çürütülemeyeni dürüstçe **artık risk** diye işaretler. Çıktısı
 **yalnız size** gelir, dilekçeye girmez. En sert kuralı sunum disiplinidir:
 karşı taraf bir tezi fiilen ileri sürmeden ona dilekçede önleyici çürütme
@@ -527,7 +529,7 @@ Zorunlu kloz kategorileri sayılıdır; sessiz atlama engellenir.
 
 ### Teslim
 
-#### [`oa-kontrol`](plugins/ortak-avukat/skills/oa-kontrol/) — son kapı · 7 script
+#### [`oa-kontrol`](plugins/ortak-avukat/skills/oa-kontrol/) — son kapı · 8 script
 Doğrulama mimarisinin son halkasıdır: künye izi, zorunlu unsurlar, içtihat
 muhakeme zinciri, kaynak tazeliği, gizlilik ve defter bütünlüğü sabit sırada
 koşar; teslime hazır olup olmadığını **tek ölçüt** söyler — kapıları elle sayıp
@@ -758,7 +760,7 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 | Üretim | ~366k token / 56 dk; 25 adım kaydı; alt-ajan 0 |
 | İki ayrı iş ürünü | A: ödeme emrine karşı · B: ek tahakkuka karşı — iki ayrı dilekçe + 2 UDF üretildi |
 | Künye teyidi | A **15/15** · B **18/18** teyitli, teyitsiz 0; çapraz denetimde kopuk referans yok |
-| Antitez / usul | 8/8 cephe + çürütme; usul matrisi süre hesabını bağladı (son gün tespiti) |
+| Antitez / usul | 8/8 cephe (o sürümün sekiz cepheli matrisi; v0.5.16'da dokuz) + çürütme; usul matrisi süre hesabını bağladı (son gün tespiti) |
 | Bayat araç nöbetçisi | Bu sahada da ateşledi (1 uyarı) |
 | Dürüst altyapı notu | Model, canlı içtihat ucuna erişemeyince yedek arşivle çalıştığını ve arşiv-sonrası kararların eksik olabileceğini kütüğün başına **kendisi yazdı** ("AŞAN-KAYNAK" riski) |
 | [G6] sınavının SONUCU | Kapı ÇALIŞTI: teslim zinciri dökümsüz atıflarla RED verdi; model 7 kararın tam metnini döküp damgaladıktan sonra yeşil makbuz kesebildi (04:53). Ayrıca bu koşu, v0.5.10'u doğuran iki kusuru bağımsız tekrarladı: 40-UYAP kopyalarında çift-uzantı ve mühürsüz kopya |
@@ -886,9 +888,9 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
   onlar için kod dahi yazmaz.
 - **Resmî kaynak bağlı değilse künye doğrulayamaz** — ve bunu gizlemez, "teyit
   edilemedi" damgası basar.
-- **Organik yeşil makbuz henüz ölçülmedi.** Sahada uçtan uca insan
-  müdahalesiz yeşil makbuz hâlâ açık hedeftir; bu satır o gün ölçümle
-  güncellenecektir.
+- **Organik yeşil makbuz bir kez ölçüldü (923 sahası).** v0.5.16 araçlarıyla
+  uçtan uca insan müdahalesiz yeşil makbuzun tekrar ölçümü açık iştir; bu
+  satır o gün ölçümle güncellenecektir.
 
 ---
 

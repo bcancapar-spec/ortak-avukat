@@ -101,9 +101,9 @@ GÖRÜNMEZ İSKELET TARAMASI** kapısı (advisory — ASLA bloklamaz) bu kalıp-
 açılışları satır başında arar ve bulursa bir akıcılık uyarısı basar; bu
 hukuki içerik denetimi DEĞİLDİR, yalnız biçim sinyalidir.
 
-## ÖMERALP ÜSLUP BAĞLAMASI — yazım disiplini playbook'a zorunlu bağlı
+## ÜSLUP BAĞLAMASI — yazım disiplini kanun yolu playbook'una zorunlu bağlı
 Bu parçanın yazım disiplini `references/kanun-yolu-mimari-playbook.md`
-(B1-B7, ömeralp temyizinden damıtık) üslubuna **ZORUNLU referansla bağlıdır:**
+(B1-B7, anonim bir temyiz dilekçesinden damıtık) üslubuna **ZORUNLU referansla bağlıdır:**
 dilekçe o playbook'un yazım konseptiyle — **tez-omurgalı, akıcı, bütünsel
 bağlantılı** — yazılır; yukarıdaki GÖRÜNMEZ İSKELET kuralı bunun ayrılmaz
 parçasıdır (etiketli-parça değil, örülü-bütün). Teslim öncesi kontrol
@@ -123,7 +123,7 @@ karşı taraf (davalı) kusurluysa aynı asimetri simetrik biçimde işler.
 (advisory — ASLA bloklamaz) karşı-taraf-kusuru bağlamında "süre verilsin/
 tamamlan-/gideril-" kalıplarını arar ve bulursa bir uyarı basar.
 
-## AVUKAT REVİZESİNDEN DAMITILAN YEDİ KURAL (2026/307 saha vakası — v0.5.5.2)
+## AVUKAT REVİZESİNDEN DAMITILAN YEDİ KURAL (saha vakası — v0.5.5.2)
 Modelin ürettiği taslak ile avukatın imzaladığı nüsha karşılaştırıldı (147↔147
 paragraf, 52.086→51.618 karakter). Avukat metni **kısaltırken iki esaslı vakıa
 EKLEDİ** — yani çıkarılanlar hacim, eklenenler isabetti. Damıtılan kurallar:
@@ -332,7 +332,7 @@ bu adı erken vermek makbuz kapısını yanlış zamanda tetikler.
 
 **Teslim öncesi MEKANİK KAPILAR (R2 — tek ölçüt `teslim_paketi.py` exit 0; aşağıdaki alt kapılar bu tek script'in içinde sabit sırada koşar, elle sayılmaz):**
 1. **UDF GEÇERLİLİK KAPISI** (UDF çıktısı üretildiyse zorunlu) — `python scripts/udf_yaz.py --dogrula dilekce.udf` (yazmadan var olan dosyayı denetler) **veya** `python scripts/dilekce_denetim.py <taslak.md> --tip ... --taraf ... --udf dilekce.udf` (aşağıdaki [A]-[D] ile birlikte tek çağrıda [E] olarak çalışır). Denetlenen: zip açılır mı, `content.xml` var mı, XML iyi biçimli mi, **offset taşıyan TÜM elemanlar** (yalnız `<content>` değil — gerçek çıktıda `<tab/>` de offset taşır) CDATA metnini UTF-16 code-unit biriminde **boşluksuz ve örtüşmesiz döşüyor** mu, ve **5. bacak: RESMİ OKUYUCU TANIĞI** — dosya, onu ÜRETEN aracın kendi okuyucusuyla (`npx -y udf-cli@latest udf2md`) geri okunabiliyor mu. Beşinci bacağın gerekçesi: ilk dördü dosyayı BİZİM ayrıştırıcımızın varsayımına göre sınar; sahada bizi yakan hata sınıfı ise tam olarak "bizim round-trip'imizi geçen ama UYAP'ın açmadığı dosya"ydı — kendi varsayımıyla kendini doğrulamak kanıt değildir. Ağ/oturum yoksa bu bacak **YAPILAMADI** der (görünür; "doğrulandı" SAYILMAZ) ve bloklamaz — ortam koşuludur, dosyanın kusuru değil. Script yalnız **"geçerli/geçersiz UDF"** der — **"iyi dilekçe" demez** (sahte kesinlik yok); GEÇERSİZ ise exit 1.
-2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal> --taraf <davaci|davali|sanik>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur). **`--tip istinaf|temyiz` iken (M3-2):** [B] TERTİP-DÜZEN kapısı, `kanun-yolu-mimari-playbook.md`'nin B1/B2/B4/B6 mekanik izdüşümünü de denetler — künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu + dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması, her içtihat blok-alıntısının ardından açıklama paragrafı bulunması — yalnız VAR/YOK (uyarı, bloklamaz). `--ictihat-muhakeme` ile birlikte `--tip` değeri [F] kapısına da geçer: G1 "emsal içtihat yok" uyarısı yalnız "esaslı" tiplerde (dava/cevap/istinaf/temyiz/aym_bireysel) basılır, `yemin`/`idari-kanal` gibi hafif tiplerde [BİLGİ]'ye düşer (R6).
+2. `python scripts/dilekce_denetim.py <taslak.md> --tip <dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal> --taraf <davaci|davali|sanik|katilan|mudahil|musteki>` — tip başına zorunlu unsur + "avukata yakışan tertip-düzen" + OCR-teyit şerhi + **MÜVEKKİL-ALEYHİ İFADE TARAMASI** (anayasal tek katı sınır: davalıda kabul/ikrar, davacıda kendi iddiasını çökerten ifade → exit 1 ile durdurur). **`--tip istinaf|temyiz` iken (M3-2):** [B] TERTİP-DÜZEN kapısı, `kanun-yolu-mimari-playbook.md`'nin B1/B2/B4/B6 mekanik izdüşümünü de denetler — künye blok alan seti (kanun yoluna konu kararın kimliği/sonucu + dayanak norm), TEBLİĞ TARİHİ'nin AYRI SATIRDA olması, GİRİŞ bölümünün varlığı, SONUÇ/İSTEM'in numaralı olması, her içtihat blok-alıntısının ardından açıklama paragrafı bulunması — yalnız VAR/YOK (uyarı, bloklamaz). `--ictihat-muhakeme` ile birlikte `--tip` değeri [F] kapısına da geçer: G1 "emsal içtihat yok" uyarısı yalnız "esaslı" tiplerde (dava/cevap/istinaf/temyiz/aym_bireysel) basılır, `yemin`/`idari-kanal` gibi hafif tiplerde [BİLGİ]'ye düşer (R6).
 3. `python ../oa-kontrol/scripts/kunye_teyit.py <taslak.md>` — her içtihat/mevzuat atfının teyit kütüğünde izi var mı (teyitsiz atıf → exit 1).
 4. `oa-kontrol` A (atıf) + B (usul+esas) listeleri — B listesine eklenen **"üslup playbook'a uygun mu?"** maddesi dahil (aşağıya bkz.).
 
@@ -386,7 +386,7 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
    deseni; `tazelik_denetim.py` bunu okur — bayatlama görünür olur). Bloğu
    ELLE KURMA: satırı `oa-kontrol/scripts/kaynak_blogu.py --girdiler <yol...>`
    üretir — sha'yı model değil script hesaplar; @sha8'siz blok tazelik
-   denetimini fiilen işlevsiz bırakır (372 Torbalı bulgusu, v0.5.8.4).
+   denetimini fiilen işlevsiz bırakır (saha bulgusu, v0.5.8.4).
 4. **MÜHÜR:** üretimden hemen sonra
    `oa-kontrol/scripts/muhur_yaz.py --kok . --urun <yol> --girdi <girdiler>`
    koşulur (ürün başına `.prov.json` doğum belgesi; UYAP öncesi `--dogrula`).

@@ -9,12 +9,12 @@
 - **Açık:** saha "sonra" ölçümü · push · B-4 filter-repo kararı · udf-cli pin · tarife doldurma · §11 yerel kurulu eklentinin 0.5.16'ya çekilmesi (hook_doktor: kurulu 0.5.9.1 BAYAT).
 
 ## DURUM — 2026-08-15 · v0.5.8.4 (önceki)
-- **Paket v0.5.8.4** (`fc9cb31`) — zincirin **ilk yeşil CI** koşusu; iki saha koşusu (447 vergi + 372 Torbalı) ve 5 kollu adli analiz v0.5.8.4 infazıyla kapandı; tam süit 1048 yeşil / 1 tasarımsal atlama; sırada v0.5.8.4'ün kendi saha provası.
-- **K4 KAPANDI:** gerçek dosyada uçtan uca prova + UDF gerçek UYAP editör teyidi yapıldı (Denizli tek-prompt koşusu, e-imzalı nüsha ölçümü v0.5.7.2, 372'de kenar-yaması A/B testi).
+- **Paket v0.5.8.4** (`fc9cb31`) — zincirin **ilk yeşil CI** koşusu; iki saha koşusu (447 vergi + 372 aile/mal rejimi) ve 5 kollu adli analiz v0.5.8.4 infazıyla kapandı; tam süit 1048 yeşil / 1 tasarımsal atlama; sırada v0.5.8.4'ün kendi saha provası.
+- **K4 KAPANDI:** gerçek dosyada uçtan uca prova + UDF gerçek UYAP editör teyidi yapıldı (ilk tam koşu, e-imzalı nüsha ölçümü v0.5.7.2, 372'de kenar-yaması A/B testi).
 
 ### (arşiv — v0.5.0 sign-off dönemi)
 - **Fable↔Sonnet ultracode döngüsü: 4 tur, YAKINSADI.** Bulunan+düzeltilen kritik/yüksek: İYUK m.8/3 tarih hatası, kunye_teyit karar-no çıkaramama, oa_ingest önbellek sessiz külliyat bozulması, süre çıpası uyumsuzluğu, SKILL placeholder çökmesi.
-- **Doğrulanmış:** aile_dogrula exit 0 · pytest 57+ · 22 script derleniyor · paket **v0.5.0** (plugin.json = marketplace.json, mekanik denetimli).
+- **Doğrulanmış:** aile_dogrula exit 0 · pytest 57+ · 22 script derleniyor · paket **v0.5.0** (plugin.json = marketplace.json, mekanik denetimli). *(arşiv — o günkü sayılar; güncel sayım `tests/README.md` OA-SUIT-SAYISI ve `ls plugins/ortak-avukat/skills/*/scripts`)*
 - **Fable sign-off: KOŞULLU ONAY.** Kapatıldı → **K2** (marketplace bayatlığı + aile_dogrula manifest sürüm denetimi), **K3** (gizlilik m.6 sözlüğü genişletildi — HIV/hastane/kanser/hükümlü/uyuşturucu artık DENY), **description ≤800** (oa-kiyas/oa-sure/oa-usta tıraşlandı), **kapı pytest'leri** (aile_dogrula/teslim_paketi/sure_nobetci/oa_metrik/capraz_denetim).
 - **Açık koşullar (bkz. Fable sign-off):** **K1** — kurulu kopyalar bayat/mükerrer (repo `.claude/plug-in/...` ≠ çalışan araç `.claude/plugins/cache/...0.3.20`; git init + reinstall gerekli); **K4** — gerçek dosyada uçtan uca prova + UDF gerçek UYAP testi.
 
@@ -44,7 +44,7 @@
   cmd_sure_flag:1205; teslim_paketi zinciri + Gate-G; §5'te zaten ✅).
 
 **Güncellenmiş öncelik sırası (bayat "Fable öncelik sırası"nın yerine):**
-1. ✅ **K4 — gerçek dosyada uçtan uca prova + UDF gerçek UYAP `format_id` testi** — KAPANDI (Denizli tek-prompt koşusu + gerçek e-imzalı nüsha ölçümü + 372 UYAP editör A/B testi).
+1. ✅ **K4 — gerçek dosyada uçtan uca prova + UDF gerçek UYAP `format_id` testi** — KAPANDI (ilk tam koşu + gerçek e-imzalı nüsha ölçümü + 372 UYAP editör A/B testi).
 2. §6-C(iii) doktrin cümlesi (SKILL.md'ye tek paragraf) + K1 canlı ölçüm (kurulu kopya senkronu).
 3. `hesapla_sure.py` v3+ (HMK m.103/104 adli tatil istisnası — bilinen tek somut hukuki-hata riski).
 4. P2: ortak kimlik uzayı (el-ID + FK denetçisi — `--json` ayağı 4 motorda tamam, bu fork'ta

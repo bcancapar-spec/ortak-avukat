@@ -1,16 +1,26 @@
 # oa-kontrol
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
-Ortak Avukat sisteminin DENETİM/KONTROL parçası. Bir dilekçe, dosya veya mütalaa teslim edilmeden önce; atıf/künye doğruluğu denetlenirken; müvekkil-aleyhi zaaflar taranırken DEVREYE GİR. Üç sabit kontrol listesini uygula: (1) atıf denetimi (her künye resmî kaynaktan teyitli mi), (2) teslim öncesi usul+esas kontrolü, (3) müvekkil-aleyhi zaaf protokolü. "Bunu kontrol et", "teslime hazır mı", "gözden geçir", "zayıf yanları neler" türü her işte — kullanıcı açıkça istemese bile esaslı bir çıktı teslim edilmeden önce — tetikle. Bağımsız çalışır; tüm oa- parçalarının çıktısını teslimden önce süzer. (İleride deterministik `oa-antitez` motoru bu listelerin üstüne kurulacaktır.)
+Ortak Avukat sisteminin DENETİM/KONTROL parçası. Bir dilekçe, dosya veya mütalaa teslim edilmeden önce; atıf/künye doğruluğu denetlenirken; müvekkil-aleyhi zaaflar taranırken DEVREYE GİR. Üç sabit kontrol listesini uygula: (1) atıf denetimi (her künye resmî kaynaktan teyitli mi), (2) teslim öncesi usul+esas kontrolü, (3) müvekkil-aleyhi zaaf protokolü. "Bunu kontrol et", "teslime hazır mı", "gözden geçir", "zayıf yanları neler" türü her işte — kullanıcı açıkça istemese bile esaslı bir çıktı teslim edilmeden önce — tetikle. Bağımsız çalışır; tüm oa- parçalarının çıktısını teslimden önce süzer. Deterministik `oa-antitez` motoru bu listelerin üstünde çalışır.
 
-## Yapı
+## Deterministik scriptler
 
-Bu parça saf metin-disiplinidir (deterministik script içermez); protokolleri `SKILL.md` gövdesindedir.
+- `scripts/ictihat_muhakeme_denetim.py` (içtihat muhakeme zinciri kapısı G1-G11)
+- `scripts/kaynakca_uret.py`
+- `scripts/kaynak_blogu.py`
+- `scripts/kunye_ortak.py`
+- `scripts/kunye_teyit.py`
+- `scripts/muhur_yaz.py`
+- `scripts/tazelik_denetim.py`
+- `scripts/teslim_paketi.py` (teslim zinciri + makbuz)
+
+> Scriptler modelin muhakemesini **denetler** (eksiksizlik/tutarlılık); model kurar, script sağlamasını yapar. Protokoller `SKILL.md` gövdesindedir.
 
 ## Referanslar
 
 - `references/degisiklik-gunlugu.md`
+- `references/cikti-semasi.md`
 
 ## Nasıl çalışır
 

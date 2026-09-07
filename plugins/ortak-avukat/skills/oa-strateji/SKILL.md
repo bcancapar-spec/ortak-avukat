@@ -81,8 +81,9 @@ Başarı olasılığı **sayı değildir.** "%72 kazanırsınız" demeyiz. Olas�
    - **KAPI (A-6/A-17):** masraf gücü VE risk toleransı girdisi olmadan **yol
      kararı verilmez**; strateji çıktısı "seçenekler + eksik girdi" ile durur ve
      DURUM.md'de **«Müvekkil Kararı Bekleyen»** kalemi olarak işaretlenir
-     (kayıt mekanizması `oa-pipeline` B grubu tarafından eklenmektedir; bu
-     parça kalemi ADIYLA üretir, defter formatını dayatmaz). Eksik girdiyle
+     (deftere `pipeline_kayit.py --muvekkil-karari "<konu>" --secenekler "a|b"`
+     ile işlenir; karar gelince `--muvekkil-karari-kapat "<konu>" --karar "<seçim>"
+     --gerekce "..."`; bu parça kalemi ADIYLA üretir, defter formatını dayatmaz). Eksik girdiyle
      "dava açalım" demek, müvekkil adına risk almaktır — Anayasa m.6 iç
      dürüstlük katmanının ihlalidir.
 2. **Pozisyonun gücü** (girdi parçalardan):

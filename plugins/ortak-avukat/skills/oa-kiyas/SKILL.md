@@ -61,8 +61,11 @@ besle (illiyet bağı unsuru zaten orada modellenmiştir). Her olguyu delile ba�
 ### 3. Eşleştir ve denetle
 Kıyası JSON yaz (`_oa/cikti/05-kiyas.json`, şema `references/kiyas-rehberi.md`) ve çalıştır:
 ```bash
-python scripts/kiyas_denetim.py _oa/cikti/05-kiyas.json
+python scripts/kiyas_denetim.py _oa/cikti/05-kiyas.json --json _oa/cikti/05-kiyas-denetim.json
 ```
+**`--json` ZORUNLU** — `pipeline_kayit.py` K1 bekçisi Kıyas Boşluk bölümünü yalnız
+`_oa/cikti/*.json` içindeki `arac == kiyas_denetim` damgasından okur; `--json`
+verilmezse bekçi hiç ateşlemez (opsiyonel kapı = ateşlemeyen kapı — oa-illiyet dersi).
 Script raporlar: eksik bileşen, vakıaya eşlenmemiş norm unsuru (= boşluk),
 delile bağlanmamış küçük önerme, içtihatsız büyük önerme.
 

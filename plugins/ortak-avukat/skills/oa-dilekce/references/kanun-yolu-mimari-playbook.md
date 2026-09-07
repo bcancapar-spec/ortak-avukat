@@ -174,9 +174,10 @@ B1-B7 burada tam gövdeyle durur; `oa-dilekce/SKILL.md`'nin "İçtihat
 kullanımı" bölümü B4'ün 5 adımını taşır (kısa çapa + tam B4 burada), GİRİŞ/
 rütbelendirme kuralları SKILL.md'de kısa çapayla anılır. B1/B3/B5/B7'nin
 mekanik denetim izdüşümü (künye alan seti, tebliğ satırı, GİRİŞ varlığı,
-numaralı SONUÇ, alıntı-sonrası açıklama zorunluluğu) `dilekce_denetim.py`'ye
-**ayrı bir pakette** bağlanacaktır (bu playbook saf metin katmanıdır; script
-değişikliği bu paketin kapsamı dışıdır). İçtihat blokları ayrıca
+numaralı SONUÇ, alıntı-sonrası açıklama zorunluluğu) `dilekce_denetim.py`
+[B] TERTİP-DÜZEN kapısına `--tip istinaf|temyiz` ile **bağlanmıştır** (M3-2;
+VAR/YOK uyarı, bloklamaz); [H]/[I] advisory taramaları da aynı scriptte (bu
+playbook saf metin katmanıdır). İçtihat blokları ayrıca
 `ictihat_muhakeme_denetim.py`'nin G2/G3 denetimine tabidir (iki katman: bu
 playbook'un tertip-düzen izdüşümü + muhakeme izi denetimi ayrı script'lerde
 yürür).

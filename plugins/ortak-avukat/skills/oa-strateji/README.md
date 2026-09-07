@@ -1,6 +1,6 @@
 # oa-strateji
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin STRATEJİ/KARAR parçası. Bir uyuşmazlıkta yol seçimini yapılandırır: dava mı sulh mu, hangi kanun yolu, hangi sıra; maliyet-fayda analizi; başarı olasılığının dürüst (sayı uydurmayan) değerlendirmesi; alternatif yollar (ör. icrada durdurma vs yapılandırma, ihtarname-sulh vs dava). "Dava açalım mı", "sulh mu olsa", "ne yapmalı", "stratejimiz ne", "değer mi", "kazanma şansı", "maliyet-fayda", "hangi yol" → kullanıcı açıkça "strateji" demese bile bir yol kararı gerektiğinde tetikle. Mütalaaya gömülü kalan strateji muhakemesini formalize eder. `oa-vakia` (delil gücü), `oa-antitez` (zaaf/risk), `oa-sure` (zamanlama), `oa-ictihat` (içtihat eğilimi) çıktılarını bir karara bağlar.
 

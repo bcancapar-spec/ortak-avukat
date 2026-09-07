@@ -1,6 +1,6 @@
 # oa-kiyas
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin AÇIK KIYAS / HUKUKİ SİLOJİZM parçası. Türk hukukunda her hukuki sonucu örtük sezgiyle değil, denetlenebilir üçlü yapıyla üret: BÜYÜK ÖNERME (uygulanacak norm + onu somutlaştıran içtihat) → KÜÇÜK ÖNERME (somut maddi vakıa / illiyet grafı) → SONUÇ (tatbik + olasılık). Bu, Türk hukukundaki subsumtion/tatbik mantığının ta kendisidir. Norm unsurları ile vakıa arasında eşleşme denetimi yap; eşleşmeyen unsuru ispat/hukuk boşluğu olarak işaretle. "Bu olaya hangi madde nasıl uygulanır", "hukuki dayanak nedir", "neden bu sonuç", "tatbik et", "unsurlar oluşmuş mu", "subsumtion" türü her işte — kullanıcı açıkça istemese bile bir argüman ya da dilekçe gerekçesi kurulurken — tetikle. Bağımsız çalışır; oa-illiyet (küçük önerme), oa-ictihat (teyitli büyük önerme), oa-antitez (kıyas zaafı) ve oa-dilekce (gerekçe) ile takım oynar.
 

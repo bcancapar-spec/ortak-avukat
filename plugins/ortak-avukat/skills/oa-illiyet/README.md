@@ -1,6 +1,6 @@
 # oa-illiyet
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin NEDENSELLİK / İLİŞKİ / İLLİYET parçası ve tüm aileyi kuşatan kesişen katmanı. Bir uyuşmazlıkta kişilerin, şirketlerin, kamu kurumlarının, nesnelerin ve delillerin birbirleriyle BAĞINI, İLİŞKİSİNİ ve neden-sonuç (illiyet) zincirini yönlü graf olarak modellemek için DEVREYE GİR. Müşteki↔şüpheli, katılan↔sanık↔hükümlü, davacı↔davalı, alacaklı↔borçlu↔üçüncü kişi, asıl-alt işveren, ortak-müdür-şirket, fiil→netice→zarar ilişkilerini kur; kesme noktalarını (mücbir sebep, mağdur/üçüncü kişi kusuru), köprü düğümleri (muvazaa/perde sinyali), yük taşıyan bağı ve ispat boşluklarını deterministik tespit et. "kim kime nasıl bağlı", "neden-sonuç", "illiyet bağı", "ilişki haritası", "kesilme savunması" türü her işte — kullanıcı açıkça istemese bile bir dosya/dilekçe/tez analiz edilirken — tetikle. Bağımsız çalışır; ortak-avukat ve diğer oa- parçalarıyla (oa-vakia, oa-kiyas, oa-antitez, oa-dilekce, oa-kontrol) takım oynar.
 

@@ -1,6 +1,6 @@
 # oa-interview
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin İLK İNCELEME / MÜLAKAT parçası. Yeni bir dosya, dava, uyuşmazlık veya hukuki mesele ilk kez önüne geldiğinde — DERİNLEMESİNE ANALİZE GİRMEDEN ÖNCE — durup yapılandırılmış sorular sorarak maddi gerçeği, belgeleri, süreyi, müvekkil hedefini ve zaafları topla. Özellikle Claude Cowork'te uzun analiz/belge üretimine başlamadan önce bu alım aşamasını çalıştır. "Şu dosyaya bakalım", "yeni bir dava", "bu konuda ne yapabiliriz", bir olay anlatımı veya Cowork'te yeni bir iş başlangıcı → kullanıcı açıkça "soru sor" demese bile tetikle. Bağımsız çalışır; akışın EN BAŞINDADIR, sonra `oa-alan`/`oa-ictihat`/`oa-dilekce` parçalarına devreder.
 

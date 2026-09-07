@@ -1,6 +1,6 @@
 # oa-usul
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin USUL HUKUKU parçası ve "usul esasa üstündür" düsturunun uygulayıcısı; pipeline'ın her aşamasında çalışan kesişen katman. Türk usul mevzuatının TAMAMINDA (HMK/İYUK/İİK/CMK/6216/7201/492 ve tüm özel usul hükümleri — sınırlı sayım değil) dava şartı, ilk itiraz, görev/yetki, tebligat, harç, taraf/temsil ehliyeti, ıslah, eski hâle getirme ve kanun yolu şartlarını denetlemek için DEVREYE GİR. Üç cephelidir: karşı tarafın usul eksiğini tespit edip kurtuluş kapılarını kapatır; müvekkilin hatasında çıkış kapılarını üç kanaldan (içtihat/doktrin/web) araştırır; kamu gücünün (idare/yargı/icra) usul hatalarını ayrı denetler. "Dava şartı", "ilk itiraz", "tebligat usulsüz", "görevsiz/yetkisiz", "harç eksik", "ıslah", "eski hâle getirme", "usulden ret" türü her işte — ve herhangi bir dava/dosya/ihtilaf analiz edilirken, kullanıcı açıkça istemese bile — tetikle. oa-sure (süre ikizi), oa-illiyet (eşgüdüm), oa-ictihat, oa-antitez, oa-dilekce ve oa-kontrol ile takım oynar.
 

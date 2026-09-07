@@ -1,6 +1,6 @@
 # oa-sozlesme
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin SÖZLEŞME parçası. Her tür sözleşmenin HAZIRLANMASI (tahrir), İNCELENMESİ (karşı taraf taslağı), REVİZESİ ve MÜZAKERESİNDE devreye gir: NDA, hizmet/eser, kira, satış/devir, ortaklık/hissedarlar, iş, vekâlet, bayilik/franchise, lisans, protokol/sulh, atipik-karma sözleşmeler. Kloz kapsam denetimi (deterministik script), risk matrisi, tuzak taraması, redline + fallback pozisyonları, genel işlem koşulları (TBK m.20-25) + Rekabet (rekabet yasağı / münhasırlık) + KVKK kloz denetimi, şekil şartı ve imza yetkisi taraması. "Sözleşme hazırla", "şu taslağı incele", "NDA geldi", "kloz", "revize", "redline", "müzakere" türü her işte — kullanıcı sözleşme tipini anmasa bile ortada akdî bir metin varsa — tetikle. Bağımsız çalışır; oa-ictihat (teyitli norm/emsal), oa-antitez (karşı taraf okuması), oa-sure (süre/temerrüt), oa-strateji (müzakere planı) ve oa-kontrol (teslim denetimi) ile takım oynar.
 

@@ -144,7 +144,7 @@ Kurallar:
   Mevzuat MCP'den teyit edilir, hafızadan yazılmaz.
 
 ## Kullanım
-`kiyas.json` yaz, `python scripts/kiyas_denetim.py kiyas.json` çalıştır. Script
+`kiyas.json` yaz, `python scripts/kiyas_denetim.py kiyas.json --json _oa/cikti/05-kiyas-denetim.json` çalıştır (`--json` ZORUNLU — pipeline K1 bekçisi bu damgayı okur). Script
 karşılanmamış unsuru, delilsiz vakıayı, teyitsiz içtihadı ve yetim vakıayı yakalar.
 Norm hiç unsurlara ayrılmamışsa denetim YAPILAMAMIŞ sayılır ve kritik boşluk
 basılır ("yapı bütün" DEĞİL). Girdi okunamaz/bozuk ya da kökü sözlük değilse

@@ -24,7 +24,7 @@ yapay zekâ modelinin en verimli ve en başarılı işlem hacmini yaratan,
 - Bir parçanın description'ını okuyup disiplinini taklit etmek o parçayla
   DONANMAK değildir (bkz. m.8 simülasyon yasağı); köprü ancak fiilî çağrı,
   gerçek script ve **güncel** araçla kurulur.
-- Araçların bayat kopyaları köprüyü sessizce çökertir (Denizli 754 bulgusu:
+- Araçların bayat kopyaları köprüyü sessizce çökertir (saha bulgusu:
   komşu klasörden miras alınan eski araçlarla koşan hat, güncel kapılardan
   yoksundu) — taze-kaynak şartı bu maddenin mekanik uzantısıdır.
 - Bu madde diğer tüm maddelerin OKUMA ANAHTARIDIR: aşağıdaki her ilke,

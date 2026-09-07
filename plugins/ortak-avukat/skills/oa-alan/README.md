@@ -1,6 +1,6 @@
 # oa-alan
 
-*Ortak Avukat ailesi · v3.20 · bir `oa-*` parçası*
+*Ortak Avukat ailesi · v3.26 · bir `oa-*` parçası*
 
 Ortak Avukat sisteminin ALAN/İHTİSAS DAİRESİ KONUMLANDIRMA parçası. Türk hukukunun HERHANGİ bir dalında — bir uyuşmazlığın hangi norma/maddeye bağlandığını ve Yargıtay/Danıştay/İstinaf (BAM/BİM) nezdinde hangi İHTİSAS dairesinin baktığını, HSK iş bölümü kararları ışığında konumlandırmak için DEVREYE GİR. "Hangi madde uygulanır", "hangi daire bakar", "nereden başlamalı" türü her işte tetikle. Alanı belirli dallarla SINIRLAMA; mesele çoğu zaman birden çok dalı birden ilgilendirir. Ayrıca geçmiş halüsinasyon/yanılma derslerinden çıkan YASAK BÖLGELERİ uygula (ör. Danıştay 8. Daire içtihadını hafızadan üretme; daire kaymaları). Kullanıcı alanı anmasa bile uyuşmazlık tipi belirginse tetikle. Bağımsız çalışır; `oa-ictihat` (sorgu) ve `oa-dilekce` (yazım) ile takım oynar.
 

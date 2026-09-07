@@ -101,11 +101,10 @@ DEĞİŞTİRMEZ.
    Hiçbir script veya model "damga yoksa nötr/geçerli say" varsayımına
    girmez; damgasız kayıt kullanılamaz durumdadır, kullanılabilir hâle
    gelmesi için açıkça muhakeme edilmesi (DAMGA atanması) gerekir.
-   **(YENİ-1, backlog)** NOTR'un mekanik karşılığı `ictihat_muhakeme_denetim.py`
-   düzeyinde yalnız bir **UYARIDIR** (bloklamaz — bkz. yukarıdaki "Denetim"
-   bölümü); giriş yasağının (NOTR'un dilekçeye girmemesi gerektiği hükmünün)
-   nihai uygulayıcısı script değil, **model + avukat gözüdür** — mekanik kapı
-   burada da sahte kesinlik üretmez, yalnız işaret verir.
+   **DAMGA=NOTR'un mekanik karşılığı (v0.5.8.5):** `ictihat_muhakeme_denetim.py`
+   G2 düzeyinde uyarı, **[G6] triyaj kapısında BLOK** (exit 1) — dilekçedeki NOTR
+   künye teslim engelidir. İçeriğin isabeti yine **model + avukat gözüdür**;
+   mekanik kapı yalnız varlık/damga bütünlüğünü denetler.
 4. **Yargıtay/BAM atfı OLMAYAN esaslı dilekçe muhakemesi ZAYIF sayılır.**
    Esaslı bir hukuki sonuç (özellikle içtihadın yerleşik olduğu konularda)
    hiç Yargıtay/BAM içtihadına dayanmıyorsa, bu açıkça "zayıf/teyitsiz
@@ -170,7 +169,8 @@ der. Damganın hukuken isabetli olup olmadığı (İLGİLİ-KISIM'ın GERÇEKTEN
 ilgili olup olmadığı dahil) avukat muhakemesidir — script bu muhakemeye
 girmez, yalnız varlık+bağ+alan bütünlüğünü denetler. Çıplak/eksik/ALEYHE
 (ayırt edilmemiş) atıf tespit edilirse **teslim engeli** (exit 1); DAMGA=NOTR
-veya hiç doğrulanmış içtihat atfı olmaması yalnız **uyarı** üretir (bloklamaz).
+G2'de uyarı, [G6] triyajında **BLOK** (v0.5.8.5); hiç doğrulanmış içtihat atfı
+olmaması yalnız **uyarı** üretir (bloklamaz).
 
 ## Kompozisyon
 - **`oa-ictihat`** → CEK adımını yürütür (künye + ham metin, `_oa/teyit/dokum/`).

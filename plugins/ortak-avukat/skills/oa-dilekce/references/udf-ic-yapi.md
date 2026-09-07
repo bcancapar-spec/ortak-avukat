@@ -1,7 +1,7 @@
 # UDF İÇ YAPISI — XML tabanı, kanonik yazım ve yerel motor sınırı (v0.5.7)
 
 > © 2026 Av. Bayram Can Çapar — FSEK. Kaynaklar: Yargı UDF/TIFF/PDF rehberi
-> (2026-06-22 sürümü, `udf_tiff_pdf_guide`) + Denizli 754 sahasında gerçek
+> (2026-06-22 sürümü, `udf_tiff_pdf_guide`) + bir sahada gerçek
 > `.udf` dosyalarının bayt-düzeyi incelemesi (her iki üretim yolunun çıktısı
 > mekanik kapı + resmî okuyucu round-trip'iyle doğrulandı).
 
