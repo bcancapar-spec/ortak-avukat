@@ -5,6 +5,8 @@
 - **TCK m.239** — ticari sır / müşteri sırrının açıklanması (ceza).
 - **KVKK m.6** — özel nitelikli kişisel veri (sağlık, ceza mahkûmiyeti, biyometrik,
   din, etnik köken, sendika) — işlenmesi/aktarımı katı koşullara bağlı.
+- **KVKK m.9** — kişisel verinin yurt dışına aktarımı: yeterlilik kararı ya da uygun
+  güvence şartı (Mevzuat MCP teyit 2026-09-06, yeniden 2026-09-07 — 7499/34 ile değişik; senkron klasör riskinin normu).
 - **KVKK genel** — kişisel verinin yurt dışına/üçüncü tarafa aktarımı.
 
 ## Desen sınıfları
@@ -60,6 +62,32 @@ MCP bağlayıcılar kalıcı erişim verir; tek-seferlik çekme değildir. Bu y�
 | Kalıcı kural (forwarding/filtre/webhook) | onay iste |
 
 "Forward"u send say; yanlış yorumlanan bir talimat onaysız aktarıma yol açabilir.
+
+## Senkron klasör desenleri (v0.5.16 — P1-8 / A-11 / B-5)
+
+Çalışma kökünün mutlak yolunda, **yol parçası (klasör adı) düzeyinde, büyük/küçük harf
+duyarsız** eşleşen desenler. Parça desene eşitse ya da desenin ardından boşluk / `-` /
+`_` / `(` geliyorsa eşleşir ("OneDrive - Şirket", "Dropbox (Personal)"); bitişik türev
+("onedrivelike") eşleşmez — yanlış-pozitif uyarı gerçek uyarının değerini düşürür.
+
+| Desen | Tipik konum |
+|---|---|
+| `OneDrive`, `OneDrive - <kuruluş>` | Windows kullanıcı kökü (kişisel / iş hesabı) |
+| `Google Drive`, `GoogleDrive`, `My Drive` | Drive for Desktop |
+| `Dropbox`, `Dropbox (Personal)` | kullanıcı kökü |
+| `iCloudDrive`, `iCloud Drive` | Windows iCloud istemcisi / macOS |
+| `Box Sync` | Box istemcisi |
+| `Nextcloud` | öz-barındırılan bulut (sunucu yeri bilinmeli) |
+| `Syncthing` | eşler arası senkron (uzak cihaz sayısı bilinmeli) |
+
+Liste **örneklemdir** (anayasa m.3): listede olmayan bir senkron istemcisi aynı riski taşır;
+avukat kökü tanımıyorsa senkron dışı sayılmaz, sorulur.
+
+**İnit uyarısı işaretçisi:** üretici uç `oa-pipeline/scripts/oa_hafiza.py init`'tir —
+eşleşmede stdout'a görünür UYARI (Av.K. m.36 / KVKK m.6, m.9) + `_oa/defter/senkron-uyari.json`
+`{yol, desen, zaman}`; kök artık desende değilse bayat JSON `[BİLGİ]` ile kaldırılır.
+Bloklamaz. Öneri: senkron dışına taşı, taşınamıyorsa VeraCrypt / BitLocker şifreli
+konteyner (bkz. SKILL.md "Senkron klasör riski").
 
 ## Sınır
 Tarama desenlere dayanır; her hassas veriyi yakalamayı garanti etmez. ALLOW çıktısı
