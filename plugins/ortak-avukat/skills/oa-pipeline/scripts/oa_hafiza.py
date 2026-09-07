@@ -91,7 +91,7 @@ def kontrol():
 # senkron klasöründe yaşamasıdır — Layer 0 dış çağrıyı süzer, cihazı/klasörü
 # korumaz; senkron istemcisi `_oa/` altındaki her dosyayı süzgeçsiz yurt dışı
 # buluta taşır (Av.K. m.36 sır saklama; KVKK m.6 özel nitelikli veri, m.9 yurt
-# dışına aktarım — Mevzuat MCP teyit 2026-09-06). Script hukuki yorum yapmaz:
+# dışına aktarım — Mevzuat MCP teyit 2026-09-06, yeniden 2026-09-07). Script hukuki yorum yapmaz:
 # yalnız YOL DESENİNİ mekanik tanır, görünür uyarır ve deftere iz bırakır
 # (`_oa/defter/senkron-uyari.json`); DURUM.md türetimi pipeline_kayit.py'dedir.
 # Desen listesi ÖRNEKLEMDİR (anayasa m.3) — büyük/küçük harf duyarsız, yol
@@ -145,7 +145,7 @@ def _senkron_uyari_isle(kok_mutlak):
     print("  `_oa/` müvekkil verisi + cephanelik (antitez/zaaf analizi) içerir; senkron "
           "istemcisi bunları Layer 0 süzgecinden GEÇMEDEN yurt dışı buluta taşır.")
     print("  Hukuki temel: 1136 s. Avukatlık Kanunu m.36 (sır saklama), KVKK m.6 (özel "
-          "nitelikli veri) ve m.9 (yurt dışına aktarım) — Mevzuat MCP teyit 2026-09-06.")
+          "nitelikli veri) ve m.9 (yurt dışına aktarım) — Mevzuat MCP teyit 2026-09-06/07.")
     print("  Öneri: dosyayı senkron DIŞI bir klasöre taşıyın ya da şifreli konteyner "
           "(VeraCrypt / BitLocker klasörü) kullanın; ayrıntı: oa-gizlilik SKILL.md "
           "'Senkron klasör riski'. Karar avukatındır — bu uyarı bloklamaz.")

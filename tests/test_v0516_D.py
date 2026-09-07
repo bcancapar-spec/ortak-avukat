@@ -386,3 +386,114 @@ def test_gizlilik_desenleri_senkron_listesi_ve_init_isaretcisi():
         assert desen in metin, desen
     assert "oa_hafiza.py init" in metin
     assert "senkron-uyari.json" in metin
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Tamamlama turu (2026-09-07) — sessiz-düşme ve C2 sözleşme kilitleri
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_k5_aramada_akibet_ifadesi_sessiz_gecilmez(tmp_path):
+    """ARAMA kaydında --sonuc «KESİNLEŞTİ» taşıyorsa akıbet İŞLENMEZ ama
+    SESSİZCE de geçilmez: [BİLGİ] ile GETİR + --damga ritüeline yönlendirir;
+    kütüğe AKIBET= hücresi YAZILMAZ (sessiz atlama yasağı, K5)."""
+    _init(tmp_path)
+    kod, cikti = _cli(["teyit", "--arac", "ictihat_ara", "--sorgu", "TBK m.49 illiyet",
+                       "--sonuc", KUNYE + " — KESİNLEŞTİ", "--kok", str(tmp_path)],
+                      cwd=tmp_path)
+    assert kod == 0, cikti
+    assert "[BİLGİ]" in cikti and "İŞLENMEZ" in cikti and "GETİR" in cikti
+    assert "AKIBET=" not in _kutuk(tmp_path)
+
+
+def test_k5_akibet_damgasiz_getirde_ret_yan_etkisiz(tmp_path):
+    """GETİR + --akibet ama --damga yok → RET; kütük/muhakeme yazılmaz."""
+    _init(tmp_path)
+    args = _getir_args(tmp_path, ek=["--akibet", "kesinlesti",
+                                     "--akibet-kaynak", "arac:ictihat_getir"])
+    i = args.index("--damga")
+    del args[i:i + 2]
+    kod, cikti = _cli(args, cwd=tmp_path)
+    assert kod != 0 and "RET" in cikti
+    assert "AKIBET" not in _kutuk(tmp_path)
+    assert not (tmp_path / "_oa" / "cikti" / "03-ictihat-muhakeme.md").exists()
+
+
+def test_k5_kutuk_hucresi_damga_ile_ayni_duzende(tmp_path):
+    """Kütük satırında AKIBET= hücresi DAMGA= ile AYNI sütunda (5-sütun /
+    7-hücre satır; sonuç hücresi = 4. indeks) ve DAMGA=…'dan SONRA gelir —
+    C2 `kunye_ortak._kutukten_son_token` bu hücreyi `AKIBET=` ile tarar."""
+    _init(tmp_path)
+    kod, cikti = _cli(_getir_args(tmp_path, ek=[
+        "--akibet", "kaldirildi", "--akibet-kaynak", "arac:ictihat_getir"]), cwd=tmp_path)
+    assert kod == 0, cikti
+    satirlar = [s for s in _kutuk(tmp_path).splitlines()
+                if s.startswith("|") and "AKIBET=" in s]
+    assert len(satirlar) == 1
+    hucreler = satirlar[0].split("|")
+    assert len(hucreler) == 7, satirlar[0]
+    sonuc_hucresi = hucreler[4]
+    assert "DAMGA=LEHE" in sonuc_hucresi and "AKIBET=kaldirildi" in sonuc_hucresi
+    assert sonuc_hucresi.index("DAMGA=") < sonuc_hucresi.index("AKIBET=")
+    # Kaynak etiketi tek doğrulanmış tokenın ARDINDAN gelir, ikinci AKIBET= üretmez.
+    assert sonuc_hucresi.count("AKIBET=") == 1
+
+
+def _c2_okuyucu():
+    """Depo içi C2 okuyucusunu (ictihat_muhakeme_denetim + kunye_ortak) yükler;
+    AKIBET tüketicisi henüz birleşmemişse (main tabanı) None döner → skip."""
+    kdir = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-kontrol" / "scripts"
+    if not (kdir / "ictihat_muhakeme_denetim.py").is_file():
+        return None
+    eski = list(sys.path)
+    sys.path.insert(0, str(kdir))
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "v0516_d_c2_imd", kdir / "ictihat_muhakeme_denetim.py")
+        imd = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(imd)
+        spec2 = importlib.util.spec_from_file_location(
+            "v0516_d_c2_ko", kdir / "kunye_ortak.py")
+        ko = importlib.util.module_from_spec(spec2)
+        spec2.loader.exec_module(ko)
+    finally:
+        sys.path[:] = eski
+    if not hasattr(imd, "AKIBET_LINE_RE") or not hasattr(ko, "kutukten_son_akibet"):
+        return None
+    return imd, ko
+
+
+def test_k5_c2_tuketicisi_uretici_ciktisini_okur(tmp_path):
+    """Sözleşme kilidi (D üretici ↔ C2 tüketici): C2'nin `MuhakemeKaydi`
+    ayrıştırıcısı **AKIBET:** satırından enum'u, `kutukten_son_akibet` kütük
+    hücresinden aynı enum'u okumalı. C2 henüz birleşmemişse gerekçeli atlanır
+    (entegrasyonda yeşil olmalı)."""
+    okuyucu = _c2_okuyucu()
+    if okuyucu is None:
+        pytest.skip("C2 AKIBET tüketicisi bu ağaçta yok (main tabanı) — entegrasyonda koşar")
+    imd, ko = okuyucu
+    _init(tmp_path)
+    kod, cikti = _cli(_getir_args(tmp_path, ek=[
+        "--akibet", "bozuldu", "--akibet-kaynak", "UYAP dosya kapağı — bozma ilamı"]),
+        cwd=tmp_path)
+    assert kod == 0, cikti
+    kayit_yolu = tmp_path / "_oa" / "cikti" / "03-ictihat-muhakeme.md"
+    metin = kayit_yolu.read_text(encoding="utf-8")
+    m = imd.AKIBET_LINE_RE.search(metin)
+    assert m and imd._akibet_normalize(m.group(1)) == "bozuldu"
+    m2 = imd.AKIBET_KAYNAK_LINE_RE.search(metin)
+    assert m2 and m2.group(1).strip().startswith("avukat beyanı:")
+    kutuk = tmp_path / "_oa" / "teyit" / "kunye-teyit.md"
+    assert ko.kutukten_son_akibet(str(kutuk), "2099/1234", "2099/5678") == "bozuldu"
+
+
+def test_p18_senkron_json_zaman_ve_yol_alanlari(tmp_path):
+    """senkron-uyari.json alan sözleşmesi: yol = init'in gördüğü mutlak kök,
+    desen = eşleşen yol parçası (orijinal yazım), zaman = ISO-8601 damgası."""
+    import re
+    kok = tmp_path / "Dropbox (Personal)" / "dava"
+    kok.mkdir(parents=True)
+    _init(kok)
+    d = json.loads((kok / "_oa" / "defter" / "senkron-uyari.json").read_text(encoding="utf-8"))
+    assert d["desen"] == "Dropbox (Personal)"
+    assert pathlib.Path(d["yol"]).resolve() == kok.resolve()
+    assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", d["zaman"]), d["zaman"]

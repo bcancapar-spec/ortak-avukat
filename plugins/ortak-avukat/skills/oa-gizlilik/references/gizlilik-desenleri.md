@@ -6,7 +6,7 @@
 - **KVKK m.6** — özel nitelikli kişisel veri (sağlık, ceza mahkûmiyeti, biyometrik,
   din, etnik köken, sendika) — işlenmesi/aktarımı katı koşullara bağlı.
 - **KVKK m.9** — kişisel verinin yurt dışına aktarımı: yeterlilik kararı ya da uygun
-  güvence şartı (Mevzuat MCP teyit 2026-09-06; senkron klasör riskinin normu).
+  güvence şartı (Mevzuat MCP teyit 2026-09-06, yeniden 2026-09-07 — 7499/34 ile değişik; senkron klasör riskinin normu).
 - **KVKK genel** — kişisel verinin yurt dışına/üçüncü tarafa aktarımı.
 
 ## Desen sınıfları

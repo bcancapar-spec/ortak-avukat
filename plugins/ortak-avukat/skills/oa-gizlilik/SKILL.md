@@ -75,7 +75,7 @@ kopyalanır; DENY/ASK kararı o kopyayı görmez bile.
   öğrendiği hususları açığa vurması yasaktır (sır saklama); KVKK m.6 — sağlık/ceza
   mahkûmiyeti gibi özel nitelikli veriler ancak sayılı şartlarla işlenebilir; KVKK m.9
   — kişisel verinin yurt dışına aktarımı yeterlilik kararı / uygun güvence şartına
-  bağlıdır. (Mevzuat MCP teyit 2026-09-06.) Senkron istemcisinin sunucusu çoğu zaman
+  bağlıdır. (Mevzuat MCP teyit 2026-09-06, yeniden teyit 2026-09-07 — 1136 m.36; 6698 m.6 (7499/33) ve m.9 (7499/34).) Senkron istemcisinin sunucusu çoğu zaman
   yurt dışındadır; "yalnız yedekliyorum" beyanı aktarım şartını kaldırmaz.
 - **Mekanik uyarı (üretici uç — oa-pipeline):** `oa_hafiza.py init`, çalışma kökünün
   mutlak yolunu senkron desenlerine karşı tarar; eşleşirse stdout'a görünür UYARI basar
