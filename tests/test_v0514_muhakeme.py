@@ -522,12 +522,17 @@ def test_kiyas_olmayan_dosya_ve_bozuk_json_temiz_mesaj_exit1(izole_dizin):
 
 def test_antitez_iskelet_stdout_gecerli_json():
     """B-26: `antitez_matris.py --iskelet > antitez.json` doğrudan
-    `dilekce_denetim` [G] kapısının okuduğu dosyayı üretebilmeli."""
+    `dilekce_denetim` [G] kapısının okuduğu dosyayı üretebilmeli.
+
+    v0.5.16 (P1-5/A-20 — BİLİNÇLİ karakterizasyon değişikliği): cephe sayısı
+    8 → 9 (`bilirkisi_teknik` eklendi). Kör noktayı görünür kılan bu değişiklik
+    şablonun JSON geçerliliğini/alan adlarını etkilemez; ayrıntı
+    `tests/test_v0516_I2.py`."""
     kod, out, err = _kos(ANTITEZ, "--iskelet")
     assert kod == 0
     sablon = json.loads(out)
     assert set(sablon) == {"tez", "cepheler"}
-    assert len(sablon["cepheler"]) == 8
+    assert len(sablon["cepheler"]) == 9
     assert sablon["cepheler"][0]["duyulmus"] is False
 
 

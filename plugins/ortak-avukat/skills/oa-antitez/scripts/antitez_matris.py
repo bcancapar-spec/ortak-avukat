@@ -29,6 +29,11 @@ antitez (dilekçeye GİRMEZ, cephanelikte kalır); `True` = duyulmuş antitez
 ile aynı dış/iç ayrımı). `oa-dilekce/scripts/dilekce_denetim.py`'nin [G] ANTİTEZ-
 CEVAP-ÇAPASI advisory kapısı `duyulmus_curutmeler()`'i çağırıp duyulmuş+çürütülmüş
 her cephenin dilekçede bir karşılığı (çapa) var mı diye BAKAR (bloklamaz).
+
+v0.5.16 (P1-5 / A-20) — 9. cephe `bilirkisi_teknik` (bkz. STANDART_CEPHELER
+yorumu). Eski sekiz cepheli matrisler `--dogrula`da "AÇIK CEPHE: bilirkisi_teknik"
+alır — istenen etkidir (kör nokta görünür; sessiz uyum YOK). `duyulmus_curutmeler()`
+sözleşmesi ve [G] kapısının okuduğu `_oa/cikti/*antitez*.json` adı DEĞİŞMEDİ.
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -53,6 +58,21 @@ STANDART_CEPHELER = {
     "zamanasimi":      "Zamanaşımı / hak düşürücü süre",
     "defi_karsi_talep":"Def'i / karşı talep / takas (ödeme, ifa, zamanaşımı def'i)",
     "muvekkil_zaaf":   "Müvekkilin kendi belgelerindeki zaaf (oa-kontrol C protokolü ile)",
+    # v0.5.16 (P1-5 / A-20): 9. cephe. Saha dersi — çoğu dosyada fiilî karar
+    # mercii bilirkişi raporudur; sekiz cephe raporu hiçbir yerde ZORUNLU
+    # taramıyordu (kör nokta). Eski sekiz cepheli matrisler bu cepheyi
+    # "AÇIK CEPHE" olarak alır — BİLİNÇLİ: sessiz uyum yok, kör nokta görünür.
+    # Norm çıpaları Mevzuat MCP'den okundu (teyit 2026-09-06, HMK 6100):
+    #   m.279/2 rapor zorunlu içeriği (görevlendirme konusu, maddi vakıa,
+    #           gerekçe/sonuç, görüş ayrılığı sebebi, tarih, imzalar) + /3 kurul
+    #   m.279/4 hukuki nitelendirme/değerlendirme YASAĞI (Değişik 6754/54)
+    #   m.281   tebliğden İKİ HAFTA içinde itiraz; ek süre (7251/24); ek rapor/
+    #           yeni bilirkişi
+    #   m.293   uzman görüşü (taraf mütalaası; duruşmaya gelmeyen uzmanın
+    #           raporu değerlendirilmez)
+    "bilirkisi_teknik": ("Bilirkişi/teknik: raporun kırılma noktaları, itiraz stratejisi "
+                         "(HMK m.281), uzman görüşü (HMK m.293), hukuki nitelendirme yasağı "
+                         "(HMK m.279/4), tek imza/heyet, keşif dayanağı"),
 }
 
 GUC_DEGERLERI = {"yuksek", "orta", "dusuk", "yok"}
