@@ -21,10 +21,30 @@ Sök-tak parça. Konumu: **akışın en başı.** Anayasanın "şüphe varsayıl
 ## Yönetici ilke — önce sor, sonra analiz et
 Yeni bir mesele geldiğinde **hemen uzun analiz/dilekçe üretme.** Önce kısa, odaklı, **toplu** bir alım mülakatı yap; karar-kritik bilgiyi al; eksikleri açık uç işaretle; sonra derin işe geç. Bu, yanlış varsayım üzerine kurulu uzun çalışmayı (özellikle Cowork'te) baştan önler.
 
-Ama **sorguya çevirme:** karar-kritik az sayıda soruyu öne al, gerisini "sonra netleştirebiliriz" diye bırak. Müvekkilin **zaten verdiği** bilgiyi tekrar sorma.
+Ama **sorguya çevirme:** karar-kritik az sayıda soruyu öne al, gerisini "sonra netleştirebiliriz" diye bırak. Avukatın **zaten verdiği** bilgiyi tekrar sorma.
+
+**Muhatap AVUKATTIR — cevap statüsü (A-5, v0.5.16).** Bu mülakatın karşısındaki
+kişi müvekkil değil, dosyayı taşıyan **avukattır**; sorular avukata sorulur,
+avukat müvekkilden aldığını ve belgeden okuduğunu aktarır. Bu yüzden her cevap
+bir **statü** alır ve devir paketine bu statüyle yazılır:
+- **`belgeli`** — cevabın kaynağı dosyadaki bir evrak (sözleşme, tebligat
+  mazbatası, karar, bordro…); evrak adı/tarihi yanına yazılır. Bu cevap
+  `oa-vakia`'da TAM ispat aracı (`belgeli`) olarak işlenebilir.
+- **`beyan`** — cevabın kaynağı müvekkilin (veya avukatın hafızasının) sözlü
+  anlatımıdır; henüz evrakla desteklenmemiştir. Bu cevap `oa-vakia`'nın
+  **`beyan`** kategorisini besler: kayda geçer, matriste `kismi_destek` olur, ama
+  **tek başına iddiayı belgeli yapmaz** — iddia belge gelene kadar `ispat
+  bosluklari`nda kalır.
+Kural: **müvekkil anlatısı, belge gelene kadar İDDİA'dır** — "müvekkil öyle
+söyledi" bir olgu değil, doğrulanacak bir hipotezdir (anayasa m.5: doğrulanmamış
+bilgi kesinmiş gibi sunulmaz). Mülakat, müvekkilin verdiği bilgiyi avukata
+"yansıtmaz"; avukata **"bu cevabın dayanağı belge mi, beyan mı?"** diye sorar ve
+statüsüz cevabı `beyan` sayar (fail-closed). Müvekkil anlatısını tekrar
+sormamak, onu doğru saymak demek değildir: sorulmaz ama `beyan` statüsüyle
+kaydedilir ve `oa-vakia` ispat boşluğu olarak işaretler.
 
 ## Mülakat protokolü — İNTERAKTİF
-Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; müvekkilin cevabına göre **uyarlanır, derinleşir, yönlenir.** Bir tur sor → gelen cevabı işle → eksik/çelişkili/fırsat doğuran noktayı **takip sorusuyla** kovala → anlayışını teyit et. Diyalog, form değil.
+Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; avukatın cevabına göre **uyarlanır, derinleşir, yönlenir.** Bir tur sor → gelen cevabı işle (statüsünü `belgeli|beyan` olarak yaz) → eksik/çelişkili/fırsat doğuran noktayı **takip sorusuyla** kovala → anlayışını teyit et. Diyalog, form değil.
 
 0. **ÇATIŞMA TARAMASI — meslek kuralları kapısı (A-13, v0.5.14; her şeyden önce).**
    İşin esasına girmeden önce **iki mekanik soru** sorulur ve cevabı deftere yazılır:
@@ -49,7 +69,7 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; müvekki
      (ihtarname, cevap); **gönderim ve temas avukata aittir** ve bu kurala tabidir.
    Her iki madde de kullanım anında Mevzuat MCP'den teyit edilir; sır saklama
    yükümlülüğü (Av.K. m.36) ve Layer 0 (`oa-gizlilik`) bu kapının yanında durur.
-1. **Meseleyi bir cümlede yansıt** — "Anladığım kadarıyla: …" diyerek anlayışını teyit et; yanlışsa müvekkil hemen düzeltsin.
+1. **Meseleyi bir cümlede özetle ve avukata teyit ettir** — "Anladığım kadarıyla: …" diyerek anlayışını teyit et; yanlışsa avukat hemen düzeltsin. Özet, müvekkil anlatısını olgu gibi değil **iddia** gibi kurar ("müvekkil beyanına göre …").
 2. **Karar-kritik çekirdeği topla (ilk tur, toplu):**
    - **Talep:** somut, ölçülebilir hedef ne?
    - **Roller:** müvekkil hangi sıfatla; karşı taraf kim?
@@ -68,21 +88,31 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; müvekki
      itibaren işler). Anlaşma tutanağı varsa: **yalnız anlaşma kapsamındaki
      talepler** için dava açılamaz — kapsam dışı kalemler sessizce
      zamanaşımına yürümesin; kapsam tereddüdünde mevzuat teyidi + avukata sor.
-   - **Belgeler:** elde olanlar / eksikler?
+   - **Belgeler:** elde olanlar / eksikler? (Her cevabın statüsü: `belgeli` mi
+     `beyan` mı — yukarıdaki A-5 kuralı.)
    - **Zaaf (dürüst, erken):** karşı tarafın en güçlü kozu; müvekkilin kendi belgelerindeki zayıf nokta?
+   - **MASRAF GÜCÜ (A-6/A-17, v0.5.16):** harç (başvuru + peşin karar harcı),
+     bilirkişi, **teminat** (ihtiyati haciz/tedbir için) ve **karşı vekâlet
+     riskini** fiilen kim taşır — müvekkil, sigorta, üçüncü kişi, adli yardım?
+     Nakit yoksa "dava + tedbir" yolu kâğıt üstünde kalır; `oa-strateji` bu
+     girdi olmadan yol kararı vermez.
+   - **RİSK TOLERANSI (müvekkil beyanı):** `kaçınan | nötr | alan` — "bugün
+     kesin az" ile "yıllar sonra belki çok" arasında müvekkil hangisini seçer?
+     Avukatın varsayımı değil, müvekkilden alınmış **beyandır**; alınmadıysa
+     "bilinmiyor" yazılır ve `oa-strateji` «Müvekkil Kararı Bekleyen» ile durur.
 3. **Cevaba göre uyarlan ve derinleş — alanı SINIRLAMA.** Gelen cevapları işle, eksik/çelişki/fırsat için **takip soruları** sor. Alan tespitini **belirli dallarla sınırlama**: meseleyi **tüm Türk hukuku** içinde değerlendir ve hangi dal(lar)a dokunduğunu **anlamaya** çalış — bir uyuşmazlık çoğu zaman **birden fazla** hukuk dalını birden ilgilendirir (ör. bir iş ilişkisi aynı anda iş + ticaret + sosyal güvenlik + ceza boyutu taşıyabilir). Olası tüm bağlantılı dalları aç; körlük yaratacak erken daraltmadan kaçın. Alanı `oa-alan` ile birlikte konumla; alana özgü ek sorular için `references/soru-bankasi.md` bir **başlangıç** kaynağıdır, tahdit değil.
-4. **Aktif ön dava teorisi kur ve geri-öğret (teach-back).** Topladığın olgulardan kendi akıl yürütmenle müvekkil lehine bir **ön teori** üret ve müvekkile yansıt: *"Bu olgulardan şu hukuki sonuçlar/çözümler çıkabilir; en güçlü açı şu; şu olgu doğrulanırsa şu kapı açılır."* Bu hipotezleri **doğrulanacak** olarak işaretle (henüz teyitli değil). Geri-öğretme iki işe yarar: uyuşmazlığı doğru öğrendiğini test eder ve müvekkile erkenden aktif değer sunar.
+4. **Aktif ön dava teorisi kur ve geri-öğret (teach-back).** Topladığın olgulardan kendi akıl yürütmenle müvekkil lehine bir **ön teori** üret ve avukata sun: *"Bu olgulardan şu hukuki sonuçlar/çözümler çıkabilir; en güçlü açı şu; şu olgu (şimdilik `beyan`) belgeyle doğrulanırsa şu kapı açılır."* Bu hipotezleri **doğrulanacak** olarak işaretle (henüz teyitli değil). Geri-öğretme iki işe yarar: uyuşmazlığı doğru öğrendiğini test eder ve avukata erkenden aktif değer sunar.
 5. **Eksikleri açık uç olarak işaretle** ve devret.
 
 ## Soru sorma biçimi — diyalog, tek atış değil
-- **Karşılıklı yürüt:** ilk turu topluca sor, **cevap gelince** o cevaba göre takip sorusu üret. Mülakat müvekkille gidip gelen bir konuşmadır; tek mesajda bitmez.
+- **Karşılıklı yürüt:** ilk turu topluca sor, **cevap gelince** o cevaba göre takip sorusu üret. Mülakat avukatla gidip gelen bir konuşmadır; tek mesajda bitmez.
 - **Toplu ve numaralı** sor; tek tek damlatma (soru-yorgunluğu yaratma) ama tek turda da kilitlenip kalma — cevap geldikçe ilerle.
 - Etkileşimli giriş aracı (buton/seçim) **varsa** onu kullan (mobil/masaüstü kolaylığı); yoksa kısa numaralı liste.
 - **Kısmi cevaba izin ver:** "şimdilik bildiklerini ver, gerisini sonra tamamlarız." Tam cevap gelmeden de ilerleyebilirsin; sadece eksiği görünür tut.
 - En çok bir-iki **kritik** soruyu (genelde süre/tebliğ ve talep) öne çıkar.
 
 ## Cowork notu
-Cowork'te uzun analiz, çoklu belge veya dosya-üretimi işine **başlamadan önce** bu mülakatı çalıştır ve anlayışını tek cümleyle teyit ettir. Müvekkil onayından sonra derin işe geç. Bu, uzun agentic çalışmanın yanlış zeminde ilerlemesini engeller.
+Cowork'te uzun analiz, çoklu belge veya dosya-üretimi işine **başlamadan önce** bu mülakatı çalıştır ve anlayışını tek cümleyle teyit ettir. Avukat onayından sonra derin işe geç. Bu, uzun agentic çalışmanın yanlış zeminde ilerlemesini engeller.
 
 ## Kompozisyon (akış)
 **oa-interview (alım) → `oa-alan` (konumla) → `oa-ictihat` (teyitli kaynak) → `oa-dilekce` (yaz) → `oa-sure` (süre satırı) → `oa-kontrol` (teslimden önce süz).** Tek başına da tetiklenir; çekirdek `ortak-avukat` yeni mesele geldiğinde önce bunu çağırır.

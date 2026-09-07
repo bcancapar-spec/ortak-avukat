@@ -1,6 +1,8 @@
 # Soru Bankası — Alan Bazlı İlk İnceleme
 
-> Bu banka, ilk inceleme mülakatında **alan belirlendikten sonra** kullanılır. Hepsini sormak zorunda değilsin; karar-kritik olanları seç, müvekkilin zaten verdiğini tekrar sorma. Amaç sorgu değil, **illiyet zincirini kurabilecek asgari maddi gerçeği** toplamak.
+> Bu banka, ilk inceleme mülakatında **alan belirlendikten sonra** kullanılır. Hepsini sormak zorunda değilsin; karar-kritik olanları seç, avukatın zaten verdiğini tekrar sorma. Amaç sorgu değil, **illiyet zincirini kurabilecek asgari maddi gerçeği** toplamak.
+>
+> **Muhatap avukattır; her cevap `belgeli|beyan` statüsü alır (A-5, v0.5.16).** Cevabın dayanağı dosyadaki bir evraksa `belgeli` (evrak adı/tarihi yazılır); müvekkil anlatısıysa `beyan` — belge gelene kadar İDDİA'dır ve `oa-vakia` `beyan` kategorisine (kısmi destek, ispat boşluğu açık) düşer. Statü söylenmemişse `beyan` sayılır.
 
 ## Her alanda ortak çekirdek (önce bunlar)
 1. **Talep:** Müvekkilin somut, ölçülebilir hedefi ne? (tahsil / iptal / men / boşanma / borç yapılandırma…)
@@ -9,6 +11,8 @@
 4. **SÜRE (en kritik):** İşleyen bir süre var mı? Tebliğ/öğrenme tarihi nedir? (→ `oa-sure`)
 5. **Belgeler:** Hangi belgeler elde (sözleşme, ihtarname, kararlar, bilirkişi, tebligat)? Hangileri eksik?
 6. **Zaaf (dürüst, erken):** Karşı tarafın en güçlü kozu ne? Müvekkilin kendi belgelerinde zayıf nokta var mı?
+7. **Masraf gücü (A-6/A-17, v0.5.16):** Harç (başvuru + peşin karar harcı), bilirkişi ücreti, ihtiyati haciz/tedbir **teminatı** ve **karşı vekâlet riskini** fiilen KİM taşıyacak — müvekkil mi, sigorta/üçüncü kişi mi, adli yardım mı? Nakit akışı yol seçimini belirler (→ `oa-strateji` §1; rakamlar `oa-strateji/scripts/maliyet_cetveli.py`).
+8. **Risk toleransı (müvekkil beyanı):** `kaçınan | nötr | alan` — "bugün kesin az" ile "yıllar sonra belki çok" arasında müvekkil hangisini seçer? Avukatın tahmini değil, müvekkilden alınmış beyan; alınmadıysa "bilinmiyor" yazılır (`oa-strateji` bu iki girdi olmadan yol kararı vermez → «Müvekkil Kararı Bekleyen»).
 
 ## İş hukuku
 Hizmet süresi, son ücret (brüt/net, ekler), fesih tarihi ve şekli (yazılı bildirim var mı), fesih sebebi, SGK kayıtları, TİS kapsamı var mı, savunma alınmış mı, bordro/puantaj, fazla mesai-AGİ kayıtları, ihbar/kıdem ödendi mi.

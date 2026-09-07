@@ -6,7 +6,16 @@ Ortak Avukat sisteminin STRATEJİ/KARAR parçası. Bir uyuşmazlıkta yol seçim
 
 ## Yapı
 
-Bu parça saf metin-disiplinidir (deterministik script içermez); protokolleri `SKILL.md` gövdesindedir.
+Protokoller `SKILL.md` gövdesindedir. v0.5.16'dan itibaren bir deterministik
+motor taşır:
+
+- `scripts/maliyet_cetveli.py` — harç / karşı vekâlet / yargılama gideri bandı
+  aritmetiği; rakamları `scripts/tarife.json`'dan (yıl damgalı, MCP-teyit
+  tarihli) okur; teyitsiz/bayat tarifede FAIL-CLOSED (exit 2); olasılık üretmez.
+- `scripts/tarife.json` — 492 s.K. (1) sayılı tarife + AAÜT değerleri; teyit
+  edilemeyen alan `null` bırakılır (sayı uydurma yasak).
+
+> Script modelin muhakemesini **denetler**; model kurar, script sağlamasını yapar.
 
 ## Referanslar
 
