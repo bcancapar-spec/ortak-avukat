@@ -4,9 +4,11 @@
 
 Ortak Avukat sisteminin İÇTİHAT/MEVZUAT ARAMA parçası. Türk hukukunda içtihat (Yargıtay/BAM/Danıştay/AYM), mevzuat (kanun/yönetmelik/tebliğ) veya doktrin (makale/tez) araştırması; bir kararın/maddenin künyesini doğrulama; "şu konuda Yargıtay ne diyor", "şu maddeyi bul", "emsal karar" türü her işte DEVREYE GİR. MCP araçlarının (Yargı/Bedesten, Mevzuat, AYM, Literatür, YokTez) doğru sorgu kalıplarını, üç ayrı arama dialect'ini, bilinen indeks sınırlarını ve fallback zincirlerini kullan. Kullanıcı açıkça "araştır" demese bile, doğrulanmış kaynak gerektiren her hukuki argümanda tetikle. Bağımsız çalışır; `ortak-avukat` ve diğer oa- parçalarıyla takım oynar.
 
-## Yapı
+## Deterministik scriptler
 
-Bu parça saf metin-disiplinidir (deterministik script içermez); protokolleri `SKILL.md` gövdesindedir.
+- `scripts/kanun_yolu_zinciri.py` — üst mahkeme kararı metninden kanun yolu zincirini (BAM → ilk derece künyeleri) çıkarır, iniş kararını MEKANİK verir (`redakte` görünür), `--suzgec` ile `ictihat_ara` sonuçlarını BAM/daire/yıl ile istemci tarafında süzer (v0.5.16).
+
+> Scriptler modelin muhakemesini **denetler** (yapısal/mekanik); model kurar, script sağlamasını yapar. Arama disiplini ve protokoller `SKILL.md` gövdesindedir.
 
 ## Referanslar
 
