@@ -3379,29 +3379,11 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
             for u in nobetci:
                 satirlar.append(f"- 🔴 {u}")
             satirlar.append("")
-        # H1 (v0.5.16) — inline sayaç M7 satırları (defter çatalları + inline
-        # bulgu çatalları AYNI bölümde; kaynak `_oa/defter/inline-sayac.json`).
-        akb = _avukat_karari_bekleyen(d) + _inline_sayac_bekleyen(kok)
-        satirlar.append("## Avukat Kararı Bekleyen")
-        if akb:
-            for k in akb:
-                satirlar.append(f"- {k}")
-        else:
-            satirlar.append("- (yok)")
-        satirlar.append("")
-        avukat_kararlari = d.get("avukat_kararlari") or []
-        if avukat_kararlari:
-            satirlar.append("## Avukat Kararları (Kayıtlı — M7, Paket D)")
-            for k in avukat_kararlari:
-                hedef_str = (f"katman {k.get('katman')}" if k.get("katman")
-                             else f"adım {k.get('adim')} / {k.get('parca')}")
-                satirlar.append(f"- {hedef_str}: **{k.get('karar')}**"
-                                 + (f" — gerekçe: {k.get('gerekce')}" if k.get("gerekce") else "")
-                                 + f"  _({k.get('zaman')})_")
-            satirlar.append("")
         # P1-9 (v0.5.16) — MÜVEKKİL KARARI BEKLEYEN: avukat kararından AYRI
         # egemenlik alanı (sulh teklifi / dava değeri / risk kabulü / tedbir
         # teminatı). Yalnız GÖSTERİR; karar müvekkilindir, kapı değildir.
+        # «Avukat Kararı Bekleyen»den ÖNCE basılır — o bölümün «## Sıradaki»ya
+        # kadar uzandığını varsayan mevcut okuyucular (test_durum_md) bozulmaz.
         mk_bekleyen = _muvekkil_karari_bekleyen(d)
         satirlar.append("## Müvekkil Kararı Bekleyen")
         if mk_bekleyen:
@@ -3427,6 +3409,26 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
         satirlar.append("## Avukat Hükümleri (A-28 sensörü — ölçer, kapı değildir)")
         satirlar.extend(_avukat_hukmu_satirlari(kok))
         satirlar.append("")
+        # H1 (v0.5.16) — inline sayaç M7 satırları (defter çatalları + inline
+        # bulgu çatalları AYNI bölümde; kaynak `_oa/defter/inline-sayac.json`).
+        akb = _avukat_karari_bekleyen(d) + _inline_sayac_bekleyen(kok)
+        satirlar.append("## Avukat Kararı Bekleyen")
+        if akb:
+            for k in akb:
+                satirlar.append(f"- {k}")
+        else:
+            satirlar.append("- (yok)")
+        satirlar.append("")
+        avukat_kararlari = d.get("avukat_kararlari") or []
+        if avukat_kararlari:
+            satirlar.append("## Avukat Kararları (Kayıtlı — M7, Paket D)")
+            for k in avukat_kararlari:
+                hedef_str = (f"katman {k.get('katman')}" if k.get("katman")
+                             else f"adım {k.get('adim')} / {k.get('parca')}")
+                satirlar.append(f"- {hedef_str}: **{k.get('karar')}**"
+                                 + (f" — gerekçe: {k.get('gerekce')}" if k.get("gerekce") else "")
+                                 + f"  _({k.get('zaman')})_")
+            satirlar.append("")
         satirlar.append("## Sıradaki")
         satirlar.append(f"- {_siradaki(d)}")
         satirlar.append("")

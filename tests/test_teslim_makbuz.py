@@ -459,8 +459,11 @@ _ADIM_PARCALARI_TEST = {
     3: ["oa-ictihat"],
     4: ["oa-vakia"],
     5: ["oa-kiyas"],
-    6: ["oa-strateji"],
-    7: ["oa-antitez"],
+    # v0.5.16/P0-3 (dış denetim A-2): hat sırası 6 = ANTİTEZ, 7 = STRATEJİ —
+    # eski çift (6, oa-strateji)/(7, oa-antitez) yeni yazımda pipeline_kayit
+    # tarafından RET edilir; sabit hat tablosu yeni sıraya güncellendi.
+    6: ["oa-antitez"],
+    7: ["oa-strateji"],
     8: ["oa-dilekce"],
 }
 _GEREKCE_TEST = "Test amaçlı: bu senaryoda bu adım/katman gereksiz kabul edildi."

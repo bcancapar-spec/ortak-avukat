@@ -3,7 +3,7 @@ name: oa-pipeline
 description: >
   Ortak Avukat sisteminin ORKESTRASYON / UÇTAN UCA AKIŞ parçası. Bir dosyayı baştan
   sona işlerken oa- parçalarını doğru sırada zincirler: MANİFEST → ALIM → KONUMLAMA →
-  ARAŞTIRMA → OLGU/DELİL → KIYAS → STRATEJİ → ANTİTEZ → YAZIM → KONTROL → KAPANIŞ,
+  ARAŞTIRMA → OLGU/DELİL → KIYAS → ANTİTEZ → STRATEJİ → YAZIM → KONTROL → KAPANIŞ,
   her adımın çıktısını bir sonrakine taşıyarak. Basit dosyada sabit hat; karmaşık/atipik
   dosyada dinamik mod; kritik kavşakta (düşük başarı olasılığı, eksik delil, yüksek
   risk) durur ve avukata sorar. "Bu dosyayı baştan sona ele al", "tam analiz yap",
@@ -76,7 +76,7 @@ ZORUNLU TAM TUR **derinlik** kuralıdır (tümü incelenir, muhakeme doğru kuru
 2. **GERÇEK SCRIPT (anayasa m.0 — kurucu ilke):** Bu sistemi kullanan yapay zekâ, tanımlardan/özetlerden değil kurulu metodolojiden — tüm yeteneklerle FİİLEN donatılmış olarak — hareket eder; yetenekler, kullanıcı ile model arasındaki köprüdür. Script'li parçada (sure, usul, vakia, antitez, kiyas, illiyet, gizlilik, ingest) script fiilen koşar; çıktısı görünür ve kanıt olarak saklanır. Model hesabı/taklidi script güvencesi değildir. **Script keşfi + ARAÇ ÇANTASI (saha dersi + v0.5.7 bayat-tohum aşısı):** scriptler yüklü skill'in KENDİ dizinindedir; oturum şu sırayla arar — (1) yüklü skill kökü (bu SKILL.md'nin yanındaki `scripts/`), (2) `~/.claude/skills/<parça>/scripts/`. Bulunduğu ilk yerden, hat başlarken kullanılacak scriptler çalışma köküne KOPYALANIR (`_oa/araclar/`) ve tüm adımlar oradan koşar. **TAZE-KAYNAK ŞARTI (atlanamaz):** kopya HER HAT BAŞINDA yüklü eklenti kökünden YENİDEN alınır; `_oa/araclar/`da önceden duran kopya BAYAT sayılır ve ÜZERİNE YAZILIR. **KOMŞU DAVA KLASÖRÜNDEN KOPYALAMA YASAKTIR** — Denizli 754 saha bulgusu: komşudan alınan 20/20 kopya eski nesildi ve güncel kapılar (makbuz/sha, OCR nöbetçisi, DAMGA, KAYNAK-URL) o koşuda fiilen yoktu; eski koşuların kopyaları kendi kendini çoğaltıyordu. `pipeline_kayit.py` bayat kopyayı her turda görünür kılar (`_bayat_arac_uyarisi`) — uyarının tek susturucusu tazelemektir. **RPM KARANTİNASI (v0.5.11 — 1865/777 kök nedeni):** uygulamanın rpm anlık-görüntü yolu (`AppData/Roaming/Claude/local-agent-mode-sessions/…`) araç kaynağı olarak YASAKTIR — bayat nesil deposudur; oradan `_oa/araclar`a kopya girişimi hook'ta karar devri ('ask') doğurur. **KİLİTLİ ÇEKİRDEK:** `_oa/araclar`daki tam-nesil çekirdek scriptler (pipeline_kayit/teslim_paketi/udf_yaz) salt-okunur tutulur ve Write/Edit ile DEĞİŞTİRİLMEZ — çekirdek elle yazılmaz, kaynaktan kopyalanır (1865: üç çekirdek 14-20KB taklitlerle ezilmişti). HİÇBİR yerde bulunamıyorsa (ör. yalnız-SKILL.md kurulumu): durum deftere ve çıktının hem BAŞINA hem SONUNA yazılır; hesap/denetim "ELDEN AMA MCP-TEYİTLİ" modda dürüstçe yürütülür — bu mod istisnadır, standart değildir; kalıcı çözüm bundled-dosyalı (.skill/zip) kurulumdur.
 3. **GERÇEK MCP ÇAĞRISI:** "MCP'den teyitli" etiketi ancak fiilen yapılmış bir araç çağrısına dayanabilir; her teyit satırı **araç + sorgu + dönen sonuç** üçlüsünü kaydeder. Yapılmamış çağrıya teyit etiketi koymak halüsinasyonun ta kendisidir. **Araç ÇÖKERSE (zaman aşımı, erişilemedi, hata döndü) bu SESSİZCE GEÇİLMEZ** — sessiz-atlama yasağının MCP tarafı (D5): `python scripts/pipeline_kayit.py --arac-hata --arac <araç adı> [--sorgu "..."] --hata "..." [--adim N] [--parca oa-x]` ile deftere "ARAÇ ÇÖKTÜ — teyitsiz" olarak işlenir. `--goster`/`--denetle` bu kaydı HER ZAMAN görünür bir uyarı olarak listeler; başka bir kaynak/yöntemle iş fiilen tamamlanmışsa bu ayrıca ilgili adımın `--kanit`ına da yazılır — ama araç çöküşünün KENDİSİ asla kayıtsız/görünmez kalmaz.
 
-**DEFTER (deterministik kayıt — Başbakan denetiminin motoru):** Hat başlarken `python scripts/pipeline_kayit.py --baslat "<dosya adı>"` ile `_oa/defter/pipeline-durum.json` açılır (yerel hafıza kökü — aşağıdaki ÇALIŞMA KÖKÜ bölümü). Her adımda statü kanıtla işlenir: `--isle --adim N --parca oa-x --durum UYGULANDI --kanit "..."`. Script deterministik reddeder: UYGULANDI **kanıtsız** yazılamaz; GEREKSİZ **gerekçesiz**, BİLGİ-EKSİK **eksik-tanımsız** yazılamaz. Teslimden önce `--denetle` koşar; boşluk/kanıtsız statü varsa hata koduyla döner — **boşluklu tur teslim edilemez.** Akış sonundaki katman kontrol listesi bu defterden ÜRETİLİR, ezberden yazılmaz.
+**DEFTER (deterministik kayıt — Başbakan denetiminin motoru):** Hat başlarken `python scripts/pipeline_kayit.py --baslat "<dosya adı>"` ile `_oa/defter/pipeline-durum.json` açılır (yerel hafıza kökü — aşağıdaki ÇALIŞMA KÖKÜ bölümü). Her adımda statü kanıtla işlenir: `--isle --adim N --parca oa-x --durum UYGULANDI --kanit "..."`. Script deterministik reddeder: UYGULANDI **kanıtsız** yazılamaz; GEREKSİZ **gerekçesiz**, BİLGİ-EKSİK **eksik-tanımsız** yazılamaz. Teslimden önce `--denetle` koşar; boşluk/kanıtsız statü varsa hata koduyla döner — **boşluklu tur teslim edilemez.** Akış sonundaki katman kontrol listesi bu defterden ÜRETİLİR, ezberden yazılmaz. Ek (A-28): **kapanışta avukat hükmü kaydı önerilir** (zorunlu değil, kapı değil): teslim edilen ürün için `--avukat-hukmu KABUL|REVIZYONLA|RET --urun <yol>` — bkz. AVUKAT HÜKMÜ SENSÖRÜ (A-28).
 
 **Defter bütünlüğü — araç-imzalı / model-beyanlı ayrımı (Görev A, v0.5.5):** Defter append-only bir dosya olduğundan model, `pipeline_kayit.py` CLI'sini HİÇ çağırmadan `pipeline-olaylar.jsonl`e doğrudan bir satır ekleyebilir; bu satır BLOKLANMAZ (append-only invaryantı bozulmaz) ama görünmez de kalmaz — CLI'den geçen her olaya deterministik bir imza eklenir, elden düşürülen satırlar "model-beyanlı" olarak `_oa/DURUM.md`de sayılır ve etiketlenir. **Sınır:** imza algoritması anahtarsızdır ve kaynak kodda açıktır — kasıtlı taklidi engellemez; amacı ayırt etmektir, kanıt/delil üretmek değildir.
 
@@ -84,7 +84,7 @@ ZORUNLU TAM TUR **derinlik** kuralıdır (tümü incelenir, muhakeme doğru kuru
 
 **SUBAGENT ORKESTRASYONU — tam turun AKTİF ve EŞGÜDÜMLÜ yürütülmesi (varsayılan — opsiyonel değil):** Agent/subagent aracı mevcutsa, Başbakan tam turu tek gövdede sırayla değil, **işin gerektirdiği ölçüde ALT-AJANLARLA paralel ve eşgüdümlü** yürütür — tek promptla tüm aile aynı anda dosyayı inceler. İlke: bağımsız cepheler eşzamanlı (fan-out), bağımlı adımlar zincirlenir.
 - **Fan-out (eşzamanlı):** büyük ölçüde bağımsız cepheler ayrı alt-ajanlara verilir — KONUMLAMA (`oa-alan`), ARAŞTIRMA (`oa-ictihat`), OLGU/DELİL (`oa-vakia`+`oa-illiyet`), USUL (`oa-usul`), SÜRE (`oa-sure`), ve ağır MANİFEST/OCR taraması (`oa-ingest` — kendi içinde de `oa_ingest.py --isci` ile evrak-düzeyinde paralel çıkarım yapar; bu iki paralellik katmanı bağımsızdır, biri alt-ajan fan-out'u, diğeri tek alt-ajan içindeki süreç havuzudur). Her alt-ajan kendi parçasının SKILL.md'sini yükler, disiplinini uygular, çıktı+kanıtı DEVİR PAKETİ olarak döndürür.
-- **Zincir (bağımlı):** KIYAS (araştırma+olgu ister) → STRATEJİ → ANTİTEZ → YAZIM sırayla; her biri önceki alt-ajanların devir paketlerini girdi alır.
+- **Zincir (bağımlı):** KIYAS (araştırma+olgu ister) → ANTİTEZ → STRATEJİ → YAZIM sırayla; her biri önceki alt-ajanların devir paketlerini girdi alır (v0.5.16/P0-3: antitez stratejiden ÖNCE — karşı tarafın en güçlü tezi görülmeden dava/sulh kararı verilmez; `oa-strateji` §2 antitezi girdi sayar).
 - **Eşgüdüm — parçalar birbirinin FARKINDA:** ortak durum diskte yaşar (`_oa/defter`, `_oa/cikti`, illiyet `graf.json`, künye kütüğü); alt-ajanlar aynı grafı/künyeyi okuyup zenginleştirir — izole değil eşgüdümlü. Standart alt-ajan brifi **`scripts/oa_hafiza.py ajan-brif --parca oa-x --gorev "..."`** ile üretilir; brif her alt-ajana fiziksel aktivasyon + teyit kütüğü + **anayasa (`ortak-avukat/references/anayasa.md`)** + Layer 0 kurallarını taşır — böylece dedup edilmiş bir parça standalone koşsa bile anayasa brifle gelir.
 - **Zaman tasarrufu:** paralel fan-out, tam turun DERİNLİĞİNDEN ödün vermeden duvar-saati süresini kısaltır (muhakemede tasarruf yok — yalnız eşzamanlılık; çaba standardı korunur).
 - **Toplama:** Başbakan tüm devir paketlerini defterde birleştirir, halüsinasyon olgu-teftişini uygular, TAM TUR kaydını (`tam_tur.py --kaydet`) üretir. Alt-ajan yoksa hat tek gövdede kademeli yüklemeyle yürür. Alt-ajana giden her içerik `oa-gizlilik` Layer 0'dan geçer.
@@ -98,7 +98,7 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
 
 **Oturum açılışı refleksi (süre nöbetçisi):** `oturum-ac`'in DEVRALMA SIRASI'nın son adımı olarak `python oa-sure/scripts/sure_nobetci.py --kok .` fiilen çalıştırılır — `_oa/sureler.json` defterini bugüne göre tek komutla tarar; GEÇMİŞ/BUGÜN/YAKLAŞAN (D-7 içi) bir son gün varsa **exit 3** döner ve diğer her işin önüne geçer (usul esasa üstündür düsturunun oturum-açılışı karşılığı). Bu adım atlanamaz — sessiz kaçış yoktur.
 
-**ÇALIŞMA EVRAKI KURALI (akışın fiziksel izi):** Hattın HER adımı, çalışılan klasörde en az bir adlandırılmış çalışma evrakı bırakır — ad standardı `_oa/cikti/NN-parca-icerik.uzanti` (ör. `01-interview-alim-notu.md`, `01-illiyet-graf.json`, `04-vakia.json`, `07-antitez-matris.json`, `08-dilekce-taslak-v1.md`). Script'li parçaların girdi/çıktı JSON'ları da bu adla buraya yazılır. Adım evrakı yoksa adım "UYGULANDI" işaretlenemez — defterdeki kanıt çoğu kez bu dosyanın yoludur. Adım kanıtının defter/rapor metnine GÖMÜLMESİ evrak sayılmaz; her adım kendi dosyasını üretir. Kural ortamdan bağımsızdır: oturum Cowork'te, Codex'te veya Claude Code'da olsun, akış aynı `_oa` iskeletini üretir.
+**ÇALIŞMA EVRAKI KURALI (akışın fiziksel izi):** Hattın HER adımı, çalışılan klasörde en az bir adlandırılmış çalışma evrakı bırakır — ad standardı `_oa/cikti/NN-parca-icerik.uzanti` (ör. `01-interview-alim-notu.md`, `01-illiyet-graf.json`, `04-vakia.json`, `06-antitez-matris.json`, `07-strateji-karar.md`, `08-dilekce-taslak-v1.md` — ön ek v0.5.16/P0-3 hat sırasını izler; ≤v0.5.15 adları `07-antitez-*`/`06-strateji-*` bekçilerce kabul edilir). Script'li parçaların girdi/çıktı JSON'ları da bu adla buraya yazılır. Adım evrakı yoksa adım "UYGULANDI" işaretlenemez — defterdeki kanıt çoğu kez bu dosyanın yoludur. Adım kanıtının defter/rapor metnine GÖMÜLMESİ evrak sayılmaz; her adım kendi dosyasını üretir. Kural ortamdan bağımsızdır: oturum Cowork'te, Codex'te veya Claude Code'da olsun, akış aynı `_oa` iskeletini üretir.
 
 **Neden:** (a) *devamlılık* — yeni oturum `dosya.md` + son oturum notu + defteri okuyarak kaldığı yerden devralır, hiçbir şey modelin hafızasında yaşamaz; (b) *bağlam ekonomisi* — durum bağlamda değil diskte taşınır, şişkinlik ve onun doğurduğu kestirme azalır; (c) *denetlenebilirlik* — "yapıldı" iddiasının dosyası vardır. **TEK OTURUM KURALI:** Aynı dosya klasöründe aynı anda TEK oturum çalışır — ikinci oturum defteri/kütüğü çakıştırır. Oturum `oa_hafiza.py oturum-ac` ile açılır (kilit dosyası; kilit doluysa script durur ve uyarır), `oturum-kapat --not "..."` ile kapanır. **KAPANIŞ RİTÜELİ (zorunlu):** oturum kapatılmadan üç soru cevaplanıp nota yazılır — (1) defter `--denetle`den geçti mi / hangi adımda kalındı, (2) süre flag'leri (`sureler.json` + hatırlatıcı) güncel mi, (3) bekleyen avukat kararı ne? Script ritüelsiz kapanışı reddeder; ritüelsiz kapanan oturum, sonraki oturumun kör başlamasıdır. **Gizlilik:** `_oa` müvekkil verisi içerir; içeriği dış araca çıkmadan önce Layer 0 taraması zorunludur (`oa-gizlilik`).
 
@@ -168,8 +168,18 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
                  _oa/cikti/capraz-denetim.json` ile graf↔vakia↔kıyas ORTAK KİMLİK
                  UZAYI çapraz-referansı denetlenir (yetim olgu/kopuk referans
                  varsa exit 1 — sessizce geçilmez)
-6. STRATEJİ    → oa-strateji (yol seçimi, olasılık, yük taşıyan bağ)
-7. ANTİTEZ     → oa-antitez (karşı cephe + kesme noktaları, oa-illiyet'ten beslenir)
+6. ANTİTEZ     → oa-antitez (karşı cephe + kesme noktaları, oa-illiyet'ten beslenir;
+                 v0.5.16/P0-3 — A-2: ANTİTEZ artık STRATEJİDEN ÖNCE gelir — karşı
+                 tarafın en güçlü tezi görülmeden dava/sulh kararı verilmez; oa-antitez
+                 "erken konum" tanımlar, oa-strateji §2 antitezi GİRDİ sayar. Çalışma
+                 evrakı ön eki adım numarasını izler: `06-antitez-*`; ≤v0.5.15 adı
+                 `07-antitez-*` bekçilerce hâlâ kabul edilir — geriye uyum)
+7. STRATEJİ    → oa-strateji (yol seçimi, olasılık, yük taşıyan bağ; antitez matrisini
+                 girdi alır; evrak `07-strateji-*`, ≤v0.5.15 adı `06-strateji-*` kabul).
+                 Yol seçimi MÜVEKKİL KARARI gerektiriyorsa (sulh teklifi, dava değeri,
+                 risk kabulü, tedbir teminatı) burada `pipeline_kayit.py
+                 --muvekkil-karari "<konu>" --secenekler "a|b|c" --adim 7 --parca
+                 oa-strateji` ile kavşak AÇILIR (P1-9, bkz. aşağıda)
 8. YAZIM       → oa-dilekce **YALNIZ DAMGA=LEHE veya DAMGA=ALEYHE-AYIRT (AYIRT-
                  ETME dolu) + İLGİLİ olarak damgalanmış** içtihatları dilekçeye
                  alır (dilekçe/mütalaa — vakıa anlatımı = illiyet zinciri, açık
@@ -217,6 +227,13 @@ Bu aile masaüstü ajanlarında (Cowork, Codex, Claude Code — hangisi olursa o
                  [F] tekilleştirme).
 10. KAPANIŞ    → oa-usta tetiği (aynı iş tipi ~3. kez tekrarlandıysa skill'e damıtma
                  önerisi) + KAPANIŞ RİTÜELİ (devir notu, süre flag'leri, bekleyen karar)
+                 + **MÜVEKKİL KARARI denetimi (P1-9):** kapanmamış müvekkil kararı
+                 varken adım-10 UYGULANDI yazılırsa görünür UYARI (bloklamaz — karar
+                 müvekkilindir; `--muvekkil-karari-kapat` ile karar+gerekçe işlenir,
+                 müvekkile bilgilendirme notu `references/muvekkil-bilgilendirme-
+                 sablonu.md` iskeletiyle yazılır) + **AVUKAT HÜKMÜ (A-28, önerilir —
+                 zorunlu değil):** teslim edilen ürün için `--avukat-hukmu
+                 KABUL|REVIZYONLA|RET --sebep … --urun <yol>` sensör kaydı
                  + `python scripts/oa_metrik.py --kok .` (token/verimlilik telemetrisi —
                  deterministik ÖLÇER, engel değil; `_oa/defter/metrik.json`'a yazar).
                  **Gate D (M1-4) — ANALİZ TOKEN RAPORU:** aynı çağrı artık [5]. bölümde
@@ -301,7 +318,7 @@ diskte yoksa yazılamaz. **BLOKLEYİCİ** (ucuz-artefaktlı): adım-5/oa-kiyas
 (`_oa/cikti/05-kiyas*` VE `*ictihat-muhakeme*` BİRLİKTE, min gövde eşiği —
 biri tek başına yetmez), adım-9/oa-kontrol (`teslim-makbuz.json`, bkz. yukarı).
 **UYARI** (bloklamaz, yalnız görünür satır): adım-3/oa-ictihat, adım-4/oa-vakia,
-adım-6/oa-strateji, adım-7/oa-antitez. **`--serh "<gerekçe ≥30 kr>"`** her
+adım-6/oa-antitez, adım-7/oa-strateji. **`--serh "<gerekçe ≥30 kr>"`** her
 blokta (İNGEST-ÖNCE dahil) GEREKÇELİ geçiş sağlar — olay `serh:true` ile
 İŞLENİR, `--goster`/`--denetle` bunu HER ZAMAN `⚠ ŞERHLİ UYGULANDI` ile basar
 (sessiz geçiş yok).
@@ -338,8 +355,16 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 | adım-3 | oa-ictihat | `_oa/teyit/kunye-teyit.md` (satır) VEYA `_oa/teyit/dokum/` (dolu) | UYARI |
 | adım-4 | oa-vakia | `_oa/cikti/04-vakia*` | UYARI |
 | adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
-| adım-6 | oa-strateji | `_oa/cikti/06-strateji*` | UYARI |
-| adım-7 | oa-antitez | `_oa/cikti/07-antitez*` | UYARI |
+| adım-6 | oa-antitez | `_oa/cikti/06-antitez*` (≤v0.5.15: `07-antitez*` de kabul) | UYARI |
+| adım-7 | oa-strateji | `_oa/cikti/07-strateji*` (≤v0.5.15: `06-strateji*` de kabul) | UYARI |
+
+**HAT SIRASI GERİYE UYUMU (P0-3, v0.5.16):** ≤v0.5.15 defterlerindeki
+`(6, oa-strateji)` / `(7, oa-antitez)` olayları `derle`'de HATA değildir — yeni
+hücreye (`7/oa-strateji`, `6/oa-antitez`) eşlenir, DURUM.md satırında
+«(eski hat sırası ≤v0.5.15 — adım eşlendi)» notu düşer, eski `--avukat-karari`
+hedefi de eşlenir (çözülmüş çatal çözülmüş kalır). YENİ yazımda eski çift
+RET: `--isle --adim 6 --parca oa-strateji` → «RET: v0.5.16: STRATEJİ adım
+7'dir» (sessiz eşleme yazan tarafı yeni sıradan habersiz bırakırdı).
 | adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** (`--serh-kapi kontrol`) |
 
 ## Model-bağımsız tetik (P0-7 + P0-B) + DURUM.md (P0-8, v0.5.5)
@@ -403,6 +428,14 @@ avukat verir (`--avukat-karari` ile değil, bulguyu düzelterek/kabul ederek —
 sayaç kendiliğinden düşer).
 
 **AVUKAT KARARI — çözüm komutu (M7, Paket D — v0.5.5):** AVUKAT KARARI BEKLEYEN yalnız GÖSTERİR; bir çatalı KAPATMAK için `pipeline_kayit.py --avukat-karari "<seçilen seçenek/karar metni>" (--adim N --parca oa-x | --katman oa-x) --gerekce "<neden bu seçenek seçildi>"` kullanılır — gerekçesiz kayıt REDDEDİLİR (çatallar gerekçeli seçeneklerle listelenir doktrini: seçim keyfi değil, gerekçeli olmalı). Kayıt append-only'dir (eski BEKLEYEN izi kaybolmaz); DURUM.md'de ayrı bir "Avukat Kararları (Kayıtlı)" bölümünde kalıcı görünür, çözülen çatal artık BEKLEYEN listesinde GÖRÜNMEZ.
+
+**MÜVEKKİL KARARI BEKLEYEN (P1-9, v0.5.16 — dış denetim A-3):** avukat kararı ile müvekkil kararı FARKLI egemenlik alanlarıdır: bazı kavşaklarda karar avukatın değil müvekkilindir ve avukatın görevi bilgilendirmektir (1136 s. Avukatlık Kanunu m.34 — özen, doğruluk ve onur yükümü; Mevzuat MCP teyit 2026-09-06). Tipik konular: **sulh teklifi** (kabul/ret/karşı teklif), **dava değeri** (harç/vekâlet ücreti/kısmi dava), **risk kabulü** (düşük başarı olasılığına rağmen devam), **tedbir teminatı** (yatır/yatırma). Konu sayımı örneklemdir (m.3). Mekanik:
+- **Açma:** `pipeline_kayit.py --muvekkil-karari "<konu>" --secenekler "a|b|c" [--adim N --parca oa-x | --katman oa-x]` — seçenek ≥2 zorunlu (tek seçenek RET); olay `muvekkil_karari` (append-only, araç-imzalı); DURUM.md'de **«## Müvekkil Kararı Bekleyen»** bölümü + hook ZİNCİR DURUMU'nda «bekleyen MÜVEKKİL kararı: n».
+- **Kapatma:** `--muvekkil-karari-kapat "<konu>" --karar "<seçim>" --gerekce "<…>"` — gerekçesiz RET (M7 ile aynı disiplin, ≥15 kr); açık kayıt bulunamazsa/seçenek dışı kararda BLOKLAMAZ, görünür UYARI (append-only; eski BEKLEYEN izi kalır, «Müvekkil Kararları (Kayıtlı)» bölümüne düşer).
+- **Kapanış uyarısı:** kapanmamış müvekkil kararı varken adım-10 KAPANIŞ UYGULANDI → `--isle` çıktısında, `--denetle` UYARILAR'ında ve DURUM.md Kapı Durumu'nda görünür UYARI («kapanmamış müvekkil kararı var») — **bloklamaz**.
+- **Bilgilendirme notu:** KAPANIŞ'ta müvekkile yazılan bilgilendirme notu `references/muvekkil-bilgilendirme-sablonu.md` iskeletiyle kurulur — DIŞ ÇIKTI sınıfıdır: m.6 (müvekkil-aleyhi ifade yok; zaaflar iç analizde kalır) ve Layer 0 (`oa-gizlilik`, dış araca çıkmadan önce tarama) uygulanır.
+
+**AVUKAT HÜKMÜ SENSÖRÜ (A-28 / P2-8, v0.5.16 — SICRAMA-NOTU §3(A)+§5):** makine kalite skoru üretemez; meşru tek kalite sinyali avukatın kayıt altına alınmış hükmüdür. Teslimden sonra ürün başına tek satır: `pipeline_kayit.py --avukat-hukmu KABUL|REVIZYONLA|RET --sebep usul|olgu|hukuk|uslup|talep|ictihat|diger --urun <yol> [--not "…"]` (REVIZYONLA/RET için `--sebep` zorunlu, KABUL'de opsiyonel; `--not` anonim tutulur — m.7). İki iz: defter olayı `avukat_hukmu` + **`_oa/defter/avukat-hukmu.jsonl`** (append-only; oa-usta damıtma tetiğinin TEK kaynağı). DURUM.md **«## Avukat Hükümleri»** sayaç satırı: «KABUL n / REVİZYONLA n / RET n» + sebep dağılımı; bozuk satır çökertmez, sayılır ve görünür not düşer. **Yalnız ÖLÇER — hiçbir kapıyı, brifi, denetimi değiştirmez; kapı değildir, hükümsüz kapanış engellenmez (SICRAMA §5: ölçüm yapar, enjeksiyon yapmaz).** Ateşlemeyen kapı kuralı: avukat refleksle KABUL basmaya başlarsa sinyal ölür — başarı ölçütü kaç teslime gerçekten hüküm düştüğüdür; oran düşükse üstüne katman inşa edilmez.
 
 ## Anayasal süzgeç
 Pipeline akışı yürütür; **her adımın çıktısı karar materyalidir, karar değildir.**
