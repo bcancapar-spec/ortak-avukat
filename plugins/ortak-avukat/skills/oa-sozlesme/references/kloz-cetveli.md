@@ -42,6 +42,37 @@ vaadi: noter düzenleme şekli · araç satışı: noter · işyeri devri/marka 
 tahkim şartı: yazılılık · tüketici işlemlerinde TKHK'nın emredici içerik şartları ·
 elektronik ortamda kurulan sözleşmede güvenli e-imza/KEP delil rejimi.
 
+## İfa senaryo testi çıpaları (v0.5.16 — P2-6/A-23; Mevzuat MCP teyit 2026-09-06, TBK 6098)
+Her yazılmış kloz üç senaryoda sınanır (`senaryo_testi: {normal, gecikme, fesih}`);
+script yalnız cevabın verilip verilmediğine bakar, yargı avukatındır. Gecikme ve
+fesih senaryolarının kanuni omurgası (madde metinleri kullanım anında YENİDEN teyit
+edilir — ezber yasağı):
+- **m.117 (temerrüt koşulları):** "Muaccel bir borcun borçlusu, alacaklının ihtarıyla
+  temerrüde düşer." İfa günü birlikte belirlenmiş ya da sözleşmede saklı tutulan hakla
+  usulüne uygun bildirimle belirlenmişse **bu günün geçmesiyle** temerrüt doğar. →
+  Kloz sorusu: vade kesin mi (ihtarsız temerrüt) yoksa ihtar mı gerekiyor; ihtar
+  hangi kanaldan (`bildirim_tebligat`)?
+- **m.118 (gecikme tazminatı):** temerrüde düşen borçlu, kusursuzluğunu ispat etmedikçe
+  geç ifadan doğan zararı giderir. → İspat yükü ve delil rejimi (`delil_sozlesmesi`).
+- **m.123 (süre verilmesi):** karşılıklı borç yükleyen sözleşmede temerrüt hâlinde
+  diğer taraf ifa için uygun süre verebilir ya da hâkimden isteyebilir.
+- **m.124 (süre gerektirmeyen hâller):** (1) borçlunun durumu/tutumundan sürenin
+  etkisiz olacağı anlaşılıyorsa, (2) ifa alacaklı için yararsız kalmışsa, (3) belirli
+  zamanda/süre içinde ifa gerçekleşmezse ifanın artık kabul edilmeyeceği sözleşmeden
+  anlaşılıyorsa. → (3) sözleşmeyle kurgulanabilir: "kesin vade" klozu gecikme
+  senaryosunu süre vermeden fesih senaryosuna bağlar.
+- **m.125 (seçimlik haklar):** süre içinde ifa yoksa ya da süre gerekmiyorsa alacaklı
+  her zaman ifa + gecikme tazminatı isteyebilir; ifadan ve gecikme tazminatından
+  vazgeçtiğini **hemen bildirerek** ifa edilmeme zararını isteyebilir **veya sözleşmeden
+  dönebilir**; dönmede taraflar karşılıklı ifa yükümünden kurtulur ve verdiklerini geri
+  isteyebilir. → Fesih senaryosunun tasfiye/iade rejimi (`fesih_tasfiye`) ve "hemen"
+  bildirimin kanalı (`bildirim_tebligat`).
+- **m.126 (sürekli edimli sözleşme):** ifasına başlanmış sürekli edimli sözleşmede
+  temerrüt hâlinde alacaklı ifa + gecikme tazminatı isteyebileceği gibi sözleşmeyi
+  **feshederek** erken sona ermeden doğan zararı da isteyebilir. → Kira, hizmet,
+  bayilik, lisans gibi sürekli ilişkilerde fesih senaryosu dönme değil fesihtir; iade
+  rejimi buna göre kurulur.
+
 ## Geçerlilik denetim merdiveni
 0. **Ehliyet / temsil** — fiil ehliyeti ve ayırt etme gücü (TMK m.9: "Fiil
    ehliyetine sahip olan kimse, kendi fiilleriyle hak edinebilir ve borç altına

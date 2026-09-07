@@ -59,17 +59,30 @@ def _teyitli_sekil():
     """B-7 sonrası `sekil_sarti` beyanı MCP teyit izi (madde + sorgu) ister."""
     return {"durum": "VAR", "risk": "orta",
             "not": "Mevzuat MCP teyidi: TBK m.583 sorgusu kosuldu",
-            "onlem": "el yazili azami miktar metne islendi"}
+            "onlem": "el yazili azami miktar metne islendi",
+            # v0.5.16 (I6): TEMİZ eşiği üç senaryoyu da ister (bkz. _dolu).
+            "senaryo_testi": {"normal": "calisir", "gecikme": "calisir",
+                              "fesih": "calisir"}}
 
 
 def _dolu():
-    """Denetimi TEMİZ geçen asgari dosya — her test tek değişkeni izole eder."""
+    """Denetimi TEMİZ geçen asgari dosya — her test tek değişkeni izole eder.
+
+    v0.5.16 (P2-6/A-23 — GRUP I6) GÜNCELLEMESİ: "TEMİZ" eşiği yükseldi —
+    her yazılmış kloz üç ifa senaryosunda (normal/gecikme/fesih) sınanmış
+    olmalı; aksi hâlde exit 0 kalır ama hüküm "SENARYO DENETİMİ AÇIK" olur.
+    Bu fikstür "TEMİZ geçen asgari dosya" tanımını koruduğu için üç senaryo
+    'calisir' işlenir. Alansız (v0.5.15) dosyanın davranışı
+    `tests/test_v0516_I6.py`'de ayrıca kilitlidir.
+    """
     d = {
         "mod": "TAHRIR",
         "tip": "hizmet",
         "kategoriler": {
             k: {"durum": "VAR", "risk": "dusuk", "not": "kloz yazildi",
-                "onlem": ""}
+                "onlem": "",
+                "senaryo_testi": {"normal": "calisir", "gecikme": "calisir",
+                                  "fesih": "calisir"}}
             for k in KATEGORI_SIRASI
         },
         "kirmizi_cizgiler": [],
@@ -87,6 +100,11 @@ def test_iskelet_ust_seviye_sema_ve_onalti_kategori_exit0():
 
     Tam-küme eşitliği BİLEREK kullanılmaz: T12-Faz2 (v0.5.17) yeni bir üst-
     seviye blok ekleyecek; asıl kilit kategori listesinin sırası ve tamlığıdır.
+
+    v0.5.16 (P2-6/A-23 — GRUP I6): kategori alan kümesine `senaryo_testi`
+    eklendi (kloz × normal/gecikme/fesih; iskelet varsayılanı 'belirsiz').
+    Karakterizasyon beklentisi bilinçli genişletildi; alanın içeriği
+    `tests/test_v0516_I6.py`'de kilitlidir.
     """
     rc, out, _ = _cli("--iskelet")
     assert rc == 0
@@ -95,7 +113,7 @@ def test_iskelet_ust_seviye_sema_ve_onalti_kategori_exit0():
             "acik_uclar"} <= set(veri.keys())
     assert list(veri["kategoriler"]) == KATEGORI_SIRASI
     for v in veri["kategoriler"].values():
-        assert set(v) == {"durum", "risk", "not", "onlem"}
+        assert set(v) == {"durum", "risk", "not", "onlem", "senaryo_testi"}
 
 
 # --------------------------------------------------------------------------
@@ -295,7 +313,11 @@ def test_sekil_sarti_teyit_izi_kategorinin_tamamina_baglidir(izole_dizin):
     d2["tip"] = "kefalet"
     d2["kategoriler"]["sekil_sarti"] = _teyitli_sekil()
     rc2, out2, _ = _cli("--dogrula", _yaz(izole_dizin, d2, "s_teyitli.json"))
-    assert rc2 == 0 and "sekil_sarti" not in out2
+    # v0.5.16 (I6): İFA SENARYO MATRİSİ her klozu satır olarak basar; bu
+    # yüzden "sekil_sarti hiç geçmez" yerine "sekil_sarti SORUN/uyarı
+    # satırında geçmez" kilitlenir (kapının kendisi değişmedi).
+    assert rc2 == 0
+    assert "✗ sekil_sarti" not in out2 and "teyit izi" not in out2
 
     # Üçüncü şık (T12 planının düzeltilmiş hâli): anahtar HİÇ yoksa şekil
     # şartı uyarısı DEĞİL, zorunlu kategori kapısı ateşler.
