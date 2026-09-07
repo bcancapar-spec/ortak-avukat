@@ -229,7 +229,10 @@ denetlenir; madde çıpaları **Mevzuat MCP teyit 2026-09-06** damgalıdır
    takip edilen davalarda kanun gereğince takdir olunacak vekâlet ücreti
    yargılama giderindendir; m.326/1: yargılama giderleri aleyhine hüküm verilen
    taraftan alınır, /2: kısmen haklılıkta haklılık oranına göre paylaştırılır
-   (Mevzuat MCP teyit 2026-09-06). Kalıp: "yargılama giderleri ile vekâlet
+   (Mevzuat MCP teyit 2026-09-06). Yargılama giderlerine mahkemece RE'SEN
+   hükmedilir (m.332/1 — Mevzuat MCP teyit 2026-09-07); istem yokluğu kalemi
+   hükümden düşürmez, açık istem sahada standarttır — [P] uyarısı bu
+   ayrımı taşır. Kalıp: "yargılama giderleri ile vekâlet
    ücretinin davalıya yükletilmesine". Tarifeye göre ücret tutarı YAZILMAZ
    (AAÜT sayısal verisi bu parçada teyit edilmez — uydurma yasak, m.4).
 6. **Tedbir talebi.** HMK m.389/1: mevcut durumdaki değişme nedeniyle hakkın

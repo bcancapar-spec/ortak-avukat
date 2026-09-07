@@ -1499,7 +1499,9 @@ def netice_talep_uyarilari(metin):
     if not _P_GIDER_RE.search(blok):
         uyarilar.append(
             "talep bloğunda 'yargılama gideri' / 'vekâlet ücreti' istemi görünmüyor — "
-            "HMK m.323/ğ + m.326 gereği istenmeyen kalem hükme girmeyebilir")
+            "yargılama giderine re'sen hükmedilir (HMK m.332/1; vekâlet ücreti "
+            "gider kalemidir m.323/1-ğ, yükletilme m.326 — Mevzuat MCP teyit "
+            "2026-09-07); açık istem sahada standarttır (playbook: NETİCE-İ TALEP 5)")
     return uyarilar
 
 
