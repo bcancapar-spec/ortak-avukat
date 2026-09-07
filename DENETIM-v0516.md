@@ -287,3 +287,14 @@ hakem kümesi, 157 norm teyidi (1 kritik → onarıldı) · 42 ajan, ~80 dk ·
 saha 11 + 27 anonim klasör, 3 ölçüm partisi · süit **1763 → 2301** ·
 tam süit **2300 yeşil / 1 atlama / 0 kırmızı** — iki bağımsız tam koşu (bayatlık sonrası 491 sn; bu belge öncesi 497 sn) · `aile_dogrula` TEMİZ (20
 parça) · beş sürüm damgası birlikte 0.5.16 · push YOK (kimlik).
+
+
+---
+
+## Sonradan — v0.5.16.1 (2026-09-07, aynı gün)
+
+Saha "sonra" ölçümünün ortaya çıkardığı 8 yan bulgudan ilk ikisi aynı gün kapatıldı
+(dal `v0516/yan-bulgular`, commit 8e5814b → main 2eca36d; test `tests/test_v0516_yan_bulgular.py`, 17 sınama; tam süit 2317 yeşil / 1 atlama):
+- **Kütük ayrıştırıcısı sütun toleransı:** `kunye_ortak` okuyucuları `len != 7` katılığıyla gerçek kütük satırlarını (17 hücre) "BOZUK" sayıp DAMGA'ları görmüyordu; okuyucu artık sütun-bağımsız (esas+karar + `DAMGA=`/`AKIBET=` tokenları, sonuncusu geçerli). `test_kaynak_url_tutarlilik` fikstürü kanonik satıra çekildi — eski fikstür bir fail-open'ı gizliyordu.
+- **Şerh zinciri kapı atlatması:** `pipeline_kayit._onkosul_kontrol` ingest-once şerhinde erken dönüp GRAF KAPISI'nı sormuyordu; şerh biriktirilir, kalan kapılar da sorulur, kapsanmayan bloklu kapı RET.
+Kalan altı yan bulgu (özet sayacı, DURUM tavanı, perde sinyali, göç çıktısı makbuz adayı, kopya klasör, exit-0 tasarımı) v0.5.17 adayı olarak açık.
