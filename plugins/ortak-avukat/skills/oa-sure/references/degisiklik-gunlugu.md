@@ -166,3 +166,21 @@ VUK m.107/A · 7201 m.7/a · Danıştay 7.D. E.2000/5685 K.2002/3522 (tam metin)
 - `PLAN-SEMA-PAKETI.md` §3 (T10) test #8, `"iyuk_yd_itiraz" not in ...` bekliyordu; bu turda
   A-3 talimatı gereği kural **eklendi**. `tests/test_tez10_amme_odeme_emri.py` yazan paket bu
   şartı kaldırmalıdır — "iki dosyada senkron gerekir" gerekçesi B-21 kilidiyle karşılanmıştır.
+
+## v0.5.16 — 2026-09-07 · İki Denetimin İnfazı (birleşim + entegrasyon)
+
+> Kaynak: iki dış denetim raporu (2026-09-06, `_gorus/denetim-2026-09-06-*.md`), 15 sahiplik grubu (`v0516/<grup>` dalları), Yargı Pro hakem teyitleri (`_gorus/denetim-v0516-yargipro-teyit-<grup>.md`). Aşağıdaki blok(lar) ilgili grubun ajan raporundaki `changelog_notu` metninin aynıdır; entegratör notu birleşim sonrası hizalamayı (H1–H5) kaydeder.
+
+### Grup I5 — kaynak rapor `18-I5-uygula.json`
+
+## v0.5.16 — AŞAMA TETİKLİ SÜRE SINIFI (P1-3 / A-10; grup I5)
+Saha dersi: bazı usul "süreleri" takvimle değil yargılamanın bir AŞAMASIYLA kapanır; bunlara "tebliğ + N gün" tarihi üretmek yanlış tarih üretmektir (nöbetçi onu otorite sayar, defter kalıcılaştırır). Ceza kolundaki katılma anı deseni (v0.5.13, oa-musteki-vekili "olay tetikli kırmızı bayrak", CMK m.237) hukuk koluna genellendi. Mevzuat MCP teyit 2026-09-07: HMK m.116, m.117, m.119, m.129, m.139, m.140, m.145, m.176, m.177 · CMK m.237.
+- `scripts/sure_kurallari.json`: yeni **`asama_kurallari`** bölümü — `hmk_ilk_itiraz` (cevap dilekçesi; m.117/1, katalog m.116/1), `hmk_delil_bildirimi` (dilekçeler aşaması; m.119/1-f, m.129/1-e, sonradan delil yasağı m.145/1), `hmk_on_inceleme_belge` (davetiye ihtarı m.139/1-ç → vazgeçmiş sayılma m.140/5; davetiye tebliğiyle takvime bağlanan ÇATAL), `hmk_islah` (tahkikat bitene kadar m.177/1-2; tek hak m.176/2), `cmk_katilma` (hüküm verilinceye kadar m.237/1-2). Alanlar: `tur:"asama"`, `asama`, `pipeline_adimi` (oa-pipeline ADIMLAR 0-10), `kaynak`, `aciklama`, `mcp_teyit_tarihi`; miktar/birim YOK. Tarih kuralları tablosu (21) değişmedi; B-21 kilidi yeşil.
+- `scripts/hesapla_sure.py`: `_GOMULU_ASAMA_KURALLAR` (JSON ile birebir — yeni ikiz kilit testi), `asama_kurallarini_yukle()` (görünür fallback, fail-closed şema), `--kural` aşama seçenekleri, `_asama_raporu()` — `hesapla()` HİÇ ÇAĞRILMAZ: "AŞAMA TETİKLİ: <asama> — pipeline adım N'e bağlı; tarih yok", exit 0; `--teblig` vb. girdiler "KULLANILMADI" diye görünür; A-1 kol uyuşmazlığı kapısı aşama kuralına uygulanmaz. Yeni **`--json`** (aşamada salt JSON `{"tur":"asama",…,"son_gun":null}`; tarih kuralında raporun sonuna `[JSON] {...}` satırı). `_asama_flagini_yaz()`: `_oa` varsa `sureler.json`a son_gun'suz `tur=asama` kaydı (tekrar yok, defter icat edilmez). `--pencereler` aşama kaydını GÖRÜNÜR atlar ("≡ … tarih penceresi yok, bindirmeye katılmadı"), JSON çıktısına `asama` listesi; yalnız aşama varsa DENETLENEMEDİ (exit 1).
+- `scripts/sure_nobetci.py`: `tur:"asama"` kayıtları ayrı **`[≡] AŞAMA TETİKLİ — adım N tamamlanmadan bu işlem yapılmalı: …`** bloğunda; tarih sayımına/acil sınıfına KATILMAZ, bozuk sayılmaz; özet satırında "N aşama tetikli (tarih sayımı dışı)"; exit sözleşmesi (0/3/1) korundu; append-only iptal aşama kaydına da uygulanır; tur'suz tarihsiz eski kayıt yine BOZUK (fail-closed — eski defterler çökmez).
+- `SKILL.md`: 4e "AŞAMA TETİKLİ SÜRELER" bölümü (komutlar, kural tablosu, ceza deseniyle ilişki, defter şeması — `son_gun` yok; `asama`/`pipeline_adimi`/`aciklama`/`tur`/`kural`; `oa_hafiza sure-flag`in `--tarih` zorunluluğu notu — aşama kaydına uydurma tarih YAZILMAZ). `references/sure-cizelgesi.md`: HMK aşama çıpaları.
+- Testler: `tests/test_v0516_I5.py` (24 test). Entegratör notu: `oa_hafiza.py sure-flag`e `--asama` desteği oa-pipeline sahasındadır.
+
+### Entegratör notu (2026-09-07)
+
+- **Entegrasyon (H1):** aşama tetikli kayıt artık kanonik yazıcı `oa_hafiza.py sure-flag --asama … --pipeline-adimi N` ile de yazılabilir (I5'in `hesapla_sure.py --kural <asama> --kok .` yolu korunur); nöbetçi her iki yazıcının kaydını aynı `[≡]` blokta gösterir (uçtan uca test).

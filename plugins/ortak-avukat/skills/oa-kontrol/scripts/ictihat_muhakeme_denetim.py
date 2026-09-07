@@ -82,7 +82,7 @@ G6 (ENGEL — TRİYAJ, v0.5.8.5/A1): dilekçedeki HER künye için üç şart �
    denetlenir), (3) DAMGA=LEHE. NOTR artık BLOK; ALEYHE-AYIRT yalnız
    'kütükte DUYULMUS=EVET + dilekçede ayırt/çürütme bağlamı' istisnasıyla
    geçer — destek atfı olarak asla. Ayrıca TERS DENETİM (advisory): kütükte
-   son damgası ALEYHE olan karar cephanelik ürününde (07-antitez*)
+   son damgası ALEYHE olan karar cephanelik ürününde (06-antitez*; ≤v0.5.15: 07-antitez*)
    anılmıyorsa "FARKINDALIK KAYBI" uyarısı. Ayrıntı: `triyaj_denetimi` /
    `farkindalik_denetimi` docstring/yorumları.
 
@@ -1014,8 +1014,8 @@ def akibet_denetimi(atiflar, kayitlar, kutuk):
 #         dilekçede ayırt/çürütme BAĞLAMINDA anılıyor. Destek atfı olarak asla.
 #
 # TERS DENETİM (advisory): kütükte SON damgası ALEYHE olan bir karar
-# cephanelik ürünlerinde (07-antitez* / *antitez* / *cephanelik* —
-# `oa_metrik`/`pipeline_kayit` "07-antitez*" adlandırması) HİÇ anılmıyorsa
+# cephanelik ürünlerinde (06-antitez* / 07-antitez* / *antitez* / *cephanelik* —
+# `oa_metrik`/`pipeline_kayit` v0.5.16 "06-antitez*" adlandırması, ≤v0.5.15 "07-antitez*") HİÇ anılmıyorsa
 # "FARKINDALIK KAYBI" uyarısı basılır (bloklamaz) — "ALEYHE ise cephaneliğe"
 # kuralının işlenmemiş kalan yarısını görünür kılar.
 
@@ -1169,7 +1169,7 @@ def farkindalik_denetimi(kutuk_yolu, cikti_dizin):
     cephanelik_icerik = ""
     gorulen_dosyalar = set()
     if cikti_dizin and os.path.isdir(cikti_dizin):
-        for desen in ("07-antitez*", "*antitez*", "*cephanelik*"):
+        for desen in ("06-antitez*", "07-antitez*", "*antitez*", "*cephanelik*"):
             for yol in sorted(glob.glob(os.path.join(cikti_dizin, desen))):
                 if yol in gorulen_dosyalar or not os.path.isfile(yol):
                     continue
@@ -1186,7 +1186,7 @@ def farkindalik_denetimi(kutuk_yolu, cikti_dizin):
         if not anildi:
             uyarilar.append(
                 f"FARKINDALIK KAYBI: kütükte ALEYHE damgalı karar (E. {esas or '—'} "
-                f"/ K. {karar or '—'}) cephanelik ürünlerinde (07-antitez*) HİÇ "
+                f"/ K. {karar or '—'}) cephanelik ürünlerinde (06-antitez*) HİÇ "
                 "anılmıyor — 'ALEYHE ise cephaneliğe' kuralının işleme yarısı eksik "
                 "kalmış olabilir; kararı oa-antitez cephaneliğine işleyin "
                 "(advisory — bloklamaz).")

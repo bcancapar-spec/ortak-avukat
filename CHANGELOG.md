@@ -17,45 +17,164 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
-## v0.5.16 — İki Denetimin İnfazı (ARA DURUM — 2026-09-07 03:10, devam ediyor)
+## v0.5.16 — İki Denetimin İnfazı (2026-09-07)
 **Kanıt türü:** iki bağımsız dış denetim raporu (6 Eylül 2026): (1) *bütünleşik
 analiz* — döngü/graf/hook mimarisi + üç dalda saha sınaması + Yargıtay→BAM→ilk
 derece dikey inişi; **22 bulgu** (K1–K5 kesişim, G1–G12 graf, H/P hook-pipeline,
 D1–D4 kaynak) ve **12 hamle**; (2) *dış denetim* — 20 parçanın hukuki metodolojisi
 ve müvekkil menfaati; **A-1..A-28 + B-1..B-8**, P0/P1/P2 reçetesi. Kaynak belgeler
-`_gorus/denetim-2026-09-06-*.md` altında aynen saklanır.
+`_gorus/denetim-2026-09-06-*.md`; her grubun Yargı Pro/Mevzuat teyit izleri
+`_gorus/denetim-v0516-yargipro-teyit-<grup>.md` (49 MCP çağrısı, ~45 (kanun, madde)
+çifti; kritik 0, küçük 10 — onarıldı). Saha "önce" ölçümü (11 gerçek dosya kopyası,
+anonim kod) `oa-v0516-calisma/saha-once/`; **"sonra" ölçümü bu sürümde YAPILMADI**
+(açık iş — STATUS §0).
 
 **Yöntem:** reçete 15 sahiplik grubuna bölündü; her grup kendi git dalında
-(`v0516/<grup>`) uygula → adversarial hakem → onarım zincirinden geçiyor; her
-norm Mevzuat/Yargı Pro MCP'den madde metniyle teyit ediliyor (m.4), fikstürler
+(`v0516/<grup>`) uygula → adversarial hakem → onarım → Yargı Pro hakem/onarım;
+her norm Mevzuat/Yargı Pro MCP'den madde metniyle teyit (m.4), fikstürler
 sentetik (m.7), önce-kırmızı TDD. Ana ajan hiçbir grubun dosyasına dokunmadı;
-birleştirme tek entegratörde.
+birleştirme tek entegratörde (`--no-ff`, sırayla A B C1 C2 D E F G H I1..I6;
+çakışma yalnız `tests/README.md` OA-SUIT-SAYISI satırında — E/H/I3/I6, nihai
+sayı `pytest --collect-only` ile tek seferde yazıldı; `tests/test_v0514_muhakeme.py`
+F+I2 otomatik birleşti, iki beklenti de duruyor).
 
-**Bu ana kadar (dallarda, main'e henüz birleştirilmedi):** 13 grup nihai
-commit'te (A, C1, C2, E, F, G, H, I1, I2, I3, I4, I5, I6); 2 grup son alt adımda (B, D);
-hakem turlarında bugüne dek 10 onay / 1 ret (onarımda). main'de yalnız hazırlık
-commit'i var: anayasa m.1 "dosya ağırlığı triyajı" (A-1/P2-1), README ölçüm
-dili (B-7/P2-13), denetim belgeleri. Sürüm damgaları **henüz 0.5.15** — bu kayıt
-sürüm etiketi DEĞİLDİR (kural: CI yeşermeden etiket atılamaz).
+**Grup → parça:** **A** → oa-illiyet; **B** → oa-pipeline; **C1** → oa-dilekce; **C2** → oa-kontrol; **D** → oa-gizlilik, oa-pipeline; **E** → oa-ingest, oa-pipeline; **F** → oa-vakia; **G** → oa-usta; **H** → oa-ictihat; **I1** → oa-interview, oa-strateji; **I2** → oa-antitez; **I3** → oa-mudafii, oa-musteki-vekili; **I4** → oa-alan, oa-kiyas, oa-usul; **I5** → oa-sure; **I6** → oa-sozlesme.
 
-**Kapatılan/kapatılmakta olan başlıklar (dal bazında):** graf kapısı sert + exit
-sözleşmesi + delil/köprü/güç sınıfları + dal-ayrımlı kesme_flag + taraf yönü +
-karar/mahkeme tipi (A); bekçi damgaya bağlandı, graf kapısı, --serh-kapi, inline
-sayaç, ANTİTEZ↔STRATEJİ sırası, müvekkil kararı düğümü, avukat hükmü sensörü (B);
-[F] hafif kip + netice-i talep playbook/[P] + [N] beyaz liste + udf-cli kesinti
-planı (C1); tarih-only/K-only atıf → EKSİK KÜNYE BLOK, [G5-AKIBET], örtüşme
-sayacı, hâkim lensi (C2); teyit --akibet + senkron klasör uyarısı (D); OCR araç
-hatası teşhisi + süre adayı (E); ispat ontolojisi (tanık caizliği, hukuki iddia,
-karine yük kaydırır) (F); aile_dogrula yapısal kilitler + sürüm işaretçisi (G);
-kanun_yolu_zinciri.py + iniş ritüeli + içtihat haritası (H); koruma tedbiri,
-zaman ekseni, risk toleransı, maliyet cetveli (fail-closed tarife) (I1);
-bilirkişi/teknik cephesi + hâkim lensi (I2); müzakereli çıkışlar + beyan
-protokolü, ceza↔hukuk köprüsü (I3); merci tayini notu, usul zamanlama, forum
+**Kapanan bulgular (ölçüm: grup raporlarındaki `changelog_notu` metinlerinde anılan
+kodlar):**
+
+| Bulgu | Grup(lar) |
+|---|---|
+| A-1 | A, I5 |
+| A-2 | B |
+| A-3 | B |
+| A-4 | E |
+| A-5 | I1 |
+| A-6 | I1 |
+| A-7 | I4 |
+| A-8 | I1, I4 |
+| A-9 | I1 |
+| A-10 | I5 |
+| A-11 | D |
+| A-13 | F |
+| A-14 | H |
+| A-15 | I4 |
+| A-16 | I1 |
+| A-17 | I1 |
+| A-18 | I1 |
+| A-19 | I1 |
+| A-20 | I2 |
+| A-21 | C2, I2 |
+| A-22 | C1 |
+| A-23 | I6 |
+| A-24 | C2 |
+| A-25 | I3 |
+| A-26 | I3 |
+| A-27 | G |
+| A-28 | B, G |
+| B-1 | B, E |
+| B-2 | B, C2 |
+| B-3 | G |
+| B-5 | D |
+| B-6 | C1 |
+| B-8 | E |
+| D1 | H |
+| D2 | H |
+| D3 | H |
+| G1 | A |
+| G2 | A, C2 |
+| G3 | A |
+| G4 | A |
+| G5 | A, C2, D |
+| G6 | A |
+| G7 | A |
+| G8 | A |
+| G9 | A |
+| G10 | A |
+| G11 | C2 |
+| G12 | A |
+| H1 | B |
+| H2 | C1 |
+| K1 | B, G, I4 |
+| K2 | A, B |
+| K3 | C1 |
+| K4 | C2 |
+| K5 | C2, D |
+| P0-1 | F |
+| P0-2 | E |
+| P0-3 | B, I2 |
+| P0-4 | C1 |
+| P0-9 | E |
+| P1-1 | I1 |
+| P1-2 | I1 |
+| P1-3 | I5 |
+| P1-4 | I4 |
+| P1-5 | C2, I2 |
+| P1-6 | I3 |
+| P1-7 | I3 |
+| P1-8 | D |
+| P1-9 | B |
+| P1-10 | E |
+| P1-11 | I1 |
+| P2-2 | I4 |
+| P2-3 | I1, I4 |
+| P2-5 | H |
+| P2-6 | I6 |
+| P2-7 | C2 |
+| P2-8 | G |
+| P2-10 | G |
+| P2-12 | C1 |
+
+Tabloda görünmeyen kodlar ya hazırlık commit'inde (fcae8d8: A-1/P2-1 anayasa m.1
+triyaj, B-7/P2-13 README ölçüm dili) kapanmıştır ya da bir grubun notunda kod
+adıyla anılmadan uygulanmıştır — parça günlükleri (`references/degisiklik-gunlugu.md`,
+"v0.5.16" bölümü) ayrıntıyı taşır. Kapanan ana başlıklar: graf kapısı SERT + exit
+sözleşmesi + bağlanmamış delil/köprü/güç sınıfları + dal-ayrımlı `kesme_flag` +
+taraf yönü + karar/mahkeme tipi (A); bekçi DAMGAYA bağlandı (K1), graf kapısı (K2),
+`--serh-kapi`, inline sayaç (M7), ANTİTEZ↔STRATEJİ sırası (P0-3), müvekkil kararı
+düğümü (P1-9), avukat hükmü sensörü (A-28) (B); [F] hafif kip + [P] netice-i talep
++ [N] beyaz liste + udf-cli kesinti planı (C1); tarih-only/K-only atıf → EKSİK KÜNYE
+BLOK, [G5-AKIBET], örtüşme sayacı, hâkim lensi (C2); `teyit --akibet` + senkron
+klasör uyarısı (D); OCR araç-hatası teşhisi + süre adayı (E); ispat ontolojisi —
+tanık caizliği, hukuki iddia, karine yük kaydırır (F); aile_dogrula yapısal kilitler
++ sürüm işaretçisi (G); `kanun_yolu_zinciri.py` + iniş ritüeli + içtihat haritası (H);
+koruma tedbiri, zaman ekseni, risk toleransı, maliyet cetveli — fail-closed tarife (I1);
+bilirkişi/teknik cephesi (dokuz cephe) + hâkim lensi (I2); müzakereli çıkışlar +
+beyan protokolü, ceza↔hukuk köprüsü (I3); merci tayini, usul zamanlama, forum
 seçimi, yarışan norm (I4); aşama tetikli süre sınıfı (I5); ifa senaryo testi (I6).
 
-**Sırada (bu kayıt güncellenecek):** Yargı Pro denetim turu → birleştirme →
-sürüm damgaları 0.5.16 → tam süit → gerçek dava kopyalarında "sonra" ölçümü
-(önce/sonra tablosu) → belge bayatlık taraması → DENETIM-v0516.md → push.
+**Entegrasyon hizalamaları (birleşim sonrası, H1–H5 — `tests/test_v0516_entegrasyon.py`,
+18 test):** H1 `oa_hafiza.py sure-flag --asama <ad> --pipeline-adimi N` (tarihsiz
+`tur: asama` kaydı; `sure_nobetci` ile uçtan uca) · H2 eski «6 STRATEJİ / 7 ANTİTEZ»
+sırası ortak-avukat/oa-mudafii/oa-musteki-vekili SKILL'lerinde düzeltildi; çalışma-
+evrakı önekleri `06-antitez*`/`07-strateji*` (oa-antitez/oa-dilekce/oa-usul/oa-kiyas
+şablonu, `oa_metrik.py`, `dilekce_denetim.py`, `ictihat_muhakeme_denetim.py`; eski
+adlar geriye uyumla kabul) · H3 OA-SUIT-SAYISI tek seferde · H4 AKIBET yazar↔okur
+uçtan uca (LEHE+bozuldu+atıf → BLOK) · H5 `*vakia*.json` bekçisi damgaya çekildi;
+aile_dogrula KİLİT-A damga sözleşmesini (bekçi damgası ↔ üretici script) dört bekçide
+denetler — gerçek depoda TEMİZ, kör kilit yok. «Sekiz cephe» kalıntıları «dokuz cephe».
+
+**Sürüm damgaları:** plugin.json · marketplace.json · iki README · `pipeline_kayit.py`
+ve `teslim_paketi.py` OA_SURUM → 0.5.16 (birlikte). `tests/README.md`
+OA-SUIT-SAYISI = **2301** (`pytest --collect-only`). Tam süit sonucu STATUS §0'da.
+
+**Yapılamayanlar / açık kalanlar (sessiz atlama yasağı):**
+- Saha "SONRA" ölçümü (aynı 11 kopya, v0.5.16 araçları) ve önce/sonra tablosu — yapılmadı.
+- `git push` — yapılmadı (kimlik engeli; `gh auth login -h github.com` sonrası kullanıcı).
+- Avukat kararı bekleyen: B-4 `git filter-repo` (geçmişte dosya kimliği) · udf-cli pin
+  (A5/B-6) · `maliyet_cetveli` tarife.json değerleri (AAÜT 2026 ek tabloları MCP'den
+  alınamadı; nispi harç asgari haddi kaynak çelişkisi «çıpa» etiketli).
+- MCP'den teyit edilemeyip «çıpa / teyit edilmedi» etiketiyle bırakılanlar: 7589 s.K. RG
+  sayısı (C1); dava dilekçesi-temerrüt/faiz içtihadı ve HMK m.392 vd. (C1); HAGB «sanığın
+  kabulü» AYM/7499 geçiş rejimi (I3); TBK m.74 içtihadı yalnız künye düzeyinde, TCK m.52 /
+  CMK m.153 / TCK m.267 (I3); 492 s.K. m.30-32, HMK m.17-18/114/116-117/390 ve İİK tedbir
+  çıpaları (I4); TBB Meslek Kuralları bilgilendirme hükmü (B-2); `ceza:hukuka_uygunluk`
+  TCK m.24 vd. ve 12. CD künyesi (A-2).
+- Devirler: `pipeline_kayit.py`'nin `senaryo_bosluklari` (I6 --json) okuması; `md_yaz`
+  araç-hatası önerisinde dil adı sabiti (E); G11 parantez sayacının «m.353/(1)» sayması
+  (C2, advisory); Linux'ta tur paketi yokken OCR yolu yalnız sahte ikiliyle sınandı (E).
+- Belge bayatlık taraması (DEVAM-PLANI §9) bu sürümde H2 kalemi + sürüm/tarih damgaları
+  ile SINIRLI yapıldı; satır satır tam tarama açık iş.
 
 ---
 

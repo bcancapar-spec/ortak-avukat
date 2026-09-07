@@ -73,11 +73,38 @@ BEKCI_PARCA = {
     "_graf_yapisal_bosluk_uyarisi": "oa-illiyet",
     "_kiyas_bosluk_uyarisi": "oa-kiyas",
     "_usul_bosluk_uyarisi": "oa-usul",
+    "_vakia_delilsiz_unsur_uyarisi": "oa-vakia",     # v0.5.16 / H5 (entegrasyon)
 }
 
 _BEKCI_GLOB_RE = re.compile(
     r"""glob\.glob\(\s*os\.path\.join\(\s*cdiz\s*,\s*["']([^"']+)["']\s*\)\s*\)""")
 _SKILL_JSON_CIKTI_RE = re.compile(r"--json\s+\[?_oa/cikti/([\w\-.]+\.json)")
+# v0.5.16 entegrasyon (B ↔ G hizalaması): B grubu bekçileri dosya-adı globundan
+# `_denetim_jsonlari(kok, "<arac>")` DAMGA süzgecine taşıdı. Kilit bu biçimi de
+# tanır: desen = `_denetim_jsonlari` gövdesindeki glob (`*.json`), ek olarak
+# DAMGA SÖZLEŞMESİ denetlenir — üretici script (parça/scripts/*.py) `"arac":
+# "<arac>"` (ya da `ARAC_ADI = "<arac>"`) damgasını yazmıyorsa bekçi o çıktıyı
+# hiç okumaz (K1 ile aynı sınıf sahte yeşil) → HATA.
+_BEKCI_DAMGA_RE = re.compile(r"""_denetim_jsonlari\(\s*kok\s*,\s*["']([\w\-]+)["']\s*\)""")
+
+
+def _damga_yazar_mi(kok, parca, arac):
+    """Parçanın scripts/*.py dosyalarından biri `"arac": "<arac>"` ya da
+    `ARAC_ADI = "<arac>"` literalini içeriyor mu? (None → scripts dizini yok.)"""
+    sdiz = os.path.join(kok, parca, "scripts")
+    if not os.path.isdir(sdiz):
+        return None
+    desen = re.compile(r"""(?:["']arac["']\s*:\s*|ARAC_ADI\s*=\s*)["']%s["']""" % re.escape(arac))
+    for ad in sorted(os.listdir(sdiz)):
+        if not ad.endswith(".py"):
+            continue
+        try:
+            metin = open(os.path.join(sdiz, ad), encoding="utf-8", errors="replace").read()
+        except OSError:
+            continue
+        if desen.search(metin):
+            return True
+    return False
 
 
 def _fonksiyon_govdesi(kaynak, ad):
@@ -117,6 +144,26 @@ def bekci_skill_sozlesmesi(kok):
                             f"'{fonk}' yok — {parca} kilidi kör")
             continue
         desenler = _BEKCI_GLOB_RE.findall(govde)
+        damgalar = _BEKCI_DAMGA_RE.findall(govde)
+        if damgalar and not desenler:
+            # DAMGA biçimi: desen ortak süzgeç `_denetim_jsonlari` gövdesinden
+            ortak = _fonksiyon_govdesi(pk_metin, "_denetim_jsonlari")
+            desenler = _BEKCI_GLOB_RE.findall(ortak) if ortak else []
+            if not desenler:
+                uyarilar.append(f"bekçi–skill sözleşmesi: '{fonk}' damga süzgeci "
+                                f"'_denetim_jsonlari' gövdesinde glob deseni "
+                                f"çıkarılamadı — {parca} kilidi kör")
+                continue
+            for arac in sorted(set(damgalar)):
+                yazar = _damga_yazar_mi(kok, parca, arac)
+                if yazar is None:
+                    uyarilar.append(f"bekçi–skill sözleşmesi: {parca}/scripts yok — "
+                                    f"'{fonk}' damga sözleşmesi ({arac}) denetlenemedi")
+                elif not yazar:
+                    hatalar.append(
+                        f"bekçi–script damga kopuşu (K1/H5): {fonk} yalnız "
+                        f"`arac == {arac!r}` damgalı JSON okur; {parca}/scripts/*.py "
+                        f"bu damgayı hiç yazmıyor (bekçi o çıktıyı hiç okumaz — sahte yeşil)")
         if not desenler:
             uyarilar.append(f"bekçi–skill sözleşmesi: '{fonk}' gövdesinde "
                             f"glob deseni çıkarılamadı — {parca} kilidi kör")

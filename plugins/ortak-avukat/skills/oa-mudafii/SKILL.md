@@ -248,15 +248,18 @@ Orkestrasyon `oa-pipeline`'a aittir; bu parça sırayı **ceza savunmasına** uy
 5. UNSUR/KIYAS → oa-kiyas (maddi + manevi unsur denetimi — eşleşmeyen unsur = boşluk)
 6. ARAŞTIRMA   → oa-ictihat (MÜVEKKİL-LEHİNE teyitli içtihat; istinaf ceza/BAM doğrudan
                  aranamıyorsa Yargıtay içinde gömülü BAM kararından çek)
-7. ANTİTEZ     → oa-antitez (iddia makamı/mahkeme tezleri; GİZLİ CEPHANELİK — sunulmamış
+7. ANTİTEZ     → oa-antitez [pipeline sabit hat adım 6] (iddia makamı/mahkeme tezleri;
+                 GİZLİ CEPHANELİK — sunulmamış
                  antiteze preemptive savunma yazma)
-8. STRATEJİ    → oa-strateji (§2/A sonuç haritası + §2/B beyan kararı girdi; savunma/
+8. STRATEJİ    → oa-strateji [pipeline adım 7 — antitez çıktısını GİRDİ alır] (§2/A sonuç haritası + §2/B beyan kararı girdi; savunma/
                  uzlaşma/etkin pişmanlık; hangi kanun yolu, hangi sıra)
 9. YAZIM       → oa-dilekce (ifade/savunma · iddianameye karşı · istinaf · temyiz · itiraz
                  · KYOK itirazı · AYM bireysel başvuru — kademeli netice-i talep)
 10. KONTROL    → oa-kontrol (atıf denetimi · ifşa kontrolü · müvekkil-aleyhi zaaf taraması)
 11. KAPANIŞ    → oa-usta (kimliksiz ders damıtma; _oa/dersler)
 ```
+
+> Numaralar bu merceğin kendi sırasıdır; `pipeline_kayit.py` sabit hattında ANTİTEZ = adım **6**, STRATEJİ = adım **7** (v0.5.16 / P0-3: antitez stratejiden ÖNCE — cephanelik evrakı `06-antitez*`, ≤v0.5.15 adı `07-antitez*` de kabul).
 
 Kalıcı katmanlar (`oa-usul`, `oa-illiyet`, `oa-gizlilik`) her adımda devrededir.
 

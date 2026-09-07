@@ -82,18 +82,28 @@ _BEKCI_SABLON = textwrap.dedent('''\
         for yol in sorted(glob.glob(os.path.join(cdiz, "{usul}"))):
             pass
         return []
+
+
+    def _vakia_delilsiz_unsur_uyarisi(kok):
+        cdiz = os.path.join(kok, "_oa", "cikti")
+        for yol in sorted(glob.glob(os.path.join(cdiz, "{vakia}"))):
+            pass
+        return []
 ''')
+# v0.5.16 entegrasyon / H5: dördüncü bekçi (_vakia_delilsiz_unsur_uyarisi → oa-vakia)
+# KİLİT-A kapsamına alındı; sentetik şablon da dört bekçi taşır.
 
 
 def _sentetik_kok(tmp, graf="*graf*.json", kiyas="*kiyas*.json", usul="*usul*.json",
-                  illiyet_ornek="01-illiyet-denetim.json", bekci_var=True):
+                  illiyet_ornek="01-illiyet-denetim.json", bekci_var=True,
+                  vakia="*vakia*.json"):
     """Sentetik aile kökü: oa-pipeline/scripts/pipeline_kayit.py (bekçiler) +
     oa-illiyet/SKILL.md (örnek komut). Gerçek depoya dokunmaz."""
     kok = tmp / "skills"
     (kok / "oa-pipeline" / "scripts").mkdir(parents=True)
     pk = kok / "oa-pipeline" / "scripts" / "pipeline_kayit.py"
     if bekci_var:
-        pk.write_text(_BEKCI_SABLON.format(graf=graf, kiyas=kiyas, usul=usul),
+        pk.write_text(_BEKCI_SABLON.format(graf=graf, kiyas=kiyas, usul=usul, vakia=vakia),
                       encoding="utf-8")
     else:
         pk.write_text("import os\n\ndef baska_fonksiyon():\n    return 1\n",
@@ -156,11 +166,13 @@ def test_kilit_a_depo_disi_sessiz(tmp):
 def test_kilit_a_bekci_yoksa_uyari_cokmez(tmp):
     """Geriye uyum / sessiz-atlama yasağı: pipeline_kayit.py var ama bekçi
     fonksiyonları yoksa (eski nesil ya da yeniden adlandırılmış) kilit kör
-    kalır — bu ÇÖKME değil, GÖRÜNÜR UYARI olmalı; hata üretilmez."""
+    kalır — bu ÇÖKME değil, GÖRÜNÜR UYARI olmalı; hata üretilmez.
+    (v0.5.16 entegrasyon / H5: bekçi sayısı 3 → 4 — oa-vakia bekçisi kilide
+    alındı; beklenti bilinçli 4.)"""
     kok = _sentetik_kok(tmp, bekci_var=False)
     hatalar, uyarilar = ad.bekci_skill_sozlesmesi(str(kok))
     assert hatalar == []
-    assert len(uyarilar) == 3
+    assert len(uyarilar) == 4
     assert all("kilidi kör" in u for u in uyarilar)
 
 
@@ -178,10 +190,10 @@ def test_kilit_a_desen_cikarilamazsa_uyari(tmp):
 
 
 def test_kilit_a_gercek_depo_kilit_kor_degil():
-    """Gerçek depoda kilit KÖR OLMAMALI: üç bekçi de bulunmalı ve her birinden
-    bir glob deseni çıkarılmalı. (Kopuş var mı yok mu — o B grubunun bekçi
-    değişikliğiyle entegrasyonda kapanır; burada yalnız kilidin GÖRDÜĞÜ
-    doğrulanır. B bekçiyi yeniden yapılandırırsa bu test onu söyler.)"""
+    """Gerçek depoda kilit KÖR OLMAMALI: dört bekçi de bulunmalı ve her birinden
+    bir glob deseni (ya da `_denetim_jsonlari` damga süzgeci üzerinden `*.json`)
+    çıkarılmalı. (v0.5.16 entegrasyon: B bekçiyi damga süzgecine taşıdı, kilit
+    o biçimi de tanır — tests/test_v0516_entegrasyon.py damga kopuşunu kilitler.)"""
     hatalar, uyarilar = ad.bekci_skill_sozlesmesi(str(SKILLS))
     assert not any("kör" in u for u in uyarilar), uyarilar
     for h in hatalar:  # varsa yalnız K1 sınıfı olabilir
@@ -345,21 +357,23 @@ def test_cli_kopya_bekci_yildiz_json_ile_temiz(tmp):
 
 def test_cli_kopya_kanonik_enum_eklenince_kirmizi(tmp):
     """Uçtan uca: kopyada KANONIK'e doktrinde olmayan bir değer eklenirse CLI
-    exit 1 ve mesaj değeri adıyla söyler."""
+    exit 1 ve mesaj değeri adıyla söyler.
+    (v0.5.16 entegrasyon: A grubu kesme_flag enum'unu `KESME_DALLARI` (dal:değer)
+    tablosundan türetir — literal küme kalmadı; sentetik değer tabloya eklenir.)"""
     hedef = tmp / "skills"
     shutil.copytree(SKILLS, hedef)
     gd = hedef / "oa-illiyet" / "scripts" / "grafik_denetim.py"
     metin = gd.read_text(encoding="utf-8")
-    assert '"kesme_flag": {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"}' in metin
+    eski = '"miras":  ("paylastirma_kasti", "ivaz"),'
+    assert eski in metin
     gd.write_text(metin.replace(
-        '"kesme_flag": {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru"}',
-        '"kesme_flag": {"mucbir_sebep", "magdur_kusuru", "ucuncu_kisi_kusuru", '
-        '"sentetik:olmayan_bayrak"}'), encoding="utf-8")
+        eski, '"miras":  ("paylastirma_kasti", "ivaz", "sentetik_olmayan_bayrak"),'),
+        encoding="utf-8")
     cp = subprocess.run([sys.executable, str(AILE_DOGRULA), str(hedef)],
                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     cikti = (cp.stdout or "") + (cp.stderr or "")
     assert cp.returncode == 1
-    assert "enum↔doktrin ayrışması: kesme_flag 'sentetik:olmayan_bayrak'" in cikti
+    assert "enum↔doktrin ayrışması: kesme_flag 'miras:sentetik_olmayan_bayrak'" in cikti
 
 
 # ═══════════════ P2-8 / A-27 / A-28 — HATA TETİKLİ DAMITMA belgesi ═════════

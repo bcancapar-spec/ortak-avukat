@@ -1,6 +1,6 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.5.15 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.5.16 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -43,7 +43,7 @@ denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yön
    katmandır: dolan bir süre varsa diğer her işin önüne geçer.
 4. **Olgu ve hukuk ayrı ayrı kurulur.** Kronoloji ve iddia↔delil matrisi bir yanda;
    norm, teyitli içtihat ve açık kıyas öbür yanda.
-5. **Karşı taraf simüle edilir.** Sekiz cephede size gelebilecek her saldırı
+5. **Karşı taraf simüle edilir.** Dokuz cephede size gelebilecek her saldırı
    çıkarılır ve çürütülür; çürütülemeyen dürüstçe "artık risk" diye işaretlenir.
    Bu çıktı **size** gelir, dilekçeye girmez.
 6. **Taslak yazılır, kapılardan geçer, UDF üretilir.** Zorunlu unsurlar, künye izi,
@@ -385,7 +385,7 @@ adımları için depo kökündeki [README](../../README.md) dosyasına bakın.
 | [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi | — |
 | [`oa-kiyas`](skills/oa-kiyas/) | Açık kıyas + içtihat muhakemesi | 1 script |
 | [`oa-strateji`](skills/oa-strateji/) | Yol seçimi + maliyet-fayda | — |
-| [`oa-antitez`](skills/oa-antitez/) | Sekiz cephe + gizli cephanelik | 1 script |
+| [`oa-antitez`](skills/oa-antitez/) | Dokuz cephe + gizli cephanelik | 1 script |
 | [`oa-dilekce`](skills/oa-dilekce/) | Dilekçe yazımı + UDF üretimi | 4 script |
 | [`oa-sozlesme`](skills/oa-sozlesme/) | Sözleşme tahrir / redline | 1 script |
 | [`oa-kontrol`](skills/oa-kontrol/) | Teslim kapıları + makbuz | 4 script |

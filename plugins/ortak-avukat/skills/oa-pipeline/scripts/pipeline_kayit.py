@@ -169,7 +169,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.15"
+OA_SURUM = "0.5.16"
 
 
 def _surum_tuple(s):
@@ -2605,23 +2605,19 @@ def _kutuk_dilekce_sayaci(kok):
 def _vakia_delilsiz_unsur_uyarisi(kok):
     """M4 (Paket D, v0.5.5) — UNSUR ŞABLONLARI: `oa-vakia/scripts/vakia_matris.py
     --dogrula ... --json <yol>` çıktısındaki `ispat_bosluklari` (delilsiz
-    iddia/unsur id'leri) `_oa/cikti/*vakia*.json` dosyalarından toplanır.
+    iddia/unsur id'leri) `arac == vakia_matris` damgalı `_oa/cikti/*.json` dosyalarından toplanır.
     Bu bir hukuki değerlendirme DEĞİLDİR — yalnız oa-vakia'nın KENDİ ürettiği
     JSON'u okur (DURUM.md salt-okur; ikinci bir denetim mantığı İCAT ETMEZ).
     Dosya yok/okunamaz/beklenmedik şemalıysa SESSİZCE boş liste döner (bu
-    advisory bir renderer alanıdır, asla çökmez)."""
-    cdiz = os.path.join(kok, "_oa", "cikti")
-    if not os.path.isdir(cdiz):
-        return []
+    advisory bir renderer alanıdır, asla çökmez).
+
+    v0.5.16 / H5 (entegrasyon hizalaması): `*vakia*.json` DOSYA-ADI sözleşmesi
+    KALDIRILDI — K1 ile aynı sınıf kopuş (SKILL örneği başka ad verirse bekçi
+    kör kalır, sahte yeşil). Artık `arac == vakia_matris` damgalı
+    `_oa/cikti/*.json` (bkz. `_denetim_jsonlari`); aile_dogrula KİLİT-A bu
+    bekçiyi de denetler."""
     uyarilar = []
-    for yol in sorted(glob.glob(os.path.join(cdiz, "*vakia*.json"))):
-        try:
-            with open(yol, encoding="utf-8", errors="replace") as f:
-                m = json.load(f)
-        except Exception:
-            continue
-        if not isinstance(m, dict):
-            continue
+    for yol, m in _denetim_jsonlari(kok, "vakia_matris"):    # H5: ad-bağımsız
         bosluklar = m.get("ispat_bosluklari") or []
         if not bosluklar:
             continue
@@ -4127,7 +4123,7 @@ def _hat_atlandi_uyarisi(kok):
             "  denetlenmemiştir:\n"
             "    · oa-sure      — süre/zamanaşımı deterministik hesabı\n"
             "    · oa-vakia     — iddia↔delil matrisi, ispat boşluğu\n"
-            "    · oa-antitez   — sekiz cephe, çürütülmemiş antitez\n"
+            "    · oa-antitez   — dokuz cephe, çürütülmemiş antitez\n"
             "    · oa-kontrol   — teslim öncesi künye/atıf denetimi + makbuz\n"
             "    · oa-gizlilik  — Layer 0 dış çıktı süzgeci\n"
             "  Hattı açmak için: `python pipeline_kayit.py --baslat \"<dosya adı>\"`\n"
@@ -4898,7 +4894,7 @@ def hook_prompt(kok=None):
             "DEVİRDİR ve devir SÖZLE değil ÇAĞRIYLA olur — parçaların description'larını "
             "okuyup disiplini taklit etmek o parçayı çalıştırmak DEĞİLDİR.\n"
             "Atlanırsa şunlar hiç koşmaz: oa-sure (süre/zamanaşımı aritmetiği) · "
-            "oa-vakia (iddia↔delil matrisi) · oa-antitez (sekiz cephe) · "
+            "oa-vakia (iddia↔delil matrisi) · oa-antitez (dokuz cephe) · "
             "oa-kontrol (teslim öncesi künye/atıf denetimi + makbuz) · "
             "oa-gizlilik (Layer 0). Çıktı doğru görünse bile DENETLENMEMİŞ olur.\n"
             "Bu bir ENGEL DEĞİLDİR: tek ve izole bir soru soruluyorsa tam hattı açma; "

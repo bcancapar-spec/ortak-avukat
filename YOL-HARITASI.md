@@ -3,7 +3,12 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (2026-08-15 · v0.5.8.4)
+## DURUM — son (2026-09-07 · v0.5.16)
+- **Paket v0.5.16 — İki Denetimin İnfazı** (birleşim ucu `10aa5c1`): 2026-09-06 iki dış denetimin reçetesi (K1–K5/G1–G12/H/P/D + A-1..A-28/B-1..B-8) 15 grup dalında uygulandı, hakem + Yargı Pro teyidinden geçti, main'e `--no-ff` birleşti; entegrasyon hizalamaları H1–H5; `aile_dogrula` TEMİZ; süit toplama 2301 (tam süit sonucu STATUS §0).
+- **Kodda kapanan yol-haritası maddeleri (aşağıda ✅):** `hesapla_sure.py` adli tatil istisnası (`--adli-tatil-istisna`, ceza/tutuklu rejimi ayrımı; I5 ayrıca aşama tetikli süre sınıfı) · `_oa/` KVKK: senkron klasör uyarısı + şifreli konteyner/cihaz koruması önerisi (D, oa-gizlilik «Senkron klasör riski») — saklama (retention) ritüeli hâlâ açık.
+- **Açık:** saha "sonra" ölçümü · push · B-4 filter-repo kararı · udf-cli pin · tarife doldurma · §11 yerel kurulu eklentinin 0.5.16'ya çekilmesi (hook_doktor: kurulu 0.5.9.1 BAYAT).
+
+## DURUM — 2026-08-15 · v0.5.8.4 (önceki)
 - **Paket v0.5.8.4** (`fc9cb31`) — zincirin **ilk yeşil CI** koşusu; iki saha koşusu (447 vergi + 372 Torbalı) ve 5 kollu adli analiz v0.5.8.4 infazıyla kapandı; tam süit 1048 yeşil / 1 tasarımsal atlama; sırada v0.5.8.4'ün kendi saha provası.
 - **K4 KAPANDI:** gerçek dosyada uçtan uca prova + UDF gerçek UYAP editör teyidi yapıldı (Denizli tek-prompt koşusu, e-imzalı nüsha ölçümü v0.5.7.2, 372'de kenar-yaması A/B testi).
 
@@ -90,14 +95,14 @@
 
 - ✅ **UDF çıktısını pipeline'a bağla** — UDF hattı teslim paketinde (`md → UDF-HTML → npx html2udf`, fail-closed, v0.5.5); gerçek UYAP editör teyidi yapıldı (v0.5.7.2 e-imzalı nüsha + 372 A/B testi). v0.5.8.4: elle-UDF engeli 3 katman + üretim makbuzu.
 - ✅ **`dilekce_denetim.py`** — kodda + testli; [F]/[G4]/[G5]/[H]/[I]/[J]/[K] kapıları sürüm sürüm eklendi.
-- ⬜ **`hesapla_sure.py` v3+** — HMK m.103/104 **adli tatil istisnası** (nafaka/işçi vb. tatilde görülen işlerde uzatma YOK → şu an koşulsuz uzatıyor, tek somut hukuki-hata riski); CMK/İİK/6183 süre kuralları JSON'a; `--uets` e-tebligat +5; altın-vaka pytest genişletme.
+- ✅ **`hesapla_sure.py` v3+** — adli tatil istisnası kodda (`--adli-tatil-istisna`; ceza kolunda CMK m.331 rejimi HMK m.104'ten ayrıldı), `--uets` +5, kural tablosu JSON, `--json`; v0.5.16/I5: **aşama tetikli süre sınıfı** (`tur: asama`, `sure_nobetci` [≡] bloğu, `oa_hafiza.py sure-flag --asama`). ⏳ Kalan: tatilde görülen iş kataloğunun (nafaka/işçi vb.) kural tablosuna otomatik bağlanması — bugün bayrak avukat kararıyla verilir.
 - ✅ **`sureler.json` mekanik çıpası** — `oa_hafiza.py sure-flag` yazar; oturum açılışında `sure_nobetci.py` refleksi zorunlu (GEÇMİŞ/BUGÜN/D-7 → exit 3).
 - ✅ **kunye_teyit + tam_tur'u pipeline defterine bağla** — `teslim_paketi.py` zinciri + Gate-G (bkz. MUTABAKAT).
 - ✅ **`ajan-brif` anayasa enjeksiyonu** — yapıldı (bkz. §5).
 
 ## 3. P2 — olgunlaştırma (orta vadeli)
 
-- ⬜ **`_oa/` KVKK yaşam döngüsü** — dosya kapanınca **saklama** (retention) ritüeli; şifreli konteyner opsiyonu (dizüstü kaybı senaryosu — `_oa` düz metin müvekkil verisidir).
+- ⏳ **`_oa/` KVKK yaşam döngüsü** — ✅ v0.5.16/D: **senkron klasör riski** (`oa_hafiza.py init` görünür uyarı + `_oa/defter/senkron-uyari.json` + DURUM.md; oa-gizlilik «Senkron klasör riski» — şifreli konteyner/cihaz koruması önerisi P1'e alındı); ⬜ dosya kapanınca **saklama** (retention) ritüeli hâlâ açık.
 - ⬜ **Arşiv anonimleştirme mekanik kapısı** — `arsiv-yerel → genel` terfisinde gizlilik kütüphanesiyle isim/TCKN taraması; dosya adında esas-no KABUL. (oa-arsiv düşük öncelik; kapı hafif tutulur.)
 - ✅ **graf/vakia/kiyas şema birleşimi + `--json`** — `--json` dört motorda + `usul_matris`'te; ilk gerçek tüketici `DURUM.md` advisory bağlantısı (v0.5.8 öncesi, `216e343`); ortak kimlik tarafında **özne eşleştirici M9 motoru** (`ozne_eslestirici.py`, v0.5.8) `oa-vakia` tetiğine bağlandı (v0.5.8.4).
 - ✅ **`oa_metrik.py`** — kodda (v0.5.5'ten beri); analiz token raporu + override/şerh oranı + görünmez-kaçış sayaçları.

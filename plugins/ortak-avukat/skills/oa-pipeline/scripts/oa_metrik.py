@@ -391,11 +391,18 @@ def olc_regresyon(kok, analiz_token_raporu, override_sayaci):
     (analiz_token_raporu'ndan devralınır — iki kez ayrıştırılmaz)."""
     cikti_dizin = os.path.join(_oa_kok(kok), "cikti")
     import glob as _glob
-    desen_map = {"04-vakia": "04-vakia*", "05-kiyas": "05-kiyas*",
-                 "06-strateji": "06-strateji*", "07-antitez": "07-antitez*"}
+    # v0.5.16 / P0-3 (H2 entegrasyon hizalaması): sabit hat 6 = ANTİTEZ, 7 = STRATEJİ;
+    # evrak önekleri yeni ada çekildi (06-antitez*, 07-strateji*); ≤v0.5.15 adları
+    # (07-antitez*, 06-strateji*) pipeline_kayit bekçisi gibi geriye uyumla sayılır.
+    desen_map = {"04-vakia": ("04-vakia*",), "05-kiyas": ("05-kiyas*",),
+                 "06-antitez": ("06-antitez*", "07-antitez*"),
+                 "07-strateji": ("07-strateji*", "06-strateji*")}
     artefakt_matrisi = {}
-    for ad, desen in desen_map.items():
-        eslesen = _glob.glob(os.path.join(cikti_dizin, desen)) if os.path.isdir(cikti_dizin) else []
+    for ad, desenler in desen_map.items():
+        eslesen = []
+        if os.path.isdir(cikti_dizin):
+            for desen in desenler:
+                eslesen.extend(_glob.glob(os.path.join(cikti_dizin, desen)))
         artefakt_matrisi[ad] = bool(eslesen)
 
     # Muhakeme kaydı sayısı — P0-2 tek-komutunun bölüm-append ürettiği

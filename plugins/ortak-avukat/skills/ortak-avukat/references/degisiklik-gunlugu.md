@@ -35,3 +35,11 @@
 - **2026-07 (v3.22 — M3-4 hizalama):** m.5'e (Doğrulama mimarisi) tek satır açık ölçüt eklendi (Fable — combined tur kapanışı): "İçtihat dilekçeye yalnız teyitli değil MUHAKEME EDİLMİŞ (tam metin çekilmiş + davaya bağı kurulmuş + LEHE/ALEYHE/ALEYHE-AYIRT damgalı) girer" — M2-1/M3-3'te kurulan Teyit≠Muhakeme ilkesinin dilekçe-giriş eşiğini somutlaştıran tek cümle; ilke değişmedi, yalnız operatif netlik eklendi. Aynı adımda tüm aile (20 parça) "Güncel sürüm" işaretçileri ortak M3 faz-sonu sürümüne (v3.26) hizalandı — `aile_dogrula.py` sürüm tutarsızlığı uyarısı kapatıldı.
 - **2026-08-07 (v0.5.7 — ANAYASA m.0: kurucu ilke):** Anayasaya (v3.23) madde 0 eklendi — kullanıcı hükmü: 'Bu plugin ve skill setini kullanan yapay zekâ, Türk hukukunda doğru çıktı üretmek için tanımlardan ve özetlerden değil, kurulu METODOLOJİDEN — tüm yeteneklerle fiilen donatılmış olarak — hareket etmelidir. Bu yetenekler, modelin en verimli ve en başarılı işlem hacmini yaratan, kullanıcı ile yapay zekâ arasındaki KÖPRÜDÜR.' Madde, diğer tüm maddelerin okuma anahtarı olarak konumlandı (m.8 simülasyon yasağı + v0.5.7 taze-kaynak şartıyla mekanik bağı kuruldu); SKILL giriş paragrafına, oa-pipeline 'GERÇEK SCRIPT' maddesine ve iki README DÜSTUR tablosuna (satır 0) işlendi.
 - **2026-08-12 — v0.5.8 fork-prova:** anayasa m.0 dış desen devşirme protokolü fıkrası ONAYLANDI (taslak→hüküm; Can 2026-08-12).
+
+## v0.5.16 — 2026-09-07 · İki Denetimin İnfazı (birleşim + entegrasyon)
+
+> Kaynak: iki dış denetim raporu (2026-09-06, `_gorus/denetim-2026-09-06-*.md`), 15 sahiplik grubu (`v0516/<grup>` dalları), Yargı Pro hakem teyitleri (`_gorus/denetim-v0516-yargipro-teyit-<grup>.md`). Aşağıdaki blok(lar) ilgili grubun ajan raporundaki `changelog_notu` metninin aynıdır; entegratör notu birleşim sonrası hizalamayı (H1–H5) kaydeder.
+
+### Entegratör notu (2026-09-07)
+
+- **Entegrasyon (H2/P0-3):** SKILL.md takım-oyunu hattı `5. KIYAS → 6. ANTİTEZ → 7. STRATEJİ → 8. YAZIM` (eski 6 STRATEJİ / 7 ANTİTEZ sırası düzeltildi). Anayasa (`references/anayasa.md`) 15 grubun madde güncellemeleriyle birleşti (grup ayrıntısı kök CHANGELOG v0.5.16 ve ilgili parça günlüklerinde).

@@ -317,11 +317,15 @@ def test_avukat_karari_hedef_eksikse_hata(tmp_path):
 # ── M4 (Paket D, v0.5.5) — UNSUR ŞABLONLARI: delilsiz unsur DURUM'da kırmızı ─
 
 def test_delilsiz_unsur_vakia_json_ispat_boslugu_durum_mdde_kirmizi(tmp_path):
+    """v0.5.16 / H5: bekçi artık dosya ADINA değil `arac == vakia_matris`
+    DAMGASINA bakar (K1 sınıfı sahte-yeşil kapatıldı) — fikstür vakia_matris.py
+    `--json` çıktısının damgasını taşır; ad-bağımsızlık tests/test_v0516_entegrasyon.py'de."""
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
     cikti = tmp_path / "_oa" / "cikti"
     cikti.mkdir(parents=True, exist_ok=True)
     (cikti / "04-vakia.json").write_text(
-        json.dumps({"ispat_bosluklari": ["U2"], "saglikli": False}, ensure_ascii=False),
+        json.dumps({"arac": "vakia_matris", "ispat_bosluklari": ["U2"], "saglikli": False},
+                   ensure_ascii=False),
         encoding="utf-8")
     kod, _c = _cli(["--goster", "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod == 0

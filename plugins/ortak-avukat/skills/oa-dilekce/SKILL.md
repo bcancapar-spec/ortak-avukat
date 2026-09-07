@@ -376,7 +376,7 @@ pipeline hattı kurulu olmasa bile şu beşli ZORUNLUDUR:
 1. **Link:** her künyenin YANINA kütükteki `KAYNAK-URL` erişim linki yazılır —
    linksiz künye EKSİK atıftır ([G4]; kural v0.5.7.5'ten beri yürürlükte).
 2. **m.6 CEPHANELİK:** karşı tarafın MUHTEMEL savunmalarının analizi ve
-   cevapları DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/07-antitez-cephanelik.md`
+   cevapları DİLEKÇEYE YAZILMAZ — yalnız `_oa/cikti/06-antitez-cephanelik.md`
    iç dosyasına yazılır (farkındalık içindir; dilekçede kurulması savunma
    hattını karşı tarafa HEDİYE etmek ve zayıf noktayı İFŞA etmektir).
    Bilinçli ön-karşılama (praeoccupatio) yalnız avukat onayıyla kalır.
@@ -439,7 +439,7 @@ yalnız DAR İSTİSNAYLA geçer: kütükte `DUYULMUS=EVET` (karşı taraf FİİL
 ileri sürmüş) VE dilekçede ayırt/çürütme bağlamında anılıyor — destek atfı
 olarak asla. **Arama sonucu parçasından alıntı YASAKTIR** — alıntı daima
 GETİR dökümünün tam metninden gelir. Ters yön: kütükte ALEYHE damgalı karar
-cephanelik ürününde (`07-antitez*`) anılmıyorsa [G6] "FARKINDALIK KAYBI"
+cephanelik ürününde (`06-antitez*`; ≤v0.5.15: `07-antitez*`) anılmıyorsa [G6] "FARKINDALIK KAYBI"
 uyarısı basar (advisory) — kararı `oa-antitez` cephaneliğine işlet.
 
 ### [Y]/[M]/[N]/[T] — dilekce_denetim.py desen kapıları

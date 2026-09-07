@@ -28,6 +28,8 @@ def _kunye_kur(kok):
 
 
 def test_artefakt_matrisi_var_yok_dogru(tmp_path):
+    """v0.5.16 / P0-3 (H2): anahtarlar yeni hat sırasıyla (06-antitez, 07-strateji);
+    ≤v0.5.15 adı `07-antitez-*` geriye uyumla 06-antitez hücresini doldurur."""
     _kunye_kur(tmp_path)
     cikti = tmp_path / "_oa" / "cikti"
     cikti.mkdir(parents=True, exist_ok=True)
@@ -39,9 +41,10 @@ def test_artefakt_matrisi_var_yok_dogru(tmp_path):
     metrik = json.loads((tmp_path / "_oa" / "defter" / "metrik.json").read_text(encoding="utf-8"))
     am = metrik["regresyon_sayaclari"]["artefakt_matrisi"]
     assert am["05-kiyas"] is True
-    assert am["07-antitez"] is True
+    assert am["06-antitez"] is True      # eski ad 07-antitez-* geriye uyumla sayıldı
     assert am["04-vakia"] is False
-    assert am["06-strateji"] is False
+    assert am["07-strateji"] is False
+    assert "07-antitez" not in am and "06-strateji" not in am
 
 
 def test_muhakeme_kayit_sayisi_kunye_bolum_sayar(tmp_path):

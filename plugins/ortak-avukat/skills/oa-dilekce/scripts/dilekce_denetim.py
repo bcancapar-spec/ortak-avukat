@@ -732,7 +732,7 @@ def _cephanelik_cumleler(metin):
 def cephanelik_ifsa_uyarilari(metin):
     """v0.5.8.1 [K] — m.6 CEPHANELİK BEKÇİSİ (447 provası bulgusu-A):
     karşı tarafın MUHTEMEL savunmalarının analizi dilekçeye yazılmışsa yakala.
-    Bu analiz İÇ CEPHANELİKTİR (_oa/cikti/07-antitez-cephanelik.md) — dilekçede
+    Bu analiz İÇ CEPHANELİKTİR (_oa/cikti/06-antitez-cephanelik.md; ≤v0.5.15: 07-antitez-*) — dilekçede
     kurulması, karşı tarafa savunma hattını HEDİYE etmek ve kendi zayıf
     noktalarını İFŞA etmektir. ADVISORY: bilinçli ön-karşılama (praeoccupatio)
     nadiren meşru bir retorik tercihtir — karar avukatta, script BLOKLAMAZ."""
@@ -744,7 +744,7 @@ def cephanelik_ifsa_uyarilari(metin):
             parca = " ".join(cumle[:m.end() + 50].split())
             uyarilar.append(
                 f"muhtemel-savunma analizi dilekçede: \"…{parca[:140]}…\" — m.6: "
-                "bu analiz CEPHANELİĞE yazılır (07-antitez), dilekçeye DEĞİL; "
+                "bu analiz CEPHANELİĞE yazılır (06-antitez), dilekçeye DEĞİL; "
                 "bilinçli ön-karşılama ise avukat onayıyla kalabilir")
             break          # aynı cümleden tek uyarı (gürültü yasağı)
         if len(uyarilar) >= 6:

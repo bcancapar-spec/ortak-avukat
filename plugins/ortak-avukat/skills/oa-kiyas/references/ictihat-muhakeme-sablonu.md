@@ -237,7 +237,7 @@ alanları, (3) `DAMGA=LEHE` aranır. **NOTR artık BLOK'tur** (v0.5.8.5 sözleş
 değişimi — eskiden uyarıydı). `ALEYHE-AYIRT` yalnız `DUYULMUS=EVET` +
 dilekçede ayırt/çürütme bağlamı dar istisnasıyla geçer — destek atfı olarak
 asla. TERS DENETİM (advisory): kütükte son damgası ALEYHE olup cephanelik
-ürünlerinde (`07-antitez*`) anılmayan karar "FARKINDALIK KAYBI" uyarısı alır.
+ürünlerinde (`06-antitez*`; ≤v0.5.15: `07-antitez*`) anılmayan karar "FARKINDALIK KAYBI" uyarısı alır.
 
 Kullanım örnekleri:
 

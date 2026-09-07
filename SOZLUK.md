@@ -215,6 +215,71 @@ karar tebliğe çıkmaz.
 neyin kırıldığı, hangi onarımın doğduğu. Başarısızlıklar da yazılır;
 sürümler karneden doğar ([SAHA-DENEYLERI.md](SAHA-DENEYLERI.md)).
 
+## v0.5.16 terimleri (İki Denetimin İnfazı — 2026-09-07)
+
+**Akıbet:** Bir kararın bugünkü hukuki durumu — kesinleşti / kesinleşmedi /
+bozuldu / kaldırıldı / geri çevrildi. Emsal diye dayanmadan önce sorulur:
+"bu karar hâlâ ayakta mı?" `oa_hafiza.py teyit --akibet` yazar (kaynak: araç
+ya da avukat beyanı — sınıfı görünür), `ictihat_muhakeme_denetim.py`
+[G5-AKIBET] okur: LEHE damgalı ama bozulmuş/kaldırılmış karar dilekçeye
+giremez (teslim engeli).
+
+**EKSİK KÜNYE:** Yalnız tarihle ("Yargıtay'ın 12.09.2023 tarihli kararı") ya da
+yalnız karar numarasıyla anılan içtihat. Bir kütüphaneciye "geçen yılki o
+karar" demek gibidir — bulunamaz, teyit edilemez. v0.5.16'da esas+karar
+tamamlanmadan dilekçe teslim edilemez (BLOK).
+
+**Bağlanmamış delil:** Dosyada var ama hiçbir iddiaya/kenara bağlanmamış delil
+(oa-illiyet grafında `baglanmamis_deliller`, oa-vakia'da "yetim delil").
+Klasörde duran ama hiçbir dilekçede anılmayan belge — ya gereksizdir ya da
+unutulmuş bir koz.
+
+**Aşama tetikli süre:** Takvimle değil yargılamanın bir aşamasıyla kapanan
+süre: ilk itiraz cevap dilekçesiyle (HMK m.117/1), ıslah tahkikat bitene kadar
+(m.177/1), katılma hüküm verilinceye kadar (CMK m.237). Deftere `tur: asama`
+olarak girer; süre nöbetçisi bunları ayrı `[≡]` blokta gösterir, gün sayımına
+katmaz. Yazıcılar: `hesapla_sure.py --kural <aşama kuralı> --kok .` ve
+`oa_hafiza.py sure-flag --asama … --pipeline-adimi N`.
+
+**Müvekkil kararı düğümü:** Hattın avukatın değil müvekkilin karar vermesi
+gereken noktası (sulh teklifi, dava değeri, risk kabulü, tedbir teminatı).
+`pipeline_kayit.py --muvekkil-karari` kaydeder, gerekçeli `--muvekkil-karari-kapat`
+ile kapanır; kapanmamış karar DURUM.md'de "Müvekkil Kararı Bekleyen" olarak
+görünür (Av.K. m.34 bilgilendirme şablonu oa-pipeline references'ta).
+
+**Avukat hükmü sensörü:** Sistemin ürettiği her teslimde avukatın verdiği
+hükmün (KABUL / REVİZYONLA / RET + sebep) `_oa/defter/avukat-hukmu.jsonl`
+defterine yazılması. Sayım görünürdür; oa-usta damıtmayı tekrar sayacıyla
+değil bu revize diff'iyle tetikler. Refleks KABUL alan alan "silinmeyi hak
+eder" (SICRAMA-NOTU §5).
+
+**Senkron klasör riski:** `_oa/` kökünün OneDrive / Google Drive / Dropbox gibi
+bir bulut senkron klasöründe yaşaması. Meslek sırrının en sık sızma yolu dış
+araç çağrısı değil budur — Layer 0 çağrıyı süzer, klasörü süzmez. `init`
+görünür uyarır ve deftere iz bırakır (Av.K. m.36; KVKK m.6, m.9).
+
+**Kanun yolu zinciri / iniş:** Aynı uyuşmazlığın Yargıtay → BAM → ilk derece
+kararlarının birbirine bağlanması (`kanun_yolu_zinciri.py`, `kanun_yolu`
+kenarı, `karar`/`mahkeme` düğüm tipleri). "İniş ritüeli": üst mahkeme
+kararından alt derecedeki somut olguya kadar inip emsalin gerçekten aynı
+olguya oturduğunu görmek — künyeyi bulmak yetmez.
+
+**Yarışan norm:** Aynı olguya birden fazla kanun hükmünün uygulanabildiği
+durum (özel/genel, sonraki/önceki, ağır/hafif). oa-alan/oa-kiyas v0.5.16'da
+yarışmayı gizlemez: adayları yan yana koyar, seçim gerekçesini yazar, seçilmeyen
+normu antitez cephesine devreder.
+
+**İfa senaryo testi:** Bir sözleşme klozunun kâğıt üzerinde değil "ne olursa ne
+olur" sorularıyla sınanması: gecikme, kısmi ifa, ayıp, fesih, mücbir sebep
+senaryolarında kloz kimi korur? `oa-sozlesme` v0.5.16'da senaryo boşluklarını
+(`senaryo_bosluklari`) çıkarır — tapuyu okumak yerine evi sel basınca ne olacağını
+sormak gibidir.
+
+**Damga sözleşmesi (bekçi ↔ üretici):** Pipeline bekçilerinin bir aracın
+çıktısını dosya ADINDAN değil, aracın kendi yazdığı `"arac": "<ad>"` damgasından
+tanıması (K1). Dosya adı değişince bekçinin kör kalması ("sahte yeşil") böyle
+kapandı; `aile_dogrula` KİLİT-A bu sözleşmeyi mekanik denetler.
+
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her
 terim bir eksikliktir — bildirin, eklensin.*

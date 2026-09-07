@@ -13,7 +13,7 @@
 > devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
 > ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
-**Sürüm:** 0.5.15 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.16 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.15'e gelen
@@ -90,7 +90,7 @@ cümle yazarsınız, kararları siz verirsiniz.** Aradaki her şeyi sistem yür�
    süre, dosyadaki telafisi olmayan tek hatadır.
 4. **Olgu ve hukuk ayrı ayrı kurulur.** Kronoloji ve iddia↔delil matrisi bir yanda;
    norm, tam metniyle doğrulanmış içtihat ve açık kıyas öbür yanda.
-5. **Karşı taraf simüle edilir.** Sekiz cephede size gelebilecek her saldırı
+5. **Karşı taraf simüle edilir.** Dokuz cephede size gelebilecek her saldırı
    çıkarılır ve çürütülür; çürütülemeyen dürüstçe "artık risk" diye işaretlenir.
    Bu çıktı **size** gelir, dilekçeye girmez.
 6. **Taslak yazılır, kapılardan geçer, UDF üretilir.** Zorunlu unsurlar, künye izi,
@@ -647,7 +647,7 @@ anatomi (hangi tema, neyi güvence altına alır):
 | Pipeline / defter | Adım zinciri, kanıt şartı, append-only defter bütünlüğü, oturum damgası |
 | Teslim zinciri / makbuz | Dokuz kapının sırası, RED/yeşil makbuz garantisi, filo tazeliği, 40-UYAP kopyaları |
 | Hafıza / devir | `_oa` iskeleti, oturum devri, çalışma hafızasının senkronu |
-| Vakıa / antitez / kıyas | Kronoloji-delil eşlemesi, sekiz cephe bütünlüğü, unsur eşleşme denetimi |
+| Vakıa / antitez / kıyas | Kronoloji-delil eşlemesi, dokuz cephe bütünlüğü, unsur eşleşme denetimi |
 | Süre hesabı | Usul ve maddi süreler, adli tatil ayrımı, son-gün hesabı |
 | Ingest / OCR | Evrak sayımı, metin çıkarımı, OCR damgası, künye/indeks üretimi |
 | Aile / sürüm bütünlüğü | Manifest-sürüm-hook tutarlılığı, parmak izi, "N skill" sayımı, vitrin sürüm damgaları |

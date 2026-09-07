@@ -28,6 +28,8 @@ Kullanım (çalışılan klasörün kökünden — ya da mutlak --kok ile):
   # v0.5.8.6 (G1) — serbest-format triyaj/okuma-muhakemesi belgesini kütüğe alma:
   python oa_hafiza.py triyaj-ice-al --dosya okuma-muhakemesi.md [--ham-dizin _oa/teyit/ham]
   python oa_hafiza.py sure-flag --tarih 2026-08-14 --aciklama "istinaf son günü" --kural hmk_istinaf
+  python oa_hafiza.py sure-flag --asama "cevap dilekçesi (dilekçeler aşaması)" --pipeline-adimi 8 --aciklama "ilk itirazlar cevap dilekçesiyle" --kural hmk_ilk_itiraz
+  # v0.5.16 (H1) — AŞAMA TETİKLİ süre: tarihsiz kayıt (tur: asama); sure_nobetci.py [≡] bloğu
   python oa_hafiza.py ajan-brif --parca oa-antitez --gorev "..." [--skill-yol YOL]
   python oa_hafiza.py oturum --not "ara not"
   python oa_hafiza.py oturum-kapat --not "yapılan / kalan / bekleyen avukat kararı"
@@ -1972,17 +1974,76 @@ def cmd_triyaj_ice_al(args):
              "(araç kapı değildir — çıkış 0)." if alinamayan else ""))
 
 
+ASAMA_TUR = "asama"   # v0.5.16 / H1 — sure_nobetci.py / hesapla_sure.py ASAMA_TUR ile aynı değer
+
+
+def _asama_kaydi_yaz(args, d, syol):
+    """v0.5.16 / H1 (entegrasyon hizalaması) — AŞAMA TETİKLİ süre kaydı.
+    I5 `sure_nobetci.py` `tur: asama` kayıtlarını ayrı blokta okuyor ve
+    `hesapla_sure.py --kural <asama_kurali> --kok .` bunları yazabiliyordu;
+    ama KANONİK yazıcı (`oa_hafiza.py sure-flag`) aşama kaydı YAZAMIYORDU —
+    avukat elle `--tarih` uydurmak zorunda kalırdı. Şema (I5 ile birebir):
+    {"tur":"asama","asama":<ad>,"pipeline_adimi":N,"aciklama","kural","kayit"}
+    — son_gun/tarih alanı YOKTUR (tarih yok demek, boş tarih yazmak değil).
+    Aynı (kural|aciklama, asama) çifti zaten kayıtlıysa tekrar eklenmez
+    (hesapla_sure._asama_flagini_yaz ile aynı tekilleştirme)."""
+    if args.tarih:
+        sys.exit("RET: --asama ile --tarih birlikte verilemez — aşama tetikli süre "
+                 "TAKVİMLE değil yargılamanın aşamasıyla kapanır (sure_nobetci.py "
+                 "tarihli aşama kaydını sayıma katmaz; sessiz kayıp yasağı). "
+                 "Takvim süresi için --tarih'i tek başına kullanın.")
+    if args.tur:
+        sys.exit("RET: --asama kaydının türü daima 'asama'dır — --tur usul|maddi verilemez.")
+    if not args.aciklama:
+        sys.exit("RET: --asama kaydı --aciklama ister (hangi işlem hangi aşamada kapanıyor).")
+    if args.pipeline_adimi is None:
+        sys.exit("RET: --asama kaydı --pipeline-adimi N ister (0-10; oa-pipeline sabit hat "
+                 "adımı — sure_nobetci.py [≡] bloğu bu numaraya göre sıralar).")
+    if not (0 <= args.pipeline_adimi <= 10):
+        sys.exit(f"RET: --pipeline-adimi {args.pipeline_adimi} geçersiz — 0..10 (MANİFEST..KAPANIŞ).")
+    asama = args.asama.strip()
+    if not asama:
+        sys.exit("RET: --asama boş olamaz.")
+    for f_ in d["flagler"]:
+        if (isinstance(f_, dict) and f_.get("tur") == ASAMA_TUR
+                and f_.get("asama") == asama
+                and (f_.get("kural") or f_.get("aciklama")) == (args.kural or args.aciklama)):
+            print(f"Aşama kaydı ZATEN VAR (tekrar eklenmedi): {asama} — {args.aciklama}")
+            print(f"Defter: {syol}")
+            return
+    kayit = {"tur": ASAMA_TUR, "asama": asama, "pipeline_adimi": args.pipeline_adimi,
+             "aciklama": args.aciklama, "kural": args.kural, "kayit": ts()}
+    d["flagler"].append(kayit)
+    d["flagler"].sort(key=lambda x: x.get("son_gun") or x.get("tarih") or "")
+    with open(syol, "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, indent=2)
+    print(f"Aşama tetikli süre kaydı işlendi [≡]: adım-{args.pipeline_adimi} · {asama} — "
+          f"{args.aciklama}" + (f" ({args.kural})" if args.kural else ""))
+    print(f"Yazıldı: {syol} (sure_nobetci.py --kok . bu kaydı AYRI [≡] blokta gösterir; "
+          "tarih sayımına ve acil sınıfına KATMAZ).")
+    print("UYARI: aşama kaydı takvimle kapanmaz — pipeline_kayit.py ilgili adımı "
+          "UYGULANDI yapmadan önce bu işlemin yapıldığını kontrol edin.")
+
+
 def cmd_sure_flag(args):
     kontrol()
-    if not (args.tarih and args.aciklama):
-        sys.exit("RET: süre flag'i --tarih ve --aciklama ister (--kural önerilir).")
     syol = yol("sureler.json")
     try:
         d = json.load(open(syol, encoding="utf-8"))
     except Exception:
         d = {"flagler": []}
+    if not isinstance(d, dict):
+        d = {"flagler": []}
     if not isinstance(d.get("flagler"), list):
         d["flagler"] = []
+    if getattr(args, "asama", None) is not None:
+        return _asama_kaydi_yaz(args, d, syol)
+    if getattr(args, "pipeline_adimi", None) is not None:
+        sys.exit("RET: --pipeline-adimi yalnız --asama ile birlikte verilebilir "
+                 "(aşama tetikli kayıt); takvim süresi için --tarih kullanın.")
+    if not (args.tarih and args.aciklama):
+        sys.exit("RET: süre flag'i --tarih ve --aciklama ister (--kural önerilir); "
+                 "aşama tetikli süre için --asama <ad> --pipeline-adimi N.")
     # KANONİK ŞEMA (sure_nobetci.py ile PAYLAŞILAN kayıt biçimi — mimari tutarlılık):
     # "son_gun" kanonik alan adıdır; "tarih" GERİYE UYUMLULUK için AYNEN korunur
     # (mevcut çağıranlar/CLI bayrağı --tarih değişmedi). sure_nobetci.py her iki
@@ -2383,6 +2444,12 @@ def main():
     s.add_argument("--tarih"); s.add_argument("--aciklama"); s.add_argument("--kural")
     s.add_argument("--tur", choices=["usul", "maddi"],
                     help="süre türü (sure_nobetci.py etiketinde gösterilir); opsiyonel")
+    s.add_argument("--asama", default=None,
+                    help="v0.5.16/H1 — AŞAMA TETİKLİ kayıt (tur: asama; tarihsiz): "
+                         "işlemin kapandığı yargılama aşaması (ör. 'cevap dilekçesi "
+                         "(dilekçeler aşaması)'); --pipeline-adimi ZORUNLU, --tarih YASAK")
+    s.add_argument("--pipeline-adimi", dest="pipeline_adimi", type=int, default=None,
+                    help="--asama ile: oa-pipeline sabit hat adımı (0-10)")
     s = sub.add_parser("ajan-brif", parents=[ortak])
     s.add_argument("--parca", required=True); s.add_argument("--gorev", required=True)
     s.add_argument("--skill-yol")

@@ -36,7 +36,7 @@ python scripts/antitez_matris.py --iskelet
 
 # 2) Matrisi muhakemeyle doldur (her cephe için antitez + çürütme + dayanak + artık risk),
 #    sonra bütünlüğünü denetle:
-python scripts/antitez_matris.py --dogrula _oa/cikti/07-antitez-matris.json
+python scripts/antitez_matris.py --dogrula _oa/cikti/06-antitez-matris.json
 ```
 
 Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): usul · maddi vakıa · ispat/delil · hukuki niteleme · içtihat · zamanaşımı · def'i/karşı talep · müvekkil zaafı · **bilirkişi/teknik** (v0.5.16). Denetim deterministik olarak şunları yakalar: **açık cepheler** (değerlendirilmemiş = kör nokta), **çürütülmemiş antitezler** (ne çürütme ne risk işareti), **teyitsiz dayanak** (atıf denetimi → `oa-kontrol` A / `oa-ictihat`), güçlü antiteze dayanaksız çürütme, ve dürüst **artık riskler**.
@@ -66,7 +66,7 @@ Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
    verilmeyeceği **avukatın takdiridir**; sistem otomatik gündem oluşturmaz.
 
 ## Kompozisyon (iki konum — v0.5.16 P0-3 hizalaması: `oa-pipeline` sabit hattıyla aynı sıra)
-- **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/07-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — ADIM numarası değişse de dosya öneki DEĞİŞMEZ). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).
+- **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/06-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — v0.5.16'da önek adım numarasını izler: `06-antitez*`; ≤v0.5.15 adı `07-antitez*` pipeline bekçisi ve [G] kapısı (`*antitez*.json`) tarafından geriye uyumla kabul edilir). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).
 - **Geç (sağlamlık) = YAZIM (adım 8) sonrası / KONTROL (adım 9) öncesi:** dilekçe taslağı çıkınca matris yeniden dolaşılır — taslaktaki her argüman çökertilmeye karşı test edilmiş, DUYULMUŞ cephelerin çürütmesi metne çapalanmış olsun; `oa-kontrol` C2/[G] bu geç pasın mekanik aynasıdır.
 Çürütme dayanakları daima `oa-ictihat` üzerinden teyitli; bu parça `oa-kontrol`'ün protokol temelinin üstüne kurulu deterministik motordur.
 
@@ -101,10 +101,10 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 > (strateji/farkındalık); NÖTR kütükte kalır."
 
 - **ALEYHE damgalı her kararı cephanelik ürününe FİİLEN İŞLE** (matris /
-  `_oa/cikti/07-antitez-cephanelik.md`) — kütükte damgalı durması yetmez;
+  `_oa/cikti/06-antitez-cephanelik.md`) — kütükte damgalı durması yetmez;
   işlenmemiş aleyhe karar farkındalık kaybıdır. Mekanik ayna: [G6] TERS
   DENETİMİ, kütükte son damgası ALEYHE olup cephanelik ürünlerinde
-  (`07-antitez*`) hiç anılmayan kararı **"FARKINDALIK KAYBI"** uyarısıyla
+  (`06-antitez*`; ≤v0.5.15: `07-antitez*`) hiç anılmayan kararı **"FARKINDALIK KAYBI"** uyarısıyla
   görünür kılar (advisory — bloklamaz; giderilmesi bu parçanın işidir).
 - **Duyulma anı kütüğe işlenir:** karşı taraf cephanelikteki aleyhe kararı
   FİİLEN ileri sürünce `oa_hafiza.py teyit --duyulmus` ile `DUYULMUS=EVET`

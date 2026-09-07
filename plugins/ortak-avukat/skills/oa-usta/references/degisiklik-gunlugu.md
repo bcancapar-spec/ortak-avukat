@@ -24,3 +24,20 @@
   keşif yapan bir üst katman aracı bunu "bozuk/yok" sayabiliyordu. Argümansız çağrının
   hâlâ kullanım hatası (exit != 0) olması AYNEN korundu.
   Test: `tests/test_v0514_pipeline.py::test_b27_aile_dogrula_help_exit0`.
+
+## v0.5.16 — 2026-09-07 · İki Denetimin İnfazı (birleşim + entegrasyon)
+
+> Kaynak: iki dış denetim raporu (2026-09-06, `_gorus/denetim-2026-09-06-*.md`), 15 sahiplik grubu (`v0516/<grup>` dalları), Yargı Pro hakem teyitleri (`_gorus/denetim-v0516-yargipro-teyit-<grup>.md`). Aşağıdaki blok(lar) ilgili grubun ajan raporundaki `changelog_notu` metninin aynıdır; entegratör notu birleşim sonrası hizalamayı (H1–H5) kaydeder.
+
+### Grup G — kaynak rapor `04-G-uygula.json`
+
+## v0.5.16 — YAPISAL KİLİTLER (Hamle 10) · SÜRÜM İŞARETÇİSİ (P2-10/B-3) · HATA TETİKLİ DAMITMA (P2-8/A-27/A-28)
+- **2026-09-06 (v0.5.16 — Hamle 10, K1):** `scripts/aile_dogrula.py` KİLİT-A `bekci_skill_sozlesmesi()`: `oa-pipeline/scripts/pipeline_kayit.py` boşluk bekçilerinin (`_graf_yapisal_bosluk_uyarisi` / `_kiyas_bosluk_uyarisi` / `_usul_bosluk_uyarisi`) `glob.glob(os.path.join(cdiz, "…"))` desenleri, ilgili parçanın (oa-illiyet / oa-kiyas / oa-usul) SKILL.md örnek komutundaki `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile eşleşmezse HATA («bekçi–skill sözleşme kopuşu (K1)»). Saha dersi: oa-illiyet örneği `01-illiyet-denetim.json` yazdırırken bekçi `*graf*.json` okuyordu → üretilen JSON bekçiye hiç girmedi, DURUM.md sahte yeşil gösterdi (B-28 `05-kiyas*` ↔ `*kiyas*.json` aynı sınıf). Depo-dışı kopyada sessiz (VENDOR deseni); bekçi/desen bulunamazsa UYARI (kilit kör kaldı, gizlenmez). Kapatılan bulgu: K1 / Hamle 10(a) — bekçi tarafı B grubu (`*.json` + damga).
+- **2026-09-06 (v0.5.16 — Hamle 10(b)):** KİLİT-B `kanonik_doktrin_uyum()`: `oa-illiyet/scripts/grafik_denetim.py` `KANONIK` enum değerlerinin her biri `oa-illiyet/references/illiyet-doktrini.md`'de LİTERAL geçmezse HATA («enum↔doktrin ayrışması: <alan> '<değer>' doktrinde yok»); script yüklenemezse UYARI, doktrin dosyası yoksa HATA. Ölçüm (main 80ac847): 23/23 değer doktrinde, 0 ayrışma — A grubu yeni enum eklerken doktrini güncellemezse kapı kırmızı.
+- **2026-09-06 (v0.5.16 — P2-10 / B-3):** `surum_isaretcileri()`: `STATUS.md` «**Sürüm:** X» ve `YOL-HARITASI.md` «## DURUM — son (… · vX)» sürümü `plugin.json` «version» ile eşit değilse UYARI (hata değil — vitrin bayatlığı paketlemeyi durdurmaz, görünür kalır); satır bulunamazsa da UYARI; depo-dışı kopyada sessiz. Test: `tests/test_v0516_G.py::test_surum_isaretcileri` (entegratör bump'ına kadar bilinçli kırmızı).
+- **2026-09-06 (v0.5.16 — P2-8 / A-27 / A-28):** SKILL.md «HATA TETİKLİ DAMITMA» bölümü: damıtma yalnız iş-tipi tekrarıyla (≥3) değil avukat revize diff'iyle tetiklenir (A-27: tek revizeden yedi kural çıktı — tekrar eden iş tipi değil hata tipiydi). Kaynak `_oa/defter/avukat-hukmu.jsonl` (B grubu `pipeline_kayit.py --avukat-hukmu KABUL|REVIZYONLA|RET --sebep …`, append-only, kapı değil); tetik: RET/REVİZYONLA kaydı + ürün↔revize diff → aday kural `[sebep] → [ürün] → [avukat] → [kural] → [parça]`, `_oa/dersler/`'e anonim (m.7). Eşik/oran YOK, KAPANIŞ'ta sayım görünür (kaç teslim → kaçına hüküm → KABUL/REVİZYONLA/RET). SICRAMA-NOTU §5 şartı aynen: refleks KABUL başlarsa alan silinmeyi hak eder; oran düşükse üstüne katman kurulmaz. Model/script ayrımı: diff+sayım mekanik, kural çıkarma yargı. «Aile yapı denetimi» paragrafına üç yeni kilit işlendi.
+- Testler: `tests/test_v0516_G.py` (22 test — sentetik fikstür, iki yön; gerçek ağaç kopyasında `*.json` ile exit 0 kanıtı; KANONİK gerçek depo ölçümü; SKILL.md belge testleri).
+
+### Entegratör notu (2026-09-07)
+
+- **Entegrasyon (H5/G):** `aile_dogrula.py` KİLİT-A B grubunun DAMGA biçimini (`_denetim_jsonlari(kok, "<arac>")`) tanır: desen ortak süzgeçten (`*.json`) alınır + üretici script `"arac": "<arac>"` damgasını yazmıyorsa HATA (damga kopuşu); `_vakia_delilsiz_unsur_uyarisi` → oa-vakia dördüncü bekçi olarak kapsama alındı. Gerçek depoda kilit kör değil, denetim TEMİZ.

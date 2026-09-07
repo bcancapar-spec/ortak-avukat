@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-08-26 · **Sürüm:** 0.5.11 · **Commit:** `26bd278`+
-*(önceki kayıtlar: 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-09-07 · **Sürüm:** 0.5.16 · **Commit:** `10aa5c1`+ (15 dalın birleşim ucu; v0.5.16 tek commit'i bunun üstünde)
+*(önceki kayıtlar: 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -14,6 +14,30 @@ açık kaldığı, sıradaki sürümün neden değiştiği. Beyan değil **ölç
 bir satır ölçülmeden buraya girmez.
 
 ---
+
+## 0. Durum özeti (2026-09-07 · v0.5.16)
+
+- **v0.5.16 — İki Denetimin İnfazı** (kök CHANGELOG): iki dış denetim raporunun
+  (2026-09-06) reçetesi 15 sahiplik grubunda (`v0516/A…I6` dalları) uygulandı →
+  adversarial hakem → onarım → Yargı Pro hakem (49 MCP çağrısı; kritik 0) → `--no-ff`
+  birleşim → entegrasyon hizalamaları H1–H5 (`tests/test_v0516_entegrasyon.py`).
+- **Ölçüm (2026-09-07):** süit toplama **2301** (`pytest --collect-only`; OA-SUIT-SAYISI
+  aynı) · tam süit: __TAMSUIT__ · `aile_dogrula` **TEMİZ** (20 parça; kör kilit yok; sürüm
+  işaretçisi uyarısı 0) · `tools/hook_doktor.py`: depo tarafı temiz, kurulu kanal **0.5.9.1
+  BAYAT** (§11 yerel kurulum güncellemesi bekliyor) · 15/15 dal main'de (merge-base teyidi).
+- **Damgalar:** plugin.json / marketplace.json / iki README / `pipeline_kayit.py` +
+  `teslim_paketi.py` OA_SURUM = 0.5.16 (birlikte).
+- **Açık işler (bu sürümde YAPILMADI — sessiz atlama yasağı):**
+  - Saha **"SONRA" ölçümü** (11 anonim dosya kopyası, v0.5.16 araçları) ve önce/sonra
+    tablosu; DENETIM-v0516.md kök tablosu buna bağlı.
+  - `git push origin main` (kimlik engeli — `gh auth login -h github.com`).
+  - Avukat kararı bekleyen: **B-4** `git filter-repo` (geçmiş commit'lerde dosya kimliği —
+    geçmiş yeniden yazımı yalnız avukat kararıyla) · **udf-cli pin** (A5/B-6, iki yönlü
+    bedel) · **tarife doldurma** (`maliyet_cetveli` tarife.json — AAÜT ek tabloları MCP'den
+    alınamadı; fail-closed boş kalır).
+  - Belge bayatlık taraması (DEVAM-PLANI §9) H2 kalemiyle sınırlı yapıldı; tam tarama açık.
+  - MCP'den teyit edilemeyen çıpalar CHANGELOG v0.5.16 «Yapılamayanlar» listesinde
+    (kod/belgede «çıpa — teyit edilmedi» etiketli; kullanım anında teyit şartı).
 
 ## 0. Durum özeti (2026-08-26 · v0.5.11)
 
