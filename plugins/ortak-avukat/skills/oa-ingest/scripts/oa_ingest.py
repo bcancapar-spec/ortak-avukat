@@ -173,6 +173,36 @@ v1.7.1 değişiklikleri (2026-08) — GATE A DİRİLTME (iki saha ölçümü: bi
   SAF+DETERMİNİSTİK → seri==paralel korunur; küçük evrakta ek maliyet YOK
   (bkz. tests/test_v0584_gate_a.py).
 
+v1.8 değişiklikleri (2026-09, v0.5.16/E) — P0-2/B-1/B-8 OCR ARAÇ HATASI TEŞHİSİ:
+  KÖK NEDEN: `ocr_png` Tesseract alt-sürecinin returncode/stderr'ini OKUMUYORDU.
+  Dil paketi (tur.traineddata) yoksa tesseract rc=1 + "Error opening data file …
+  / Failed loading language / Tesseract couldn't load any languages" basar ve
+  stdout BOŞ kalır; script bunu "boş sayfa" sanıp P0-9 retry zincirini (DPI/PSM/
+  yönelim × her sayfa) boşa koşturuyor, evrağı "OCR-BOŞ → GÖRSEL İNCELEME GEREK"
+  diye damgalayıp PNG yazıyordu — ORTAM hatası EVRAK özelliği gibi raporlanıyordu
+  (Linux denetiminde tur paketi yokken 2 kırmızı test). ONARIM:
+  ① `ocr_png` artık (metin, hata) döner: rc != 0 VEYA stderr'de
+    OCR_ARAC_HATA_IMZALARI → hata dolu, metin None (araç hatası ≠ boş sayfa).
+  ② Araç hatası `OcrAracHatasi` ile sayfa döngüsünü ANINDA keser: retry zinciri
+    ÇALIŞMAZ, sonraki sayfa DENENMEZ (aynı ortam hatası tekrar denenmez — israf yok),
+    görsel klasörüne PNG YAZILMAZ. Evrak yöntemi "OCR-ARAC-HATA", künyede
+    `ocr_durum: "arac-hatasi"` + `hata: OCR_ARAC_HATA_DAMGA · <ilk stderr satırı>`;
+    üst düzeyde `ocr_arac_hatasi` sayacı; `ocr_bos_evrak` bu kayıtları SAYMAZ.
+  ③ main() başında (--ocr kapali değilse) `tesseract --list-langs` ile `--dil`
+    paketi ÖN-KONTROL edilir: paket yoksa TEK seferlik görünür UYARI + opts
+    ["ocr_arac_hatasi"] doldurulur → OCR gerektiren her evrak (paralel işçi
+    yolunda da — opts pickle ile taşınır) tesseract HİÇ çağrılmadan bu damgayı
+    alır; metin PDF/UDF/DOCX/düz-metin yine işlenir.
+  ④ INDEX'te ayrı "## 🔴 OCR YAPILAMADI (ortam hatası)" bölümü + kurulum önerisi
+    (UB-Mannheim / apt tesseract-ocr-tur); md başlığında aynı damga.
+  ⑤ `OA_TESSERACT_YOL` ortam değişkeni TESSERACT sabitini geçersiz kılar (test
+    kancası: sahte ikili ile hata yolu gerçek kurulumdan bağımsız sınanır; sahada
+    PATH dışı kurulumu göstermek için de kullanılabilir).
+  Araç hatası _ARIZA_ONBELLEKSIZ'e girer (v1.5.1 a doktrini: paket kurulunca
+  yeniden denenir) ve _ADMIN kovasına sayılır (OCR hiç YAPILMADI — ocr_teyit_gerek
+  sayacını şişirmez). Tesseract ikilisinin HİÇ olmaması yolu ("YÜKLENEMEDİ")
+  bilinçli olarak DEĞİŞTİRİLMEDİ (karakterizasyon korunur).
+
 ÇIKARIM YOLLARI (model kurmaz, script çıkarır):
   PDF (metin katmanlı)  → PyMuPDF text            [BEDAVA, kayıpsız]
   PDF (taranmış/fontsuz) → PyMuPDF render + OCR    [OCR — ⚠ teyit]
@@ -229,7 +259,14 @@ ATLA_DOSYA = {"thumbs.db", "desktop.ini", ".ds_store", ".ingest-onbellek.json"}
 METIN_ESIK_KARAKTER_SAYFA = 40   # sayfa başına bu kadar anlamlı karakterin altı → OCR
 KAR_PER_TOKEN = 3                 # Türkçe için kaba token tahmini (~3 karakter/token)
 BUYUK_ESIK_KARAKTER = 40000        # Gate A: bu eşiği aşan evrak için sayfa/bölüm haritası üretilir
-TESSERACT = shutil.which("tesseract")
+# v1.8 (v0.5.16/E): `OA_TESSERACT_YOL` ortam değişkeni PATH keşfini geçersiz kılar —
+# (a) test kancası: sahte ikili ile dil-paketi/araç hatası yolu gerçek kurulumdan
+# bağımsız sınanır; (b) sahada PATH dışı kurulum. Değer bir yol/adsa which ile
+# çözülür; çözülemezse OLDUĞU GİBİ kullanılır → çağrıda OSError = görünür araç hatası
+# (sessizce PATH'e düşülmez: avukat "şu ikiliyi kullan" dediyse o kullanılır).
+_TESSERACT_ORTAM = (os.environ.get("OA_TESSERACT_YOL") or "").strip()
+TESSERACT = (shutil.which(_TESSERACT_ORTAM) or _TESSERACT_ORTAM) if _TESSERACT_ORTAM \
+    else shutil.which("tesseract")
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabit içerik imzası
 # P1-9 DÜZELTME (sinav bulgusu, tek-kaynak) — --onbakis'ın yazdığı MEŞRU dizin
 # adı burada TEK yerde tanımlanır; pipeline_kayit.py bekçisi bunu İN-PROCESS
@@ -240,7 +277,54 @@ ONBAKIS_DIZIN = "metin-onbakis"
 # sonradan kurulunca "imza aynı → önbellekten bas" yolu bayat 'YÜKLENEMEDİ' damgasını
 # tekrarlamasın. 'zaman-aşımı' kasıtlı olarak DIŞARIDA: OCR zaman-aşımı pahalıdır,
 # önbellekte kalması (--yeniden ile açıkça atlanabilir) kabul edilebilir bir ödünleşimdir.
-_ARIZA_ONBELLEKSIZ = {"hata", "atlandı"}
+_ARIZA_ONBELLEKSIZ = {"hata", "atlandı", "OCR-ARAC-HATA"}   # v1.8: araç hatası da yeniden denenir
+
+# ═════════════════════════════════════════════════════════════════════════
+# P0-2 / B-1 / B-8 (v0.5.16/E) — OCR ARAÇ HATASI: ortam hatası ≠ evrak özelliği.
+# Tesseract rc != 0 ya da stderr'de aşağıdaki imzalardan biri → sayfa "boş" DEĞİL,
+# araç ÇALIŞMADI. Bkz. docstring v1.8.
+# ═════════════════════════════════════════════════════════════════════════
+OCR_ARAC_HATA_YONTEM = "OCR-ARAC-HATA"
+OCR_ARAC_HATA_DURUM = "arac-hatasi"          # künye `ocr_durum` değeri (OCR-BOŞ'tan AYRI sınıf)
+OCR_ARAC_HATA_DAMGA = "OCR YAPILAMADI — dil paketi/araç hatası (ortam hatası, evrak özelliği DEĞİL)"
+OCR_ARAC_HATA_IMZALARI = (
+    "Error opening data file",
+    "Failed loading language",
+    "Tesseract couldn't load any languages",
+    "Could not initialize tesseract",
+)
+OCR_ARAC_HATA_ONERI = ("'{dil}' dil paketini kur: Windows → UB-Mannheim kurucusunda "
+                       "Turkish/{dil}.traineddata seç (veya {dil}.traineddata'yı tessdata/ "
+                       "altına koy); Linux → apt-get install tesseract-ocr tesseract-ocr-{dil}; "
+                       "PATH dışı kurulum için OA_TESSERACT_YOL=<tesseract yolu>. "
+                       "Sonra oa_ingest.py'yi yeniden koş (araç hatası önbelleğe yazılmaz).")
+
+
+class OcrAracHatasi(RuntimeError):
+    """Tesseract ÇALIŞMADI (dil paketi/araç hatası) — OCR-BOŞ retry zincirini
+    keser; sayfa/evrak özelliği değil ORTAM hatası olarak damgalanır."""
+
+
+def _tesseract_dil_var_mi(dil):
+    """`tesseract --list-langs` ile `dil` paketinin kurulu olup olmadığını ÖLÇER.
+    Dönüş: (True, detay) paket listede; (False, detay) liste alındı ama paket YOK;
+    (None, detay) liste alınamadı (tesseract yok/çöktü) → karar verilemez, sayfa
+    düzeyindeki teşhis (ocr_png) devreye girer. Tesseract 5.x listeyi stdout'a,
+    eski sürümler stderr'e basar → ikisi birlikte taranır."""
+    if not TESSERACT:
+        return None, "tesseract yok"
+    try:
+        r = subprocess.run([TESSERACT, "--list-langs"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+    except (OSError, subprocess.SubprocessError) as e:
+        return None, f"--list-langs çalıştırılamadı: {e}"
+    if r.returncode != 0:
+        return None, f"--list-langs rc={r.returncode}: {(r.stderr or '').strip()[:200]}"
+    diller = {s.strip() for s in (r.stdout or "").splitlines() + (r.stderr or "").splitlines()}
+    if dil in diller:
+        return True, f"'{dil}' --list-langs çıktısında var"
+    return False, (f"'{dil}' paketi tesseract --list-langs çıktısında YOK "
+                   f"(bulunan: {', '.join(sorted(d for d in diller if d and ' ' not in d)) or '—'})")
 
 # ═════════════════════════════════════════════════════════════════════════
 # P0-9 (v0.5.5) — OCR-NÖBETÇİSİ: OCR çıktısı kalite denetimi + deterministik
@@ -297,20 +381,27 @@ def _ocr_sayfalari_isle(n, limit, sayfa_render):
     denenir; hâlâ yetersizse birim 'OCR-BOŞ' sayılır ve son denemenin PNG
     baytları saklanır (görsel-inceleme için — DİSKE YAZMA burada değil,
     EBEVEYNDEKİ kaydet_evrak'tadır; bu fonksiyon SAF kalır).
-    `sayfa_render(i, ayar, deneme_i) -> (metin, png_bytes)`.
-    Dönüş: (birleşik_metin, [(sayfa_no, png_bytes), ...])."""
+    `sayfa_render(i, ayar, deneme_i) -> (metin, png_bytes)`; araç hatasında
+    `OcrAracHatasi` FIRLATIR (v1.8).
+    Dönüş: (birleşik_metin, [(sayfa_no, png_bytes), ...], arac_hata|None).
+    v1.8: araç hatası döngüyü ANINDA keser — retry adımları ve sonraki sayfalar
+    DENENMEZ (aynı ortam hatası tekrar denenmez), o ana kadar biriken metin
+    KAYIPSIZ döner, boş-sayfa listesi BOŞ kalır (PNG yazılmaz)."""
     parcalar = []
     bos_sayfalar = []
     for i in range(min(n, limit)):
         son_metin, son_png = "", None
-        for deneme_i, ayar in enumerate(OCR_RETRY_ADIMLARI):
-            son_metin, son_png = sayfa_render(i, ayar, deneme_i)
-            if _ocr_kalite_yeterli_mi(son_metin, 1):
-                break
-        else:
-            bos_sayfalar.append((i + 1, son_png))
+        try:
+            for deneme_i, ayar in enumerate(OCR_RETRY_ADIMLARI):
+                son_metin, son_png = sayfa_render(i, ayar, deneme_i)
+                if _ocr_kalite_yeterli_mi(son_metin, 1):
+                    break
+            else:
+                bos_sayfalar.append((i + 1, son_png))
+        except OcrAracHatasi as e:
+            return "".join(parcalar), [], str(e)
         parcalar.append(f"\n<!-- --- sayfa {i+1} --- -->\n" + son_metin)
-    return "".join(parcalar), bos_sayfalar
+    return "".join(parcalar), bos_sayfalar, None
 
 
 def _render_pixmap(page, dpi, rotate=0):
@@ -523,15 +614,38 @@ def evrak_no_ad(dosya_adi):
 
 
 def ocr_png(png_yol, dil, psm="3"):
-    """Tek PNG'yi OCR'la (Tesseract subprocess). Yoksa None. `psm` P0-9
-    deterministik retry zincirinin PSM-değişimi adımı için parametrikleştirildi
-    (varsayılan "3" = ORİJİNAL davranış, çağıran belirtmezse hiçbir fark yok)."""
+    """Tek PNG'yi OCR'la (Tesseract subprocess). Dönüş (v1.8): `(metin, hata)`.
+      - başarı → (stdout metni, None)
+      - Tesseract yok → (None, "tesseract yok")
+      - ARAÇ HATASI → (None, "<ilk stderr imza satırı | rc=N>") — rc != 0 VEYA
+        stderr'de OCR_ARAC_HATA_IMZALARI'ndan biri (dil paketi yok vb.) VEYA
+        ikili çalıştırılamadı (OSError). Bu, boş sayfadan AYRI bir sınıftır
+        (P0-2): çağıran retry zincirine girmez, OcrAracHatasi fırlatır.
+    `psm` P0-9 deterministik retry zincirinin PSM-değişimi adımı için
+    parametrikleştirildi (varsayılan "3" = orijinal davranış).
+    Zaman aşımı (TimeoutExpired) bilinçli olarak YAKALANMAZ — evrak_isle'deki
+    'zaman-asimi' damgası aynen çalışır."""
     if not TESSERACT:
-        return None
-    r = subprocess.run([TESSERACT, png_yol, "-", "-l", dil, "--psm", str(psm)],
-                       capture_output=True, text=True,
-                       encoding="utf-8", errors="replace", timeout=600)
-    return r.stdout or ""
+        return None, "tesseract yok"
+    try:
+        r = subprocess.run([TESSERACT, png_yol, "-", "-l", dil, "--psm", str(psm)],
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=600)
+    except OSError as e:          # ikili yok/çalıştırılamıyor (OA_TESSERACT_YOL yanlış vb.)
+        return None, f"tesseract çalıştırılamadı: {e}"
+    stderr = r.stderr or ""
+    imza = next((s.strip() for s in stderr.splitlines()
+                 if any(i in s for i in OCR_ARAC_HATA_IMZALARI)), None)
+    if r.returncode != 0 or imza:
+        detay = imza or (stderr.strip().splitlines() or [""])[0].strip()
+        return None, f"{detay or 'stderr boş'} (rc={r.returncode})"
+    return r.stdout or "", None
+
+
+def _ocr_arac_hata_donusu(metin, n, detay):
+    """Araç hatası için ORTAK çıkarıcı dönüşü (pdf/görüntü): yöntem
+    OCR-ARAC-HATA, teyit gerek, hata = DAMGA · detay, görsel listesi BOŞ."""
+    return metin, OCR_ARAC_HATA_YONTEM, True, n, f"{OCR_ARAC_HATA_DAMGA} · {detay}", []
 
 
 # ---------------- çıkarım (İÇERİK-AGNOSTİK, saf; işçide de ebeveynde de aynı) ----------------
@@ -562,6 +676,9 @@ def pdf_isle(yol, opts, tmp):
     if not TESSERACT:
         doc.close()
         return ham, "pdf-metin(zayıf)", True, n, f"taranmış ({oran:.0f} kar/sayfa) ama Tesseract yok — YÜKLENEMEDİ", []
+    if opts.get("ocr_arac_hatasi"):   # v1.8 ③: ön-kontrol dil paketini bulamadı → sayfa başına deneme YOK
+        doc.close()
+        return _ocr_arac_hata_donusu(ham, n, opts["ocr_arac_hatasi"])
     limit = opts["sayfa_limit"] or n
 
     def _render(i, ayar, deneme_i):
@@ -569,12 +686,16 @@ def pdf_isle(yol, opts, tmp):
         pix = _render_pixmap(doc[i], dpi_i, ayar["rotate"])
         p = os.path.join(tmp, f"p{i:03d}_d{deneme_i}.png")
         pix.save(p)
-        metin_sayfa = ocr_png(p, opts["dil"], ayar["psm"]) or ""
+        metin_sayfa, arac_hata = ocr_png(p, opts["dil"], ayar["psm"])
+        if arac_hata:
+            raise OcrAracHatasi(arac_hata)
         with open(p, "rb") as fh:
-            return metin_sayfa, fh.read()
+            return metin_sayfa or "", fh.read()
 
-    metin, bos_sayfalar = _ocr_sayfalari_isle(n, limit, _render)
+    metin, bos_sayfalar, arac_hata = _ocr_sayfalari_isle(n, limit, _render)
     doc.close()
+    if arac_hata:
+        return _ocr_arac_hata_donusu(metin or ham, n, arac_hata)
     if bos_sayfalar:
         hata = (f"{len(bos_sayfalar)}/{min(n, limit)} sayfa {len(OCR_RETRY_ADIMLARI)} "
                 f"deterministik denemeden sonra da boş/çöp kaldı — GÖRSEL İNCELEME GEREK")
@@ -594,6 +715,8 @@ def goruntu_isle(yol, opts, tmp):
         return "", "atlandı", True, None, "Tesseract yok — YÜKLENEMEDİ", []
     im = Image.open(yol)
     n = getattr(im, "n_frames", 1)
+    if opts.get("ocr_arac_hatasi"):   # v1.8 ③: ön-kontrol → kare başına deneme YOK
+        return _ocr_arac_hata_donusu("", n, opts["ocr_arac_hatasi"])
     limit = opts["sayfa_limit"] or n
 
     def _render(i, ayar, deneme_i):
@@ -610,11 +733,15 @@ def goruntu_isle(yol, opts, tmp):
             kare = kare.rotate(-ayar["rotate"], expand=True)
         p = os.path.join(tmp, f"f{i:03d}_d{deneme_i}.png")
         kare.save(p)
-        metin_kare = ocr_png(p, opts["dil"], ayar["psm"]) or ""
+        metin_kare, arac_hata = ocr_png(p, opts["dil"], ayar["psm"])
+        if arac_hata:
+            raise OcrAracHatasi(arac_hata)
         with open(p, "rb") as fh:
-            return metin_kare, fh.read()
+            return metin_kare or "", fh.read()
 
-    metin, bos_sayfalar = _ocr_sayfalari_isle(n, limit, _render)
+    metin, bos_sayfalar, arac_hata = _ocr_sayfalari_isle(n, limit, _render)
+    if arac_hata:
+        return _ocr_arac_hata_donusu(metin, n, arac_hata)
     if bos_sayfalar:
         hata = (f"{len(bos_sayfalar)}/{min(n, limit)} kare {len(OCR_RETRY_ADIMLARI)} "
                 f"deterministik denemeden sonra da boş/çöp kaldı — GÖRSEL İNCELEME GEREK")
@@ -884,7 +1011,10 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
     bas.append(f"- Karakter: {kayit['karakter']}")
     if kayit["teyit_gerek"]:
         bas.append("- ⚠ **OCR/zayıf çıkarım — künye ve sayısal veri için orijinalden TEYİT gerekir.**")
-    if kayit.get("ocr_durum"):
+    if kayit.get("ocr_durum") == OCR_ARAC_HATA_DURUM:
+        bas.append(f"- 🔴 **{OCR_ARAC_HATA_DAMGA}** — OCR HİÇ YAPILMADI; bu bir evrak "
+                   f"özelliği değil ORTAM hatasıdır: {OCR_ARAC_HATA_ONERI.format(dil='tur')}")
+    elif kayit.get("ocr_durum"):
         sayfalar = ", ".join(str(s) for s in (kayit.get("ocr_bos_sayfalar") or []))
         bas.append(f"- 🔴 **{kayit['ocr_durum']}** (sayfa: {sayfalar or '—'}) — "
                     f"görsel: `{kayit.get('gorsel_klasor') or '—'}` (P0-9 OCR-NÖBETÇİSİ: "
@@ -917,6 +1047,13 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
              "tur_tahmini": tur_tahmin_et(ad, kaynak),
              "buyuk": karakter > buyuk_esik,
              "ocr_durum": None, "ocr_bos_sayfalar": [], "gorsel_klasor": ""}
+    # ---- v1.8 (P0-2): ARAÇ HATASI ayrı sınıf — OCR-BOŞ değil, YÜKLENEMEDİ değil,
+    # işlendi hiç değil. `ocr_durum` "arac-hatasi"; görsel yazılmaz (gorsel_sayfalar
+    # zaten boş gelir). Damga metni `hata` alanında (çıkarıcıdan) taşınır.
+    if yontem == OCR_ARAC_HATA_YONTEM:
+        kayit["ocr_durum"] = OCR_ARAC_HATA_DURUM
+        if OCR_ARAC_HATA_DAMGA not in (hata or ""):
+            kayit["hata"] = f"{OCR_ARAC_HATA_DAMGA} · {hata or ''}".rstrip(" ·")
     # ---- A PAKETİ (v0.5.15): UDF yapı künyesi + provenans ----------------
     # Zenginlik SESSİZ gelmez: yapı sayaçları INDEX'e, çekirdek alanlar künye
     # kimliğine, uyarılar görünür alana yazılır. Değerler DÜZELTİLMEZ —
@@ -978,6 +1115,17 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
             kayit["ocr_bos_sayfalar"] = [s for s, _ in gorsel_sayfalar]
             kayit["gorsel_klasor"] = f"{GORSEL_DIZIN}/{taban}"
     return kayit
+
+
+def _ocr_bos_mu(k):
+    """P0-9 OCR-BOŞ sınıfı mı? (v1.8: 'arac-hatasi' AYRI sınıftır — OCR-BOŞ sayılmaz.)
+    Eski künyelerde ocr_durum ya None ya OCR_BOS_DAMGA'dır → geriye uyumlu."""
+    d = k.get("ocr_durum")
+    return bool(d) and d != OCR_ARAC_HATA_DURUM
+
+
+def _ocr_arac_hatasi_mi(k):
+    return k.get("ocr_durum") == OCR_ARAC_HATA_DURUM
 
 
 def _atomik_yaz(yol, veri):
@@ -1219,8 +1367,27 @@ def main():
               "(metin PDF/UDF/DOCX yine işlenir). Kur: UB-Mannheim (Win) / apt tesseract-ocr-tur (Linux).",
               file=sys.stderr)
 
+    # ---- v1.8 ③ (P0-2): DİL PAKETİ ÖN-KONTROLÜ — TEK seferlik, görünür ----
+    # `tesseract --list-langs` --dil paketini listelemiyorsa OCR gerektiren HER evrak
+    # tesseract hiç çağrılmadan OCR_ARAC_HATA_DAMGA alır (sayfa başına 4 retry × N
+    # sayfa israfı yok); metin PDF/UDF/DOCX/düz-metin yine işlenir. opts ile taşınır
+    # → paralel işçi yolu da aynı karara uyar (işçi ayrıca ölçmez; seri==paralel).
+    ocr_arac_hatasi = None
+    if a.ocr != "kapali" and TESSERACT:
+        dil_var, dil_detay = _tesseract_dil_var_mi(a.dil)
+        if dil_var is False:
+            ocr_arac_hatasi = dil_detay
+            print(f"UYARI (P0-2 OCR ARAÇ HATASI): {dil_detay}. OCR gerektiren TÜM evraklar "
+                  f"'{OCR_ARAC_HATA_DAMGA}' damgasını alacak (sayfa başına deneme yapılmayacak); "
+                  f"metin PDF/UDF/DOCX yine işlenir. {OCR_ARAC_HATA_ONERI.format(dil=a.dil)}",
+                  file=sys.stderr)
+        elif dil_var is None:
+            print(f"BİLGİ: tesseract --list-langs ölçülemedi ({dil_detay}) — dil paketi kararı "
+                  "sayfa düzeyindeki teşhise bırakıldı.", file=sys.stderr)
+    opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit,
+            "ocr_arac_hatasi": ocr_arac_hatasi}
+
     if a.onbakis and a.onbakis > 0:
-        opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit}
         sys.exit(_onbakis_calistir(a, opts))
 
     hedef = a.hedef or os.path.join(a.klasor, "_oa", "metin")
@@ -1233,7 +1400,6 @@ def main():
             os.remove(_art)
         except OSError:
             pass
-    opts = {"ocr": a.ocr, "dil": a.dil, "dpi": a.dpi, "sayfa_limit": a.sayfa_limit}
 
     onbellek_yol = os.path.join(hedef, ".ingest-onbellek.json")
     onbellek = {}
@@ -1427,13 +1593,16 @@ def main():
     # 'zaman-asimi' (OCR başladı ama bitmedi) da BURAYA eklendi — bunlar GERÇEK OCR/zayıf-
     # çıkarım DEĞİL, ocr_teyit_gerek sayacını (asıl 'yapıldı ama teyit gerekir' kovası) şişirip
     # yanlış izlenim vermesin.
-    _ADMIN = {"bilinmeyen", "arşiv-boş", "hata", "atlandı", "zaman-asimi"}
+    # v1.8: OCR-ARAC-HATA da buraya — OCR hiç YAPILMADI (ortam hatası), teyit kovası değil.
+    _ADMIN = {"bilinmeyen", "arşiv-boş", "hata", "atlandı", "zaman-asimi", OCR_ARAC_HATA_YONTEM}
     ocr_sayisi = sum(1 for k in kunye if k.get("teyit_gerek") and k.get("yontem") not in _ADMIN)
     bilinmeyen = sum(1 for k in kunye if k.get("yontem") in _ADMIN)
     # Gate A özeti: kaç evrak eşiği aştı (>buyuk_esik anlamlı karakter).
     buyuk_sayisi = sum(1 for k in kunye if k.get("buyuk"))
     # P0-9 özeti: kaç evrakta EN AZ BİR sayfa OCR-BOŞ damgası aldı (görsel-inceleme gerek).
-    ocr_bos_sayisi = sum(1 for k in kunye if k.get("ocr_durum"))
+    # v1.8: araç hatası AYRI sayılır — ortam hatası "görsel incele" listesine sızmaz.
+    ocr_bos_sayisi = sum(1 for k in kunye if _ocr_bos_mu(k))
+    ocr_arac_hata_sayisi = sum(1 for k in kunye if _ocr_arac_hatasi_mi(k))
 
     # ---- MEKANİK KAPI (sessiz-atlama yasağı): HER kaynak ≥1 kayıtla temsil edilmeli ----
     # GERÇEK invaryant — 'append başına say' totolojisi DEĞİL: bozuk önbellekte "kayitlar":[]
@@ -1453,6 +1622,7 @@ def main():
            f"Toplam evrak: **{len(kunye)}** · OCR/teyit gerek: **{ocr_sayisi}** · "
            f"bilinmeyen/elle: **{bilinmeyen}** · büyük (>{a.buyuk_esik:,} kar): **{buyuk_sayisi}** · "
            f"🔴 OCR-BOŞ (görsel inceleme gerek): **{ocr_bos_sayisi}** · "
+           f"🔴 OCR YAPILAMADI (ortam hatası): **{ocr_arac_hata_sayisi}** · "
            f"toplam metin: ~{toplam:,} karakter (~{tahmini_token:,} token)\n\n",
            "| # | Evrak | Tarih | Yöntem | ⚠ | 🔴 | Yapı | Tür~ | Karakter | Harita | Dosya |\n",
            "|---|-------|-------|--------|---|---|------|------|----------|--------|-------|\n"]
@@ -1464,7 +1634,12 @@ def main():
             harita_hucre = "büyük"
         else:
             harita_hucre = ""
-        ocr_bos_hucre = f"🔴({len(k.get('ocr_bos_sayfalar') or [])})" if k.get("ocr_durum") else ""
+        if _ocr_arac_hatasi_mi(k):
+            ocr_bos_hucre = "🔴 araç"
+        elif _ocr_bos_mu(k):
+            ocr_bos_hucre = f"🔴({len(k.get('ocr_bos_sayfalar') or [])})"
+        else:
+            ocr_bos_hucre = ""
         if k.get("ayni_icerik"):        # E5 sha-dedup: ikinci metin üretilmedi, ilkine işaret
             dosya_hucre = f"aynı içerik → `{k['ayni_icerik']}`"
         else:
@@ -1491,11 +1666,20 @@ def main():
     if ocr_bos_sayisi:
         idx.append("\n## 🔴 OCR-BOŞ — GÖRSEL İNCELEME GEREK\n\n")
         for k in kunye:
-            if not k.get("ocr_durum"):
+            if not _ocr_bos_mu(k):
                 continue
             sayfalar = ", ".join(str(s) for s in (k.get("ocr_bos_sayfalar") or []))
             idx.append(f"- `{k.get('md','')}` (sayfa {sayfalar}) → "
                        f"`{k.get('gorsel_klasor') or '—'}`\n")
+    if ocr_arac_hata_sayisi:
+        # v1.8 ④ (P0-2): ORTAM hatası ayrı bölüm — 'görsel incele' değil 'paketi kur, yeniden koş'.
+        idx.append("\n## 🔴 OCR YAPILAMADI (ortam hatası)\n\n")
+        idx.append(f"> {OCR_ARAC_HATA_DAMGA}. Bu evraklar OKUNMADI; görsel de üretilmedi "
+                   f"(evrak değil ortam arızalı). Öneri: {OCR_ARAC_HATA_ONERI.format(dil=a.dil)}\n\n")
+        for k in kunye:
+            if not _ocr_arac_hatasi_mi(k):
+                continue
+            idx.append(f"- `{k.get('kaynak','')}` → `{k.get('md','')}` — {k.get('hata') or ''}\n")
 
     _atomik_yaz(os.path.join(hedef, "00-INDEX.md"), "".join(idx))
     # Önbellek sort_keys → tamamlanma/ekleme sırasından BAĞIMSIZ, byte-deterministik.
@@ -1504,6 +1688,7 @@ def main():
                             "ocr_teyit_gerek": ocr_sayisi, "bilinmeyen": bilinmeyen,
                             "buyuk_evrak": buyuk_sayisi, "buyuk_esik": a.buyuk_esik,
                             "ocr_bos_evrak": ocr_bos_sayisi,
+                            "ocr_arac_hatasi": ocr_arac_hata_sayisi,
                             "toplam_karakter": toplam, "tahmini_token": tahmini_token,
                             "kayitlar": kunye}, ensure_ascii=False, indent=2)
     _atomik_yaz(os.path.join(hedef, "00-kunye.json"), kunye_str)   # EN SON = commit işareti
@@ -1515,6 +1700,11 @@ def main():
     if ocr_bos_sayisi:
         print(f"UYARI (P0-9 OCR-NÖBETÇİSİ): {ocr_bos_sayisi} evrakta en az bir sayfa OCR-BOŞ "
               f"kaldı — görsel-inceleme gerek (bkz. 00-INDEX.md, _oa/metin/{GORSEL_DIZIN}/).",
+              file=sys.stderr)
+    if ocr_arac_hata_sayisi:
+        print(f"UYARI (P0-2 OCR ARAÇ HATASI): {ocr_arac_hata_sayisi} evrakta OCR YAPILAMADI — "
+              f"dil paketi/araç hatası (ortam hatası, evrak özelliği DEĞİL). Bu evraklar "
+              f"OKUNMADI; paketi kurup yeniden koş (bkz. 00-INDEX.md '🔴 OCR YAPILAMADI').",
               file=sys.stderr)
     print(f"Süre: {top_sn:.1f} sn (çıkarım {cik_sn:.1f} sn · işçi={isci}) · Çıktı: {hedef}")
     if profil:

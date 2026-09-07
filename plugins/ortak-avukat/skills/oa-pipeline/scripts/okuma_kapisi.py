@@ -27,9 +27,22 @@ GATE B — İKİ İŞLEV:
       hiçbir zaman kısılmaz — bu yalnız "önce haritaya bak, sonra bilinçli seç"
       disiplinidir.
 
+  (3) KRİTİK EVRAK → SÜRE ADAYI (v0.5.16/E — P1-10/A-4): künyedeki evraklar
+      arasında tür/ad sınıfı tebligat | tebliğ mazbatası | ara karar | tensip |
+      bilirkişi raporu | gerekçeli karar | ödeme emri | ihbarname olanlar
+      "SÜRE ADAYI" işaretlenir; evrağın .md metninden dd.mm.yyyy / dd/mm/yyyy
+      tarihleri, "tebliğ | tebellüğ | karar tarihi | düzenleme tarihi" komşuluğu
+      (±80 karakter) ile ADVISORY tarih adayı olarak çıkarılır. `--sure-adaylari`
+      → stdout tablo + `_oa/cikti/00-sure-adaylari.json`. Script `sure-flag`
+      YAZMAZ: yalnız `oa_hafiza.py sure-flag … (avukat onayıyla)` komutunu
+      ÖNERİR — süre kuralını ve son günü seçmek muhakemedir (oa-sure + Mevzuat
+      MCP teyidi + avukat), mekanik tarama değil. Künyede `tur_tahmini` yoksa
+      dosya adı + md'nin ilk 600 karakterinden `tur_tahmin` (advisory) üretilir.
+
 Kullanım:
   python okuma_kapisi.py [--kok KLASÖR] [--esik N]
   python okuma_kapisi.py [--kok KLASÖR] --json CIKTI.json
+  python okuma_kapisi.py [--kok KLASÖR] --sure-adaylari
   python okuma_kapisi.py [--kok KLASÖR] --tam-yukle-kaydet "<kaynak>" [--ajan "oa-x"]
   python okuma_kapisi.py [--kok KLASÖR] --tam-yukle-defter
 
@@ -49,9 +62,243 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, datetime, json, os, sys
+import argparse, datetime, json, os, re, sys
 
 BUYUK_ESIK_VARSAYILAN = 40000  # oa_ingest.py BUYUK_ESIK_KARAKTER ile aynı varsayılan
+
+# ═════════════════════════════════════════════════════════════════════════
+# (3) KRİTİK EVRAK → SÜRE ADAYI (v0.5.16/E — P1-10 / A-4)
+# MEKANİK: ad/tür/ilk-600-karakter üzerinde anahtar eşlemesi + tarih regex'i.
+# Hangi sürenin işlediği, başlangıcın tebliğ mi tefhim mi olduğu, adli tatil,
+# UETS — hepsi MUHAKEMEDİR (oa-sure + Mevzuat MCP + avukat). Bu script yalnız
+# "şu evrak süre başlatabilir, şu tarihler tebliğ/karar sözcüğünün yanında
+# geçiyor" der; kesinlik iddia etmez, sure-flag YAZMAZ.
+# ═════════════════════════════════════════════════════════════════════════
+_TR_KATLA = {"ç": "c", "Ç": "c", "ğ": "g", "Ğ": "g", "ı": "i", "İ": "i",
+             "ö": "o", "Ö": "o", "ş": "s", "Ş": "s", "ü": "u", "Ü": "u"}
+
+
+def _katla(s):
+    """Türkçe harfleri ASCII'ye katla + küçült (oa_ingest._ascii_kucuk ile aynı sözleşme)."""
+    return "".join(_TR_KATLA.get(c, c) for c in (s or "")).lower()
+
+
+# Sıralı liste — İLK eşleşen kazanır (deterministik). Anahtarlar KATLANMIŞ
+# (ASCII-küçük) metne uygulanır; boşluk/tire/alt çizgi farkı için birkaç varyant.
+SURE_ADAYI_SINIFLARI = [
+    ("tebligat",        ("teblig mazbata", "tebligat", "teblig")),
+    ("gerekceli_karar", ("gerekceli karar", "gerekceli_karar", "gerekceli-karar", "gerekceli")),
+    ("ara_karar",       ("ara karar", "ara_karar", "ara-karar", "arakarar")),
+    ("tensip",          ("tensip",)),
+    ("bilirkisi_raporu", ("bilirkisi rapor", "bilirkisi", "bilirkis")),
+    ("odeme_emri",      ("odeme emri", "odeme_emri", "odeme-emri", "odemeemri")),
+    ("ihbarname",       ("ihbarname",)),
+    # Gate C 'karar' tahmini (karar/ilam/hukum) — gerekçeli olduğu belli değil; yine
+    # de süre adayıdır (kanun yolu süresi tebliğle işleyebilir) → en düşük özgüllük.
+    ("karar",           ("ilam", "hukum", "karar")),
+]
+# Gate C `tur_tahmini` → süre adayı sınıfı (künye zaten tahmin etmişse ad taranmaz).
+_TUR_TAHMINI_ESLEME = {"tebligat": "tebligat", "bilirkisi": "bilirkisi_raporu", "karar": "karar"}
+
+# Sınıf → oa-sure kataloğu (`sure_kurallari.json`) anahtar ÖNERİSİ + kısa not.
+# Normlar Mevzuat MCP teyitlidir (2026-09-06): HMK m.345/1 (istinaf iki hafta,
+# ilamın tebliğinden), HMK m.281/1 (bilirkişi raporuna tebliğden iki hafta),
+# CMK m.273/1 (istinaf, hükmün gerekçesiyle tebliğinden iki hafta), İYUK m.45/1
+# (BİM istinaf 30 gün), İYUK m.7/1 (dava: idare 60 / vergi 30 gün), İİK m.62/1
+# (ödeme emrine itiraz tebliğden 7 gün), 6183 m.58/1 (amme ödeme emrine itiraz
+# 15 gün). Anahtar listesi "aday"dır — yargı kolunu ve somut kuralı AVUKAT seçer;
+# katalogda karşılığı olmayan süre için hesapla_sure.py --sure/--birim ile elle.
+SURE_ADAYI_ONERI = {
+    "tebligat":        {"kural": [], "not": "tebliğ mazbatası süreyi BAŞLATIR; hangi sürenin "
+                                            "işlediği tebliğ edilen belgeye bağlıdır (o evrağa bak)"},
+    "gerekceli_karar": {"kural": ["hmk_istinaf", "cmk_istinaf", "iyuk_istinaf"],
+                        "not": "kanun yolu süresi tebliğle işler — yargı koluna göre HMK m.345 / "
+                               "CMK m.273 / İYUK m.45 (Mevzuat MCP teyit 2026-09-06)"},
+    "karar":           {"kural": ["hmk_istinaf", "cmk_istinaf", "iyuk_istinaf"],
+                        "not": "karar/ilam — gerekçeli mi, tebliğ edildi mi belgeden doğrula; "
+                               "kanun yolu süresi adayı"},
+    "ara_karar":       {"kural": [], "not": "ara karar — kesin süre/duruşma günü içerebilir; "
+                                            "belgeden okunur (avukat)"},
+    "tensip":          {"kural": [], "not": "tensip — kesin süre/duruşma günü/delil ibraz süresi "
+                                            "içerebilir; belgeden okunur (avukat)"},
+    "bilirkisi_raporu": {"kural": [], "not": "HMK m.281/1: rapora itiraz tebliğden iki hafta "
+                                             "(Mevzuat MCP teyit 2026-09-06) — katalogda anahtar "
+                                             "yok: hesapla_sure.py --sure 2 --birim hafta"},
+    "odeme_emri":      {"kural": ["amme_6183_m58"],
+                        "not": "İİK m.62/1: genel haciz ödeme emrine itiraz tebliğden 7 gün "
+                               "(katalogda anahtar yok, elle); 6183 m.58/1: amme alacağında "
+                               "15 gün (Mevzuat MCP teyit 2026-09-06) — hangisi olduğu belgeden"},
+    "ihbarname":       {"kural": ["iyuk_dava_vergi", "iyuk_dava_idare"],
+                        "not": "İYUK m.7/1: vergi mahkemesinde 30, idare mahkemesinde 60 gün "
+                               "(Mevzuat MCP teyit 2026-09-06); uzlaşma/düzeltme yolları ayrıca"},
+}
+
+_TARIH_RE = re.compile(r"(?<!\d)(\d{1,2})[./](\d{1,2})[./](\d{4})(?!\d)")
+# Tarih komşuluğunda aranan çıpalar (katlanmış metne uygulanır). Sıra = raporlanan etiket.
+_TARIH_CIPALARI = [
+    ("tebellüğ", "tebellug"),
+    ("tebliğ", "teblig"),
+    ("karar tarihi", "karar tarihi"),
+    ("düzenleme tarihi", "duzenleme tarihi"),
+]
+TARIH_KOMSULUK = 80          # ± karakter
+TUR_TAHMIN_ILK_KARAKTER = 600
+
+
+def _sure_adayi_sinifi(k, md_ilk=None):
+    """Bir künye kaydı için (sinif, tur_tahmin, tur_tahmin_kaynak) döndürür.
+    Öncelik: (1) künyedeki `tur_tahmini` (Gate C) eşlemesi; (2) ad + kaynak taraması;
+    (3) tur_tahmini YOKSA ad + md'nin ilk 600 karakteri → `tur_tahmin` (advisory,
+    kaynak "ad+md600"). Eşleşme yoksa (None, None, None) — 'diğer' UYDURULMAZ."""
+    tt = k.get("tur_tahmini")
+    if tt and tt in _TUR_TAHMINI_ESLEME:
+        return _TUR_TAHMINI_ESLEME[tt], None, None
+    ad_metin = _katla(f"{k.get('ad') or ''} {k.get('kaynak') or ''}")
+    for sinif, anahtarlar in SURE_ADAYI_SINIFLARI:
+        if any(a in ad_metin for a in anahtarlar):
+            return sinif, None, None
+    if tt is None and md_ilk:
+        govde = _katla(md_ilk[:TUR_TAHMIN_ILK_KARAKTER])
+        for sinif, anahtarlar in SURE_ADAYI_SINIFLARI:
+            if any(a in govde for a in anahtarlar):
+                return sinif, sinif, "ad+md600"
+    return None, None, None
+
+
+def _md_govde_oku(kok, md):
+    """`_oa/metin/<md>` gövdesini (başlık bloğundan sonrasını) okur; yoksa ''."""
+    if not md:
+        return ""
+    yol = os.path.join(_oa_kok(kok), "metin", md)
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            icerik = f.read()
+    except OSError:
+        return ""
+    _bas, ayrac, kuyruk = icerik.partition("\n---\n")
+    return kuyruk if ayrac else icerik
+
+
+def _tarih_gecerli(g, a, y):
+    try:
+        datetime.date(int(y), int(a), int(g))
+        return True
+    except ValueError:
+        return False
+
+
+def _tarih_adaylari(metin, en_fazla=12):
+    """md metninden ÇIPALI tarih adayları: dd.mm.yyyy / dd/mm/yyyy biçimindeki her
+    tarih için ±TARIH_KOMSULUK karakterlik pencere katlanır ve _TARIH_CIPALARI
+    aranır; çıpasız tarihler ADAY DEĞİLDİR (yalnız sayılır → `cipasiz_tarih`).
+    Aynı tarih+çıpa çifti bir kez raporlanır. Advisory: tarih 'tebliğ' sözcüğünün
+    yanında geçiyor diye tebliğ tarihi OLMAYABİLİR — orijinalden teyit."""
+    adaylar, gorulen, cipasiz = [], set(), 0
+    for m in _TARIH_RE.finditer(metin or ""):
+        g, a, y = m.group(1), m.group(2), m.group(3)
+        if not _tarih_gecerli(g, a, y):
+            continue
+        bas = max(0, m.start() - TARIH_KOMSULUK)
+        pencere = _katla(metin[bas:m.end() + TARIH_KOMSULUK])
+        etiket = next((e for e, k in _TARIH_CIPALARI if k in pencere), None)
+        if etiket is None:
+            cipasiz += 1
+            continue
+        anahtar = (m.group(0), etiket)
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        adaylar.append({"tarih": m.group(0), "iso": f"{y}-{int(a):02d}-{int(g):02d}",
+                        "baglam": etiket, "offset": m.start()})
+        if len(adaylar) >= en_fazla:
+            break
+    return adaylar, cipasiz
+
+
+def sure_adaylari(kunye, kok):
+    """Künyeden SÜRE ADAYI listesi üretir (saf: künye + md gövdeleri → liste)."""
+    cikti = []
+    for k in kunye.get("kayitlar", []) if kunye else []:
+        if not isinstance(k, dict):
+            continue
+        govde = _md_govde_oku(kok, k.get("md"))
+        sinif, tur_tahmin, tt_kaynak = _sure_adayi_sinifi(k, govde)
+        if not sinif:
+            continue
+        tarihler, cipasiz = _tarih_adaylari(govde)
+        if k.get("tarih"):
+            tarihler.insert(0, {"tarih": k["tarih"], "iso": None, "baglam": "dosya-adi", "offset": None})
+        oneri = SURE_ADAYI_ONERI.get(sinif, {"kural": [], "not": ""})
+        aday = {"evrak": k.get("kaynak"), "no": k.get("no"), "ad": k.get("ad"), "md": k.get("md") or "",
+                "sinif": sinif, "tur_tahmini": k.get("tur_tahmini"),
+                "teyit_gerek": bool(k.get("teyit_gerek")),
+                "tarih_adaylari": tarihler, "cipasiz_tarih": cipasiz,
+                "oneri_kural": list(oneri["kural"]), "not": oneri["not"]}
+        if tur_tahmin:
+            aday["tur_tahmin"] = tur_tahmin
+            aday["tur_tahmin_kaynak"] = tt_kaynak
+        cikti.append(aday)
+    return cikti
+
+
+def _sure_adaylari_json_yolu(kok):
+    return os.path.join(_oa_kok(kok), "cikti", "00-sure-adaylari.json")
+
+
+def cmd_sure_adaylari(args):
+    kok = args.kok
+    kunye = _kunye_oku(kok)
+    if kunye is None:
+        print(f"HATA: künye bulunamadı: {_kunye_yolu(kok)} — önce oa-ingest "
+              "(0. MANİFEST'in AI katmanı) koşulmalı.", file=sys.stderr)
+        return 1
+    adaylar = sure_adaylari(kunye, kok)
+    print(f"# SÜRE ADAYI TARAMASI — mekanik/advisory ({_kunye_yolu(kok)})")
+    print("Kaynak: künye tür~ + dosya adı + md ilk 600 kar.; tarih = dd.mm.yyyy|dd/mm/yyyy, "
+          f"±{TARIH_KOMSULUK} kar. içinde tebliğ/tebellüğ/karar tarihi/düzenleme tarihi çıpası. "
+          "Bu bir MUHAKEME değildir: süre kuralı, başlangıç ve son gün oa-sure (hesapla_sure.py) "
+          "+ Mevzuat MCP teyidi + AVUKAT kararıyla belirlenir. Script sure-flag YAZMAZ.")
+    print()
+    if not adaylar:
+        print("SÜRE ADAYI: süre adayı YOK (tebligat/karar/tensip/bilirkişi/ödeme emri/ihbarname "
+              "sınıfında evrak bulunamadı — bu 'süre yok' demek DEĞİLDİR; künyeye ve orijinale bak).")
+    else:
+        print(f"SÜRE ADAYI: {len(adaylar)} evrak")
+        print("| # | Evrak | Sınıf | Tarih adayları (bağlam) | Öneri kural | Not |")
+        print("|---|-------|-------|--------------------------|-------------|-----|")
+        for a in adaylar:
+            tarih_s = "; ".join(f"{t['tarih']} ({t['baglam']})" for t in a["tarih_adaylari"]) or "—"
+            if a["cipasiz_tarih"]:
+                tarih_s += f" · +{a['cipasiz_tarih']} çıpasız"
+            sinif_s = a["sinif"] + (" (md600~)" if a.get("tur_tahmin") else "")
+            if a["teyit_gerek"]:
+                sinif_s += " ⚠OCR"
+            print(f"| {a['no'] or '—'} | {a['evrak']} | {sinif_s} | {tarih_s} | "
+                  f"{', '.join(a['oneri_kural']) or '—'} | {a['not']} |")
+        print()
+        print("ÖNERİLEN ADIMLAR (avukat onayıyla — script YAZMAZ):")
+        # `--flagsiz` ZORUNLU: hesapla_sure.py `--kok` varsayılanı '.' ve <kok>/_oa
+        # varsa son günü sureler.json'a OTOMATİK flag yazar (E4a). Aday tarih
+        # orijinalden teyit edilmeden flag'e girmesin — hesap advisory, flag yalnız
+        # avukat onayıyla oa_hafiza.py sure-flag ile.
+        for a in adaylar:
+            ilk_iso = next((t["iso"] for t in a["tarih_adaylari"] if t.get("iso")), "YYYY-MM-DD")
+            kural = a["oneri_kural"][0] if a["oneri_kural"] else "<kural|--sure N --birim gun|hafta>"
+            print(f"  - {a['evrak']} [{a['sinif']}]: python oa-sure/scripts/hesapla_sure.py "
+                  f"--kural {kural} --teblig {ilk_iso} --flagsiz  →  HESAPLANAN SON GÜN ile: "
+                  f"python oa_hafiza.py sure-flag --tarih <SON GÜN> --aciklama \"{a['sinif']}: "
+                  f"{a['evrak']}\" --kural {kural} (avukat onayıyla)")
+    yol = _sure_adaylari_json_yolu(kok)
+    os.makedirs(os.path.dirname(yol), exist_ok=True)
+    veri = {"kok": os.path.abspath(kok), "uretim": _simdi(), "kaynak_kunye": _kunye_yolu(kok),
+            "advisory": True, "sure_flag_yazildi": False,
+            "aciklama": ("mekanik tarama — süre kuralı/son gün oa-sure + Mevzuat MCP + avukat; "
+                         "sure-flag yalnız avukat onayıyla oa_hafiza.py ile yazılır"),
+            "adaylar": adaylar}
+    with open(yol, "w", encoding="utf-8") as f:
+        json.dump(veri, f, ensure_ascii=False, indent=2)
+    print(f"\nJSON yazıldı: {yol} (sure-flag YAZILMADI — `oa_hafiza.py sure-flag` avukat onayıyla)")
+    return 0
 
 # Mekanik öncelik sırası — oa_ingest.py Gate C'nin `tur_tahmini` alanına uygulanan
 # SABİT tablo (usul/süre önce doktrini). İçerik okumaz; yalnız zaten hesaplanmış
@@ -115,11 +362,15 @@ def _oncelik_listesi(kunye, esik):
     liste = []
     for _, k in sirali:
         buyuk = bool(k.get("buyuk")) or (k.get("karakter") or 0) > esik
+        # v0.5.16/E: SÜRE ADAYI etiketi (ad/tür üzerinden — md okunmaz, ucuz; tam
+        # tarama için --sure-adaylari). Eşleşme yoksa None (uydurma yok).
+        sure_adayi, _tt, _ttk = _sure_adayi_sinifi(k)
         liste.append({
             "no": k.get("no"), "ad": k.get("ad"), "kaynak": k.get("kaynak"),
             "tur_tahmini": k.get("tur_tahmini"), "karakter": k.get("karakter") or 0,
             "teyit_gerek": bool(k.get("teyit_gerek")), "buyuk": buyuk,
             "harita": k.get("harita") or "", "md": k.get("md") or "",
+            "sure_adayi": sure_adayi,
         })
     return liste
 
@@ -259,6 +510,8 @@ def cmd_liste(args):
             etiketler.append("⚠OCR")
         if k["buyuk"]:
             etiketler.append("BÜYÜK")
+        if k.get("sure_adayi"):
+            etiketler.append(f"SÜRE ADAYI:{k['sure_adayi']}")
         etiket_s = (" [" + ", ".join(etiketler) + "]") if etiketler else ""
         print(f" {i:>3}. [{k['tur_tahmini'] or '—'}] {k['no'] or '—'} · {k['ad'] or ''} · "
               f"{k['karakter']} kar.{etiket_s} · {k['md']}")
@@ -274,6 +527,13 @@ def cmd_liste(args):
             damga = f" — DAHA ÖNCE {onceki} kez TAM yüklenmiş (mükerrer olabilir)" if onceki else ""
             print(f"  - {k['kaynak']} (~{k['karakter']:,} kar.) · harita: "
                   f"{k['harita'] or '—'}{damga}")
+
+    sure_adaylari_l = [k for k in liste if k.get("sure_adayi")]
+    if sure_adaylari_l:
+        print()
+        print(f"SÜRE ADAYI: {len(sure_adaylari_l)} evrak (tebligat/karar/tensip/bilirkişi/ödeme "
+              "emri/ihbarname sınıfı — süre BAŞLATABİLİR). Tarih çıkarımı + öneri için: "
+              "`okuma_kapisi.py --sure-adaylari` (advisory; sure-flag avukat onayıyla yazılır).")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as f:
@@ -300,11 +560,16 @@ def main():
                     "(opsiyonel, ör. oa-vakia)")
     ap.add_argument("--tam-yukle-defter", dest="tam_yukle_defter", action="store_true",
                     help="tam-yükleme dedup defterini göster")
+    ap.add_argument("--sure-adaylari", dest="sure_adaylari", action="store_true",
+                    help="(v0.5.16/E P1-10) kritik evrak → SÜRE ADAYI taraması: stdout tablo + "
+                         "_oa/cikti/00-sure-adaylari.json; advisory — sure-flag YAZMAZ")
     args = ap.parse_args()
 
     if not os.path.isdir(args.kok):
         sys.exit(f"HATA: klasör yok: {args.kok}")
 
+    if args.sure_adaylari:
+        sys.exit(cmd_sure_adaylari(args))
     if args.tam_yukle_kaydet:
         sys.exit(cmd_tam_yukle_kaydet(args))
     if args.tam_yukle_defter:
