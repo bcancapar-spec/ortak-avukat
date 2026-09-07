@@ -32,10 +32,11 @@ bir kez yapıya döküp sonra tek komutla çağrılabilir kılmaktır.
 **Çırak bu yüzden ailenin esaslı/sürekli parçasıdır** — tek seferlik bir araç değil, her çalışmada arka planda öğrenen ve aileyi büyüten organ. Sistem böylece dosya işleyen değil, dosyadan öğrenen ve kendini geliştiren bir bütün olur.
 
 ## Ne zaman damıtmaya değer
-Bir iş tipi **en az üç kez** elle tekrarlandığında veya avukat açıkça "bunu kalıba
-dök" dediğinde. Tek seferlik iş için skill üretme — bakım yükü değmez. Almanca
-referans repodaki antipattern (3670 skill) hatasına düşme: az sayıda derin, gerçekten
-tekrarlayan iş için skill üret.
+Bir iş tipi **en az üç kez** elle tekrarlandığında, avukat açıkça "bunu kalıba
+dök" dediğinde **ya da tek bir avukat revizesi bir YÖNTEM açığa çıkardığında**
+(aşağıda «Hata tetikli damıtma»). Tek seferlik iş için skill üretme — bakım yükü
+değmez. Almanca referans repodaki antipattern (3670 skill) hatasına düşme: az sayıda
+derin, gerçekten tekrarlayan iş için skill üret.
 
 ## Damıtma akışı
 
@@ -66,8 +67,52 @@ yetki iddiası, izinsiz dosya/shell erişimi yok mu). Sonra skill-creator ile pa
 taslak yazdır → avukatın düzeltmesini al → tekrar. Birkaç turda kalıp oturur. Taslak
 bir başlangıçtır, son ürün değil.
 
+## HATA TETİKLİ DAMITMA — revize diff'i tetiktir (v0.5.16 / P2-8, A-27, A-28)
+
+**Kural:** Damıtma yalnız iş-tipi TEKRARIYLA (≥3) tetiklenmez; **avukatın revize
+diff'i tek başına tetiktir.** Saha ölçümü (2026-09 denetimi, A-27): bir dilekçe
+taslağının TEK avukat revizesinden **yedi kural** çıktı — hiçbiri "aynı iş üçüncü
+kez" sayacına takılmadı, çünkü tekrar eden şey iş tipi değil HATA TİPİYDİ. Tekrar
+sayacı yöntemin varlığını ölçer; revize diff'i yöntemin YOKLUĞUNU ölçer. İkincisi
+daha değerlidir: ürün ↔ revize farkı, modelin bilmediği bir kuralın ilk fiziksel
+kanıtıdır.
+
+**Kaynak (B grubu, v0.5.16):** `oa-pipeline/scripts/pipeline_kayit.py --avukat-hukmu
+KABUL|REVIZYONLA|RET --sebep <olgu|uslup|strateji|eksik|fazla>` teslim sonrası
+`_oa/defter/avukat-hukmu.jsonl` dosyasına **append-only** tek satır yazar (kapı
+DEĞİLDİR — hükümsüz kapanış engellenmez, yalnız görünür sayaç düşer; bkz.
+`SICRAMA-NOTU.md` §5). Çırak bu defteri KAPANIŞ adımında okur.
+
+**Tetik (deterministik, yorumsuz):**
+1. Defterde `REVIZYONLA` veya `RET` hükmü olan her teslim bir **damıtma adayıdır**;
+   `KABUL` aday değildir (öğrenecek fark yok).
+2. Aday için ürün (teslim edilen taslak, `_oa/cikti/…`) ile avukatın revize nüshası
+   yan yana konur; **diff** çıkarılır. Diff'teki her anlamlı değişiklik (eklenen
+   ihtirazi kayıt, silinen ikrar, değişen talep sırası, düzeltilen künye, çıkarılan
+   paragraf) bir **aday kural** olarak yazılır: `[sebep] → [ürün ne yaptı] → [avukat
+   ne yaptı] → [kural cümlesi] → [hangi parçaya ait]`.
+3. Aday kural `_oa/dersler/` kaydına anonim örüntü olarak işlenir (m.7 — kişi/dosya
+   adı yok; örnekler soyutlanır). Aynı sebep kodu ikinci kez görünürse kural,
+   ilgili parçanın SKILL.md/references güncellemesi ya da yeni oa- taslağı olarak
+   yapıya dökülür — ama **ilk görünüşte de aday yazılır**, beklemez.
+
+**Ölçü — eşik/oran YOK, sayım GÖRÜNÜR:** "Şu kadar RET'ten sonra damıt" gibi bir
+eşik konmaz; böyle bir eşik sayacın kendisini hedefe çevirir. Onun yerine KAPANIŞ
+özetinde üç sayı düz yazılır: *kaç teslim → kaçına hüküm düştü → kaçı
+KABUL/REVİZYONLA/RET*. Sayı yorumlanmaz, yalnız gösterilir; yorum avukatındır.
+
+**SICRAMA-NOTU §5 şartı (aynen):** avukat refleksle `KABUL` basmaya başlarsa sinyal
+ölür ve alan, "ateşlemeyen kapı" kuralı gereği **silinmeyi hak eder**. Başarı
+ölçütü tektir: kaç teslime gerçekten hüküm düştüğü. Oran düşükse bu bölümün üstüne
+hiçbir katman (otomatik kural üretimi, puanlama, öneri motoru) inşa edilmez —
+Çırak önce alanın yaşadığını gösterir, sonra büyütür.
+
+**Model/script ayrımı:** diff çıkarmak ve sayım mekaniktir (script yapabilir);
+diff'ten KURAL çıkarmak yargıdır (model yapar, avukat onaylar). Script "bu bir
+kuraldır" demez; "şurada fark var, şu sebep koduyla" der.
+
 ## Aile yapı denetimi — bakım kuralı (Çırak'ın deterministik görevi)
-Ailenin yapısal sağlığı Çırak'ın işidir ve deterministiktir: `python scripts/aile_dogrula.py <aile-kök-dizini>` tüm parçalarda frontmatter geçerliliğini, name↔klasör eşleşmesini, description uzunluğunu (1024 paketleme sınırı — 900 üstü uyarı), fiziksel aktivasyon bloğunu, günlük işaretçisini, SKILL.md'de anılan scriptlerin gerçekten var olduğunu ve sürüm işaretçisi tutarlılığını denetler. **Bakım kuralı (kritik):** yeni içerik daima GÖVDEYE eklenir, description'a DEĞİL — description tetikleme vitrinidir, sınıra yaklaştıkça kırılganlaşır. Her yeniden paketlemeden önce bu denetim koşulur; hata varken paketleme yapılmaz.
+Ailenin yapısal sağlığı Çırak'ın işidir ve deterministiktir: `python scripts/aile_dogrula.py <aile-kök-dizini>` tüm parçalarda frontmatter geçerliliğini, name↔klasör eşleşmesini, description uzunluğunu (1024 paketleme sınırı — 900 üstü uyarı), fiziksel aktivasyon bloğunu, günlük işaretçisini, SKILL.md'de anılan scriptlerin gerçekten var olduğunu ve sürüm işaretçisi tutarlılığını denetler. **v0.5.16 yapısal kilitler (Hamle 10):** (a) **bekçi↔skill sözleşmesi (K1)** — `oa-pipeline/scripts/pipeline_kayit.py` boşluk bekçilerinin (`_graf_yapisal_bosluk_uyarisi` / `_kiyas_bosluk_uyarisi` / `_usul_bosluk_uyarisi`) glob desenleri, ilgili parçanın (oa-illiyet / oa-kiyas / oa-usul) SKILL.md örnek komutundaki `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile eşleşmezse HATA — üretilen JSON'u bekçinin hiç okumadığı 'sahte yeşil' bir daha doğmasın; (b) **KANONİK↔doktrin** — `oa-illiyet/scripts/grafik_denetim.py` `KANONIK` enum değerlerinin her biri `oa-illiyet/references/illiyet-doktrini.md`'de literal geçmezse HATA (kod ile doktrin birbirini yalanlamasın); (c) **sürüm işaretçisi (P2-10/B-3)** — `STATUS.md` «**Sürüm:** X» ve `YOL-HARITASI.md` «## DURUM — son (… · vX)» plugin.json sürümüyle eşit değilse UYARI (hata değil; vitrin bayatlığı görünür kalır). Depo-dışı kopyada bu kilitler sessiz atlanır (VENDOR deseni: kural depoyu bağlar, kopyayı değil). **Bakım kuralı (kritik):** yeni içerik daima GÖVDEYE eklenir, description'a DEĞİL — description tetikleme vitrinidir, sınıra yaklaştıkça kırılganlaşır. Her yeniden paketlemeden önce bu denetim koşulur; hata varken paketleme yapılmaz.
 
 ## Anayasal süzgeç
 Üretilen her skill aile anayasasına uymak zorundadır: otomasyon muhakemeyi besler,
