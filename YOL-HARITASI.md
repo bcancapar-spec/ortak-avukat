@@ -3,7 +3,7 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (2026-09-07 · v0.5.16)
+## DURUM — son (2026-09-07 · v0.5.16.1)
 - **Paket v0.5.16 — İki Denetimin İnfazı** (birleşim ucu `10aa5c1`): 2026-09-06 iki dış denetimin reçetesi (K1–K5/G1–G12/H/P/D + A-1..A-28/B-1..B-8) 15 grup dalında uygulandı, hakem + Yargı Pro teyidinden geçti, main'e `--no-ff` birleşti; entegrasyon hizalamaları H1–H5; `aile_dogrula` TEMİZ; süit toplama 2301 (tam süit sonucu STATUS §0).
 - **Kodda kapanan yol-haritası maddeleri (aşağıda ✅):** `hesapla_sure.py` adli tatil istisnası (`--adli-tatil-istisna`, ceza/tutuklu rejimi ayrımı; I5 ayrıca aşama tetikli süre sınıfı) · `_oa/` KVKK: senkron klasör uyarısı + şifreli konteyner/cihaz koruması önerisi (D, oa-gizlilik «Senkron klasör riski») — saklama (retention) ritüeli hâlâ açık.
 - **Açık:** saha "sonra" ölçümü · push · B-4 filter-repo kararı · udf-cli pin · tarife doldurma · §11 yerel kurulu eklentinin 0.5.16'ya çekilmesi (hook_doktor: kurulu 0.5.9.1 BAYAT).
