@@ -55,15 +55,20 @@ def test_catalli_graf_en_kirilgan_once():
 
 
 def test_guc_beyan_edilmemis_varsayilan_ve_iliski_kenari_haric():
+    """v0.5.16/A G4 (avukat kararı #5, bilinçli değişiklik): beyan-yok
+    ağırlığı 0.8 → 0.4 (≤ tartışmalı). Gerekçe: 0.8, `guc` beyan ETMEYEN
+    kenarı `zayif` beyan edenden (0.6) güçlü sayıyordu — dürüstlük ödülü
+    tersine dönmüştü (beyan etmemek kazandırıyordu)."""
     d, k = _graf([
         {"kaynak": "fiil", "hedef": "zarar", "kategori": "illiyet",
-         "tur": "fiil_netice"},                          # guc yok → 0.8
+         "tur": "fiil_netice"},                          # guc yok → 0.4
         {"kaynak": "yan", "hedef": "zarar", "kategori": "iliski",
          "tur": "ortaklik", "guc": "guclu"},             # illiyet DEĞİL — hariç
     ])
     z = gd.zincir_analizi(d, k)
-    assert len(z) == 1 and abs(z[0]["guven"] - 0.8) < 1e-9
+    assert len(z) == 1 and abs(z[0]["guven"] - 0.4) < 1e-9
     assert z[0]["en_zayif"]["guc"] == "beyan-yok"
+    assert z[0]["en_zayif"]["agirlik"] == gd.GUC_VARSAYILAN == 0.4
 
 
 def test_cli_zincir_varsayilan_zincirsiz_kapatir_zincir_noop():
@@ -73,9 +78,11 @@ def test_cli_zincir_varsayilan_zincirsiz_kapatir_zincir_noop():
     (c) --zincir → geriye-uyum NO-OP (varsayılanla aynı çıktı)."""
     d = {"dugumler": [{"id": "a", "tip": "olay", "ad": "A"},
                       {"id": "b", "tip": "olay", "ad": "B"}],
+         # v0.5.16/A: illiyet_tipi eklendi — eksikliği artık exit 3 şema
+         # hatasıdır; bu test zincir sözleşmesini sınar, kapıyı değil.
          "kenarlar": [{"kaynak": "a", "hedef": "b", "kategori": "illiyet",
-                       "tur": "fiil_netice", "guc": "guclu",
-                       "dayanak_delil": [], "dogrulama": "iddia"}]}
+                       "tur": "fiil_netice", "illiyet_tipi": "dogal",
+                       "guc": "guclu", "dayanak_delil": [], "dogrulama": "iddia"}]}
     tmp = pathlib.Path(tempfile.mkdtemp())
     graf = tmp / "graf.json"
     graf.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")

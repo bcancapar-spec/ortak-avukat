@@ -6,11 +6,15 @@ Bu testler scriptin MEVCUT davranışını olduğu gibi KİLİTLER; davranışı
 değiştirmez, "doğru" davranışı dayatmaz. Koddan çıkarılan ve burada
 kilitlenen dikkat çekici mevcut-tasarım kararları:
 
-* `rapor()` hiçbir koşulda `sys.exit` çağırmaz → şema hatası, yetim düğüm,
-  çevrim vb. BULGULAR OLSA DA exit kodu 0'dır (karakterizasyon — mevcut
-  tasarım). Exit 1 yalnızca iki yoldan gelir: argümansız çağrı (usage
-  mesajı + sys.exit(1)) veya yakalanmayan istisna (dosya yok / bozuk JSON
-  → traceback).
+* v0.5.16/A (K2+G6, avukat kararı #1 SERT KAPI) — BİLİNÇLİ SÖZLEŞME
+  DEĞİŞİKLİĞİ: eski "bulguda da exit 0" kilidi KALDIRILDI. Yeni: exit 0
+  temiz · exit 1 kullanım hatası (aynen) · exit 2 DENETİM ÇÖKTÜ (dosya yok /
+  bozuk JSON — traceback+exit 1 yerine görünür satır + --json çökme kaydı)
+  · exit 3 şema hatası VEYA çevrim. Gerekçe: exit 0 dönen denetim pipeline'da
+  hiçbir şeyi durdurmuyordu (opsiyonel kapı = ateşlemeyen kapı).
+* v0.5.16/A G8 — köprü düğüm etiketi tip-duyarlı (`perde` | `yapisal`);
+  JSON `kopru_dugumler[]` artık `etiket` taşır; yalnız `olay` tipli halterde
+  etiket `yapisal`tır (perde sinyali gerçek kişi + iki yanda tüzel kişi ister).
 * Çevrim denetimi yalnızca kategori="illiyet" kenarlarına bakar; "iliski"
   kenarlarının oluşturduğu yönlü çevrim raporlanmaz.
 * Kesme adayı denetimi de yalnızca kategori="illiyet" kenarlarındaki
@@ -47,10 +51,19 @@ JSON_ANAHTARLARI = {
     "arac", "ozet", "sema_hatalari", "yetim_dugumler", "desteksiz_kenarlar",
     "kopru_dugumler", "cevrimler", "kesme_adaylari", "yuk_tasiyan_kenarlar",
     "dugumler", "kenarlar", "girdi", "zincirler",
+    # v0.5.16/A (K2/G6/G7/G4/G2): bekçi sözleşmesi alanları
+    "denetim_coktu", "cikis_kodu", "blok_sinifi", "baglanmamis_deliller",
+    "guc_beyansiz_kenarlar", "zincir_uyarisi",
+    # v0.5.16/A-2 (G9 taraf/yön, G12 kanun yolu zinciri)
+    "taraf", "yon", "kanun_yolu_zinciri",
 }
 KENAR_REF_ANAHTARLARI = {
     "index", "kaynak", "hedef", "kategori", "tur", "dayanak_delil", "dogrulama",
 }
+# v0.5.16/A-2 G10 (BİLİNÇLİ karakterizasyon değişikliği): kesme adayı referansı
+# artık kesme_flag + dal + not (doktrin hatırlatması) taşır — bekçi ve
+# oa-antitez dal ayrımını makine-okur almalı; genel kenar ref'i DEĞİŞMEDİ.
+KESME_REF_ANAHTARLARI = KENAR_REF_ANAHTARLARI | {"kesme_flag", "dal", "not"}
 
 
 def _cli(*args):
@@ -85,9 +98,12 @@ def _temiz_graf():
             {"kaynak": "DAVALI", "hedef": "FIIL", "kategori": "iliski",
              "tur": "faili", "dogrulama": "delil",
              "dayanak_delil": ["kaza tutanagi"]},
+            # v0.5.16/A G4: `guc` beyanı eklendi — beyansız illiyet kenarı artık
+            # ayrı sınıfta (guc_beyansiz_kenarlar) raporlanır; "temiz" fikstür
+            # yedi denetime de takılmamalı.
             {"kaynak": "FIIL", "hedef": "ZARAR", "kategori": "illiyet",
-             "tur": "sebep", "illiyet_tipi": "dogal", "dogrulama": "delil",
-             "dayanak_delil": ["bilirkisi raporu"]},
+             "tur": "sebep", "illiyet_tipi": "dogal", "guc": "guclu",
+             "dogrulama": "delil", "dayanak_delil": ["bilirkisi raporu"]},
             {"kaynak": "DAVALI", "hedef": "ZARAR", "kategori": "iliski",
              "tur": "sorumlu", "dogrulama": "delil",
              "dayanak_delil": ["kusur raporu"]},
@@ -120,9 +136,10 @@ def test_temiz_graf_yedi_denetim_de_temiz_exit0(izole_kok):
 
 # ── 1. şema denetimi: dört tespit sınıfı + bulgulara rağmen exit 0 ──────────
 
-def test_sema_hatalari_tek_tek_raporlanir_ama_exit_yine_sifir(izole_kok):
-    """rapor() sys.exit çağırmadığı için şema hatalarında da exit 0
-    (karakterizasyon — mevcut tasarım)."""
+def test_sema_hatalari_tek_tek_raporlanir_exit3(izole_kok):
+    """v0.5.16/A K2 (bilinçli değişiklik): şema hatası artık exit 3 — eski
+    'bulguda da exit 0' kilidi kaldırıldı (opsiyonel kapı = ateşlemeyen kapı).
+    G3: illiyet kenarında eksik `dogrulama` da şema hatasıdır."""
     graf = {
         "dugumler": [
             {"id": "N1", "ad": "Tipsiz Dugum"},                       # tip eksik
@@ -139,8 +156,9 @@ def test_sema_hatalari_tek_tek_raporlanir_ama_exit_yine_sifir(izole_kok):
     yol = _graf_yaz(izole_kok, graf)
     kod, out, err = _cli(yol)
 
-    assert kod == 0, f"bulgu olsa da mevcut tasarımda exit 0 beklenir; stderr:\n{err}"
+    assert kod == 3, f"şema hatası = exit 3 (v0.5.16/A K2); stderr:\n{err}"
     assert "✗ Düğüm 'N1': 'tip' eksik" in out
+    assert "✗ Kenar #1 (illiyet): 'dogrulama' eksik (zorunlu)" in out
     assert "✗ Düğüm 'N2' (gerçek kişi): 'usul_rolu' eksik (zorunlu)" in out
     assert "✗ Kenar #0: hedef 'HAYALET' tanımsız düğüm" in out
     assert "✗ Kenar #1 (illiyet): 'illiyet_tipi' eksik" in out
@@ -227,9 +245,12 @@ def test_kopru_dugum_halter_grafinda_yalniz_orta_dugum(izole_kok):
 
     assert kod == 0
     assert "⚑ Dugum C (C) iki kümeyi bağlıyor" in out
-    assert "muvazaa / perdeyi kaldırma incele" in out
+    # v0.5.16/A G8: tümü `olay` tipli → tip-duyarlı etiket `yapisal`
+    # (perde/muvazaa sinyali gerçek kişi + iki yanda tüzel kişi ister)
+    assert "yapısal köprü (perde etiketi değil)" in out
+    assert "muvazaa / perdeyi kaldırma incele" not in out
     sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
-    assert sonuc["kopru_dugumler"] == [{"id": "C", "ad": "Dugum C"}]
+    assert sonuc["kopru_dugumler"] == [{"id": "C", "ad": "Dugum C", "etiket": "yapisal"}]
 
 
 # ── 5. yönlü çevrim (dairesel illiyet) ──────────────────────────────────────
@@ -254,7 +275,7 @@ def test_yonlu_illiyet_cevrimi_a_b_c_a_raporlanir(izole_kok):
     json_yol = izole_kok / "sonuc.json"
     kod, out, err = _cli(yol, "--json", json_yol)
 
-    assert kod == 0, "çevrim bulgusu da exit kodunu değiştirmez (mevcut tasarım)"
+    assert kod == 3, "v0.5.16/A K2: çevrim = exit 3 (blok sınıfı 'cevrim')"
     assert "✗ Olay A → Olay B → Olay C → Olay A" in out
     sonuc = json.loads(json_yol.read_text(encoding="utf-8"))
     assert sonuc["cevrimler"] == [["A", "B", "C", "A"]]
@@ -287,8 +308,10 @@ def test_iliski_kenarlarinin_cevrimi_denetime_girmez(izole_kok):
 
 def test_kesme_flagli_illiyet_kenari_aday_iliski_kenari_yok_sayilir(izole_kok):
     """kesme_flag yalnız kategori=illiyet kenarında görülür; iliski
-    kenarındaki kesme_flag sessizce yok sayılır. JSON kenar referansı
-    kesme_flag alanını TAŞIMAZ (karakterizasyon — mevcut tasarım)."""
+    kenarındaki kesme_flag sessizce yok sayılır. v0.5.16/A-2 G10: kesme adayı
+    referansı artık kesme_flag/dal/not TAŞIR (eski 'taşımaz' kilidi BİLİNÇLİ
+    değiştirildi — dal ayrımı bekçiye makine-okur gitmeli); 'mucbir sebep'
+    dal öneksiz + alt çizgisiz olduğundan dal None, not None."""
     graf = {
         "dugumler": [
             {"id": "A", "tip": "olay", "ad": "Olay A"},
@@ -318,8 +341,9 @@ def test_kesme_flagli_illiyet_kenari_aday_iliski_kenari_yok_sayilir(izole_kok):
     assert len(sonuc["kesme_adaylari"]) == 1
     tek = sonuc["kesme_adaylari"][0]
     assert tek["index"] == 0
-    # _kenar_ref kesme_flag/illiyet_tipi taşımaz — anahtar seti sabit:
-    assert set(tek) == KENAR_REF_ANAHTARLARI
+    # A-2 G10: kesme ref'i = kenar ref + kesme_flag/dal/not (illiyet_tipi yine yok)
+    assert set(tek) == KESME_REF_ANAHTARLARI
+    assert tek["kesme_flag"] == "mucbir sebep" and tek["dal"] is None and tek["not"] is None
 
 
 # ── 7. yük taşıyan kenar (illiyet alt-grafında bridge) ──────────────────────
@@ -389,8 +413,10 @@ def test_json_cikti_anahtar_seti_ve_arac_degeri(izole_kok):
     # temiz grafta tüm bulgu listeleri boş
     for anahtar in ("sema_hatalari", "yetim_dugumler", "desteksiz_kenarlar",
                     "kopru_dugumler", "cevrimler", "kesme_adaylari",
-                    "yuk_tasiyan_kenarlar"):
+                    "yuk_tasiyan_kenarlar", "baglanmamis_deliller",
+                    "guc_beyansiz_kenarlar", "blok_sinifi"):
         assert sonuc[anahtar] == [], f"{anahtar} temiz grafta boş olmalı"
+    assert sonuc["cikis_kodu"] == 0 and sonuc["denetim_coktu"] is False
 
     # düğüm ve kenar dökümlerinin alan setleri
     assert len(sonuc["dugumler"]) == 3
@@ -412,26 +438,23 @@ def test_arguman_yok_kullanim_mesaji_exit1(izole_kok):
     assert "Kullanım: python grafik_denetim.py graf.json" in out
 
 
-def test_var_olmayan_dosya_cokus_traceback_exit1(izole_kok):
-    """yukle() dosya-yok durumunu yakalamaz — script traceback ile çöker
-    (karakterizasyon — mevcut tasarım; düzeltme yapılmaz)."""
+def test_var_olmayan_dosya_denetim_coktu_exit2(izole_kok):
+    """v0.5.16/A K2 (bilinçli değişiklik): dosya-yok artık traceback+exit 1
+    DEĞİL — rapor() try/except sarmalı: stdout 'DENETİM ÇÖKTÜ' + exit 2
+    (traceback teşhis için stderr'de kalır)."""
     kod, out, err = _cli(izole_kok / "yok.json")
-    assert kod != 0
-    assert kod == 1
-    assert "Traceback" in err
+    assert kod == 2
+    assert "DENETİM ÇÖKTÜ: FileNotFoundError" in out
     assert "FileNotFoundError" in err
 
 
-def test_bozuk_json_cokus_traceback_exit1(izole_kok):
-    """Bozuk JSON da yakalanmaz — json.JSONDecodeError traceback'i ile
-    çöker (karakterizasyon — mevcut tasarım)."""
+def test_bozuk_json_denetim_coktu_exit2(izole_kok):
+    """v0.5.16/A K2: bozuk JSON → 'DENETİM ÇÖKTÜ: JSONDecodeError' + exit 2."""
     yol = izole_kok / "graf.json"
     yol.write_text("{ bozuk json", encoding="utf-8")
     kod, out, err = _cli(yol)
-    assert kod != 0
-    assert kod == 1
-    assert "Traceback" in err
-    assert "JSONDecodeError" in err
+    assert kod == 2
+    assert "DENETİM ÇÖKTÜ: JSONDecodeError" in out
 
 
 def test_bos_graf_nesnesi_cokmez_exit0(izole_kok):
