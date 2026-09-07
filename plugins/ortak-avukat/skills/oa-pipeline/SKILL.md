@@ -340,7 +340,15 @@ hangi adın gerektiğini söyler). Çıplak `--serh` geriye uyumludur (tüm kap�
 AMA görünür UYARI basar: «--serh-kapi verilmedi — şerh TÜM kapılara uygulandı».
 Olay `serh_kapi` alanını taşır; DURUM.md/--denetle şerh metnini `[kapı: …]`
 ekiyle gösterir. CANLI-SENKRON ve ÇAPRAZ-ADIM (adım-8) ayrı ad almaz — yalnız
-`tumu`/çıplak şerhle geçilir. **ELDEN ⟂ şerh:** C5 ELDEN düşürmesi artık
+`tumu`/çıplak şerhle geçilir. **ŞERH ZİNCİRİ (v0.5.16.1 — saha yan-bulgusu):**
+şerhle geçilen kapı zinciri KESMEZ — İNGEST-ÖNCE şerhi verilmişken KALAN kapılar
+(GRAF, KIYAS, KONTROL, CANLI-SENKRON, ÇAPRAZ-ADIM) da değerlendirilir; kalan bir
+kapı bloklu ve şerh onu kapsamıyorsa RET (mesaj kapıyı ve gereken adı söyler; iki
+kapı birden bloklu ise tek çare `--serh-kapi tumu` görünür kılınır). Şerh mesajı
+geçilen kapıların HEPSİNİ « ‖ » ile listeler (DURUM.md/--denetle). Saha: 00-kunye.
+json yokken `--serh-kapi ingest-once` çevrimli/şema hatalı grafı şerhsiz
+geçiriyordu (erken dönüş) — kapandı. UYARI kademesi şerhli geçişte de basılır.
+**ELDEN ⟂ şerh:** C5 ELDEN düşürmesi artık
 şerhten BAĞIMSIZDIR — şerh bir kapının geçildiğini söyler, ELDEN script
 artefaktının diskte olmadığını; ikisi birlikte yazılır (`ELDEN ⚠ŞERHLİ`),
 Avukat Kararı Bekleyen'de `ŞERHLİ ELDEN` olarak görünür.

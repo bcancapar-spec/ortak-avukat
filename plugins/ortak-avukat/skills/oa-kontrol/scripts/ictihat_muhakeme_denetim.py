@@ -431,7 +431,8 @@ def kutuk_dayanagi_denetle(kayit, kutuk_yolu):
     bölüm tam da bu izi bırakmaz).
 
     Denetim yalnız kütük FİİLEN KULLANILIYORSA (`kutuk_gercek_veri_var_mi` —
-    en az bir gerçek 7-hücreli satır) etkindir; kütük hiç yoksa/hiç
+    en az bir gerçek veri satırı; v0.5.16.1: sütun sayısından bağımsız,
+    bkz. `kunye_ortak.kutuk_veri_satirlari`) etkindir; kütük hiç yoksa/hiç
     kullanılmamışsa (elle kurulmuş test iskeleti / 'derin yol' — doğrudan
     dosya yazımıyla muhakeme kaydı oluşturma, P1-11 playbook'u) mevcut SESSİZ
     ATLAMA (geriye uyum, `kutuk_son_damga_engeli` ile SİMETRİK) KORUNUR — bu
@@ -1050,39 +1051,23 @@ def _ayirt_baglami_var_mi(metin, satir_no):
 
 def _kutuk_kunye_bilgisi(kutuk_yolu, esas, karar, daire):
     """Kütükte bu esas/karar (+daire) için satırları tarar; döner:
-    {"satir_var", "tam_metin", "duyulmus"}. Hücre eşleşme mantığı
-    `kunye_ortak.kutukte_esas_karar_satiri_var_mi` ile AYNI 7-hücre/
-    esas-karar-daire kuralını izler (kunye_ortak 2. dalga merkezinde
-    dokunulmaz olduğundan burada yerel aynalanır — davranış bire bir)."""
+    {"satir_var", "tam_metin", "duyulmus"}. Satır/eşleşme mantığı
+    `kunye_ortak.kutuk_veri_satirlari` + `kutuk_satiri_kunyeyle_eslesir` ile
+    AYNIDIR (tek-yazar kuralı). v0.5.16.1 (saha yan-bulgusu): sütun sayısına
+    bağlı değil — tokenlar (DOKUM-SINIFI=/DUYULMUS=) satırın tamamında,
+    hücre konumundan bağımsız aranır (saha kütükleri 17 hücreli; eski 7-hücre
+    aynalama her künyeyi 'kütükte yok' sayıyordu)."""
     bilgi = {"satir_var": False, "tam_metin": False, "duyulmus": False}
     if not (esas or karar):
         return bilgi
-    for satir in ko._kutuk_satirlarini_oku(kutuk_yolu):
-        if not satir.startswith("|"):
+    for satir in ko.kutuk_veri_satirlari(kutuk_yolu, "_kutuk_kunye_bilgisi"):
+        if not ko.kutuk_satiri_kunyeyle_eslesir(satir, esas, karar, daire):
             continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            continue
-        sonuc_hucresi = hucreler[4]
-        esas_var = bool(esas) and ko.sayi_var(sonuc_hucresi, esas)
-        karar_var = bool(karar) and ko.sayi_var(sonuc_hucresi, karar)
-        if esas and karar:
-            if not (esas_var and karar_var):
-                continue
-        elif esas:
-            if not esas_var:
-                continue
-        elif not karar_var:
-            continue
-        if daire is not None:
-            satir_daire = ko.daire_key(sonuc_hucresi)
-            if satir_daire is not None and satir_daire != daire:
-                continue
         bilgi["satir_var"] = True
-        m = _DOKUM_SINIFI_TOKEN_RE.search(sonuc_hucresi)
-        if m and m.group(1).strip().lower() == "tam-metin":
+        siniflar = _DOKUM_SINIFI_TOKEN_RE.findall(satir)
+        if siniflar and siniflar[-1].strip().lower() == "tam-metin":
             bilgi["tam_metin"] = True
-        if _DUYULMUS_TOKEN_RE.search(sonuc_hucresi):
+        if _DUYULMUS_TOKEN_RE.search(satir):
             bilgi["duyulmus"] = True
     return bilgi
 
@@ -1148,21 +1133,17 @@ def farkindalik_denetimi(kutuk_yolu, cikti_dizin):
     döner (bloklamaz). Son-damga esası: --damga-degistir ile düzeltilmiş
     (artık ALEYHE olmayan) karar yanlış-pozitif üretmez."""
     son_damgalar = {}
-    for satir in ko._kutuk_satirlarini_oku(kutuk_yolu):
-        if not satir.startswith("|"):
+    # v0.5.16.1 — sütun sayısından bağımsız: DAMGA= satırın tamamında (sonuncusu
+    # geçerli), künye `kunye_ortak.kutuk_satiri_kunyesi` ile (damgalı hücre
+    # öncelikli — sorgu hücresindeki bir künye damganın sahibi sanılmaz).
+    for satir in ko.kutuk_veri_satirlari(kutuk_yolu, "farkindalik_denetimi"):
+        tokenlar = _KUTUK_DAMGA_TOKEN_RE.findall(satir)
+        if not tokenlar:
             continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            continue
-        sonuc_hucresi = hucreler[4]
-        m = _KUTUK_DAMGA_TOKEN_RE.search(sonuc_hucresi)
-        if not m:
-            continue
-        esas, karar = ko.kunye_normalize(sonuc_hucresi)
+        esas, karar, daire = ko.kutuk_satiri_kunyesi(satir)
         if esas is None and karar is None:
             continue
-        daire = ko.daire_key(sonuc_hucresi)
-        son_damgalar[(esas, karar, daire)] = m.group(1).upper()
+        son_damgalar[(esas, karar, daire)] = tokenlar[-1].upper()
     aleyheler = [k for k, v in son_damgalar.items() if v == "ALEYHE"]
     if not aleyheler:
         return []

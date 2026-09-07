@@ -31,9 +31,16 @@ def _kok_kur(kaynak_url=None):
     dokum.mkdir(parents=True)
     (dokum / "kaynak.md").write_text(
         "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 tam metni...\n", encoding="utf-8")
+    # v0.5.16.1: kütük satırı kanonik biçimde (5 sütun, `DAMGA=` tokenı,
+    # `[döküm](<kaynak-izi>)` bağı). Eski fikstür 6 sütunlu el yazısı satırdı;
+    # v0.5.16 okuyucusu onu `len != 7` diye YOK sayıp kütüğü «fiilen
+    # kullanılmıyor» ilan ediyor, hayalet-muhakeme dayanak denetimlerini
+    # SESSİZCE atlıyordu (fail-open). Sütun-toleranslı okuyucu satırı görür;
+    # dayanak (DAMGA=LEHE + kaynak-izi bağı) fikstürde de gerçek olmalı.
     (kok / "_oa" / "teyit" / "kunye-teyit.md").write_text(
-        "# Künye Teyit Kütüğü\n| 2026-08-07 | ictihat_getir | sorgu | "
-        "E. 2023/1234 K. 2023/5678 | LEHE | dokum |\n", encoding="utf-8")
+        "# Künye Teyit Kütüğü\n| 2026-08-07T10:00:00 | ictihat_getir | sorgu | "
+        "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 DAMGA=LEHE DOKUM-SINIFI=tam-metin | "
+        "[döküm](_oa/teyit/dokum/kaynak.md) |\n", encoding="utf-8")
     cikti = kok / "_oa" / "cikti"
     cikti.mkdir(parents=True)
     satirlar = [

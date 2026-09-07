@@ -931,6 +931,34 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
         adim_i = int(adim)
     except (TypeError, ValueError):
         adim_i = None
+    anahtar = (adim_i, parca)
+
+    # v0.5.16.1 (saha yan-bulgusu — ŞERH ZİNCİRİ KAPI ATLATMA): eskiden şerhle
+    # geçilen İLK kapı `return True, …` ile ERKEN DÖNÜYOR, sonraki kapılar
+    # (özellikle K2 GRAF KAPISI) hiç değerlendirilmiyordu — 00-kunye.json
+    # yokken `--serh --serh-kapi ingest-once` çevrimli/şema hatalı grafı
+    # şerhsiz geçiriyordu. Artık şerhli geçiş BİRİKTİRİLİR ve KALAN kapılar da
+    # sorulur: kalan kapılardan biri bloklu ve şerh onu kapsamıyorsa RET
+    # (mesaj hangi kapının hangi adla geçileceğini söyler; birden çok kapı
+    # birden bloklu ise tek çare `tumu` görünür kılınır). `tumu`/çıplak şerh
+    # tüm kapıları kapsar. Dönüş sözleşmesi korunur; `serh_mesaj` geçilen
+    # kapıların HEPSİNİ « ‖ » ile listeler (DURUM.md/--denetle görür).
+    # Aynı sınıf erken dönüş CANLI-SENKRON, ÇAPRAZ-ADIM, KIYAS ve KONTROL
+    # kapılarında da kapandı (hepsi tek `_kapi` yolundan geçer).
+    serh_gecilen = []  # [(kapı adı, geçiş mesajı)] — sırayla
+
+    def _kapi(kapi_adi, sorun, gecis_mesaji):
+        """Bloklu bir kapı: şerh kapsıyorsa mesajı biriktirip None (DEVAM)
+        döner; kapsamıyorsa RET metnini döner (çağıran hemen RET eder)."""
+        if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, kapi_adi):
+            serh_gecilen.append((kapi_adi, gecis_mesaji))
+            return None
+        ret = sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, kapi_adi)
+        if serh_gecilen:
+            ret += (f" [şerh bu çağrıda {len(serh_gecilen)} kapıyı zaten kapsıyor "
+                    "(" + ", ".join(k for k, _ in serh_gecilen) + ") — birden çok "
+                    "bloklu kapı için --serh-kapi tumu]")
+        return ret
 
     if adim_i is not None and adim_i >= 1 and not _ingest_once_saglam_mi(kok):
         sorun = ("İNGEST-ÖNCE: _oa/metin/00-kunye.json yok — evrak hiç ingest "
@@ -938,23 +966,22 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
         # P1-9 KUCUK-DÜZELTME (sinav bulgusu) — kısmi-okuma gerçeği (--onbakis
         # ile geçilen İNGEST-ÖNCE) modelin kendi yazdığı şerh METNİNE değil,
         # DETERMİNİSTİK bir ön-eke bağlanır: "KISMI INGEST: N/M" HER ZAMAN
-        # görünür, model şerhinde bunu anmayı unutsa/atlasa BİLE.
-        if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "ingest-once"):
-            kismi, n, m = _kismi_ingest_durumu(kok)
-            onek = f"KISMI INGEST: {n}/{m} — " if kismi and n is not None and m is not None else ""
-            return True, None, None, (onek + "İNGEST-ÖNCE ŞERH ile geçildi: " + sorun + kapi_eki)
-        return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "ingest-once"), None, False
+        # görünür, model şerhinde bunu anmayı unutsa/atlasa BİLE. İngest kapısı
+        # zincirin İLK kapısıdır → ön-ek şerh mesajının başında kalır.
+        kismi, n, m = _kismi_ingest_durumu(kok)
+        onek = f"KISMI INGEST: {n}/{m} — " if kismi and n is not None and m is not None else ""
+        ret = _kapi("ingest-once", sorun, onek + "İNGEST-ÖNCE ŞERH ile geçildi: " + sorun)
+        if ret:
+            return False, ret, None, False
 
     # P1-10 — CANLI-SENKRON KAPISI: tam_tur akışı kullanılıyorsa (dosya-analiz.
     # json var) working-memory bayatken yeni bir UYGULANDI yazılamaz.
     if adim_i is not None and adim_i >= 1:
         senkron_sorun = _canli_senkron_bayat_mi(kok)
         if senkron_sorun:
-            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "tumu"):
-                return True, None, None, ("CANLI-SENKRON ŞERH ile geçildi: " + senkron_sorun + kapi_eki)
-            return False, senkron_sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "tumu"), None, False
-
-    anahtar = (adim_i, parca)
+            ret = _kapi("tumu", senkron_sorun, "CANLI-SENKRON ŞERH ile geçildi: " + senkron_sorun)
+            if ret:
+                return False, ret, None, False
 
     # ÇAPRAZ-ADIM kontrolü: adım-8 (YAZIM/oa-dilekce) UYGULANDI iken adım-5
     # (KIYAS/oa-kiyas) hâlâ BEKLIYORSA — kıyas hiç değerlendirilmeden (ne
@@ -969,17 +996,17 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
             sorun = ("adım-8 (YAZIM/oa-dilekce) UYGULANDI ama adım-5 (KIYAS/oa-kiyas) "
                      "hâlâ BEKLIYOR — kıyas hiç değerlendirilmeden (UYGULANDI/GEREKSIZ "
                      "dahi denmeden) yazım adımına geçilemez.")
-            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "tumu"):
-                return True, None, None, ("ŞERH ile geçildi: " + sorun + kapi_eki)
-            return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "tumu"), None, False
+            ret = _kapi("tumu", sorun, "ŞERH ile geçildi: " + sorun)
+            if ret:
+                return False, ret, None, False
 
     # K2 (v0.5.16, karar #1 SERT) — GRAF KAPISI: yalnız adım-1/oa-illiyet.
     if anahtar in ONKOSUL_GRAF_KAPISI:
         graf_sorun = _graf_kapisi_sorunu(kok)
         if graf_sorun:
-            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, "graf"):
-                return True, None, None, ("GRAF KAPISI ŞERH ile geçildi: " + graf_sorun + kapi_eki)
-            return False, graf_sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, "graf"), None, False
+            ret = _kapi("graf", graf_sorun, "GRAF KAPISI ŞERH ile geçildi: " + graf_sorun)
+            if ret:
+                return False, ret, None, False
 
     if anahtar in ONKOSUL_BLOKLEYICI:
         fonk = _ONKOSUL_FONK[anahtar]
@@ -989,17 +1016,21 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
             if _kendine_atif_var_mi(kanit):
                 sorun += _KENDINE_ATIF_NOTU
             kapi = _SERH_KAPI_BLOKLEYICI.get(anahtar, "tumu")
-            if _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, kapi):
-                return True, None, None, ("ŞERH ile geçildi: " + sorun + kapi_eki)
-            return False, sorun + _serh_ret_ipucu(serh_gecerli, serh_kapi, kapi), None, False
+            ret = _kapi(kapi, sorun, "ŞERH ile geçildi: " + sorun)
+            if ret:
+                return False, ret, None, False
 
+    # UYARI kademesi şerhten bağımsız değerlendirilir (eskiden şerhli erken
+    # dönüş bu satıra hiç ulaşmıyordu — sessiz atlama).
+    uyari_mesaj = None
     if anahtar in ONKOSUL_UYARI and not _onkosul_uyari_var_mi(kok, anahtar):
         uyari_mesaj = ONKOSUL_UYARI[anahtar]
         if _kendine_atif_var_mi(kanit):
             uyari_mesaj += _KENDINE_ATIF_NOTU
-        return True, None, uyari_mesaj, False
 
-    return True, None, None, False
+    if serh_gecilen:
+        return True, None, uyari_mesaj, (" ‖ ".join(m for _, m in serh_gecilen) + kapi_eki)
+    return True, None, uyari_mesaj, False
 
 
 def simdi():
@@ -1707,7 +1738,10 @@ def isle(args):
             sys.exit("RET: " + sorun)
         if serh_mesaj:
             serh_bayrak, serh_metni = True, serh_mesaj
-        elif onkosul_uyari:
+        # v0.5.16.1 — UYARI kademesi şerhli geçişte de basılır (şerh bir
+        # BLOKLU kapının geçildiğini söyler, UYARI ayrı bir gerçektir; eskiden
+        # `elif` ile yutuluyordu — sessiz atlama yasağı).
+        if onkosul_uyari:
             ek_uyari = "\nUYARI: " + onkosul_uyari
 
     # C5 (v0.5.8.5) — ELDEN DÜŞÜRME: SCRIPT'li parça UYGULANDI yazılırken

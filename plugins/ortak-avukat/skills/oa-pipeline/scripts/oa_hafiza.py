@@ -944,6 +944,29 @@ def _sonuc_damga_ize_karismasin(s):
     return _DAMGA_ENJEKSIYON_RE.sub(lambda m: m.group(1) + "∶", s or "")
 
 
+# v0.5.16.1 (saha yan-bulgusu — kütük ayrıştırıcısı sütun toleransı):
+# `kunye_ortak` okuyucuları artık esas/karar ve `DAMGA=`/`AKIBET=` tokenlarını
+# hücre konumundan bağımsız, satırın TAMAMINDA arar (saha kütükleri 17
+# hücreli). Bu, kullanıcı-kontrolündeki `--sorgu` hücresini de okuyucunun
+# görüş alanına sokar: `--sorgu "… DAMGA=LEHE"` ya da `--sorgu "E. 2022/333
+# K. 2022/444 …"` (ARAMA, damgasız) yazıcı temizliği olmasa hayalet bir damga/
+# künye izi bırakabilirdi. Kapı YAZICIDA kapanır: sorgu hücresi de
+# `_sonuc_damga_ize_karismasin` katmanından geçer ve içindeki «YYYY/N» künye
+# izi görsel eşdeğerle (`⁄` U+2044) nötrleştirilir — `sayi_var` («2022/333»
+# literal) artık eşleşmez; sorgu metni okunur kalır. Yalnız KÜTÜK hücresi için
+# kullanılır — `args.sorgu`'nun asıl hâli (Layer-0 taraması, muhakeme kaydı)
+# etkilenmez. Kütükte kalan TEK gerçek `DAMGA=`/künye izi, script'in
+# doğruladığı sonuc hücresininkidir.
+_KUTUK_KUNYE_IZI_RE = re.compile(r"(\d{4})\s*/\s*(?=\d)")
+
+
+def _sorgu_kutuk_ize_karismasin(s):
+    """Kütüğe yazılacak SORGU hücresi: DAMGA=/AKIBET=/… tokenları ve «YYYY/N»
+    künye izi görsel eşdeğere çevrilir (bkz. üstteki not)."""
+    return _KUTUK_KUNYE_IZI_RE.sub(lambda m: m.group(1) + "⁄",
+                                   _sonuc_damga_ize_karismasin(s))
+
+
 # v0.5.16 (K5): **AKIBET:** / **AKIBET-KAYNAK:** satır-başı belirteçleri de
 # kaçışlanır — serbest --akibet-kaynak metni hayalet akıbet satırı üretemez.
 _MUHAKEME_YAPISAL_RE = re.compile(
@@ -1539,7 +1562,9 @@ def cmd_teyit(args):
         # — dokunulmazlar listesindeki 'her serbest-metin alanı _hucre'den
         # geçirilir' ilkesi hiçbir istisna BIRAKMAZ.
         arac_h = _hucre(args.arac)
-        sorgu_h = _hucre(args.sorgu)
+        # v0.5.16.1 — sorgu hücresi de DAMGA=/künye-izi kaçışından geçer
+        # (okuyucu satır-geneli arar; bkz. `_sorgu_kutuk_ize_karismasin`).
+        sorgu_h = _hucre(_sorgu_kutuk_ize_karismasin(args.sorgu))
         sonuc_h = _hucre(sonuc_yazilan)
         with open(yol("teyit", "kunye-teyit.md"), "a", encoding="utf-8") as f:
             f.write(f"| {ts()} | {arac_h} | {sorgu_h} | {sonuc_h} | {dokum_hucre} |\n")
@@ -1938,7 +1963,7 @@ def cmd_triyaj_ice_al(args):
             dokum_hucre = ""
             if dokum_yolu:
                 dokum_hucre = f"[döküm]({_hucre(_kaynak_izi_yolu(dokum_yolu, args.kok))})"
-            sorgu_h = _hucre(f"triyaj-ice-al ← {belge_adi}")
+            sorgu_h = _hucre(_sorgu_kutuk_ize_karismasin(f"triyaj-ice-al ← {belge_adi}"))
             with open(kutuk_yolu, "a", encoding="utf-8") as f:
                 f.write(f"| {ts()} | triyaj-ice-al | {sorgu_h} | {_hucre(sonuc)} | "
                         f"{dokum_hucre} |\n")

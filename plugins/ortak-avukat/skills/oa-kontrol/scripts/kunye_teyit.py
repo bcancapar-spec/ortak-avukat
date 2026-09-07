@@ -403,9 +403,10 @@ _HAM_SEGMENT_RE = re.compile(r"ham[/\\]")
 
 
 def kutuk_ham_baglari(kutuk_yolu):
-    """Kütük tablosunun Döküm sütunundaki (7-hücreli satır, hücre[5] —
-    `kunye_ortak.kutukte_damgali_dayanak_satiri_var_mi` ile aynı hücre
-    sözleşmesi) `_oa/teyit/ham/` bağlarını teyit kaynağı olarak yükler.
+    """Kütük tablosunun Döküm bağlarını (satırın herhangi bir hücresinde —
+    v0.5.16.1: sütun sayısı/konumu sorulmaz, `kunye_ortak.kutuk_veri_satirlari`
+    ile aynı satır sözleşmesi) `_oa/teyit/ham/` altını gösteriyorsa teyit
+    kaynağı olarak yükler.
     Göreli bağlar KÖKE göre çözülür (oa_hafiza `--dokum` yazım sözleşmesi);
     kök dışına çıkan bağ RET edilir (stderr'e görünür uyarı)."""
     cikan = []
@@ -416,18 +417,11 @@ def kutuk_ham_baglari(kutuk_yolu):
     kok = os.path.dirname(os.path.dirname(teyit_dizin))
     ham_n = os.path.normcase(os.path.normpath(ham_dizin))
     gorulen = set()
-    try:
-        with open(kutuk_yolu, encoding="utf-8", errors="replace") as f:
-            satirlar = f.read().splitlines()
-    except OSError:
-        return cikan
-    for satir in satirlar:
-        if not satir.lstrip().startswith("|"):
-            continue
-        hucreler = satir.split("|")
-        if len(hucreler) != 7:
-            continue
-        for tok in _HAM_BAG_TOKEN_RE.findall(hucreler[5]):
+    # v0.5.16.1 — sütun sayısından bağımsız: bağ tokenları satırın tamamında
+    # aranır (`ham/` segmenti süzer); veri satırı tanımı `kunye_ortak.
+    # kutuk_veri_satirlari` (tek-yazar kuralı; saha kütükleri 17 hücreli).
+    for satir in ko.kutuk_veri_satirlari(kutuk_yolu, "kutuk_ham_baglari"):
+        for tok in _HAM_BAG_TOKEN_RE.findall(satir):
             if not _HAM_SEGMENT_RE.search(tok):
                 continue  # ham/ altını göstermeyen hücre içeriği — ilgisiz
             yol = tok if os.path.isabs(tok) else os.path.join(kok, tok)
