@@ -122,3 +122,17 @@ olarak işaretleniyor. IBAN deseni B-15'te 26 karaktere düzeltilmiş (doğru).
 *Latent not (aktif bug değil):* `_MASKE` listesi `MUTLAK_DENY[4]` ile **konuma bağlı**;
 listeye eleman eklenir/sırası değişirse maske yanlış deseni maskeler ve IBAN maskesiz
 kalır. Ada göre aramak daha dayanıklı olur.
+
+---
+## OTURUM KAPANIŞI (2026-09-10)
+
+- **Onarıldı:** B1 (tam_tur.py + README) · B2/B3/B4 (dilekce_denetim.py) · B5 (hook sözleşmesi,
+  avukat kararıyla)
+- **Kilitlendi:** `tests/test_v0517_muvekkil_lehine_kiriklar.py` (10 sınama) + `test_hooks_wiring.py`
+  ve `test_devir_zorlayici.py` yeni sözleşmeye çevrildi. Kilitlerin TUTTUĞU doğrulandı: onarımlar
+  geçici geri alındığında testler kırmızı yandı (B3→1, B4→2), geri yüklendiğinde 10/10 yeşil.
+- **Nihai ölçüm (Python 3.12 = CI hedef sürümü):** `2314 passed, 15 skipped` → 2329 = işaretçi ·
+  `aile_dogrula` 20 parça TEMİZ · `hook_doktor` exit 0, altı olay yeşil.
+- **Commit:** `fe4f3ab` · **PR:** https://github.com/bcancapar-spec/ortak-avukat/pull/4 (draft, izleniyor)
+- **Avukata bırakılan:** sürüm damgası + CHANGELOG sürüm girişi · `_MASKE` indeks bağı ·
+  raporun §4 canlı doğrulama adımları.
