@@ -52,15 +52,35 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          # v0.5.16.3: pip önbelleği YOKTU — her koşuda 5 iş × ~35 MB tekerlek
+          # yeniden indiriliyordu (pymupdf+pillow başlıca yük).
+          cache: pip
 
+      # pytest-xdist BİLİNÇLİ OLARAK requirements.txt'e KONMADI: o dosyanın
+      # başlığı "çalışma zamanı + test bağımlılıkları" diyor ve avukatın kendi
+      # makinesinde de `pip install -r requirements.txt` koşuyor — son
+      # kullanıcıya paralel test koşucusu yüklemek gereksiz bir bağımlılıktır.
+      # Yalnızca CI burada kurar. (`pytest` requirements.txt:6'da zaten var;
+      # eski satırdaki fazladan `pytest` argümanı da kaldırıldı.)
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt pytest-xdist
 
       # -rsfE: atlanan her test GEREKÇESİYLE + düşen her test ADIYLA listelenir.
       # (Ders: yalın `-rs`, pytest'in varsayılan başarısızlık özetini SUSTURUR —
       # v0.5.7 koşusunda 10 kırmızının adları özetten kaybolmuştu.)
+      #
+      # -n auto (v0.5.16.3): süit paralel-güvenli ÖLÇÜLDÜ — seri 259.1 s vs
+      # `-n auto` 42.6 s (4 çekirdek) ve iki koşuda bilanço BİREBİR aynı,
+      # yani sıra-bağımlı çakışma yok ve kırmızılar paralelde GİZLENMİYOR.
+      # Kod delili: tests/ altında `chdir` yok, testler kendi `tmp_path`
+      # köklerinde çalışıyor.
+      # DİKKAT — bu ölçüm LINUX'ta yapıldı. Windows kolu `msvcrt` kilitleme
+      # kullanıyor; paralel işçiler ayrı tmp_path'lerde çalıştığı için
+      # çakışma beklenmiyor ama matris bunu ilk kez BURADA sınayacak.
+      # Windows bacağında sıra-bağımlı bir kırmızı çıkarsa çözüm `-n auto`yu
+      # o platformda kaldırmaktır — test SUSTURMAK değil.
       - name: Run tests
-        run: pytest -rsfE
+        run: pytest -rsfE -n auto
 
   yapi:
     name: aile yapı denetimi
@@ -90,6 +110,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+          cache: pip
 
       - name: Install Tesseract (Türkçe dil paketiyle)
         run: |
@@ -97,7 +118,9 @@ jobs:
           sudo apt-get install -y tesseract-ocr tesseract-ocr-tur
 
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: pip install -r requirements.txt
 
+      # Bu iş TEK bir test dosyası koşuyor — `-n auto` burada işçi başlatma
+      # maliyetini kazançtan büyük yapar, o yüzden SERİ kalır.
       - name: OCR testleri (gerçek tesseract ile)
         run: pytest -rsfE tests/test_oa_ingest_ocr_nobetci.py
