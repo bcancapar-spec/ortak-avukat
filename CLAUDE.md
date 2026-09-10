@@ -112,7 +112,43 @@ okuyordu — 3 MB'lık `ek-deliller.pdf` utf-8'e çözülüp regex'e sokuluyordu
 `udf_yaz.py`, `udf_md.py`, `pipeline_kayit.py`, `hesapla_sure.py` ve
 `oa_hafiza.py`'de kullanılır ve orada import edilir.
 
-### 5. Hook yolu `hook_giris.py` üzerinden geçmeli
+### 5. Aynı modül tek hook çağrısında BİR KEZ yürütülmeli
+
+Bu depoda kardeş scriptler birbirini `spec_from_file_location` ile in-process
+yükler (paket yok). Her yükleyici **kendi modül global'inde** memoize
+ediyordu; iki ayrı yükleyici (`pipeline_kayit` + `oa_metrik`) aynı dosyayı
+yüklediğinde iki ayrı örnek doğuyor ve memoizasyon örnekler arasına
+**geçmiyordu**.
+
+Ölçüm (11 olaylı gerçek defter, tek `--hook-denetle`, cProfile):
+`exec_module` **5 kez** koşuyordu — `oa_hafiza.py` (2500 satır) × **3**,
+`oa_metrik.py` × 1, `pipeline_kayit.py` (6300 satır) × 1 fazladan.
+Şimdi **2**. Soğuk `.pyc` senaryosunda (taze kurulum / güncelleme sonrası
+ilk çağrı) uçtan uca: **397 ms → 95–135 ms**.
+
+İki mekanizma:
+
+- `_paylasimli_modul_al()` + `sys.modules["_oa_paylasimli_oa_hafiza"]` —
+  **anahtar dize `pipeline_kayit.py` ve `oa_metrik.py`'de AYNI olmak
+  zorunda.** Ayrışırsa hiçbir şey çökmez, paylaşım **sessizce ölür**;
+  bu yüzden testle kilitli (`test_paylasimli_onbellek_anahtari_IKI_DOSYADA_AYNI`).
+- `oa_metrik._yuklu_pipeline_kayit()` — zaten yüklü örneği bulur.
+  **Arama ADA göre değil, DOSYA KİMLİĞİNE göre yapılır** (`__file__`
+  realpath + gereken çağrı yüzeyi). Neden: bu modül bağlama göre farklı
+  adlarla yüklenir — hook yolunda `pipeline_kayit`, CLI'da `__main__`,
+  testlerde `_pk_test` gibi benzersiz adlar (tests/README.md §1). Ada
+  bakmak optimizasyonu tesadüfi bir ada bağlardı.
+
+Neden güvenli (üçü de denetlendi): bu modüller modül seviyesinde
+**yan etkisizdir**; üretim kodu mutable global'lerini (`DIZINLER`,
+`ARAMA_ARACLARI`…) **yerinde değiştirmez**, yalnız okur; aday adına
+güvenilmez, kimlik denetiminden geçer. Tek-kaynak garantisi **güçlenir**:
+iki ayrı örnek yerine tek örnek okunur.
+
+> `hook_giris.py`'nin `sys.modules["pipeline_kayit"] = mod` satırı bu
+> paylaşımın giriş kapısıdır — kaldırmayın.
+
+### 6. Hook yolu `hook_giris.py` üzerinden geçmeli
 
 Python, `__main__` olarak koşan bir betiğin bytecode'unu **ASLA** önbelleğe
 almaz (`__pycache__` yalnızca IMPORT edilen modüller için). Hook ağı

@@ -194,6 +194,117 @@ def test_ikili_suzgec_kapi_kararini_DEGISTIRMIYOR():
                os.path.basename(without.split()[-1].rstrip(")")) or True
 
 
+# ── (4) SÜREÇ ÇAPINDA PAYLAŞIMLI MODÜL ÖNBELLEĞİ (v0.5.16.4) ──────────────
+
+def test_paylasimli_onbellek_anahtari_IKI_DOSYADA_AYNI():
+    """Paylaşım, iki dosyadaki sabit DİZENİN aynı olmasına dayanır. Ayrışırsa
+    hiçbir şey çökmez — paylaşım SESSİZCE ölür ve modüller yine 3 kez
+    yürütülür. Sessiz performans kaybı en kötü kayıptır: bu yüzden kilitli."""
+    m = _modul()
+    metrik = (SCRIPTS / "oa_metrik.py").read_text(encoding="utf-8")
+    pk_anahtar = m._OA_PAYLASIMLI_HAFIZA
+    assert f'OA_PAYLASIMLI_HAFIZA = "{pk_anahtar}"' in metrik, (
+        f"oa_metrik.py'deki paylaşım anahtarı pipeline_kayit'tekiyle "
+        f"({pk_anahtar!r}) AYNI DEĞİL — paylaşım sessizce ölür")
+
+
+def test_paylasimli_onbellek_kimlik_denetiminden_geciyor():
+    """Aday ADINA GÜVENİLEREK kabul edilmemeli: `sys.modules`'e yanlış
+    dosyadan bir modül konursa REDDEDİLMELİ. Aksi hâlde ad çakışması yanlış
+    modülün okunmasına yol açar — tek-kaynak garantisi çöker."""
+    import sys as _s
+    import types
+    m = _modul()
+    hafiza_yol = str(SCRIPTS / "oa_hafiza.py")
+    anahtar = m._OA_PAYLASIMLI_HAFIZA
+    onceki = _s.modules.get(anahtar)
+    try:
+        # (a) yanlış dosya → reddedilmeli
+        sahte = types.ModuleType("sahte")
+        sahte.__file__ = str(SCRIPTS / "oa_metrik.py")
+        sahte.DIZINLER = ["sahte"]
+        _s.modules[anahtar] = sahte
+        assert m._paylasimli_modul_al(anahtar, hafiza_yol, ("DIZINLER",)) is None, (
+            "yanlış DOSYADAN gelen aday kabul edildi — kimlik denetimi çalışmıyor")
+        # (b) doğru dosya ama eksik çağrı yüzeyi → reddedilmeli
+        eksik = types.ModuleType("eksik")
+        eksik.__file__ = hafiza_yol
+        _s.modules[anahtar] = eksik
+        assert m._paylasimli_modul_al(anahtar, hafiza_yol, ("DIZINLER",)) is None, (
+            "gereken niteliği OLMAYAN aday kabul edildi")
+        # (c) __file__ yok → fırlatmadan None
+        bos = types.ModuleType("bos")
+        _s.modules[anahtar] = bos
+        assert m._paylasimli_modul_al(anahtar, hafiza_yol, ("DIZINLER",)) is None
+    finally:
+        if onceki is None:
+            _s.modules.pop(anahtar, None)
+        else:
+            _s.modules[anahtar] = onceki
+
+
+def test_tek_hookta_ayni_modul_TEKRAR_TEKRAR_yurutulmuyor():
+    """Asıl regresyon kilidi: `oa_hafiza.py` (2500 satır) tek `--hook-denetle`
+    çağrısında 3 KEZ, `pipeline_kayit.py` (6300 satır) 1 kez FAZLADAN
+    yürütülüyordu — her in-process modül örneği kendi önbellek global'ini
+    taşıdığı için. Ölçüm: exec_module 5 → 2; soğuk `.pyc` senaryosunda
+    (taze kurulum) uçtan uca 397 ms → 122 ms."""
+    import importlib.machinery as mach
+    import importlib.util
+    import io
+    import contextlib
+    import sys as _s
+    from collections import Counter
+
+    # GERÇEK HOOK YOLUNU MODELLE: `hook_giris.py` yüklediği modülü
+    # `sys.modules["pipeline_kayit"]` altına KAYDEDER. Kaydetmezsek kardeş
+    # modüller onu bulamaz ve yedek yola düşer — o zaman bu test kendi
+    # kurulumundaki eksiği ölçer, sistemi değil.
+    spec = importlib.util.spec_from_file_location("pipeline_kayit", str(KAYIT))
+    m = importlib.util.module_from_spec(spec)
+    onceki = _s.modules.get("pipeline_kayit")
+    _s.modules["pipeline_kayit"] = m
+    spec.loader.exec_module(m)
+
+    kok = _dava_kok()
+    ex = []
+    _orij = mach.SourceFileLoader.exec_module
+
+    def izle(self, module):
+        ex.append(os.path.basename(getattr(self, "path", "?")))
+        return _orij(self, module)
+
+    mach.SourceFileLoader.exec_module = izle
+    try:
+        with contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            try:
+                m.hook_denetle(str(kok))
+            except SystemExit:
+                pass
+    finally:
+        mach.SourceFileLoader.exec_module = _orij
+        if onceki is None:
+            _s.modules.pop("pipeline_kayit", None)
+        else:
+            _s.modules["pipeline_kayit"] = onceki
+
+    sayim = Counter(ex)
+    # Hiçbir modül İKİ KEZ yürütülmemeli — asıl kural bu. Bir hook'un hangi
+    # yardımcıları (udf_yaz, muhur_yaz…) yükleyeceği dava durumuna bağlıdır,
+    # o yüzden sabit bir TOPLAM sayı beklenmez; TEKRAR beklenmez.
+    tekrarlar = {ad: n for ad, n in sayim.items() if n > 1}
+    assert not tekrarlar, (
+        f"aynı modül tek hook çağrısında birden fazla yürütüldü: {tekrarlar}. "
+        "Paylaşımlı önbellek (_paylasimli_modul_al / _yuklu_pipeline_kayit) "
+        "devre dışı — her in-process örnek kendi önbelleğini taşıyor.")
+    assert sayim.get("pipeline_kayit.py", 0) == 0, (
+        "pipeline_kayit.py AYNI SÜREÇTE bir kez DAHA yürütüldü — "
+        "oa_metrik._yuklu_pipeline_kayit zaten yüklü örneği bulamadı "
+        "(6300 satır boşa). Arama ADA göre değil DOSYA KİMLİĞİNE göre "
+        "yapılmalı: bu modül testlerde özel adlarla yüklenir.")
+
+
 def test_ikili_suzgec_buyuk_pdf_okumuyor():
     """Süzgeç gerçekten okuma yapmadığının kanıtı: 8 MB'lık bir ikili ürün
     konduğunda çağrı süresi anlamlı biçimde artmamalı."""

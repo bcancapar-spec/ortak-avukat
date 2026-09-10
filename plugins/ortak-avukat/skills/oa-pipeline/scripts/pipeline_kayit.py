@@ -358,6 +358,34 @@ _SERH_KAPI_BLOKLEYICI = {(5, "oa-kiyas"): "kiyas", (9, "oa-kontrol"): "kontrol"}
 _OA_HAFIZA_MOD_BL = None
 _OA_INGEST_MOD_BL = None
 
+# ── PERFORMANS (v0.5.16.4) — SÜREÇ ÇAPINDA PAYLAŞIMLI MODÜL ÖNBELLEĞİ ──────
+# Bu depoda kardeş scriptler birbirini `spec_from_file_location` ile
+# İN-PROCESS yükler (paket yok). Her yükleyici KENDİ modül global'inde
+# memoize ediyordu; iki AYRI yükleyici (pipeline_kayit + oa_metrik) aynı
+# dosyayı yüklediğinde iki AYRI örnek doğuyor ve memoizasyon örnekler
+# arasına GEÇMİYORDU. `sys.modules` süreç çapında TEK sözlüktür.
+# Anahtar oa_metrik.py'deki `OA_PAYLASIMLI_HAFIZA` ile AYNI olmak ZORUNDA —
+# ikisi de bu sabit dizeyi kullanır (iki dosyada tek dize; ayrışırsa
+# paylaşım sessizce ölür, bu yüzden testle kilitlendi).
+_OA_PAYLASIMLI_HAFIZA = "_oa_paylasimli_oa_hafiza"
+
+
+def _paylasimli_modul_al(anahtar, betik, gereken_nitelikler=()):
+    """`sys.modules[anahtar]`'da hazır bir modül varsa KİMLİK DENETİMİNDEN
+    geçirip döndürür; yoksa None. Adı tesadüfen çakışan bir modül ASLA
+    kullanılmaz (dosya yolu + çağrı yüzeyi doğrulanır). ASLA fırlatmaz."""
+    aday = sys.modules.get(anahtar)
+    if aday is None:
+        return None
+    try:
+        if os.path.realpath(getattr(aday, "__file__", "") or "") != os.path.realpath(betik):
+            return None
+        if not all(hasattr(aday, a) for a in gereken_nitelikler):
+            return None
+    except (OSError, ValueError, TypeError):
+        return None
+    return aday
+
 
 def _oa_hafiza_modulu_beyaz_liste():
     """oa_hafiza.py'yi (aynı dizin) İN-PROCESS import eder — DIZIN_BEYAZ_LISTE
@@ -369,6 +397,17 @@ def _oa_hafiza_modulu_beyaz_liste():
     betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oa_hafiza.py")
     if not os.path.isfile(betik):
         return None
+    # v0.5.16.4 — SÜREÇ ÇAPINDA PAYLAŞIM: oa_metrik.py de aynı dosyayı
+    # in-process yüklüyor. Her yükleyici kendi global'inde memoize ettiği için
+    # `oa_hafiza.py` (2500 satır) tek hook çağrısında 3 KEZ yürütülüyordu
+    # (cProfile: exec_module × 5, 34 çalışma-anı regex derlemesi).
+    # GÜVENLİ: bu modül modül seviyesinde YAN ETKİSİZ ve üretim kodu mutable
+    # global'lerini (DIZINLER…) yerinde DEĞİŞTİRMİYOR — yalnız okuyor.
+    # Aday adına güvenilmez: `__file__` + çağrı yüzeyi doğrulanır.
+    paylasimli = _paylasimli_modul_al(_OA_PAYLASIMLI_HAFIZA, betik, ("DIZINLER",))
+    if paylasimli is not None:
+        _OA_HAFIZA_MOD_BL = paylasimli
+        return _OA_HAFIZA_MOD_BL
     try:
         spec = importlib.util.spec_from_file_location("_oa_pipeline_hafiza_bl_inproc", betik)
         mod = importlib.util.module_from_spec(spec)
@@ -376,6 +415,7 @@ def _oa_hafiza_modulu_beyaz_liste():
     except Exception:
         return None
     _OA_HAFIZA_MOD_BL = mod
+    sys.modules.setdefault(_OA_PAYLASIMLI_HAFIZA, mod)   # sonraki örnekler bulsun
     return _OA_HAFIZA_MOD_BL
 
 

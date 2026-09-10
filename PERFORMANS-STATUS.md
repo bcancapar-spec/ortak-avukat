@@ -268,17 +268,58 @@ Hiçbiri zayıflatılmadı, hepsi testle kilitlendi:
 
 ---
 
-## 9. SIRADAKİ EN BÜYÜK KAZANÇLAR (denetimde bulundu, bu oturumda uygulanmadı)
+## 9. İKİNCİ TUR (v0.5.16.4) — ajan iddialarının kendi denetimi
 
-Kalan ~77 ms'lik `hook-denetle` bedelinin içinde:
+Birinci turun bıraktığı beş bulgu tek tek **kendim ölçüldü**. Üçü
+doğrulanmadı; ikisi doğrulandı ve düzeltildi. Ajan çıktısı hüküm değil,
+hipotezdir.
 
-- **Defterin tek Stop hook'unda 4 kez baştan sona taranması** — zamanla
-  kötüleşen O(n) borç (20.001 olaylı defterde ölçüldü: 1437 ms).
-- `_oa_metrik_ozet_al` → `oa_metrik.py` → `pipeline_kayit.py`'yi **aynı
-  süreçte ikinci kez** exec ediyor (cProfile: 126-152 ms).
-- `hook_prompt`'ta aynı dosyaların 5 kez okunması (~3.4 MB gereksiz okuma).
-- `_eklenti_script_indeksi()` önbelleksiz: her çağrıda 21 `os.listdir`.
-- CI'da pip önbelleği yok (koşu başına 5 iş × 35 MB).
+| Ajan iddiası | Kendi ölçümüm | Sonuç |
+|---|---|---|
+| "Defter tek Stop hook'unda **4 kez** taranıyor" | 11 olaylı gerçek defter: `olaylari_oku` **2 kez**, `derle` 1 kez | ❌ **doğrulanmadı** |
+| "`_eklenti_script_indeksi()` önbelleksiz, çağrı başına 21 `os.listdir`" | `hook-denetle` yolunda **0 kez** çağrılıyor | ❌ **bu yolda alakasız** |
+| "`oa_metrik` → `pipeline_kayit` ikinci exec: **126–152 ms**" | `_oa_metrik_ozet_al` toplam **9 ms** | ❌ **artık geçerli değil** — `_oa_ingest_sabit_oku` düzeltmem pymupdf zincirini zaten kurutmuş; ajan düzeltmeden ÖNCE ölçmüş |
+| "`re` derlemesi 9 ms israf" | 34 derlemenin 25'i `oa_hafiza`'nın **tek seferlik** modül-seviyesi derlemesi, 9'u `fnmatch`'in kendi önbellekli desenleri | ❌ **zorunlu iş, israf değil** |
+| "Aynı modüller birden çok kez yürütülüyor" | cProfile: `exec_module` **5 kez** — `oa_hafiza.py` × **3**, `oa_metrik.py` × 1, `pipeline_kayit.py` × 1 | ✅ **doğrulandı → düzeltildi** |
 
-Bunlar ölçüldü ve doğrulandı ama **uygulanmadı** — her biri defter okuma
-semantiğine dokunduğu için ayrı bir tur ve ayrı bir test seti hak ediyor.
+### Düzeltilen: süreç çapında paylaşımlı modül önbelleği
+
+**Kök neden:** her in-process yükleyici kendi modül global'inde memoize
+ediyor; iki ayrı yükleyici aynı dosyayı yüklediğinde iki ayrı örnek doğuyor
+ve memoizasyon örnekler arasına geçmiyor.
+
+**Çözüm:** `sys.modules` süreç çapında tek sözlüktür.
+`_paylasimli_modul_al()` paylaşımlı bir anahtarla oradan okur;
+`oa_metrik._yuklu_pipeline_kayit()` zaten yüklü örneği **dosya kimliğiyle**
+(ada göre değil) bulur.
+
+| | ÖNCE | SONRA |
+|---|---|---|
+| `exec_module` / hook | **5** | **2** |
+| `oa_hafiza.py` yürütmesi | 3× | **1×** |
+| `pipeline_kayit.py` fazladan yürütmesi | 1× | **0** |
+| Soğuk `.pyc` (taze kurulum) uçtan uca | **397 ms** | **95–135 ms** |
+| Sıcak `.pyc` uçtan uca | ~42 ms | ~42 ms |
+
+**Dürüst not:** sıcak `.pyc` durumunda uçtan uca kazanç **ölçülemedi**
+(117.9 vs 118.1 ms — gürültü içinde), çünkü bytecode önbelleği modül
+yüklemeyi zaten ucuzlatmış. Kazanç **soğuk önbellekte** gerçekleşiyor:
+eklentiyi her güncellediğinizde ve `.pyc` yazılamayan kurulumlarda. Yapılan
+iş yine de ölçülebilir biçimde azaldı (5 → 2 modül yürütmesi, 8800 satır).
+
+### Bu mimarinin tabanına ulaşıldı
+
+Kalan 2 `exec_module` **zorunludur** (`oa_hafiza` bir kez, `oa_metrik` bir
+kez). Kalan regex derlemeleri **tek seferlik ilklendirmedir**. Kalan uçtan
+uca ~42 ms: yorumlayıcı başlığı (~12 ms) + `pipeline_kayit`'in kendi
+yüklenmesi + zorunlu modül yüklemeleri + gerçek defter/dosya işi.
+
+Daha ileri gitmek **mimari** değişiklik ister (kalıcı bir yardımcı süreç
+veya hook'ları birleştirmek) — o, bloklamayan hook sözleşmesini ve
+"kanıtla yazılır" kapılarını yeniden tasarlamak demektir. Karar vericiye
+ait bir tercih; performans gerekçesiyle tek taraflı yapılmaz.
+
+### Uygulanmayan tek kalem
+
+CI pip önbelleği — **uygulandı** (`actions/setup-python cache: pip` +
+`pytest-xdist -n auto`, süit 259 s → 43 s). Ayrı commit.

@@ -330,21 +330,138 @@ def olc_defter(defter, defter_hata):
     }
 
 
+# ── PERFORMANS (v0.5.16.4) — SÜREÇ ÇAPINDA PAYLAŞIMLI MODÜL ÖNBELLEĞİ ──────
+# NEDEN VAR: bu depoda kardeş scriptler birbirini `spec_from_file_location`
+# ile İN-PROCESS yükler (paket yok, her skill kendi `scripts/` dizininde
+# yaşar). Her yükleyici KENDİ modül global'inde memoize ediyordu; ama iki
+# AYRI yükleyici (pipeline_kayit ve oa_metrik) aynı dosyayı yüklediğinde iki
+# AYRI örnek doğuyor ve memoizasyon örnekler arasına GEÇMİYORDU.
+#
+# ÖLÇÜM (gerçek 11 olaylı defter, tek `--hook-denetle`, cProfile):
+# `exec_module` bir hook çağrısında 5 KEZ koşuyordu — `oa_hafiza.py` × 3
+# (2500 satır), `oa_metrik.py` × 1, `pipeline_kayit.py` × 1 (6300 satır) —
+# ve bu gövdelerdeki modül-seviyesi `re.compile` çağrıları yüzünden 34 regex
+# çalışma anında derleniyordu.
+#
+# ÇÖZÜM: `sys.modules` süreç çapında TEK sözlüktür; paylaşımlı özel adlarla
+# oraya kaydedilen modül her örnekten görünür.
+#
+# NEDEN GÜVENLİ (denetlendi):
+#   · `oa_hafiza.py`, `oa_metrik.py` ve `pipeline_kayit.py` modül seviyesinde
+#     YAN ETKİSİZDİR (dosya yazımı/os çağrısı yok) — bir kez yürütmek ile üç
+#     kez yürütmek arasında DAVRANIŞ farkı yoktur.
+#   · Üretim kodu bu modüllerin mutable global'lerini (`DIZINLER`,
+#     `ARAMA_ARACLARI`, `GETIR_ARACLARI`…) YERİNDE DEĞİŞTİRMEZ; yalnız okur.
+#   · Aday ADINA GÜVENİLEREK kabul edilmez: `__file__` hedef dosyanın ta
+#     kendisi olmalı VE gereken çağrı yüzeyi üzerinde bulunmalı.
+# TEK-KAYNAK GARANTİSİ GÜÇLENİR: iki ayrı örnek yerine TEK örnek okunur.
+OA_PAYLASIMLI_HAFIZA = "_oa_paylasimli_oa_hafiza"
+
+
+def _paylasimli_modul_al(anahtar, betik, gereken_nitelikler=()):
+    """`sys.modules[anahtar]`'da hazır bir modül varsa KİMLİK DENETİMİNDEN
+    geçirip döndürür; yoksa None. Adı tesadüfen çakışan bir modül ASLA
+    kullanılmaz (dosya yolu + çağrı yüzeyi doğrulanır). ASLA fırlatmaz."""
+    aday = sys.modules.get(anahtar)
+    if aday is None:
+        return None
+    try:
+        if os.path.realpath(getattr(aday, "__file__", "") or "") != os.path.realpath(betik):
+            return None
+        if not all(hasattr(aday, a) for a in gereken_nitelikler):
+            return None
+    except (OSError, ValueError, TypeError):
+        return None
+    return aday
+
+
 # ---------------- 6) OVERRIDE SAYACI (P2-14, v0.5.5) ----------------
 _PIPELINE_KAYIT_MOD = None
 
 
+def _yuklu_pipeline_kayit(betik):
+    """ZATEN YÜKLÜ bir pipeline_kayit örneği varsa onu döndürür, yoksa None.
+
+    NEDEN VAR (v0.5.16.4 — ölçülmüş kök neden)
+    ------------------------------------------
+    Hook yolunda `pipeline_kayit` ZATEN yüklüdür ve `_oa_metrik_ozet_al`
+    üzerinden bu dosyayı çağırır. Aşağıdaki fonksiyon ise kendine AYRI bir
+    `pipeline_kayit` örneği exec ediyordu (6300+ satır) — ve o yeni örneğin
+    kendi `_OA_HAFIZA_MOD_BL = None` önbelleği olduğu için `oa_hafiza.py`
+    (2500 satır) da bir kez DAHA yürütülüyordu.
+
+    ÖLÇÜM (gerçek 11 olaylı defter, tek `--hook-denetle`, cProfile):
+    bir hook çağrısında `exec_module` 5 kez koşuyordu —
+    `oa_hafiza.py` × 3, `oa_metrik.py` × 1, `pipeline_kayit.py` × 1 —
+    toplam 15 ms; ayrıca bu modüllerin gövdelerindeki modül-seviyesi
+    `re.compile` çağrıları yüzünden 34 regex çalışma anında derleniyordu (9 ms).
+    Her in-process modül örneği KENDİ önbellek global'ini taşıdığı için
+    memoizasyon örnekler arasına geçmiyordu.
+
+    ÇÖZÜM: yeni bir örnek exec etmeden ÖNCE `sys.modules`'e bak. Bulunan
+    aday, ADINA GÜVENİLEREK kabul edilmez — KİMLİK DENETİMİNDEN geçer:
+    `__file__` hedef betiğin ta kendisi olmalı ve gereken çağrı yüzeyi
+    üzerinde bulunmalı. Böylece adı tesadüfen çakışan bir modül asla
+    kullanılmaz.
+
+    TEK-KAYNAK GARANTİSİ GÜÇLENİR, zayıflamaz: artık iki ayrı örnek yerine
+    TEK örnek okunur. Üretim kodu bu modüllerin modül-seviyesi mutable
+    global'lerini (`DIZINLER`, `ARAMA_ARACLARI`…) YERİNDE DEĞİŞTİRMİYOR
+    (denetlendi), o yüzden paylaşım bir yan etki üretmez. İki modülün de
+    modül seviyesi YAN ETKİSİZDİR (denetlendi), o yüzden bir kez yürütmek
+    ile üç kez yürütmek arasında davranış farkı yoktur.
+    """
+    GEREKEN = ("_sozlesme_disi_dizinler", "_dilekce_sekilli_makbuzsuz_uyarisi")
+    try:
+        hedef = os.path.realpath(betik)
+    except (OSError, ValueError):
+        return None
+
+    # ARAMA ADA GÖRE DEĞİL, DOSYA KİMLİĞİNE GÖRE yapılır. Neden: bu modül
+    # farklı bağlamlarda farklı adlarla yüklenir — hook yolunda
+    # `hook_giris.py` "pipeline_kayit" adıyla kaydeder, doğrudan CLI'da
+    # "__main__" olur, testler ise "_pk_test" gibi özel adlar kullanır
+    # (tests/README.md §1: her test dosyası BENZERSİZ modül adı kullanır).
+    # Ada bakmak, optimizasyonu tesadüfi bir ada bağımlı kılardı: gerçek
+    # hook yolunda çalışır, her yerde sessizce devre dışı kalırdı.
+    # Maliyet: `sys.modules` üzerinde tek geçiş (mikrosaniyeler) — karşılığı
+    # 6300 satırlık bir modülü yeniden yürütmemek.
+    # Anlık görüntü üzerinde gezilir: canlı sözlükte gezmek, import sırasında
+    # "dictionary changed size during iteration" üretebilir.
+    for _ad, aday in list(sys.modules.items()):
+        if aday is None:
+            continue
+        try:
+            aday_yol = getattr(aday, "__file__", "") or ""
+            if not aday_yol:
+                continue
+            if os.path.realpath(aday_yol) != hedef:
+                continue
+        except (OSError, ValueError, TypeError):
+            continue
+        if all(hasattr(aday, a) for a in GEREKEN):
+            return aday
+    return None
+
+
 def _pipeline_kayit_modulu():
-    """pipeline_kayit.py'yi (aynı dizin) İN-PROCESS import eder — sözleşme-dışı
-    dizin bekçisi/makbuzsuz-dilekçe uyarısı TEK KAYNAKTAN okunur (ikiz-liste
-    yasağı); bulunamaz/çökerse None (çağıran taraf bu alt-sayaçları 'olculemedi'
-    sayar, ANA override_orani hesabını ETKİLEMEZ)."""
+    """pipeline_kayit.py'yi İN-PROCESS sağlar — sözleşme-dışı dizin bekçisi /
+    makbuzsuz-dilekçe uyarısı TEK KAYNAKTAN okunur (ikiz-liste yasağı);
+    bulunamaz/çökerse None (çağıran taraf bu alt-sayaçları 'olculemedi' sayar,
+    ANA override_orani hesabını ETKİLEMEZ).
+
+    v0.5.16.4: ZATEN yüklü bir örnek varsa yeniden exec EDİLMEZ (bkz.
+    `_yuklu_pipeline_kayit`). Yoksa eski davranış aynen sürer."""
     global _PIPELINE_KAYIT_MOD
     if _PIPELINE_KAYIT_MOD is not None:
         return _PIPELINE_KAYIT_MOD
     betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipeline_kayit.py")
     if not os.path.isfile(betik):
         return None
+    hazir = _yuklu_pipeline_kayit(betik)      # ← yeniden exec'ten ÖNCE
+    if hazir is not None:
+        _PIPELINE_KAYIT_MOD = hazir
+        return _PIPELINE_KAYIT_MOD
     try:
         spec = importlib.util.spec_from_file_location("_oa_metrik_pipeline_kayit_inproc", betik)
         mod = importlib.util.module_from_spec(spec)
@@ -363,13 +480,23 @@ def _oa_hafiza_modulu():
     """oa_hafiza.py'yi (aynı dizin) İN-PROCESS import eder — ARAMA_ARACLARI/
     GETIR_ARACLARI (araç sınıflandırması) TEK KAYNAKTAN okunur (ikiz-liste
     yasağı). Bulunamaz/çökerse None (çağıran taraf sınıflandırmayı 'diğer'e
-    düşürür, çökmez)."""
+    düşürür, çökmez).
+
+    v0.5.16.4: SÜREÇ ÇAPINDA PAYLAŞIMLI önbellek (`OA_PAYLASIMLI_HAFIZA`)
+    kullanılır — bkz. `pipeline_kayit._oa_hafiza_modulu_beyaz_liste`
+    gerekçesi. Aynı hook çağrısında `oa_hafiza.py` (2500 satır) hem buradan
+    hem pipeline_kayit'ten yükleniyordu; her modül örneği kendi önbelleğini
+    taşıdığı için memoizasyon örnekler arasına geçmiyordu."""
     global _OA_HAFIZA_MOD
     if _OA_HAFIZA_MOD is not None:
         return _OA_HAFIZA_MOD
     betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "oa_hafiza.py")
     if not os.path.isfile(betik):
         return None
+    paylasimli = _paylasimli_modul_al(OA_PAYLASIMLI_HAFIZA, betik, ("DIZINLER",))
+    if paylasimli is not None:
+        _OA_HAFIZA_MOD = paylasimli
+        return _OA_HAFIZA_MOD
     try:
         spec = importlib.util.spec_from_file_location("_oa_metrik_hafiza_inproc", betik)
         mod = importlib.util.module_from_spec(spec)
@@ -377,6 +504,7 @@ def _oa_hafiza_modulu():
     except Exception:
         return None
     _OA_HAFIZA_MOD = mod
+    sys.modules.setdefault(OA_PAYLASIMLI_HAFIZA, mod)   # sonraki örnekler bulsun
     return _OA_HAFIZA_MOD
 
 
