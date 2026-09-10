@@ -175,3 +175,94 @@ def test_b4_mudahil_her_iki_ekseni_de_tarar():
     _e, _d, _o, aleyhe, _n = dd.denetle(
         "Müdahil olarak davayı kabul ediyoruz.", "cevap", "mudahil")
     assert aleyhe, "müdahil tarafında kabul/ikrar ekseni yakalanmalı"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# B6 — İŞ MAHKEMELERİ EKSENİ (2026-09-10 saha testi)
+#
+# Genel medeni usul kalıpları (kabul/ikrar/feragat/vazgeçme) iş davasında
+# YETMEZ: müvekkili bitiren ikrar orada BAŞKA bir dille gelir. Onarım öncesi
+# ölçüm: işçi yanında 0/7, işveren yanında 0/5 — hiçbiri yakalanmıyordu.
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _ocr_bozulmus(metin):
+    """Türkçe karakterleri düşmüş metin — OCR'dan geçmiş evrakın gerçek hâli."""
+    for a, b in (("ş", "s"), ("ı", "i"), ("ğ", "g"), ("ü", "u"),
+                 ("ö", "o"), ("ç", "c"), ("İ", "I"), ("Ş", "S")):
+        metin = metin.replace(a, b)
+    return metin
+
+
+# Her biri, işçi (davacı) müvekkilin davasını TEK BAŞINA bitirebilecek ikrardır.
+IS_ISCI_YANI = [
+    ("Müvekkil 12.03.2024 tarihinde istifa etmiştir.",
+     "istifa → fesih işçiye ait olur, kıdem+ihbar düşer (4857 m.17, m.120)"),
+    ("İş sözleşmesi müvekkilin kendi isteğiyle ayrılması ile sona ermiştir.",
+     "kendi isteğiyle ayrılma → işveren feshi yok, tazminat yok"),
+    ("Müvekkil işten ayrılırken ibranameyi imzalamıştır.",
+     "ibraname → alacakların ibrası (TBK m.420)"),
+    ("Taraflar arasında ikale sözleşmesi imzalanarak iş akdi sona ermiştir.",
+     "ikale → işe iade hakkı ve tazminatlar ortadan kalkar"),
+    ("Müvekkilin tüm yasal alacakları ödenmiş, bakiye alacağı kalmamıştır.",
+     "alacak kalmadı ikrarı → dava konusuz kalır"),
+    ("Müvekkil işyerinde devamsızlık yapmıştır.",
+     "devamsızlık → işverenin haklı fesih sebebi (4857 m.25/II-g)"),
+    ("Feshin haklı sebebe dayandığı görülmektedir.",
+     "haklı fesih ikrarı → işe iade + tazminat talepleri çöker"),
+]
+
+# Her biri, işveren (davalı) müvekkil için yıkıcıdır.
+IS_ISVEREN_YANI = [
+    ("Fesih haksız olarak gerçekleştirilmiştir.", "haksız fesih ikrarı"),
+    ("Davacı işçinin kıdem tazminatına hak kazandığı açıktır.", "kıdem hakkı ikrarı"),
+    ("İşçi fazla mesai yapmıştır ancak ücretleri ödenmemiştir.", "ödenmemiş fazla mesai"),
+    ("Davacı sigortasız çalıştırılmıştır.", "sigortasız çalıştırma (SGK + ceza riski)"),
+    ("İhbar öneline uyulmamıştır.", "ihbar tazminatı ikrarı"),
+]
+
+
+@pytest.mark.parametrize("metin,neden", IS_ISCI_YANI)
+@pytest.mark.parametrize("bozulma", [lambda x: x, _ocr_bozulmus], ids=["turkce", "ocr"])
+def test_b6_isci_yani_ikrar_yakalanir(metin, neden, bozulma):
+    _e, _d, _o, aleyhe, _n = dd.denetle(bozulma(metin), "dava", "davaci")
+    assert aleyhe, "İŞ HUKUKU KÖRLÜĞÜ (B6): %r yakalanmadı — %s" % (metin, neden)
+
+
+@pytest.mark.parametrize("metin,neden", IS_ISVEREN_YANI)
+@pytest.mark.parametrize("bozulma", [lambda x: x, _ocr_bozulmus], ids=["turkce", "ocr"])
+def test_b6_isveren_yani_ikrar_yakalanir(metin, neden, bozulma):
+    _e, _d, _o, aleyhe, _n = dd.denetle(bozulma(metin), "cevap", "davali")
+    assert aleyhe, "İŞ HUKUKU KÖRLÜĞÜ (B6): %r yakalanmadı — %s" % (metin, neden)
+
+
+@pytest.mark.parametrize("metin,taraf,neden", [
+    ("Davacı işçi kendi isteğiyle ayrılmış, istifa etmiştir.", "davali",
+     "işveren vekili için istifa LEHE bir olgudur — alarm üretmemeli"),
+    ("İşveren müvekkilimi haksız olarak işten çıkarmıştır.", "davaci",
+     "işçi vekili için haksız fesih LEHE bir olgudur — alarm üretmemeli"),
+    ("Müşteki şikayetinden vazgeçmemiştir.", "musteki",
+     "ceza tarafı iş hukuku kalıplarından etkilenmemeli"),
+    ("Sanık isnat edilen suçu kabul etmemektedir.", "sanik",
+     "ceza tarafı iş hukuku kalıplarından etkilenmemeli"),
+])
+def test_b6_taraf_asimetrisi_ters_tarafta_alarm_uretmez(metin, taraf, neden):
+    """İş hukuku ekseni TARAF ASİMETRİKTİR ve öyle kalmalıdır.
+
+    Aynı olgu bir tarafta yıkıcı, öbür tarafta müvekkil lehinedir; kalıpları
+    her iki sete birden koymak kapıyı gürültüye boğar ve güveni aşındırır
+    (yanlış alarm da bir kusurdur)."""
+    _e, _d, _o, aleyhe, _n = dd.denetle(metin, "genel", taraf)
+    assert not aleyhe, "YANLIŞ ALARM (B6): %r → %r — %s" % (metin, aleyhe, neden)
+
+
+def test_b6_turkce_morfoloji_capasi():
+    """Türkçe çekim, kalıbı sessizce ıskalatır — bu ailenin tekrar eden tuzağı.
+
+    B3'te `-me` eki (olumsuzluk mü, mastar mı) aynı sınıftandı. Burada iki
+    ayrı olay var: ÜNLÜ DÜŞMESİ (`fesih` → `feshin`) ve ÜNSÜZ YUMUŞAMASI
+    (`sebep` → `sebebe`). İlk yazımda ikisi de kalıbı kaçırıyordu."""
+    for metin, taraf in (("Feshin haklı sebebe dayandığı görülmektedir.", "davaci"),
+                         ("Fesih haksız olarak gerçekleştirilmiştir.", "davali")):
+        for donusum in (lambda x: x, _ocr_bozulmus):
+            _e, _d, _o, aleyhe, _n = dd.denetle(donusum(metin), "genel", taraf)
+            assert aleyhe, "Türkçe morfoloji kaçağı: %r" % donusum(metin)

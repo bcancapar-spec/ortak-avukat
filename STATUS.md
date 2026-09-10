@@ -49,6 +49,30 @@ bir satır ölçülmeden buraya girmez.
   `python3.12 -m pytest tests` → CI hedef sürümünde koşuldu ·
   Python 3.11'de derlenmeyen script **1 → 0** · hook katmanı kırmızısı **4 → 0** ·
   ikrarlı taslakta yakalanan sinyal (`--taraf davali`) **3 → 5**.
+- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** İndirilenler klasörüne bu
+  oturumdan erişim YOK (bulutta izole konteyner) — test *gerçek dosya* yerine **gerçek ve
+  güncel kaynak** üzerinden kuruldu (Yargı Pro MCP · Yargıtay 9. HD kararları).
+  - **Süre motoru GEÇTİ (4/4).** Y. 9. HD E.2016/10425 K.2017/8620: ikale 29.08.2015 →
+    motor `2015-09-29`; ilk derece "30 Eylül" demişti, Yargıtay bunu *"yasanın
+    düzenlemesine AÇIKÇA AYKIRI"* buldu. Arabuluculuk 2 haftalık süresi üç ayrı gerçek
+    vakada mahkeme kararındaki son günle birebir tuttu.
+  - **B6 — KIRIK BULUNDU ve ONARILDI:** teslim öncesi son kapı **iş hukukunu hiç
+    tanımıyordu**; müvekkili bitiren ikrarların **işçi yanında 0/7, işveren yanında 0/5**'i
+    yakalanıyordu (istifa · kendi isteğiyle ayrılma · ibraname · ikale · alacağı kalmadı ·
+    devamsızlık · haklı fesih / haksız fesih · kıdeme hak kazanma · ödenmemiş fazla mesai ·
+    sigortasız çalıştırma · ihbar öneli). Sistemin kendi içinde asimetriydi: `oa-alan`
+    iş hukukunu BİLİYOR (`ise-iade.md`, `kidem-ihbar.md`), son kapı bilmiyordu. İki
+    **taraf-asimetrik** eksen eklendi → **24/24** (Türkçe + OCR bozulmuş metinde ayrı ayrı),
+    ters-taraf yanlış alarm **0/4**. Türkçe morfoloji çıpası (ünlü düşmesi `fesih→feshin`,
+    ünsüz yumuşaması `sebep→sebebe`) B3'ün akrabası olarak kayda geçti.
+  - **B7 — kapsam boşluğu (onarılmadı, karar sizin):** kural tabanındaki 21 kuralın hiçbiri
+    iş hukuku değil; bilinmeyen kural **fail-closed reddediliyor** (sessiz yanlış hesap YOK).
+    Aday üç süre: arabulucuya başvuru 1 ay · dava 2 hafta (başlangıcı **tartışmalı** —
+    Y. 9. HD E.2024/10170 K.2024/14797, 18.11.2024: uyuşmazlığın giderilmesine YER OLMADI,
+    BAM 29. HD ↔ 31. HD ayrılığı SÜRÜYOR) · işe başlatma başvurusu **10 İŞ GÜNÜ** — motor
+    "iş günü" birimini tanımıyor (takvim günü sayar; erken = güvenli ama dar).
+- **Ölçüm (2026-09-10, ikinci tur · Python 3.12):** `2343 passed, 15 skipped` → süit **2358** ·
+  `aile_dogrula` 20 parça TEMİZ · `hook_doktor` exit 0.
 - **Açık / avukat kararı bekleyen:** (a) `gizlilik_tara._MASKE` listesi IBAN desenine
   `MUTLAK_DENY[4]` diye **konum üzerinden** bağlı — bugün doğru, ama liste sırası değişirse
   IBAN maskesiz kalır (ada göre arama önerildi, uygulanmadı). (b) **Sürüm damgası ATILMADI**

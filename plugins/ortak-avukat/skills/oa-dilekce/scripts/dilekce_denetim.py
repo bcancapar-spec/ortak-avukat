@@ -384,13 +384,58 @@ _ALEYHE_MUSTEKI = [
     r"şikayet(im|imiz)i\s*geri", r"şikayetten\s*vazgeç", r"affediyor",
     r"barıştık", r"şikayetçi\s*değil", r"davacı\s*olmak\s*istemiyor",
 ]
+# ── İŞ HUKUKU EKSENİ (2026-09-10 saha testi — iş mahkemeleri yönünden) ─────
+# Genel medeni usul kalıpları (feragat/vazgeçme/kabul) iş davasında YETMEZ:
+# müvekkili bitiren ikrar burada BAŞKA bir dille gelir. Ölçüm (aynı tarih):
+# aşağıdaki yedi işçi-yanı ve beş işveren-yanı ifadenin HİÇBİRİ yakalanmıyordu
+# (0/7 ve 0/5) — oysa her biri davayı tek başına bitirebilir.
+#
+# NEDEN OPSİYONEL BİR `--alan is` BAYRAĞINA BAĞLANMADI: aynı denetimin B2
+# bulgusu, taramayı isteğe bağlı bir bayrağa bağlamanın onu SESSİZCE kör
+# bıraktığını gösterdi. Bu yüzden kalıplar taraf setlerine doğrudan eklendi;
+# yanlış-pozitifi avukat gözü eler ([UYARI] sınıfı, BLOK değil), yanlış-negatif
+# müvekkili batırır.
+#
+# TARAF ASİMETRİSİ KASITLIDIR: "istifa etti" bir İŞVEREN vekili dilekçesinde
+# müvekkil LEHİNEdir ve orada taranmaz; "haksız fesih" bir İŞÇİ vekili
+# dilekçesinde LEHEdir ve orada taranmaz. Bu yüzden iki liste ayrı tutulur.
+_ALEYHE_IS_ISCI_YANI = [
+    # Fesih işçiye ait sayılırsa kıdem+ihbar düşer (4857 m.17, m.120 / 1475 m.14)
+    r"istifa\s*et(?:ti|mi[sş]|erek|mek|mesi|mekle)", r"istifa\s*dilek[çc]e",
+    r"kendi\s*(?:iste[gğ]|r[ıi]za|arzu)\w*\s*(?:ile\s*)?(?:i[sş]ten\s*)?ayr[ıi]l",
+    # İbraname: TBK m.420 — alacakların ibrası
+    r"ibraname\w*\s*(?:n[ıi]|y[ıi])?\s*imzala", r"ibra\s*et(?:ti|mi[sş])",
+    # İkale: işe iade hakkını ve tazminatları ortadan kaldırır
+    r"ikale\s*(?:s[öo]zle[sş]me|protokol)", r"ikale\s*ile\s*sona\s*er",
+    r"ikale\s*(?:s[öo]zle[sş]mesi\s*)?imzalan",
+    # Alacak kalmadı ikrarı — dava konusuz kalır
+    r"alaca[gğ][ıi]\s*kalma(?:m[ıi][sş]|d[ıi])", r"alaca[gğ][ıi]m[ıi]z\s*kalma",
+    r"t[üu]m\s*(?:yasal\s*)?alacaklar[ıi]\s*[öo]denmi[sş]",
+    # İşverenin haklı fesih sebebini teyit eden ikrarlar (4857 m.25)
+    r"devams[ıi]zl[ıi]k\s*yap", r"i[sş]e\s*gelme(?:di|mi[sş])",
+    r"(?:fesih|fesh?in?)\s*hakl[ıi]\s*(?:sebe[bp]|neden|oldu[gğ])",
+    r"hakl[ıi]\s*(?:sebe[bp]|neden)e?\s*dayan",
+]
+_ALEYHE_IS_ISVEREN_YANI = [
+    r"haks[ıi]z\s*(?:olarak\s*)?(?:fesh|fesih|i[sş]ten)",
+    r"(?:fesih|fesh?in?)\s*haks[ıi]z",
+    r"ge[çc]erli\s*(?:bir\s*)?(?:sebep|neden)\s*(?:bulunma|yok|olmad[ıi][gğ])",
+    r"k[ıi]dem\s*tazminat[ıi]na\s*hak\s*kazan", r"ihbar\s*tazminat[ıi]na\s*hak\s*kazan",
+    r"fazla\s*mesai\w*(?:\s+\S+){0,4}\s*[öo]denme(?:di|mi[sş])",
+    r"sigortas[ıi]z\s*[çc]al[ıi][sş]", r"sigorta\s*primleri(?:\s+\S+){0,3}\s*yat[ıi]r[ıi]lma",
+    r"ihbar\s*[öo]ne?l\w*(?:\s+\S+){0,3}\s*uyulma",
+    r"[üu]cretleri(?:\s+\S+){0,3}\s*[öo]denme(?:di|mi[sş])",
+]
+
 _ALEYHE_SANIK = [
     r"suçu\s*kabul", r"işlediğim(i)?\s*kabul", r"\bikrar\s*ed", r"pişman.*kabul",
     r"suçlu\s*olduğumu",
 ]
 ALEYHE = {
-    "davali": _ALEYHE_DAVALI,
-    "davaci": _ALEYHE_DAVACI,
+    # İş davalarının ezici çoğunluğunda işçi DAVACI, işveren DAVALIdır — HMK
+    # m.103/1-ç'nin lafzı da ("işçilerin AÇTIKLARI davalar") bu kabuldedir.
+    "davali": _ALEYHE_DAVALI + _ALEYHE_IS_ISVEREN_YANI,
+    "davaci": _ALEYHE_DAVACI + _ALEYHE_IS_ISCI_YANI,
     "musteki": _ALEYHE_MUSTEKI,
     # katılan usulen müştekinin kamu davası açıldıktan sonraki devamıdır — aynı riskli eksen.
     "katilan": _ALEYHE_MUSTEKI,

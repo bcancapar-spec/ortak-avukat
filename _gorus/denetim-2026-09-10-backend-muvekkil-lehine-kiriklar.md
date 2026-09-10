@@ -217,6 +217,124 @@ plugin.json hooks: ✓ bildirim YOK — doğru; hooks/hooks.json standart konumd
 
 ---
 
+### B6 — İŞ MAHKEMELERİ EKSENİ: müvekkili bitiren ikrarların HİÇBİRİ yakalanmıyordu · H2
+
+**Nasıl test edildi.** Avukatın kendi dosyalarına (İndirilenler klasörü) bu oturumdan
+erişim yoktur — oturum bulutta izole bir konteynerde koşuyor. Bu yüzden test, *gerçek
+dosya* yerine **gerçek ve güncel kaynak** üzerinden kuruldu: Yargı Pro MCP'den çekilen
+Yargıtay 9. Hukuk Dairesi kararları, iş mahkemesi vakalarının somut tarihleri ve iş
+hukukunun kendi ikrar dili.
+
+**Önce doğrulama — süre motoru gerçek Yargıtay vakalarında sınandı (GEÇTİ).**
+
+| Vaka | Motor | Mahkeme kararındaki son gün |
+|---|---|---|
+| **Y. 9. HD E.2016/10425 K.2017/8620** — ikale 29.08.2015, 1 aylık hak düşürücü süre | `2015-09-29` | **29.09.2015** (Yargıtay); ilk derece "30 Eylül" demişti ve Yargıtay bunu *"yasanın düzenlemesine **açıkça aykırı**"* buldu |
+| Arabuluculuk son tutanağı 27.11.2018 + 2 hafta | `2018-12-11` | 11.12.2018 |
+| Avanos vakası: 09.01.2019 + 2 hafta | `2019-01-23` | 23.01.2019 |
+| Adıyaman vakası: 07.03.2018 + 2 hafta | `2018-03-21` | 21.03.2018 |
+
+Motor 4/4 doğru. Özellikle birincisi anlamlı: **HMK m.92'nin ay hesabında ilk derece
+mahkemesinin düştüğü hatayı motor yapmıyor** (`_ay_ekle` tebliğ gününe denk gelen günü
+verir, ertesi günü değil).
+
+**Sonra kırık — teslim öncesi son kapı iş hukukunu hiç tanımıyordu.** İş davasında
+müvekkili bitiren ikrar, genel medeni usul dilinde ("kabul ediyoruz", "feragat") değil,
+**iş hukukunun kendi dilinde** gelir. Ölçüm:
+
+```
+İŞÇİ (davacı) yanı  : 0/7 yakalandı
+İŞVEREN (davalı) yanı: 0/5 yakalandı
+```
+
+Kaçan yedi işçi-yanı ikrar ve her birinin bedeli:
+
+| İfade | Sonuç |
+|---|---|
+| "istifa etmiştir" | fesih işçiye ait olur → **kıdem + ihbar düşer** (4857 m.17, m.120) |
+| "kendi isteğiyle ayrılması" | işveren feshi yok → tazminat yok |
+| "ibranameyi imzalamıştır" | alacakların ibrası (TBK m.420) |
+| "ikale sözleşmesi imzalanarak" | **işe iade hakkı ve tazminatlar ortadan kalkar** |
+| "alacağı kalmamıştır" | dava konusuz kalır |
+| "devamsızlık yapmıştır" | işverenin haklı fesih sebebi (4857 m.25/II-g) |
+| "feshin haklı sebebe dayandığı" | işe iade + tazminat talepleri çöker |
+
+İşveren yanında da beş ikrar kaçıyordu: haksız fesih, kıdeme hak kazanma, ödenmemiş fazla
+mesai, sigortasız çalıştırma, ihbar önelime uyulmaması.
+
+**Bu boşluk sistemin kendi içinde bir asimetriydi.** `oa-alan` parçası iş hukukunu
+**biliyor** — `references/unsur-sablonlari/ise-iade.md` (4857 m.18-21) ve `kidem-ihbar.md`
+şablonları mevcut. Yani sistem davayı kurarken iş hukukunu tanıyor, ama **teslim öncesi
+son kapı** onu tanımıyordu.
+
+**Onarıldı.** İki yeni taraf-asimetrik eksen eklendi (`_ALEYHE_IS_ISCI_YANI`,
+`_ALEYHE_IS_ISVEREN_YANI`). Asimetri kasıtlıdır: *"istifa etti"* bir **işveren** vekili
+dilekçesinde müvekkil **lehinedir** ve orada taranmaz; *"haksız fesih"* bir **işçi**
+vekili dilekçesinde lehedir ve orada taranmaz.
+
+**Neden opsiyonel bir `--alan is` bayrağına bağlanmadı:** aynı denetimin **B2** bulgusu,
+taramayı isteğe bağlı bir bayrağa bağlamanın onu sessizce kör bıraktığını gösterdi.
+Kalıplar doğrudan taraf setlerine eklendi; yanlış-pozitifi avukat gözü eler ([UYARI]
+sınıfı, BLOK değil), yanlış-negatif müvekkili batırır.
+
+**Türkçe morfoloji çıpası — B3'ün akrabası.** İlk yazımda iki kalıp kaçıyordu ve sebebi
+öğreticiydi: **ünlü düşmesi** (`fesih` → `fes**h**in`) ve **ünsüz yumuşaması** (`sebep` →
+`sebe**b**e`). B3'te `-me` ekinin iki işlevi neyse, bu da odur: Türkçe çekim, kalıbı
+sessizce ıskalatır. Ayrıca tüm kalıplar **OCR bozulmasına** karşı toleranslı yazıldı
+(`[ıi]`, `[sş]`, `[gğ]`) — sistem OCR'dan geçmiş evrakla çalışıyor ve ailenin mevcut
+konvansiyonu da budur.
+
+**Onarım sonrası ölçüm:**
+
+```
+İŞÇİ    — Türkçe 7/7 · OCR bozulmuş 7/7
+İŞVEREN — Türkçe 5/5 · OCR bozulmuş 5/5   → TOPLAM 24/24
+Ters-taraf yanlış alarm: 0/4 (davali·davaci·musteki·sanik tümü temiz)
+```
+
+29 yeni kilit (`test_v0517_...` B6 bloğu). Kilitlerin tuttuğu doğrulandı: eksen geçici
+geri alındığında **25 test kırmızı** yanıyor.
+
+### B7 — İş hukuku süre kuralı kural tabanında YOK (bulgu — onarılmadı, kapsam kararı sizin)
+
+`hesapla_sure.py` kural tabanında **21 kural** var ve **hiçbiri iş hukuku değil**
+(HMK/CMK/İYUK/İİK/AYM). Yani avukat `--kural ise_iade` diyemez.
+
+**İyi haber — fail-closed:** bilinmeyen kural `argparse choices` ile **reddediliyor**;
+sistem sessizce yanlış hesap yapmıyor, hata verip duruyor. Kırık değil, **kapsam boşluğu**.
+
+Eklenmeye aday, iş mahkemelerinde en sık ıskalanan üç süre:
+
+1. **İşe iade — arabulucuya başvuru:** fesih bildiriminin tebliğinden **1 ay** (4857 m.20/1,
+   7036 s.K. m.11 ile değişik).
+2. **İşe iade — dava:** arabuluculuk **son tutanağından 2 hafta** içinde iş mahkemesinde
+   dava (4857 m.20/1). ⚠️ **Başlangıcı TARTIŞMALIDIR** — aşağıya bakınız.
+3. **İşe başlatma başvurusu:** kesinleşen kararın tebliğinden **10 İŞ GÜNÜ** (4857 m.21/5).
+   ⚠️ Motor **"iş günü" birimini tanımıyor** (`gun|hafta|ay|yil`); `--birim gun` takvim
+   günü sayar ve **erken** (dolayısıyla güvenli ama dar) bir tarih verir. Bu bir birim
+   eksikliğidir; tatil tablosu zaten mevcut olduğundan eklenmesi teknik olarak küçüktür.
+
+**Tartışmalı başlangıç — güncel içtihat durumu (Yargı Pro, 2026-09-10):**
+Yargıtay 9. HD **E.2024/10170 K.2024/14797 (18.11.2024)** kararında, işe iade davasındaki
+iki haftalık sürenin ne zaman başlayacağına dair BAM daireleri arasındaki uyuşmazlık
+incelendi ve **"uyuşmazlığın giderilmesine YER OLMADIĞINA"** karar verildi (usulden: 29. HD
+kararı nihai/kesin nitelikte değildi). Yani **ayrılık sürüyor**:
+
+- **İstanbul BAM 31. HD** (2020/2741 E., 2021/10 K.): son tutanağın **düzenlendiği tarih**
+  esastır; imza tarihi ya da telekonferansla katılım önemsizdir; süre hak düşürücüdür ve
+  resen gözetilir.
+- **İstanbul BAM 29. HD** (2024/502 E., 2024/919 K.): tutanakta imza/imza tarihi yoksa,
+  **tüm imzaların tamamlandığı tarih** düzenlenme tarihi sayılır.
+
+Aynı dosyada anılan çok sayıda BAM kararı ise *"hak düşürücü sürelerde tereddüt hâlinde,
+aleyhine süre konulan kişi lehine yorum"* ilkesiyle **işçi lehine** geç tarihi kabul etmiştir.
+
+**Avukat için operatif sonuç — motorun A-20 mantığıyla aynı:** güvenli plan **erken**
+tarihtir (son tutanağın düzenlenme tarihi); imzaların tamamlanması ya da tebliğe dayalı
+geç tarih yalnız **ikincil savunma** olarak tutulmalıdır. Bir kural eklenecekse uyarı
+metninin bu ayrılığı taşıması gerekir — çünkü burada "doğru hesap" tek başına yetmez,
+**hangi olaya bağlandığı** belirleyicidir.
+
 ## 2. Kırık BULUNMAYAN hatlar (negatif bulgular — dürüst kayıt)
 
 **H1 — SÜRE / HAK KAYBI: temiz.** `hesapla_sure.py` sınır senaryolarında fiilen koşturuldu:
