@@ -74,11 +74,16 @@ jobs:
       # yani sıra-bağımlı çakışma yok ve kırmızılar paralelde GİZLENMİYOR.
       # Kod delili: tests/ altında `chdir` yok, testler kendi `tmp_path`
       # köklerinde çalışıyor.
-      # DİKKAT — bu ölçüm LINUX'ta yapıldı. Windows kolu `msvcrt` kilitleme
-      # kullanıyor; paralel işçiler ayrı tmp_path'lerde çalıştığı için
-      # çakışma beklenmiyor ama matris bunu ilk kez BURADA sınayacak.
-      # Windows bacağında sıra-bağımlı bir kırmızı çıkarsa çözüm `-n auto`yu
-      # o platformda kaldırmaktır — test SUSTURMAK değil.
+      #
+      # DÖRT BACAKTA DOĞRULANDI (koşu 34522778869, commit 553a448):
+      #   ubuntu py3.12  : 4 failed, 2318 passed, 15 skipped —  81.01 s
+      #   windows py3.12 : 4 failed, 2318 passed, 15 skipped — 123.87 s (gw1 win32)
+      # Bilanço yerel seri koşumla BİREBİR aynı; Windows'ta `msvcrt`
+      # kilitleme ile paralel işçiler arasında çakışma ÇIKMADI (işçiler ayrı
+      # `tmp_path` köklerinde çalışıyor). README'nin "~7 dk (Windows)"
+      # ölçümüne göre Windows bacağı ~2 dk'ya indi.
+      # Bir gün sıra-bağımlı kırmızı çıkarsa çözüm `-n auto`yu o platformda
+      # kaldırmaktır — test SUSTURMAK değil.
       - name: Run tests
         run: pytest -rsfE -n auto
 

@@ -30,18 +30,41 @@ python -m pytest tests/ -q              # tek çekirdek ~259 s (v0.5.16.3 önces
 sonuçlar birebir aynı), 3.5× hızlanır. `pytest-xdist` yoksa:
 `pip install pytest-xdist`.
 
-### Bilinen, ÖNCEDEN VAR OLAN başarısızlıklar (bu oturumdan bağımsız)
+### Bilinen, ÖNCEDEN VAR OLAN başarısızlıklar — RELEASE KAPISI ŞU AN KAPALI
 
-`main` dalında da kırmızı yanan 4 test — `08441f5` commit'i `plugin.json`'dan
-`hooks` alanını kaldırdı, ama testler onu hâlâ şart koşuyor:
+`main` dalında da kırmızı yanan 4 test (dört CI bacağının hepsinde):
 
 - `test_devir_zorlayici.py::test_plugin_json_hooks_KAYDINI_tasimak_ZORUNDA`
 - `test_hooks_wiring.py::test_plugin_json_var_ve_gecerli_json`
 - `test_hooks_wiring.py::test_plugin_json_hooks_alani_diskte_cozulebilir`
 - `test_hook_doktor.py::test_uctan_uca_tum_olaylar_yesil`
 
-**Karar bekliyor:** `hooks` alanı `plugin.json`'a geri mi konacak, yoksa
-testler mi güncellenecek? İkisi de davranış kararıdır — Bayram Can ÇAPAR'a
+**Kök neden saptandı (PR #5 yorumunda tam kanıtla):** deponun kendi
+tarihinde belgelenmiş bir çelişki.
+
+| Olay | Ne yapıldı | Sahada ne oldu |
+|---|---|---|
+| **v0.5.6** | `plugin.json`'dan `hooks` düştü | `STATUS.md:145`: "dört hook olayı da ölüydü" → v0.5.6.1'de **P0** olarak geri kondu, bu 4 test kilit olarak yazıldı |
+| **`08441f5`** | Aynı satır tekrar kaldırıldı | "Duplicate hooks file detected" → **eklentinin tamamı (20 skill) yüklenemedi** |
+
+Uzlaşma: **Claude Code'un davranışı bu iki olay arasında değişti.**
+`hooks/hooks.json` eklenti kökünde artık **otomatik keşfediliyor**; alanı
+tekrar bildirmek yinelenen kayıt sayılıp eklentiyi düşürüyor.
+
+**Kanıt (resmî belge + deponun kendi CI çıktısı):** `plugins-reference`
+hook konumunu *"`hooks/hooks.json` in plugin root, or inline in
+plugin.json"* diye tanımlıyor ve alanı **opsiyonel** sayıyor. Daha
+güçlüsü: `hook_doktor` aynı koşuda `plugin.json hooks: ✗ YOK` derken
+**altı olayın altısını da** `✓ exit 0` olarak ölçüyor — yani "hook katmanı
+hiç kaydolmaz" teşhisi kendi ölçümüyle çelişiyor.
+
+**Sonuç:** bu 4 test şu an eklentiyi tamamen bozacak bir yapılandırmayı
+şart koşuyor — önlemek için yazıldıkları arızadan daha büyüğünü. `08441f5`
+doğru davranmış; kilitler bayat.
+
+**Karar bekliyor** (önerilen yama PR #5 yorumunda): testler ters çevrilip
+`hook_doktor`'un teşhisi düzeltilecek. Bu, deponun hook kaydı hakkındaki
+garantisini değiştirdiği için **davranış kararıdır** — Bayram Can ÇAPAR'a
 aittir. Kendi başına "düzeltilmemelidir".
 
 ---
