@@ -266,3 +266,78 @@ def test_b6_turkce_morfoloji_capasi():
         for donusum in (lambda x: x, _ocr_bozulmus):
             _e, _d, _o, aleyhe, _n = dd.denetle(donusum(metin), "genel", taraf)
             assert aleyhe, "Türkçe morfoloji kaçağı: %r" % donusum(metin)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# B8 — [F] KAPISI DİLEKÇENİN KENDİ DOSYA NUMARASINI ÇIPLAK KÜNYE SAYIYORDU
+#
+# Yargı Pro'dan çekilen GERÇEK kararlarla yapılan uçtan uca teyit-zinciri
+# testi (2026-09-10) bunu ortaya çıkardı. 346 sahasının tek ayrıştırıcı
+# yanlış-pozitifi buydu ve `kunye_teyit.py`'de kapatılmıştı — ama KARDEŞ
+# kapıya (`ictihat_muhakeme_denetim.py` [G2]) taşınmamıştı. Sonuç: geçerli
+# bir dilekçe, kendi künye bloğu yüzünden TESLİM ENGELİ alıyordu.
+#
+# Yanlış-pozitif bir kapı, kapalı bir kapıdan daha tehlikeli olabilir:
+# avukat ona güvenmeyi bırakıp `--serh` ile geçmeye alışır, ve o alışkanlık
+# GERÇEK çıplak künyeleri de geçirir.
+# ═══════════════════════════════════════════════════════════════════════════
+
+KONTROL = SKILLS / "oa-kontrol" / "scripts"
+sys.path.insert(0, str(KONTROL))
+import kunye_ortak as _ko  # noqa: E402
+import ictihat_muhakeme_denetim as _imd  # noqa: E402
+
+
+def _taslak(dosya_no_satiri):
+    return (
+        "# CEVAP DİLEKÇESİ\n\n"
+        "DENİZLİ 1. İŞ MAHKEMESİ'NE\n\n"
+        f"{dosya_no_satiri}\n"
+        "DAVACI : Müvekkil\n\n"
+        "## AÇIKLAMALAR\n\n"
+        "1. Yargıtay 9. Hukuk Dairesi, E. 2016/10425, K. 2017/8620 sayılı kararı\n"
+        "   uygulanmalıdır.\n"
+    )
+
+
+def test_b8_kendi_dosya_no_ciplak_kunye_SAYILMAZ():
+    """Taslağın kendi `DOSYA NO:` satırı bir karşı-atıf değildir."""
+    metin = _taslak("DOSYA NO : 2026/100 E.")
+    atiflar = _imd.taslaktaki_atiflari_bul(metin)
+    esaslar = {a["esas"] for a in atiflar}
+    assert "2026/100" not in esaslar, (
+        "REGRESYON (B8): dilekçenin KENDİ dosya numarası içtihat atfı sayıldı → "
+        "geçerli dilekçe sahte bir TESLİM ENGELİ alır: %r" % (atiflar,))
+    assert "2016/10425" in esaslar, "gerçek içtihat atfı kaybolmamalı"
+
+
+@pytest.mark.parametrize("satir", [
+    "DOSYA NO : 2026/100 E.",
+    "ESAS NO : 2026/100",
+    "Dosya Esas No: 2026/100 E.",
+])
+def test_b8_muafiyet_kunye_blogu_etiketlerini_taniyor(satir):
+    metin = _taslak(satir)
+    assert "2026/100" not in {a["esas"] for a in _imd.taslaktaki_atiflari_bul(metin)}
+
+
+def test_b8_muafiyet_KAPIYI_GEVSETMEZ_tam_kunye_hala_yakalanir():
+    """Muafiyet DAR olmalıdır: DOSYA NO satırında bile olsa daire adı ve/veya
+    E+K çifti taşıyan bir künye GERÇEK atıftır ve yakalanmaya devam eder."""
+    metin = _taslak("DOSYA NO : Yargıtay 4. HD E. 2019/1111 K. 2020/2222")
+    esaslar = {a["esas"] for a in _imd.taslaktaki_atiflari_bul(metin)}
+    assert "2019/1111" in esaslar, (
+        "MUAFİYET FAZLA GENİŞ (B8): daire+E+K taşıyan gerçek künye, sırf DOSYA NO "
+        "satırında diye muaf tutuldu — çıplak künye kapısı delinir.")
+
+
+def test_b8_muafiyet_aym_ve_aihm_kunyelerini_KAPSAMAZ():
+    """AYM bireysel başvuru ve AİHM künyelerinde karar numarası ZATEN yoktur
+    (6216 m.45-49 usulü); muafiyetin 'E+K çifti tam değil' şartı onları
+    yanlışlıkla yutmamalıdır."""
+    for atif in ({"esas": "2021/58970", "karar": None, "daire_key": None,
+                  "kunye_turu": "aym_bb", "satir_no": 1},
+                 {"esas": "1234/05", "karar": None, "daire_key": None,
+                  "kunye_turu": "aihm_basvuru", "satir_no": 1}):
+        assert not _ko.kendi_dosya_no_mu(atif, "DOSYA NO : x"), (
+            "özel künye türü muafiyete girmemeli: %r" % atif)

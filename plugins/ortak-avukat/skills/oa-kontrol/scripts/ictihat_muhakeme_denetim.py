@@ -570,6 +570,12 @@ def taslaktaki_atiflari_bul(metin):
             continue
         if a["esas"] is None and a["karar"] is None:
             continue
+        # 346 sahası yanlış-pozitifi: taslağın KENDİ `DOSYA NO:` satırı bir
+        # karşı-atıf değildir ve [G2] çıplak-künye BLOK'u üretemez. Muafiyet
+        # `kunye_teyit.py`'de kapatılmıştı ama bu KARDEŞ kapıya taşınmamıştı;
+        # tek kaynak `ko.kendi_dosya_no_mu` (bkz. oradaki gerekçe).
+        if ko.kendi_dosya_no_mu(a, metin):
+            continue
         gorulen.add(anahtar)
         tekil.append(a)
     return tekil

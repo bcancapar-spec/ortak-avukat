@@ -335,6 +335,76 @@ geç tarih yalnız **ikincil savunma** olarak tutulmalıdır. Bir kural eklenece
 metninin bu ayrılığı taşıması gerekir — çünkü burada "doğru hesap" tek başına yetmez,
 **hangi olaya bağlandığı** belirleyicidir.
 
+### B8 — [F] kapısı dilekçenin KENDİ dosya numarasını çıplak künye sayıyordu · H0
+
+**Nasıl bulundu.** Backend, Yargı Pro'nun **gerçek verisiyle** uçtan uca sınandı: gerçek
+kararlar çekildi, teyit kütüğüne işlendi, dilekçeye kondu ve kapılar koşturuldu. Sentetik
+test verisinin göremediği şey buydu.
+
+**Önce — çalışan her şey (gerçek veriyle doğrulandı):**
+
+| Test | Sonuç |
+|---|---|
+| Künye ayrıştırma — 10 farklı merci biçimi (HGK · daire · BAM · Danıştay · AYM BB · iyelik/sonek/sıkışık yazımlar) | **10/10**, ayrıştırılamayan 0 |
+| AYM bireysel başvurusu (`B. No: 2021/58970`) | doğru: `kunye_turu=aym_bb`, karar no yok (6216 m.45-49) |
+| **Halüsinasyon kapısı** — döküm metninde geçmeyen alıntı | **RET** (exit 1): *"özet/parafraz kabul edilmez"* |
+| Damgasız GETİR kaydı | **RET** (exit 1) |
+| DAVAYA-BAĞ < 40 karakter | **RET** (exit 1) |
+| LEHE damgalı gerçek künye dilekçede | **[OK]**, kütük kaydına bağlandı |
+| Gerçek çıplak künye (kütükte yok) | **BLOK** |
+| **ALEYHE damgalı künye dilekçede** | **BLOK** — *"anayasa m.6 — müvekkil-aleyhi dış çıktı yasağı"* |
+
+**Sonra — kırık.** Geçerli, tam kurallı bir dilekçe [F] kapısından **geçemedi**:
+
+```
+[BLOK] (satır 5) 2026/100 E.  (E. 2026/100 / K. — / Daire: belirtilmemiş)
+       ✗ Bu künye için hiçbir _oa/cikti/*ictihat-muhakeme*.md kaydı yok
+         (çıplak/muhakeme edilmemiş atıf) — dilekçede çıplak künye kalamaz
+```
+
+Satır 5, dilekçenin **kendi künye bloğu**: `DOSYA NO : 2026/100 E.`
+
+**İlliyet — düzeltilmiş bir hatanın kardeş kapıda hayatta kalması.** Bu, CHANGELOG'da
+anılan **346 sahasının tek ayrıştırıcı yanlış-pozitifi**dir ("taslağın kendi DOSYA NO
+satırını karşı-atıf sanması") ve o gün *"tek bir ayrıştırıcı yanlış-pozitifi yeşil makbuzu
+imkânsız kıldı"* diye kayda geçmişti. Muafiyet yazıldı — ama yalnız **iki** yere:
+
+| Dosya | `KENDI_DOSYA_SATIR_RE` muafiyeti |
+|---|---|
+| `kunye_ortak.py` (`ayristirilamayan_atiflar`) | ✅ var |
+| `kunye_teyit.py` (`kendi_dosya_no_ayikla`) | ✅ var |
+| **`ictihat_muhakeme_denetim.py`** (`taslaktaki_atiflari_bul` → [G2]) | ❌ **yok** |
+
+`kunye_ortak.py`'deki tanımın başında *"TEK KAYNAK burasıdır; `kunye_teyit.py` bu tanımı
+kullanır"* yazıyordu — cümle, kardeş kapıyı hiç anmıyor. Tek kaynak ilan edilmiş ama
+**tek tüketici** varsayılmıştı.
+
+**Neden yanlış-pozitif bir kapı, kapalı bir kapıdan tehlikeli olabilir.** Bu kırık
+müvekkile doğrudan zarar vermiyor: sahte bir engel üretiyor. Ama sistemin bütün mimarisi
+"kapıya güven" üzerine kurulu ve `--serh` ile gerekçeli geçiş meşru bir yol. Geçerli
+dilekçelerini düzenli olarak sahte engelle karşılayan bir avukat, kapıyı şerhle geçmeye
+**alışır** — ve o alışkanlık, sıra **gerçek** bir çıplak künyeye geldiğinde de işler.
+Yanlış-pozitif, kapıyı doğrudan değil, ona duyulan güveni aşındırarak açar.
+
+**Onarıldı.** Muafiyet gerçekten tek kaynağa taşındı: `kunye_ortak.kendi_dosya_no_mu()`
+(+ `satir_metni_no()`), ve [F] kapısının `taslaktaki_atiflari_bul()` fonksiyonuna bağlandı.
+Muafiyet **dar** ve fail-closed — dört şart birden aranır: (1) özel künye türü değil
+(AYM BB / AİHM gerçek atıftır), (2) E.+K. çifti tam değil, (3) daire/merci anılmıyor,
+(4) satır `DOSYA NO` / `ESAS NO` / `MERCİ` etiketiyle başlıyor.
+
+**Onarımın kapıyı gevşetmediği ayrıca ölçüldü:**
+
+| Negatif test | Sonuç |
+|---|---|
+| Gerçek çıplak künye (22. HD, kütükte yok) | **BLOK** ✅ |
+| `DOSYA NO` satırında **tam** künye + daire (`Yargıtay 4. HD E. 2019/1111 K. 2020/2222`) | **BLOK** ✅ (muafiyet kapsamadı) |
+| ALEYHE damgalı künye | **BLOK** ✅ |
+| Geçerli LEHE künye + kendi dosya no | **exit 0** ✅ |
+
+6 yeni kilit; onarım geri alındığında **4 test kırmızı** yanıyor. `test_b8_muafiyet_KAPIYI_
+GEVSETMEZ_tam_kunye_hala_yakalanir` bundan böyle muafiyetin genişlemesini yapısal olarak
+yasaklar.
+
 ## 2. Kırık BULUNMAYAN hatlar (negatif bulgular — dürüst kayıt)
 
 **H1 — SÜRE / HAK KAYBI: temiz.** `hesapla_sure.py` sınır senaryolarında fiilen koşturuldu:

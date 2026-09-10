@@ -71,6 +71,26 @@ bir satır ölçülmeden buraya girmez.
     Y. 9. HD E.2024/10170 K.2024/14797, 18.11.2024: uyuşmazlığın giderilmesine YER OLMADI,
     BAM 29. HD ↔ 31. HD ayrılığı SÜRÜYOR) · işe başlatma başvurusu **10 İŞ GÜNÜ** — motor
     "iş günü" birimini tanımıyor (takvim günü sayar; erken = güvenli ama dar).
+- **YARGI PRO İLE BACKEND TESTİ (aynı gün, avukat talebi):** backend, Yargı Pro'nun
+  **gerçek verisiyle** uçtan uca sınandı — gerçek kararlar çekildi, teyit kütüğüne
+  işlendi, dilekçeye kondu, kapılar koşturuldu.
+  - **Çalışan her şey (gerçek veriyle doğrulandı):** künye ayrıştırma 10 farklı merci
+    biçiminde **10/10** (HGK · daire · BAM · Danıştay · AYM BB · iyelik/sonek/sıkışık) ·
+    AYM bireysel başvurusu doğru (`aym_bb`, karar no yok — 6216 m.45-49) · **halüsinasyon
+    kapısı** uydurma verbatim alıntıyı **RET** ediyor (exit 1) · damgasız kayıt RET ·
+    DAVAYA-BAĞ <40 kr RET · LEHE künye [OK] · çıplak künye BLOK · **ALEYHE künye BLOK**
+    (anayasa m.6).
+  - **B8 — KIRIK BULUNDU ve ONARILDI:** [F]/[G2] kapısı dilekçenin **kendi künye
+    bloğundaki dosya numarasını** çıplak atıf sayıp TESLİM ENGELİ üretiyordu. Bu, 346
+    sahasının *«yeşil makbuzu imkânsız kılan»* yanlış-pozitifidir; muafiyet
+    `kunye_ortak`+`kunye_teyit`'e yazılmış ama **kardeş kapıya taşınmamıştı** (tek kaynak
+    ilan edilmiş, tek TÜKETİCİ varsayılmıştı). Muafiyet gerçekten tek kaynağa taşındı
+    (`ko.kendi_dosya_no_mu`) ve dar/fail-closed tutuldu; kapıyı gevşetmediği ölçüldü
+    (gerçek çıplak künye · DOSYA NO satırındaki tam künye · ALEYHE — üçü de hâlâ BLOK).
+    **Neden önemli:** yanlış-pozitif kapı müvekkile doğrudan zarar vermez ama avukatı
+    `--serh` ile geçmeye alıştırır; o alışkanlık gerçek çıplak künyede de işler.
+- **Ölçüm (2026-09-10, üçüncü tur · Python 3.12):** `2349 passed, 15 skipped` → süit
+  **2364** · `aile_dogrula` 20 parça TEMİZ · CI 6/6 yeşil (önceki tur).
 - **Ölçüm (2026-09-10, ikinci tur · Python 3.12):** `2343 passed, 15 skipped` → süit **2358** ·
   `aile_dogrula` 20 parça TEMİZ · `hook_doktor` exit 0.
 - **Açık / avukat kararı bekleyen:** (a) `gizlilik_tara._MASKE` listesi IBAN desenine
