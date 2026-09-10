@@ -480,7 +480,13 @@ BASLANGIC_TURLERI = {
     "teblig": "tebliğ (evrakın usulüne uygun tebliği)",
     "tefhim": "tefhim (duruşmada yüze karşı açıklama)",
     "ogrenme": "öğrenme (fiilen öğrenildiği gün)",
-    "olay": "olay/fiil tarihi (maddi hukuk süreleri)",
+    # NOT (2026-09-10): "olay" YALNIZ maddi hukuka ait değildir. Tebliğe değil
+    # bir OLAYA bağlanan USUL süreleri de vardır — en belirgini 4857 m.20/1:
+    # işe iade davasının iki haftalık süresi arabuluculuk son tutanağının
+    # DÜZENLENDİĞİ (tebliğ edildiği değil) tarihten işler.
+    "olay": ("olay/fiil tarihi — maddi hukuk süreleri VE tebliğe değil bir olaya "
+             "bağlanan usul süreleri (ör. arabuluculuk son tutanağının düzenlenmesi, "
+             "4857 m.20/1; işçinin işverene başvurusu, m.21/1)"),
     "belirsiz": "BELİRSİZ — iki senaryo hesaplanmalı",
 }
 
