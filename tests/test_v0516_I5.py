@@ -109,13 +109,26 @@ def test_asama_kurallari_beklenen_kume_ve_alanlar(mod):
         assert v.get("mcp_teyit_tarihi"), f"{k}: MCP teyit tarihi BOŞ — teyitsiz kural eklenemez"
 
 
-def test_tarih_kurallari_tablosu_degismedi_21_kural(mod):
-    """Aşama sınıfı AYRI bölümde yaşar; 21 gün/hafta kuralı ve B-21 kilidi aynen."""
+def test_tarih_kurallari_asama_kurallarindan_AYRI_yasar(mod):
+    """AŞAMA sınıfı ile TARİH sınıfı aynı tabloda karışamaz.
+
+    Sözleşme v0.5.16/I5'te kuruldu ve şudur: aşama tetikli kurallar (miktar/birim
+    TAŞIMAZ, tarih üretmez) ayrı bölümde durur; tarih kuralları ise geçerli bir
+    birim ve MCP teyit tarihi taşır. İkisi kesişirse `hesapla()` aşama kuralına
+    tarih aritmetiği uygular ve YANLIŞ TARİH üretir — nöbetçi onu otorite sayar.
+
+    NOT (2026-09-10): bu test eskiden tabloyu «21 kural» sabitiyle de
+    kilitliyordu. O sabit, I5 paketinin KAPSAM beyanıydı ("bu paket tarih
+    tablosuna dokunmadı"), kalıcı bir sözleşme değil; iş mahkemesi kuralları
+    (B7) eklenince anlamını yitirdi. Kural sayısını iki yerde tutmak ayrıca
+    B-35'in tersidir. Tablonun kendi bütünlüğü B-21 ikiz kilidiyle
+    (`test_v0514_sure.py`) korunmaya devam eder."""
     j = json.loads(KURAL_JSON.read_text(encoding="utf-8"))["kurallar"]
-    assert len(j) == 21 and len(mod._GOMULU_KURALLAR) == 21
-    assert not (set(j) & set(ASAMA_KURALLARI))
+    assert len(j) == len(mod._GOMULU_KURALLAR), "JSON ↔ gömülü tablo ayrıştı"
+    assert not (set(j) & set(ASAMA_KURALLARI)), "aşama kuralı tarih tablosuna sızmış"
     for k, v in j.items():
-        assert v["birim"] in ("gun", "hafta"), k
+        assert v["birim"] in ("gun", "isgunu", "hafta", "ay", "yil"), k
+        assert v.get("mcp_teyit_tarihi"), f"{k}: teyitsiz tarih kuralı olamaz"
 
 
 def test_asama_kurallari_kural_seceneginde(mod):

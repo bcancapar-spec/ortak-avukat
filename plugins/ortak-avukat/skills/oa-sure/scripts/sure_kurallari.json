@@ -204,6 +204,61 @@
         "teblig",
         "ogrenme"
       ]
+    },
+    "is_ise_iade_arabulucu": {
+      "miktar": 1,
+      "birim": "ay",
+      "kaynak": "4857 m.20/1 (Değişik: 7036 s.K. m.11) — işe iade: iş sözleşmesi feshedilen işçi, fesih bildiriminde sebep gösterilmediği veya gösterilen sebebin geçerli olmadığı iddiasıyla FESİH BİLDİRİMİNİN TEBLİĞİ tarihinden itibaren BİR AY içinde işe iade talebiyle ARABULUCUYA BAŞVURMAK ZORUNDADIR. Dava değil, arabuluculuk başvurusudur (7036 m.3 dava şartı). HMK m.92: ay olarak belirlenen sürede son ayın SAYILI GÜNÜ esastır — Y. 9. HD E.2016/10425 K.2017/8620 (23.05.2017) ertesi günden hesaplamayı 'yasanın düzenlemesine AÇIKÇA AYKIRI' bulmuştur.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "is_ise_iade_dava": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "4857 m.20/1 (Değişik: 7036 s.K. m.11) — arabuluculuk faaliyeti sonunda ANLAŞMAYA VARILAMAMASI hâlinde, SON TUTANAĞIN DÜZENLENDİĞİ tarihten itibaren İKİ HAFTA içinde iş mahkemesinde dava açılabilir (taraflar anlaşırsa aynı sürede ÖZEL HAKEME de gidilebilir). Süre HAK DÜŞÜRÜCÜdür, resen gözetilir. Başlangıç türü 'olay'dır: tebliğ değil, tutanağın DÜZENLENME anı. Başlangıç içtihatta TARTIŞMALIDIR — bkz. çıktıdaki BAŞLANGIÇ TARTIŞMALI uyarısı.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ]
+    },
+    "is_ise_iade_arabulucu_ret": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "4857 m.20/1 son cümleler (Değişik: 7036 s.K. m.11) — arabulucuya başvurmaksızın DOĞRUDAN dava açılması sebebiyle davanın USULDEN REDDİ hâlinde ret kararı taraflara RESEN tebliğ edilir; KESİNLEŞEN ret kararının da resen tebliğinden itibaren İKİ HAFTA içinde arabulucuya başvurulabilir. Bu, dava şartı eksikliğini telafi eden İKİNCİ bir penceredir; kaçırılırsa işe iade yolu tümüyle kapanır.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "is_ise_baslatma_basvuru": {
+      "miktar": 10,
+      "birim": "isgunu",
+      "kaynak": "4857 m.21/5 — işçi, KESİNLEŞEN mahkeme veya özel hakem kararının TEBLİĞİNDEN itibaren ON İŞGÜNÜ içinde işe başlamak için İŞVERENE başvuruda bulunmak zorundadır. TAKVİM GÜNÜ DEĞİL İŞ GÜNÜdür (hafta sonu ve resmî tatiller sayılmaz). m.21/6: bu sürede başvurulmazsa işverence yapılmış fesih GEÇERLİ sayılır ve işveren yalnız onun sonuçlarından sorumlu olur — kazanılmış işe iade kararı işlevsizleşir.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ]
+    },
+    "is_ise_baslatma_isveren": {
+      "miktar": 1,
+      "birim": "ay",
+      "kaynak": "4857 m.21/1 — feshin geçersizliğine karar verildiğinde işveren, işçiyi BİR AY içinde İŞE BAŞLATMAK zorundadır; işçiyi BAŞVURUSU ÜZERİNE bir ay içinde işe başlatmazsa en az DÖRT en çok SEKİZ aylık ücreti tutarında tazminat öder. Süre işçinin BAŞVURUSU (olay) ile başlar. İŞVEREN vekili için takvim; işçi vekili için karşı tarafın süresini denetleme kalemidir.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ]
+    },
+    "is_zamanasimi_5yil": {
+      "miktar": 5,
+      "birim": "yil",
+      "kaynak": "4857 Ek m.3 (Ek: 7036 s.K. m.15) — iş sözleşmesinden kaynaklanmak kaydıyla HANGİ KANUNA TABİ OLURSA OLSUN, YILLIK İZİN ÜCRETİ ile (a) kıdem tazminatı, (b) bildirim şartına uyulmaksızın fesihten kaynaklanan tazminat [ihbar], (c) kötüniyet tazminatı, (d) eşit davranma ilkesine uyulmaksızın fesihten kaynaklanan tazminat için ZAMANAŞIMI BEŞ YILDIR. MADDİ HUKUK süresidir: adli tatil uzatması UYGULANMAZ; zamanaşımı TBK m.153-158 uyarınca durur/kesilir — script bunu hesaplamaz. Ücret, fazla mesai, UBGT gibi diğer alacaklarda TBK m.147/1 beş yıllık süre ayrıca değerlendirilir.",
+      "mcp_teyit_tarihi": "2026-09-10",
+      "izinli_baslangic_turleri": [
+        "olay",
+        "ogrenme"
+      ]
     }
   },
   "asama_kurallari": {

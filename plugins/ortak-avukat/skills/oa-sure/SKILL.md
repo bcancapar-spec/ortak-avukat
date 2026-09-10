@@ -62,7 +62,7 @@ Süre yalnızca bizim riskimiz değildir. **Bir dava/dosya/ihtilaf incelenirken 
    python scripts/hesapla_sure.py --teblig 2020-05-01 --sure 10 --birim yil --tur maddi   # TBK m.146
    python scripts/hesapla_sure.py --teblig 2025-03-10 --sure 6 --birim ay --tur maddi     # ör. 6 ay
    ```
-   Birimler: `gun · hafta · ay · yil`. Script tebliğ+1 (HMK m.92 / CMK m.39/1), süre ekleme, hafta sonu + resmî tatil (HMK m.93 · İYUK m.8/2 · CMK m.39/4), ve **usul sürelerinde** adli tatil/çalışmaya arayı yargı koluna göre AYRI işler. **Maddi hukuk sürelerinde (`--tur maddi`) adli tatil uygulanmaz** (usul süresi değildir); yalnız son gün tatile rastlarsa kayar.
+   Birimler: `gun · isgunu · hafta · ay · yil`. **`isgunu`** hafta sonu ve resmî tatilleri SAYMAZ (4857 m.21/5 "on işgünü" — takvim günüyle arası bir haftaya çıkabilir). Script tebliğ+1 (HMK m.92 / CMK m.39/1), süre ekleme, hafta sonu + resmî tatil (HMK m.93 · İYUK m.8/2 · CMK m.39/4), ve **usul sürelerinde** adli tatil/çalışmaya arayı yargı koluna göre AYRI işler. **Maddi hukuk sürelerinde (`--tur maddi`) adli tatil uygulanmaz** (usul süresi değildir); yalnız son gün tatile rastlarsa kayar.
 
 4b. **`--yargi` ZORUNLU BİLİNÇTİR — üç kol, ÜÇ FARKLI ADLİ TATİL UZATMASI (v0.5.14; MCP teyitli):**
    ```bash
@@ -156,3 +156,45 @@ Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için a
 
 ---
 © 2026 Av. Bayram Can Çapar — Bu eserin tüm fikri mülkiyet, mali ve manevi hakları saklıdır (5846 sayılı FSEK). İzinsiz çoğaltma, dağıtma veya türev çalışma yasaktır.
+
+
+## İŞ MAHKEMESİ SÜRELERİ (4857 / 7036 / 6325 — MCP teyit 2026-09-10)
+
+İş dosyasında tarih aritmetiği **tek başına yetmez**: üç mekanizma hesabın
+dışındadır ve script bunları HESAPLAMAZ, yalnız GÖRÜNÜR kılar.
+
+| Kural | Süre | Başlangıç | Dayanak |
+|---|---|---|---|
+| `is_ise_iade_arabulucu` | 1 ay | fesih bildiriminin **tebliği** | 4857 m.20/1 |
+| `is_ise_iade_dava` | 2 hafta | arabuluculuk **son tutanağının düzenlenmesi** (olay) | 4857 m.20/1 |
+| `is_ise_iade_arabulucu_ret` | 2 hafta | usulden ret kararının **kesinleşip resen tebliği** | 4857 m.20/1 |
+| `is_ise_baslatma_basvuru` | **10 İŞ GÜNÜ** | kesinleşen kararın **tebliği** | 4857 m.21/5 |
+| `is_ise_baslatma_isveren` | 1 ay | **işçinin başvurusu** (olay) | 4857 m.21/1 |
+| `is_zamanasimi_5yil` | 5 yıl | fesih/muacceliyet (maddi hukuk) | 4857 Ek m.3 |
+
+**Hesabın dışındaki üç mekanizma — hepsi çıktıda uyarı olarak basılır:**
+
+1. **Dava şartı (7036 m.3):** işçi/işveren alacağı, tazminatı ve işe iade
+   taleplerinde arabulucuya başvuru **dava şartıdır**; 7445 s.K. m.41 ile
+   itirazın iptali, menfi tespit ve istirdat davaları da kapsamda. Son
+   tutanağın aslı/onaylı örneği dilekçeye **eklenir**; eksikse dava usulden reddedilir.
+2. **Süre durur (6325 m.18/A-15):** arabuluculuk bürosuna başvurudan son
+   tutanağa kadar **zamanaşımı durur ve hak düşürücü süre işlemez**. Script bu
+   günleri düşmez — arada geçen gün sayısını **elle ekle** ve deftere işle.
+3. **Adli tatil (HMK m.103/1-ç):** "hizmet akdi veya iş sözleşmesi sebebiyle
+   **işçilerin AÇTIKLARI** davalar" tatilde görülür → süre uzamaz
+   (`--adli-tatil-istisna`). Bent **davacı sıfatına** bağlıdır: **işverenin**
+   açtığı iş davası bu bende girmez, orada uzatma işler.
+
+**İşe iade davasında 2 haftanın başlangıcı TARTIŞMALIDIR.** İstanbul BAM 31. HD
+(2020/2741 E., 2021/10 K.) düzenlenme tarihini esas alır; 29. HD (2024/502 E.,
+2024/919 K.) imzalar tamamlanmamışsa tamamlanma tarihini sayar. Yargıtay 9. HD
+(E.2024/10170, K.2024/14797, 18.11.2024) uyuşmazlığın giderilmesine **yer
+olmadığına** karar verdiği için ayrılık **sürmektedir**. Plan **erken** tarihe
+(düzenlenme) göre yapılır; geç senaryo yalnız ikincil savunmadır.
+
+```bash
+python scripts/hesapla_sure.py --teblig 2026-03-02 --kural is_ise_iade_arabulucu
+python scripts/hesapla_sure.py --teblig 2026-04-10 --kural is_ise_iade_dava --baslangic-turu olay
+python scripts/hesapla_sure.py --teblig 2026-03-06 --kural is_ise_baslatma_basvuru   # 10 İŞ GÜNÜ
+```

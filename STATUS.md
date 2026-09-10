@@ -89,6 +89,29 @@ bir satır ölçülmeden buraya girmez.
     (gerçek çıplak künye · DOSYA NO satırındaki tam künye · ALEYHE — üçü de hâlâ BLOK).
     **Neden önemli:** yanlış-pozitif kapı müvekkile doğrudan zarar vermez ama avukatı
     `--serh` ile geçmeye alıştırır; o alışkanlık gerçek çıplak künyede de işler.
+- **B7 KAPATILDI — İŞ MAHKEMESİ SÜRELERİ + İŞ GÜNÜ BİRİMİ (avukat talebi, dördüncü tur):**
+  kural tabanı 21 → **27**; motorun hiç tanımadığı **`isgunu`** birimi eklendi.
+  - **6 kural (MCP teyitli 2026-09-10, JSON + gömülü ikiz):** `is_ise_iade_arabulucu`
+    1 ay/fesih tebliği · `is_ise_iade_dava` 2 hafta/son tutanağın DÜZENLENMESİ (olay) ·
+    `is_ise_iade_arabulucu_ret` 2 hafta · `is_ise_baslatma_basvuru` **10 İŞGÜNÜ** ·
+    `is_ise_baslatma_isveren` 1 ay/işçinin başvurusu · `is_zamanasimi_5yil` 5 yıl.
+  - **`isgunu` ölçümü:** 06.03.2026 + 10 işgünü = **23.03.2026**; takvim günü 16.03.2026
+    ederdi (**7 gün fark**; 20 Mart dini bayram da atlandı). Bu birimde adli tatil
+    uzatması UYGULANMAZ ve bu GÖRÜNÜR uyarıyla söylenir (m.21/5 mahkemeye değil
+    İŞVERENE başvuru süresidir; uzatma GEÇ tarih üretirdi, geç tarih hak kaybettirir).
+  - **Hesabın dışındaki üç mekanizma uyarı olarak basılır:** 7036 m.3 dava şartı ·
+    6325 m.18/A-15 süre DURUR (script günleri düşmez, elle eklenir) · HMK m.103/1-ç
+    (bent DAVACI sıfatına bağlı). Ayrıca `is_ise_iade_dava`'ya BAŞLANGIÇ TARTIŞMALI
+    (BAM 29↔31 HD; Y.9.HD 2024/14797 ile giderilmedi → güvenli plan ERKEN tarih) ve
+    `is_ise_baslatma_basvuru`'ya m.21/6 sonucu uyarısı. Uyarılar yalnız `is_`
+    kurallarında basılır.
+  - **Çapraz doğrulama:** Y. 9. HD E.2016/10425 K.2017/8620 — 29.08.2015 + 1 ay →
+    `2015-09-29` (Yargıtay'ın "açıkça aykırı" bulduğu ilk derece hatası tekrarlanmıyor).
+  - **Bir test yeniden yazıldı:** `test_v0516_I5::test_tarih_kurallari_tablosu_degismedi_21_kural`
+    → `..._asama_kurallarindan_AYRI_yasar`. «21» sabiti I5'in KAPSAM beyanıydı, kalıcı
+    sözleşme değil (ve sayıyı iki yerde tutmak B-35'in tersi); kalıcı sözleşme —
+    aşama ↔ tarih kuralları KESİŞMEZ, her kural geçerli birim + MCP teyidi taşır —
+    korundu ve genişletildi.
 - **Ölçüm (2026-09-10, üçüncü tur · Python 3.12):** `2349 passed, 15 skipped` → süit
   **2364** · `aile_dogrula` 20 parça TEMİZ · CI 6/6 yeşil (önceki tur).
 - **Ölçüm (2026-09-10, ikinci tur · Python 3.12):** `2343 passed, 15 skipped` → süit **2358** ·

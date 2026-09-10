@@ -295,7 +295,7 @@ Ters-taraf yanlış alarm: 0/4 (davali·davaci·musteki·sanik tümü temiz)
 29 yeni kilit (`test_v0517_...` B6 bloğu). Kilitlerin tuttuğu doğrulandı: eksen geçici
 geri alındığında **25 test kırmızı** yanıyor.
 
-### B7 — İş hukuku süre kuralı kural tabanında YOK (bulgu — onarılmadı, kapsam kararı sizin)
+### B7 — İş hukuku süre kuralı kural tabanında YOKTU · ONARILDI (2026-09-10, ikinci tur)
 
 `hesapla_sure.py` kural tabanında **21 kural** var ve **hiçbiri iş hukuku değil**
 (HMK/CMK/İYUK/İİK/AYM). Yani avukat `--kural ise_iade` diyemez.
@@ -334,6 +334,65 @@ tarihtir (son tutanağın düzenlenme tarihi); imzaların tamamlanması ya da te
 geç tarih yalnız **ikincil savunma** olarak tutulmalıdır. Bir kural eklenecekse uyarı
 metninin bu ayrılığı taşıması gerekir — çünkü burada "doğru hesap" tek başına yetmez,
 **hangi olaya bağlandığı** belirleyicidir.
+
+#### B7 ONARIMI — kural tabanı + İŞ GÜNÜ birimi
+
+**Eklenen 6 kural** (hepsi MCP teyitli 2026-09-10; `sure_kurallari.json` + gömülü ikiz):
+
+| Kural | Süre | Başlangıç | Dayanak |
+|---|---|---|---|
+| `is_ise_iade_arabulucu` | 1 ay | fesih bildiriminin **tebliği** | 4857 m.20/1 (7036/11) |
+| `is_ise_iade_dava` | 2 hafta | son tutanağın **düzenlenmesi** (olay) | 4857 m.20/1 |
+| `is_ise_iade_arabulucu_ret` | 2 hafta | usulden ret kararının kesinleşip resen tebliği | 4857 m.20/1 |
+| `is_ise_baslatma_basvuru` | **10 İŞ GÜNÜ** | kesinleşen kararın tebliği | 4857 m.21/5 |
+| `is_ise_baslatma_isveren` | 1 ay | işçinin başvurusu (olay) | 4857 m.21/1 |
+| `is_zamanasimi_5yil` | 5 yıl | fesih/muacceliyet (maddi) | 4857 Ek m.3 (7036/15) |
+
+**Yeni birim `isgunu`.** Motorun hiç tanımadığı birim eklendi (`_is_gunu_ekle`):
+başlangıç günü sayılmaz, hafta sonu ve resmî tatiller atlanır. Ölçüm — 06.03.2026
+(Cuma) + 10 iş günü = **23.03.2026**; aynı sayıda takvim günü 16.03.2026 ederdi:
+**7 gün fark** (20 Mart dini bayram olduğu için de atlandı). Bu fark, işe başlatma
+başvurusunda hakkın kendisidir: takvim hesabına güvenen avukat, 20 Mart'ta yapılan
+geçerli bir başvuruyu "süresi geçmiş" sanar.
+
+İş günü biriminde **adli tatil uzatması uygulanmaz** — ve bu görünür uyarıyla
+söylenir. Gerekçe: (a) sayım tatilleri zaten atlar, (b) 4857 m.21/5 süresi
+mahkemeye değil **işverene** başvuru süresidir, HMK m.104'ün "bu Kanunun tayin
+ettiği süreler" kapsamında değildir. Uzatma uygulamak **geç** tarih üretirdi;
+geç tarih hak kaybettirir.
+
+**Uyarı katmanı — hesabın dışındaki üç mekanizma.** Bunların hiçbiri tarih
+aritmetiğiyle bulunamaz; görünür kılınmazsa doğru hesap yanlış tarihe götürür:
+
+1. **Dava şartı** (7036 m.3; 7445/41 ile itirazın iptali/menfi tespit/istirdat da
+   kapsamda) — son tutanağın aslı/onaylı örneği dilekçeye eklenir, eksikse dava
+   usulden reddedilir.
+2. **Süre durur** (6325 m.18/A-15) — arabuluculuk bürosuna başvurudan son tutanağa
+   kadar zamanaşımı durur, hak düşürücü süre işlemez. **Script bu günleri düşmez**;
+   uyarı bunu açıkça söyler ve elle eklenmesini ister.
+3. **Adli tatil** (HMK m.103/1-ç) — "işçilerin **açtıkları** davalar" tatilde
+   görülür; bent **davacı sıfatına** bağlıdır, işverenin açtığı davada uzatma işler.
+
+Ayrıca iki kural-özel uyarı: `is_ise_iade_dava` için **başlangıç tartışması**
+(BAM 29. HD ↔ 31. HD; Y. 9. HD E.2024/10170 K.2024/14797 ile giderilmedi → güvenli
+plan erken tarih) ve `is_ise_baslatma_basvuru` için **m.21/6 sonucu** (süresinde
+başvurulmazsa fesih geçerli sayılır, kazanılmış işe iade kararı işlevsizleşir).
+Uyarılar yalnız `is_` kurallarında basılır — her hesabı iş hukuku metniyle
+doldurmak gürültüdür.
+
+**Çapraz doğrulama:** Y. 9. HD E.2016/10425 K.2017/8620 — ikale 29.08.2015 + 1 ay
+→ motor `2015-09-29`; ilk derecenin "30 Eylül" hesabını Yargıtay *"yasanın
+düzenlemesine açıkça aykırı"* bulmuştu. Üç gerçek BAM vakasında 2 haftalık süre
+birebir tuttu. 39 yeni kilit (`tests/test_v0518_is_mahkemesi_sureleri.py`).
+
+**Bir test yeniden yazıldı.** `test_v0516_I5.py::test_tarih_kurallari_tablosu_
+degismedi_21_kural` → `test_tarih_kurallari_asama_kurallarindan_AYRI_yasar`.
+"21" sabiti, I5 paketinin **kapsam beyanıydı** ("bu paket tarih tablosuna
+dokunmadı"), kalıcı bir sözleşme değil; kural sayısını iki yerde tutmak ayrıca
+B-35'in tersidir. Kalıcı olan sözleşme korundu ve genişletildi: aşama ↔ tarih
+kuralları **kesişmez**, her tarih kuralı geçerli bir birim **ve** MCP teyit tarihi
+taşır. Tablonun bütünlüğü B-21 ikiz kilidiyle korunmaya devam ediyor.
+
 
 ### B8 — [F] kapısı dilekçenin KENDİ dosya numarasını çıplak künye sayıyordu · H0
 
