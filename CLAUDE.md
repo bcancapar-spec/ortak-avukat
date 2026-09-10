@@ -31,17 +31,28 @@ python -m pytest tests/ -q              # tek çekirdek ~259 s (v0.5.16.3 önces
 sonuçlar birebir aynı), 3.5× hızlanır. `pytest-xdist` yoksa:
 `pip install pytest-xdist`.
 
-### Bilinen, ÖNCEDEN VAR OLAN başarısızlıklar — RELEASE KAPISI ŞU AN KAPALI
+### ÇÖZÜLDÜ — `main`'den miras alınan 4 kırmızı (B5)
 
-`main` dalında da kırmızı yanan 4 test (dört CI bacağının hepsinde):
+> **Durum: KAPANDI.** PR #4'ün **B5** düzeltmesi bu dala port edildi; süit
+> **2326 passed / 15 skipped / 0 kırmızı**. `hook_doktor.py` artık
+> `SONUÇ: TÜM MEKANİK KONTROLLER GEÇTİ ✓` diyor.
+>
+> `main` hâlâ kırmızıdır — düzeltme PR #4'te ve PR #5'te bekliyor. `main`
+> yeşile ancak biri merge edilince döner. Aynı yamayı iki dal taşıdığı için
+> hangisi önce merge edilirse diğeri **no-op**'a düşer (tek çakışma
+> `tests/README.md` süit sayısı satırı).
+
+Kırmızı olan dört test:
 
 - `test_devir_zorlayici.py::test_plugin_json_hooks_KAYDINI_tasimak_ZORUNDA`
+  → adı `test_hook_katmani_STANDART_KONUMDAN_yuklenebilir_olmak_ZORUNDA`
 - `test_hooks_wiring.py::test_plugin_json_var_ve_gecerli_json`
 - `test_hooks_wiring.py::test_plugin_json_hooks_alani_diskte_cozulebilir`
+  → yerine `test_plugin_json_STANDART_hooks_yolunu_YENIDEN_BILDIRMEZ`
+  \+ `test_hooks_json_STANDART_KONUMDA_ve_gecerli`
 - `test_hook_doktor.py::test_uctan_uca_tum_olaylar_yesil`
 
-**Kök neden saptandı (PR #5 yorumunda tam kanıtla):** deponun kendi
-tarihinde belgelenmiş bir çelişki.
+**Kök neden:** deponun kendi tarihinde belgelenmiş bir çelişki.
 
 | Olay | Ne yapıldı | Sahada ne oldu |
 |---|---|---|
@@ -59,14 +70,26 @@ güçlüsü: `hook_doktor` aynı koşuda `plugin.json hooks: ✗ YOK` derken
 **altı olayın altısını da** `✓ exit 0` olarak ölçüyor — yani "hook katmanı
 hiç kaydolmaz" teşhisi kendi ölçümüyle çelişiyor.
 
-**Sonuç:** bu 4 test şu an eklentiyi tamamen bozacak bir yapılandırmayı
-şart koşuyor — önlemek için yazıldıkları arızadan daha büyüğünü. `08441f5`
-doğru davranmış; kilitler bayat.
+**Sonuç:** o 4 test eklentiyi tamamen bozacak bir yapılandırmayı şart
+koşuyordu — önlemek için yazıldıkları arızadan daha büyüğünü. `08441f5`
+doğru davranmış; kilitler bayatmış.
 
-**Karar bekliyor** (önerilen yama PR #5 yorumunda): testler ters çevrilip
-`hook_doktor`'un teşhisi düzeltilecek. Bu, deponun hook kaydı hakkındaki
-garantisini değiştirdiği için **davranış kararıdır** — Bayram Can ÇAPAR'a
-aittir. Kendi başına "düzeltilmemelidir".
+**Yeni sözleşme (B5, PR #4'ten port).** Kapı zayıflatılmadı, **tersine
+çevrilip güçlendirildi**:
+
+- Aranan şey artık manifest kaydının **varlığı değil, yokluğu**.
+- Standart yolu (`./hooks/hooks.json`) manifestte **yeniden bildirmek
+  ARIZADIR** — kurulumda "Duplicate hooks file detected" verir ve eklentinin
+  tamamı yüklenmez. Bu, eskiden hiç denetlenmeyen bir arıza sınıfıydı.
+- **Asıl sözleşme:** `hooks/hooks.json` standart konumda VAR olmalı ve
+  tetik sözlüğü DOLU olmalı (`hooks.json` diskte durup boş kalırsa katman
+  ölüdür — o da artık testli).
+- Standart yol **dışı** özel bir bildirim hâlâ meşru; yasak olan yalnızca
+  standart yolun ikinci kez bildirilmesi.
+
+İki bağımsız analiz (bu oturum + PR #4'ün B5 denetimi) aynı kök nedene
+ulaştı; PR #4 ayrıca yamayı PR #5'in bir kopyasına uygulayıp dördünün de
+geçtiğini deneysel olarak doğrulamıştı.
 
 ---
 

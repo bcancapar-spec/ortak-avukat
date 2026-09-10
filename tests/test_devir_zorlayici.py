@@ -58,21 +58,35 @@ def _kos(args, kok):
 
 # ── (1) MANİFEST KABLOSU — kaydı düşen hook, olmayan hooktur ────────────────
 
-def test_plugin_json_hooks_KAYDINI_tasimak_ZORUNDA():
-    """ASIL REGRESYON: v0.5.6'da bu satır silindi ve üç tetiğin üçü birden
-    öldü. `hooks.json`'un diskte durması YETMEZ — manifest onu kaydetmelidir."""
+def test_hook_katmani_STANDART_KONUMDAN_yuklenebilir_olmak_ZORUNDA():
+    """Kilitlenen sözleşme AYNI, mekanizması DÜZELTİLDİ (2026-09-10).
+
+    Korunan şey hep şuydu: *kaydı düşen hook, olmayan hooktur* — model bir
+    adımı atladığında uyaran katman ayakta kalmalı. Eski test bunu manifestteki
+    `"hooks": "./hooks/hooks.json"` satırının VARLIĞINA bağlıyordu. Oysa bu
+    dosya plugin kökünde STANDART konumdadır ve otomatik keşfedilir; manifestte
+    yeniden bildirmek onu ikinci kez kaydeder → "Duplicate hooks file detected"
+    → **eklentinin tamamı (20 skill dâhil) yüklenmez** (commit 08441f5).
+    Yani eski kilit, hook'ları kurtarmak isterken sistemi tümden öldürüyordu.
+
+    Bugünkü sözleşme: dosya standart konumda VAR ve tetikleri DOLU olmalı;
+    manifest onu YENİDEN bildirmemeli.
+    """
     veri = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))
+    bildirim = veri.get("hooks")
+    if isinstance(bildirim, str):
+        assert bildirim.replace("\\", "/").lstrip("./") != "hooks/hooks.json", (
+            "ÇİFT BİLDİRİM: standart yol manifestte yeniden bildirilmiş — kurulumda "
+            "'Duplicate hooks file detected' verir ve eklenti hiç yüklenmez.")
 
-    assert "hooks" in veri, (
-        "plugin.json'da `hooks` kaydı YOK. hooks.json diskte dursa bile "
-        "Claude Code onu YÜKLEMEZ; PostToolUse/Stop/SessionEnd/UserPromptSubmit "
-        "tetiklerinin HEPSİ ölür ve model bir adımı atladığında hiçbir şey "
-        "uyarmaz (v0.5.6 saha vakası).")
-    assert veri["hooks"] == "./hooks/hooks.json", veri["hooks"]
-
-    # Kayıt, gerçekten var olan bir dosyayı göstermeli (kırık yol da ölü hooktur).
-    hedef = (PLUGIN_JSON.parent.parent / veri["hooks"].lstrip("./")).resolve()
-    assert hedef.is_file(), f"manifest kaydı var olmayan dosyayı gösteriyor: {hedef}"
+    std = (PLUGIN_JSON.parent.parent / "hooks" / "hooks.json").resolve()
+    assert std.is_file(), (
+        "hooks/hooks.json STANDART konumda YOK — hook katmanı hiç yüklenmez; "
+        "PostToolUse/Stop/SessionEnd/UserPromptSubmit tetiklerinin HEPSİ ölür ve "
+        "model bir adımı atladığında hiçbir şey uyarmaz (v0.5.6 saha vakası).")
+    tetikler = json.loads(std.read_text(encoding="utf-8")).get("hooks")
+    assert isinstance(tetikler, dict) and tetikler, \
+        "hooks.json diskte var ama tetik sözlüğü BOŞ — katman ölü."
 
 
 def test_dort_hook_olayi_da_kayitli():

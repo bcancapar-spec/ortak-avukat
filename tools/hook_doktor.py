@@ -314,10 +314,30 @@ def main():
         hata = 1
 
     pj = json.loads((plugin_kok / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    if pj.get("hooks"):
-        print("    plugin.json hooks: ✓ %s" % pj["hooks"])
+    # ── MANİFEST ↔ STANDART YOL (2026-09-10 düzeltmesi) ──────────────────
+    # v0.5.6'da bu satır "kayıt DÜŞTÜ mü?" diye sorulurdu ve YOKLUĞU arıza
+    # sayılırdı. O teşhis ARTIK TERSİNE DÖNMÜŞTÜR: `hooks/hooks.json` plugin
+    # kökünde STANDART konumdur ve Claude Code tarafından OTOMATİK keşfedilir
+    # (plugin referansı: "Location: hooks/hooks.json in plugin root, or inline
+    # in plugin.json"). `plugin.json`'da AYRICA "./hooks/hooks.json" bildirmek
+    # aynı dosyayı İKİNCİ kez kaydeder → "Duplicate hooks file detected" →
+    # EKLENTİNİN TAMAMI (20 skill dâhil) yüklenmez (commit 08441f5, saha).
+    # Bu yüzden burada aranan şey kaydın VARLIĞI değil, YOKLUĞUdur; asıl
+    # sözleşme ise dosyanın standart konumda ve geçerli olmasıdır ([2]).
+    hooks_std = plugin_kok / "hooks" / "hooks.json"
+    if not pj.get("hooks"):
+        print("    plugin.json hooks: ✓ bildirim YOK — doğru; hooks/hooks.json "
+              "standart konumdan otomatik yüklenir (çift bildirim eklentiyi öldürür)")
+    elif str(pj["hooks"]).replace("\\", "/").lstrip("./") == "hooks/hooks.json":
+        print("    plugin.json hooks: ✗ ÇİFT BİLDİRİM (%s) — bu dosya zaten STANDART "
+              "konumdan otomatik yükleniyor; ikinci kayıt kurulumda 'Duplicate hooks "
+              "file detected' verir ve EKLENTİNİN TAMAMI yüklenmez. Satırı KALDIR." % pj["hooks"])
+        hata = 1
     else:
-        print("    plugin.json hooks: ✗ YOK — hook katmanı hiç kaydolmaz (v0.5.6 arızası)")
+        print("    plugin.json hooks: ✓ %s (standart yol DIŞI özel bildirim)" % pj["hooks"])
+    if not hooks_std.is_file():
+        print("    hooks/hooks.json  : ✗ STANDART KONUMDA YOK — hook katmanı hiç "
+              "yüklenmez (asıl arıza budur, manifest kaydı değil)")
         hata = 1
 
     hooks_yol = plugin_kok / "hooks" / "hooks.json"
