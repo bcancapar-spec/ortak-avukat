@@ -430,7 +430,58 @@ def _dizin_beyaz_liste_hesapla():
     return beyaz
 
 
-DIZIN_BEYAZ_LISTE = _dizin_beyaz_liste_hesapla()
+# ── PERFORMANS (v0.5.16.2) — TEMBEL BEYAZ LİSTE ────────────────────────────
+# NEDEN VAR: `DIZIN_BEYAZ_LISTE = _dizin_beyaz_liste_hesapla()` MODÜL
+# SEVİYESİNDE duruyordu. Bu modül HER hook çağrısında (`--hook-prompt`,
+# `--hook-pretool`, `--hook-postwrite`, `--hook-denetle`, `--hook-acilis`)
+# baştan yüklendiği için, beyaz liste de her seferinde yeniden hesaplanıyordu:
+# oa_hafiza.py (2500 satır) + oa_ingest.py (1716 satır) İN-PROCESS import
+# ediliyor, oa_ingest de modül seviyesinde subprocess/zipfile/
+# xml.etree.ElementTree/concurrent.futures (→ multiprocessing, logging, enum)
+# çekiyordu. ÖLÇÜM (Python 3.12, 20 çağrı ort., çıplak yorumlayıcı üstü net):
+# oa_hafiza ~15.6 ms + oa_ingest ~40 ms ≈ ~55 ms / hook.
+# Oysa bu değer TEK yerde kullanılıyor: `_sozlesme_disi_dizinler()` (gölge-
+# dizin bekçisi, advisory). Yani hook'ların çoğu, hiç dokunmadıkları bir
+# sabit için ~55 ms bloklama ödüyordu — bir `Write` Pre+Post iki hook
+# ateşlediği için tur başına bu maliyet katlanıyor.
+#
+# ÇÖZÜM: hesap İLK ERİŞİME kadar ertelenir. Hesabın KENDİSİ değişmedi —
+# `_dizin_beyaz_liste_hesapla()` aynen duruyor ve hâlâ üretici modüllerden
+# CANLI türetiyor (ikiz-liste yasağı / tek-kaynak garantisi P1-9(b) BOZULMADI;
+# değer koda GÖMÜLMEDİ). Değişen tek şey: NE ZAMAN ödendiği.
+#
+# Önbellekleme semantiği ÖNCEKİYLE AYNI: eskiden import anında bir kez
+# hesaplanıyordu, şimdi ilk kullanımda bir kez. Süreç ömrü boyunca tek hesap —
+# bayatlık riski eklenmedi.
+#
+# `__getattr__` (PEP 562) DIŞ erişimi (`mod.DIZIN_BEYAZ_LISTE`) korur, böylece
+# mevcut sınayıcılar ve dış tüketiciler değişiklikten HABERSİZ çalışır.
+# UYARI: modül `__getattr__`'ı modülün KENDİ içindeki çıplak global ad
+# aramasında ateşlenmez — bu yüzden iç kullanım `_dizin_beyaz_liste()`
+# erişimcisini çağırır (bkz. `_sozlesme_disi_dizinler`).
+_DIZIN_BEYAZ_LISTE_ONBELLEK = None
+
+
+def _dizin_beyaz_liste():
+    """DIZIN_BEYAZ_LISTE'nin TEMBEL erişimcisi (süreç başına tek hesap).
+    Modül İÇİ tüm kullanımlar bunu çağırır; modül DIŞI `mod.DIZIN_BEYAZ_LISTE`
+    erişimi aşağıdaki `__getattr__` üzerinden buraya düşer."""
+    global _DIZIN_BEYAZ_LISTE_ONBELLEK
+    if _DIZIN_BEYAZ_LISTE_ONBELLEK is None:
+        _DIZIN_BEYAZ_LISTE_ONBELLEK = _dizin_beyaz_liste_hesapla()
+    return _DIZIN_BEYAZ_LISTE_ONBELLEK
+
+
+def __getattr__(_ad):
+    """PEP 562 — `pipeline_kayit.DIZIN_BEYAZ_LISTE` erişimini tembel hesaba
+    bağlar. Modül seviyesinde ARTIK bir atama YOK; bu yüzden attribute
+    aramaları buraya düşer (dict'te bulunan adlar buraya HİÇ gelmez, yani
+    diğer sabitler etkilenmez)."""
+    if _ad == "DIZIN_BEYAZ_LISTE":
+        return _dizin_beyaz_liste()
+    raise AttributeError(f"module {__name__!r} has no attribute {_ad!r}")
+
+
 _DILEKCE_DESEN = re.compile(
     r"NETİCE-İ TALEP|SONUÇ VE İSTEM|DAVACI\s*:|DAVALI\s*:|SANIK\s*:|MÜŞTEKİ\s*:", re.I)
 
@@ -2852,8 +2903,9 @@ def _sozlesme_disi_dizinler(kok):
     if not os.path.isdir(oa):
         return []
     try:
+        beyaz = _dizin_beyaz_liste()          # tembel: maliyet SADECE burada ödenir
         return sorted(ad for ad in os.listdir(oa)
-                      if os.path.isdir(os.path.join(oa, ad)) and ad not in DIZIN_BEYAZ_LISTE)
+                      if os.path.isdir(os.path.join(oa, ad)) and ad not in beyaz)
     except OSError:
         return []
 
