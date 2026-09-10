@@ -407,6 +407,73 @@ def _oa_ingest_modulu_beyaz_liste():
     return _OA_INGEST_MOD_BL
 
 
+def _oa_ingest_betik_yolu():
+    """oa_ingest.py'nin diskteki yolu (yukarıdaki fonksiyonun konum mantığının
+    TEK KAYNAĞI). Bulunamazsa None."""
+    skills = os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    betik = os.path.join(skills, "oa-ingest", "scripts", "oa_ingest.py")
+    if os.path.isfile(betik):
+        return betik
+    kok_env = os.environ.get("OA_SKILLS_KOK")
+    if kok_env:
+        alt = os.path.join(kok_env, "oa-ingest", "scripts", "oa_ingest.py")
+        if os.path.isfile(alt):
+            return alt
+    return None
+
+
+_SABIT_DESENI = re.compile(r'^([A-Z_][A-Z0-9_]*)\s*=\s*(["\'])(.*?)\2\s*(?:#.*)?$')
+
+
+def _oa_ingest_sabit_oku(ad):
+    """oa_ingest.py'den bir modül-seviyesi STRING sabitini, modülü
+    YÜRÜTMEDEN okur. Bulamazsa None.
+
+    NEDEN VAR (v0.5.16.3 — ölçülmüş kök neden)
+    ------------------------------------------
+    `_oa_ingest_modulu_beyaz_liste()` sabiti TEK KAYNAKTAN okumak için doğru
+    şeyi amaçlıyor ama bunu oa_ingest.py'yi (1700+ satır) TAM YÜRÜTEREK
+    yapıyor. oa_ingest modül seviyesinde `subprocess`, `zipfile`,
+    `concurrent.futures` (→ `multiprocessing`, `logging`) VE — asıl bedel —
+    dolaylı olarak **pymupdf + PIL** çekiyor.
+
+    ÖLÇÜM (gerçek dava kökü, python3.12, `-X importtime`): tek başına
+    `pymupdf` 85.8 ms, `PIL.Image` 8.0 ms. Bu zincir `hook_prompt`
+    (her kullanıcı turu) ve `hook_denetle` (her asistan turu + SessionEnd)
+    yollarında `_sozlesme_disi_dizinler()` üzerinden HER ZAMAN koşuyordu.
+    v0.5.16.2'nin tembelleştirmesi bedeli KALDIRMADI, yalnızca ERTELEDİ —
+    ve dava klasöründe erteleme hiçbir şey kazandırmıyor, çünkü o dal
+    her zaman çalışıyor. PDF okumakla ilgisi olmayan bir kanca, PDF
+    kütüphanesi yüklüyordu.
+
+    TEK-KAYNAK GARANTİSİ NASIL KORUNUR (P1-9(a) BOZULMADI)
+    ------------------------------------------------------
+    Değer hâlâ ÇALIŞMA ANINDA oa_ingest.py DOSYASINDAN okunur; koda
+    GÖMÜLMEZ. Sabit orada değişirse buradaki okuma da değişir — "ikiz liste"
+    yasağı yerinde. Tek fark: dosya YÜRÜTÜLMEZ, satır olarak OKUNUR.
+
+    Sabit basit bir string literali DEĞİLSE (hesaplanmış, f-string, başka
+    bir değişkene atıf) desen EŞLEŞMEZ ve çağıran taraf TAM IMPORT yedeğine
+    düşer. Yani yanlış değer üretmek yapısal olarak mümkün değildir:
+    ya doğru okunur ya hiç okunmaz.
+    """
+    betik = _oa_ingest_betik_yolu()
+    if betik is None:
+        return None
+    try:
+        with open(betik, encoding="utf-8", errors="replace") as f:
+            for satir in f:
+                if not satir.startswith(ad):
+                    continue              # ucuz ön-süzgeç (regex'e girmeden)
+                m = _SABIT_DESENI.match(satir.rstrip("\n"))
+                if m is not None and m.group(1) == ad:
+                    return m.group(3)
+    except OSError:
+        return None
+    return None
+
+
 def _dizin_beyaz_liste_hesapla():
     """DIZIN_BEYAZ_LISTE'yi ÜRETİCİ modüllerden TÜRETİR (sinav 'ikiz-liste'
     düzeltmesi — elle tekrarlanan sabit küme yerine kaynağından okunur):
@@ -423,10 +490,20 @@ def _dizin_beyaz_liste_hesapla():
         beyaz |= set(hafiza.DIZINLER)
     else:
         beyaz |= {"defter", "devir", "cikti", "teyit", "oturum", "arsiv-yerel"}
-    ingest = _oa_ingest_modulu_beyaz_liste()
-    if ingest is not None and hasattr(ingest, "ONBAKIS_DIZIN"):
+    # v0.5.16.3 — UCUZ YOL ÖNCE: sabiti oa_ingest.py'den SATIR OKUYARAK al.
+    # Modülü yürütmek pymupdf + PIL dahil ~95 ms ödetiyordu (bkz.
+    # `_oa_ingest_sabit_oku` gerekçesi). Tek-kaynak garantisi korunuyor:
+    # değer hâlâ o dosyadan, çalışma anında okunuyor.
+    onbakis = _oa_ingest_sabit_oku("ONBAKIS_DIZIN")
+    if onbakis is None:
+        # YEDEK: sabit basit bir string literali değilse (hesaplanmış/atıflı)
+        # eski TAM IMPORT yoluna düşülür — doğruluk her zaman hızdan önce.
+        ingest = _oa_ingest_modulu_beyaz_liste()
+        if ingest is not None and hasattr(ingest, "ONBAKIS_DIZIN"):
+            onbakis = ingest.ONBAKIS_DIZIN
+    if onbakis:
         beyaz.discard("metin-onbakis")
-        beyaz.add(ingest.ONBAKIS_DIZIN)
+        beyaz.add(onbakis)
     return beyaz
 
 
@@ -484,6 +561,44 @@ def __getattr__(_ad):
 
 _DILEKCE_DESEN = re.compile(
     r"NETİCE-İ TALEP|SONUÇ VE İSTEM|DAVACI\s*:|DAVALI\s*:|SANIK\s*:|MÜŞTEKİ\s*:", re.I)
+
+# ── PERFORMANS (v0.5.16.3) — İKİLİ ÜRÜN SÜZGECİ ────────────────────────────
+# NEDEN VAR: `_oa/cikti` gerçek bir dava kökünde metin taslakların YANINDA
+# İKİLİ ÜRÜNLER de barındırır: `ek-deliller.pdf`, `TASLAK.udf`, `.docx`,
+# UYAP `.eyp` paketi… `_DILEKCE_DESEN` taramaları bu dosyaları da
+# `errors="replace"` ile utf-8'e ÇÖZÜP BAŞTAN SONA okuyordu — 3 MB'lık bir
+# PDF, 3,4 milyon karakterlik çöp metne dönüşüp regex'e sokuluyordu.
+# ÖLÇÜM (3,5 MB'lık _oa/cikti, python3.12): tek fonksiyon çağrısı 271 ms.
+# Stop hook'u bu hatayı İKİ ayrı fonksiyonda tekrarlıyor
+# (`_dilekce_sekilli_makbuzsuz_uyarisi` özyinelemeli, `_kutuk_dilekce_sayaci`
+# özyinelemesiz), ve `hooks.json`'da Stop ile SessionEnd AYNI moda bağlı
+# olduğu için oturum kapanışında bedel bir kez daha ödeniyor.
+#
+# NEDEN GÜVENLİ (kapı ZAYIFLATILMADI): bir dilekçe METİN belgesidir. Zip
+# tabanlı (`.udf`/`.docx`/`.eyp`) veya ikili (`.pdf`) bir dosyanın
+# utf-8-replace çözümü `DAVACI:` / `DAVALI:` / `NETİCE-İ TALEP` gibi Türkçe
+# büyük-harf hukuk kalıplarını ÜRETEMEZ — bu dosyalar bugün de zaten
+# EŞLEŞMİYORDU, sadece eşleşmedikleri pahalıya anlaşılıyordu. Süzgeç kapının
+# KARARINI değiştirmez, kararı üretmenin BEDELİNİ düşürür.
+#
+# Metin dosyaları (`.md`, `.txt`, `.html`…) AYNEN TAM okunmaya devam eder:
+# bilinçli olarak bir bayt EŞİĞİ/KIRPMA getirilmedi. Kod tabanında
+# `f.read(20000)` deseni var (satır ~4184, ~5511) ama o kardeş fonksiyon
+# TETİKLEYİCİ arıyor; buradaki iki fonksiyon TESLİM KAPISI besliyor.
+# Uzun bir dilekçenin `NETİCE-İ TALEP` bölümü 20 KB'ı aşabileceği için
+# metinde kırpma yapmak kapıyı kör edebilirdi — yapılmadı.
+IKILI_URUN_UZANTILARI = (
+    ".pdf", ".udf", ".docx", ".doc", ".odt", ".rtf",
+    ".zip", ".eyp", ".rar", ".7z", ".gz",
+    ".xlsx", ".xls", ".pptx", ".ppt",
+    ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".gif", ".bmp", ".webp",
+)
+
+
+def _ikili_urun_mu(ad):
+    """Dosya adı, dilekçe METNİ olamayacak bir ikili ÜRÜN uzantısı taşıyor mu?
+    `_DILEKCE_DESEN` taramalarının bu dosyaları okumasına gerek yoktur."""
+    return ad.lower().endswith(IKILI_URUN_UZANTILARI)
 
 
 # ── GÖREV C(1) — ADIM-PARÇA / DAL UYUŞMAZLIĞI (advisory, UYARIR/bloklamaz) ──
@@ -2355,6 +2470,8 @@ def _dilekce_sekilli_makbuzsuz_uyarisi(kok):
     for kok_dizin, alt_dizinler, dosyalar in os.walk(cdiz):
         alt_dizinler.sort()
         for ad in sorted(dosyalar):
+            if _ikili_urun_mu(ad):        # v0.5.16.3: ikili ÜRÜN okunmaz
+                continue                  # (dilekçe METNİ olamaz — bkz. süzgeç notu)
             yol = os.path.join(kok_dizin, ad)
             if not os.path.isfile(yol):
                 continue
@@ -2674,6 +2791,8 @@ def _kutuk_dilekce_sayaci(kok):
     if os.path.isdir(cdiz):
         atif_re = re.compile(r"\bE\.?\s*\d{4}\s*/\s*\d+")
         for ad in os.listdir(cdiz):
+            if _ikili_urun_mu(ad):        # v0.5.16.3: ikili ÜRÜN okunmaz
+                continue                  # (dilekçe METNİ olamaz — bkz. süzgeç notu)
             yol = os.path.join(cdiz, ad)
             if not os.path.isfile(yol):
                 continue

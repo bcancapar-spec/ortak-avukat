@@ -54,18 +54,41 @@ param(
 $ErrorActionPreference = 'Continue'
 
 $DepoKok  = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$KayitDir = Join-Path $env:LOCALAPPDATA 'ortak-avukat'
+
+# Geri alma defterinin yaşadığı yer. LOCALAPPDATA Windows'ta her zaman
+# vardır; yine de yedeklenir — bu betik bir TEŞHİS aracıdır ve kendi
+# kurulumu yüzünden çökmesi kabul edilemez (kilitli/atipik profillerde
+# ortam değişkeni boş gelebilir).
+$KayitDir = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'ortak-avukat' }
+            elseif ($env:USERPROFILE) { Join-Path $env:USERPROFILE '.ortak-avukat' }
+            else { Join-Path ([IO.Path]::GetTempPath()) 'ortak-avukat' }
 $Kayit    = Join-Path $KayitDir 'pc_hizlandir-kayit.json'
 $Gunluk   = Join-Path $KayitDir 'pc_hizlandir-gunluk.txt'
-New-Item -ItemType Directory -Force -Path $KayitDir | Out-Null
+New-Item -ItemType Directory -Force -Path $KayitDir -ErrorAction SilentlyContinue | Out-Null
 
 function Yaz([string]$m, [string]$renk = 'Gray') { Write-Host $m -ForegroundColor $renk }
+
+function GuvenliYol([string]$kok, [string]$alt) {
+    # Join-Path, kök null ise FIRLATIR. Windows'ta USERPROFILE/APPDATA her
+    # zaman doludur; ama bu bir teşhis aracı ve atipik/kilitli profillerde
+    # boş gelebilir. Boşsa sessizce $null döner — çağıran taraf o adayı atlar.
+    if ([string]::IsNullOrWhiteSpace($kok)) { return $null }
+    return (Join-Path $kok $alt)
+}
 function Bolum([string]$m) { Yaz ""; Yaz ("── " + $m + " " + ("─" * [Math]::Max(0, 66 - $m.Length))) 'Cyan' }
 function Kaydet([string]$m) { ("[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $m) | Add-Content -Path $Gunluk -Encoding UTF8 }
 
 function YoneticiMi {
-    $k = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-    return $k.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    # try/catch: Windows dışı bir PowerShell'de (Linux/macOS) WindowsPrincipal
+    # yoktur ve çağrı fırlatır. O durumda "yönetici değil" demek doğrudur —
+    # çağıran taraf temiz bir mesaj basıp durur, ham istisna dökmez.
+    try {
+        $k = New-Object Security.Principal.WindowsPrincipal(
+            [Security.Principal.WindowsIdentity]::GetCurrent())
+        return $k.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    } catch {
+        return $false
+    }
 }
 
 # ── Geri alma defteri: her değişiklik ÖNCEKİ değeriyle diske yazılır ────────
@@ -80,15 +103,23 @@ function DefterYaz($nesne) { $nesne | ConvertTo-Json -Depth 6 | Set-Content -Pat
 # ═══════════════════════════════════════════════════════════════════════════
 function Teshis {
     Bolum "DONANIM"
-    $cs  = Get-CimInstance Win32_ComputerSystem
-    $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
-    $os  = Get-CimInstance Win32_OperatingSystem
-    Yaz ("  İşlemci        : {0}" -f $cpu.Name.Trim())
-    Yaz ("  Çekirdek/İş par: {0} fiziksel / {1} mantıksal" -f $cpu.NumberOfCores, $cpu.NumberOfLogicalProcessors)
-    Yaz ("  Taban frekans  : {0} MHz" -f $cpu.MaxClockSpeed)
-    Yaz ("  RAM            : {0:N1} GB" -f ($cs.TotalPhysicalMemory / 1GB))
-    Yaz ("  Boş RAM        : {0:N1} GB" -f ($os.FreePhysicalMemory / 1MB))
-    Yaz ("  İşletim sistemi: {0} (derleme {1})" -f $os.Caption, $os.BuildNumber)
+    # try/catch ZORUNLU: WMI/CIM kurumsal kilitli makinelerde engellenmiş ya
+    # da deposu bozuk olabilir. Bir TEŞHİS aracının kendi teşhisi yüzünden
+    # çökmesi kabul edilemez — eksik bilgiyle devam eder, susmaz.
+    try {
+        $cs  = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+        $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop | Select-Object -First 1
+        $os  = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        Yaz ("  İşlemci        : {0}" -f $cpu.Name.Trim())
+        Yaz ("  Çekirdek/İş par: {0} fiziksel / {1} mantıksal" -f $cpu.NumberOfCores, $cpu.NumberOfLogicalProcessors)
+        Yaz ("  Taban frekans  : {0} MHz" -f $cpu.MaxClockSpeed)
+        Yaz ("  RAM            : {0:N1} GB" -f ($cs.TotalPhysicalMemory / 1GB))
+        Yaz ("  Boş RAM        : {0:N1} GB" -f ($os.FreePhysicalMemory / 1MB))
+        Yaz ("  İşletim sistemi: {0} (derleme {1})" -f $os.Caption, $os.BuildNumber)
+    } catch {
+        Yaz "  Donanım bilgisi okunamadı (WMI/CIM engelli veya bu makine Windows değil)." 'Yellow'
+        Yaz ("  Ayrıntı: {0}" -f $_.Exception.Message) 'DarkGray'
+    }
 
     # Disk tipi: SSD mi HDD mi — birleştirme (defrag) önerisi buna bağlı
     try {
@@ -116,14 +147,27 @@ function Teshis {
         Yaz "    Bu, hook başına ~41 ms kazancı yok eder. Kaldırılmalı." 'Red'
     } else { Yaz "  PYTHONDONTWRITEBYTECODE: ayarsız ✓ (bytecode önbelleği çalışır)" 'Green' }
 
-    if ($env:PYTHONUTF8 -eq '1') { Yaz "  PYTHONUTF8=1 ✓" 'Green' }
-    else { Yaz "  PYTHONUTF8: ayarsız — cp1254 konsolunda Türkçe çökmesi riski" 'Yellow' }
+    # PYTHONUTF8 bir HIZ ayarı değildir ve bu betik onu KALICI ayarlamaz
+    # (gerekçe: -Uygula bölümündeki not). Burada yalnızca DURUM bildirilir.
+    if ($env:PYTHONUTF8 -eq '1') {
+        Yaz "  PYTHONUTF8=1 ayarlı." 'Yellow'
+        Yaz "    Not: eklenti cp1254 konsolunda kendi korumasıyla (her betiğin"
+        Yaz "    başındaki __OA_UTF8_GUARD__) zaten çalışır. Bu ayar o korumanın"
+        Yaz "    bir gün kırılmasını MASKELER — teşhis için geçici kullanın."
+    } else {
+        Yaz "  PYTHONUTF8: ayarsız ✓ (eklentinin kendi UTF8 koruması devrede)" 'Green'
+    }
 
     Bolum "GÜÇ PLANI"
-    $aktif = (powercfg /getactivescheme) -join ''
-    Yaz ("  Aktif          : {0}" -f $aktif.Trim())
-    if ($aktif -match 'Dengeli|Balanced') {
-        Yaz "  ! 'Dengeli' plan: kısa süreçler için frekans rampası yavaş." 'Yellow'
+    try {
+        $aktif = (powercfg /getactivescheme 2>$null) -join ''
+        if ([string]::IsNullOrWhiteSpace($aktif)) { throw "powercfg çıktı vermedi" }
+        Yaz ("  Aktif          : {0}" -f $aktif.Trim())
+        if ($aktif -match 'Dengeli|Balanced') {
+            Yaz "  ! 'Dengeli' plan: kısa süreçler için frekans rampası yavaş." 'Yellow'
+        }
+    } catch {
+        Yaz "  Güç planı okunamadı (powercfg yok veya kurumsal politika engelliyor)." 'Yellow'
     }
 
     Bolum "DEFENDER (gerçek zamanlı tarama)"
@@ -140,12 +184,38 @@ function Teshis {
         }
     } catch { Yaz "  Defender bilgisi okunamadı (üçüncü parti antivirüs olabilir)." 'Yellow' }
 
+    # ── VERİ BÜTÜNLÜĞÜ TEŞHİSİ (hızdan ÖNCE gelir) ─────────────────────────
+    # NEDEN BURADA: Denetimli Klasör Erişimi (Controlled Folder Access) açıkken
+    # "tanınmayan" bir sürecin Belgeler/Masaüstü/Resimler altına yazması
+    # ENGELLENİR. Hook yolunda yazan süreç python.exe'dir ve dava klasörleri
+    # tipik olarak Belgeler altındadır. Engellenirse append-only deftere
+    # (`_oa/defter/pipeline-olaylar.jsonl`) olay HİÇ YAZILMAZ — ve üst
+    # katmanlardaki "her hatayı yut" desenleri yüzünden bu SESSİZ kalabilir.
+    # Bu bir performans değil BÜTÜNLÜK bulgusudur ve Windows'a özgüdür.
+    Bolum "VERİ BÜTÜNLÜĞÜ — Denetimli Klasör Erişimi (CFA)"
+    try {
+        $cfa = (Get-MpPreference).EnableControlledFolderAccess
+        $durum = switch ($cfa) { 0 { 'kapalı' } 1 { 'AÇIK (engelliyor)' } 2 { 'yalnızca denetim' } default { "bilinmiyor ($cfa)" } }
+        Yaz ("  Durum: {0}" -f $durum)
+        if ($cfa -eq 1) {
+            Yaz "  ! RİSK: python.exe dava klasörüne (Belgeler altı) YAZAMAZSA" 'Red'
+            Yaz "    defter olayı sessizce kaybolabilir — VERİ KAYBI sınıfı." 'Red'
+            Yaz "    Çözüm (CFA'yı KAPATMADAN): python.exe'yi izinli uygulama yap:" 'Yellow'
+            Yaz "      Add-MpPreference -ControlledFolderAccessAllowedApplications '<python.exe tam yolu>'" 'Cyan'
+            Yaz "    Bu betik bunu KENDİ BAŞINA yapmaz: izinli uygulama listesi" 'Yellow'
+            Yaz "    bir güvenlik kararıdır, karar vericiye aittir." 'Yellow'
+        } else {
+            Yaz "  Bu iş yükü için risk yok ✓" 'Green'
+        }
+    } catch { Yaz "  CFA durumu okunamadı (üçüncü parti antivirüs olabilir)." 'Yellow' }
+
     Bolum "EKLENTİ KURULUMU"
     $adaylar = @(
-        (Join-Path $env:USERPROFILE '.claude\plugins'),
-        (Join-Path $env:APPDATA 'Claude\plugins')
-    )
+        (GuvenliYol $env:USERPROFILE '.claude\plugins'),
+        (GuvenliYol $env:APPDATA 'Claude\plugins')
+    ) | Where-Object { $_ }
     foreach ($a in $adaylar) { if (Test-Path $a) { Yaz ("  bulundu: {0}" -f $a) } }
+    if (-not $adaylar) { Yaz "  eklenti dizini adayı bulunamadı (ortam değişkenleri boş)" 'Yellow' }
     Yaz ("  depo kökü      : {0}" -f $DepoKok)
 }
 
@@ -177,10 +247,10 @@ function OptimizasyonUygula {
     # DIŞLANMAZ — orada indirilen dosyalar olabilir, tarama sürmelidir.
     Bolum "P0 · DEFENDER DIŞLAMALARI"
     $dislanacak = @()
-    foreach ($p in @((Join-Path $env:USERPROFILE '.claude\plugins'),
-                     (Join-Path $env:APPDATA 'Claude\plugins'),
+    foreach ($p in @((GuvenliYol $env:USERPROFILE '.claude\plugins'),
+                     (GuvenliYol $env:APPDATA 'Claude\plugins'),
                      $DepoKok)) {
-        if (Test-Path $p) { $dislanacak += $p }
+        if ($p -and (Test-Path $p)) { $dislanacak += $p }
     }
     $pyKomut = Get-Command python -ErrorAction SilentlyContinue
     if ($pyKomut) { $dislanacak += (Split-Path -Parent $pyKomut.Source) }
@@ -221,10 +291,42 @@ function OptimizasyonUygula {
         Kaydet "PYTHONDONTWRITEBYTECODE kaldirildi"
     } else { Yaz "  PYTHONDONTWRITEBYTECODE zaten ayarsız ✓" }
 
-    [Environment]::SetEnvironmentVariable('PYTHONUTF8', '1', 'User')
-    Yaz "  + PYTHONUTF8=1 (Türkçe konsol çökmesi biter)" 'Green'
-    Kaydet "PYTHONUTF8=1 ayarlandi"
+    # PYTHONUTF8 BİLİNÇLİ OLARAK AYARLANMIYOR — gerekçe:
+    # (a) HIZ KAZANCI YOK. Bu bir kodlama ayarıdır, performans ayarı değildir.
+    # (b) DAHA ÖNEMLİSİ: bu depo, cp1254 konsolunda çökmemeyi KENDİ kodunda
+    #     çözmüş (her betiğin başındaki __OA_UTF8_GUARD__) ve bunu TESTLE
+    #     kilitlemiş. PYTHONUTF8=1'i kalıcı ayarlamak, o korumanın bir gün
+    #     kırılmasını MASKELER: avukatın makinesinde sorun görünmez, ama
+    #     ayarı olmayan başka bir makinede (veya CI'da) çöker.
+    #     Yani bu ayar bir onarım değil, bir GİZLEMEdir.
+    # Tek seferlik teşhis için geçici olarak kullanmak meşrudur:
+    #     $env:PYTHONUTF8=1   (yalnız o pencerede geçerli)
+    Yaz "  PYTHONUTF8: BİLİNÇLİ olarak ayarlanmadı." 'Yellow'
+    Yaz "    Hız kazancı yok; üstelik eklentinin kendi UTF8 korumasının"
+    Yaz "    kırılmasını maskeler (o koruma testle kilitli). Geçici teşhis"
+    Yaz "    için tek pencerede: `$env:PYTHONUTF8=1"
     Yaz "  ! Yeni değerler için Claude Code TAM kapatılıp açılmalı." 'Yellow'
+
+    # ── (P0) BYTECODE ÖN-DERLEME — taze kurulum uçurumu ────────────────────
+    # NEDEN: .gitignore `__pycache__/` dışlıyor, yani kuruluma .pyc GİTMEZ.
+    # Eklenti her güncellemede yeni bir sürümlü dizine açılır; orada
+    # __pycache__ sıfırdır ve İLK hook çağrısı 380+ KB bytecode'u sıfırdan
+    # üretir. Kurulum dizini salt-okunur ise ceza KALICI olur.
+    Bolum "P0 · BYTECODE ÖN-DERLEME (taze kurulum)"
+    $pluginDirs = @()
+    foreach ($p in @((GuvenliYol $env:USERPROFILE '.claude\plugins'),
+                     (GuvenliYol $env:APPDATA 'Claude\plugins'), $DepoKok)) {
+        if ($p -and (Test-Path $p)) { $pluginDirs += $p }
+    }
+    if ($pyKomut -and $pluginDirs.Count -gt 0) {
+        foreach ($p in $pluginDirs) {
+            & $pyKomut.Source -m compileall -q $p 2>&1 | Out-Null
+            Yaz ("  + ön-derlendi: {0}" -f $p) 'Green'
+            Kaydet "compileall: $p"
+        }
+        Yaz "  NOT: eklentiyi her GÜNCELLEDİKTEN sonra bunu tekrar koşun —" 'Yellow'
+        Yaz "       yeni sürüm yeni bir dizine açılır, orada .pyc yoktur." 'Yellow'
+    } else { Yaz "  atlandı (python veya eklenti dizini bulunamadı)" 'Yellow' }
 
     # ── (P1) GÜÇ PLANI ─────────────────────────────────────────────────────
     # Kısa ömürlü süreçler frekans rampasından en çok etkilenen iş yüküdür:
@@ -318,7 +420,19 @@ function Reddedilenler {
         @{ ad = 'WSL2 altında koşturmak';
            n  = 'Depo Windows diskindeyse /mnt geçişi dosya işlemlerini YAVAŞLATIR. Ancak tüm ağaç WSL2 ext4 içinde yaşarsa kazanç olur — o zaman da masaüstü entegrasyonu karmaşıklaşır.' },
         @{ ad = 'python -S / -E ile site''ı atlamak';
-           n  = 'Hook yolunda ~3 ms kazanç; ama oa-ingest pymupdf/pillow''a ihtiyaç duyduğunda site-packages şart. Ödün kazançtan büyük.' }
+           n  = 'Ölçüldü: ~2.4 ms kazanç; karşılığında oa-ingest''in pymupdf/pillow yedek yolu kırılır. Ödün kazançtan büyük. (-E ise hız değil SERTLEŞTİRME olarak ayrıca değerlendirilebilir.)' },
+        @{ ad = '-X frozen_modules=on';
+           n  = 'PLASEBO: Python 3.11+ standart kütüphane için zaten donmuş modül kullanıyor. Ayar bir şey değiştirmez.' },
+        @{ ad = 'PYTHONNODEBUGRANGES';
+           n  = 'Ölçülen kazanç alt-milisaniye; bedeli traceback kalitesi. Fail-closed bir sistemde teşhis yeteneğini hıza satmak yanlış takas.' },
+        @{ ad = 'NTFS 8.3 kısa ad kapatma / klasör sıkıştırma';
+           n  = 'Bu iş yükünde ölçülebilir kazanç üretmez; sıkıştırma CPU ekler. 8.3 yalnızca YENİ dosyaları etkiler.' },
+        @{ ad = 'Çekirdek park etmeyi (core parking) zorlamak';
+           n  = 'Çoğu Windows 11 makinesinde AC güçte ZATEN kapalı. Ölçmeden dokunmak plasebo.' },
+        @{ ad = 'VBS / HVCI (Çekirdek yalıtımı, Bellek bütünlüğü) kapatmak';
+           n  = 'Ölçülmemiş kazanç karşılığında gerçek ve kalıcı güvenlik kaybı. Bir hukuk bürosu makinesinde kabul edilemez.' },
+        @{ ad = 'PYTHONPYCACHEPREFIX';
+           n  = 'Varsayılan olarak ÖNERİLMEZ. Yalnızca kurulum dizini salt-okunur ya da bulut senkronlu ise anlamlı — o zaman .pyc''yi yerel bir dizine taşır.' }
     ) | ForEach-Object {
         Yaz ("  ✗ {0}" -f $_.ad) 'Red'
         Yaz ("     {0}" -f $_.n)

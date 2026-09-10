@@ -22,8 +22,8 @@ içtihat/mevzuat doğrulaması.
 ## Testleri koşturma
 
 ```bash
-python -m pytest tests/ -q -n auto      # 4 çekirdekte ~75 s
-python -m pytest tests/ -q              # tek çekirdek ~259 s
+python -m pytest tests/ -q -n auto      # 4 çekirdekte ~43 s
+python -m pytest tests/ -q              # tek çekirdek ~259 s (v0.5.16.3 öncesi ölçüm)
 ```
 
 `-n auto` (pytest-xdist) **kullanın**: süit paralel-güvenlidir (ölçüldü:
@@ -48,33 +48,86 @@ aittir. Kendi başına "düzeltilmemelidir".
 
 ## PERFORMANS DEĞİŞMEZLERİ — bunları geri almayın
 
-v0.5.16.2'de hook gecikmesi **189.7 ms → 26.9 ms** (%85.8 azalma, 7.05×)
-düşürüldü. İki yapısal karar bunu sağlıyor; ikisi de kolayca ve sessizce
-geri alınabilir, o yüzden burada yazılıdır.
+v0.5.16.3'te bir `Write`'ın hook bloklaması **1164 ms → 118 ms** (%89.9
+azalma, 9.86×) düşürüldü; sıcak yoldaki ağır modül sayısı **11 → 0**.
+Ölçüm: `main` vs bu dal, aynı araç, **gerçekçi dava kökü**, dedup yenilmiş.
+Ayrıntı ve kök neden zincirleri: `PERFORMANS-STATUS.md`.
 
-### 1. `DIZIN_BEYAZ_LISTE` TEMBEL kalmalı
+Dört yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
+o yüzden burada yazılıdır.
 
-`pipeline_kayit.py`'de bu değer **modül seviyesinde hesaplanmamalıdır.**
-Eskiden `DIZIN_BEYAZ_LISTE = _dizin_beyaz_liste_hesapla()` satırı modül
-gövdesindeydi; her hook çağrısında `oa_hafiza.py` (2500 satır) **ve**
-`oa_ingest.py` (1716 satır) in-process import ediliyordu — oa_ingest de
-modül seviyesinde `subprocess`, `zipfile`, `xml.etree.ElementTree`,
-`concurrent.futures` (→ `multiprocessing`, `logging`, `enum`) çekiyordu.
-Bedeli: **~155 ms/hook**, ve bu değer **tek bir yerde** kullanılıyor:
-`_sozlesme_disi_dizinler()` (gölge-dizin bekçisi, advisory).
+### 1. `ONBAKIS_DIZIN` sabiti oa_ingest'i YÜRÜTMEDEN okunmalı
 
-Şimdi `_dizin_beyaz_liste()` erişimcisi ilk kullanımda hesaplıyor; modül
-dışı `mod.DIZIN_BEYAZ_LISTE` erişimi `__getattr__` (PEP 562) ile aynı yere
-düşüyor.
+**En büyük tek kazanç.** `_dizin_beyaz_liste_hesapla()` bu sabiti almak için
+`oa_ingest.py`'yi (1716 satır) TAM YÜRÜTÜYORDU; o da dolaylı olarak
+**pymupdf (78-86 ms) + PIL (7-8 ms)** çekiyordu. PDF okumakla ilgisi olmayan
+bir kanca PDF kütüphanesi yüklüyordu — hem `hook_prompt` (her kullanıcı turu)
+hem `hook_denetle` (her asistan turu + SessionEnd) yollarında.
 
-- **Tek-kaynak garantisi (P1-9(b)) BOZULMADI**: `_dizin_beyaz_liste_hesapla()`
-  aynen duruyor, hâlâ üretici modüllerden CANLI türetiyor, değer koda
-  gömülmedi. Değişen tek şey NE ZAMAN ödendiği.
-- **Modül İÇİ kullanım `_dizin_beyaz_liste()` çağırmalı.** Modül `__getattr__`'ı
-  modülün kendi içindeki çıplak global ad aramasında **ateşlenmez** — çıplak
-  `DIZIN_BEYAZ_LISTE` yazarsanız `NameError` alırsınız.
+Şimdi `_oa_ingest_sabit_oku("ONBAKIS_DIZIN")` dosyayı **satır olarak okur**.
+
+- **Tek-kaynak garantisi (P1-9(a)) BOZULMADI**: değer hâlâ çalışma anında
+  `oa_ingest.py`'den gelir, koda gömülmez. Fark: dosya yürütülmez, okunur.
+- Sabit basit bir string literali değilse desen eşleşmez → **tam import
+  yedeğine** düşülür. Yanlış değer üretmek yapısal olarak imkânsız.
+- `_oa_ingest_modulu_beyaz_liste()` **kaldırılmadı** (yedek + testli).
+
+> **UYARI — v0.5.16.2'nin dersi:** ilk denemem hesabı *tembelleştirmekti*.
+> O maliyeti **kaldırmadı, erteledi** — ve gerçek dava klasöründe ilgili dal
+> her zaman koştuğu için hiçbir şey kazandırmadı. Tembelleştirme, her zaman
+> çalışan bir kod yolu için çözüm DEĞİLDİR.
+
+### 2. `DIZIN_BEYAZ_LISTE` TEMBEL kalmalı (ikincil kazanç)
+
+Modül seviyesinde hesaplanmamalıdır; `_dizin_beyaz_liste()` erişimcisi ilk
+kullanımda hesaplar, modül dışı `mod.DIZIN_BEYAZ_LISTE` erişimi `__getattr__`
+(PEP 562) ile aynı yere düşer.
+
+- **Modül İÇİ kullanım `_dizin_beyaz_liste()` çağırmalı.** Modül
+  `__getattr__`'ı modülün kendi içindeki çıplak global ad aramasında
+  **ateşlenmez** — çıplak `DIZIN_BEYAZ_LISTE` yazarsanız `NameError` alırsınız.
 - Yeni bir modül-seviyesi ağır hesap eklemeyin. Kontrol:
-  `python tools/hook_olc.py --import-dokumu` → "ağır modül YOK ✓" görmelisiniz.
+  `python tools/hook_olc.py --gercekci --import-dokumu`
+  → "ağır modül YOK ✓" görmelisiniz.
+
+### 3. `_oa/cikti` taramaları İKİLİ ÜRÜNLERİ okumamalı
+
+`_dilekce_sekilli_makbuzsuz_uyarisi` ve `_kutuk_dilekce_sayaci` eskiden
+`_oa/cikti`'daki **her dosyayı** uzantı süzgeci olmadan `f.read()` ile tam
+okuyordu — 3 MB'lık `ek-deliller.pdf` utf-8'e çözülüp regex'e sokuluyordu
+(tek fonksiyon çağrısı 271 ms). `_ikili_urun_mu()` süzgecini kaldırmayın.
+
+- Süzgeç **kapının kararını değiştirmez**: zip/ikili bir dosyanın
+  utf-8-replace çözümü Türkçe hukuk kalıplarını üretemez. Testle kilitli
+  (`test_ikili_suzgec_kapi_kararini_DEGISTIRMIYOR`).
+- **Metin dosyalarına bayt eşiği/kırpma EKLEMEYİN.** Uzun bir dilekçenin
+  `NETİCE-İ TALEP` bölümü 20 KB'ı aşabilir; kırpma teslim kapısını kör eder.
+  (Kod tabanındaki `f.read(20000)` deseni TETİKLEYİCİ arayan kardeş
+  fonksiyona aittir — o kapı beslemez.)
+
+### 4. `oa_ingest.py`'ye ölü import geri koymayın
+
+`import xml.etree.ElementTree as ET` kaldırıldı: bu dosyada `ET.` kullanımı
+**sıfırdı** (soğuk süreçte 8.7 ms bedelsiz maliyet). ET gerçekten
+`udf_yaz.py`, `udf_md.py`, `pipeline_kayit.py`, `hesapla_sure.py` ve
+`oa_hafiza.py`'de kullanılır ve orada import edilir.
+
+### 5. Hook yolu `hook_giris.py` üzerinden geçmeli
+
+Python, `__main__` olarak koşan bir betiğin bytecode'unu **ASLA** önbelleğe
+almaz (`__pycache__` yalnızca IMPORT edilen modüller için). Hook ağı
+`pipeline_kayit.py`'yi doğrudan çağırdığında 6300+ satır **her ateşlemede**
+yeniden derleniyordu (~38-46 ms).
+
+- `run-hook.cmd`'yi `pipeline_kayit.py`'ye geri yönlendirmeyin.
+- `PYTHONDONTWRITEBYTECODE` **ayarlı olmamalı** — kazancı tümüyle yok eder.
+- `hook_giris.py` `sys.path`'i kirletmez; bu deseni bozmayın.
+- **Taze kurulumda `.pyc` YOKTUR** (`.gitignore` `__pycache__/` dışlıyor ve
+  eklenti her güncellemede yeni bir sürümlü dizine açılır). İlk çağrı tam
+  bedeli öder. Çözüm: güncellemeden sonra `python -m compileall <eklenti dizini>`
+  — `tools/pc_hizlandir.ps1 -Uygula` bunu yapar.
+- Modül gövdesi **YARIDA** çökerse betik `runpy` yedeğine DÜŞMEZ (çift yan
+  etki riski); hatayı olduğu gibi bırakır. Bu bilinçlidir, "iyileştirmeyin".
 
 ### 2. Hook yolu `hook_giris.py` üzerinden geçmeli
 
@@ -93,16 +146,29 @@ o da `pipeline_kayit.py`'yi importlib ile yükleyip `main()`'i çağırır.
 - Testler: `tests/test_hook_giris.py` (10 test) hem işlev eşitliğini hem
   kazancın kendisini kilitler.
 
-### Ölçüm aracı
+### Ölçüm aracı — ve ÜÇ ÖLÇÜM TUZAĞI
 
 ```bash
-python tools/hook_olc.py --tekrar 25 --import-dokumu
+python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu
 ```
 
-Bir hız beyanı ancak bu araçta görülürse gerçektir. Araç ortamını (Python
-sürümü, işletim sistemi, çekirdek) basar — ortamsız sayı anlamsızdır.
+`--gercekci` bayrağını **KULLANIN**. Bu oturumda üç tuzağa düşüldü; hepsi
+araçta kapatıldı ama elle ölçerken yine düşülebilir:
+
+1. **Dedup kısa devresi.** `_hook_dedup_kisa_devre` aynı olayı aynı saniye
+   içinde kısa devre yapar (`prompt` için ayırt edici `None`). Sıkı bir
+   döngüde ölçerseniz çağrıların çoğu NO-OP olur. Ölçüldü: aralıksız 56 ms
+   vs 1.1 sn arayla 210-373 ms — **%70 yanlış ölçüm.** Araç varsayılan
+   olarak `--bekle 1.1` bekler; `--bekle 0` vermeyin.
+2. **Boş klasör tabanı.** Boş kökte hook neredeyse hiç iş yapmaz. Gerçek
+   maliyeti dava kökündeki dosya sistemi işi belirler, modül yükleme değil.
+3. **Yanlış hedef.** Gerçek yol `run-hook.cmd` → `hook_giris.py`. Doğrudan
+   `pipeline_kayit.py` ölçmek terk edilmiş yolu ölçer.
+
+Araç ortamını (Python sürümü, OS, çekirdek) basar — ortamsız sayı anlamsızdır.
 Absolüt sayılar yorumlayıcı sürümüne ve `.pyc` sıcaklığına göre değişir;
 karşılaştırma **aynı makinede, aynı yorumlayıcıyla, arka arkaya** yapılmalıdır.
+İki dalı kıyaslarken ölçüm aracının **aynı sürümünü** her iki tarafa kopyalayın.
 
 ---
 

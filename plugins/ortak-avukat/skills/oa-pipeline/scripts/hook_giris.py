@@ -84,6 +84,21 @@ def _eski_yol():
 def main():
     if not os.path.isfile(_BETIK):
         sys.exit(0)                # eklenti yarım kurulmuş — sessizce çık, blokla
+
+    # ÇİFT YAN ETKİ KAPISI (v0.5.16.3)
+    # ---------------------------------
+    # `exec_module` modül gövdesini YARIDA bırakan bir istisna atarsa
+    # (bozuk __pycache__, disk hatası), yedek yol aynı dosyayı `runpy` ile
+    # BAŞTAN koşturur. O zaman gövde KISMEN bir kez + TAM bir kez yürür.
+    # BUGÜN bu güvenlidir, çünkü pipeline_kayit.py'nin modül seviyesi
+    # YAN-ETKİSİZDİR (v0.5.16.2 ile DIZIN_BEYAZ_LISTE ataması tembel
+    # erişimciye çevrildi; modül seviyesinde dosya yazımı yok). Ama bu
+    # SESSİZ bir varsayımdı. Artık açık: yedek yola YALNIZCA gövde HİÇ
+    # başlamadan çöken hatalarda düşülür. Gövde başladıktan sonraki bir
+    # çökme, çift yan etki riskini almamak için OLDUĞU GİBİ yukarı bırakılır
+    # (davranış eski yolla aynı: pipeline_kayit doğrudan koşarken de aynı
+    # istisna aynı şekilde çıkardı).
+    govde_basladi = False
     try:
         spec = importlib.util.spec_from_file_location("pipeline_kayit", _BETIK)
         if spec is None or spec.loader is None:
@@ -92,14 +107,21 @@ def main():
         # exec_module'dan ÖNCE kaydet: modülün kendine referanslı import'ları
         # ve `sys.modules` bekleyen kodu doğru çalışsın.
         sys.modules["pipeline_kayit"] = mod
+        govde_basladi = True
         spec.loader.exec_module(mod)      # <- burada __pycache__ okunur/yazılır
         govde = getattr(mod, "main", None)
         if not callable(govde):
-            return _eski_yol()
+            return _eski_yol()            # gövde bitti, yan etki yok — güvenli
     except SystemExit:
         raise                      # modül gövdesi sys.exit çağırdıysa: koru
     except Exception:
-        return _eski_yol()         # import katmanı çöktü → eski yola dön
+        if govde_basladi:
+            # Gövde çalışmaya başlamıştı: runpy ile TEKRAR koşturmak yan
+            # etkileri ikiye katlayabilir. Bunu YAPMA — hatayı olduğu gibi
+            # bırak. sys.modules'ü de temizle ki yarım modül geride kalmasın.
+            sys.modules.pop("pipeline_kayit", None)
+            raise
+        return _eski_yol()         # import katmanı hiç başlamadan çöktü
     govde()                        # SystemExit buradan doğal olarak yayılır
 
 
