@@ -398,6 +398,34 @@ ALEYHE = {
     "genel": [r"karşı\s*taraf(ın)?\s*haklı", r"aleyhimize\s*kabul"],
 }
 
+# CLI'nin kabul ettiği ama ALEYHE'de KENDİ anahtarı olmayan taraf sıfatlarının
+# hangi eksen(ler)le taranacağı. Fer'î müdahil, yanında katıldığı tarafın
+# yardımcısıdır (HMK m.66-69); asli müdahilse kendi hakkını ileri sürer. Script
+# müdahilin HANGİ tarafta olduğunu BİLEMEZ → fail-closed: HER İKİ eksen de
+# taranır (yanlış-pozitif avukat gözüyle elenir; yanlış-negatif müvekkili batırır).
+TARAF_ESLEME = {
+    "mudahil": ("davaci", "davali"),
+}
+
+
+def aleyhe_kapsami(taraf):
+    """(setler, kismi_mi, sebep) — bu taraf sıfatı için HANGİ kalıp setlerinin
+    taranacağı ve taramanın TAM mı KISMİ mi olduğu.
+
+    Ailenin SESSİZ ATLAMA YASAĞI'nın bu kapıdaki karşılığıdır: taraf sıfatı
+    verilmemiş ya da sözlükte karşılığı yoksa yalnız iki desenli 'genel' seti
+    taranır — bu bir tarama DEĞİL, tarama YOKLUĞUdur ve çıktıda "bulunamadı"
+    diye görünemez ("bakmadım" ile "bakıp bulamadım" aynı şey değildir).
+    """
+    t = (taraf or "").strip().lower()
+    if not t:
+        return ["genel"], True, "taraf sıfatı VERİLMEDİ"
+    if t in ALEYHE:
+        return [t, "genel"], False, ""
+    if t in TARAF_ESLEME:
+        return list(TARAF_ESLEME[t]) + ["genel"], False, ""
+    return ["genel"], True, "taraf sıfatı %r kalıp sözlüğünde YOK" % t
+
 
 def _bul(metin, desenler):
     return any(re.search(d, metin, re.I | re.M) for d in desenler)
@@ -1645,10 +1673,18 @@ def denetle(metin, tip, taraf):
     # D) müvekkil-aleyhi ifade (tek katı sınır) — OLUMSUZLAMA KORUMALI
     # Standart cevap kalıbı "davanın kabulü anlamına gelmemek kaydıyla" / "kabul etmediğimiz"
     # sahte alarm üretmesin: ±70 karakter penceresinde olumsuzlama varsa sinyal düşürülür.
-    NEG = re.compile(r"anlamına\s*gelme|kaydıyla|etmedi[ğg]|etmiyor|etmemek|etmez|\bkabul\s*etme"
+    # DİKKAT (B3) — `\bkabul\s*etme` KELİME SINIRI OLMADAN yazılamaz: Türkçede
+    # `-me` hem OLUMSUZLUK eki (`kabul etmemek`) hem MASTAR/çekim ekidir
+    # (`kabul etmektedir`, `kabul etmekteyiz`, `kabul etmesi` — bunlar OLUMLU
+    # İKRARDIR). Sınırsız desen, en yaygın ikrar kalıbını "olumsuzlanmış" sayıp
+    # BLOK'tan BİLGİ'ye düşürüyordu (müvekkil ikrarı sessizce onaylanmış olur;
+    # HMK m.188 — ikrar kesin delildir, geri alınamaz). Gerçek olumsuz çekimler
+    # zaten ayrı ayrı listelidir: etmedi/etmiyor/etmemek/etmez.
+    NEG = re.compile(r"anlamına\s*gelme|kaydıyla|etmedi[ğg]|etmiyor|etmemek|etmez|\bkabul\s*etme\b"
                      r"|redd|aksi|\bdeğil|olmaks[ıi]z[ıi]n|olmamak", re.I)
     aleyhe, aleyhe_notu = [], []
-    for anahtar in ([taraf] if taraf in ALEYHE else []) + ["genel"]:
+    _setler, _kismi, _sebep = aleyhe_kapsami(taraf)
+    for anahtar in _setler:
         for d in ALEYHE.get(anahtar, []):
             for m in re.finditer(d, metin, re.I):
                 # EK-FİX (risk#2): pencere eşleşen kalıbın KENDİ aralığını İÇERMEZ.
@@ -1758,10 +1794,26 @@ def main():
         print("   [OK] OCR-teyit şerhi sorunu görünmüyor")
 
     print("\n[D] MÜVEKKİL-ALEYHİ İFADE TARAMASI (anayasal — tek katı sınır)")
+    # B2/B4 — KAPSAM ÖNCE YAZILIR: bu kapı "bakmadım"ı "bulamadım" diye
+    # gösteremez. Taraf sıfatı yoksa/sözlükte karşılığı yoksa yalnız iki desenli
+    # 'genel' seti taranır; taraf-özel eksenler (kabul/ikrar, feragat, şikayetten
+    # vazgeçme, suç ikrarı) HİÇ taranmaz — ve eski çıktı buna rağmen
+    # "[OK] ... bulunamadı" basıp YANLIŞ GÜVENCE veriyordu.
+    _setler, _kismi, _sebep = aleyhe_kapsami(a.taraf)
+    if _kismi:
+        print(f"   [UYARI] TARAMA KISMİ — {_sebep}. Yalnız 'genel' kalıp seti tarandı; "
+              "taraf-özel eksenler (kabul/ikrar · feragat · şikayetten vazgeçme · "
+              "suç ikrarı) TARANMADI.")
+        print("           → --taraf davaci|davali|sanik|katilan|mudahil|musteki VERİP "
+              "YENİDEN KOŞ; aksi hâlde aşağıdaki sonuç bir TEMİZLİK BEYANI DEĞİLDİR.")
+    else:
+        print("   [KAPSAM] taranan kalıp setleri: %s" % ", ".join(_setler))
     if aleyhe:
         for s in sorted(set(aleyhe)):
             print(f"   [UYARI] olası müvekkil-aleyhi ifade: \"{s}\" — avukat TEYİT ETMELİ; "
                   "dış çıktı müvekkil lehine kurgulanır (davalıda kabul/ikrar YOK).")
+    elif _kismi:
+        print("   [—] taranan DAR kapsamda sinyal yok — bu 'temiz' DEMEK DEĞİLDİR (bkz. yukarıdaki UYARI).")
     else:
         print("   [OK] belirgin müvekkil-aleyhi ifade sinyali bulunamadı (heuristik)")
     if aleyhe_notu:

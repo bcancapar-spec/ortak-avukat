@@ -15,6 +15,47 @@ bir satır ölçülmeden buraya girmez.
 
 ---
 
+## 0. Durum özeti (2026-09-10 · backend kırık taraması — DAL, sürüm damgası ATILMADI)
+
+- **Ne yapıldı:** `plugins/ortak-avukat` tüm skill setinde **backend (Python) katmanı**,
+  "bir avukatın müvekkili lehine olan sonucu bozacak sistemsel kırık" sorusuyla tarandı
+  (20 skill · 35 script · 32.278 satır · `tools/hook_doktor.py` · CI · kurulum belgesi).
+  Tam rapor: [_gorus/denetim-2026-09-10-backend-muvekkil-lehine-kiriklar.md](_gorus/denetim-2026-09-10-backend-muvekkil-lehine-kiriklar.md).
+- **Beş bulgu — dördü aynı sınıftan:** kapı çökmüyor, **çalıştığı sanılan bir yokluk**
+  üretiyordu (sistemin tek vaadi "model kurar → script denetler" olduğu için en ağır sınıf budur).
+  - **B1** `tam_tur.py` Python <3.12'de İMPORT EDİLEMİYORDU (f-string içi ters bölü, iki satır).
+    Gate G fail-closed yazılmış ama `dosya-analiz.json` hiç doğmadığı için kapı kendini
+    kapatmıyor, **yok sayıyordu**. `README.md` üç yerde "Python 3.10+" derken `pyproject.toml`
+    `>=3.12` istiyor ve CI yalnız 3.12/3.13 koşuyordu → README'ye uyan kurulum Gate G'yi düşürüyordu.
+  - **B2** `--taraf` verilmeden koşulan müvekkil-aleyhi taraması yalnız 2 desenli `genel` setini
+    tarıyor, ama çıktı `[OK] … bulunamadı` diyordu: dört ikrar cümlesi taşıyan cevap dilekçesine
+    **TEMİZLİK BEYANI**. Sessiz atlama değil, **yanlış güvence** (HMK m.188 — ikrar kesin delil).
+  - **B3** `NEG` deseni `\bkabul\s*etme` kelime sınırsızdı; Türkçede `-me` hem olumsuzluk hem
+    mastar ekidir → `kabul **etmektedir**` (olumlu ikrar) olumsuzlama sayılıp sinyali susturuyordu.
+  - **B4** `mudahil` CLI'de var, `ALEYHE` sözlüğünde yoktu → avukat taraf sıfatını DOĞRU verdiği
+    hâlde kör tarama alıyordu (B2'den sinsi).
+  - **B5** Hook katmanında **teşhis aracı ters yönü gösteriyordu**: `hook_doktor.py` + 4 test,
+    `plugin.json`'da `hooks` kaydının yokluğunu "v0.5.6 arızası" sayıyordu. Oysa `hooks/hooks.json`
+    standart konumdur ve otomatik yüklenir (resmî plugin referansı ile teyitli); manifestte
+    yeniden bildirmek "Duplicate hooks file detected" verip **eklentinin tamamını (20 skill)**
+    yüklenmez yapıyor (commit `08441f5`). Yani yanlış alarm, gerçek arızadan yıkıcı bir
+    "onarıma" çağırıyordu. **Av. Bayram Can ÇAPAR kararı (2026-09-10):** sözleşme yeni gerçeğe
+    çevrildi — kilitlenen şey aynı (*kaydı düşen hook, olmayan hooktur*), mekanizması düzeltildi.
+- **Kırık BULUNMAYAN hatlar (dürüst negatif kayıt):** **süre motoru temiz** — adli tatil ilk/son
+  günü, CMK m.331/4 (3 gün), HMK m.104 (1 hafta), İYUK m.8/3 (7 gün), ay ekleme, artık yıl, yıl
+  geçişi fiilen koşuldu, hepsi doğru ve sınırda **güvenli tarafta** (erken tarih). **Gizlilik
+  temiz** — fail-closed; checksum tutmayan kimlik dizileri de düşürülmüyor.
+- **Ölçüm (2026-09-10):** süit toplama **2329** (2318 + 11 yeni kilit) ·
+  `python3.12 -m pytest tests` → CI hedef sürümünde koşuldu ·
+  Python 3.11'de derlenmeyen script **1 → 0** · hook katmanı kırmızısı **4 → 0** ·
+  ikrarlı taslakta yakalanan sinyal (`--taraf davali`) **3 → 5**.
+- **Açık / avukat kararı bekleyen:** (a) `gizlilik_tara._MASKE` listesi IBAN desenine
+  `MUTLAK_DENY[4]` diye **konum üzerinden** bağlı — bugün doğru, ama liste sırası değişirse
+  IBAN maskesiz kalır (ada göre arama önerildi, uygulanmadı). (b) **Sürüm damgası ATILMADI**
+  (plugin/marketplace/iki script birlikte artar kuralı) — sürüm ve CHANGELOG girişi kararı sizin.
+  (c) Raporun §4'ündeki **canlı doğrulama** beş adımı kendi makinenizde koşulmalı; mekanik test
+  hook katmanının canlılığını ikame edemez.
+
 ## 0. Durum özeti (2026-09-07 · v0.5.16)
 
 - **v0.5.16 — İki Denetimin İnfazı** (kök CHANGELOG): iki dış denetim raporunun

@@ -81,20 +81,45 @@ def test_plugin_json_var_ve_gecerli_json():
     with open(PLUGIN_JSON, encoding="utf-8") as f:
         veri = json.load(f)
     assert isinstance(veri, dict)
-    assert veri.get("hooks") == "./hooks/hooks.json"
 
 
-def test_plugin_json_hooks_alani_diskte_cozulebilir():
-    """plugin.json'daki './hooks/hooks.json' göreli yolu FİİLEN diskte var mı?
-    (Claude Code kuralı: plugin.json'daki göreli yollar `.claude-plugin/`ın
-    BİR ÜST klasörüne — plugin paket köküne — göre çözülür, plugin.json'ın
-    KENDİ bulunduğu `.claude-plugin/` klasörüne göre DEĞİL.)"""
+def test_plugin_json_STANDART_hooks_yolunu_YENIDEN_BILDIRMEZ():
+    """SÖZLEŞME TERSİNE DÖNDÜ (2026-09-10) — kayıt aranmaz, ÇİFT kayıt aranır.
+
+    v0.5.6'da `plugin.json`'dan `hooks` satırının düşmesi arıza sayılıyordu ve
+    bu test onun varlığını kilitliyordu. Gerçek şudur: `hooks/hooks.json`
+    plugin KÖKÜNDE standart konumdur ve Claude Code onu OTOMATİK keşfeder
+    (plugin referansı: "Location: hooks/hooks.json in plugin root, or inline
+    in plugin.json"). Manifestte AYRICA "./hooks/hooks.json" bildirmek aynı
+    dosyayı ikinci kez kaydeder → kurulumda "Duplicate hooks file detected" →
+    **eklentinin TAMAMI (20 skill dâhil) yüklenmez** (commit 08441f5, saha
+    vakası). Yani eski kilit, sistemi tümden öldüren bir "onarıma" çağırıyordu.
+
+    Özel/standart-dışı bir yol bildirmek hâlâ meşrudur; yasak olan, standart
+    yolun İKİNCİ kez bildirilmesidir.
+    """
     with open(PLUGIN_JSON, encoding="utf-8") as f:
         veri = json.load(f)
-    goreli = veri["hooks"]
-    hedef = (PLUGIN_ROOT / goreli).resolve()
-    assert hedef.is_file(), f"plugin.json'ın işaret ettiği hooks dosyası yok: {hedef}"
-    assert hedef == HOOKS_JSON.resolve()
+    bildirim = veri.get("hooks")
+    if bildirim is None:
+        return  # doğru hâl: standart konumdan otomatik yüklenir
+    assert not isinstance(bildirim, str) or \
+        str(bildirim).replace("\\", "/").lstrip("./") != "hooks/hooks.json", (
+            "ÇİFT BİLDİRİM: %r zaten STANDART konumdan otomatik yükleniyor; "
+            "manifestte yeniden bildirmek kurulumda 'Duplicate hooks file "
+            "detected' verir ve eklentinin tamamı yüklenmez." % bildirim)
+
+
+def test_hooks_json_STANDART_KONUMDA_ve_gecerli():
+    """ASIL SÖZLEŞME: hook katmanının yaşaması manifest kaydına değil, dosyanın
+    standart konumda ve geçerli olmasına bağlıdır."""
+    assert HOOKS_JSON.is_file(), f"hooks.json standart konumda YOK: {HOOKS_JSON}"
+    assert HOOKS_JSON.parent.name == "hooks"
+    assert HOOKS_JSON.parent.parent == PLUGIN_ROOT, (
+        "hooks/ klasörü plugin paket kökünde olmalı (standart konum): %s" % HOOKS_JSON)
+    veri = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
+    assert isinstance(veri.get("hooks"), dict) and veri["hooks"], \
+        "hooks.json 'hooks' sözlüğü boş — katman diskte var ama ÖLÜ"
 
 
 def test_hook_denetle_bayragi_pipeline_kayit_scriptinde_tanimli():

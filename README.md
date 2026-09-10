@@ -117,7 +117,7 @@ yerlerde (tarayıcı onayı gibi) durup size söyler:
 Bu bilgisayara "Ortak Avukat" sistemini uçtan uca kur. Sırayla ve her adımın
 sonucunu tek satır göstererek ilerle:
 
-1) Python 3.10+ kurulu mu denetle (python --version). Yoksa kurulum linkini
+1) Python 3.12+ kurulu mu denetle (python --version). Yoksa kurulum linkini
    ver ve bekle. Varsa: pip install pymupdf pillow markitdown[all] (kuruluysa geç).
 2) Tesseract OCR + Türkçe paketi denetle (tesseract --list-langs içinde
    "tur"). Eksikse Windows için UB-Mannheim kurulum sayfası linkini ver,
@@ -154,7 +154,7 @@ sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
 | Yazılım | Nereden | Neden gerekli |
 |---|---|---|
 | **Claude Code** (veya Claude masaüstü/Cowork) | [claude.com/claude-code](https://claude.com/claude-code) | Sistemin koştuğu ajan ortamı: skill'ler, hook ağı ve MCP bağlantıları burada yaşar. Eklenti bu ortama kurulur. |
-| **Python 3.10+** | [python.org/downloads](https://www.python.org/downloads/) | Bütün deterministik denetim scriptleri (defter, makbuz, künye teyidi, süre hesabı, teslim zinciri) Python'dur — "script denetler" ayağının motoru. |
+| **Python 3.12+** | [python.org/downloads](https://www.python.org/downloads/) | Bütün deterministik denetim scriptleri (defter, makbuz, künye teyidi, süre hesabı, teslim zinciri) Python'dur — "script denetler" ayağının motoru. **3.12 alt sınırı ölçülmüş bir sınırdır, tercih değil:** `pyproject.toml` `requires-python = ">=3.12"` der ve CI yalnız 3.12/3.13 koşar; daha eski bir yorumlayıcıda scriptlerin bir kısmı sözdizimi düzeyinde YÜKLENMEZ ve yüklenmeyen bir script'in koruduğu kapı kapanmaz — **yok sayılır**. |
 | **PyMuPDF** (pip paketi) | [pypi.org/project/PyMuPDF](https://pypi.org/project/PyMuPDF/) | Metin-katmanlı PDF'lerden evrak çıkarımı ve PDF önizleme üretimi — evrakı görüntü olarak modele yüklememenin (26× tasarrufun) temeli. |
 | **Pillow** (pip paketi) | [pypi.org/project/pillow](https://pypi.org/project/pillow/) | TIFF/görüntü evrakların sayfalara ayrılıp OCR'a hazırlanması. |
 | **MarkItDown** (Microsoft, pip paketi) | [github.com/microsoft/markitdown](https://github.com/microsoft/markitdown) | Office ve karışık formatlı evrakı (**.docx, .xlsx, .pptx**, HTML, e-posta, CSV/JSON, hatta bazı PDF'ler) tek elden **Markdown'a** çevirir. UYAP klasörü yalnız PDF/TIFF değildir: bilirkişi raporu Excel, ekler PowerPoint, yazışma Word olarak gelir. Bu araç olmadan o evraklar ya modele görüntü olarak yüklenir (token patlaması) ya da hiç okunmaz. Metne bir kez indirip her adımda o metni seçici okuma ekonomisinin Office ayağıdır. |
@@ -169,7 +169,7 @@ Adım adım:
 ### 1. Claude Code'u kurun
 Claude Code (CLI veya Desktop) kurulu ve oturum açık olmalı: <https://claude.com/claude-code>
 
-### 2. Python 3.10+ ve iki paket
+### 2. Python 3.12+ ve iki paket
 
 ```bash
 python --version
