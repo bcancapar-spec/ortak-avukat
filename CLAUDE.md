@@ -14,7 +14,8 @@ içtihat/mevzuat doğrulaması.
 - Kod: `plugins/ortak-avukat/skills/*/scripts/*.py` (176 dosya)
 - Beceri metinleri: `plugins/ortak-avukat/skills/*/SKILL.md`
 - Hook ağı: `plugins/ortak-avukat/hooks/` (`hooks.json` + `run-hook.cmd`)
-- Testler: `tests/` (2328 test)
+- Testler: `tests/` (2340 test — tek kaynak: `tests/README.md`'deki
+  `OA-SUIT-SAYISI` işaretçisi; `test_b35` ikisini karşılaştırır)
 - **Hedef ortam: Windows** (masaüstü Claude Code, cp1254 konsol)
 
 ---
@@ -76,7 +77,7 @@ azalma, 9.86×) düşürüldü; sıcak yoldaki ağır modül sayısı **11 → 0
 Ölçüm: `main` vs bu dal, aynı araç, **gerçekçi dava kökü**, dedup yenilmiş.
 Ayrıntı ve kök neden zincirleri: `PERFORMANS-STATUS.md`.
 
-Dört yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
+Altı yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
 o yüzden burada yazılıdır.
 
 ### 1. `ONBAKIS_DIZIN` sabiti oa_ingest'i YÜRÜTMEDEN okunmalı
@@ -187,23 +188,6 @@ yeniden derleniyordu (~38-46 ms).
   — `tools/pc_hizlandir.ps1 -Uygula` bunu yapar.
 - Modül gövdesi **YARIDA** çökerse betik `runpy` yedeğine DÜŞMEZ (çift yan
   etki riski); hatayı olduğu gibi bırakır. Bu bilinçlidir, "iyileştirmeyin".
-
-### 2. Hook yolu `hook_giris.py` üzerinden geçmeli
-
-Python, `__main__` olarak koşan bir betiğin bytecode'unu **ASLA** önbelleğe
-almaz (`__pycache__` yalnızca IMPORT edilen modüller için). Hook ağı
-`pipeline_kayit.py`'yi doğrudan çağırdığında 6300+ satır **her ateşlemede**
-yeniden derleniyordu (~41 ms).
-
-`hooks/run-hook.cmd` içindeki `OA_SCRIPT` artık `hook_giris.py`'yi gösterir;
-o da `pipeline_kayit.py`'yi importlib ile yükleyip `main()`'i çağırır.
-
-- `run-hook.cmd`'yi `pipeline_kayit.py`'ye geri yönlendirmeyin.
-- `PYTHONDONTWRITEBYTECODE` **ayarlı olmamalı** — kazancı tümüyle yok eder.
-- `hook_giris.py` `sys.path`'i kirletmez (kardeş dosya stdlib'i gölgeleyemez);
-  bu deseni bozmayın.
-- Testler: `tests/test_hook_giris.py` (10 test) hem işlev eşitliğini hem
-  kazancın kendisini kilitler.
 
 ### Ölçüm aracı — ve ÜÇ ÖLÇÜM TUZAĞI
 
