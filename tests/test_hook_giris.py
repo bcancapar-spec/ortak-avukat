@@ -18,9 +18,15 @@ Ayrıca kazancın KENDİSİ de kilitlenir (aksi hâlde bir gün sessizce kaybolu
 """
 import os
 import pathlib
+import re
+import statistics
 import subprocess
 import sys
 import tempfile
+import time
+import warnings
+
+import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPTS = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts"
@@ -35,6 +41,13 @@ def _dava_klasoru():
     for i in ("001", "002", "003"):
         (t / f"{i}_evrak.pdf").write_bytes(b"x")
     return t
+
+
+def _sure(fn):
+    """Bir çağrının duvar saati süresi (sn)."""
+    t0 = time.perf_counter()
+    fn()
+    return time.perf_counter() - t0
 
 
 def _kos(betik, mod, kok, girdi=b"{}"):
@@ -114,28 +127,91 @@ def test_bytecode_onbellegi_gercekten_yaziliyor():
         "hook başına ~41 ms kazanç kaybediliyor")
 
 
-def test_giris_betigi_dogrudan_cagridan_HIZLI():
-    """Kazanç sayısal olarak da kilitlenir. Eşik bilinçli olarak GEVŞEK
-    (%25): amaç bir kıyaslama yarışı değil, kazancın bir gün sessizce
-    kaybolmasını engellemek. Yavaş/gürültülü CI makinelerinde bile
-    `__main__` yolu 6300 satırı yeniden derlediği için fark kalıcıdır."""
-    import time
+def test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR():
+    """Onarımın DETERMİNİSTİK kanıtı: giriş betiği üzerinden yapılan çağrıda
+    `pipeline_kayit`'in kod nesnesi `.pyc`'den OKUNUR, kaynaktan DERLENMEZ.
+    Zamanlama YOK — kanıt `python -v` import izidir.
+
+    v0.5.17'de bu test, eski `test_giris_betigi_dogrudan_cagridan_HIZLI`
+    (oran eşiği: `giris < dogrudan * 0.75`) yerine geldi. GEREKÇE — eski
+    ölçüt yapısal olarak kırılgandı:
+      · Kazanç sabit bir DERLEME maliyetidir (mutlak); oranın PAYDASI ise
+        platforma bağlıdır. Windows'ta çıplak yorumlayıcı başlığı 53.49 ms
+        ve süreç doğurma bedeli paydayı büyütür → aynı ~40-80 ms kazanç
+        Linux'ta ~%45, Windows'ta ~%23 oran verir. Eşik (%25) tam bandın
+        ortasına düşüyordu: test YÜKSÜZ makinede 3 koşuda 1 kırmızı yandı,
+        tam süit yükü altında ölçüm TERSİNE döndü (203.3 vs 194.6 ms).
+      · Mutlak/kendinden-kalibre ölçüt de denendi ve ÖLÇÜMLE ÇÜRÜTÜLDÜ:
+        `fark >= 0.5 × C` (C = kaynağın derleme maliyeti) öngörüsü fark ≈
+        0.85-0.95·C varsayıyordu; gerçek fark/C bu makinede **0.24-0.62**
+        (U = .pyc okuma+unmarshal, 6300 satırlık modülde 0.3-0.4·C — ihmal
+        edilemez). Kalibrasyon tablosu: PERFORMANS-STATUS.md §8.
+      · KIRILGAN KAPI, KIRMIZI KAPIDAN KÖTÜDÜR: «tekrar koştur» refleksi
+        öğretir — ki bu, testin önlemek için yazıldığı şeyin (kazancın bir
+        gün sessizce kaybolması) tam mekanizmasıdır.
+    Bu yüzden BÜYÜKLÜK assert edilmez; mekanizma boolean olarak kilitlenir
+    (kod nesnesi .pyc'den geldi mi?) ve büyüklük assert'siz kanaryada
+    (`test_giris_kazanci_KANARYA`) + sürüm defterinde (`hook_olc.py` →
+    PERFORMANS-STATUS) okunur. Kırmızı bütçesi SIFIR: zaman ölçülmüyor.
+
+    Ne yakalar: `runpy` yedeğine sessiz düşüş (.pyc satırı hiç yok), bayat
+    ya da yazılamayan önbellek (kaynaktan derleme satırı var), `sys.path`
+    veya loader değişikliği.
+    """
     kok = _dava_klasoru()
-    _kos(GIRIS, "hook-prompt", kok)              # .pyc'yi ısıt
+    # Ortam bilinçli olarak temizlenir: bu test KODUN kanıtını arar; üretim
+    # ortamının bytecode ayarını `tools/hook_doktor.py` denetler.
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONDONTWRITEBYTECODE"}
+    subprocess.run([sys.executable, str(GIRIS), "--hook-prompt"], cwd=str(kok),
+                   input=b"{}", capture_output=True, env=env)        # .pyc yazılır
+    p = subprocess.run([sys.executable, "-v", str(GIRIS), "--hook-prompt"],
+                       cwd=str(kok), input=b"{}", capture_output=True, env=env)
+    iz = p.stderr.decode("utf-8", "replace")
+    # Regex `__pycache__` DEMİYOR — PYTHONPYCACHEPREFIX ile de doğru kalır.
+    assert re.search(r"code object from .*pipeline_kayit\.cpython-\d+\.pyc", iz), (
+        "pipeline_kayit .pyc'den YÜKLENMEDİ — giriş betiği derleme/runpy "
+        "yoluna düşmüş; hook başına ~40-80 ms kazanç kayboldu")
+    assert not re.search(r"code object from .*pipeline_kayit\.py\s*$", iz, re.M), (
+        "pipeline_kayit KAYNAKTAN derlendi — bytecode önbelleği bayat ya da "
+        "devre dışı")
 
-    def olc(betik, n=5):
-        sureler = []
-        for _ in range(n):
-            t0 = time.perf_counter()
-            _kos(betik, "hook-prompt", kok)
-            sureler.append(time.perf_counter() - t0)
-        return sorted(sureler)[len(sureler) // 2]      # ortanca
 
-    giris = olc(GIRIS)
-    dogrudan = olc(KAYIT)
-    assert giris < dogrudan * 0.75, (
-        f"giriş betiği beklenen kazancı vermiyor: {giris*1000:.1f} ms vs "
-        f"doğrudan {dogrudan*1000:.1f} ms (eşik: %25 daha hızlı)")
+@pytest.mark.perf
+def test_giris_kazanci_KANARYA():
+    """KAPI DEĞİLDİR — assert yok, bloklamaz. Eşleştirilmiş ABBA fark
+    ortancası 20 ms'in altına düşerse UYARI basar (pytest özetinde görünür).
+
+    Neden eşleştirilmiş ABBA ortancası: iki yolun dağılımları FARKLI
+    yayılımlıdır (bu makinede giriş 85-163 ms, doğrudan 127-233 ms), bu
+    yüzden `min(d) - min(g)` iki TABANI çıkarır ve geniş kuyruklu doğrudan
+    yolun tabanı tipik maliyetine göre orantısız düşük olduğundan kazancı
+    SİSTEMATİK KÜÇÜLTÜR (ölçüm: min-min 25.9-80.8 ms arası zıpladı).
+    Eşleştirilmiş farkın ortancası ortak-mod kaymayı (yük fazı, CPU
+    frekansı) çift İÇİNDE söndürür, çift içi sırayı dönüşümlü yapmak (ABBA)
+    sıra etkisini de söndürür: ölçülen 61-100 ms, ortanca 78.8 ms — bağımsız
+    araç `hook_olc.py`'nin hook-prompt için verdiği +79.0 ms ile birebir.
+
+    Sağlıklı sayı özete DÜŞMEZ (gürültü yok); düşük sayı uyarı olarak
+    görünür. Tek seferlik uyarı bloklamaz, TEKRARLAYAN uyarı sinyaldir.
+    Yetkili büyüklük kaydı: sürüm öncesi `tools/hook_olc.py --gercekci
+    --tekrar 5 --karsilastir` → PERFORMANS-STATUS.md.
+    """
+    kok = _dava_klasoru()
+    _kos(GIRIS, "hook-prompt", kok)      # iki yol da ısınsın (.pyc yazılır)
+    _kos(KAYIT, "hook-prompt", kok)
+
+    farklar = []
+    for i in range(7):
+        sira = (GIRIS, KAYIT) if i % 2 == 0 else (KAYIT, GIRIS)      # ABBA
+        t = {b: _sure(lambda b=b: _kos(b, "hook-prompt", kok)) for b in sira}
+        farklar.append(t[KAYIT] - t[GIRIS])
+    fark = statistics.median(farklar)
+    if fark < 0.020:
+        warnings.warn(
+            "hook_giris kazancı DÜŞÜK: eşleştirilmiş ortanca %.1f ms "
+            "(bu makinede beklenen ~40-80 ms). `tools/hook_olc.py --gercekci "
+            "--karsilastir` ile doğrulayın — kazanç kayboluyor olabilir."
+            % (fark * 1000))
 
 
 # ── arıza emniyeti: hook ASLA sessizce ölmez ───────────────────────────────

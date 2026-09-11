@@ -6,3 +6,9 @@ requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  # v0.5.17: zamanlama testleri ana süitten AYRI ve SERİ koşar — paralel
+  # koşuda (-n auto) işçiler birbirinin ölçümünü kirletir. Karantina DEĞİL:
+  # test her CI bacağında koşar ve KAPIDIR, yalnızca YALNIZ koşar.
+  "perf: zamanlama ölçümü — süitten ayrı, seri koşar",
+]

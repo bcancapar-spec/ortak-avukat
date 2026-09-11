@@ -1,6 +1,6 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-09-07 · **Sürüm:** 0.5.16.1 · **Commit:** `10aa5c1`+ (15 dalın birleşim ucu; v0.5.16 tek commit'i bunun üstünde)
+**Tarih:** 2026-09-12 · **Sürüm:** 0.5.17 · **Commit:** `10aa5c1`+ (15 dalın birleşim ucu; v0.5.16 tek commit'i bunun üstünde)
 *(önceki kayıtlar: 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**

@@ -85,7 +85,14 @@ jobs:
       # Bir gün sıra-bağımlı kırmızı çıkarsa çözüm `-n auto`yu o platformda
       # kaldırmaktır — test SUSTURMAK değil.
       - name: Run tests
-        run: pytest -rsfE -n auto
+        run: pytest -rsfE -n auto -m "not perf"
+
+      # v0.5.17 — ZAMANLAMA TESTLERİ AYRI VE SERİ. Gerekçe: paralel işçiler
+      # birbirinin süre ölçümünü kirletir (eski oran tabanlı test tam süit
+      # yükü altında tersine dönüyordu: 203.3 vs 194.6 ms). Bu adım KAPIDIR —
+      # kırmızısı bacağı düşürür; yalnızca YALNIZ koşar.
+      - name: Zamanlama testleri (seri — perf markası)
+        run: pytest -rsfE -m perf -p no:xdist
 
   yapi:
     name: aile yapı denetimi

@@ -17,6 +17,130 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
+## v0.5.17 — BACKEND DENETİMİ + HOOK PERFORMANSI (2026-09-12)
+
+**Ne:** İki bağımsız denetim dalının birleşimi (`claude/ortak-avukat-backend-check`
++ `claude/pc-optimization-performance`) ve manifest onarımı. Süit 2318 → **2426**;
+`aile_dogrula` 20 parça TEMİZ.
+
+### A. Müvekkil lehine sonucu bozan sistemsel kırıklar (2026-09-10 backend denetimi)
+
+- **B5 — hook katmanı manifest çakışması (H0; eklentiyi tümden düşürüyordu):**
+  `plugin.json`'daki `"hooks": "./hooks/hooks.json"` satırı, standart yol olduğu
+  için zaten yüklenen dosyayı ikinci kez bildiriyordu → kurulumda «Duplicate
+  hooks file detected» ve eklentinin **20 skill'i birlikte** yüklenemiyordu.
+  Teşhis aracı (`tools/hook_doktor.py`) ise «hooks ✗ YOK» diyerek avukatı
+  sistemi kırmaya yönlendiriyordu. Sözleşme tersine çevrildi ve **güçlendirildi**:
+  standart yolun manifestte yeniden bildirimi artık ARIZA; buna karşılık
+  `hooks/hooks.json` standart konumda VAR olmalı VE tetik sözlüğü DOLU olmalı
+  (diskte durup boş kalırsa katman ölüdür — o da artık testli); standart yol
+  DIŞI özel bildirim hâlâ meşru. Kapı sayısı azalmadı, arttı.
+- **B1–B4 — müvekkil-aleyhi taramasının kör noktaları:** `tam_tur.py` Python 3.12
+  öncesinde import edilemiyordu (SyntaxError); `--taraf` verilmediğinde tarama kör
+  kalıyor ama çıktı «[OK] bulunamadı» diyordu (sessiz-yanlış); olumsuzlama deseni
+  Türkçe `-me` ekini ayırt etmediğinden gerçek ikrar susturuluyordu; `mudahil`
+  CLI'de varken kalıp sözlüğünde yoktu.
+- **B6 — İŞ MAHKEMELERİ EKSENİ:** teslim kapısı iş hukukunu hiç tanımıyordu;
+  müvekkili bitiren ikrarların HİÇBİRİ yakalanmıyordu.
+- **B7 — iş hukuku süreleri + İŞ GÜNÜ birimi:** kural tabanındaki 21 kuralın
+  hiçbiri iş hukuku değildi ve motor `isgunu` birimini TANIMIYORDU — oysa 4857
+  m.21/5 süresi takvim günü değil **iş günü** sayar. Sistem fail-closed
+  davranıyordu (sessiz yanlış hesap YOK) ama avukat motoru iş mahkemesi
+  dosyasında hiç kullanamıyordu. `BASLANGIC_TURLERI["olay"]` açıklaması da
+  düzeltildi: olaya bağlanan **usul** süreleri de vardır (4857 m.20/1 iki
+  haftalık süre arabuluculuk son tutanağının DÜZENLENDİĞİ tarihten; m.21/1 bir
+  aylık süre işçinin BAŞVURUSU ile) — «yanlış olaya bağlanan doğru hesap, yanlış
+  hesaptır» (B-20).
+- **B8 — [F] kapısı (H0):** dilekçenin KENDİ dosya numarasını çıplak künye
+  sayıyordu.
+
+### B. Hook performansı ve CI (pc-optimization dalı)
+
+Ölçüm koşulu (PERFORMANS-STATUS.md §2 — elmayla-elma): `main` vs dal, aynı ölçüm
+aracı, gerçekçi dava kökü, dedup yenilmiş, Python 3.12.3, 4 vCPU, ortanca değerler.
+
+| Hook modu | ÖNCE (`main`) | SONRA | kazanç |
+|---|---|---|---|
+| `hook-prompt` (her kullanıcı turu) | 239.4 ms | **46.4 ms** | −80.6% |
+| `hook-pretool` (her Write/Edit/Bash) | 232.7 ms | **40.4 ms** | −82.6% |
+| `hook-denetle` (Stop + SessionEnd) | 935.3 ms | **77.1 ms** | −91.8% |
+| **bir `Write` (Pre+Post birlikte)** | **1164.2 ms** | **118.1 ms** | **−89.9% · 9.86×** |
+| sıcak yolda ağır modül | 11 (pymupdf dahil) | **0** | — |
+| soğuk `.pyc` (taze kurulum) uçtan uca | 397 ms | **95–135 ms** | — |
+
+- **Kök nedenler:** tek bir string sabiti için `pymupdf` yükleniyordu (sıcak yolda
+  11 ağır modül); ayrıca aynı modül tek çağrıda 3 kez yürütülüyordu. `hooks.json`
+  Stop ve SessionEnd'i aynı `hook-denetle` moduna bağladığından oturum
+  kapanışında bu bedel iki kez ödeniyordu: ~1.87 s → ~0.15 s.
+- Yeni tek giriş noktası `oa-pipeline/scripts/hook_giris.py` — **performans
+  katmanı; hukuki iş akışını asla durdurmaz**: çıktısı doğrudan çağrıyla birebir
+  aynı, `--denetle` exit 1 aktarımı, yedek yol ve `sys.path` temizliği testli.
+  Ölçüm aracı `tools/hook_olc.py`; makine hızlandırma `tools/pc_hizlandir.ps1`.
+- **CI:** paralel test (`-n auto`) + pip önbelleği ile süit 94.8 s → **43.0 s**
+  (seri 259.1 s'ye göre 6.0×); Windows `-n auto` dört bacakta doğrulandı.
+  `CLAUDE.md` mükerrer bölümü ve bayat sayılar düzeltildi.
+
+**Düzeltme kaydı (B-20 düsturu gereği):** PR #5'in ilk gövdesindeki «189.7 →
+26.9 ms · 7.05×» rakamı **boş klasörde, dedup'a yakalanmış sıkı bir döngüyle**
+alınmıştı; hem yöntemi geçersizdi hem de gerçek kazancı OLDUĞUNDAN KÜÇÜK
+gösteriyordu. Geçerli olan yukarıdaki tablodur (PERFORMANS-STATUS.md §2).
+
+### C. Zamanlama testi yeniden tasarımı — kırılgan kapı kaldırıldı
+
+`test_giris_betigi_dogrudan_cagridan_HIZLI`'nin oran eşiği (`giris <
+dogrudan * 0.75`) **kaldırıldı**; yerine mekanizmayı zamanlamasız kilitleyen
+deterministik kapı geldi. Gerekçe ölçümle kuruldu (tam kalibrasyon tablosu:
+PERFORMANS-STATUS.md §10):
+
+- Kazanç sabit bir DERLEME maliyetidir (mutlak); oranın paydası platforma
+  bağlıdır. Windows'ta çıplak yorumlayıcı başlığı 53.49 ms ve süreç doğurma
+  bedeli paydayı büyütür → aynı ~40–80 ms kazanç Linux'ta ~%45, Windows'ta
+  ~%23 oran verir; eşik (%25) tam bandın ortasına düşüyordu. Test YÜKSÜZ
+  makinede 3 koşuda 1 kırmızı yandı; tam süit yükü altında ölçüm TERSİNE
+  döndü (203.3 vs 194.6 ms — eski AAAAA-BBBBB blok düzeninin artefaktı).
+- Kendinden kalibre mutlak ölçüt (`fark >= 0.5 × C`) de denendi ve ÖLÇÜMLE
+  ÇÜRÜTÜLDÜ: öngörü fark ≈ 0.85–0.95·C, gerçek **fark/C = 0.24–0.62**
+  (unmarshal 6300 satırlık modülde 0.3–0.4·C — ihmal edilemez). Tahminci
+  karşılaştırması da kayda geçti: `min−min` 25.9–80.8 ms arası zıplarken
+  eşleştirilmiş ABBA fark ortancası 61.5–100.2 ms (ortanca 78.8 ms) ve
+  bağımsız araç `hook_olc`'un +79.0 ms'iyle birebir uyumlu.
+- **Kırılgan kapı, kırmızı kapıdan kötüdür:** «tekrar koştur» refleksi
+  öğretir — ki bu, testin önlemek için yazıldığı şeyin (kazancın bir gün
+  sessizce kaybolması) tam mekanizmasıdır.
+
+Yerine gelen üçlü: **KAPI** `test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`
+(`python -v` import izinde `code object from …pipeline_kayit.cpython-3xx.pyc`;
+kırmızı bütçesi sıfır — zaman ölçmez; `runpy` yedeğine sessiz düşüşü, bayat/
+yazılamayan önbelleği ve loader değişikliğini yakalar) · **KANARYA**
+`test_giris_kazanci_KANARYA` (`@pytest.mark.perf`, assert YOK — eşleştirilmiş
+ABBA ortancası 20 ms altına düşerse uyarı) · **DEFTER** (CLAUDE.md: her
+sürümden önce `hook_olc.py --gercekci --tekrar 5 --karsilastir`, tablo
+PERFORMANS-STATUS'a; hook-prompt farkı 30 ms altındaysa sürüm notunda
+gerekçelendirilir). CI ana koşu `-m "not perf"`, ayrı **seri** adım `-m perf
+-p no:xdist` — karantina değil yalıtım, kanarya her bacakta koşar. Ürün
+koduna DOKUNULMADI.
+
+**Ölçüm gözlemi — `hook-postwrite` farkı düşük (borç, kusur değil).** Diğer
+dört modda giriş betiği +53…79 ms hızlıyken `hook-postwrite` yalnız +6.4 ms
+(365.6 vs 372.0 ms). Regresyon DEĞİL — giriş yolu hâlâ hızlı taraf ve kapı
+kararı aynı. **tahmin:** `hook_olc.py` giriş×5'i doğrudan×5'ten ÖNCE ve aynı
+kökte koşuyor; postwrite, ağır gövdenin (Gate-G + makbuz + metrik) fiilen
+ateşlendiği ilk mod olduğundan ilk-kez durum üretimini giriş bloğu ödüyor,
+doğrudan blok hazır buluyor. Aynı yöne bakan iki anomali: postwrite-giriş
+(365.6) > denetle-giriş (350.9) iken Linux'ta ikisi eşit (77.8/77.1).
+Deneyle doğrulanmadı. **v0.5.17.1 borçları:** (i) ölçüm aracına yol başına
+ısıtma turu + serpiştirme; (ii) çıktı birebir-eşitlik testi şu an yalnız
+`hook-prompt` için kilitli — beş moda genişletilecek (zaman damgası
+normalize ederek).
+
+**Çakışma notu:** iki dal da `tests/README.md` OA-SUIT-SAYISI satırına dokunuyordu
+(2403 ↔ 2341); kod çakışmadı, yalnız SAYI çakıştı. Bu satır elle uzlaştırılmaz —
+`test_v0514_vitrin.py::test_b35_suit_sayisi_isaretcisi_gercek_toplama_ile_ayni`
+beyanı `pytest --collect-only` ile karşılaştırır; birleşim sonrası gerçek toplama
+**2426**.
+
+---
+
 ## v0.5.16.1 — Saha Yan-Bulguları (2026-09-07)
 
 **Ne:** v0.5.16'nın gerçek dava kopyalarında yapılan saha ölçümünün bulduğu iki

@@ -323,3 +323,59 @@ ait bir tercih; performans gerekçesiyle tek taraflı yapılmaz.
 
 CI pip önbelleği — **uygulandı** (`actions/setup-python cache: pip` +
 `pytest-xdist -n auto`, süit 259 s → 43 s). Ayrı commit.
+
+---
+
+## 10. ZAMANLAMA EŞİĞİ NEDEN TUTMAZ — v0.5.17 KALİBRASYONU (Windows)
+
+`test_giris_betigi_dogrudan_cagridan_HIZLI` oran eşiği (`giris < dogrudan *
+0.75`) v0.5.17'de KALDIRILDI. Karar ölçümle alındı; tablo kalıcı kayıt olarak
+buradadır (ortam: Windows 11 · Python 3.14.6 · 12 çekirdek · gerçekçi dava
+kökü · çıplak yorumlayıcı başlığı **53.49 ms**).
+
+**1) Oran yapısal olarak eşiğin bandına düşüyor.** Kazanç sabit bir DERLEME
+maliyetidir (mutlak); oranın paydası platforma bağlıdır. Aynı ~40–80 ms kazanç
+Linux'ta ~%45, Windows'ta ~%23 oran verir.
+
+| koşul | giriş | doğrudan | oran |
+|---|---|---|---|
+| yalıtılmış (yüksüz) | 128.0 ms | 166.3 ms | %23 — eşiğin ALTINDA |
+| tam süit (`-n auto`) yükü altında | 203.3 ms | 194.6 ms | ters dönüş (eski AAAAA-BBBBB blok düzeninin artefaktı) |
+
+Yüksüz makinede 3 koşuda **1 kırmızı**; yani yük tek başına açıklamıyor.
+
+**2) Kendinden kalibre mutlak ölçüt de çürütüldü.** `fark >= 0.5 × C`
+(C = kaynağın derleme maliyeti) öngörüsü fark ≈ 0.85–0.95·C varsayıyordu.
+Gerçek: **fark/C = 0.24–0.62.** Sebep: U (`.pyc` okuma + doğrulama +
+unmarshal) 6300 satırlık modülde ihmal edilemez — bu makinede 0.3–0.4·C.
+
+| tahminci | ölçülen aralık | kararlılık |
+|---|---|---|
+| `min(doğrudan) − min(giriş)` | 25.9 – 80.8 ms | KÖTÜ — iki farklı yayılımlı dağılımın tabanları çıkarılıyor; doğrudan yolun geniş sağ kuyruğu (127→233 ms) tabanını orantısız düşürür, kazancı sistematik küçültür |
+| ortanca − ortanca | 74.5 – 101.9 ms | iyi |
+| **eşleştirilmiş fark ortancası (ABBA)** | **61.5 – 100.2 ms · ortanca 78.8 ms** | EN İYİ — ortak-mod kayma çift içinde söner; bağımsız araç `hook_olc` hook-prompt için **+79.0 ms** demişti: birebir uyum |
+
+C'nin kendisi de alt süreç gürültüsünü paylaşmaz: ısıtmasız 124–234 ms,
+ısıtılmış (2 atılır + min-5) 113–160 ms. Gürültüyü ölçeklemeyen bir paydaya
+bağlı eşik, gürültüyü yalnızca TAŞIR.
+
+**3) Karar.** Kırılgan kapı, kırmızı kapıdan kötüdür: «tekrar koştur» refleksi
+öğretir — ki bu, testin önlemek için yazıldığı şeyin (kazancın bir gün sessizce
+kaybolması) tam mekanizmasıdır. Bu yüzden BÜYÜKLÜK artık assert EDİLMEZ:
+
+- **KAPI (deterministik, kırmızı bütçesi sıfır):**
+  `test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR` — `python -v` import izinde
+  `code object from …pipeline_kayit.cpython-3xx.pyc` aranır ve kaynaktan
+  derleme satırının YOKLUĞU doğrulanır. Docstring'in iddia ettiği şeyi (derleme
+  atlanır) her zamanlama eşiğinden daha DOĞRUDAN kanıtlar; `runpy` yedeğine
+  sessiz düşüşü, bayat/yazılamayan önbelleği ve loader değişikliğini yakalar.
+- **KANARYA (assert YOK, bloklamaz):** `test_giris_kazanci_KANARYA`
+  (`@pytest.mark.perf`) — eşleştirilmiş ABBA fark ortancası 20 ms altına
+  düşerse UYARI basar. Sağlıklı sayı özete düşmez; tekrarlayan uyarı sinyaldir.
+- **DEFTER (insan-okur kapı):** sürüm öncesi `tools/hook_olc.py --gercekci
+  --tekrar 5 --karsilastir` koşulur, tablo bu belgeye eklenir; hook-prompt
+  farkı 30 ms altındaysa sürüm notunda gerekçelendirilir.
+
+**CI:** ana koşu `pytest -rsfE -n auto -m "not perf"`, ayrı **seri** adım
+`pytest -rsfE -m perf -p no:xdist` (paralel işçiler birbirinin ölçümünü
+kirletir). Karantina değil YALITIM — kanarya her bacakta koşar.

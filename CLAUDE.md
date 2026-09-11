@@ -31,6 +31,20 @@ python -m pytest tests/ -q              # tek çekirdek ~259 s (v0.5.16.3 önces
 sonuçlar birebir aynı), 3.5× hızlanır. `pytest-xdist` yoksa:
 `pip install pytest-xdist`.
 
+**ZAMANLAMA TESTLERİ AYRI VE SERİ (v0.5.17).** Paralel işçiler birbirinin süre
+ölçümünü kirletir. CI ana koşu `-m "not perf"`, ayrı seri adım `-m perf
+-p no:xdist`. Yerelde de süit bittikten SONRA koşturun:
+
+```bash
+python -m pytest tests/ -q -n auto -m "not perf"   # ana süit
+python -m pytest tests/ -q -m perf -p no:xdist     # zamanlama (seri)
+```
+
+`perf` markalı test KAPI DEĞİL kanaryadır (assert yok, uyarı basar).
+Mekanizmayı kilitleyen kapı zamanlamasızdır:
+`test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`. Gerekçe ve kalibrasyon
+tablosu: PERFORMANS-STATUS.md §10.
+
 ### ÇÖZÜLDÜ — `main`'den miras alınan 4 kırmızı (B5)
 
 > **Durum: KAPANDI.** PR #4'ün **B5** düzeltmesi bu dala port edildi; süit
@@ -217,6 +231,11 @@ yeniden derleniyordu (~38-46 ms).
 ```bash
 python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu
 ```
+
+**SÜRÜM DEFTERİ KURALI (v0.5.17).** Büyüklüğün insan-okur kapısı budur:
+her sürümden ÖNCE yukarıdaki komutu koşun ve tabloyu PERFORMANS-STATUS.md'ye
+ekleyin. `hook-prompt` farkı **30 ms altındaysa** sürüm notunda
+GEREKÇELENDİRİN. Zamanlama tabanlı assert YOKTUR — bu yüzden bu adım atlanamaz.
 
 `--gercekci` bayrağını **KULLANIN**. Bu oturumda üç tuzağa düşüldü; hepsi
 araçta kapatıldı ama elle ölçerken yine düşülebilir:
