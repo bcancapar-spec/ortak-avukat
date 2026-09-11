@@ -15,6 +15,114 @@ bir satır ölçülmeden buraya girmez.
 
 ---
 
+## 0. Durum özeti (2026-09-10 · backend kırık taraması — DAL, sürüm damgası ATILMADI)
+
+- **Ne yapıldı:** `plugins/ortak-avukat` tüm skill setinde **backend (Python) katmanı**,
+  "bir avukatın müvekkili lehine olan sonucu bozacak sistemsel kırık" sorusuyla tarandı
+  (20 skill · 35 script · 32.278 satır · `tools/hook_doktor.py` · CI · kurulum belgesi).
+  Tam rapor: [_gorus/denetim-2026-09-10-backend-muvekkil-lehine-kiriklar.md](_gorus/denetim-2026-09-10-backend-muvekkil-lehine-kiriklar.md).
+- **Beş bulgu — dördü aynı sınıftan:** kapı çökmüyor, **çalıştığı sanılan bir yokluk**
+  üretiyordu (sistemin tek vaadi "model kurar → script denetler" olduğu için en ağır sınıf budur).
+  - **B1** `tam_tur.py` Python <3.12'de İMPORT EDİLEMİYORDU (f-string içi ters bölü, iki satır).
+    Gate G fail-closed yazılmış ama `dosya-analiz.json` hiç doğmadığı için kapı kendini
+    kapatmıyor, **yok sayıyordu**. `README.md` üç yerde "Python 3.10+" derken `pyproject.toml`
+    `>=3.12` istiyor ve CI yalnız 3.12/3.13 koşuyordu → README'ye uyan kurulum Gate G'yi düşürüyordu.
+  - **B2** `--taraf` verilmeden koşulan müvekkil-aleyhi taraması yalnız 2 desenli `genel` setini
+    tarıyor, ama çıktı `[OK] … bulunamadı` diyordu: dört ikrar cümlesi taşıyan cevap dilekçesine
+    **TEMİZLİK BEYANI**. Sessiz atlama değil, **yanlış güvence** (HMK m.188 — ikrar kesin delil).
+  - **B3** `NEG` deseni `\bkabul\s*etme` kelime sınırsızdı; Türkçede `-me` hem olumsuzluk hem
+    mastar ekidir → `kabul **etmektedir**` (olumlu ikrar) olumsuzlama sayılıp sinyali susturuyordu.
+  - **B4** `mudahil` CLI'de var, `ALEYHE` sözlüğünde yoktu → avukat taraf sıfatını DOĞRU verdiği
+    hâlde kör tarama alıyordu (B2'den sinsi).
+  - **B5** Hook katmanında **teşhis aracı ters yönü gösteriyordu**: `hook_doktor.py` + 4 test,
+    `plugin.json`'da `hooks` kaydının yokluğunu "v0.5.6 arızası" sayıyordu. Oysa `hooks/hooks.json`
+    standart konumdur ve otomatik yüklenir (resmî plugin referansı ile teyitli); manifestte
+    yeniden bildirmek "Duplicate hooks file detected" verip **eklentinin tamamını (20 skill)**
+    yüklenmez yapıyor (commit `08441f5`). Yani yanlış alarm, gerçek arızadan yıkıcı bir
+    "onarıma" çağırıyordu. **Av. Bayram Can ÇAPAR kararı (2026-09-10):** sözleşme yeni gerçeğe
+    çevrildi — kilitlenen şey aynı (*kaydı düşen hook, olmayan hooktur*), mekanizması düzeltildi.
+- **Kırık BULUNMAYAN hatlar (dürüst negatif kayıt):** **süre motoru temiz** — adli tatil ilk/son
+  günü, CMK m.331/4 (3 gün), HMK m.104 (1 hafta), İYUK m.8/3 (7 gün), ay ekleme, artık yıl, yıl
+  geçişi fiilen koşuldu, hepsi doğru ve sınırda **güvenli tarafta** (erken tarih). **Gizlilik
+  temiz** — fail-closed; checksum tutmayan kimlik dizileri de düşürülmüyor.
+- **Ölçüm (2026-09-10):** süit toplama **2329** (2318 + 11 yeni kilit) ·
+  `python3.12 -m pytest tests` → CI hedef sürümünde koşuldu ·
+  Python 3.11'de derlenmeyen script **1 → 0** · hook katmanı kırmızısı **4 → 0** ·
+  ikrarlı taslakta yakalanan sinyal (`--taraf davali`) **3 → 5**.
+- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** İndirilenler klasörüne bu
+  oturumdan erişim YOK (bulutta izole konteyner) — test *gerçek dosya* yerine **gerçek ve
+  güncel kaynak** üzerinden kuruldu (Yargı Pro MCP · Yargıtay 9. HD kararları).
+  - **Süre motoru GEÇTİ (4/4).** Y. 9. HD E.2016/10425 K.2017/8620: ikale 29.08.2015 →
+    motor `2015-09-29`; ilk derece "30 Eylül" demişti, Yargıtay bunu *"yasanın
+    düzenlemesine AÇIKÇA AYKIRI"* buldu. Arabuluculuk 2 haftalık süresi üç ayrı gerçek
+    vakada mahkeme kararındaki son günle birebir tuttu.
+  - **B6 — KIRIK BULUNDU ve ONARILDI:** teslim öncesi son kapı **iş hukukunu hiç
+    tanımıyordu**; müvekkili bitiren ikrarların **işçi yanında 0/7, işveren yanında 0/5**'i
+    yakalanıyordu (istifa · kendi isteğiyle ayrılma · ibraname · ikale · alacağı kalmadı ·
+    devamsızlık · haklı fesih / haksız fesih · kıdeme hak kazanma · ödenmemiş fazla mesai ·
+    sigortasız çalıştırma · ihbar öneli). Sistemin kendi içinde asimetriydi: `oa-alan`
+    iş hukukunu BİLİYOR (`ise-iade.md`, `kidem-ihbar.md`), son kapı bilmiyordu. İki
+    **taraf-asimetrik** eksen eklendi → **24/24** (Türkçe + OCR bozulmuş metinde ayrı ayrı),
+    ters-taraf yanlış alarm **0/4**. Türkçe morfoloji çıpası (ünlü düşmesi `fesih→feshin`,
+    ünsüz yumuşaması `sebep→sebebe`) B3'ün akrabası olarak kayda geçti.
+  - **B7 — kapsam boşluğu (onarılmadı, karar sizin):** kural tabanındaki 21 kuralın hiçbiri
+    iş hukuku değil; bilinmeyen kural **fail-closed reddediliyor** (sessiz yanlış hesap YOK).
+    Aday üç süre: arabulucuya başvuru 1 ay · dava 2 hafta (başlangıcı **tartışmalı** —
+    Y. 9. HD E.2024/10170 K.2024/14797, 18.11.2024: uyuşmazlığın giderilmesine YER OLMADI,
+    BAM 29. HD ↔ 31. HD ayrılığı SÜRÜYOR) · işe başlatma başvurusu **10 İŞ GÜNÜ** — motor
+    "iş günü" birimini tanımıyor (takvim günü sayar; erken = güvenli ama dar).
+- **YARGI PRO İLE BACKEND TESTİ (aynı gün, avukat talebi):** backend, Yargı Pro'nun
+  **gerçek verisiyle** uçtan uca sınandı — gerçek kararlar çekildi, teyit kütüğüne
+  işlendi, dilekçeye kondu, kapılar koşturuldu.
+  - **Çalışan her şey (gerçek veriyle doğrulandı):** künye ayrıştırma 10 farklı merci
+    biçiminde **10/10** (HGK · daire · BAM · Danıştay · AYM BB · iyelik/sonek/sıkışık) ·
+    AYM bireysel başvurusu doğru (`aym_bb`, karar no yok — 6216 m.45-49) · **halüsinasyon
+    kapısı** uydurma verbatim alıntıyı **RET** ediyor (exit 1) · damgasız kayıt RET ·
+    DAVAYA-BAĞ <40 kr RET · LEHE künye [OK] · çıplak künye BLOK · **ALEYHE künye BLOK**
+    (anayasa m.6).
+  - **B8 — KIRIK BULUNDU ve ONARILDI:** [F]/[G2] kapısı dilekçenin **kendi künye
+    bloğundaki dosya numarasını** çıplak atıf sayıp TESLİM ENGELİ üretiyordu. Bu, 346
+    sahasının *«yeşil makbuzu imkânsız kılan»* yanlış-pozitifidir; muafiyet
+    `kunye_ortak`+`kunye_teyit`'e yazılmış ama **kardeş kapıya taşınmamıştı** (tek kaynak
+    ilan edilmiş, tek TÜKETİCİ varsayılmıştı). Muafiyet gerçekten tek kaynağa taşındı
+    (`ko.kendi_dosya_no_mu`) ve dar/fail-closed tutuldu; kapıyı gevşetmediği ölçüldü
+    (gerçek çıplak künye · DOSYA NO satırındaki tam künye · ALEYHE — üçü de hâlâ BLOK).
+    **Neden önemli:** yanlış-pozitif kapı müvekkile doğrudan zarar vermez ama avukatı
+    `--serh` ile geçmeye alıştırır; o alışkanlık gerçek çıplak künyede de işler.
+- **B7 KAPATILDI — İŞ MAHKEMESİ SÜRELERİ + İŞ GÜNÜ BİRİMİ (avukat talebi, dördüncü tur):**
+  kural tabanı 21 → **27**; motorun hiç tanımadığı **`isgunu`** birimi eklendi.
+  - **6 kural (MCP teyitli 2026-09-10, JSON + gömülü ikiz):** `is_ise_iade_arabulucu`
+    1 ay/fesih tebliği · `is_ise_iade_dava` 2 hafta/son tutanağın DÜZENLENMESİ (olay) ·
+    `is_ise_iade_arabulucu_ret` 2 hafta · `is_ise_baslatma_basvuru` **10 İŞGÜNÜ** ·
+    `is_ise_baslatma_isveren` 1 ay/işçinin başvurusu · `is_zamanasimi_5yil` 5 yıl.
+  - **`isgunu` ölçümü:** 06.03.2026 + 10 işgünü = **23.03.2026**; takvim günü 16.03.2026
+    ederdi (**7 gün fark**; 20 Mart dini bayram da atlandı). Bu birimde adli tatil
+    uzatması UYGULANMAZ ve bu GÖRÜNÜR uyarıyla söylenir (m.21/5 mahkemeye değil
+    İŞVERENE başvuru süresidir; uzatma GEÇ tarih üretirdi, geç tarih hak kaybettirir).
+  - **Hesabın dışındaki üç mekanizma uyarı olarak basılır:** 7036 m.3 dava şartı ·
+    6325 m.18/A-15 süre DURUR (script günleri düşmez, elle eklenir) · HMK m.103/1-ç
+    (bent DAVACI sıfatına bağlı). Ayrıca `is_ise_iade_dava`'ya BAŞLANGIÇ TARTIŞMALI
+    (BAM 29↔31 HD; Y.9.HD 2024/14797 ile giderilmedi → güvenli plan ERKEN tarih) ve
+    `is_ise_baslatma_basvuru`'ya m.21/6 sonucu uyarısı. Uyarılar yalnız `is_`
+    kurallarında basılır.
+  - **Çapraz doğrulama:** Y. 9. HD E.2016/10425 K.2017/8620 — 29.08.2015 + 1 ay →
+    `2015-09-29` (Yargıtay'ın "açıkça aykırı" bulduğu ilk derece hatası tekrarlanmıyor).
+  - **Bir test yeniden yazıldı:** `test_v0516_I5::test_tarih_kurallari_tablosu_degismedi_21_kural`
+    → `..._asama_kurallarindan_AYRI_yasar`. «21» sabiti I5'in KAPSAM beyanıydı, kalıcı
+    sözleşme değil (ve sayıyı iki yerde tutmak B-35'in tersi); kalıcı sözleşme —
+    aşama ↔ tarih kuralları KESİŞMEZ, her kural geçerli birim + MCP teyidi taşır —
+    korundu ve genişletildi.
+- **Ölçüm (2026-09-10, üçüncü tur · Python 3.12):** `2349 passed, 15 skipped` → süit
+  **2364** · `aile_dogrula` 20 parça TEMİZ · CI 6/6 yeşil (önceki tur).
+- **Ölçüm (2026-09-10, ikinci tur · Python 3.12):** `2343 passed, 15 skipped` → süit **2358** ·
+  `aile_dogrula` 20 parça TEMİZ · `hook_doktor` exit 0.
+- **Açık / avukat kararı bekleyen:** (a) `gizlilik_tara._MASKE` listesi IBAN desenine
+  `MUTLAK_DENY[4]` diye **konum üzerinden** bağlı — bugün doğru, ama liste sırası değişirse
+  IBAN maskesiz kalır (ada göre arama önerildi, uygulanmadı). (b) **Sürüm damgası ATILMADI**
+  (plugin/marketplace/iki script birlikte artar kuralı) — sürüm ve CHANGELOG girişi kararı sizin.
+  (c) Raporun §4'ündeki **canlı doğrulama** beş adımı kendi makinenizde koşulmalı; mekanik test
+  hook katmanının canlılığını ikame edemez.
+
 ## 0. Durum özeti (2026-09-07 · v0.5.16)
 
 - **v0.5.16 — İki Denetimin İnfazı** (kök CHANGELOG): iki dış denetim raporunun

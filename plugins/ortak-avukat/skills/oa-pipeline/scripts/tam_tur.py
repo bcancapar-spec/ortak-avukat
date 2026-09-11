@@ -1404,7 +1404,12 @@ def cmd_durum(kok):
         icerik = _md_render(kok, durum, tamam_tarih=None)
         _md_yaz_atomik(kok, icerik)
         print(_ONARIM_UYARISI, file=sys.stderr)
-    print(f"TEZ             : {durum.get('tez') or '(henüz belirlenmedi — `--tez \"...\"`)'}")
+    # NOT: f-string ifadesi içinde ters bölü, Python 3.12'den ÖNCE (PEP 701)
+    # SyntaxError'dur ve bu modülü İMPORT EDİLEMEZ hâle getirir. İmport
+    # edilemeyen tam_tur.py = ölü Gate G/Gate E hattı; sabit metin f-string'in
+    # DIŞINDA tutulur (uyumluluk çıpası — geri alınmamalı).
+    _tez_bos = '(henüz belirlenmedi — `--tez "..."`)'
+    print(f"TEZ             : {durum.get('tez') or _tez_bos}")
     print(f"Dosya           : {durum.get('dosya')}")
     print(f"Tam tur durumu  : {durum.get('tam_tur_durumu')}  ({durum.get('tam_tur_tarihi') or '—'})")
     snap = durum.get("kunye_snapshot", {})
@@ -1471,7 +1476,9 @@ def cmd_brif(kok):
     (künye okunamadı)."""
     bayat = _bayat_kontrol_yaz(kok)
     durum = _durum_oku(kok)
-    print(f"TEZ: {(durum or {}).get('tez') or '(henüz belirlenmedi — `tam_tur.py --tez \"...\"`)'}")
+    # Bkz. cmd_durum'daki uyumluluk notu: sabit metin f-string'in DIŞINDA tutulur.
+    _tez_bos = '(henüz belirlenmedi — `tam_tur.py --tez "..."`)'
+    print(f"TEZ: {(durum or {}).get('tez') or _tez_bos}")
     if not durum or durum.get("tam_tur_durumu") != "TAMAM":
         print("ARTIMLI MOD: KAPALI — tam tur hiç yapılmamış/TAMAM değil.")
         print("TALİMAT: ZORUNLU TAM TUR işletilmeli (MANİFEST → ... → KONTROL), sonra --kaydet.")

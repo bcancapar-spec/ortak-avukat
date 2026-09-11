@@ -95,6 +95,44 @@ AIHM_BASVURU_RE = re.compile(
 KENDI_DOSYA_SATIR_RE = re.compile(
     r"^\s*[>*\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
 
+
+def satir_metni_no(metin, satir_no):
+    """1-tabanlı satır numarasından o satırın metnini verir ('' — aralık dışı)."""
+    if not satir_no or satir_no < 1:
+        return ""
+    satirlar = metin.splitlines()
+    return satirlar[satir_no - 1] if satir_no <= len(satirlar) else ""
+
+
+def kendi_dosya_no_mu(atif, metin):
+    """Bu atıf, dilekçenin KENDİ künye bloğundaki dosya numarası mı?
+
+    346 sahasının tek ayrıştırıcı yanlış-pozitifi buydu: taslağın kendi
+    `DOSYA NO:` satırı KARŞI-atıf sanılıyor ve yeşil makbuz imkânsız hâle
+    geliyordu. Muafiyet `kunye_teyit.py`'de kapatıldı, ama KARDEŞ kapıya
+    (`ictihat_muhakeme_denetim.py` [F] / [G2]) taşınmamıştı; bu fonksiyon o
+    asimetriyi bitirir — muafiyetin TEK KAYNAĞI burasıdır.
+
+    Dört şart BİRDEN aranır (fail-closed): (1) özel künye türü değil
+    (AYM bireysel başvuru / AİHM gerçek atıftır), (2) E.+K. çifti TAM DEĞİL,
+    (3) daire/merci anılmıyor, (4) satır DOSYA NO / ESAS NO / MERCİ etiketiyle
+    başlıyor. Gerçek içtihat künyeleri (daire adı ve/veya E.+K. çifti taşıyan)
+    bu süzgeçten GEÇMEZ — yakalanmaya devam eder.
+    """
+    if not isinstance(atif, dict):
+        return False
+    # AYM bireysel başvuru / AİHM künyeleri GERÇEK atıftır (karar no'ları
+    # zaten yoktur — 6216 m.45-49 usulü); muafiyet onları kapsayamaz.
+    if atif.get("kunye_turu") in ("aym_bb", "aihm_basvuru"):
+        return False
+    if atif.get("esas") and atif.get("karar"):
+        return False
+    if atif.get("daire_key") is not None:
+        return False
+    return bool(KENDI_DOSYA_SATIR_RE.match(
+        satir_metni_no(metin, atif.get("satir_no") or 0)))
+
+
 MERCI_RE = re.compile(
     r"(?:Yargıtay|Danıştay|Anayasa\s+Mahkemesi|AYM|Sayıştay|Uyuşmazlık\s+Mahkemesi|"
     r"A[İI]HM|(?:[A-ZÇĞİÖŞÜ][a-zçğıöşü]+\s+)?(?:BAM|B[İI]M|Bölge\s+Adliye\s+Mahkemesi|"

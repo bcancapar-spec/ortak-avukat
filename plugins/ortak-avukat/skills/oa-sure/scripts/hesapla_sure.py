@@ -86,6 +86,19 @@ _GOMULU_KURALLAR = {
                         "6183 m.58 — ödeme emrine karşı dava; tebliğ tarihinden itibaren 15 gün (7061 s.K. ile 7→15). Ödeme emri bir TAHSİLAT işlemidir: dava açılması tahsili KENDİLİĞİNDEN durdurmaz (İYUK m.27/4) — ayrıca yürütmenin durdurulması istenir."),
     "aym_bireysel":        (30, "gun",
                         "6216 m.47/5 — AYM bireysel başvuru"),
+    # ── İŞ HUKUKU (2026-09-10, MCP teyitli) ────────────────────────────
+    "is_ise_iade_arabulucu":(1, "ay",
+                        "4857 m.20/1 (Değişik: 7036 s.K. m.11) — işe iade: iş sözleşmesi feshedilen işçi, fesih bildiriminde sebep gösterilmediği veya gösterilen sebebin geçerli olmadığı iddiasıyla FESİH BİLDİRİMİNİN TEBLİĞİ tarihinden itibaren BİR AY içinde işe iade talebiyle ARABULUCUYA BAŞVURMAK ZORUNDADIR. Dava değil, arabuluculuk başvurusudur (7036 m.3 dava şartı). HMK m.92: ay olarak belirlenen sürede son ayın SAYILI GÜNÜ esastır — Y. 9. HD E.2016/10425 K.2017/8620 (23.05.2017) ertesi günden hesaplamayı 'yasanın düzenlemesine AÇIKÇA AYKIRI' bulmuştur."),
+    "is_ise_iade_dava":     (2, "hafta",
+                        "4857 m.20/1 (Değişik: 7036 s.K. m.11) — arabuluculuk faaliyeti sonunda ANLAŞMAYA VARILAMAMASI hâlinde, SON TUTANAĞIN DÜZENLENDİĞİ tarihten itibaren İKİ HAFTA içinde iş mahkemesinde dava açılabilir (taraflar anlaşırsa aynı sürede ÖZEL HAKEME de gidilebilir). Süre HAK DÜŞÜRÜCÜdür, resen gözetilir. Başlangıç türü 'olay'dır: tebliğ değil, tutanağın DÜZENLENME anı. Başlangıç içtihatta TARTIŞMALIDIR — bkz. çıktıdaki BAŞLANGIÇ TARTIŞMALI uyarısı."),
+    "is_ise_iade_arabulucu_ret":(2, "hafta",
+                        '4857 m.20/1 son cümleler (Değişik: 7036 s.K. m.11) — arabulucuya başvurmaksızın DOĞRUDAN dava açılması sebebiyle davanın USULDEN REDDİ hâlinde ret kararı taraflara RESEN tebliğ edilir; KESİNLEŞEN ret kararının da resen tebliğinden itibaren İKİ HAFTA içinde arabulucuya başvurulabilir. Bu, dava şartı eksikliğini telafi eden İKİNCİ bir penceredir; kaçırılırsa işe iade yolu tümüyle kapanır.'),
+    "is_ise_baslatma_basvuru":(10, "isgunu",
+                        '4857 m.21/5 — işçi, KESİNLEŞEN mahkeme veya özel hakem kararının TEBLİĞİNDEN itibaren ON İŞGÜNÜ içinde işe başlamak için İŞVERENE başvuruda bulunmak zorundadır. TAKVİM GÜNÜ DEĞİL İŞ GÜNÜdür (hafta sonu ve resmî tatiller sayılmaz). m.21/6: bu sürede başvurulmazsa işverence yapılmış fesih GEÇERLİ sayılır ve işveren yalnız onun sonuçlarından sorumlu olur — kazanılmış işe iade kararı işlevsizleşir.'),
+    "is_ise_baslatma_isveren":(1, "ay",
+                        '4857 m.21/1 — feshin geçersizliğine karar verildiğinde işveren, işçiyi BİR AY içinde İŞE BAŞLATMAK zorundadır; işçiyi BAŞVURUSU ÜZERİNE bir ay içinde işe başlatmazsa en az DÖRT en çok SEKİZ aylık ücreti tutarında tazminat öder. Süre işçinin BAŞVURUSU (olay) ile başlar. İŞVEREN vekili için takvim; işçi vekili için karşı tarafın süresini denetleme kalemidir.'),
+    "is_zamanasimi_5yil":   (5, "yil",
+                        '4857 Ek m.3 (Ek: 7036 s.K. m.15) — iş sözleşmesinden kaynaklanmak kaydıyla HANGİ KANUNA TABİ OLURSA OLSUN, YILLIK İZİN ÜCRETİ ile (a) kıdem tazminatı, (b) bildirim şartına uyulmaksızın fesihten kaynaklanan tazminat [ihbar], (c) kötüniyet tazminatı, (d) eşit davranma ilkesine uyulmaksızın fesihten kaynaklanan tazminat için ZAMANAŞIMI BEŞ YILDIR. MADDİ HUKUK süresidir: adli tatil uzatması UYGULANMAZ; zamanaşımı TBK m.153-158 uyarınca durur/kesilir — script bunu hesaplamaz. Ücret, fazla mesai, UBGT gibi diğer alacaklarda TBK m.147/1 beş yıllık süre ayrıca değerlendirilir.'),
 }
 
 # B-21 (v0.5.14) — teyit tarihi kaynak METNİNDEN AYRI alanda tutulur; böylece
@@ -112,6 +125,12 @@ _GOMULU_TEYIT = {
     "iyuk_temyiz_ozel_7gun": "2026-08-31",
     "amme_6183_m58":       "2026-08-31",
     "aym_bireysel":        "2026-08-31",
+    "is_ise_iade_arabulucu":      '2026-09-10',
+    "is_ise_iade_dava":           '2026-09-10',
+    "is_ise_iade_arabulucu_ret":  '2026-09-10',
+    "is_ise_baslatma_basvuru":    '2026-09-10',
+    "is_ise_baslatma_isveren":    '2026-09-10',
+    "is_zamanasimi_5yil":         '2026-09-10',
 }
 
 # B-20 (v0.5.14) — kuralın hukuken İZİN VERDİĞİ başlangıç türleri. Script
@@ -138,6 +157,12 @@ _GOMULU_BASLANGIC = {
     "iyuk_temyiz_ozel_7gun":  ["teblig"],
     "amme_6183_m58":          ["teblig"],
     "aym_bireysel":           ["teblig", "ogrenme"],
+    "is_ise_iade_arabulucu":      ['teblig'],
+    "is_ise_iade_dava":           ['olay'],
+    "is_ise_iade_arabulucu_ret": ['teblig'],
+    "is_ise_baslatma_basvuru":    ['teblig'],
+    "is_ise_baslatma_isveren":    ['olay'],
+    "is_zamanasimi_5yil":         ['olay', 'ogrenme'],
 }
 
 # ── v0.5.16 / I5 (P1-3 / A-10) — AŞAMA TETİKLİ SÜRE SINIFI ───────────────
@@ -151,7 +176,8 @@ _GOMULU_BASLANGIC = {
 # "olay tetikli kırmızı bayrak", CMK m.237) hukuk koluna genellendi.
 # Tablo `sure_kurallari.json` → "asama_kurallari" bölümüyle BİREBİR aynıdır
 # (ikiz kilit: tests/test_v0516_I5.py::test_asama_kurallari_json_ve_gomulu_BIREBIR);
-# tarih kuralları tablosu (`_GOMULU_KURALLAR`, 21 kural) DEĞİŞMEMİŞTİR.
+# tarih kuralları tablosu (`_GOMULU_KURALLAR`) bu paketle DEĞİŞMEMİŞTİ;
+# 2026-09-10'da iş hukuku kurallarıyla 21 → 27'ye çıktı (B7).
 # Alanlar: asama (hangi aşama kapatır), pipeline_adimi (oa-pipeline ADIMLAR
 # 0-10; bu adım TAMAMLANMADAN işlem yapılmalı), kaynak (MCP teyitli madde),
 # aciklama (saha dersi), mcp_teyit_tarihi. miktar/birim YOK.
@@ -282,7 +308,7 @@ ASAMA_KURALLAR, _ASAMA_TABLO_YOK = asama_kurallarini_yukle()
 # Sessiz yanlış varsayılan YASAK: uyuşmazlıkta hesap DURUR (aşağıda main/
 # _pencere_kontrol), çünkü uyarı basılsa dahi ">>> HESAPLANAN SON GÜN" satırı
 # ve otomatik `_oa/sureler.json` flag'i yanlış tarihi kalıcılaştırırdı.
-KURAL_KOLU = {"cmk": "ceza", "hmk": "hukuk", "iik": "hukuk",
+KURAL_KOLU = {"cmk": "ceza", "hmk": "hukuk", "iik": "hukuk", "is": "hukuk",
               "iyuk": "idari", "amme": "idari", "aym": None}
 
 
@@ -324,7 +350,8 @@ def kol_uyusmazligi(kural, yargi):
 # B-16 / B-22 (v0.5.14) — miktar için akla uygun üst sınır: bunun ötesi
 # hesaplanabilir bir usul/maddi süre değil, girdi hatasıdır (yıl biriminde
 # date aritmetiği 9999'u aşınca ham OverflowError/ValueError veriyordu).
-MIKTAR_UST_SINIR = {"gun": 36525, "hafta": 5217, "ay": 1200, "yil": 100}
+MIKTAR_UST_SINIR = {"gun": 36525, "isgunu": 26000, "hafta": 5217,
+                    "ay": 1200, "yil": 100}
 
 
 def miktar_dogrula(miktar, birim):
@@ -356,6 +383,27 @@ def _ay_ekle(d, ay):
     else:
         son_gun = (date(y, m+1, 1) - timedelta(days=1)).day
     return date(y, m, min(d.day, son_gun))
+
+
+def _is_gunu_ekle(d, n):
+    """Tarihe n İŞ GÜNÜ ekler; başlangıç günü SAYILMAZ (4857 m.21/5 "on işgünü").
+
+    İş günü = hafta sonu DEĞİL + resmî tatil DEĞİL (`is_gunu_mu`). Takvim
+    gününden farkı şudur: aradaki cumartesi/pazar ve resmî tatiller süreye
+    DAHİL EDİLMEZ, atlanır. 10 takvim günü ile 10 iş günü arasında iki haftalık
+    fark doğabilir — bu fark, işe başlatma başvurusunda hakkın kendisidir
+    (süresinde başvurmayan işçi bakımından fesih GEÇERLİ sayılır, 4857 m.21/6).
+
+    Not: idari izin günleri iş günü sayılır (2429 anlamında resmî tatil
+    değildir) — `is_gunu_mu` onları atlamaz; `hesapla()` ayrıca uyarır.
+    """
+    g = d
+    kalan = n
+    while kalan > 0:
+        g += timedelta(days=1)
+        if is_gunu_mu(g):
+            kalan -= 1
+    return g
 
 def tatilleri_yukle():
     yol = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tatiller.json")
@@ -432,7 +480,13 @@ BASLANGIC_TURLERI = {
     "teblig": "tebliğ (evrakın usulüne uygun tebliği)",
     "tefhim": "tefhim (duruşmada yüze karşı açıklama)",
     "ogrenme": "öğrenme (fiilen öğrenildiği gün)",
-    "olay": "olay/fiil tarihi (maddi hukuk süreleri)",
+    # NOT (2026-09-10): "olay" YALNIZ maddi hukuka ait değildir. Tebliğe değil
+    # bir OLAYA bağlanan USUL süreleri de vardır — en belirgini 4857 m.20/1:
+    # işe iade davasının iki haftalık süresi arabuluculuk son tutanağının
+    # DÜZENLENDİĞİ (tebliğ edildiği değil) tarihten işler.
+    "olay": ("olay/fiil tarihi — maddi hukuk süreleri VE tebliğe değil bir olaya "
+             "bağlanan usul süreleri (ör. arabuluculuk son tutanağının düzenlenmesi, "
+             "4857 m.20/1; işçinin işverene başvurusu, m.21/1)"),
     "belirsiz": "BELİRSİZ — iki senaryo hesaplanmalı",
 }
 
@@ -502,6 +556,11 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
         ham = teblig + timedelta(weeks=miktar); rapor.append(f"Süre                  : {miktar} hafta")
     elif birim=="gun":
         ham = teblig + timedelta(days=miktar); rapor.append(f"Süre                  : {miktar} gün")
+    elif birim=="isgunu":
+        ham = _is_gunu_ekle(teblig, miktar)
+        _takvim = teblig + timedelta(days=miktar)
+        rapor.append(f"Süre                  : {miktar} İŞ GÜNÜ (hafta sonu ve resmî tatiller "
+                     f"SAYILMAZ; aynı sayıda takvim günü {_takvim.isoformat()} ederdi)")
     elif birim=="ay":
         ham = _ay_ekle(teblig, miktar); rapor.append(f"Süre                  : {miktar} ay (TBK m.92 tarzı: sayılı güne denk gelen gün)")
     elif birim=="yil":
@@ -512,7 +571,19 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     son = ham
     # Adli tatil/çalışmaya ara YALNIZCA USUL sürelerine uygulanır.
     # Maddi hukuk süreleri (zamanaşımı, hak düşürücü) usul süresi DEĞİLDİR → uzamaz.
-    if tur=="usul" and aralik_icinde_mi(son) and not adli_tatil_istisna:
+    # İŞ GÜNÜ biriminde adli tatil UZATMASI uygulanmaz: (a) sayım zaten tatilleri
+    # atlayarak yapılır, (b) bu birimin tek kullanım yeri olan 4857 m.21/5 süresi
+    # MAHKEMEYE değil İŞVERENE yapılan bir başvurunun süresidir ve HMK m.104'ün
+    # "bu Kanunun tayin ettiği süreler" kapsamında değildir. Uzatma uygulamak
+    # GEÇ tarih üretirdi; geç tarih hak kaybettirir (güvenli taraf erken tarihtir).
+    if tur=="usul" and birim=="isgunu" and aralik_icinde_mi(son):
+        uyarilar.append(
+            "İŞ GÜNÜ + ADLİ TATİL: Son gün adli tatil aralığına (20 Tem–31 Ağu) düşüyor ancak "
+            "UZATMA UYGULANMADI. Gerekçe: iş günü sayımı tatilleri zaten atlar ve 4857 m.21/5 "
+            "süresi mahkemeye değil İŞVERENE başvuru süresidir (HMK m.104 'bu Kanunun tayin "
+            "ettiği süreler' kapsamı dışında). Aksi bir dayanak teyit edilirse tarih yeniden "
+            "hesaplanmalıdır — bu hesap GÜVENLİ (erken) taraftadır.")
+    if tur=="usul" and birim!="isgunu" and aralik_icinde_mi(son) and not adli_tatil_istisna:
         if yargi=="ceza":
             # A-1 (P0, v0.5.14 — MCP teyitli 2026-08-31, CMK m.331/4):
             # "Adlî tatile rastlayan süreler işlemez. Bu süreler tatilin bittiği
@@ -689,6 +760,54 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "CMK m.272/3 (parasal sınır ve kesin hükümler), temyizde m.286 sınırlamaları kullanım "
             "anında Mevzuat MCP'den teyit edilir. Tutuklu sanıkta CMK m.263 (ceza infaz kurumu "
             "müdürüne başvuru) süreyi KESER — müvekkile bu kanal ayrıca söylenir.")
+    # ── İŞ HUKUKU KATMANI (2026-09-10, MCP teyitli) ────────────────────────
+    # İş mahkemesi süreleri, tarih aritmetiğinin DIŞINDA üç mekanizmaya bağlıdır
+    # ve hiçbiri script tarafından hesaplanamaz: (a) zorunlu arabuluculuk bir
+    # DAVA ŞARTIdır, (b) arabuluculuk süreci hak düşürücü süreyi DURDURUR,
+    # (c) işe iade davasında iki haftalık sürenin başlangıcı içtihatta
+    # TARTIŞMALIDIR. Bunlar görünür kılınmazsa doğru aritmetik yanlış tarihe
+    # götürür — "yanlış olaya bağlanan doğru hesap, yanlış hesaptır".
+    if str(kural or "").startswith("is_"):
+        uyarilar.append(
+            "ZORUNLU ARABULUCULUK (DAVA ŞARTI): 7036 s.K. m.3/1 — kanuna, bireysel veya toplu iş "
+            "sözleşmesine dayanan İŞÇİ veya İŞVEREN alacağı ve tazminatı ile İŞE İADE talebiyle "
+            "açılan davalarda arabulucuya başvurulmuş olması DAVA ŞARTIDIR (7445 s.K. m.41 ek "
+            "cümlesiyle: bu alacak ve tazminatla ilgili İTİRAZIN İPTALİ, MENFİ TESPİT ve İSTİRDAT "
+            "davaları da kapsamdadır). m.3/2: anlaşmaya varılamadığına ilişkin SON TUTANAĞIN ASLI "
+            "veya arabulucunun onayladığı örneği dava dilekçesine EKLENİR. Şart yerine "
+            "getirilmeden açılan dava USULDEN REDDEDİLİR.")
+        uyarilar.append(
+            "ARABULUCULUK SÜRECİ SÜREYİ DURDURUR (6325 s.K. m.18/A-15): 'Arabuluculuk bürosuna "
+            "başvurulmasından SON TUTANAĞIN DÜZENLENDİĞİ TARİHE kadar geçen sürede zamanaşımı "
+            "DURUR ve hak düşürücü süre İŞLEMEZ.' Bu script durma/kesilme olaylarını HESAPLAMAZ: "
+            "yukarıdaki tarih, arabuluculukta geçen günleri DIŞARIDA BIRAKMAZ. Arabuluculuk "
+            "başvurusu ile son tutanak arasındaki gün sayısını ELLE ekleyin ve sonucu ayrıca "
+            "deftere işleyin.")
+        uyarilar.append(
+            "ADLİ TATİL — İŞÇİNİN AÇTIĞI DAVA: HMK m.103/1-ç, 'hizmet akdi veya iş sözleşmesi "
+            "sebebiyle İŞÇİLERİN AÇTIKLARI davalar'ı adli tatilde görülen işler arasında sayar; "
+            "bu işlerde süre UZAMAZ (`--adli-tatil-istisna`). Bent DAVACI SIFATINA bağlıdır — "
+            "İŞVERENİN açtığı iş davası bu bende GİRMEZ ve orada uzatma işler. Sıfatı teyit et.")
+    if kural == "is_ise_iade_dava":
+        uyarilar.append(
+            "BAŞLANGIÇ TARTIŞMALI (işe iade, iki hafta): 4857 m.20/1 süreyi 'son tutanağın "
+            "DÜZENLENDİĞİ tarihten' başlatır; ancak BAM daireleri arasında ayrılık SÜRMEKTEDİR. "
+            "İstanbul BAM 31. HD (2020/2741 E., 2021/10 K.): düzenlenme tarihi esastır, imza "
+            "tarihi ve telekonferansla katılım önemsizdir, süre hak düşürücüdür ve resen "
+            "gözetilir. İstanbul BAM 29. HD (2024/502 E., 2024/919 K.): tutanakta imza/imza "
+            "tarihi yoksa TÜM İMZALARIN TAMAMLANDIĞI tarih düzenlenme tarihi sayılır. Yargıtay "
+            "9. HD (E.2024/10170, K.2024/14797, 18.11.2024) uyuşmazlığın giderilmesine YER "
+            "OLMADIĞINA karar verdiği için ayrılık giderilmemiştir. GÜVENLİ PLAN: DÜZENLENME "
+            "tarihi (erken senaryo — yukarıdaki hesap budur); imza tamamlanma/tebliğ tarihine "
+            "dayanan geç senaryo yalnız İKİNCİL SAVUNMA olarak tutulur.")
+    if kural == "is_ise_baslatma_basvuru":
+        uyarilar.append(
+            "SÜRESİNDE BAŞVURMAMANIN SONUCU (4857 m.21/6): işçi on işgünü içinde işverene "
+            "başvurmazsa 'işverence yapılmış olan fesih GEÇERLİ BİR FESİH SAYILIR ve işveren "
+            "sadece bunun hukuki sonuçları ile sorumlu olur' — kazanılmış işe iade kararı bu "
+            "sürede işlevsizleşir. Başvuru İŞVERENE yapılır (mahkemeye değil) ve ULAŞTIĞI an "
+            "esastır; ispat için iadeli taahhütlü/noter kanalını kullan.")
+
     # B-16 (v0.5.14) — SON SAĞLIK KONTROLÜ: son gün hiçbir koşulda başlangıç
     # tarihinden önce olamaz. Bu satır bir daha ASLA geçmeyecek olsa bile durur:
     # bu motorun tek işi tarih aritmetiğidir ve geçmişe düşen bir "son gün"
@@ -1014,11 +1133,12 @@ def _asama_raporu(a):
 def main():
     p = argparse.ArgumentParser(description="Deterministik Türk usul/maddi süre hesaplayıcı (v3)")
     p.add_argument("--teblig", help="Başlangıç tarihi: usulde tebliğ/öğrenme; maddi hukukta muacceliyet/öğrenme/fiil (YYYY-MM-DD)")
-    p.add_argument("--sure", type=int); p.add_argument("--birim", choices=["gun","hafta","ay","yil"])
+    p.add_argument("--sure", type=int); p.add_argument("--birim", choices=["gun","isgunu","hafta","ay","yil"],
+                   help="isgunu: hafta sonu ve resmî tatiller SAYILMAZ (4857 m.21/5 'on işgünü')")
     p.add_argument("--kural", choices=list(KURALLAR.keys()) + list(ASAMA_KURALLAR.keys()),
-                   help="tarih kuralı (21 gün/hafta kuralı) VEYA aşama tetikli kural "
-                        "(v0.5.16: %s — tarih aritmetiği YAPILMAZ, --teblig gerekmez)"
-                        % ", ".join(ASAMA_KURALLAR))
+                   help="tarih kuralı (%d adet; gün/İŞ GÜNÜ/hafta/ay/yıl) VEYA aşama tetikli "
+                        "kural (%s — tarih aritmetiği YAPILMAZ, --teblig gerekmez)"
+                        % (len(KURALLAR), ", ".join(ASAMA_KURALLAR)))
     p.add_argument("--json", action="store_true",
                    help="v0.5.16 — makine-okur çıktı: aşama kuralında YALNIZ JSON "
                         "({\"tur\":\"asama\",...}); tarih kuralında raporun sonuna "
@@ -1251,7 +1371,13 @@ def main():
         _kaynak_adi = "gömülü tablo" if _KURAL_TABLO_YOK else "sure_kurallari.json"
         print(f"Kural kaynağı/teyit   : {_kaynak_adi}; mcp_teyit_tarihi = "
               f"{teyit or 'BOŞ → kuralı resmî kaynaktan/Mevzuat MCP ile TEYİT ET (süreler değişebilir)'}")
-    print(f"Süre türü             : {a.tur}  ({'usul — adli tatil uygulanır' if a.tur=='usul' else 'maddi hukuk — zamanaşımı/hak düşürücü, adli tatil uygulanmaz'})")
+    if a.tur == "usul" and birim == "isgunu":
+        _tur_notu = "usul — İŞ GÜNÜ sayımı; adli tatil UZATMASI uygulanmaz (tatiller zaten atlanır)"
+    elif a.tur == "usul":
+        _tur_notu = "usul — adli tatil uygulanır"
+    else:
+        _tur_notu = "maddi hukuk — zamanaşımı/hak düşürücü, adli tatil uygulanmaz"
+    print(f"Süre türü             : {a.tur}  ({_tur_notu})")
     print(f"Yargı kolu            : {a.yargi}")
     for s in rapor: print(s)
     print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")
