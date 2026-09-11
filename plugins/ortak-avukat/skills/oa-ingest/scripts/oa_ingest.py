@@ -240,8 +240,16 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse, glob, hashlib, json, os, re, shutil, subprocess, sys, tempfile, time, zipfile
-import xml.etree.ElementTree as ET
 from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# NOT (v0.5.16.3): `import xml.etree.ElementTree as ET` BURADAN KALDIRILDI —
+# ÖLÜ KODdu. Bu dosyada `ET.` kullanımı SIFIRDI (kelime-sınırlı `\bET\b`
+# yalnızca import satırının kendisini buluyordu). ET gerçekten şu dosyalarda
+# kullanılıyor ve orada import ediliyor: oa-dilekce/scripts/udf_yaz.py,
+# oa-ingest/scripts/udf_md.py, oa-pipeline/scripts/pipeline_kayit.py,
+# oa-sure/scripts/hesapla_sure.py, oa-pipeline/scripts/oa_hafiza.py.
+# Bedeli: soğuk süreçte 8.7 ms — bu modül hook yolunda in-process import
+# edildiği için o bedel boşuna ödeniyordu.
 
 GORUNTU = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp", ".gif"}
 PDF, UDF, DOCX = {".pdf"}, {".udf"}, {".docx"}
