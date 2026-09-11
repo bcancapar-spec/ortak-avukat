@@ -169,3 +169,11 @@ Yani bu çakışmanın **sessizce yanlış çözülmesi yapısal olarak mümkün
 
 **Karar vericiye ait olan (değişmedi):** merge sırası · sürüm damgası ·
 `gizlilik_tara._MASKE` konum bağı · raporun §4 canlı doğrulaması.
+
+**CI teyidi — head `9704d2a` (11.09.2026 03:57Z):** koşu #123 · **6/6 bacak `success`**
+(ubuntu py3.12 · ubuntu py3.13 · windows py3.12 · windows py3.13 · OCR bacağı ·
+aile yapı denetimi). PR #4 açık inceleme yorumu taşımıyor; `mergeable_state: clean`.
+Tek bekleyen: **avukatın merge kararı.**
+*(Not: bu kaydı "tek satır için altı bacaklı CI koşusu israftır" diye commit
+etmemeyi düşünmüştüm; deponun stop-hook politikası çalışma ağacını temiz
+istiyor — politika benim tasarruf tercihimin önünde gelir, commit edildi.)*
