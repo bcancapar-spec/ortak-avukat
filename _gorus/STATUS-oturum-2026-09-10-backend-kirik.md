@@ -136,3 +136,36 @@ kalır. Ada göre aramak daha dayanıklı olur.
 - **Commit:** `fe4f3ab` · **PR:** https://github.com/bcancapar-spec/ortak-avukat/pull/4 (draft, izleniyor)
 - **Avukata bırakılan:** sürüm damgası + CHANGELOG sürüm girişi · `_MASKE` indeks bağı ·
   raporun §4 canlı doğrulama adımları.
+
+---
+
+## Check-in — 11.09.2026 (PR #4 nöbeti)
+
+**PR #4 durumu:** `open` · `draft: false` · `merged: false` · `mergeable_state: clean`
+· head `073b0c6` (değişmedi) · `updated_at 2026-09-10T03:19:26Z` (değişmedi).
+CI son ölçümde 6/6 yeşildi; head değişmediği için ölçüm hâlâ geçerli.
+
+**Değişen tek şey PR #5'te:** dal `a3f8593`'te **aynı B5 yamasını port etmiş**
+(CI koşusu **#122 · `success`**). Yani PR #5'in dört kırmızısı, bu PR'ın merge'ini
+BEKLEMEDEN kapandı.
+
+**Muhakeme — neden bu, "sessiz yeniden kur" durumunu bozuyor:**
+Bu PR'ın gövdesinde karar vericiye şu yazılıydı: *"Bu PR önce merge edilirse PR #5
+main'i aldığında kendiliğinden yeşilleşir."* Bu cümle bir **merge sırası kısıtı**
+ilan ediyordu. Kısıt artık YOK. Avukat, olmayan bir teknik zorunluluk yüzünden
+PR #5'i bekletiyor olabilir — yani bayat cümle, bekleyen kararın kendisini
+yanlış yönlendiriyor. Bu, "durum değişmedi" kapsamına girmez; **düzeltilir.**
+
+**Yapılan:** PR #4 gövdesindeki "PR #5 ile ilişki" bölümü, deponun kendi
+üslubunca (PR #5'in kendi gövdesindeki "ilk sayı YANLIŞTI" düzeltmesi gibi)
+**ilk tespit korunarak** tarihli bir GÜNCELLEME bloğu ile düzeltildi.
+Kod değişikliği YOK; merge YOK.
+
+**Çakışma notu (gövdeye de yazıldı):** iki dal da `tests/README.md`
+`OA-SUIT-SAYISI` satırına dokunuyor (bu PR 2403, PR #5 2341). Bu satır elle
+"uzlaştırılmaz" — `tests/test_v0514_vitrin.py::test_b35_suit_sayisi_isaretcisi_gercek_toplama_ile_ayni`
+beyanı `pytest --collect-only` ile karşılaştırır; yanlış değer CI'da kırmızı yanar.
+Yani bu çakışmanın **sessizce yanlış çözülmesi yapısal olarak mümkün değildir.**
+
+**Karar vericiye ait olan (değişmedi):** merge sırası · sürüm damgası ·
+`gizlilik_tara._MASKE` konum bağı · raporun §4 canlı doğrulaması.
