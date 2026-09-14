@@ -180,6 +180,16 @@ def donustur(md, ham=False):
         # Numaralı liste
         m = re.match(r"^(\d+)\.\s+(.*)$", s)
         if m:
+            # NEDEN VAR (v0.5.17.1 — saha arızası): kaynak markdown'ın madde
+            # NUMARASI atılıyor, `<ol>` her zaman 1'den yeniden sayıyordu.
+            # Dilekçede SONUÇ VE İSTEM bentleri "A. USUL YÖNÜNDEN" (1-8) ve
+            # "B. ESAS YÖNÜNDEN" (9-17) diye İKİ listeye bölünür; araya giren
+            # başlık listeyi kapattığı için 9. bent belgede "1." olarak
+            # basılıyordu. Mahkeme hükmü bent numarasına atıf yapar; dilekçenin
+            # kendi iç göndermeleri de ("yukarıda 12. bentte") kayar. Sessiz
+            # yanlış numaralandırma, eksik numaralandırmadan KÖTÜDÜR.
+            # Çözüm: ilk maddenin numarası 1 değilse `start` ile bildirilir.
+            bas_no = int(m.group(1))
             items = []
             while i < n:
                 cur = lines[i].strip()
@@ -194,7 +204,7 @@ def donustur(md, ham=False):
                     break
                 else:
                     break
-            out.append("<ol>")
+            out.append("<ol>" if bas_no == 1 else '<ol start="%d">' % bas_no)
             for it in items:
                 # v0.5.8.4 CANLI ÖLÇÜM (372): `<li><p style=...>` deseni
                 # html2udf'te her maddeden sonra HAYALET boş Numbered paragraf
