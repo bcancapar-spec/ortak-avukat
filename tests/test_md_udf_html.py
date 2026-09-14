@@ -86,6 +86,29 @@ def test_numarali_liste_ol_madde_listesi_ul():
     assert "<ul>" in html_ul and html_ul.count("<li>") == 3
 
 
+def test_numarali_liste_BIRDEN_BASLIYORSA_start_YAZILMAZ():
+    """Olağan hâlde `start` gürültüdür; yalnız gerektiğinde bildirilir."""
+    html = mh.donustur("1. birinci\n2. ikinci\n")
+    assert "<ol>" in html
+    assert "start=" not in html
+
+
+def test_numarali_liste_BIRDEN_BASLAMIYORSA_start_BILDIRILMEK_ZORUNDA():
+    """NEDEN VAR: dilekçenin SONUÇ VE İSTEM bentleri "A. USUL YÖNÜNDEN"
+    (1-8) ve "B. ESAS YÖNÜNDEN" (9-17) başlıkları arasında İKİ ayrı listeye
+    bölünür. Araya giren başlık listeyi kapattığı için, `start` bildirilmezse
+    9. bent belgede "1." olarak basılır — mahkeme hükmü bent numarasına atıf
+    yaptığından ve dilekçe kendi içinde bende gönderme yaptığından bu SESSİZ
+    bir içerik hatasıdır. Kaynak numarası korunmak ZORUNDADIR."""
+    html = mh.donustur("9. dokuzuncu bent\n10. onuncu bent\n")
+    assert '<ol start="9">' in html
+    assert html.count("<li>") == 2
+
+    # ardışık iki bölüm: ilki 1'den, ikincisi 9'dan saymalı
+    iki = mh.donustur("1. bir\n2. iki\n\nAra başlık paragrafı.\n\n9. dokuz\n")
+    assert "<ol>" in iki and '<ol start="9">' in iki
+
+
 def test_alinti_blogu_girintili_paragraf_uretir():
     html = mh.donustur("> Bu bir alıntıdır.\n> İkinci satır.\n")
     assert "margin-left:36pt" in html
