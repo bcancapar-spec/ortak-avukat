@@ -58,9 +58,8 @@ uzatamaz; MCP, belirli bir hizmete (içtihat arama, mevzuat metni çekme)
 tanımlı ve denetlenebilir bir gişe açar — avukatın UYAP'a kendi
 şifresiyle, tanımlı yetkiyle girmesi gibi. Her gişe tek işe bakar: model
 oradan yalnız o hizmeti alabilir, gişenin verdiği her belge kayda geçer.
-**Yargı Pro MCP** bu sistemin varsayılan içtihat gişesidir; açık kaynak
-alternatif **yargi-mcp**'dir (semantik arama için ayrıca bir AI API
-anahtarı ister). Gişe kapalıysa sistem "hafızadan söyleyeyim" DEMEZ —
+**Yargı Pro MCP** bu sistemin tek içtihat gişesidir (v0.5.17.1'den beri
+yedek gişe ilan edilmez: eski yedeğin adresi sahipsiz kalmıştı). Gişe kapalıysa sistem "hafızadan söyleyeyim" DEMEZ —
 kaynağa erişemediğini dürüstçe yazar.
 
 **API anahtarı:** Bir çevrimiçi hizmeti kullanma yetkinizi kanıtlayan gizli

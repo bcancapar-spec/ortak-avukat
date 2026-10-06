@@ -561,7 +561,7 @@ Zaman: {ts()}
 # kütüğe, kütüksüz künye çıktıya GİREMEZ). Diğer araçlar (mevzuat_*, vb.)
 # serbest kalır — geriye uyum (v0.5.1 davranışı birebir).
 # v0.5.7.4 — BAĞLANTI KATMANI: birincil Yargı Pro adları + o sürümde ilan edilen
-# açık kaynak `yargi-mcp-yedek` adları. v0.5.18 / B-23: yedek İLANI KALDIRILDI
+# açık kaynak `yargi-mcp-yedek` adları. v0.5.17.1 / B-23: yedek İLANI KALDIRILDI
 # (sahipsiz uç nokta — bkz. oa-ictihat SKILL "BAĞLANTI KATMANI"); adlar sözlükte
 # BİLİNÇLİ olarak KALIR: eski kütük kayıtları okunur ve bu adlarla gelen her
 # kayıt aynı ARAMA/GETİR disiplinine (damga zorunluluğu) tabi kalır — çıkarmak

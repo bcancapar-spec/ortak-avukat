@@ -19,8 +19,13 @@ bölgeyi tazeler, ikinci koşuda ikinci blok üretmez.
   listelenir — yokluk görünür kalır, teslim notunda uyarıya dönüşür.
 - Taslakta geçmeyen muhakeme künyesi kaynakçaya GİRMEZ (kaynakça, taslağın
   fiilî atıflarının aynasıdır; şişirme yasak).
-- Taslağa işlendiği için ürün zinciri (UDF → PDF → 40-UYAP kopyaları)
-  kaynakçayı kendiliğinden taşır — "tüm çıktılarda" şartının mekanik yolu.
+- Blok İÇ TASLAKTA yaşar: B-20 avukat kararı (2026-10-06) gereği mahkemeye
+  giden UDF/PDF/40-UYAP nüshalarına GİRMEZ — md_udf_html.yorumlari_ayikla
+  işaretli bloğu gövdesiyle birlikte ayıklar; kapılar bloğu taslaktan okur.
+- İşaretler bozuksa (açılış/kapanış sayısı eşleşmiyor ya da sırası ters)
+  taslak DEĞİŞTİRİLMEZ, hata verilir (v0.5.17.1): eskiden kapanışı silinmiş
+  bloğun ARDINA ikinci blok eklenir, ayıklama aradaki metni (EKLER, imza)
+  yutabilirdi.
 
 Kullanım:
   python kaynakca_uret.py --taslak <yol.md> --kok <dava kökü>
@@ -133,6 +138,12 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
     """Taslağa kaynakça bloğunu işler/tazeler. Döner:
     {linkli, linksiz, degisti, satirlar}."""
     metin = io.open(taslak_yolu, encoding="utf-8", errors="replace").read()
+    bas_say, son_say = metin.count(BLOK_BAS), metin.count(BLOK_SON)
+    if ((bas_say, son_say) not in ((0, 0), (1, 1))
+            or (bas_say and metin.index(BLOK_SON) < metin.index(BLOK_BAS))):
+        raise ValueError(
+            "kaynakça bloğu işaretleri bozuk (açılış=%d, kapanış=%d) — taslak "
+            "DEĞİŞTİRİLMEDİ; işaretleri elle onarın ya da bloğu silin." % (bas_say, son_say))
     # kendi bloğumuzu ayıklayarak taslağın ASIL gövdesindeki atıfları say
     govde = metin
     if BLOK_BAS in govde and BLOK_SON in govde:
@@ -183,7 +194,11 @@ def main():
     ap.add_argument("--kok", required=True)
     ap.add_argument("--kuru", action="store_true", help="yazmadan raporla")
     a = ap.parse_args()
-    r = taslaga_isle(a.taslak, a.kok, kuru=a.kuru)
+    try:
+        r = taslaga_isle(a.taslak, a.kok, kuru=a.kuru)
+    except ValueError as e:
+        print("HATA: %s" % e, file=sys.stderr)
+        sys.exit(1)
     print(f"KAYNAKÇA: linkli={r['linkli']} linksiz={r['linksiz']} "
           f"teyitsiz={r['teyitsiz']} "
           f"{'(kuru koşu)' if a.kuru else ('işlendi' if r['degisti'] else 'değişiklik yok')}")

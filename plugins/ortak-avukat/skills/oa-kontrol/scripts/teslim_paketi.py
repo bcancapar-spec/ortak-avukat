@@ -1027,7 +1027,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.17"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.17.1"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -1089,11 +1089,12 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
 
 
 def _kaynakca_isle(taslak, kok):
-    """v0.5.12 — İÇTİHAT KAYNAKÇASI (link zinciri tamamlayıcısı; avukat
-    kuralı 2026-08-27: çalışmaya giren her kararın linki tüm çıktılarda).
+    """v0.5.12 — İÇTİHAT KAYNAKÇASI (link zinciri tamamlayıcısı; 2026-08-27
+    "linkler tüm çıktılarda" kuralı B-20 kararıyla (2026-10-06) İÇ TASLAKLA sınırlandı).
     Kardeş `kaynakca_uret.py` İN-PROCESS çağrılır (subprocess yasak);
-    taslağın sonuna işaretli kaynakça bloğu işlenir — UDF/PDF/40-UYAP
-    kopyaları bu hâlden üretileceği için linkler tüm ürünlere taşınır.
+    taslağın sonuna işaretli kaynakça bloğu işlenir. B-20 avukat kararı
+    (2026-10-06): blok İÇ TASLAKTA kalır, mahkemeye giden UDF/PDF/40-UYAP
+    nüshalarına GİRMEZ (md_udf_html.yorumlari_ayikla ayıklar).
     Döner: makbuz alanı {linkli, linksiz} (+hata varsa 'hata').
     ASLA fırlatmaz — kaynakça işlenemezse teslim KIRILMAZ, alanda hata
     görünür kalır (bu bir kapı değil tamamlayıcıdır; linksizlik zaten
@@ -1412,15 +1413,16 @@ def _zincir():
             ekstra={"advisory_denetimler": advisory}), basarili=False)
         sys.exit(1)
 
-    # ── v0.5.12 — İÇTİHAT KAYNAKÇASI (UDF üretiminden ÖNCE işlenir ki
-    # linkler ürün zincirine taşınsın; kapı DEĞİL, tamamlayıcı) ─────────────
-    _bolum("[≡] İÇTİHAT KAYNAKÇASI — link zinciri (v0.5.12; tamamlayıcı)")
+    # ── v0.5.12 — İÇTİHAT KAYNAKÇASI (UDF üretiminden ÖNCE iç taslağa işlenir;
+    # B-20: mahkeme nüshasına GİRMEZ; kapı DEĞİL, tamamlayıcı) ─────────────
+    _bolum("[≡] İÇTİHAT KAYNAKÇASI — iç taslak (v0.5.12; B-20: mahkeme nüshasına girmez)")
     kaynakca_alani = _kaynakca_isle(taslak, kok)
     if kaynakca_alani.get("hata"):
         print("    [UYARI] kaynakça işlenemedi: %s — teslim sürer, alan "
               "makbuzda görünür." % kaynakca_alani["hata"])
     else:
-        print("    [OK] kaynakça taslağa işlendi: %s linkli, %s linksiz."
+        print("    [OK] kaynakça iç taslağa işlendi (mahkemeye giden UDF'ye girmez — B-20): "
+              "%s linkli, %s linksiz."
               % (kaynakca_alani["linkli"], kaynakca_alani["linksiz"]))
         if kaynakca_alani.get("linksiz"):
             print("    [UYARI] linksiz künye var — teyit kaydına --kaynak-url "

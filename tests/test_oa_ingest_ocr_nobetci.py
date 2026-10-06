@@ -325,7 +325,7 @@ def test_karisik_evrakta_yalniz_bos_sayfa_gorsele_girer_saglikli_sayfa_girmez(tm
         draw = ImageDraw.Draw(img)
         font = _ocr_okunur_font(40)
         draw.text((20, 20), "IKINCI SAYFA SAGLIKLI OKUNABILIR METIN ICERIR BURADA", fill=0, font=font)
-        # v0.5.18: tek satır ~46 anlamlı karakterdi — boş-sayfa eşiğinin (50) ALTINDA; testin
+        # v0.5.17.1: tek satır ~46 anlamlı karakterdi — boş-sayfa eşiğinin (50) ALTINDA; testin
         # sonucu OCR motorunun birkaç gürültü karakteri ekleyip eklemediğine bağlıydı (Windows
         # Tesseract 5.4'te sağlıklı sayfa "boş" sayılıyordu). İkinci satır sayfayı eşiğin
         # belirgin ÜSTÜNE taşır; doğrulanan davranış (yalnız boş sayfa görsele girer) aynıdır.

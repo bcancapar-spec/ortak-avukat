@@ -1089,7 +1089,16 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
     <template format_id> · <content><![CDATA[..]]></content> ·
     <properties><pageFormat/></properties> · <elements resolver="hvl-default"
     name="hvl-default"> paragraf offset'leri (UTF-16 code unit, bitişik) ·
-    <styles>. Döner: (xml_str, tam_metin, paragraf_sayisi)."""
+    <styles>. Döner: (xml_str, tam_metin, paragraf_sayisi).
+
+    v0.5.17.1 (B-19, bağımsız inceleme A3): yerel motor da html2udf hattı gibi
+    iç izi (HTML yorumları, makine kaynakça bloğu) AYIKLAR — tek tanım kardeş
+    md_udf_html.yorumlari_ayikla'dadır; bulunamazsa üretim DURUR (fail-closed)."""
+    mh = _sibling_yukle("md_udf_html.py", "_oa_udf_yaz_md_udf_html")
+    if mh is None or not hasattr(mh, "yorumlari_ayikla"):
+        raise RuntimeError("md_udf_html.py (kardeş script) bulunamadı — iç iz ayıklanamadı, "
+                           "yerel motor üretimi durduruldu.")
+    ham_metin = mh.yorumlari_ayikla(ham_metin)
     ham = ham_metin.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
     satirlar = ham.split("\n") if ham != "" else [""]
     parcalar, paragraflar, imlec = [], [], 0

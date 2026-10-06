@@ -1,6 +1,6 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.5.17 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.5.17.1 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -321,13 +321,13 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
 İçtihat, mevzuat ve kurum kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır.
 
 > **Eklenti `yargi-pro` sunucusunu KENDİSİ ilan eder** — kurulumda bağlantı
-> otomatik teklif edilir; onaylamanız yeterlidir. **v0.5.18 (B-23):** v0.5.7.4'te
+> otomatik teklif edilir; onaylamanız yeterlidir. **v0.5.17.1 (B-23):** v0.5.7.4'te
 > eklenen `yargi-mcp-yedek` ilanı KALDIRILDI — kaynak proje artık herkese açık
 > değil ve alan adı ilgisiz bir sunucuya çözülüyor; sahipsiz bir uç noktaya
 > kendiliğinden güvenmek, sorgularınızı okuyup sahte "içtihat" döndürebilecek
 > bir kanal açardı. Pro erişilemezse aile başka sunucuya geçmez: çıktıya
 > "teyit YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu
-> olanlar `yargi-mcp-yedek` bağlantısını connectors bölümünden kaldırabilir.
+> olanlar `yargi-mcp-yedek` bağlantısını connectors bölümünden kaldırmalıdır.
 > Aşağıdaki elle kurulum yalnız otomatik teklifi atlamışsanız gereklidir.
 
 Claude Code → **connectors** bölümünden yeni bir MCP sunucusu ekleyin ve adres

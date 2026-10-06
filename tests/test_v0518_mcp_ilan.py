@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""v0.5.18 — B-23 kilidi: eklentinin KENDİLİĞİNDEN İLAN ETTİĞİ MCP sunucuları.
+"""v0.5.17.1 — B-23 kilidi: eklentinin KENDİLİĞİNDEN İLAN ETTİĞİ MCP sunucuları.
 
 2026-10-06 ölçümü: v0.5.7.4'te ilan edilen yedek sunucunun (`yargi-mcp-yedek`) alan adı
 ilgisiz bir sunucuya çözülüp başka bir alan adına verilmiş sertifika sunuyordu; kaynak depo
@@ -69,3 +69,15 @@ def test_kutuk_sozlugu_yedek_adlari_damga_disiplininde_tutar(tmp_path):
     sp.loader.exec_module(m)
     assert {"search_bedesten_unified", "search_anayasa_unified"} <= m.ARAMA_ARACLARI
     assert {"get_bedesten_document_markdown", "get_anayasa_document_unified"} <= m.GETIR_ARACLARI
+
+
+def test_sahipsiz_yedek_proje_alternatif_diye_onerilmiyor():
+    """Bağımsız inceleme (D): ilan kaldırılsa da belgeler kaynak deposu artık herkese açık
+    olmayan yedek projeyi "alternatif" diye öneriyordu — kullanıcıyı ele geçirilebilir bir
+    kanala yönlendirmek. Proje bağlantısı yalnız tarihçe kayıtlarında geçebilir."""
+    proje = "github.com/saidsurucu/yargi-mcp"
+    bulunan = []
+    for yol in [KOK / "README.md", KOK / "SOZLUK.md", KOK / "STATUS.md"] + list(EKLENTI.rglob("*.md")):
+        if yol.is_file() and yol.name not in TARIHCE and proje in yol.read_text(encoding="utf-8", errors="replace"):
+            bulunan.append(str(yol.relative_to(KOK)))
+    assert bulunan == []

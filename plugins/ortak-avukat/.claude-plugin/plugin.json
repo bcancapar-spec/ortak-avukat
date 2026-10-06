@@ -1,6 +1,6 @@
 {
   "name": "ortak-avukat",
-  "version": "0.5.17",
+  "version": "0.5.17.1",
   "mcpServers": {
     "yargi-pro": {
       "type": "http",

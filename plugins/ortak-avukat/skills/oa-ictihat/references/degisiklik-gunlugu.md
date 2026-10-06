@@ -50,7 +50,7 @@
 - **README.md:** «saf metin-disiplini» ifadesi kaldırıldı; deterministik script listesi.
 - **Testler:** `tests/test_v0516_H.py` (20) — sentetik fikstürler (E. 2099/N, «Örnek … Mahkemesi»); önerilen teyit komutunun `oa_hafiza` ile uçtan uca geçtiği entegrasyon kilidi dahil.
 
-## v0.5.18 — 2026-10-06 · B-23: sahipsiz yedek MCP ilanı kaldırıldı
+## v0.5.17.1 — 2026-10-06 · B-23: sahipsiz yedek MCP ilanı kaldırıldı
 
 - **Bulgu (ölçüm, 2026-10-06):** `plugin.json`'un v0.5.7.4'ten beri ilan ettiği `yargi-mcp-yedek` uç noktasının alan adı ilgisiz bir sunucuya çözülüyor ve başka bir alan adına verilmiş sertifika sunuyor (Claude Code bağlantıyı TLS ad uyuşmazlığıyla reddetti); kaynak depo GitHub'da artık herkese açık değil. Eklentinin kendiliğinden ilan ettiği bir uç nokta avukatın sorgularını okur ve "içtihat" diye metin döndürür — adı ele geçiren taraf geçerli sertifika alırsa bu, B-22 sınıfı (gizli talimat) bir enjeksiyon ve sahte künye kanalıdır.
 - **Düzeltme:** ilan kaldırıldı; BAĞLANTI KATMANI güvenli kapanışa çevrildi (Pro yoksa otomatik geçiş YOK → "teyit YAPILAMADI", künye iddia kalır, kanonik kaynaktan elle teyit yolu gösterilir). AYM satırlarındaki yedek araç adları ve çekirdek SKILL'deki Pro'da bulunmayan `search_anayasa_unified` atfı `aym_ictihat_ara` ile düzeltildi.
