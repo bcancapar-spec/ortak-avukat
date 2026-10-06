@@ -13,7 +13,7 @@
 > devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
 > ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
-**Sürüm:** 0.5.17 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
+**Sürüm:** 0.5.17.1 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça)
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -162,7 +162,7 @@ sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
 | **Node.js (LTS)** | [nodejs.org](https://nodejs.org/) | UDF üretim araçları npm ekosisteminde yaşar ve `npx` ile koşar. |
 | **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@latest login` gerekir. |
 | **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. |
-| **Yargı Pro MCP** (geliştirici: [@saidsurucu](https://github.com/saidsurucu)) | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Alternatif: açık kaynak [yargi-mcp](https://github.com/saidsurucu/yargi-mcp) (semantik arama için ayrıca AI API anahtarı gerekir). |
+| **Yargı Pro MCP** (geliştirici: [@saidsurucu](https://github.com/saidsurucu)) | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Yedek kanal ilan edilmez (v0.5.17.1, B-23): Yargı Pro erişilemezse içtihat "teyit YAPILAMADI" diye işlenir. |
 
 Adım adım:
 
@@ -226,15 +226,14 @@ claude mcp add --transport http yargipro https://yargi.betaspacestudio.com/mcp
 akışını tamamlayın. Bu bağlantı olmadan künye doğrulaması yapılamaz; içtihat
 "teyit edilemedi" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
 
-**Yargı Pro kullanmayanlar için alternatif:** açık kaynak
-[yargi-mcp](https://github.com/saidsurucu/yargi-mcp) sunucusu da içtihat
-arama kanalı olarak bağlanabilir — dikkat: **semantik arama özelliği için
-ayrıca bir AI API anahtarı gerekir** ve kanal yetenekleri Yargı Pro ile
-birebir değildir; sistemin "resmî kaynaktan teyit" kuralı hangi kanal
-bağlıysa onun üzerinden işler.
+**Yedek kanal yok (v0.5.17.1, B-23):** eskiden önerilen açık kaynak yedek
+sunucunun kaynak deposu artık herkese açık değil ve eklentinin ilan ettiği
+alan adı ilgisiz bir sunucuya çözülüyordu; bu yüzden yedek önerilmez ve
+ilan edilmez. Yargı Pro erişilemezse sistem başka bir sunucuya geçmez:
+içtihat "teyit YAPILAMADI" damgasıyla işlenir, künye iddia olarak kalır.
 
-> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele açan her
-> iki köprü de — **Yargı Pro MCP** ve açık kaynak **yargi-mcp** —
+> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele açan
+> **Yargı Pro MCP** — ve daha önce açık kaynak olarak yayımlanan **yargi-mcp** —
 > [Said Sürücü](https://github.com/saidsurucu)'nün eseridir. Bu sistemin
 > "resmî kaynaktan tam metin" disiplini, onun kurduğu gişeler üzerinde çalışır.
 
@@ -302,6 +301,11 @@ claude plugin marketplace update ortak-avukat && claude plugin update ortak-avuk
 ```
 
 Ardından Claude Code'u yine **TAM kapatıp açın**.
+
+> **0.5.17.1'e geçerken:** eski sürümle üretilmiş `.udf` dosyaları iç iz (`<!-- kaynaklar … -->`,
+> kaynakça önsözü) taşıyabilir ve teslim hattı aynı adlı mevcut `.udf`'yi devralabilir. Güncellemeden
+> sonra açık dosyalardaki eski `.udf`'leri kaldırıp teslimi yeniden koşun; UYAP'a vermeden önce
+> nüshayı editörde açıp kontrol edin.
 
 ### Sorun giderme — temiz kurulum
 Güncelleme takılırsa: eklentiyi ve marketplace'i kaldırın, Claude Code'u

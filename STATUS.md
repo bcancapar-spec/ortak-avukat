@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-09-12 · **Sürüm:** 0.5.17 · **Commit:** `10aa5c1`+ (15 dalın birleşim ucu; v0.5.16 tek commit'i bunun üstünde)
-*(önceki kayıtlar: 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-06 · **Sürüm:** 0.5.17.1 · **Commit:** `2a32f8d` + acil güvenlik yaması (B-23 sahipsiz yedek MCP, B-19 UDF iç iz sızıntısı; bkz. CHANGELOG)
+*(önceki kayıtlar: 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·

@@ -92,8 +92,10 @@ AIHM_BASVURU_RE = re.compile(
 # Dilekçenin KENDİ künye bloğu (Denizli 346 karnesinin tek parser
 # yanlış-pozitifi: scriptin kendi `DOSYA NO:` satırını karşı-atıf sanması).
 # TEK KAYNAK burasıdır; `kunye_teyit.py` bu tanımı kullanır.
+# v0.5.16.3 / v0.5.17.1 (B-19): `++DOSYA NO++` (altı çizili künye etiketi,
+# md_udf_html) öneki de tanınır — yoksa kendi künye satırı yine BLOK'lanıyordu.
 KENDI_DOSYA_SATIR_RE = re.compile(
-    r"^\s*[>*\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
+    r"^\s*[>*+\-•\s]*(?:DOSYA\s*(?:ESAS\s*)?NO|ESAS\s*NO|MERC[İIiı])\b", re.I)
 
 
 def satir_metni_no(metin, satir_no):

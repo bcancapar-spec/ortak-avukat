@@ -49,7 +49,121 @@ import sys
 # girintili + altında 6pt boşluk + 1,5 satır aralığı (v0.5.8.4: yorum
 # koddan sapmıştı — sabit zaten 1.5 üretiyor, yorum da 1,5 der).
 JUST = "text-align:justify; text-indent:24pt; line-height:1.5; margin-top:0pt; margin-bottom:6pt"
+# v0.5.16.3 — KÜNYE BLOĞU: TAB ile hizalanmış başlık satırlarında ilk satır
+# girintisi TAB sütununu kaydırır; gerçek UYAP dilekçelerinde bu bloklarda
+# girinti YOKTUR (e-imzalı nüsha: <paragraph Alignment="3"> girintisiz).
+JUST_KUNYE = "text-align:justify; line-height:1.5; margin-top:0pt; margin-bottom:6pt"
 QUOTE = "text-align:justify; line-height:1.5; margin-left:36pt; margin-right:18pt; margin-top:6pt; margin-bottom:6pt"
+
+# v0.5.16.2 — İÇ İZ AYIKLAMA (B-18/B-19 saha bulgusu: teslim evrakına araç izi
+# sızması). _oa/cikti ürünleri KAYNAK-BLOĞU (<!-- kaynaklar: ... -->, v0.5.8
+# konvansiyonu) ve kaynakça işaretleri (kunye_ortak KAYNAKCA_BLOK_BAS/SON) taşır;
+# bunlar İÇ İZLEME verisidir. kacis() '<'/'>' karakterlerini escape ettiğinden
+# yorumlar "normal paragraf" dalına düşüp html2udf'e ve PDF'e GÖRÜNÜR METİN
+# olarak geçiyordu. Tek boğaz noktasında ayıklanır; kaynak .md'ye DOKUNULMAZ
+# (tazelik_denetim ve kaynakça kapıları bloğu .md'den okumaya devam eder).
+# MAKİNE BLOĞU (kaynakca_uret.py, `<!-- kaynakca:v1 --> … <!-- /kaynakca -->`)
+# gövdesiyle birlikte çıkar: kunye_ortak'ın kendi tanımına göre "O blok
+# avukatın GÖVDE METNİ DEĞİLDİR" ve önsözü aracın adını anar. B-20 avukat
+# kararı (2026-10-06): kaynakça mahkemeye giden nüshaya GİRMEZ.
+# v0.5.17.1: eski `<!--.*?-->` deseni yerine TEK GEÇİŞLİ tarama — kapanmayan
+# çok sayıda '<!--' içeren taslakta desen her başlangıçtan metin sonuna dek
+# tarıyordu (karesel).
+# v0.5.17.1 / bağımsız inceleme (Fable 5.1, A1-A4): AYIKLAMA METİN YUTMAZ. Kapanmamış
+# bir '<!--' (yarım kalmış not) ileride HERHANGİ bir '-->' ile — ör. dosya sonundaki
+# kaynakça işaretiyle — "yorum" sanılırsa aradaki dilekçe metni UDF'den SESSİZCE
+# silinirdi (veri kaybı). OA'nın kendi iç izleri tek satırlıktır (KAYNAK-BLOĞU,
+# kaynakça işaretleri); bu yüzden kapanışından önce yeni '<!--' açılan, boş satır ya
+# da Markdown başlığı içeren ya da _YORUM_AZAMI_KAR'ı aşan aday YORUM SAYILMAZ:
+# metinde görünür kalır ve stderr'e uyarı basılır (fail-visible). Görünür sızıntı
+# düzeltilebilir; sessiz kayıp düzeltilemez.
+_KAYNAKCA_BAS_ICERIK = "kaynakca:v1"   # kunye_ortak.KAYNAKCA_BLOK_BAS içeriği
+_KAYNAKCA_SON_ICERIK = "/kaynakca"     # kunye_ortak.KAYNAKCA_BLOK_SON içeriği
+_YORUM_AZAMI_KAR = 2000
+_METIN_YAPISI_RE = re.compile(r"\n[ \t]*\n|\n[ \t]*#")
+_SATIR_AYRACI = " "   # paragraf içi satır sonu; satir_ici'de '.' ile eşleşir, '\n' eşleşmezdi
+
+
+def _uyar(mesaj):
+    print("UYARI (md_udf_html): " + mesaj, file=sys.stderr)
+
+
+def _yorum_araliklari(md):
+    """İç iz biçimindeki kapanmış HTML yorumlarının (başlangıç, bitiş, kırpılmış
+    içerik) aralıkları, tek geçişte. HTML5 boş yorumları ('<!-->', '<!--->')
+    kapanmış sayılır. Avukatın metnini yutabilecek aday (bkz. yukarı) aralığa
+    GİRMEZ, metinde görünür kalır. Doğrusal: kapanış konumu önbellekte tutulur,
+    her bölge en çok bir kez taranır."""
+    out, i, k, supheli = [], 0, -1, 0
+    while True:
+        j = md.find("<!--", i)
+        if j < 0:
+            break
+        bos = 5 if md.startswith("<!-->", j) else 6 if md.startswith("<!--->", j) else 0
+        if bos:
+            out.append((j, j + bos, ""))
+            i = j + bos
+            continue
+        if k < j + 4:
+            k = md.find("-->", j + 4)
+            if k < 0:
+                supheli += 1           # kapanışı hiç olmayan açılış: kalan metin aynen
+                break
+        n = md.find("<!--", j + 4, k)
+        if n >= 0:                     # kapanıştan ÖNCE yeni açılış → bu açılış kapanmamış
+            supheli += 1
+            i = n
+            continue
+        icerik = md[j + 4:k]
+        # tavan yalnız ÇOK SATIRLI adaya (2. tur inceleme): tek satırlık yorum paragraf sınırı
+        # yutamaz; kaynak_blogu'nun çok girdili meşru satırı uzun olabilir.
+        if ("\n" in icerik and len(icerik) > _YORUM_AZAMI_KAR) or _METIN_YAPISI_RE.search(icerik):
+            supheli += 1               # metin yapısı taşıyan aday: yorum sayılmaz
+            i = k + 3
+            continue
+        out.append((j, k + 3, icerik.strip()))
+        i = k + 3
+    if supheli:
+        _uyar("%d HTML yorumu AYIKLANMADI (kapanmamış ya da dilekçe metni taşıyor) — "
+              "metinde görünür kaldı; taslağı kontrol edin." % supheli)
+    return out
+
+
+def yorumlari_ayikla(md):
+    """İç izleme artefaktlarını çıkarır: kapanışı olan MAKİNE BLOĞU (gövdesiyle
+    birlikte) ve iç iz biçimindeki HTML yorumları. Makine bloğunun kapanışından
+    önce ikinci bir açılış varsa (kapanışı silinmiş eski blok) sıçrama YAPILMAZ:
+    yalnız o işaret çıkar, aradaki metin (EKLER, imza) kalır. Satır sonları önce LF'ye
+    çevrilir (2. tur inceleme): CRLF'de boş satır koruması '\\n\\s*\\n' desenini kaçırıyordu."""
+    md = md.replace("\r\n", "\n").replace("\r", "\n")
+    araliklar = _yorum_araliklari(md)
+    # her aralıktan sonraki ilk kaynakça kapanışı ve SONRAKİ açılış — sondan tek geçiş
+    sonraki_kapanis, sonraki_acilis, kap, ac = [None] * len(araliklar), [None] * len(araliklar), None, None
+    for x in range(len(araliklar) - 1, -1, -1):
+        sonraki_acilis[x] = ac
+        if araliklar[x][2] == _KAYNAKCA_SON_ICERIK:
+            kap = x
+        elif araliklar[x][2] == _KAYNAKCA_BAS_ICERIK:
+            ac = x
+        sonraki_kapanis[x] = kap
+    parcalar, i, x, yetim = [], 0, 0, 0
+    while x < len(araliklar):
+        bas, son, icerik = araliklar[x]
+        if icerik == _KAYNAKCA_BAS_ICERIK:
+            kp, ac = sonraki_kapanis[x], sonraki_acilis[x]
+            if kp is not None and (ac is None or ac > kp):
+                x = kp
+                son = araliklar[x][1]
+            else:
+                yetim += 1
+        parcalar.append(md[i:bas])
+        i = son
+        x += 1
+    parcalar.append(md[i:])
+    if yetim:
+        _uyar("%d kaynakça açılış işaretinin kapanışı yok — blok gövdesi AYIKLANMADI, "
+              "görünür kaldı; taslağı kontrol edin." % yetim)
+    return "".join(parcalar)
 
 
 def kacis(t):
@@ -76,6 +190,12 @@ def satir_ici(t):
     t = re.sub(r"\*\*\*(.+?)\*\*\*", r"<strong><em>\1</em></strong>", t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     t = re.sub(r"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)", r"<em>\1</em>", t)
+    # ALTI ÇİZİLİ (v0.5.16.3): ++metin++ → <u>metin</u>. UYAP dilekçe teamülünde
+    # başlık bloğu etiketleri (DOSYA NO / DAVACI / VEKİLİ / KONU) ve bölüm
+    # başlıkları altı çizilidir; markdown'da karşılığı yok. '__' SEÇİLMEDİ: tarih
+    # boşluklarıyla (__.__.____) çakışıyor. html2udf <u>'yu underline="true" taşır.
+    # v0.5.17.1 (inceleme C): yalnız sözcük sınırında — "C++ ve C++14" gibi metin bozulmasın.
+    t = re.sub(r"(?<![\w+])\+\+(?=\S)(.+?)(?<=\S)\+\+(?![\w+])", r"<u>\1</u>", t)
     t = re.sub(r"`(.+?)`", r"\1", t)
     return t
 
@@ -98,8 +218,13 @@ def donustur(md, ham=False):
 
     Desteklenen bloklar: başlık (#..######), tablo, alıntı (>), numaralı/madde
     listesi, düz paragraf. Rehberin A.4 kurallarına uyar: sabit pt değerleri,
-    `<p>` bazlı paragraflama, `<br>` KULLANILMAZ.
+    `<p>` bazlı paragraflama, paragraflar arasında `<br>` KULLANILMAZ
+    (paragraf İÇİ satır sonu `<br/>` yumuşak satırdır — v0.5.16.3).
+
+    v0.5.16.2: İç iz (HTML yorumları, makine kaynakça bloğu) EN BAŞTA
+    ayıklanır — --ham yolu da bu ayıklamadan geçer.
     """
+    md = yorumlari_ayikla(md)
     if ham:
         return _ham_donustur(md)
 
@@ -227,7 +352,15 @@ def donustur(md, ham=False):
                     or re.match(r"^\d+\.\s", nxt) or re.match(r"^[-*+]\s", nxt)):
                 break
             buf.append(nxt); i += 1
-        out.append('<p style="%s">%s</p>' % (JUST, satir_ici(" ".join(buf))))
+        # v0.5.16.3 — SATIR SONU ANLAMLIDIR: dilekçede yazarın koyduğu satır sonu
+        # (künye bloğu, imza bloğu, adres ve taraf satırları) korunur. Markdown'ın
+        # "tek satır sonu = aynı satır" kuralı hukuk metninde başlık bloğunu tek
+        # paragrafa eziyordu (saha bulgusu: "MAHKEME: ... DOSYA NO: ..." yan yana).
+        stil = JUST_KUNYE if any("\t" in x for x in buf) else JUST
+        # v0.5.17.1 (inceleme B): satırlar U+2028 ile birleşip TEK seferde işlenir ki
+        # satıra yayılan vurgu (`**…\n…**`) da <strong> olsun; ayraç sonra <br/> olur.
+        out.append('<p style="%s">%s</p>' % (
+            stil, satir_ici(_SATIR_AYRACI.join(buf)).replace(_SATIR_AYRACI, "<br/>")))
 
     return "\n".join(out)
 
