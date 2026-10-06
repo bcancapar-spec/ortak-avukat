@@ -90,15 +90,15 @@ m.63, m.66; 6216 m.47/3, m.47/6 (2026-10-05).
   `aym_bireysel_mazeret` (oa-sure v0.5.18 kataloğu).
 - **AİHM:** iç hukuk yollarının tüketilmesinden sonra ve kesinleşmiş iç hukuk kararından
   itibaren **dört ay** (AİHS m.35/1, 15 No.lu Protokol m.4 ile değişik metin — Orhan/Türkiye
-  (k.k.), no. 38358/22, 6 Aralık 2022, § 25). Geçiş: Protokol 1 Ağustos 2021'de yürürlüğe
-  girdi, yeni süre **1 Şubat 2022**'den uygulanır; nihai karar bu tarihten önce verildiyse
-  (tebliğ sonra olsa bile) **altı ay** (aynı karar §§ 26, 44). Süre, uygulamada kararın
-  tebliğinden (ya da içeriğinin öğrenilme imkânından) işler (aynı karar §§ 31, 35, 46);
+  (k.k.), no. 38358/22, 6 Aralık 2022, § 25). 1.2.2022 öncesi kararlara ilişkin altı ay
+  geçişi OA kapsamı dışındadır (avukat kararı 2026-10-06): motor her dosyada dört ay esas
+  alır (`oa-sure` ile aynı). Süre, uygulamada kararın tebliğinden (ya da içeriğinin
+  öğrenilme imkânından) işler (aynı karar §§ 31, 35, 46);
   süre kuralı kamu düzenindendir ve resen gözetilir (aynı karar § 23; Aybek ve
   Diğerleri/Türkiye (k.k.), no. 32365/20, 2 Haziran 2026, §§ 6, 9-10). Kaynak: HUDOC,
   Yargı PRO `aihm_ictihat_ara` + `ictihat_getir` (Türkçe çeviri — Adalet Bakanlığı).
-  `[G11]` nihai karar tarihinden rejimi (4/6 ay) **tarih karşılaştırmasıyla** basar; son
-  günü `oa-sure` hesaplar; oa-sure v0.5.18 kataloğundaki kural `aihm_basvuru`dur.
+  `[G11]` nihai karar tarihini ister ve süreyi dört ay olarak basar; son günü `oa-sure`
+  hesaplar; oa-sure v0.5.18 kataloğundaki kural `aihm_basvuru`dur.
   Kural adı katalogda (`oa-sure/scripts/sure_kurallari.json` — adların TEK kaynağı)
   yoksa `[G10]`/`[G11]` görünür bulgu basar; önek yolla tutarsızsa BOŞLUK.
 - Script iki alanı ZORUNLU tutar: `sure.son_gun` (oa-sure çıktısı) ve

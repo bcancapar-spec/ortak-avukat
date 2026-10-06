@@ -258,9 +258,9 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
 
 ### Avrupa İnsan Hakları Mahkemesi — bireysel başvuru (AİHS m.35/1) — v0.5.18
 - **Süre: dört ay** — nihai iç hukuk kararından (15 No'lu Protokol ile altı aydan dörde
-  indirildi; HUDOC sınıflaması "Four-month period (former six-month)"). **1.2.2022 öncesi**
-  kesinleşen kararlarda altı ay uygulanmış olabilir — geçiş kuralı **TEYİT BEKLİYOR**
-  (`aihm_basvuru`).
+  indirildi; HUDOC sınıflaması "Four-month period (former six-month)"); kural `aihm_basvuru`.
+  1.2.2022 öncesi kararlara ilişkin altı ay geçişi kapsam dışıdır (avukat kararı
+  2026-10-06) — motor ve `oa-usul` [G11] her dosyada dört ay esas alır.
 - **Başlangıç:** iç hukukta kararın yazılı tebliği öngörülüyorsa **tebliğ** tarihi esastır
   (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, § 53 — Worm/Avusturya'ya atıfla). AYM'nin
   "UYAP'tan öğrenme" yaklaşımı AİHM'e otomatik taşınmaz.

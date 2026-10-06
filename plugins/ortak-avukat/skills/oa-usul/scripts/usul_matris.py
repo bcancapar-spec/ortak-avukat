@@ -432,10 +432,6 @@ AIHM_KRITERLER = (
     ("eksiksiz_basvuru", "Resmî başvuru formu ve zorunlu ekler EKSİKSİZ (eksik form "
      "süreyi korumayabilir)", "AİHM İçtüzüğü m.47 — TEYİT BEKLİYOR", False),
 )
-# AİHS m.35/1 süresinin 6 aydan 4 aya inişi: iç hukukta kesinleşmiş (nihai)
-# karar 01.02.2022'den ÖNCE verildiyse 6 ay, 31.01.2022'den SONRA verildiyse 4
-# ay — Orhan/Türkiye (k.k.) § 44. Tarih karşılaştırmasıdır, nitelendirme değil.
-AIHM_4AY_GECIS = date(2022, 2, 1)
 # Karar sonrası — yanlış yeniden yargılama dayanağı (AYM ihlal kararı için):
 # HMK m.375/1-i, CMK m.311/1-f ve İYUK m.53/1-ı AİHM kararına özgüdür
 # (mevzuat.gov.tr metinleri); AYM ihlal kararında dayanak 6216 m.50/2'dir.
@@ -723,13 +719,15 @@ def _bb_denetle(bb, bulgular, bosluklar):
         nk = (sure or {}).get("nihai_karar_tarihi") if isinstance(sure, dict) else None
         if not nk:
             bosluklar.append(f"[G11] {bid}: sure.nihai_karar_tarihi YOK — AİHS m.35/1 "
-                             f"rejimi (4/6 ay) belirlenemez.")
+                             f"süresinin bağlandığı nihai iç hukuk kararı belirsiz.")
         else:
             try:
-                rejim = "6 ay (eski rejim)" if _d(nk) < AIHM_4AY_GECIS else "4 ay"
-                bulgular.append(f"  [G11] {bid}: nihai karar {nk} → AİHS m.35/1 süre "
-                                f"rejimi {rejim} (Orhan/Türkiye (k.k.) § 44); süre "
-                                f"tebliğden işler — hesap oa-sure'nin.")
+                # R7 (v0.5.18) — süre DÖRT aydır; 1.2.2022 öncesi altı ay geçişi
+                # KAPSAM DIŞI (avukat kararı 2026-10-06) — oa-sure ile aynı.
+                _d(nk)
+                bulgular.append(f"  [G11] {bid}: nihai karar {nk} → AİHS m.35/1 süresi "
+                                f"4 ay; süre tebliğden işler — hesap oa-sure'nin "
+                                f"(aihm_basvuru).")
             except (TypeError, ValueError):
                 bosluklar.append(f"[G11] {bid}: sure.nihai_karar_tarihi ISO tarih değil "
                                  f"({nk!r}).")

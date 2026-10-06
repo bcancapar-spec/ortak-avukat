@@ -63,7 +63,7 @@ Alan hiç yoksa (eski dosya) hiçbir satır basılmaz. `taraf: "biz"`/`"kamu"` k
 
 ## 9. AYM bireysel başvuru usulü (6216) — ve AİHM yolu
 - m.47/5 haklı mazeret: mazeretin kalktığı tarihten **15 gün** + belge. m.47/6 eksiklik tamamlama: **on beş günü geçmemek üzere** verilen kesin süre (yazıdaki süre esastır; İçtüzük m.66). m.46 kişisel-güncel-doğrudan etkilenme = kabul edilebilirlik usul şartları.
-- **v0.5.18:** AYM (6216 m.45-48, geçici m.1/8; İçtüzük m.59/60/63/66) ve AİHM (AİHS m.34, m.35/1, m.35/3-a/b; 4/6 ay geçişi) kabul edilebilirlik kontrol listesi + karar sonrası yollar (6216 m.50/2; HMK m.375/1-i, CMK m.311/1-f, İYUK m.53/1-ı — AİHM'e özgü) → **`references/bireysel-basvuru-yolu.md`**; mekanik denetim `usul_matris.py` `[G10]`/`[G11]` (`bireysel_basvuru` bloğu, şablon `--ornek-bb`).
+- **v0.5.18:** AYM (6216 m.45-48, geçici m.1/8; İçtüzük m.59/60/63/66) ve AİHM (AİHS m.34, m.35/1 — dört ay, m.35/3-a/b) kabul edilebilirlik kontrol listesi + karar sonrası yollar (6216 m.50/2; HMK m.375/1-i, CMK m.311/1-f, İYUK m.53/1-ı — AİHM'e özgü) → **`references/bireysel-basvuru-yolu.md`**; mekanik denetim `usul_matris.py` `[G10]`/`[G11]` (`bireysel_basvuru` bloğu, şablon `--ornek-bb`).
 
 ## 10. Ceza usulü (CMK — çıpa dışı, teyit zorunlu)
 - Pratiğin ağırlığı hukuk/idare/icra. CMK eski hâle getirme (m.40-42) ve süre rejimi farklıdır; kullanılacaksa o gün CMK'dan teyit.

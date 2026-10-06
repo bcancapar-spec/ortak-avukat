@@ -528,6 +528,65 @@ def test_gorunurluk_kahini_butce_ve_hata_None_doner(bg):
     assert bg._Gorunurluk(None, bg._Rapor()).gizli_mi((0, 0, 10, 10)) is None
 
 
+# ---------------------------------------------------------------- R9: kâhin sessizce kapanmaz
+def _koyu_bant_baslik(s, y):
+    """Kâhinin yanlış alarmı önlediği sayfa: koyu eğri bant üstünde beyaz (görünür) başlık."""
+    sh = s.new_shape()
+    sh.draw_rect(fitz.Rect(55, y - 16, 590, y + 8), radius=0.3)
+    sh.finish(fill=(0.1, 0.2, 0.5), color=None)
+    sh.commit()
+    s.insert_text((60, y), "White heading on a rounded band.", fontsize=12, fontname="helv", color=(1, 1, 1))
+
+
+def _kahin_notlari(rapor):
+    return [b for b in (rapor or {}).get("bulgular", []) if b["tur"] == "kahin-devre-disi"]
+
+
+def test_R9_pymupdf_alt_surumu_requirements_ile_kilitli(bg):
+    """Kâhin `apply_redactions(graphics=…, text=…)` kullanır: graphics v1.23.27'de, text v1.24.2'de
+    geldi (PyMuPDF belgesi, Page.apply_redactions «Changed in»). requirements.txt alt sınırı ile
+    modüldeki sürüm kapısı AYNI sayıyı taşır — iki kaynak ayrışamaz."""
+    import re
+    satirlar = [s for s in (REPO / "requirements.txt").read_text(encoding="utf-8").splitlines()
+                if re.match(r"\s*pymupdf\b", s, re.I)]
+    assert len(satirlar) == 1, satirlar
+    m = re.fullmatch(r"\s*pymupdf\s*>=\s*(\d+)\.(\d+)\.(\d+)\s*(?:#.*)?", satirlar[0], re.I)
+    assert m, satirlar[0]
+    assert tuple(int(x) for x in m.groups()) == bg.PYMUPDF_ASGARI
+    assert bg.PYMUPDF_ASGARI >= (1, 24, 2)
+
+
+def test_R9_eski_pymupdfte_kahin_kapanir_ve_GORUNUR_not_duser(bg, ing, tmp_path, monkeypatch):
+    """Eskiden kâhin hatası `except Exception` ile SESSİZCE yutuluyordu: eski PyMuPDF'te örtülü,
+    saydam ve zeminli yazı denetimi tümüyle kapanır, rapor bunu hiç söylemezdi."""
+    monkeypatch.setattr(bg, "PYMUPDF_ASGARI", (999, 0, 0))
+    yol = _pdf(tmp_path / "eski.pdf", _koyu_bant_baslik)
+    _, rapor = _tara_pdf(bg, ing, yol, tmp_path)
+    notlar = _kahin_notlari(rapor)
+    assert len(notlar) == 1, rapor
+    assert "PyMuPDF" in notlar[0]["yontem"] and "999.0.0" in notlar[0]["yontem"], notlar
+
+
+def test_R9_kahin_istisnasi_sessiz_yutulmaz(bg, ing, tmp_path, monkeypatch):
+    def imza_1_24_oncesi(self, images=2, graphics=1):   # text= yok → TypeError
+        return 0
+
+    monkeypatch.setattr(fitz.Page, "apply_redactions", imza_1_24_oncesi)
+    yol = _pdf(tmp_path / "hata.pdf", _koyu_bant_baslik)
+    _, rapor = _tara_pdf(bg, ing, yol, tmp_path)
+    notlar = _kahin_notlari(rapor)
+    assert len(notlar) == 1 and "TypeError" in notlar[0]["yontem"], rapor
+
+
+def test_R9_kahin_notu_bulgu_tavaninda_da_kaybolmaz(bg):
+    R = bg._Rapor()
+    for i in range(bg.AZAMI_BULGU):
+        R.ekle("gizli-metin", "y", "k%d" % i)
+    bg._kahin_kapali(R, "deneme")
+    bg._kahin_kapali(R, "ikinci")   # belge başına BİR not
+    assert len(_kahin_notlari(R.sonuc())) == 1
+
+
 def test_ocr_yontemli_pdf_metin_katmani_denetlenmez(bg, ing, tmp_path):
     """Metin PİKSELDEN geldiyse (OCR) PDF metin katmanı modele hiç gitmemiştir —
     orada gizli yazı aramak yanlış alarmdır."""

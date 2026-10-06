@@ -102,8 +102,8 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
 - **AYM bireysel başvuru** (`usul_matris.py`, `oa-usul/references/bireysel-basvuru-yolu.md`):
   süre, başvuru yollarının tüketilmesi, form unsurları ve "dördüncü derece" kaynaklı telafisiz
   ret gerekçeleri görünür olur; "AYM kararı = dosya bitti" varsayımı yakalanır.
-- **AİHM:** dört/altı aylık başvuru süresi rejimi tarih karşılaştırmasıyla basılır; yeniden
-  yargılama kolu ve süresi birbirine karışmaz. Ceza muhakemesinde koruma tedbiri tazminatı
+- **AİHM:** başvuru süresi dört ay (oa-sure ile aynı; 1.2.2022 öncesi geçiş kapsam dışı — §6.1);
+  yeniden yargılama kolu ve süresi birbirine karışmaz. Ceza muhakemesinde koruma tedbiri tazminatı
   (CMK m.141-142) için yöntem notu.
 - **Atıf kapısı:** Anayasa ve ek/geçici madde atıfları artık denetlenir; numaralı atıfta kimlik
   numaradır ("765 sayılı TCK" yeni TCK kaydıyla teyit edilmez); Türkçe yazılmış AİHM künyesi
@@ -170,7 +170,7 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
 
 ## 6. Avukat kararları
 
-### 6.1 Verilenler (2026-10-05)
+### 6.1 Verilenler (2026-10-05 ve 2026-10-06)
 
 - İncelenecek "graph" projesi: Graft. Kurulmaz; yalnız desen incelendi.
 - Junction/bağlantı dizinleri: mevcut davranış korunur.
@@ -179,6 +179,13 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
 - UDF teslimde Layer 0: **katı engel** — ölçüm gösterildikten sonra verildi (911 gerçek UDF
   metninin 908'i taramadan geçmiyor; dava dilekçesinde TC kimlik no zorunlu). Bulgu varsa UDF
   udf-cli ile üretilmez, teslim `--udf-yok` ile sürer.
+
+**2026-10-06:**
+
+- Kaynakça (B-20): mahkemeye giden teslim nüshasına **girmez**; makine kaynakça bloğu ve HTML
+  yorumları UDF'ye geçmez (v0.5.17.1).
+- AİHM başvuru süresi (R7): her dosyada **dört ay**. 1.2.2022 öncesi kararlara ilişkin altı ay
+  geçişi kapsam dışıdır; `oa-sure` ve `oa-usul` artık aynı değeri verir.
 
 ### 6.2 Bekleyenler
 
@@ -213,8 +220,7 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
   teyitli atıfların kabulü.
 - **AYM'den sonra AİHM:** AYM kararı sonrasında AİHM'e gidilip gidilmeyeceği ve karşılanmayan
   ölçüt / süre aşımında "devam mı, vazgeçme mi" — her dosyada avukat kararıdır.
-- Önceki listeden açık kalanlar: kaynakça teslim nüshasında olsun mu (B-20) · "UYAP'a verilen
-  nüsha" kaydı zorunlu mu (B-08) · ELDEN parçayla teslim şerh mi engel mi (B-04) · `oa-anayasa`
+- Önceki listeden açık kalanlar: "UYAP'a verilen nüsha" kaydı zorunlu mu (B-08) · ELDEN parçayla teslim şerh mi engel mi (B-04) · `oa-anayasa`
   ayrı skill olsun mu · `_oa` diskte şifreli tutulsun mu (ADR K11) · AAÜT ek tablolarıyla tarife
   doldurma.
 
@@ -227,7 +233,6 @@ yerleşik içtihatla teyit edilene kadar "kesin" sayılmaz:
   olarak başlatıp başlatmadığı.
 - Şu sürelerin adli tatil rejimi: HMK m.397/1, İİK m.67/1, m.69/2, m.89/3, m.347.
 - Ceza yargılamasında 19 Temmuz'da yapılan tebliğin sınır hâli.
-- AİHM 15 No'lu Protokol geçişi (1.2.2022 öncesi kesinleşen kararlarda altı aylık süre).
 - 2027 dini bayram tarihleri (resmî kaynakta bulunamadı; tabloya eklenmedi).
 - İİK m.269 son fıkrasında atıf yapılan mülga Borçlar Kanunu m.260'ın Türk Borçlar Kanunu'ndaki
   karşılığı (kira ilişkisine dayalı tahliye takibi).

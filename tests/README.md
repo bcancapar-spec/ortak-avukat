@@ -1,6 +1,6 @@
 # Test Mimarisi — mühendisler için
 
-<!-- OA-SUIT-SAYISI: 3244 -->
+<!-- OA-SUIT-SAYISI: 3248 -->
 
 > **Süit büyüklüğünün TEK kaynağı yukarıdaki `OA-SUIT-SAYISI` işaretçisidir.**
 > `tests/test_v0514_vitrin.py` bu sayıyı her koşuda `pytest --collect-only`

@@ -468,9 +468,13 @@ def test_AIHM_son_gun_hafta_sonuna_rastlasa_da_KAYMAZ_Sabri_Gunes():
     assert son4 == date(2026, 10, 3) and son4.weekday() == 5   # Cumartesi, kaymaz
 
 
-def test_AIHM_gecis_kurali_uyarisi():
-    _s, _r, uyarilar = _hesap(date(2021, 12, 1), "aihm_basvuru")
-    assert any("15 No'lu Protokol" in u and "TEYİT BEKLİYOR" in u for u in uyarilar)
+def test_AIHM_suresi_dort_ay_alti_ay_gecis_uyarisi_yok():
+    """R7 (avukat kararı 2026-10-06): AİHM süresi dört aydır; 1.2.2022 öncesi altı ay
+    geçişi kapsam dışıdır — oa-usul [G11] ile aynı, motor geçiş uyarısı basmaz."""
+    son, _r, uyarilar = _hesap(date(2021, 12, 1), "aihm_basvuru")
+    assert son == date(2022, 4, 1)
+    assert not any("altı ay" in u.lower() for u in uyarilar), uyarilar
+    assert "TEYİT BEKLİYOR" not in H.KURALLAR["aihm_basvuru"][2]
 
 
 def test_AIHM_ceza_koluyla_da_hesaplanir_kural_kendi_rejimini_tasir():

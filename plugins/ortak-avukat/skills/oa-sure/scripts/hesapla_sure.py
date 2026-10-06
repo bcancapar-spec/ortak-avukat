@@ -150,7 +150,7 @@ _GOMULU_KURALLAR = {
     "aym_bireysel_mazeret": (15, "gun",
                         "6216 m.47/5 (ikinci cümle) — haklı mazeret nedeniyle süresinde başvuramayan, MAZERETİN KALKTIĞI tarihten itibaren on beş gün içinde mazeretini belgeleyen delillerle başvurabilir; mazeretin kabulü Mahkemenin takdirindedir (AYM İçtüzüğü m.64/2)."),
     "aihm_basvuru":        (4, "ay",
-                        "AİHS m.35/1 — 15 No'lu Protokol ile altı aydan DÖRT aya indirildi (HUDOC sınıflaması: 'Four-month period (former six-month)'); nihai iç hukuk kararından itibaren, iç hukukta yazılı tebliğ öngörülüyorsa TEBLİĞDEN işler (Sabri Güneş/Türkiye [BD] § 53 — Worm/Avusturya); son gün hafta sonu veya resmî tatile rastlasa da UZAMAZ (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ 60-61). 1.2.2022 öncesi nihai kararlarda altı ay uygulandığına ilişkin geçiş kuralı TEYİT BEKLİYOR."),
+                        "AİHS m.35/1 — 15 No'lu Protokol ile altı aydan DÖRT aya indirildi (HUDOC sınıflaması: 'Four-month period (former six-month)'); nihai iç hukuk kararından itibaren, iç hukukta yazılı tebliğ öngörülüyorsa TEBLİĞDEN işler (Sabri Güneş/Türkiye [BD] § 53 — Worm/Avusturya); son gün hafta sonu veya resmî tatile rastlasa da UZAMAZ (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ 60-61)."),
 }
 
 # B-21 (v0.5.14) — teyit tarihi kaynak METNİNDEN AYRI alanda tutulur; böylece
@@ -1468,12 +1468,8 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "27396/06, § 53 — Worm/Avusturya'ya atıfla). AYM'nin 'UYAP'tan öğrenme' yaklaşımını "
             "AİHM'e otomatik taşıma. Süre Sözleşme ölçütleriyle hesaplanır: son gün hafta sonu/resmî "
             "tatile rastlasa da UZAMAZ (aynı karar §§ 60-61) — başvuruyu son güne bırakma.")
-        if teblig < date(2022, 2, 1):
-            uyarilar.append(
-                "AİHM SÜRE GEÇİŞİ (15 No'lu Protokol): süre altı aydan dört aya indirildi; 1.2.2022'den "
-                "ÖNCE kesinleşen iç hukuk kararlarında altı ay uygulanmış olabilir — geçiş kuralı TEYİT "
-                "BEKLİYOR. Bu hesap girilen süreyle (%d %s) yapıldı; geçiş kuralını Protokol metninden "
-                "teyit et." % (miktar, birim))
+        # R7 (v0.5.18) — 1.2.2022 öncesi altı ay geçişi KAPSAM DIŞI (avukat kararı
+        # 2026-10-06): süre dört aydır; oa-usul [G11] de yalnız dört ay der.
 
     # B-16 (v0.5.14) — SON SAĞLIK KONTROLÜ: son gün hiçbir koşulda başlangıç
     # tarihinden önce olamaz. Bu satır bir daha ASLA geçmeyecek olsa bile durur:

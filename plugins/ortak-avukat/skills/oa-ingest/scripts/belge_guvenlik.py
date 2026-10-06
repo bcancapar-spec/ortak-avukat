@@ -51,7 +51,12 @@ punto 8; eşikler yanlış alarm vermeyecek biçimde seçildi):
   alfaya bakmak yanlış alarm üretir.
 
 SINIRLAR (dürüstçe): taranmış görüntünün PİKSEL kanalı denetlenmez; metnin
-üstüne sonradan konan GÖRSEL ile örtme ölçülmez (vektör kutu ölçülür); DOCX
+üstüne sonradan konan GÖRSEL ile örtme yalnız talimat diliyle bulgudur (mühür/
+damga görselinden ayırt edilemez; vektör kutuyla örtme ölçülür). PDF görünürlük
+kâhini (sayfa yazılı ve yazısız iki kez çizilir) PyMuPDF ≥ 1.24.2 ister: çalışmazsa
+raporda 'kahin-devre-disi' notu çıkar ve sezgisel kural uygulanır; bütçesi (belge
+başına 300 sayfa, sayfa başına 4000 sorgu) aşılırsa sezgisel karar korunur, görsel
+zemindeki ölçülemeyen yazı ise sayfayı DENETLENEMEDİ diye sarar. DOCX
 tablo STİLİ koşullu zemininin hangi satıra düştüğü çözülmez (en elverişli zemin
 alınır — yanlış alarm yerine bu küçük açık seçildi); belgede koyu dolgulu çizim
 şekli varsa, onun açıklayabileceği açık renkli yazı yalnız talimat diliyle bulgu
@@ -108,6 +113,10 @@ GORSEL_SAYFA_ORANI = 0.30  # görünmez yazı yalnız sayfanın ≥ %30'unu kapl
 AZAMI_PIKSEL_ALAN = 60000  # piksel teyidinde render tavanı (dev kutu dpi düşürülerek ölçülür)
 AZAMI_GORUNURLUK_SAYFA = 300   # belge başına görünürlük kâhini hazırlanan sayfa (aşılırsa ölçülemez → temkinli taraf)
 AZAMI_SAYFA_PIKSEL = 1000000   # kâhin sayfa render tavanı (büyük sayfada dpi düşer)
+# R9 (2026-10-06): kâhin `apply_redactions(graphics=…, text=…)` kullanır — graphics v1.23.27'de,
+# text v1.24.2'de geldi (PyMuPDF belgesi). Daha eskisinde kâhin ÇALIŞMAZ ve bu görünür not düşer;
+# requirements.txt alt sınırıyla aynı sayı (testle kilitli).
+PYMUPDF_ASGARI = (1, 24, 2)
 AZAMI_KAHIN_SORGU = 4000   # sayfa başına kâhin sorgusu (binlerce gizli parçalı kasıtlı sayfa kilitlemesin)
 AZAMI_ORTUSEN = 64         # kâhin sorgusunda maskelenen örtüşen yazı kutusu (fazlası: ölçülemez)
 AZAMI_ORTUSEN_BAKIS = 2000  # örtüşen aramasında bakılan aday (üst üste yığılmış yazıya karşı)
@@ -361,11 +370,13 @@ class _Rapor:
         self.piksel = 0
         self.gorunurluk = 0
         self.sayfa_kapsami_kapali = False   # R2: sayfa ayracı metinde taklit edilmişse True
+        self.kahin_kapali = None            # R9: görünürlük kâhini çalışamadıysa sebebi
 
-    def ekle(self, tur, yontem, konum, ornek=""):
+    def ekle(self, tur, yontem, konum, ornek="", zorunlu=False):
         # yontem/konum da evraktan gelen ad (arşiv girdi adı ≤ 64 KB, ⟦⟧ taşıyabilir) içerebilir ve
         # md başlığına/INDEX'e/DURUM.md'ye DAMGA DIŞI gider → kırp + nötrle (v0.5.18 inceleme #11).
-        if len(self.bulgular) < AZAMI_BULGU:
+        # zorunlu: denetimin kendisi hakkındaki not bulgu tavanında da düşmez (R9).
+        if zorunlu or len(self.bulgular) < AZAMI_BULGU:
             self.bulgular.append({"tur": tur, "yontem": _kirp(_notrle(gorunmez_ayikla(str(yontem))[0]), 300),
                                   "konum": _kirp(_notrle(gorunmez_ayikla(str(konum))[0]), 200),
                                   "ornek": _ornek(ornek)})
@@ -1192,6 +1203,26 @@ def _fitz():
             return None
 
 
+def _pymupdf_surumu(fz):
+    """'1.28.2' → (1, 28, 2); okunamazsa None (kâhin yine denenir — hatası görünür not düşer)."""
+    try:
+        return tuple(int(x) for x in str(getattr(fz, "VersionBind", "")).split(".")[:3])
+    except (TypeError, ValueError):
+        return None
+
+
+def _kahin_kapali(R, sebep):
+    """R9 (2026-10-06): kâhin çalışamazsa SESSİZ kalınmaz — belge başına BİR görünür not (UYARI).
+    Sezgisel karar yine korunur (temkinli taraf) ama avukat, örtülü/saydam/zeminli yazı denetiminin
+    bu evrakta zayıf kaldığını bilir: görünür yazı gizli sayılabilir, örtülü yazı kaçabilir."""
+    if R.kahin_kapali:
+        return
+    R.kahin_kapali = sebep
+    R.ekle("kahin-devre-disi", "görünürlük kâhini ÇALIŞMADI (%s): örtülü/saydam/zeminli yazı yalnız "
+           "sezgisel kuralla değerlendirildi — PyMuPDF ≥ %s gerekir"
+           % (sebep, ".".join(str(x) for x in PYMUPDF_ASGARI)), "belge", "", zorunlu=True)
+
+
 def _pdf_rgb(renk):
     if isinstance(renk, int):
         return (renk >> 16) & 255, (renk >> 8) & 255, renk & 255
@@ -1361,6 +1392,11 @@ class _Gorunurluk:
         self.R.gorunurluk += 1
         fz, tmp = _fitz(), None
         try:
+            surum = _pymupdf_surumu(fz)
+            if surum is not None and surum < PYMUPDF_ASGARI:
+                _kahin_kapali(self.R, "PyMuPDF %s < %s" % (".".join(str(x) for x in surum),
+                                                          ".".join(str(x) for x in PYMUPDF_ASGARI)))
+                return False
             from PIL import Image, ImageChops
             sr = self.sayfa.rect
             alan = sr.width / 72.0 * sr.height / 72.0
@@ -1381,8 +1417,9 @@ class _Gorunurluk:
             fark = ImageChops.lighter(ImageChops.lighter(r, g), m).point(lambda v: 255 if v > 40 else 0)
             self.durum = (fark, pix[0].width / sr.width, pix[0].height / sr.height, sr.x0, sr.y0,
                           _donme_matrisi(self.sayfa))
-        except Exception:
+        except Exception as e:
             self.durum = False
+            _kahin_kapali(self.R, "%s: %s" % (type(e).__name__, str(e)[:90]))
         finally:
             if tmp is not None:
                 try:

@@ -112,7 +112,7 @@ Süre yalnızca bizim riskimiz değildir. **Bir dava/dosya/ihtilaf incelenirken 
    ```
    - `--baslangic-kaniti`: `mazbata` · `uets-kaydi` · `kalem-tevdi` · `ilan` · `tefhim-tutanagi` · `uyap-erisim-kaydi` · `kesinlesme-serhi` · `beyan` · `yok`. Kanıtın işaret ettiği olay kuralın izinli türünde değilse **KANIT ↔ KURAL ÇELİŞKİSİ**; `beyan`/`yok` → **KANITSIZ BAŞLANGIÇ** (hesap ihtiyat amaçlı, karşı tarafa kesin dil kapalı).
    - `--teblig-durumu`: `gecerli` · `usulsuz` (TK m.32: muttali olunan tarih tebliğ tarihidir → `--baslangic-turu ogrenme`) · `supheli` (çıktı satırı ">>> İHTİYAT HEDEFİ"; defter kaydı `[İHTİYAT HEDEFİ — ŞÜPHELİ TEBLİĞ]` etiketli).
-   - **AYM** (`aym_bireysel`): süre başvuru yollarının tüketilmesinden; AYM kararlarında nihai kararın UYAP'tan öğrenildiği tarih olay olarak kaydedilir (Ramazan Seçen § 9) — genel ilke **TEYİT BEKLİYOR**, erken öğrenme kanıtı varsa onu gir. **AİHM** (`aihm_basvuru`, 4 ay): iç hukukta yazılı tebliğ öngörülüyorsa **tebliğ** esastır (Sabri Güneş § 53); 1.2.2022 öncesi kararlarda altı ay geçiş kuralı **TEYİT BEKLİYOR**.
+   - **AYM** (`aym_bireysel`): süre başvuru yollarının tüketilmesinden; AYM kararlarında nihai kararın UYAP'tan öğrenildiği tarih olay olarak kaydedilir (Ramazan Seçen § 9) — genel ilke **TEYİT BEKLİYOR**, erken öğrenme kanıtı varsa onu gir. **AİHM** (`aihm_basvuru`, 4 ay): iç hukukta yazılı tebliğ öngörülüyorsa **tebliğ** esastır (Sabri Güneş § 53); süre her dosyada **dört aydır** — 1.2.2022 öncesi altı ay geçişi kapsam dışıdır (avukat kararı 2026-10-06; `oa-usul` [G11] ile aynı).
 4g. **Kural tablosu genişledi (v0.5.18 / Y-04, Y-05; her biri Mevzuat MCP teyitli 2026-10-05):**
    | Aile | Yeni kurallar |
    |---|---|

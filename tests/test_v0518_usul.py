@@ -255,13 +255,15 @@ def test_suresi_gecmis_basvuru_bulgu_ve_mazeret_yolu_avukat_karari():
 
 # ── [G11] AİHM ──────────────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("nihai,rejim", [
-    ("2022-01-31", "6 ay (eski rejim)"), ("2022-02-01", "4 ay"), ("2026-08-20", "4 ay")])
-def test_aihm_4_6_ay_rejimi_tarih_karsilastirmasiyla(nihai, rejim):
+@pytest.mark.parametrize("nihai", ["2022-01-31", "2022-02-01", "2026-08-20"])
+def test_aihm_suresi_her_zaman_dort_ay(nihai):
+    """R7 (avukat kararı 2026-10-06): AİHM başvuru süresi dört aydır; 1.2.2022 öncesi
+    altı ay geçişi kapsam dışıdır. oa-sure ile aynı: iki modül de yalnız dört ay der."""
     v = _bb()
     v["bireysel_basvuru"][1]["sure"]["nihai_karar_tarihi"] = nihai
     bulgular, _ = _denetle(v)
-    assert f"rejimi {rejim}" in bulgular
+    assert "süresi 4 ay" in bulgular
+    assert "6 ay" not in bulgular
 
 
 def test_aihm_nihai_karar_tarihi_yoksa_bosluk():
