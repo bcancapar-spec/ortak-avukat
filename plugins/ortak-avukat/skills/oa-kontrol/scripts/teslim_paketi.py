@@ -24,7 +24,8 @@ Zincir (ilk exit != 0'da DURUR — kalan kapılar çalıştırılmaz):
        TAMAMLAYICIDIR — (b) künyenin kaynakta İZİNİ, (b2) o künyenin GERÇEKTEN
        MUHAKEME EDİLİP EDİLMEDİĞİNİ ve DAMGA'sına göre dış-çıktıya girip
        giremeyeceğini denetler.
-  (c)  gizlilik_tara.py <taslak>   [yalnız --dis-arac ise]  → Privacy Layer 0
+  (c)  gizlilik_tara.py <taslak>   [--dis-arac ise YA DA teslim ürünü UDF ve UDF
+       yazıcısı udf-cli ise — v0.5.18]  → Privacy Layer 0
   (d)  pipeline_kayit.denetle_calistir(kok, makbuz_kontrolu=False) [yalnız defter
        varsa] → defter boşluğu — P0-5 (v0.5.5): artık İN-PROCESS import (subprocess
        DEĞİL — 'kapı başka kapıyı subprocess ile çağırmaz' ilkesi); makbuz bütünlüğü
@@ -42,8 +43,9 @@ Hepsi geçerse:
   zip/content.xml) "hızlı yapısal ön-kapı" TAMAMEN KALDIRILDI — saha dosyası A
   sahasında bu motorun ürettiği .udf UYAP editöründe AÇILMADI, ama zincir
   yine de "TESLİME HAZIR" basıyordu (sessiz-yanlış). udf_yaz.py artık BAŞKA
-  bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@latest
-  login`) GEREKTİRİR. npx/udf-cli yoksa veya oturum gerekiyorsa udf_yaz.py
+  bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@<sürüm>
+  login`; sürüm udf_yaz.py'deki `UDF_CLI_SURUM` sabitine BAĞLIDIR — v0.5.18,
+  `@latest` kullanılmaz) GEREKTİRİR. npx/udf-cli yoksa veya oturum gerekiyorsa udf_yaz.py
   FAIL-CLOSED döner (hiçbir .udf yazılmaz) ve bu adım mevcut (rc != 0 → BLOK)
   dalından TESLİMİ DURDURUR — bu KASITLIDIR: bozuk-ama-"üretildi" görünen bir
   UDF, dürüst bir "ağ/oturum eksik" engelinden DAHA KÖTÜDÜR. Avukat
@@ -84,6 +86,19 @@ mühürle sha uyuşmazlığı BAYAT değil TÜREV'dir; was_derived_from zinciri
 kurulmuşsa YEŞİL, kurulmamışsa "imzalı türev mühürsüz" uyarısı + best-effort
 e-imzali-nusha mührü (istisna defterine dogrulama-toleransi satırı düşer).
 
+v0.5.18 — UDF TESLİMİ = DIŞ ARAÇ ÇAĞRISI (avukat kararı, 2026-10-05): UDF'i
+üreten/okuyan tek yazıcı `npx udf-cli` AĞ + OTURUM kullanır; dilekçe metninin
+sunucuya gidip gitmediği ÖLÇÜLMEDİ. Belirsizlikte fail-closed: teslim ürünü
+UDF ise (--udf-yok YOK) ve zincirin UDF yazıcısı udf-cli ise (udf_yaz.py
+IMPORT EDİLMEDEN okunur: sütun-0 `UDF_CLI_PAKET =` tanımı ya da `def
+npx_ile_udf_uret(`; dosya okunamazsa udf-cli VARSAYILIR), (c) Layer 0 taraması `--dis-arac`
+verilmese de ZORUNLU koşar ve BLOK sonucu teslimi durdurur (--dis-arac
+kapısıyla AYNI semantik: gizlilik_tara exit != 0 → BLOK; script yoksa
+fail-closed). «İçerik dışarı çıkmıyor» varsayımı UDF teslimlerinde artık
+yapılmaz; tetik makbuzda görünür (`layer0_tetik`, (c) kaydında `tetik`).
+UDF olmayan (--udf-yok, dış araçsız) teslimde davranış DEĞİŞMEZ (anayasa
+m.10: Layer 0 her dış-araç çağrısını sarar).
+
 Alt scriptler bu scriptin __file__ konumundan GÖRELİ keşfedilir
 (../../<skill>/scripts/...); bulunamazsa `OA_SKILLS_KOK` ortam değişkeni
 fallback denenir (P0-5(b) path-fix). "Script bulunamadı/çalıştırılamadı" artık
@@ -98,8 +113,10 @@ Kullanım (Windows/PowerShell — 'python'):
   python teslim_paketi.py <taslak.md> --tip <tip> --taraf <taraf> [--dis-arac] [--kok <klasör>] [--udf-yok]
     --tip   : dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal|genel
               (dilekce_denetim'e VE ictihat_muhakeme_denetim'e geçer)
-    --taraf : davaci|davali|sanik|katilan|mudahil            (boş bırakılabilir)
+    --taraf : davaci|davali|sanik|katilan|mudahil|musteki|alacakli|borclu|ucuncu-kisi
+              (boş bırakılabilir; v0.5.18: icra tarafları + musteki)
     --dis-arac : çıktı dış araca (web/bulut/e-posta) gidecekse Layer 0 taramasını ekler
+                 (UDF teslimde — udf-cli dış araçtır — bayraksız da ZORUNLU koşar, v0.5.18)
     --kok   : çalışma kökü; _oa/... göreli yolları buradan çözülür (varsayılan: bulunulan klasör)
     --udf-yok : kurucu kural 'varsayılan çıktı UDF'yi BİLİNÇLİ atla (makbuza yazılır)
 
@@ -294,6 +311,64 @@ def _muhur_modulu():
 
 def _udf_yaz_modulu():
     return _modul_yukle("oa-dilekce", "udf_yaz.py", "_oa_tp_udf_yaz_inproc")
+
+
+# v0.5.18 — udf_yaz.py IMPORT EDİLMEDEN satır satır okunur (yan etkisiz,
+# yükleme hatasından bağımsız): sabitlenmiş udf-cli sürümü (Ajan B,
+# `UDF_CLI_SURUM`) ve yazıcının udf-cli olup olmadığı (`UDF_CLI_PAKET`
+# sabiti / `npx_ile_udf_uret` fonksiyonu) sütun-0 tanımlarından okunur.
+_UDF_CLI_SURUM_RE = re.compile(r'^UDF_CLI_SURUM = "(\d+\.\d+\.\d+)"$')
+_UDF_CLI_YAZICI_RE = re.compile(r"^(?:UDF_CLI_PAKET\s*=|def npx_ile_udf_uret\()")
+
+
+def _udf_yaz_satirlari():
+    """Çözülen udf_yaz.py'nin satırları; bulunamaz/okunamazsa None."""
+    try:
+        with open(_script("oa-dilekce", "udf_yaz.py"), encoding="utf-8",
+                  errors="replace") as f:
+            return f.read().splitlines()
+    except OSError:
+        return None
+
+
+def _udf_cli_surumu():
+    """udf_yaz.py'de sabitlenmiş udf-cli sürümü ('0.5.6' gibi) ya da None."""
+    for satir in _udf_yaz_satirlari() or ():
+        m = _UDF_CLI_SURUM_RE.match(satir)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _udf_cli_paket_metni():
+    """Kullanıcı mesajı için paket adı. Sürüm okunamazsa @latest'e DÜŞÜLMEZ
+    (sabitlenmemiş sürüm UYAP'ta açılmayan UDF riskidir) — sabitin yeri
+    gösterilir."""
+    surum = _udf_cli_surumu()
+    return ("udf-cli@" + surum) if surum else "udf-cli@<udf_yaz.py UDF_CLI_SURUM>"
+
+
+def _udf_yazici_udf_cli_mi():
+    """v0.5.18 — zincirin UDF yazıcısı udf-cli (npx; ağ + oturum) mi?
+    MEKANİK: udf_yaz.py'de sütun-0 `UDF_CLI_PAKET =` tanımı ya da `def
+    npx_ile_udf_uret(` varsa EVET. Dosya bulunamaz/okunamazsa yazıcı
+    BİLİNMİYORDUR → fail-closed: udf-cli VARSAYILIR (Layer 0 koşar)."""
+    satirlar = _udf_yaz_satirlari()
+    if satirlar is None:
+        return True
+    return any(_UDF_CLI_YAZICI_RE.match(s) for s in satirlar)
+
+
+def _layer0_tetigi(a):
+    """v0.5.18 — (c) Layer 0 neden koşuyor? None (koşmaz — eski davranış) |
+    'dis-arac' | 'udf-cli' | 'dis-arac+udf-cli'. UDF teslimi (--udf-yok
+    yok) + udf-cli yazıcısı = dış araç çağrısı (anayasa m.10)."""
+    tetik = []
+    if a.dis_arac:
+        tetik.append("dis-arac")
+    if not a.udf_yok and _udf_yazici_udf_cli_mi():
+        tetik.append("udf-cli")
+    return "+".join(tetik) or None
 
 
 def _udf_content_xml(yol):
@@ -994,6 +1069,9 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
         "tip": a.tip, "taraf": a.taraf or None,
         "kapilar": kapilar, "exit_kodu": exit_kodu, "udf_yolu": udf_yolu,
         "udf_atlandi_istekle": bool(a.udf_yok),
+        # v0.5.18 — Layer 0 neden koştu (None = koşmadı; 'udf-cli' = UDF
+        # teslimi dış araç çağrısı sayıldı; 'dis-arac' = --dis-arac)
+        "layer0_tetik": getattr(a, "layer0_tetik", None),
         "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
         "kismi_ingest": _kismi_ingest_alani(kok),
         "durdu": durdu,
@@ -1112,8 +1190,15 @@ def _zincir():
                     help="dilekçe tipi (dava|cevap|istinaf|temyiz|aym_bireysel|yemin|"
                          "idari-kanal|genel); dilekce_denetim.py'ye VE "
                          "ictihat_muhakeme_denetim.py'ye geçer (varsayılan: genel)")
+    # v0.5.18 — icra tarafları (alacakli/borclu/ucuncu-kisi) ve musteki:
+    # dilekce_denetim.py (a) kapısı bu sıfatların müvekkil-aleyhi kalıp
+    # setlerini taşıyor; zincir onları REDDEDİYORDU (argparse hatası) —
+    # icra dosyasında tek komut teslim hiç koşamıyordu. Değer (a)'ya AYNEN
+    # geçer; liste dilekce_denetim'in kabul ettiği kümenin ALT kümesidir
+    # (test_v0518_teslim_layer0.py kilitler).
     ap.add_argument("--taraf", default="",
-                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil"],
+                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil",
+                             "musteki", "alacakli", "borclu", "ucuncu-kisi"],
                     help="taraf sıfatı (müvekkil-aleyhi taraması için); boş bırakılabilir")
     ap.add_argument("--dis-arac", action="store_true",
                     help="çıktı dış araca gidecekse Privacy Layer 0 (gizlilik_tara) kapısını ekle")
@@ -1140,12 +1225,20 @@ def _zincir():
         print("HATA: kök klasör yok: %s" % kok, file=sys.stderr)
         sys.exit(1)
 
+    # v0.5.18 — Layer 0 tetiği (UDF teslimi = udf-cli dış araç çağrısı)
+    a.layer0_tetik = _layer0_tetigi(a)
+
     print(CIZGI)
     print("TESLİM PAKETİ — tek komut teslim zinciri (oa-kontrol)")
     print(CIZGI)
     print("Taslak    : %s" % taslak)
     print("tip/taraf : %s / %s" % (a.tip, a.taraf or "—"))
-    print("Dış araç  : %s" % ("EVET (Layer 0 taraması dahil)" if a.dis_arac else "hayır"))
+    if a.dis_arac:
+        print("Dış araç  : EVET (Layer 0 taraması dahil)")
+    elif a.layer0_tetik:
+        print("Dış araç  : UDF/udf-cli (Layer 0 taraması ZORUNLU — v0.5.18)")
+    else:
+        print("Dış araç  : hayır")
     print("Kök (_oa) : %s" % kok)
 
     gecen = []           # açılan (OK) kapılar
@@ -1209,16 +1302,34 @@ def _zincir():
         elif sonuc == "OK":
             gecen.append("(b2) içtihat muhakeme zinciri")
 
-    # ── (c) gizlilik / Privacy Layer 0 — yalnız --dis-arac ise ─────────────
+    # ── (c) gizlilik / Privacy Layer 0 — --dis-arac YA DA UDF teslimi (udf-cli)
+    # v0.5.18 (avukat kararı): UDF yazıcısı udf-cli ağ + oturum kullanan bir
+    # DIŞ ARAÇTIR; metnin sunucuya gidip gitmediği ölçülmedi → UDF teslimde
+    # «içerik dışarı çıkmıyor» varsayımı YAPILMAZ, tarama ZORUNLU koşar (fail-
+    # closed; semantik --dis-arac kapısıyla AYNI). UDF'siz teslim değişmez.
     if kapanan is None:
         _bolum("[c] GİZLİLİK / PRIVACY LAYER 0  (gizlilik_tara.py)")
-        if not a.dis_arac:
+        if not a.layer0_tetik:
             print("    [BILGI] --dis-arac verilmedi; içerik dışarı çıkmıyor sayıldı — "
                   "Layer 0 taraması ATLANDI.")
             kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": "BILGI", "exit": None})
         else:
+            if "udf-cli" in a.layer0_tetik:
+                print("    [ZORUNLU] teslim ürünü UDF ve UDF yazıcısı udf-cli (npx %s; ağ + "
+                      "oturum) — dış araç çağrısıdır (anayasa m.10: Layer 0 her dış-araç "
+                      "çağrısını sarar). «İçerik dışarı çıkmıyor» varsayımı UDF teslimde "
+                      "YAPILMAZ; tarama --dis-arac olmadan da koşar." % _udf_cli_paket_metni())
             sonuc, rc = _kapi(S_GIZLILIK, [taslak], kok)
-            kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": sonuc, "exit": rc})
+            kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": sonuc, "exit": rc,
+                                   "tetik": a.layer0_tetik})
+            if sonuc in ("BLOK", "ATLA") and "udf-cli" in a.layer0_tetik:
+                # Avukat kararı (2026-10-05, ölçüm sonrası): KATI ENGEL, onay
+                # bayrağı YOK — yol, UDF'i yerelde üretmektir.
+                print("    [BILGI] UDF teslimde Layer 0 kapandı: metin dış araca (udf-cli) "
+                      "GÖNDERİLMEDİ. YOL: teslim_paketi'ni --udf-yok ile yeniden koş ve "
+                      "UDF'i yerelde UYAP editöründe üret. Dilekçede TCKN zorunlu "
+                      "olduğundan (HMK m.119/1-c) maskeleme çoğu zaman uygun değildir; "
+                      "yalnız zorunlu OLMAYAN hassas veri çıkarılabilir.")
             if sonuc == "ATLA":
                 atlanan.append("(c) gizlilik_tara.py")
                 kapanan = ("(c) GİZLİLİK / LAYER 0", rc)
@@ -1352,7 +1463,8 @@ def _zincir():
                   "rehbere birebir) — ağ + oturum gerektirir. `--yerel-motor` KALDIRILDI "
                   "(B5 saha bulgusu: o motorun ürettiği .udf UYAP'ta açılmıyordu); "
                   "npx/oturum yoksa bu adım FAIL-CLOSED BLOK olur (bkz. oa-dilekce/"
-                  "scripts/udf_yaz.py, 'npx -y udf-cli@latest login').")
+                  "scripts/udf_yaz.py, 'npx -y %s login' — sürüm udf_yaz.py "
+                  "UDF_CLI_SURUM sabitine bağlı)." % _udf_cli_paket_metni())
             bulundu, rc, cikti = _kos(
                 S_UDF, ["--girdi", taslak, "--cikti", udf_cikti], kok)
             if not bulundu:

@@ -61,16 +61,75 @@ Kategori listesi **kapalı beyaz listedir** (v0.5.14): listede olmayan bir etike
 
 `beyan` **daima ifade/sorgu tutanağı `belge`si ile yazılır** — belgesiz `beyan` olayı, `oa-pipeline/scripts/capraz_denetim.py`'nin `BELGESIZ_MESRU` kümesinde (`karine · ikrar · yemin`) yer almadığı için `OLGU_EVRAKSIZ` kopukluğu sayılır ve o script exit 1 verir. Bu küme v0.5.14'te **bilinçli olarak değiştirilmemiştir** (kapı bir kütük/olgu disiplini kapısıdır; beyanın belgesiz kalması meşru değildir).
 
-## ÖZNE EŞLEŞTİRME — yazım varyantı taraması (v0.5.8.4, advisory)
-Matris girdisine tarafları `taraflar` listesine, her olayın failini opsiyonel
-`ozne` alanına yaz — `vakia_matris.py --dogrula` bu adları Jaro-Winkler ile
-skorlar ve çıktıya `ozne_eslestirme` bölümünü ekler: **skor ≥0.92 → BAGLA**
-(aynı öznenin yazım varyantı sayılır), **0.80-0.92 → AVUKATA-SOR**. Amaç
-kayıpsızlıktır: "öznenin tüm beyanları" sorgusu yazım varyantı yüzünden kayıt
-kaçırmasın. **AVUKATA-SOR görüldüğünde model KENDİ KARAR VERMEZ — iki yazımın
-aynı kişi olup olmadığını avukata sorar ve cevabı gelene dek kayıtları
-birleştirmez.** Tarama `saglikli` hesabına girmez (advisory); varyant yoksa
-sessizdir.
+## ÖZNE EŞLEŞTİRME — yazım varyantı taraması (v0.5.8.4, advisory; v0.5.18 kural seti)
+Matris girdisine tarafları `taraflar` listesine (düz ad ya da `{"ad": ..., "tur":
+"gercek_kisi|tuzel_kisi|kamu"}`), her olayın failini opsiyonel `ozne` alanına yaz —
+`vakia_matris.py --dogrula` bu adları `scripts/ozne_eslestirici.py` kural setinden
+geçirir ve çıktıya `ozne_eslestirme` bölümünü (karar, skor, kural, gerekçe) ekler.
+**v0.5.18 (kullanıcı kararı 2026-10-05 — yanlış birleştirme fazladan sorudan daha
+kötüdür; eski tüm-dize Jaro-Winkler iki ayrı kişiyi BAGLA'yabiliyordu):**
+**BAGLA** (aynı öznenin yazım varyantı sayılır) yalnız YAZIM eşdeğerliğinde verilir:
+harfler aynı, fark yalnız büyük-küçük harf, ASCII yazımı ("ISMAIL GUNES" = "İsmail
+Güneş"), boşluk ("Ayşegül" = "Ayşe Gül"), kurum eki kısaltması ("Ltd. Şti." =
+"Limited Şirketi") ya da soyadı belli sıra ("YILMAZ Mehmet" / "Yılmaz, Mehmet" =
+"Mehmet Yılmaz"). Sayısal yakınlık ve OCR jokeri tek başına BAGLA ettirmez (kardeş
+adları "Serkan/Serhan" yüksek skor alır; "Ha.an" Hasan da olabilir Hakan da).
+**AVUKATA-SOR:** iki yazım da Türkçe harfli ve harfleri farklıysa ("Gülşen/Gülsen"),
+birleşik biçim yalnız harf katlamasıyla aynıysa ("Can Kaya/Çankaya"), soyadı belli
+olmayan sıra farkında ("Şahin Yıldız/Yıldız Şahin"), ad parçalarının en zayıf
+eşleşmesi ≥0,80 ise (Kaya/Kara, Demir/Demirci), parça sayısı farklıysa (ikinci ad,
+çift soyad "Kaya-Demir", şirket eki), baş harf ("M. Yılmaz", "M.Yılmaz"), OCR jokeri
+("Y.lmaz") ya da OCR harf karışıklığı (rn↔m, l↔i) varsa, aynı unvanda şirket türü
+farklıysa ("A.Ş." / "Ltd. Şti."). `tur` iki tarafta da yazılı ve farklıysa **BAGLA
+asla** (alan yoksa davranış değişmez); türsüz bir yazım farklı türden kayıtlara
+bağlanıyorsa (kişi mi şirket mi?) onun bağları da SOR olur — koruma dolaylı yoldan
+delinemez; tanınmayan `tur` değeri ("davacı" gibi usul rolü) görünür uyarıyla yok
+sayılır. Skor bilgi amaçlıdır; karar kuraldan çıkar. Bilinen bedel: OCR bozulması
+("Y.lmaz", "Yılrnaz") ve "Ahmed/Ahmet" gibi yazım farkları soru olarak gelir.
+Davranış değişikliği: aynı soyadlı farklı ön adlar ("Osman Balcı / Orhan Balcı")
+eskiden SOR idi, artık ayrı özne (sessiz) — yazım varyantı değildir. Amaç kayıpsızlıktır: "öznenin tüm
+beyanları" sorgusu yazım varyantı yüzünden kayıt kaçırmasın. **AVUKATA-SOR
+görüldüğünde model KENDİ KARAR VERMEZ — iki yazımın aynı kişi olup olmadığını
+avukata sorar ve cevabı gelene dek kayıtları birleştirmez.** Tarama `saglikli`
+hesabına girmez (advisory); varyant yoksa sessizdir.
+
+## DELİL TEDARİK PLANI ve TANIK SORU PLANI (v0.5.18 adayı; Yargı PRO 16-4/16-3 fikri, OA yöntemiyle)
+Matris ispat boşluğunu BULUR; bu iki kapı boşluğun nasıl kapatılacağını ve tanığın
+nasıl dinletileceğini disipline eder. İkisi de `vakia_matris.py --dogrula …
+--json _oa/cikti/04-vakia-denetim.json` çıktısını okur, dosya yazmaz (JSON stdout'a),
+hukuki karar vermez; madde metinleri Yargı PRO MCP `mevzuat_getir` ile okundu
+(teyit 2026-10-05).
+- **Delil tedarik planı — `python scripts/delil_plani.py --matris
+  _oa/cikti/04-vakia-denetim.json --iskelet`** her ispat boşluğu için doldurulacak
+  satır iskeletini basar; doldurulan plan `--plan _oa/cikti/04-delil-plani.json`
+  ile denetlenir. Kural: **ispat boşluğu bir tedarik satırına bağlanmadan
+  kapanmaz.** Satır kaynak · yöntem · kim (`MUVEKKIL|AVUKAT|MAHKEME|KURUM|KARSI_TARAF`)
+  · aciliyet (`KAYBOLUYOR|SURELI|NORMAL`) · son gün (tarih ya da `BELIRLENEMEDI` →
+  `oa-sure`) · dayanak (madde ya da `TEYIDE MUHTAC`) · durum taşır; "sair deliller",
+  "bilahare bildirilecek", "ilgili yerlerden" boş hücre sayılır. İspat yükü karşı
+  taraftaysa tedarik planlanmaz (HMK m.190/1 — gereksiz delil karşı tarafa veri
+  verir). Kaybolabilir delil (kamera, log…) aynı gün ele alınır: hemen tespit
+  edilmezse kaybolacak ya da ileri sürülmesi önemli ölçüde zorlaşacaksa delil
+  tespitinde hukuki yarar var sayılır (HMK m.400/2). Avans kesin süreye bağlıdır;
+  yatırılmazsa delilden vazgeçilmiş sayılır (HMK m.324). Süresinden sonra delil
+  ancak izinle gösterilir (HMK m.145). Çıkış: 0 TAM · 1 EKSİK · 2 girdi hatası.
+- **Tanık soru planı — `python scripts/tanik_plani.py --matris
+  _oa/cikti/04-vakia-denetim.json --plan _oa/cikti/04-tanik-soru-plani.json`.**
+  Kural: **VAKIASIZ SORU YOKTUR** — her soru matristeki bir iddia kimliğine bağlanır
+  (`ispat_yonu`: `ispat|curutme|guvenilirlik`); **TANIĞIN CEVABI YAZILMAZ** — cevap
+  ya da ifade taslağı alanı veya "şöyle söyleyin" türü yönlendirme planı GEÇERSİZ
+  kılar (TCK m.272 yalan tanıklık; m.277 görülmekte olan davada tanığı hukuka
+  aykırı etkilemeye teşebbüs). HMK'da listede gösterilmeyen kimse tanık olarak
+  dinlenemez ve ikinci liste verilemez (m.240/2; hazır bulundurma, m.243/1, avukat
+  takdiridir); vekil tanığa doğrudan soru yöneltebilir (HMK m.152; ceza
+  yargılamasında CMK m.201); karşı tanıkta güvenilirlik ekseni HMK m.255; istinabede
+  tanığın hangi hususlardan dinleneceğini hâkim belirler (m.259/4); tanık dinlenirken
+  yazılı not kullanamaz (m.261/2). Hukuki iddiaya ya da tanık caizliği belirsiz
+  vakıaya yöneltilen soru uyarı alır (İSPAT ONTOLOJİSİ). Çıkış: 0 GEÇERLİ ·
+  1 GEÇERSİZ · 2 girdi hatası.
+- **İki plan da DAHİLİDİR** (antitez cephaneliği gibi): markdown sürümü
+  `⚠ DAHİLİ — DOSYAYA EKLENMEZ / UYAP'A YÜKLENMEZ` filigranıyla başlar; soru planı
+  tanığa verilmez, tanıkla cevap provası yapılmaz.
 
 ## Aktif çıkarım refleksi
 Kronolojiyi edilgen dizme. Sıralama sırasında **müvekkil lehine örüntü** ara: bir illiyet zinciri, bir karşı tarafın temerrüt anı, bir hak düşürücü sürenin başlangıcı, lehe bir karine doğuran olgu. Boşluğu yalnız işaretleme — **nasıl kapatılacağını** da öner.

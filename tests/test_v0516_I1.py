@@ -331,13 +331,18 @@ def test_P1_1_koruma_tedbiri_sifirinci_adim_var():
 
 def test_P1_1_sure_kurallari_jsona_kural_eklenmedi():
     """oa-sure alanı (I5) — bu grup sure_kurallari.json'a DOKUNMAZ; SKILL bunu
-    açıkça 'yalnız çıpa' diye yazar. Dosya HEAD ile aynı olmalı."""
+    açıkça 'yalnız çıpa' diye yazar.
+
+    v0.5.18: eski ikinci yarı dosyayı `git diff HEAD` ile karşılaştırıyordu — I1 dalına
+    özgü geçici bir bekçiydi; oa-sure sahibinin MEŞRU her kural eklemesinde commit'e
+    kadar kırmızı kalıyor ve sonucu git çalışma ağacına bağlıydı (deterministik değil).
+    Niyet aynen korunur, deterministik biçimde: oa-strateji'nin hiçbir betiği
+    sure_kurallari.json'a erişmez (okumaz/yazmaz)."""
     txt = _oku(STRATEJI_MD)
     assert "sure_kurallari.json" in txt and "eklenmez" in txt.lower()
-    cp = subprocess.run(["git", "-C", str(REPO), "diff", "--quiet", "HEAD", "--",
-                         str(SURE_KURALLARI.relative_to(REPO)).replace("\\", "/")],
-                        capture_output=True)
-    assert cp.returncode == 0, "sure_kurallari.json değişmiş — I1 grubunun alanı değil"
+    erisen = [p.name for p in sorted((STRATEJI / "scripts").glob("*.py"))
+              if SURE_KURALLARI.name in _oku(p)]
+    assert erisen == [], "oa-strateji betiği sure_kurallari.json'a erişiyor: %s" % erisen
 
 
 # ═══════════════════════════════════════════════════════════════════════════

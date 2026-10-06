@@ -42,7 +42,7 @@ def _teslim_paketi_modulu():
 
 TAM_TEMIZ_TASLAK = """İSTANBUL 4. ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİ'NE
 
-DAVACI: Ayşe Yılmaz (T.C. Kimlik No: 12345678901)
+DAVACI: Ayşe Yılmaz (T.C. Kimlik No: kurgu-maskeli)
 Adres: Örnek Mahallesi No:1 İstanbul
 
 DAVALI: Mehmet Kaya

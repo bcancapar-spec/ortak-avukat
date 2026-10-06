@@ -320,11 +320,14 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
 ### 1) Yargı Pro bağlantısı — önce bunu yapın
 İçtihat, mevzuat ve kurum kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır.
 
-> **v0.5.7.4'ten itibaren eklenti iki sunucuyu KENDİSİ ilan eder** — kurulumda
-> `yargi-pro` (birincil) ve `yargi-mcp-yedek` (MIT, hesapsız) bağlantıları
-> otomatik teklif edilir; onaylamanız yeterlidir. Katman kuralı tek yönlüdür:
-> Pro çalışıyorsa yedek hiç kullanılmaz; Pro düşerse içtihat araması yedekten
-> sürer (yedekte **mevzuat/AİHM yoktur** — aile bunu çıktıya dürüstçe yazar).
+> **Eklenti `yargi-pro` sunucusunu KENDİSİ ilan eder** — kurulumda bağlantı
+> otomatik teklif edilir; onaylamanız yeterlidir. **v0.5.18 (B-23):** v0.5.7.4'te
+> eklenen `yargi-mcp-yedek` ilanı KALDIRILDI — kaynak proje artık herkese açık
+> değil ve alan adı ilgisiz bir sunucuya çözülüyor; sahipsiz bir uç noktaya
+> kendiliğinden güvenmek, sorgularınızı okuyup sahte "içtihat" döndürebilecek
+> bir kanal açardı. Pro erişilemezse aile başka sunucuya geçmez: çıktıya
+> "teyit YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu
+> olanlar `yargi-mcp-yedek` bağlantısını connectors bölümünden kaldırabilir.
 > Aşağıdaki elle kurulum yalnız otomatik teklifi atlamışsanız gereklidir.
 
 Claude Code → **connectors** bölümünden yeni bir MCP sunucusu ekleyin ve adres

@@ -560,10 +560,12 @@ Zaman: {ts()}
 # GETİR tam metin döndürür → --damga (+--bag+--dokum) ZORUNLU (damgasız içtihat
 # kütüğe, kütüksüz künye çıktıya GİREMEZ). Diğer araçlar (mevzuat_*, vb.)
 # serbest kalır — geriye uyum (v0.5.1 davranışı birebir).
-# v0.5.7.4 — BAĞLANTI KATMANI: birincil Yargı Pro adları + Pro düşerse
-# devreye giren açık kaynak `yargi-mcp-yedek` adları (bkz. oa-ictihat SKILL
-# "BAĞLANTI KATMANI"). Yedek kipteki teyitler de aynı kütük disipliniyle
-# işlenir; sözlük iki sunucuyu da tanır.
+# v0.5.7.4 — BAĞLANTI KATMANI: birincil Yargı Pro adları + o sürümde ilan edilen
+# açık kaynak `yargi-mcp-yedek` adları. v0.5.18 / B-23: yedek İLANI KALDIRILDI
+# (sahipsiz uç nokta — bkz. oa-ictihat SKILL "BAĞLANTI KATMANI"); adlar sözlükte
+# BİLİNÇLİ olarak KALIR: eski kütük kayıtları okunur ve bu adlarla gelen her
+# kayıt aynı ARAMA/GETİR disiplinine (damga zorunluluğu) tabi kalır — çıkarmak
+# onları "sözlük dışı serbest araç" yapıp damga kapısını gevşetirdi.
 ARAMA_ARACLARI = {"ictihat_ara", "semantik_ictihat_ara", "aym_ictihat_ara", "aihm_ictihat_ara",
                   "search_bedesten_unified", "search_bedesten_semantic", "search_anayasa_unified"}
 GETIR_ARACLARI = {"ictihat_getir", "kurum_karari_getir",

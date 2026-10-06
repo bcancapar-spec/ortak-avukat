@@ -203,6 +203,70 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   ek tabloları MCP'den çekilemediği için `aaut.*` null — karşı vekâlet kalemi
   avukat tarafından tarife eki ile doldurulana kadar hesaplanmaz (dürüst boşluk,
   sessiz atlama değil).
+- **Merci (v0.5.18 adayı — Y-07):** `--merci asliye|idare|sulh|icra_tetkik|vergi`
+  başvurma harcı ve kanun yolu satırını seçer; kalemler `tarife.json` →
+  `harc_merci` bloğundadır (RG 31.12.2025/33124 5. mük. Seri No:98 ekindeki
+  tarife + mevzuat.gov.tr "Uygulanan Miktar" sütunu — iki kaynakta birebir;
+  yürürlük 2026-01-01; teyit 2026-10-05). Blok kaynaksız ya da yılı tarifeyle
+  uyuşmuyorsa kalem TEYİTSİZ sayılır (exit 2). Vergi davasında (3) sayılı tarife
+  uygulanır; nispi karar harcının peşin kısmı/ödeme zamanı TEYİT BEKLİYOR
+  (492 m.28 yalnız (1) sayılı tarifeyi düzenler) — açılış toplamına yalnız
+  başvurma harcı girer. Karşı vekâletin maktu tabanı davanın görüldüğü merciye
+  göredir (AAÜT m.13/1): script başka merci için asliye maktuunu KULLANMAZ
+  (`aaut.maktu_<merci>`). `--olum-cismani`: ölüm ve cismani zarar sebebiyle
+  açılan maddi ve manevi tazminat davasında peşin harç yirmide bir (492 m.28/a;
+  nitelendirme avukatındır). **Sınırlar:** cetvel NİSPİ harç hesaplar — değeri
+  para ile ölçülemeyen (maktu harca tabi) davada karar ve ilam harcı maktu
+  tutardır, nispi satırlar o dava için kullanılmaz; vergi davasında kabul edilen
+  kısım üzerinden harç TEYİT BEKLİYOR (hesaplanmaz); faiz harç matrahına
+  eklenmez (eklenip eklenmeyeceğini avukat değerlendirir). `harc.basvuru_maktu`
+  ile `harc_merci.asliye_idare_basvuru` farklıysa tarife TUTARSIZ sayılır
+  (exit 2). **Çıkış kodları:** 0 tüm kalemler teyitli tarifeden/orandan · 2 KISMİ ya da
+  ÇIPA (null tarife alanı, bayat/teyitsiz tarife, teyitsiz faiz) · 1 girdi hatası
+  ya da oran verilmedi (script oran ÜRETMEZ).
+- Durum (2026-10-05): AAÜT tabloları hâlâ çekilemedi (RG fihristinde yalnız genel
+  hükümler; mevzuat.gov.tr kaydında tablolar yalnız `.doc` eki) → `aaut.*` null,
+  **TEYİT BEKLİYOR**. AAÜT m.21: ücret takdirinde hükmün verildiği tarihteki
+  tarife esas alınır — bugünkü tarife gelecekteki hüküm için ÇIPADIR; cetvel bunu
+  ZAMAN NOTU satırıyla yazar.
+
+## GÜNCEL ORAN TEYİDİ — faiz/oran protokolü (v0.5.18 adayı; Yargı PRO 14-1/14-2 fikri, OA yöntemiyle)
+Faiz, avans, reeskont gibi ORANLAR dönemseldir ve resmî kaynakta değişir; "bildiğim
+oran" ile yapılan hesap sayı uydurmanın en sinsi biçimidir. Kural: **script oran
+ÜRETMEZ, model oranı hafızadan YAZMAZ.**
+1. **Rejimi önce belirle (model):** hangi faiz — kanuni (3095 m.1), temerrüt
+   (m.2/1), ticari işte avans (m.2/2), sözleşmesel ya da özel kanun faizi — ve
+   hangi dönem. Rejim belirsizliği bir oran seçerek örtülmez; avukata sorulur.
+2. **Oranı dönemiyle resmî kaynaktan oku:** Resmî Gazete / mevzuat / TCMB
+   duyurusu; her dilime `kaynak` (künye) ve `teyit_tarihi` yazılır. Kaynağı
+   okunamayan oran TEYİT BEKLİYOR'dur, rakam olarak dilekçeye ya da müvekkile
+   verilmez.
+3. **Dilimle:** 3095 m.1 (7589 s.K. m.10 ile değişik; yürürlük RG 31.07.2026 —
+   7589 m.26/1-c) kanuni faizi TCMB reeskont oranının yüzde sekseni olarak her
+   yıl belirler ve 30 Haziran'da beş puan ve üzeri farkta yılın ikinci yarısını
+   değiştirir; m.2/2 avans oranında aynı yarıyıl kuralı vardır. Faiz dönemi bu
+   yüzden yıl/yarıyıl sınırında ve 31.07.2026 rejim sınırında ayrı dilimlere
+   bölünür; eski dönemin oranı ayrıca teyit edilir (Mevzuat MCP teyit 2026-10-05).
+4. **Script denetler:** `python scripts/maliyet_cetveli.py --deger <TL>
+   --faiz-baslangic <YYYY-MM-DD> --faiz-bitis <YYYY-MM-DD> --oranlar <json>` (tek
+   dilim için `--faiz-orani <yüzde> --faiz-turu <tür> --faiz-kaynak "<künye>"
+   --faiz-teyit <YYYY-MM-DD>`; `--faiz-turu` zorunlu, türü bilinmeyen dilim
+   reddedilir). Basit faiz, gün/365 (artık yılda da). KAYNAKSIZ/TARİHSİZ oran,
+   KAPSANMAYAN gün, ÇAKIŞAN dilim, PROJEKSİYON (teyit gününden sonrası; yarıyıl
+   kuralına tabi oranda teyit edilen yarıyılın sonundan sonrası; sözleşme
+   faizinde yok) ve yıl/yarıyıl/rejim sınırını kesen dilim → faiz kalemi
+   **ÇIPA**, görünür uyarı, exit 2; oran hiç verilmezse faiz hesaplanmaz
+   (exit 1). Kapsanmayan ya da çakışan gün sessizce bir oranla doldurulmaz,
+   hesap dışı kalır ve yazılır. Yüzde yerine kesir girilmiş görünen oran (0 ile
+   1 arası) görünür uyarı alır.
+5. **Gelecek dönem:** ZAMAN EKSENİ şablonundaki "faiz" kalemi gelecek oranı
+   içerir; gelecek oran bilinmediği için projeksiyon her zaman ÇIPA etiketiyle
+   yazılır.
+Oran dosyası şeması: `{"oranlar": [{"tur": "kanuni|temerrut|avans|sozlesme|diger",
+"baslangic": "YYYY-MM-DD", "bitis": "YYYY-MM-DD", "yillik_yuzde": <sayı>, "kaynak":
+"<RG/TCMB künyesi>", "teyit_tarihi": "YYYY-MM-DD"}]}`. `tarife.json`'daki
+`oran_kurallari` ORAN İÇERMEZ; yalnız yarıyıl/rejim sınırı hatırlatıcısının resmî
+metin dayanağını taşır.
 
 ## Aktif çıkarım refleksi
 Sorulan tek yolu değerlendirip durma. **Sorulmayan daha iyi yolu** kendiliğinden öner: müvekkil "dava açalım" dese de, durdurma/sulh/idari başvuru daha az maliyetle hedefe ulaştırıyorsa bunu açıkça ortaya koy — ama kararı müvekkile bırak.

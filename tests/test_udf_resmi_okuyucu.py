@@ -229,4 +229,6 @@ def test_okuyucu_udf2md_cagirir_md2udf_DEGIL(tmp_path, uy, monkeypatch):
     komut = cagrilar[0]
     assert "udf2md" in komut
     assert "md2udf" not in komut
-    assert "udf-cli@latest" in komut
+    # v0.5.18: sabitlenmiş sürüm (udf_yaz.py UDF_CLI_SURUM) — `@latest` yok.
+    assert uy.UDF_CLI_PAKET in komut
+    assert not any("latest" in str(a) for a in komut), komut

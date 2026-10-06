@@ -61,8 +61,9 @@ Alan hiç yoksa (eski dosya) hiçbir satır basılmaz. `taraf: "biz"`/`"kamu"` k
 - **Süre:** m.114 zamanaşımı süresi dolduktan sonra ortaya çıkan vergi hataları **düzeltilemez** (m.126/1); m.126'nın (a)/(b)/(c) bentlerindeki hâllerde düzeltme zamanaşımı ilgili tarihten başlayarak **bir yıldan aşağı olamaz**. Şikâyetin reddi (veya zımni ret) üzerine açılacak davanın süresi `oa-sure` ile ayrıca hesaplanır.
 → Kapı Kataloğu K-17.
 
-## 9. AYM bireysel başvuru usulü (6216)
-- m.47/5 haklı mazeret: mazeretin kalktığı tarihten **15 gün** + belge. m.47/6 eksiklik tamamlama: **15 gün**. m.46 kişisel-güncel-doğrudan etkilenme = kabul edilebilirlik usul şartları.
+## 9. AYM bireysel başvuru usulü (6216) — ve AİHM yolu
+- m.47/5 haklı mazeret: mazeretin kalktığı tarihten **15 gün** + belge. m.47/6 eksiklik tamamlama: **on beş günü geçmemek üzere** verilen kesin süre (yazıdaki süre esastır; İçtüzük m.66). m.46 kişisel-güncel-doğrudan etkilenme = kabul edilebilirlik usul şartları.
+- **v0.5.18:** AYM (6216 m.45-48, geçici m.1/8; İçtüzük m.59/60/63/66) ve AİHM (AİHS m.34, m.35/1, m.35/3-a/b; 4/6 ay geçişi) kabul edilebilirlik kontrol listesi + karar sonrası yollar (6216 m.50/2; HMK m.375/1-i, CMK m.311/1-f, İYUK m.53/1-ı — AİHM'e özgü) → **`references/bireysel-basvuru-yolu.md`**; mekanik denetim `usul_matris.py` `[G10]`/`[G11]` (`bireysel_basvuru` bloğu, şablon `--ornek-bb`).
 
 ## 10. Ceza usulü (CMK — çıpa dışı, teyit zorunlu)
 - Pratiğin ağırlığı hukuk/idare/icra. CMK eski hâle getirme (m.40-42) ve süre rejimi farklıdır; kullanılacaksa o gün CMK'dan teyit.
@@ -84,7 +85,7 @@ Alan hiç yoksa (eski dosya) hiçbir satır basılmaz. `taraf: "biz"`/`"kamu"` k
 | K-8 | Süresiz şikâyet | İİK m.16/2 | kamu düzenine aykırılık / hakkın yerine getirilmemesi | süresiz | aykırılık kamu düzeni boyutunda değil |
 | K-9 | Gecikmiş itiraz | İİK m.65 | mazeret + belge | mazeret kalkınca 3 gün | mazeret yok/ispatsız; 3 gün geçti |
 | K-10 | İdari başvuru ile süre durması | İYUK m.11 | süresi içinde üst makama başvuru | kalan süre işler | başvuru süresi dışında / m.11 kapsamı dışında |
-| K-11 | AYM haklı mazeret / eksiklik | 6216 m.47/5-6 | mazeret belgeli / eksiklik listesi | 15 gün | mazeret haklı değil; 15 gün geçti |
+| K-11 | AYM haklı mazeret / eksiklik | 6216 m.47/5-6 | mazeret belgeli / eksiklik listesi | mazerette 15 gün; eksiklikte en çok 15 gün (yazıdaki kesin süre) | mazeret haklı değil; süre geçti |
 
 **Katalog kuralı:** Tabloya yeni kapı, ancak gerçek dosyada işleyip içtihatla teyit edildikten sonra eklenir (`_oa/dersler/` ders kaydıyla birlikte). Web search yalnızca kapı ADAYI bulmak için iz sürer; künye otoritesi daima Yargı/Mevzuat MCP'dir.
 

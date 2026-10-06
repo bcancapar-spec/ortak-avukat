@@ -140,8 +140,8 @@ bir satır ölçülmeden buraya girmez.
     tablosu; DENETIM-v0516.md kök tablosu buna bağlı.
   - `git push origin main` (kimlik engeli — `gh auth login -h github.com`).
   - Avukat kararı bekleyen: **B-4** `git filter-repo` (geçmiş commit'lerde dosya kimliği —
-    geçmiş yeniden yazımı yalnız avukat kararıyla) · **udf-cli pin** (A5/B-6, iki yönlü
-    bedel) · **tarife doldurma** (`maliyet_cetveli` tarife.json — AAÜT ek tabloları MCP'den
+    geçmiş yeniden yazımı yalnız avukat kararıyla) · ~~**udf-cli pin**~~ (A5/B-6 — 2026-10-05
+    karara bağlandı: sabitle + Layer 0, v0.5.18 adayı) · **tarife doldurma** (`maliyet_cetveli` tarife.json — AAÜT ek tabloları MCP'den
     alınamadı; fail-closed boş kalır).
   - Belge bayatlık taraması (DEVAM-PLANI §9) H2 kalemiyle sınırlı yapıldı; tam tarama açık.
   - MCP'den teyit edilemeyen çıpalar CHANGELOG v0.5.16 «Yapılamayanlar» listesinde
@@ -314,10 +314,30 @@ değiştirdiğinde bizi eski sürümde çakılı bırakır. Karar: pinleme **ert
 gerçek bir kırılma görülene kadar aksiyon alınmayacak (kullanıcı kararı,
 2026-07-29). Bozulma olursa ilk bakılacak yer bu satırdır.
 
-### A5 · `udf-cli@latest` 33 yerde pinsiz — ORTA (ERTELENDİ)
+### A5 · ~~`udf-cli@latest` 33 yerde pinsiz~~ → **KARARA BAĞLANDI (v0.5.18 adayı)** — ORTA
 Teslim hattının tek yazıcısı ve tek doğrulayıcısı sürüm kilidi olmadan
-çağrılıyor. Pinlemek de bedelli: UYAP biçim değişirse pinli sürüm sessizce
-bayatlar. Karar gerektirir.
+çağrılıyordu. Pinlemek de bedelli: UYAP biçim değişirse pinli sürüm sessizce
+bayatlar.
+
+**Avukat kararı (2026-10-05):** "Layer 0'a dahil + sürüm sabitle". Sürüm tek
+sabitte: `oa-dilekce/scripts/udf_yaz.py` `UDF_CLI_SURUM = "0.5.6"` (bu
+makinenin npx önbelleğinde 2026-09-30'dan beri fiilen çalışan sürüm; npm
+kayıt defterinde o günün en son yayını). Diğer scriptler (`udf_metin.py`,
+`teslim_paketi.py`) sabiti dosyadan SATIR olarak okur; bulunamazsa `@latest`'e
+düşmez, FAIL-CLOSED hata verir. Aynı kural `docx2udf` için de uygulanır.
+Bayatlama bedeli için yükseltme yöntemi: sürüm yalnız avukat onayıyla, yayım
+notları okunarak ve testler geçerek değişir (oa-dilekce SKILL.md). Teslim
+kapısı UDF ürününde Layer 0 gizlilik taramasını artık atlamaz (oa-kontrol).
+
+**Bedel ölçüldü ve bilerek kabul edildi (2026-10-05):** 911 okunabilir gerçek
+UDF metninin 908'i `gizlilik_tara` (strict) kapısından geçmiyor (430 kesin
+engel: TC kimlik no, IBAN, "e-imza" ifadesi, KVKK m.6 verisi; 478 onay ister:
+esas no + taraf adı, telefon). Dava dilekçesinde TC kimlik no zorunlu olduğundan
+maskeleme çoğu zaman uygun değildir. Avukat kararı: **katı engel** — bulgu
+varsa UDF udf-cli ile üretilmez; teslim `--udf-yok` ile sürer ve UDF UYAP
+editöründe üretilir. Açık soru: udf-cli'nin dilekçe metnini sunucuya gönderip
+göndermediği ölçülmedi (sentetik dilekçeyle ağ ölçümü — yapılırsa karar
+yeniden değerlendirilebilir).
 
 ---
 
@@ -548,8 +568,8 @@ En büyük üç script tek başına 6.128 satır: `pipeline_kayit.py` (2.977),
 2. **Ağırlık nereye?** Jürinin ortak itirazı: dört bakir klasör dururken
    sentetik test yazmak. v0.5.6 sahaya mı dönsün (playbook hazır), repoda mı
    kalsın?
-3. **`udf-cli` pinlensin mi?** (A5 — iki yönlü bedel; hangi yönde olursa olsun
-   gerçek sürüm teslim makbuzuna damgalanacak)
+3. ~~**`udf-cli` pinlensin mi?**~~ → **Karar verildi (2026-10-05):** sabitle +
+   Layer 0'a dahil et (bkz. A5). Sürüm teslim makbuzuna damgalanır.
 4. **`_oa/arastirma/` meşrulaştırılsın mı**, yoksa anatomi mevcut dizinlere mi
    yazsın? (gölge-hat bekçisini zayıflatmadan) — **ve `maruziyet.md` nereye?** (A6)
 

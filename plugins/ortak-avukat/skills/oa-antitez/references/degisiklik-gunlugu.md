@@ -56,3 +56,9 @@
 ### Entegratör notu (2026-09-07)
 
 - **Entegrasyon (H2/P0-3):** çalışma-evrakı öneki `06-antitez-*` (matris/cephanelik) — sabit hat adım 6; ≤v0.5.15 adı `07-antitez-*` pipeline bekçisi ve [G] kapısı (`*antitez*.json`) tarafından geriye uyumla kabul edilir.
+
+## v0.5.18 (aday) — 2026-10-05 · Zabıt karşılaştırma yardımcısı (Ajan D)
+
+- **Yeni `scripts/zapt_denetim.py`** (Yargı PRO 16-2 fikri, OA yöntemiyle): celse kartının (c) "TUTANAĞA …" kalemlerini zabıtta kelime kökü düzeyinde arar (Türkçe ünsüz yumuşaması yalnız kök sonunda denk); her kalem ADAY (GEÇMİŞ GÖRÜNÜYOR / KISMEN / GEÇMEMİŞ GÖRÜNÜYOR); ara kararları, süre doğurabilecek ifadeleri (→ oa-sure) ve gerekçe ibaresi görülmeyen RET kararlarını listeler; HMK m.154/3 unsur ipuçları bilgi düzeyinde. Dayanak HMK m.154/3-g-ğ, m.156 (Yargı PRO MCP, 2026-10-05). Tutanak düzeltme süresi HMK m.154-158'de bulunamadı → **TEYİT BEKLİYOR**. Çıkış 0 rapor / 2 girdi hatası; dosya yazmaz; Protokol 7'nin "yalnız öneri" sınırı korunur.
+- **SKILL.md:** Protokol 7 "Celse sonrası" paragrafına kullanım notu; (c) bölümünün madde işaretli liste olarak yazılması kuralı.
+- **Testler:** `tests/test_v0518_meslek_delil.py`.

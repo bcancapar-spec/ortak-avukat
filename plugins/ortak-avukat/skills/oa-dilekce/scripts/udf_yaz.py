@@ -18,11 +18,12 @@ sürüm 2026-06-22) zaten açıkça söyler: **"UDF opak bir UYAP biçimidir —
 BİRİNCİL (ve varsayılan) yazma hattı:
 
     md taslak → UDF-HTML (md_udf_html.py, inline-CSS, rehber şemasına birebir)
-             → `npx -y udf-cli@latest html2udf` (GERÇEK UYAP yazıcısı)
+             → `npx -y udf-cli@<UDF_CLI_SURUM> html2udf` (GERÇEK UYAP yazıcısı;
+               sürüm aşağıdaki TEK sabitten gelir — `@latest` KULLANILMAZ)
              → [+opsiyonel] aynı UDF-HTML'den PDF önizleme (udf_html2pdf.py)
 
 `npx`/`udf-cli` bulunamazsa VEYA oturum (login) gerekiyorsa: script FAIL-CLOSED
-davranır — çıkış kodu != 0, stderr'e NET talimat (`npx -y udf-cli@latest
+davranır — çıkış kodu != 0, stderr'e NET talimat (`npx -y udf-cli@<UDF_CLI_SURUM>
 login` İNSAN varsa; başsız/otomasyon ortamda `issue_cli_login_code` MCP aracı
 çağrılıp dönen tek-kullanımlık kodla `udf-cli login --token <kod>`), ve HİÇBİR
 `.udf` dosyası YAZILMAZ. Yerel motora SESSİZCE düşmek YASAKTIR — bozuk ama
@@ -86,6 +87,32 @@ import tempfile
 import time
 import zipfile
 import xml.etree.ElementTree as ET
+
+# ── udf-cli SÜRÜM SABİTİ (v0.5.18 — kullanıcı kararı 2026-10-05) ──────────────
+# NEDEN VAR: hat her teslimde `npx -y` ile udf-cli'nin SABİTLENMEMİŞ en son
+# ('latest' etiketli) sürümünü ağ + oturumla çalıştırıyordu — yeni bir upstream
+# yayını DENETİMSİZ biçimde teslim zincirine giriyordu (npm kaydına göre paketin
+# geliştirme bağımlılıklarında kod karartıcı bulunduğundan yayımlanan kodun
+# denetimi de zordur). Sürüm TEK KAYNAKTAN gelir; bütün çağrılar (whoami,
+# html2udf, udf2md) ve kullanıcıya basılan talimatlar `UDF_CLI_PAKET`'i kullanır.
+# BİÇİM SÖZLEŞMESİ: bu satır başka scriptlerce (oa-pipeline) SATIR olarak
+# okunur — tek satır, sütun 0, çift tırnaklı düz string literali kalmalıdır.
+# YÜKSELTME YÖNTEMİ: sürüm yalnız AVUKAT ONAYIYLA, yeni sürümün yayım notları
+# okunarak ve UDF testleri geçerek değişir; oa-dilekce belgelerindeki komut
+# örnekleri aynı anda güncellenir (test bunu kilitler) ve değişiklik
+# günlüğüne eski → yeni sürüm ile gerekçe yazılır.
+UDF_CLI_SURUM = "0.5.6"
+UDF_CLI_PAKET = "udf-cli@" + UDF_CLI_SURUM
+
+# ── docx2udf SÜRÜM SABİTİ (v0.5.18 — aynı karar, aynı biçim sözleşmesi) ────────
+# Hazır .docx/.pdf → UDF dönüştürücüsü AYRI bir npm paketidir ve aynı
+# sabitsiz-sürüm riskini taşır. DENETLENEBİLİRLİK NOTU (yükseltmede okunur):
+# npm kaydında bu paketin LİSANS ve KAYNAK DEPO alanı YOKTUR (ana ajan kaydı
+# okudu, 2026-10-05: en son yayın 1.0.6 — 2026-08-28; bağımlılık yok) —
+# yayımlanan kodun kaynağı doğrulanamaz; yükseltme bu yüzden ayrıca temkinli
+# yapılır (avukat onayı + yayım notları + testler; bkz. UDF_CLI_SURUM notu).
+DOCX2UDF_SURUM = "1.0.6"
+DOCX2UDF_PAKET = "docx2udf@" + DOCX2UDF_SURUM
 
 
 def utf16_uzunluk(s):
@@ -523,10 +550,10 @@ def _sayfa_kenari_yonetmelik(udf_yolu):
 
 # ───────────────── gerçek yazıcı: `npx udf-cli html2udf` ────────────────────
 _GIRIS_TALIMATI = (
-    "Giriş gerekli: İNSAN varsa 'npx -y udf-cli@latest login' (tarayıcıda "
+    "Giriş gerekli: İNSAN varsa 'npx -y " + UDF_CLI_PAKET + " login' (tarayıcıda "
     "onaylayana kadar bekler). Başsız/otomasyon ortamda `issue_cli_login_code` "
     "MCP aracını çağırıp dönen tek-kullanımlık kodla "
-    "'npx -y udf-cli@latest login --token <kod>' çalıştırın."
+    "'npx -y " + UDF_CLI_PAKET + " login --token <kod>' çalıştırın."
 )
 
 
@@ -542,7 +569,7 @@ def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
         # ÖNEMLİ (Windows): npx.CMD gibi PATHEXT uzantısı yalnız shutil.which
         # ile çözülür — CreateProcess çıplak "npx" adını PATHEXT'e göre
         # KENDİLİĞİNDEN bulmaz (WinError 2). Her zaman ÇÖZÜLMÜŞ yolu çağır.
-        p = subprocess.run([yol, "-y", "udf-cli@latest", "whoami"],
+        p = subprocess.run([yol, "-y", UDF_CLI_PAKET, "whoami"],
                             capture_output=True, text=True, timeout=zaman_asimi,
                             encoding="utf-8", errors="replace")
     except Exception as e:
@@ -553,7 +580,7 @@ def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
 
 
 def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
-    """Rehberin ZORUNLU kıldığı TEK yazıcıyı çağırır: `npx -y udf-cli@latest
+    """Rehberin ZORUNLU kıldığı TEK yazıcıyı çağırır: `npx -y udf-cli@<UDF_CLI_SURUM>
     html2udf <html> <udf>`. UDF içeriğini ASLA elle kurmaz (rehber A.2/D.1) —
     yalnız dış süreci çağırır, sonucu ATOMİK taşır. FAIL-CLOSED: başarısızlık
     durumunda hiçbir dosya `cikti_yolu`'na yazılmaz (geçici dosya, üretilmişse
@@ -571,7 +598,7 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
     try:
         # bkz. npx_kullanilabilir_mi — çıplak "npx" değil, ÇÖZÜLMÜŞ yol çağrılır.
         p = subprocess.run(
-            [yol, "-y", "udf-cli@latest", "html2udf", html_yolu, tmp_udf],
+            [yol, "-y", UDF_CLI_PAKET, "html2udf", html_yolu, tmp_udf],
             capture_output=True, text=True, timeout=zaman_asimi,
             encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
@@ -632,7 +659,7 @@ _RESMI_OKUYUCU_ASGARI_ORAN = 0.5   # resmî metin, CDATA metninin bu oranından 
 
 
 def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
-    """`npx -y udf-cli@latest udf2md <udf>` — dosyayı ÜRETEN aracın kendi
+    """`npx -y udf-cli@<UDF_CLI_SURUM> udf2md <udf>` — dosyayı ÜRETEN aracın kendi
     okuyucusuyla geri okur. Döner: dict —
       calisti (bool): dış süreç fiilen koştu ve bir hüküm verdi mi
       basarili (bool): koştuysa dosyayı okuyabildi mi
@@ -645,7 +672,7 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
                 "hata": "npx bulunamadı (Node.js kurulu olmayabilir)"}
     try:
         # bkz. npx_kullanilabilir_mi — Windows PATHEXT için ÇÖZÜLMÜŞ yol.
-        p = subprocess.run([yol, "-y", "udf-cli@latest", "udf2md", udf_yolu],
+        p = subprocess.run([yol, "-y", UDF_CLI_PAKET, "udf2md", udf_yolu],
                            capture_output=True, text=True, timeout=zaman_asimi,
             encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
@@ -691,7 +718,7 @@ DOCX2UDF_CIKIS_KODU = {
 
 
 def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=180):
-    """`npx -y docx2udf@latest -input <girdi> [-output <cikti>]` çağırır.
+    """`npx -y docx2udf@<DOCX2UDF_SURUM> -input <girdi> [-output <cikti>]` çağırır.
     Başarı ölçütü REHBERE GÖRE: çıkış kodu + `-output` (veya türetilen) dosyanın
     VARLIĞI — stdout/stderr metni ayrıştırılmaz (rehber §5 kuralı). `-y` her
     zaman geçilir (npx'in etkileşimli sorusu bloklamasın).
@@ -705,7 +732,7 @@ def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=1
                 "aciklama": "npx bulunamadı (Node.js kurulu olmayabilir).",
                 "cikti_yolu": None, "stdout": "", "stderr": ""}
 
-    args = [yol, "-y", "docx2udf@latest", "-input", girdi_yolu]
+    args = [yol, "-y", DOCX2UDF_PAKET, "-input", girdi_yolu]
     if cikti_yolu:
         args += ["-output", cikti_yolu]
     try:
@@ -1201,7 +1228,11 @@ def _uretim_makbuzu_yaz(kok, girdi_yolu, cikti_yolu, motor, dogrulama,
             "girdi": girdi_yolu,
             "cikti": cikti_yolu,
             "sha256": sha,
-            "motor": motor,                      # "html2udf" | "yerel-riskli"
+            "motor": motor,                      # "html2udf" | "docx2udf" | "yerel-riskli"
+            # v0.5.18 — hangi SABİTLENMİŞ üretici paketle üretildiği (iz);
+            # yerel riskli motorda dış paket yoktur (None).
+            "uretici_paket": {"html2udf": UDF_CLI_PAKET,
+                              "docx2udf": DOCX2UDF_PAKET}.get(motor),
             "dogrulama": bool(d.get("gecerli")),
             "resmi_okuyucu": d.get("resmi_okuyucu"),
             "kenar_notu": kenar_notu,
@@ -1316,7 +1347,7 @@ def main():
             print("  --- docx2udf stderr ---\n%s" % sonuc["stderr"], file=sys.stderr)
         if not sonuc["basarili"]:
             sys.exit(sonuc["exit_kod"] if sonuc["exit_kod"] else 1)
-        print("UDF yazıldı (docx2udf): %s" % sonuc["cikti_yolu"])
+        print("UDF yazıldı (%s): %s" % (DOCX2UDF_PAKET, sonuc["cikti_yolu"]))
         # NOT: rehber §5 başarı ölçütü AÇIKÇA "çıkış kodu + -output dosyasının
         # varlığı"dır — stdout/stderr AYRIŞTIRILMAZ. `udf_dogrula()`nın offset-
         # bitişiklik varsayımı (paragraf uzunluğu = CDATA'nın TAMAMINI TİLER)
@@ -1492,7 +1523,7 @@ def main():
             sys.exit(sonuc["exit_kod"] or 1)
 
         dogrulama = udf_dogrula(cikti)
-        print("UDF yazıldı (npx udf-cli html2udf): %s" % cikti)
+        print("UDF yazıldı (npx %s html2udf): %s" % (UDF_CLI_PAKET, cikti))
         if dogrulama["paragraf_sayisi"] is not None:
             print("  paragraf sayısı  : %d" % dogrulama["paragraf_sayisi"])
         if dogrulama["karakter_sayisi"] is not None:

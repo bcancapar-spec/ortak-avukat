@@ -39,6 +39,11 @@ jobs:
   test:
     name: test (${{ matrix.os }} / py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
+    # v0.5.18 (bağımsız güvenlik incelemesi): koşucuda udf-cli oturumu YOK; test altyapısının
+    # yoklaması (`npx -y udf-cli@… whoami`) her koşuda npm'den paket indirip çalıştırıyordu.
+    # Kapalı: gerçek UDF üretimini iddia eden testler GÖRÜNÜR gerekçeyle atlanır (oa_udf_ortam).
+    env:
+      OA_TEST_UDF_YAZICI: "0"
     strategy:
       fail-fast: false
       matrix:

@@ -22,9 +22,18 @@ Eylül (İYUK m.8/3; Danıştay'ın yerleşik uygulaması ve scriptin kendi gün
 konvansiyonu — başlangıç günü 1. gün sayılır). Matematik olarak 31 Ağu + 7 gün
 ile AYNI sonucu verir; HMK m.104 (hukuk: 31 Ağu + 1 hafta) ile de örtüşür.
 
+v0.5.18: (1) ADLİ TATİL REJİMİNİ KURAL TAŞIR (`adli_tatil` alanı; Y-01) — eski
+motor rejimi kuralın ön ekinden türetiyordu ve icra sürelerini HMK m.104 ile bir
+hafta yanlış uzatıyordu. (2) CMK'da tatil İÇİNDE tebliğde süre tatilde işlemez
+(Y-02; YCGK 2022/846). (3) Resmî dini bayram kaydı olmayan yılda "TATİL TAKVİMİ
+EKSİK" görünür yazılır (Y-08). (4) BAŞLANGIÇ KAPISI (`--baslangic-kaniti`,
+`--teblig-durumu`) ve karşı taraf için KESİN DİL KAPISI. Neden: yanlış olaya ya da
+yanlış rejime bağlanan doğru aritmetik, yanlış son gündür.
+
 Kullanım:
   python hesapla_sure.py --teblig 2026-05-20 --kural hmk_istinaf
   python hesapla_sure.py --teblig 2026-07-15 --kural iyuk_istinaf --yargi idari
+  python hesapla_sure.py --teblig 2026-08-10 --kural iik_istinaf --yargi icra
   python hesapla_sure.py --teblig 2026-05-20 --sure 2 --birim hafta
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
@@ -45,15 +54,15 @@ ARA_BITIS = (8, 31)       # 31 Ağustos
 # Süreler HUKUKİ kuraldır; resmî kaynaktan (Mevzuat MCP) teyit edilmelidir.
 _GOMULU_KURALLAR = {
     "hmk_istinaf":         (2, "hafta",
-                        "HMK m.345 — istinaf, ilamın tebliğinden"),
+                        "HMK m.345/1 — istinaf iki hafta; süre ilamın usulen taraflardan HER BİRİNE TEBLİĞİYLE işlemeye başlar (tefhim süreyi BAŞLATMAZ). İstinaf süresine ilişkin özel kanun hükümleri saklıdır."),
     "hmk_temyiz":          (2, "hafta",
-                        "HMK m.361 — temyiz, BAM kararının tebliğinden"),
+                        "HMK m.361/1 — BAM nihai kararına temyiz iki hafta; TEBLİĞ tarihinden işler (tefhim süreyi BAŞLATMAZ)."),
     "hmk_cevap":           (2, "hafta",
-                        "HMK m.127 — cevap (kural; uzatma ayrı)"),
+                        "HMK m.127 — YAZILI yargılamada cevap iki hafta (dava dilekçesinin tebliğinden); ek süre bu süre içinde istenirse bir defaya mahsus ve EN ÇOK BİR AY. BASİT yargılamada (iş mahkemeleri dahil — 7036 m.7/1) kural hmk_cevap_basit'tir (HMK m.317/2: ek süre en çok iki hafta)."),
     "iik_istinaf":         (2, "hafta",
-                        "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL) · 7499 s.K. (yür. 1/6/2024) süreyi iki haftaya çıkardı VE \"tefhim veya\" ibaresini metinden ÇIKARDI — süre artık YALNIZ tebliğden işler."),
+                        'İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL) · 7499 s.K. (yür. 1/6/2024) süreyi iki haftaya çıkardı VE "tefhim veya" ibaresini metinden ÇIKARDI — süre artık YALNIZ tebliğden işler.'),
     "iik_sikayet":         (7, "gun",
-                        "İİK m.16 — icra mahkemesine şikâyet; kural 7 gün (SÜRESİZ şikâyet halleri ayrıktır — m.16/2)"),
+                        "İİK m.16/1 — icra ve iflas dairelerinin işlemlerine şikâyet; işlemin ÖĞRENİLDİĞİ tarihten itibaren yedi gün (m.16/2: hakkın yerine getirilmemesi veya sebepsiz sürüncemede bırakılması hâlinde SÜRESİZ)."),
     "cmk_itiraz":          (2, "hafta",
                         "CMK m.268 — itiraz; ilgililerin kararı ÖĞRENDİĞİ günden itibaren iki hafta (m.35: yüze karşı açıklama; hazır bulunamayana tebliğ). Eski '7 gün' YÜRÜRLÜKTE DEĞİL. CMK m.263 (tutuklunun kurum müdürüne başvurusu — süreyi KESER) saklıdır."),
     "cmk_istinaf":         (2, "hafta",
@@ -85,30 +94,73 @@ _GOMULU_KURALLAR = {
     "amme_6183_m58":       (15, "gun",
                         "6183 m.58 — ödeme emrine karşı dava; tebliğ tarihinden itibaren 15 gün (7061 s.K. ile 7→15). Ödeme emri bir TAHSİLAT işlemidir: dava açılması tahsili KENDİLİĞİNDEN durdurmaz (İYUK m.27/4) — ayrıca yürütmenin durdurulması istenir."),
     "aym_bireysel":        (30, "gun",
-                        "6216 m.47/5 — AYM bireysel başvuru"),
+                        "6216 m.47/5 — bireysel başvuru otuz gün: başvuru yollarının TÜKETİLDİĞİ tarihten; başvuru yolu öngörülmemişse ihlalin ÖĞRENİLDİĞİ tarihten (AYM İçtüzüğü m.64/1 aynı). Haklı mazerette mazeretin kalktığı tarihten on beş gün (aym_bireysel_mazeret); eksik evrak için verilen süre en çok on beş gün (m.47/6)."),
     # ── İŞ HUKUKU (2026-09-10, MCP teyitli) ────────────────────────────
-    "is_ise_iade_arabulucu":(1, "ay",
+    "is_ise_iade_arabulucu": (1, "ay",
                         "4857 m.20/1 (Değişik: 7036 s.K. m.11) — işe iade: iş sözleşmesi feshedilen işçi, fesih bildiriminde sebep gösterilmediği veya gösterilen sebebin geçerli olmadığı iddiasıyla FESİH BİLDİRİMİNİN TEBLİĞİ tarihinden itibaren BİR AY içinde işe iade talebiyle ARABULUCUYA BAŞVURMAK ZORUNDADIR. Dava değil, arabuluculuk başvurusudur (7036 m.3 dava şartı). HMK m.92: ay olarak belirlenen sürede son ayın SAYILI GÜNÜ esastır — Y. 9. HD E.2016/10425 K.2017/8620 (23.05.2017) ertesi günden hesaplamayı 'yasanın düzenlemesine AÇIKÇA AYKIRI' bulmuştur."),
-    "is_ise_iade_dava":     (2, "hafta",
+    "is_ise_iade_dava":    (2, "hafta",
                         "4857 m.20/1 (Değişik: 7036 s.K. m.11) — arabuluculuk faaliyeti sonunda ANLAŞMAYA VARILAMAMASI hâlinde, SON TUTANAĞIN DÜZENLENDİĞİ tarihten itibaren İKİ HAFTA içinde iş mahkemesinde dava açılabilir (taraflar anlaşırsa aynı sürede ÖZEL HAKEME de gidilebilir). Süre HAK DÜŞÜRÜCÜdür, resen gözetilir. Başlangıç türü 'olay'dır: tebliğ değil, tutanağın DÜZENLENME anı. Başlangıç içtihatta TARTIŞMALIDIR — bkz. çıktıdaki BAŞLANGIÇ TARTIŞMALI uyarısı."),
-    "is_ise_iade_arabulucu_ret":(2, "hafta",
-                        '4857 m.20/1 son cümleler (Değişik: 7036 s.K. m.11) — arabulucuya başvurmaksızın DOĞRUDAN dava açılması sebebiyle davanın USULDEN REDDİ hâlinde ret kararı taraflara RESEN tebliğ edilir; KESİNLEŞEN ret kararının da resen tebliğinden itibaren İKİ HAFTA içinde arabulucuya başvurulabilir. Bu, dava şartı eksikliğini telafi eden İKİNCİ bir penceredir; kaçırılırsa işe iade yolu tümüyle kapanır.'),
-    "is_ise_baslatma_basvuru":(10, "isgunu",
-                        '4857 m.21/5 — işçi, KESİNLEŞEN mahkeme veya özel hakem kararının TEBLİĞİNDEN itibaren ON İŞGÜNÜ içinde işe başlamak için İŞVERENE başvuruda bulunmak zorundadır. TAKVİM GÜNÜ DEĞİL İŞ GÜNÜdür (hafta sonu ve resmî tatiller sayılmaz). m.21/6: bu sürede başvurulmazsa işverence yapılmış fesih GEÇERLİ sayılır ve işveren yalnız onun sonuçlarından sorumlu olur — kazanılmış işe iade kararı işlevsizleşir.'),
-    "is_ise_baslatma_isveren":(1, "ay",
-                        '4857 m.21/1 — feshin geçersizliğine karar verildiğinde işveren, işçiyi BİR AY içinde İŞE BAŞLATMAK zorundadır; işçiyi BAŞVURUSU ÜZERİNE bir ay içinde işe başlatmazsa en az DÖRT en çok SEKİZ aylık ücreti tutarında tazminat öder. Süre işçinin BAŞVURUSU (olay) ile başlar. İŞVEREN vekili için takvim; işçi vekili için karşı tarafın süresini denetleme kalemidir.'),
-    "is_zamanasimi_5yil":   (5, "yil",
-                        '4857 Ek m.3 (Ek: 7036 s.K. m.15) — iş sözleşmesinden kaynaklanmak kaydıyla HANGİ KANUNA TABİ OLURSA OLSUN, YILLIK İZİN ÜCRETİ ile (a) kıdem tazminatı, (b) bildirim şartına uyulmaksızın fesihten kaynaklanan tazminat [ihbar], (c) kötüniyet tazminatı, (d) eşit davranma ilkesine uyulmaksızın fesihten kaynaklanan tazminat için ZAMANAŞIMI BEŞ YILDIR. MADDİ HUKUK süresidir: adli tatil uzatması UYGULANMAZ; zamanaşımı TBK m.153-158 uyarınca durur/kesilir — script bunu hesaplamaz. Ücret, fazla mesai, UBGT gibi diğer alacaklarda TBK m.147/1 beş yıllık süre ayrıca değerlendirilir.'),
+    "is_ise_iade_arabulucu_ret": (2, "hafta",
+                        "4857 m.20/1 son cümleler (Değişik: 7036 s.K. m.11) — arabulucuya başvurmaksızın DOĞRUDAN dava açılması sebebiyle davanın USULDEN REDDİ hâlinde ret kararı taraflara RESEN tebliğ edilir; KESİNLEŞEN ret kararının da resen tebliğinden itibaren İKİ HAFTA içinde arabulucuya başvurulabilir. Bu, dava şartı eksikliğini telafi eden İKİNCİ bir penceredir; kaçırılırsa işe iade yolu tümüyle kapanır."),
+    "is_ise_baslatma_basvuru": (10, "isgunu",
+                        "4857 m.21/5 — işçi, KESİNLEŞEN mahkeme veya özel hakem kararının TEBLİĞİNDEN itibaren ON İŞGÜNÜ içinde işe başlamak için İŞVERENE başvuruda bulunmak zorundadır. TAKVİM GÜNÜ DEĞİL İŞ GÜNÜdür (hafta sonu ve resmî tatiller sayılmaz). m.21/6: bu sürede başvurulmazsa işverence yapılmış fesih GEÇERLİ sayılır ve işveren yalnız onun sonuçlarından sorumlu olur — kazanılmış işe iade kararı işlevsizleşir."),
+    "is_ise_baslatma_isveren": (1, "ay",
+                        "4857 m.21/1 — feshin geçersizliğine karar verildiğinde işveren, işçiyi BİR AY içinde İŞE BAŞLATMAK zorundadır; işçiyi BAŞVURUSU ÜZERİNE bir ay içinde işe başlatmazsa en az DÖRT en çok SEKİZ aylık ücreti tutarında tazminat öder. Süre işçinin BAŞVURUSU (olay) ile başlar. İŞVEREN vekili için takvim; işçi vekili için karşı tarafın süresini denetleme kalemidir."),
+    "is_zamanasimi_5yil":  (5, "yil",
+                        "4857 Ek m.3 (Ek: 7036 s.K. m.15) — iş sözleşmesinden kaynaklanmak kaydıyla HANGİ KANUNA TABİ OLURSA OLSUN, YILLIK İZİN ÜCRETİ ile (a) kıdem tazminatı, (b) bildirim şartına uyulmaksızın fesihten kaynaklanan tazminat [ihbar], (c) kötüniyet tazminatı, (d) eşit davranma ilkesine uyulmaksızın fesihten kaynaklanan tazminat için ZAMANAŞIMI BEŞ YILDIR. MADDİ HUKUK süresidir: adli tatil uzatması UYGULANMAZ; zamanaşımı TBK m.153-158 uyarınca durur/kesilir — script bunu hesaplamaz. Ücret, fazla mesai, UBGT gibi diğer alacaklarda TBK m.147/1 beş yıllık süre ayrıca değerlendirilir."),
+    # ── v0.5.18 (Y-04/Y-05, AYM/AİHM — 2026-10-05, MCP teyitli) ────────
+    "iik_temyiz":          (2, "hafta",
+                        "İİK m.364/2 (Değişik: 7499 s.K.) — icra mahkemesi işlerinde BAM kararına temyiz iki hafta; TEBLİĞ tarihinden işler, inceleme HMK'ya göre yapılır (m.364/1 miktar/değer eşiği — kullanım anında teyit et)."),
+    "iik_odeme_emrine_itiraz": (7, "gun",
+                        "İİK m.62/1 — genel haciz yoluyla takipte ödeme emrine itiraz yedi gün; ödeme emrinin TEBLİĞİNDEN itibaren icra dairesine dilekçeyle veya sözlü; imza itirazı ayrıca ve açıkça bildirilmezse imza kabul edilmiş sayılır (m.62/son). Süresinde itiraz edilmezse takip kesinleşir; mazeret hâlinde İİK m.65 (iik_gecikmis_itiraz)."),
+    "iik_gecikmis_itiraz": (3, "gun",
+                        "İİK m.65/2 — borçlu kusuru olmaksızın bir mani yüzünden süresinde itiraz edemediyse MANİİN KALKTIĞI günden itibaren üç gün içinde mazeret delilleriyle itiraz eder ve masrafı öder; dış sınır m.65/1: paraya çevirme işlemi bitinceye kadar."),
+    "iik_itirazin_iptali": (1, "yil",
+                        "İİK m.67/1 — itirazın iptali davası, itirazın alacaklıya TEBLİĞİNDEN itibaren bir yıl içinde genel mahkemede açılır; süre geçerse genel hükümlere göre dava hakkı saklıdır (m.67/son) ama takibin bu dava yoluyla sürdürülmesi ve icra inkâr tazminatı imkânı kaybedilir."),
+    "iik_itirazin_kaldirilmasi": (6, "ay",
+                        "İİK m.68/1 ve m.68/a-1 — itirazın kesin veya geçici kaldırılması, itirazın alacaklıya TEBLİĞİNDEN itibaren altı ay içinde icra mahkemesinden istenir; bu süre içinde istenmezse YENİDEN İLÂMSIZ TAKİP YAPILAMAZ (m.68/1 son cümle)."),
+    "iik_borctan_kurtulma": (7, "gun",
+                        "İİK m.69/2 — itirazın muvakkaten kaldırılması kararının TEFHİM veya TEBLİĞİNDEN itibaren yedi gün içinde borçtan kurtulma davası; dinlenebilmesi için alacağın yüzde on beşi ilk duruşmaya kadar depo/teminat edilmeli; süresinde açılmazsa kaldırma kararı ve muvakkat haciz kesinleşir (m.69/3)."),
+    "iik_89_ihbarname_itiraz": (7, "gun",
+                        "İİK m.89/2-3 — birinci ve ikinci haciz ihbarnamesine üçüncü şahsın itirazı: ihbarnamenin kendisine TEBLİĞİNDEN itibaren yedi gün içinde icra dairesine yazılı veya sözlü; itiraz edilmezse mal yedinde veya borç zimmetinde sayılır."),
+    "iik_89_menfi_tespit": (15, "gun",
+                        "İİK m.89/3 — üçüncü ihbarnameyi alan üçüncü şahıs on beş gün içinde parayı ödemek veya malı teslim etmek YA DA menfi tespit davası açmak zorundadır; dava açıldığına dair belge bildirimden itibaren yirmi gün içinde icra dairesine teslim edilirse cebri icra işlemleri durur."),
+    "iik_ihalenin_feshi":  (7, "gun",
+                        "İİK m.134/2 — ihalenin feshi, icra mahkemesinden şikâyet yoluyla İHALE TARİHİNDEN itibaren yedi gün içinde (talep hakkı maddede sayılan kişilere aittir); satış ilanı tebliğ edilmemişse veya esaslı hata/fesada sonradan vakıf olunmuşsa süre ITTILA tarihinden başlar, ancak ihale kararının elektronik satış portalında ilanından itibaren BİR YILI geçemez (iik_ihalenin_feshi_azami)."),
+    "iik_ihalenin_feshi_azami": (1, "yil",
+                        "İİK m.134 (ıttıla hâli) — ihalenin feshi şikâyetinde öğrenmeye bağlı süre, ihalenin yapıldığına ilişkin kararın elektronik satış portalında İLAN EDİLDİĞİ tarihten itibaren bir yılı geçemez (dış sınır)."),
+    "iik_kambiyo_itiraz":  (5, "gun",
+                        "İİK m.168/3-5 — kambiyo senetlerine dayalı takipte ödeme emrinin TEBLİĞİNDEN itibaren beş gün içinde icra mahkemesine: senedin kambiyo vasfına şikâyet (b.3), imza itirazı (b.4), borca veya yetkiye itiraz (b.5)."),
+    "iik_ihtiyati_haciz_itiraz": (7, "gun",
+                        "İİK m.265/1-2 — ihtiyati hacze itiraz yedi gün: borçlu için huzurunda yapılan hacizlerde HACZİN TATBİKİNDEN, aksi hâlde haciz TUTANAĞININ TEBLİĞİNDEN; menfaati ihlal edilen üçüncü kişi için ÖĞRENMEDEN; kararı veren mahkemeye."),
+    "iik_icra_ceza_sikayet": (3, "ay",
+                        "İİK m.347 — icra ceza bölümündeki fiillerden şikâyet hakkı fiilin ÖĞRENİLDİĞİ tarihten itibaren üç ay ve her hâlde fiilin işlendiği tarihten itibaren bir yıl geçmekle DÜŞER — iki sınır birlikte denetlenir (iik_icra_ceza_sikayet_azami)."),
+    "iik_icra_ceza_sikayet_azami": (1, "yil",
+                        "İİK m.347 — şikâyet hakkı her hâlde fiilin İŞLENDİĞİ tarihten itibaren bir yıl geçmekle düşer (dış sınır)."),
+    "hmk_dosya_gonderme":  (2, "hafta",
+                        "HMK m.20/1 — görevsizlik veya yetkisizlik kararından sonra dosyanın gönderilmesi talebi iki hafta: karar verildiği anda kesinse TEBLİĞDEN; kanun yoluna başvurulmayıp kesinleşmişse KESİNLEŞME tarihinden; kanun yoluna başvurulmuşsa başvurunun reddi kararının TEBLİĞİNDEN; aksi hâlde dava AÇILMAMIŞ SAYILIR (resen)."),
+    "hmk_cevap_basit":     (2, "hafta",
+                        "HMK m.317/2 — BASİT yargılamada (iş mahkemeleri dahil — 7036 m.7/1) cevap süresi dava dilekçesinin TEBLİĞİNDEN itibaren iki hafta; ek süre ancak bu süre içinde istenirse, bir defaya mahsus ve EN ÇOK İKİ HAFTA (cevap süresinin bitiminden işler) — yazılı yargılamadaki bir aylık sınır (m.127) burada YOKTUR."),
+    "hmk_on_inceleme_belge_sunma": (2, "hafta",
+                        "HMK m.139/1-ç — ön inceleme davetiyesinin TEBLİĞİNDEN itibaren iki haftalık KESİN süre: dilekçede gösterilip sunulmayan belgeler sunulur, başka yerden getirtilecekler için gereken açıklama yapılır; m.140/5 — yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ sayılma kararı verilir."),
+    "hmk_tedbir_itiraz":   (1, "hafta",
+                        "HMK m.394/2-3 — karşı taraf dinlenmeden verilen ihtiyati tedbire itiraz bir hafta: uygulamada hazırsa UYGULAMADAN, değilse uygulama tutanağının TEBLİĞİNDEN; menfaati açıkça ihlal edilen üçüncü kişi için ÖĞRENMEDEN; itiraz kural olarak icrayı durdurmaz (m.394/1)."),
+    "hmk_tedbir_esas_dava": (2, "hafta",
+                        "HMK m.397/1 — dava açılmadan verilen ihtiyati tedbirde, kararın UYGULANMASINI TALEP ETTİĞİ tarihten itibaren iki hafta içinde esas dava açılmalı VE dava açıldığına dair evrak kararı uygulayan memura ibrazla dosyaya konup karşılığında belge alınmalıdır; aksi hâlde tedbir KENDİLİĞİNDEN kalkar."),
+    "aym_bireysel_mazeret": (15, "gun",
+                        "6216 m.47/5 (ikinci cümle) — haklı mazeret nedeniyle süresinde başvuramayan, MAZERETİN KALKTIĞI tarihten itibaren on beş gün içinde mazeretini belgeleyen delillerle başvurabilir; mazeretin kabulü Mahkemenin takdirindedir (AYM İçtüzüğü m.64/2)."),
+    "aihm_basvuru":        (4, "ay",
+                        "AİHS m.35/1 — 15 No'lu Protokol ile altı aydan DÖRT aya indirildi (HUDOC sınıflaması: 'Four-month period (former six-month)'); nihai iç hukuk kararından itibaren, iç hukukta yazılı tebliğ öngörülüyorsa TEBLİĞDEN işler (Sabri Güneş/Türkiye [BD] § 53 — Worm/Avusturya); son gün hafta sonu veya resmî tatile rastlasa da UZAMAZ (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ 60-61). 1.2.2022 öncesi nihai kararlarda altı ay uygulandığına ilişkin geçiş kuralı TEYİT BEKLİYOR."),
 }
 
 # B-21 (v0.5.14) — teyit tarihi kaynak METNİNDEN AYRI alanda tutulur; böylece
 # aynı bilginin iki kaynağı (metin içi şerh + JSON alanı) doğup ayrışamaz.
 _GOMULU_TEYIT = {
-    "hmk_istinaf":         "2026-08-31",
-    "hmk_temyiz":          "2026-08-31",
-    "hmk_cevap":           "2026-08-31",
-    "iik_istinaf":         "2026-08-31",
-    "iik_sikayet":         "2026-08-31",
+    "hmk_istinaf":         "2026-10-05",
+    "hmk_temyiz":          "2026-10-05",
+    "hmk_cevap":           "2026-10-05",
+    "iik_istinaf":         "2026-10-05",
+    "iik_sikayet":         "2026-10-05",
     "cmk_itiraz":          "2026-08-31",
     "cmk_istinaf":         "2026-08-31",
     "cmk_temyiz":          "2026-08-31",
@@ -124,22 +176,43 @@ _GOMULU_TEYIT = {
     "iyuk_temyiz_cevap":   "2026-08-31",
     "iyuk_temyiz_ozel_7gun": "2026-08-31",
     "amme_6183_m58":       "2026-08-31",
-    "aym_bireysel":        "2026-08-31",
-    "is_ise_iade_arabulucu":      '2026-09-10',
-    "is_ise_iade_dava":           '2026-09-10',
-    "is_ise_iade_arabulucu_ret":  '2026-09-10',
-    "is_ise_baslatma_basvuru":    '2026-09-10',
-    "is_ise_baslatma_isveren":    '2026-09-10',
-    "is_zamanasimi_5yil":         '2026-09-10',
+    "aym_bireysel":        "2026-10-05",
+    "is_ise_iade_arabulucu": "2026-09-10",
+    "is_ise_iade_dava":    "2026-09-10",
+    "is_ise_iade_arabulucu_ret": "2026-09-10",
+    "is_ise_baslatma_basvuru": "2026-09-10",
+    "is_ise_baslatma_isveren": "2026-09-10",
+    "is_zamanasimi_5yil":  "2026-09-10",
+    "iik_temyiz":          "2026-10-05",
+    "iik_odeme_emrine_itiraz": "2026-10-05",
+    "iik_gecikmis_itiraz": "2026-10-05",
+    "iik_itirazin_iptali": "2026-10-05",
+    "iik_itirazin_kaldirilmasi": "2026-10-05",
+    "iik_borctan_kurtulma": "2026-10-05",
+    "iik_89_ihbarname_itiraz": "2026-10-05",
+    "iik_89_menfi_tespit": "2026-10-05",
+    "iik_ihalenin_feshi":  "2026-10-05",
+    "iik_ihalenin_feshi_azami": "2026-10-05",
+    "iik_kambiyo_itiraz":  "2026-10-05",
+    "iik_ihtiyati_haciz_itiraz": "2026-10-05",
+    "iik_icra_ceza_sikayet": "2026-10-05",
+    "iik_icra_ceza_sikayet_azami": "2026-10-05",
+    "hmk_dosya_gonderme":  "2026-10-05",
+    "hmk_cevap_basit":     "2026-10-05",
+    "hmk_on_inceleme_belge_sunma": "2026-10-05",
+    "hmk_tedbir_itiraz":   "2026-10-05",
+    "hmk_tedbir_esas_dava": "2026-10-05",
+    "aym_bireysel_mazeret": "2026-10-05",
+    "aihm_basvuru":        "2026-10-05",
 }
 
 # B-20 (v0.5.14) — kuralın hukuken İZİN VERDİĞİ başlangıç türleri. Script
 # NİTELENDİRME YAPMAZ: yalnız seçilen türün bu kümede olup olmadığına bakar.
 _GOMULU_BASLANGIC = {
-    "hmk_istinaf":            ["teblig", "tefhim"],
-    "hmk_temyiz":             ["teblig", "tefhim"],
+    "hmk_istinaf":            ["teblig"],
+    "hmk_temyiz":             ["teblig"],
     "hmk_cevap":              ["teblig"],
-    "iik_istinaf":            ["teblig", "tefhim"],
+    "iik_istinaf":            ["teblig"],
     "iik_sikayet":            ["ogrenme", "teblig"],
     "cmk_itiraz":             ["ogrenme", "teblig", "tefhim"],
     "cmk_istinaf":            ["teblig"],
@@ -157,13 +230,156 @@ _GOMULU_BASLANGIC = {
     "iyuk_temyiz_ozel_7gun":  ["teblig"],
     "amme_6183_m58":          ["teblig"],
     "aym_bireysel":           ["teblig", "ogrenme"],
-    "is_ise_iade_arabulucu":      ['teblig'],
-    "is_ise_iade_dava":           ['olay'],
-    "is_ise_iade_arabulucu_ret": ['teblig'],
-    "is_ise_baslatma_basvuru":    ['teblig'],
-    "is_ise_baslatma_isveren":    ['olay'],
-    "is_zamanasimi_5yil":         ['olay', 'ogrenme'],
+    "is_ise_iade_arabulucu":  ["teblig"],
+    "is_ise_iade_dava":       ["olay"],
+    "is_ise_iade_arabulucu_ret": ["teblig"],
+    "is_ise_baslatma_basvuru": ["teblig"],
+    "is_ise_baslatma_isveren": ["olay"],
+    "is_zamanasimi_5yil":     ["olay", "ogrenme"],
+    "iik_temyiz":             ["teblig"],
+    "iik_odeme_emrine_itiraz": ["teblig"],
+    "iik_gecikmis_itiraz":    ["olay"],
+    "iik_itirazin_iptali":    ["teblig"],
+    "iik_itirazin_kaldirilmasi": ["teblig"],
+    "iik_borctan_kurtulma":   ["teblig", "tefhim"],
+    "iik_89_ihbarname_itiraz": ["teblig"],
+    "iik_89_menfi_tespit":    ["teblig"],
+    "iik_ihalenin_feshi":     ["olay", "ogrenme"],
+    "iik_ihalenin_feshi_azami": ["olay"],
+    "iik_kambiyo_itiraz":     ["teblig"],
+    "iik_ihtiyati_haciz_itiraz": ["olay", "teblig", "ogrenme"],
+    "iik_icra_ceza_sikayet":  ["ogrenme"],
+    "iik_icra_ceza_sikayet_azami": ["olay"],
+    "hmk_dosya_gonderme":     ["teblig", "olay"],
+    "hmk_cevap_basit":        ["teblig"],
+    "hmk_on_inceleme_belge_sunma": ["teblig"],
+    "hmk_tedbir_itiraz":      ["olay", "teblig", "ogrenme"],
+    "hmk_tedbir_esas_dava":   ["olay"],
+    "aym_bireysel_mazeret":   ["olay"],
+    "aihm_basvuru":           ["teblig", "ogrenme"],
 }
+
+# >>> v0.5.18 REJİM TABLOSU (sure_kurallari.json ile BİREBİR ikiz — tests/test_v0518_sure.py)
+# ADLİ TATİL REJİMİ KURAL DÜZEYİNDEDİR (Y-01/Y-02, 2026-10-03 denetimi). Rejim artık
+# kuralın ön ekinden (KURAL_KOLU) TÜRETİLMEZ: icra kuralları 'hukuk' koluna bağlıydı
+# ve HMK m.104 ile bir hafta YANLIŞ uzatılıyordu (10.08 tebliğ → 07.09; doğrusu
+# istinaf 24.08, şikâyet 17.08). Değerler: hmk104 | iyuk8 | cmk331 | uygulanmaz.
+# teyitli=False → resmî kaynakla teyit edilemedi; motor TEMKİNLİ (erken) tarihi seçer
+# ve karşı tarafa kesin dil kurmaz. son_gun_kaymasi=False → yalnız AİHM (Sabri Güneş).
+_RD_HMK104 = ("HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi "
+              "tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 "
+              "kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → "
+              "--adli-tatil-istisna")
+_RD_IYUK8 = ("İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara "
+             "vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi "
+             "işlerinde uzatma YOKTUR → --adli-tatil-istisna")
+_RD_CMK331 = ("CMK m.331/4 — adli tatile rastlayan süreler İŞLEMEZ ve tatilin bittiği günden "
+              "itibaren ÜÇ GÜN uzar; tatil İÇİNDE tebliğde süre tatilde işlemez, TAM süre tatil "
+              "bitiminden sonra işler (YCGK 26.11.2013 E.2013/2-272 K.2013/524; YCGK 27.12.2022 "
+              "E.2021/319 K.2022/846; 14.02.1934 t. 47/1 s. İBK); tutuklu işlerde de aynıdır (YCGK "
+              "E.2021/319 K.2022/846; AYM Ramazan Seçen, B. No: 2021/37483, 6/1/2026)")
+_RD_ICRA = ("İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); "
+            "icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) "
+            "uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu "
+            "kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; "
+            "E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538")
+_RD_ICRA_ITIRAZ = ("İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); "
+                   "icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) "
+                   "uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu "
+                   "kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; "
+                   "E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538; ödeme emrine itiraz süresi için "
+                   "ayrıca Y. 23. HD E.2013/8404 K.2013/7933 (HMK m.104 HMK dışındaki sürelere "
+                   "uygulanmaz)")
+_RD_ICRA_DAVA = ("İİK'nın koyduğu süre (HMK'nın değil) — HMK m.104 yalnız HMK'nın tayin ettiği "
+                 "sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 için); bu gerekçenin "
+                 "genel mahkemede açılan dava süresine aynen uygulanacağı ayrıca TEYİT EDİLMEDİ → "
+                 "TEMKİNLİ: uzatma YOK (erken tarih)")
+_RD_ICRA_IHTIYATI = ("HMK m.103/1-a — ihtiyati haciz talepleri ile bunlara karşı itiraz ve diğer "
+                     "başvurular adli tatilde GÖRÜLÜR (adli tatile tabi iş değildir); HMK m.104 uzatması "
+                     "yalnız adli tatile tabi işlerdeki sürelere uygulanır — İİK m.265 itiraz süresi "
+                     "uzamaz")
+_RD_ICRA_CEZA = ("TEYİT BEKLİYOR — İİK m.347 süresi geçmekle şikâyet hakkı DÜŞER (hak düşürücü); HMK "
+                 "m.104 yalnız HMK'nın tayin ettiği sürelere ilişkindir, CMK m.331/4'ün bu hak "
+                 "düşürücü süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → TEMKİNLİ: "
+                 "uzatma YOK (erken tarih)")
+_RD_TEDBIR = ("HMK m.103/1-a — ihtiyati tedbir, ihtiyati haciz ve delil tespiti talepleri ile "
+              "bunlara karşı itiraz ve diğer başvurular adli tatilde görülür; HMK m.104 uzatması "
+              "uygulanmaz")
+_RD_TEDBIR_DAVA = ("TEYİT BEKLİYOR — HMK m.397/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse "
+                   "HMK m.104 lafzen uygulanabilir görünür, ancak tedbirin kendisi HMK m.103/1-a işidir "
+                   "ve uzatmanın bu süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → "
+                   "TEMKİNLİ: uzatma YOK (erken tarih); geç okuma (31 Ağu + 1 hafta) güçlü olduğundan "
+                   "karşı tarafa kesin dil kurulmaz")
+_RD_IS = ("4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK "
+          "m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz "
+          "(Y. 9. HD E.2016/1261 K.2016/22196)")
+_RD_IS_MADDI = ("maddi hukuk süresi (zamanaşımı) — adli tatil uzatması yok; durma/kesilme TBK "
+                "m.153-158 (script hesaplamaz)")
+_RD_AYM = ("TEYİT BEKLİYOR — 6216 sayılı Kanun ve AYM İçtüzüğünde adli tatil/süre uzatması hükmü "
+           "yok (Mevzuat MCP içinde-ara 'tatil' → yalnız 6216 m.8, üye seçimi); 6216 m.49/7 "
+           "hüküm bulunmayan hâllerde ilgili usul kanunlarının 'bireysel başvurunun niteliğine "
+           "uygun' hükümlerine yollasa da uzatmaya GÜVENME → TEMKİNLİ: uzatma YOK (erken tarih)")
+_RD_AIHM = ("AİHS m.35/1 — süre Sözleşme ölçütleriyle hesaplanır, iç hukukun tatil ve uzatma "
+            "kuralları dikkate alınmaz (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ "
+            "48-49, 60-61): adli tatil uzatması YOK, son gün kayması YOK")
+_RD_AMME = ("İYUK m.8/3 uzatmasının ÖZEL KANUN süresine uygulanması TARTIŞMALIDIR (Danıştay 7. D. "
+            "E.2000/5685 K.2002/3522 oyçokluğu — A-20); motor uzatır ama GÜVENLİ PLAN ham "
+            "bitiştir")
+_GOMULU_REJIM_SATIRLARI = {
+    # kural:                      (adli_tatil,   teyitli, son_gun_kaymasi, dayanak)
+    "hmk_istinaf":                 ("hmk104",     True, True, _RD_HMK104),
+    "hmk_temyiz":                  ("hmk104",     True, True, _RD_HMK104),
+    "hmk_cevap":                   ("hmk104",     True, True, _RD_HMK104),
+    "iik_istinaf":                 ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_sikayet":                 ("uygulanmaz", True, True, _RD_ICRA),
+    "cmk_itiraz":                  ("cmk331",     True, True, _RD_CMK331),
+    "cmk_istinaf":                 ("cmk331",     True, True, _RD_CMK331),
+    "cmk_temyiz":                  ("cmk331",     True, True, _RD_CMK331),
+    "iyuk_dava_idare":             ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_dava_vergi":             ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_istinaf":                ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_temyiz":                 ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_yd_itiraz":              ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_dava_ivedi":             ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_temyiz_ivedi":           ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_dava_sinav":             ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_temyiz_sinav":           ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_temyiz_cevap":           ("iyuk8",      True, True, _RD_IYUK8),
+    "iyuk_temyiz_ozel_7gun":       ("iyuk8",      True, True, _RD_IYUK8),
+    "amme_6183_m58":               ("iyuk8",      False, True, _RD_AMME),
+    "aym_bireysel":                ("uygulanmaz", False, True, _RD_AYM),
+    "is_ise_iade_arabulucu":       ("uygulanmaz", True, True, _RD_IS),
+    "is_ise_iade_dava":            ("uygulanmaz", True, True, _RD_IS),
+    "is_ise_iade_arabulucu_ret":   ("uygulanmaz", True, True, _RD_IS),
+    "is_ise_baslatma_basvuru":     ("uygulanmaz", True, True, _RD_IS),
+    "is_ise_baslatma_isveren":     ("uygulanmaz", True, True, _RD_IS),
+    "is_zamanasimi_5yil":          ("uygulanmaz", True, True, _RD_IS_MADDI),
+    "iik_temyiz":                  ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_odeme_emrine_itiraz":     ("uygulanmaz", True, True, _RD_ICRA_ITIRAZ),
+    "iik_gecikmis_itiraz":         ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_itirazin_iptali":         ("uygulanmaz", False, True, _RD_ICRA_DAVA),
+    "iik_itirazin_kaldirilmasi":   ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_borctan_kurtulma":        ("uygulanmaz", False, True, _RD_ICRA_DAVA),
+    "iik_89_ihbarname_itiraz":     ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_89_menfi_tespit":         ("uygulanmaz", False, True, _RD_ICRA_DAVA),
+    "iik_ihalenin_feshi":          ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_ihalenin_feshi_azami":    ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_kambiyo_itiraz":          ("uygulanmaz", True, True, _RD_ICRA),
+    "iik_ihtiyati_haciz_itiraz":   ("uygulanmaz", True, True, _RD_ICRA_IHTIYATI),
+    "iik_icra_ceza_sikayet":       ("uygulanmaz", False, True, _RD_ICRA_CEZA),
+    "iik_icra_ceza_sikayet_azami": ("uygulanmaz", False, True, _RD_ICRA_CEZA),
+    "hmk_dosya_gonderme":          ("hmk104",     True, True, _RD_HMK104),
+    "hmk_cevap_basit":             ("hmk104",     True, True, _RD_HMK104),
+    "hmk_on_inceleme_belge_sunma": ("hmk104",     True, True, _RD_HMK104),
+    "hmk_tedbir_itiraz":           ("uygulanmaz", True, True, _RD_TEDBIR),
+    "hmk_tedbir_esas_dava":        ("uygulanmaz", False, True, _RD_TEDBIR_DAVA),
+    "aym_bireysel_mazeret":        ("uygulanmaz", False, True, _RD_AYM),
+    "aihm_basvuru":                ("uygulanmaz", True, False, _RD_AIHM),
+}
+_GOMULU_REJIM = {k: {"adli_tatil": r, "adli_tatil_teyitli": t, "son_gun_kaymasi": s,
+                     "adli_tatil_dayanak": d}
+                 for k, (r, t, s, d) in _GOMULU_REJIM_SATIRLARI.items()}
+# <<< v0.5.18 REJİM TABLOSU
 
 # ── v0.5.16 / I5 (P1-3 / A-10) — AŞAMA TETİKLİ SÜRE SINIFI ───────────────
 # Bazı usul "süreleri" takvimle değil yargılamanın bir AŞAMASIYLA kapanır: ilk
@@ -200,7 +416,7 @@ _GOMULU_ASAMA_KURALLAR = {
         "asama": "ön inceleme (davetiye ihtarı → belge sunma kesin süresi)",
         "pipeline_adimi": 4,
         "kaynak": "HMK m.139/1-ç — ön inceleme davetiyesinin tebliğinden itibaren İKİ HAFTALIK KESİN SÜRE içinde dilekçede gösterilip henüz sunulmayan belgeler sunulur / getirtilecek belgeler için gereken açıklama yapılır; m.140/5 (7251 s.K.) — ihtara rağmen yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ SAYILMA kararı verilir.",
-        "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--teblig <davetiye tebliği> --sure 2 --birim hafta` ile hesapla (m.139/1-ç kesin süre). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
+        "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--kural hmk_on_inceleme_belge_sunma --teblig <davetiye tebliği>` ile hesapla (m.139/1-ç kesin süre; v0.5.18). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
         "mcp_teyit_tarihi": "2026-09-07",
     },
     "hmk_islah": {
@@ -230,12 +446,60 @@ _ASAMA_TABLO_SEBEP = ""
 # Kuralın izin verdiği başlangıç türleri (JSON'dan okunur; yoksa gömülüden).
 KURAL_BASLANGIC = {}
 
+# v0.5.18 (Y-01/Y-02) — kuralın ADLİ TATİL REJİMİ. Sıra: JSON alanları → (alan
+# yoksa/bozuksa) gömülü ikiz → (kural gömülüde de yoksa) ön ekten TÜRETME. Her
+# türetme hesapta GÖRÜNÜR yazılır; ön ekten türetilen rejim teyitsizdir ve en
+# temkinli değeri (uzatma YOK = erken tarih) alır — sessiz varsayılan yasak.
+KURAL_REJIM = {}
+ADLI_TATIL_REJIMLERI = ("hmk104", "iyuk8", "cmk331", "uygulanmaz")
+# Kural verilmeden (--sure/--birim) hesapta rejimi beyan edilen yargı kolu belirler.
+YARGI_REJIMI = {"hukuk": "hmk104", "idari": "iyuk8", "ceza": "cmk331", "icra": "uygulanmaz"}
+_YARGI_REJIM_DAYANAK = {"hukuk": _RD_HMK104, "idari": _RD_IYUK8, "ceza": _RD_CMK331,
+                        "icra": _RD_ICRA}
+# Ön ekin DOĞAL rejimi — yalnız türetme notunda ve TEMKİNLİ alternatif tarihte kullanılır.
+_ONEK_REJIM = {"hmk": "hmk104", "iik": "uygulanmaz", "cmk": "cmk331", "iyuk": "iyuk8",
+               "amme": "iyuk8", "is": "uygulanmaz", "aym": "uygulanmaz", "aihm": "uygulanmaz"}
+REJIM_ETIKET = {"hmk104": "HMK m.104 (31 Ağu + 1 hafta)",
+                "iyuk8": "İYUK m.8/3 (1 Eylül'den itibaren 7 gün)",
+                "cmk331": "CMK m.331/4 (tatilde işlemez; tatil bitiminden itibaren +3 gün)",
+                "uygulanmaz": "UYGULANMAZ (adli tatil uzatması yok)"}
+
+
+def _rejim_alanlari(v):
+    """JSON kaydındaki rejim alanlarını mekanik denetler; eksik/geçersizse None."""
+    if not isinstance(v, dict):
+        return None
+    r, t = v.get("adli_tatil"), v.get("adli_tatil_teyitli")
+    s, d = v.get("son_gun_kaymasi"), v.get("adli_tatil_dayanak")
+    if (r not in ADLI_TATIL_REJIMLERI or not isinstance(t, bool) or not isinstance(s, bool)
+            or not str(d or "").strip()):
+        return None
+    return {"adli_tatil": r, "adli_tatil_teyitli": t, "son_gun_kaymasi": s,
+            "adli_tatil_dayanak": str(d), "turetildi": ""}
+
+
+def _rejim_turet(kural):
+    """Rejim alanı olmayan kural için: önce gömülü ikiz, o da yoksa ön ek (teyitsiz)."""
+    if kural in _GOMULU_REJIM:
+        r = dict(_GOMULU_REJIM[kural])
+        r["turetildi"] = "gömülü tablodan"
+        return r
+    onek = str(kural).split("_", 1)[0]
+    dogal = _ONEK_REJIM.get(onek, "bilinmiyor")
+    return {"adli_tatil": "uygulanmaz", "adli_tatil_teyitli": False,
+            "son_gun_kaymasi": onek != "aihm",
+            "adli_tatil_dayanak": ("TÜRETİLDİ — kural kaydında rejim alanı yok; ön ek '%s' "
+                                   "doğal rejimi '%s', ancak teyit edilmeden uzatma UYGULANMADI "
+                                   "(temkinli: erken tarih). Resmî kaynakla TEYİT ET ve JSON'a "
+                                   "işle." % (onek, dogal)),
+            "turetildi": "ön ekten"}
+
 
 def kurallari_yukle():
-    """sure_kurallari.json varsa oradan (kural, teyit, başlangıç) oku; yoksa/bozuksa
+    """sure_kurallari.json varsa oradan (kural, teyit, başlangıç, rejim) oku; yoksa/bozuksa
     gömülüye düş — ve DÜŞME SEBEBİNİ `_KURAL_TABLO_SEBEP`e yaz (B-21: sessiz
     fallback, kullanıcıya birbirini yalanlayan iki satır gösteriyordu)."""
-    global _KURAL_TABLO_SEBEP, KURAL_BASLANGIC
+    global _KURAL_TABLO_SEBEP, KURAL_BASLANGIC, KURAL_REJIM
     yol = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sure_kurallari.json")
     if not os.path.exists(yol):
         _KURAL_TABLO_SEBEP = "sure_kurallari.json BULUNAMADI"
@@ -243,20 +507,23 @@ def kurallari_yukle():
         try:
             with open(yol, encoding="utf-8") as f:
                 data = json.load(f)
-            kurallar, teyit, baslangic = {}, {}, {}
+            kurallar, teyit, baslangic, rejim = {}, {}, {}, {}
             for k, v in data.get("kurallar", {}).items():
                 kurallar[k] = (v["miktar"], v["birim"], v.get("kaynak", ""))
                 teyit[k] = v.get("mcp_teyit_tarihi", "") or ""
                 bt = v.get("izinli_baslangic_turleri") or []
                 baslangic[k] = [str(x) for x in bt] if isinstance(bt, list) else []
+                rejim[k] = _rejim_alanlari(v) or _rejim_turet(k)
             if kurallar:
                 KURAL_BASLANGIC = baslangic
+                KURAL_REJIM = rejim
                 return kurallar, teyit, False
             _KURAL_TABLO_SEBEP = "sure_kurallari.json 'kurallar' bölümü BOŞ"
         except Exception as e:
             _KURAL_TABLO_SEBEP = ("sure_kurallari.json OKUNAMADI/BOZUK "
                                   "(%s: %s)" % (type(e).__name__, e))
     KURAL_BASLANGIC = {k: list(v) for k, v in _GOMULU_BASLANGIC.items()}
+    KURAL_REJIM = {k: dict(v, turetildi="") for k, v in _GOMULU_REJIM.items()}
     return dict(_GOMULU_KURALLAR), dict(_GOMULU_TEYIT), True
 
 KURALLAR, KURAL_TEYIT, _KURAL_TABLO_YOK = kurallari_yukle()
@@ -308,8 +575,14 @@ ASAMA_KURALLAR, _ASAMA_TABLO_YOK = asama_kurallarini_yukle()
 # Sessiz yanlış varsayılan YASAK: uyuşmazlıkta hesap DURUR (aşağıda main/
 # _pencere_kontrol), çünkü uyarı basılsa dahi ">>> HESAPLANAN SON GÜN" satırı
 # ve otomatik `_oa/sureler.json` flag'i yanlış tarihi kalıcılaştırırdı.
-KURAL_KOLU = {"cmk": "ceza", "hmk": "hukuk", "iik": "hukuk", "is": "hukuk",
-              "iyuk": "idari", "amme": "idari", "aym": None}
+# v0.5.18 (Y-01): "iik" artık "icra" koludur (eskiden "hukuk" → HMK m.104 ile yanlış
+# uzatma). AYM/AİHM kol-bağımsızdır (None). Adli tatil rejimini artık KOL değil
+# KURAL taşır (KURAL_REJIM); kol, kayma dayanağı/kurtarma kapısı/uyarılar ve
+# "kural ile beyan edilen kol birbirini yalanlıyor mu" denetimi içindir.
+KURAL_KOLU = {"cmk": "ceza", "hmk": "hukuk", "iik": "icra", "is": "hukuk",
+              "iyuk": "idari", "amme": "idari", "aym": None, "aihm": None}
+# İcra ceza şikâyeti (İİK m.347) icra CEZA mahkemesine yapılır: ceza koluyla da çelişmez.
+_KOL_EK_IZIN = {"iik_icra_ceza_sikayet": {"ceza"}, "iik_icra_ceza_sikayet_azami": {"ceza"}}
 
 
 def kural_kolu(kural):
@@ -319,31 +592,57 @@ def kural_kolu(kural):
     return KURAL_KOLU.get(str(kural).split("_", 1)[0])
 
 
+def etkin_kol(kural, yargi):
+    """Kuralın kendi kolu; kol-bağımsız kuralda (AYM/AİHM) ya da kuralsız hesapta --yargi."""
+    return kural_kolu(kural) or yargi
+
+
+def etkin_rejim(kural, yargi):
+    """v0.5.18 — hesapta uygulanacak ADLİ TATİL REJİMİ: kural verildiyse KURALIN KENDİ
+    rejimi (KURAL_REJIM), değilse beyan edilen yargı kolunun rejimi."""
+    if kural and kural in KURAL_REJIM:
+        r = dict(KURAL_REJIM[kural])
+        r["kaynak"] = "kural"
+        return r
+    if kural:
+        # Tabloda olmayan kural (doğrudan API çağrısı): kol rejimine SESSİZCE
+        # düşülmez — gömülüden/ön ekten türetilir ve teyitsiz sayılır (fail-closed).
+        r = _rejim_turet(str(kural))
+        r["kaynak"] = "kural"
+        return r
+    return {"adli_tatil": YARGI_REJIMI[yargi], "adli_tatil_teyitli": True,
+            "son_gun_kaymasi": True, "adli_tatil_dayanak": _YARGI_REJIM_DAYANAK[yargi],
+            "turetildi": "", "kaynak": "yargi"}
+
+
 def kol_uyusmazligi(kural, yargi):
     """(A-1) Kural ↔ yargı kolu uyuşmazlığında insan-okur gerekçe döndürür; yoksa None.
 
-    Yalnız ADLİ TATİL REJİMİNİN FARKLI olduğu hâller bloklanır:
-      · ceza kolu ile ceza-dışı kural (üç günlük uzatma hukuk/idari süreyi KISALTIR)
-      · ceza kuralı ile ceza-dışı kol (bir haftalık uzatma ceza süresini UZATIR)
-    İYUK ↔ HMK arasında uzatma aritmetiği aynı sonucu verdiği için (31 Ağu + 1
-    hafta ≡ 1 Eylül'den 7 gün) orası bilgi notu olarak kalır, bloklanmaz.
+    Bloklanan hâller (kural ile beyan edilen kol birbirini yalanlıyor — ya kural ya
+    kol yanlış seçildi; sessiz devam yanlış dayanaklı tarih üretir):
+      · ceza kuralı ile ceza-dışı kol · ceza-dışı kural ile ceza kolu
+    v0.5.18: adli tatil rejimini kural kendisi taşıdığından (KURAL_REJIM) yanlış
+    uzatma artık kol seçiminden doğamaz; AYM/AİHM gibi kol-bağımsız kurallar ceza
+    dosyasında da hesaplanır. İYUK ↔ HMK / icra ↔ hukuk arası bilgi notudur.
     """
+    if yargi in _KOL_EK_IZIN.get(kural, ()):
+        return None
     beklenen = kural_kolu(kural)
     if beklenen is None:
-        if yargi == "ceza":
-            return ("'%s' kuralı ceza yargısına ait değil; --yargi ceza ile "
-                    "koşulursa CMK m.331/4 (üç gün) uzatması uygulanır ve süre "
-                    "YANLIŞ KISALIR." % kural)
+        if yargi == "ceza" and kural not in KURAL_REJIM:
+            return ("'%s' kuralı ceza yargısına ait değil ve kendi adli tatil rejimini "
+                    "taşımıyor; --yargi ceza ile koşulursa CMK m.331/4 (üç gün) uygulanır ve "
+                    "süre YANLIŞ KISALIR." % kural)
         return None
     if beklenen == "ceza" and yargi != "ceza":
-        return ("'%s' bir CEZA kanun yolu kuralıdır; --yargi %s ile koşulduğunda "
-                "adli tatil uzatması HMK m.104/İYUK m.8-3 rejimine göre yapılır ve "
-                "son gün CMK m.331/4'e göre olması gerekenden GEÇ çıkar (denetim "
-                "A-1: dört gün). Doğru kullanım: --yargi ceza" % (kural, yargi))
+        return ("'%s' bir CEZA kanun yolu kuralıdır; --yargi %s beyanı kuralı yalanlıyor "
+                "(denetim A-1: eski motor bu durumda HMK m.104/İYUK m.8-3 uygulayıp son günü "
+                "CMK m.331/4'e göre dört gün GEÇ veriyordu). Doğru kullanım: --yargi ceza"
+                % (kural, yargi))
     if beklenen != "ceza" and yargi == "ceza":
-        return ("'%s' ceza yargısına ait bir kural DEĞİLDİR; --yargi ceza ile "
-                "koşulduğunda CMK m.331/4 (üç gün) uzatması uygulanır ve süre "
-                "YANLIŞ KISALIR. Doğru kullanım: --yargi %s" % (kural, beklenen))
+        return ("'%s' ceza yargısına ait bir kural DEĞİLDİR (kolu: %s); --yargi ceza beyanı "
+                "kuralı yalanlıyor — ya kural ya kol yanlış seçildi. Doğru kullanım: --yargi %s"
+                % (kural, beklenen, beklenen))
     return None
 
 
@@ -470,6 +769,21 @@ def aralik_icinde_mi(g):
     return date(g.year,*ARA_BASLANGIC) <= g <= date(g.year,*ARA_BITIS)
 def dini_tanimli_mi(y): return str(y) in DINI and len(DINI[str(y)])>0
 
+
+def dini_tam_mi(y):
+    """v0.5.18 / Y-08 — yılın dini bayram kaydı TAM mı? Tek bir girişle yılı "tanımlı"
+    saymak, yarım girilmiş yılda (ör. yalnız Ramazan) takvim kapısını sessizce kapatır.
+    Ölçüt mekaniktir: kayıtlı gün sayısı, aritmetik hicri tahminin o yıla düşürdüğü
+    bayram günü sayısının en az (tahmin − 2)'si olmalı (tahmin ±1-2 gün sapabilir;
+    yıl sınırına taşan bayramlar da böylece doğru sayılır)."""
+    if not dini_tanimli_mi(y):
+        return False
+    try:
+        beklenen = sum(len(g) for g in tahmini_bayramlar(int(y)).values())
+    except Exception:
+        return True   # tahmin üretilemezse kayıt varlığı yeter (kapıyı kilitleme)
+    return len(DINI[str(y)]) >= max(1, beklenen - 2)
+
 # v0.5.13 — BAŞLANGIÇ TÜRÜ (pratikçi hakem heyeti tez 1; MCP teyitli gerekçe):
 # aynı dosyada iki farklı başlangıç rejimi yaşayabilir — CMK m.268 itiraz
 # *öğrenme gününden*, m.273/291 istinaf-temyiz *gerekçeli kararın tebliğinden*
@@ -491,12 +805,25 @@ BASLANGIC_TURLERI = {
 }
 
 
-def _kurtarma_kapisi_notu(yargi):
+def _kurtarma_kapisi_notu(yargi, kural=None):
     """A-10 (v0.5.14) — kaçırılan süre için gösterilecek kurtarma kapısı YARGI
     KOLUNA GÖRE değişir. Eski kod idari dosyada da HMK m.95'i öneriyordu; oysa
     2577'de 'eski hale getirme'/'mazeret' geçmiyor (MCP içinde-ara 2026-08-31 →
     0 eşleşme) ve ailenin kendi kuralı 'bu satır idari dosyaya ASLA basılmaz'
-    diyordu. Var olmayan bir kapı, gerçek kapıların aranmasını engeller."""
+    diyordu. Var olmayan bir kapı, gerçek kapıların aranmasını engeller.
+    v0.5.18: icra kolunun kapısı İİK'nın kendisindedir (m.65); AYM'de 6216 m.47/5
+    mazeret penceresi; AİHM'de iç hukuk kurumlarına güvenilmez."""
+    _onek = str(kural or "").split("_", 1)[0]
+    if str(kural or "").startswith("iik_icra_ceza"):
+        return ("İcra ceza şikâyet süresi geçmekle şikâyet hakkı DÜŞER (İİK m.347): eski hâle getirme/"
+                "mazeret kapısına GÜVENME — şikâyeti son güne bırakma.")
+    if _onek == "aym":
+        return ("İşlem o gün fiilen imkânsızlaştıysa: 6216 m.47/5 — haklı mazeret hâlinde mazeretin "
+                "kalktığı tarihten itibaren ON BEŞ GÜN içinde mazereti belgeleyen delillerle başvuru "
+                "(kural aym_bireysel_mazeret); kabul AYM'nin takdirindedir — buna güvenerek bekleme.")
+    if _onek == "aihm":
+        return ("AİHM süresi Sözleşme ölçütleriyle hesaplanır (Sabri Güneş/Türkiye [BD]): iç "
+                "hukuktaki eski hâle getirme/mazeret kurumlarına GÜVENME — başvuruyu son güne bırakma.")
     if yargi == "idari":
         return ("İşlem o gün fiilen imkânsızlaştıysa: İYUK'ta ESKİ HÂLE GETİRME KURUMU YOKTUR "
                 "(2577'de 'eski hale getirme'/'mazeret' hükmü bulunmaz) — HMK m.95'e GÜVENME. "
@@ -509,12 +836,157 @@ def _kurtarma_kapisi_notu(yargi):
                 "bulunabilir'; kanun yoluna başvuru hakkı bildirilmemişse kişi KUSURSUZ sayılır "
                 "(m.40/2). Ayrıca tutukluda CMK m.263 kanalı ayrıca kontrol edilir — buna güvenerek "
                 "bekleme, süresinde işlem yap.")
+    if yargi == "icra":
+        return ("İşlem o gün fiilen imkânsızlaştıysa: ödeme emrine itirazda İİK m.65 (gecikmiş "
+                "itiraz — mânî kalktıktan itibaren ÜÇ GÜN içinde mazeret delilleriyle; dış sınır "
+                "paraya çevirme işlemi bitinceye kadar; kural iik_gecikmis_itiraz); diğer icra "
+                "sürelerinde eski hâle getirme imkânı ayrıca ve ihtiyatla değerlendirilir — buna "
+                "güvenerek bekleme.")
     return ("İşlem o gün fiilen imkânsızlaştıysa eski hâle getirme (HMK m.95 vd.; süre m.96 — "
             "engelin kalkmasından iki hafta) ayrıca ve ihtiyatla değerlendirilir — buna güvenerek bekleme.")
 
 
+# ── v0.5.18 — BAŞLANGIÇ KAPISI (Yargı PRO 12-2/12-3 FİKRİNİN OA uyarlaması) ──────
+# Motor tarihi doğru sayar; ama süreyi başlatan OLAY ya da onun KANITI yanlışsa
+# doğru hesap yanlış sonuç verir. Kapı NİTELENDİRME YAPMAZ: kanıt türünün işaret
+# ettiği başlangıç türünü kuralın izinli türleriyle karşılaştırır, kanıtsız ya da
+# şüpheli başlangıcı GÖRÜNÜR kılar ve karşı tarafa kesin dili keser. Aritmetiği
+# değiştirmez. Ayrıntı ve normlar: references/baslangic-kapisi.md (Mevzuat MCP
+# teyitli 2026-10-05: 7201 s. TK m.7/a, 11, 21, 31, 32, 35, 36).
+BASLANGIC_KANITLARI = {
+    "mazbata": ("teblig", "tebliğ mazbatası / şerhi (7201 s. TK m.21 ve m.35 hâlleri dahil)"),
+    "uets-kaydi": ("teblig", "UETS / e-tebligat kaydı (7201 s. TK m.7/a: ulaştığı tarihi izleyen "
+                             "beşinci günün sonunda tebliğ sayılır)"),
+    "kalem-tevdi": ("teblig", "kalemde/duruşmada imza karşılığı tevdi (7201 s. TK m.36 — tebliğ "
+                              "hükmünde)"),
+    "ilan": ("teblig", "ilanen tebligat (7201 s. TK m.31 — son ilandan yedi gün sonra tebliğ sayılır)"),
+    "tefhim-tutanagi": ("tefhim", "tefhim tutanağı / duruşma zaptı"),
+    "uyap-erisim-kaydi": ("ogrenme", "UYAP erişim / öğrenme kaydı"),
+    "kesinlesme-serhi": ("olay", "kesinleşme şerhi"),
+    "beyan": (None, "yalnız BEYAN — belge yok"),
+    "yok": (None, "kanıt YOK"),
+}
+TEBLIG_DURUMLARI = {
+    "gecerli": "geçerli (usulüne uygun)",
+    "usulsuz": "USULSÜZ (7201 s. TK m.32 — muttali olunan tarih tebliğ tarihi sayılır)",
+    "supheli": "ŞÜPHELİ (tarih okunamıyor / mazbata eksik / kayıtlar çelişkili)",
+}
+
+
+def _baslangic_kapisi(kural, tur_anahtari, kanit, durum, rapor, uyarilar):
+    """Kanıt + tebliğ durumunu kural/başlangıç türüyle karşılaştırır (uyarı üretir).
+    Dönüş: {"kanitsiz": bool, "supheli": bool} — karşı taraf kesin dil kapısı için."""
+    sonuc = {"kanitsiz": False, "supheli": False}
+    izinli = ([str(x).strip().lower() for x in (KURAL_BASLANGIC.get(kural) or [])]
+              if kural else [])
+    if kanit is not None:
+        k = str(kanit).strip().lower()
+        if k not in BASLANGIC_KANITLARI:
+            sonuc["kanitsiz"] = True
+            uyarilar.append("TANINMAYAN BAŞLANGIÇ KANITI: %r — kanıtsız sayıldı; geçerli değerler: %s"
+                            % (kanit, ", ".join(sorted(BASLANGIC_KANITLARI))))
+        else:
+            isaret, ad = BASLANGIC_KANITLARI[k]
+            rapor.append("Başlangıç kanıtı      : %s — %s" % (k, ad))
+            if isaret is None:
+                sonuc["kanitsiz"] = True
+                uyarilar.append(
+                    "KANITSIZ BAŞLANGIÇ: süreyi başlatan olay BELGEYE bağlanmadı (%s). Hesap yalnız "
+                    "İHTİYAT amaçlıdır: bizim süremizde plan, belgeyle bağlanabilecek EN ERKEN olaya "
+                    "göre yapılır; karşı tarafa 'süre kaçırılmıştır' kesin dili tebliğ mazbatası / "
+                    "UETS / UYAP kaydı bulunup teyit edilmeden KURULAMAZ (UYAP tebligat sorgusu, PTT "
+                    "barkod kaydı)." % k)
+            else:
+                if tur_anahtari and tur_anahtari not in ("belirsiz", isaret):
+                    uyarilar.append(
+                        "KANIT ↔ BAŞLANGIÇ TÜRÜ ÇELİŞKİSİ: kanıt '%s' süreyi '%s' olayına bağlıyor; "
+                        "beyan edilen başlangıç türü '%s'. Hangisi doğruysa belgeyle sabitle — iki "
+                        "farklı olay iki farklı son gün demektir." % (k, isaret, tur_anahtari))
+                if izinli and isaret not in izinli:
+                    uyarilar.append(
+                        "KANIT ↔ KURAL ÇELİŞKİSİ: kanıt '%s' süreyi '%s' olayına bağlıyor; '%s' kuralı "
+                        "kayıtlı olarak yalnız (%s) ile işler. Ör. HMK m.345/361 ve İİK m.363/364 "
+                        "süreleri tefhimden değil TEBLİĞDEN işler — o hâlde süreyi başlatan tebliğ "
+                        "belgesini bul." % (k, isaret, kural, ", ".join(izinli)))
+                if k == "uets-kaydi":
+                    uyarilar.append(
+                        "UETS KANITI (7201 s. TK m.7/a): tebliğ, elektronik adrese ULAŞTIĞI tarihi "
+                        "izleyen beşinci günün sonunda yapılmış sayılır — ulaşma günü ile tebliğ-sayılma "
+                        "gününü karıştırma; iki senaryo hesaplanır (CLI'da --baslangic-kaniti uets-kaydi "
+                        "--uets'i kendiliğinden açar). BİZİM süremizde plan ERKEN senaryodur.")
+                if k == "ilan":
+                    uyarilar.append(
+                        "İLANEN TEBLİGAT (7201 s. TK m.31): --teblig olarak SON İLAN tarihinden yedi "
+                        "gün sonrası (merci daha uzun süre tayin ettiyse o) girilmiş olmalı — son ilan "
+                        "tarihinin kendisi tebliğ tarihi DEĞİLDİR.")
+    if durum is not None:
+        d = str(durum).strip().lower()
+        if d not in TEBLIG_DURUMLARI:
+            uyarilar.append("TANINMAYAN TEBLİĞ DURUMU: %r — geçerli değerler: %s"
+                            % (durum, ", ".join(TEBLIG_DURUMLARI)))
+        else:
+            rapor.append("Tebliğ durumu         : %s" % TEBLIG_DURUMLARI[d])
+            if d == "usulsuz" and tur_anahtari == "ogrenme":
+                uyarilar.append(
+                    "USULSÜZ TEBLİĞ (7201 s. TK m.32): muhatap tebliğe muttali olmuşsa tebliğ muteberdir "
+                    "ve muhatabın beyan ettiği ÖĞRENME tarihi tebliğ tarihi sayılır — hesap öğrenme "
+                    "tarihine göre yapıldı; öğrenmeyi belgeye bağla (dilekçe tarihi, UYAP erişim kaydı).")
+            elif d == "usulsuz":
+                uyarilar.append(
+                    "USULSÜZ TEBLİĞ (7201 s. TK m.32): usulsüzlük süreyi kendiliğinden sınırsız bırakmaz — "
+                    "muhatabın tebliğe muttali olduğu (ÖĞRENDİĞİ) tarih tebliğ tarihi sayılır. --teblig "
+                    "öğrenme tarihi olmalı ve --baslangic-turu ogrenme verilmeli; usulsüzlüğü ileri "
+                    "sürüyorsan öğrenme tarihini dilekçede AÇIKÇA beyan et.")
+            elif d == "supheli":
+                sonuc["supheli"] = True
+                uyarilar.append(
+                    "ŞÜPHELİ TEBLİĞ: tebliğ tarihi kesin değil — motor TEK KESİN TARİH ÜRETMEZ; aşağıdaki "
+                    "tarih yalnız İHTİYAT HEDEFİdir ve deftere öyle yazılır. Okunamayan tarihi TAHMİN "
+                    "ETME: olası EN ERKEN tebliğ tarihini gir, gerçek tarihi UYAP tebligat sorgusu / PTT "
+                    "barkod kaydıyla teyit edip yeniden hesapla. Karşı tarafa kesin dil kurulmaz.")
+    return sonuc
+
+
+# Teyitsiz rejimli kuralda KARŞILAŞTIRMA için kullanılan "diğer okuma". Varsayılan
+# HMK m.104 (31 Ağu + 1 hafta — en geniş okuma); icra ceza şikâyetinde (İİK m.347,
+# icra ceza mahkemesi) doğal alternatif CMK m.331/4'tür: öğrenme tatil İÇİNDEYSE süre
+# tatilde hiç işlemeyebilir (tam süre 31 Ağu'dan sonra) — v0.5.18 karşı-tez incelemesi.
+_TEMKINLI_ALTERNATIF = {"iik_icra_ceza_sikayet": "cmk331", "iik_icra_ceza_sikayet_azami": "cmk331"}
+
+
+def _sure_ekle(bas, miktar, birim):
+    """Takvim birimli süreyi `bas` tarihine ekler (gün/hafta/ay/yıl — iş günü hariç)."""
+    if birim == "hafta":
+        return bas + timedelta(weeks=miktar)
+    if birim == "gun":
+        return bas + timedelta(days=miktar)
+    if birim == "ay":
+        return _ay_ekle(bas, miktar)
+    return _ay_ekle(bas, miktar * 12)
+
+
+def _alternatif_bitis(rejim, teblig, ham, miktar, birim):
+    """Teyitsiz/sınır hâlde KARŞILAŞTIRMA için diğer okumanın son günü (kaymasız); yoksa None."""
+    bitis = date(ham.year, *ARA_BITIS)
+    if rejim in ("hmk104", "iyuk8"):
+        return bitis + timedelta(days=7) if aralik_icinde_mi(ham) else None
+    if rejim == "cmk331":
+        if aralik_icinde_mi(teblig) or aralik_icinde_mi(teblig + timedelta(days=1)):
+            return _sure_ekle(date(teblig.year, *ARA_BITIS), miktar, birim)
+        return bitis + timedelta(days=3) if aralik_icinde_mi(ham) else None
+    return None
+
+
 def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
-            baslangic_turu=None, kural=None):
+            baslangic_turu=None, kural=None, baslangic_kaniti=None, teblig_durumu=None,
+            _bilgi=None):
+    """Deterministik son gün hesabı → (son, rapor, uyarilar).
+
+    v0.5.18: adli tatil rejimini KURAL taşır (etkin_rejim — Y-01); CMK'da tatil
+    İÇİNDE tebliğde süre tatilde işlemez (Y-02); dini bayram tablosu eksik yıl
+    GÖRÜNÜR yazılır (Y-08); başlangıç kapısı (kanıt/tebliğ durumu) yalnız uyarı
+    üretir. `_bilgi` (dict) verilirse makine-okur ayrıntı ona yazılır (rejim,
+    rejim_teyitli, alt_son, ihtiyat_son, takvim_eksik, kanitsiz, supheli, kol)."""
     rapor, uyarilar = [], []
     # B-16 (v0.5.14) — negatif/sıfır/aşırı miktar SESSİZCE kabul edilemez:
     # eskiden `--sure -5` tebliğden ÖNCEKİ bir tarihi ">>> HESAPLANAN SON GÜN"
@@ -522,7 +994,15 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     _mh = miktar_dogrula(miktar, birim)
     if _mh:
         raise ValueError(_mh)
+    if yargi not in YARGI_REJIMI:
+        raise ValueError("tanınmayan yargı kolu %r — geçerli: %s (sessizce bir adli tatil "
+                         "rejimine bağlanmaz)" % (yargi, ", ".join(sorted(YARGI_REJIMI))))
+    rj = etkin_rejim(kural, yargi)
+    rejim = rj["adli_tatil"]
+    _kol = etkin_kol(kural, yargi)
+    _onek = str(kural or "").split("_", 1)[0]
     bas = teblig + timedelta(days=1)
+    anahtar = None
     if baslangic_turu is not None:
         anahtar = str(baslangic_turu).strip().lower()
         if anahtar in BASLANGIC_TURLERI:
@@ -538,7 +1018,11 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             # bakar; hukuki hüküm avukata aittir (kural metni ekrandadır).
             _izinli = [str(x).strip().lower()
                        for x in (KURAL_BASLANGIC.get(kural) or [])] if kural else []
-            if _izinli and anahtar not in _izinli and anahtar != "belirsiz":
+            # v0.5.18 — usulsüz tebliğde muttali olunan (öğrenme) tarih tebliğ tarihi
+            # sayılır (7201 s. TK m.32): tebliğe bağlı kuralda bu bir çelişki değildir.
+            _tk32 = (str(teblig_durumu or "").strip().lower() == "usulsuz"
+                     and anahtar == "ogrenme" and "teblig" in _izinli)
+            if _izinli and anahtar not in _izinli and anahtar != "belirsiz" and not _tk32:
                 uyarilar.append(
                     "BAŞLANGIÇ TÜRÜ ÇELİŞKİSİ: '%s' kuralının kayıtlı başlangıç türleri "
                     "(%s) arasında '%s' YOK. Kural satırındaki dayanağı oku ve hangi "
@@ -550,6 +1034,8 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 "TANINMAYAN BAŞLANGIÇ TÜRÜ: %r — sessizce 'tebliğ' sayılmadı; "
                 "geçerli değerler: %s" % (baslangic_turu,
                                           ", ".join(sorted(BASLANGIC_TURLERI))))
+    _kapi = _baslangic_kapisi(kural, anahtar if anahtar in BASLANGIC_TURLERI else None,
+                              baslangic_kaniti, teblig_durumu, rapor, uyarilar)
     rapor.append(f"Tebliğ/öğrenme tarihi : {teblig.isoformat()} ({_gun_adi(teblig)})")
     rapor.append(f"Süre başlangıcı       : {bas.isoformat()} (tebliğ günü sayılmaz)")
     if birim=="hafta":
@@ -569,6 +1055,21 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
         raise ValueError("birim 'gun', 'hafta', 'ay' veya 'yil' olmalı")
     rapor.append(f"Ham bitiş             : {ham.isoformat()} ({_gun_adi(ham)})")
     son = ham
+    alt_son = None       # teyitsiz rejimde DİĞER rejime göre son gün (karşılaştırma için)
+    ihtiyat_son = None   # CMK tatil içi tebliğde eski daire uygulamasına göre son gün
+    if rj.get("turetildi"):
+        uyarilar.append(
+            "REJİM TÜRETİLDİ: '%s' kaydında adli tatil alanları (adli_tatil, adli_tatil_teyitli, "
+            "son_gun_kaymasi, adli_tatil_dayanak) YOK veya geçersiz — rejim %s TÜRETİLDİ (%s). "
+            "sure_kurallari.json'u onar; türetilmiş rejimle karşı tarafa kesin dil kurma."
+            % (kural, rj["turetildi"], REJIM_ETIKET[rejim]))
+    # v0.5.18 / Y-02 — CMK m.331/4 "Adlî tatile rastlayan süreler İŞLEMEZ": tebliğ
+    # TATİL İÇİNDEYSE süre tatilde hiç işlemez; tam süre tatilin bittiği günden
+    # sonra işler (YCGK E.2013/2-272 K.2013/524; YCGK E.2021/319 K.2022/846 —
+    # tutuklu işlerde de; AYM Ramazan Seçen: aksi uygulama erişim hakkı ihlali).
+    # Eski kod süreyi tatilde işletiyordu (25.08 → 08.09; doğrusu 14.09).
+    tatilde_teblig = (tur == "usul" and birim != "isgunu" and rejim == "cmk331"
+                      and not adli_tatil_istisna and aralik_icinde_mi(teblig))
     # Adli tatil/çalışmaya ara YALNIZCA USUL sürelerine uygulanır.
     # Maddi hukuk süreleri (zamanaşımı, hak düşürücü) usul süresi DEĞİLDİR → uzamaz.
     # İŞ GÜNÜ biriminde adli tatil UZATMASI uygulanmaz: (a) sayım zaten tatilleri
@@ -583,8 +1084,27 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "süresi mahkemeye değil İŞVERENE başvuru süresidir (HMK m.104 'bu Kanunun tayin "
             "ettiği süreler' kapsamı dışında). Aksi bir dayanak teyit edilirse tarih yeniden "
             "hesaplanmalıdır — bu hesap GÜVENLİ (erken) taraftadır.")
-    if tur=="usul" and birim!="isgunu" and aralik_icinde_mi(son) and not adli_tatil_istisna:
-        if yargi=="ceza":
+    if tatilde_teblig:
+        _bitis = date(teblig.year, *ARA_BITIS)
+        if birim == "hafta":
+            son = _bitis + timedelta(weeks=miktar)
+        elif birim == "gun":
+            son = _bitis + timedelta(days=miktar)
+        elif birim == "ay":
+            son = _ay_ekle(_bitis, miktar)
+        else:
+            son = _ay_ekle(_bitis, miktar * 12)
+        rapor.append(f"Adli tatil (CMK m.331/4) — TATİL İÇİNDE TEBLİĞ: süre tatilde İŞLEMEZ; TAM süre "
+                     f"tatilin bittiği günden (31 Ağu) sonra işler → {son.isoformat()} "
+                     f"(YCGK E.2013/2-272 K.2013/524; YCGK E.2021/319 K.2022/846)")
+        # İHTİYAT = eski daire okuması: süre tatilde de işler; bitiş tatile rastlarsa
+        # 31 Ağu + üç gün, rastlamazsa ham bitiş (Y. 11. CD E.2017/14079 K.2018/2400:
+        # 07.08.2014 tebliğ, bir haftalık süre tatilde bitti → 01.09'dan üç gün).
+        _ih = (_bitis + timedelta(days=3)) if aralik_icinde_mi(ham) else ham
+        if _ih < son:
+            ihtiyat_son = _ih
+    elif tur=="usul" and birim!="isgunu" and aralik_icinde_mi(son) and not adli_tatil_istisna:
+        if rejim == "cmk331":
             # A-1 (P0, v0.5.14 — MCP teyitli 2026-08-31, CMK m.331/4):
             # "Adlî tatile rastlayan süreler işlemez. Bu süreler tatilin bittiği
             # günden itibaren ÜÇ GÜN uzatılmış sayılır." Bu, hukuk yargısının
@@ -604,13 +1124,15 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 "uzaması her hâlde f.4'e tabidir — tutuklu dosyada işin fiilen yürüyecek olması sürenin "
                 "uzamadığı anlamına GELMEZ. Tutuklu sanıkta ayrıca CMK m.263 (ceza infaz kurumu "
                 "müdürüne başvuru süreyi KESER) değerlendirilir.")
-        elif yargi=="hukuk":
+        elif rejim == "hmk104":
             son = date(son.year,*ARA_BITIS) + timedelta(weeks=1)
             rapor.append(f"Adli tatil (HMK m.104): ham bitiş 20 Tem–31 Ağu arasında; 31 Ağu + 1 hafta → {son.isoformat()}")
-        else:
+        elif rejim == "iyuk8":
             son = date(son.year,*ARA_BITIS) + timedelta(days=7)
             rapor.append(f"Çalışmaya ara (İYUK m.8/3): ham bitiş 20 Tem–31 Ağu arasında; ara bitimini izleyen "
                          f"1 Eylül'den itibaren 7 gün (1 Eylül dahil) → {son.isoformat()}")
+            if not rj["adli_tatil_teyitli"]:
+                alt_son = ham   # uzamasız (ham) bitiş — karşı taraf denetiminde karşılaştırılır
             # A-20 (v0.5.14) — İYUK m.8/3 uzatmasının ÖZEL KANUN sürelerine
             # (ör. 6183 m.58) uygulanması TARTIŞMALIDIR. Danıştay 7.D.
             # E.2000/5685 K.2002/3522 (13.11.2002, MCP tam metin) çoğunluğu
@@ -628,13 +1150,17 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                     "için uzamaz). Karşı taraf ayrışık oya dayanarak süre aşımı def'i ileri sürebilir: "
                     "GÜVENLİ PLAN HAM BİTİŞ tarihidir (%s) — işlemi ona göre yap, uzamış süreyi yalnız "
                     "ikincil savunma olarak tut." % (kural, ham.isoformat()))
+        else:
+            # v0.5.18 / Y-01 — kuralın kendi rejimi: uzatma YOK (icra İİK m.18/1;
+            # tedbire itiraz HMK m.103/1-a; 4857 süreleri; AYM/AİHM — dayanak satırda).
+            rapor.append(f"Adli tatil: UZATMA UYGULANMAZ — ham bitiş {son.isoformat()} ({_gun_adi(son)}) "
+                         f"20 Tem–31 Ağu arasında olsa da UZATILMADI. Dayanak: {rj['adli_tatil_dayanak']}")
     elif tur=="usul" and aralik_icinde_mi(son) and adli_tatil_istisna:
-        # A-7 (v0.5.14) — İSTİSNA GEREKÇESİ YARGI KOLUNA GÖRE DALLANIR.
-        # Eski kod idari yargı istinafında da HMK m.103 kataloğunu basıyordu;
-        # oysa idari yargının nöbetçi mahkeme kataloğu İYUK m.62'dir ve içeriği
-        # tamamen farklıdır (MCP teyitli 2026-08-31). Sayılan işler adli tatilde
-        # GÖRÜLÜR → süre UZAMAZ; ham bitiş korunur, yalnız son gün kayması yapılır.
-        if yargi == "idari":
+        # A-7 (v0.5.14) — İSTİSNA GEREKÇESİ REJİME GÖRE DALLANIR (v0.5.18: kolun değil
+        # KURALIN rejimi). İdari yargının nöbetçi mahkeme kataloğu İYUK m.62'dir ve
+        # HMK m.103'ten tamamen farklıdır (MCP teyitli 2026-08-31). Sayılan işler adli
+        # tatilde GÖRÜLÜR → süre UZAMAZ; ham bitiş korunur, yalnız son gün kayması yapılır.
+        if rejim == "iyuk8":
             rapor.append(f"İYUK m.62 nöbetçi mahkeme işi — çalışmaya ara uzatması uygulanmadı: ham bitiş "
                          f"{son.isoformat()} ({_gun_adi(son)}) 20 Tem–31 Ağu arasında olsa da UZATILMADI. "
                          f"İYUK m.62: nöbetçi mahkeme ara verme süresi içinde (a) yürütmenin durdurulmasına "
@@ -647,9 +1173,11 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 "YANLIŞ KISALTIR. Ayrıca İYUK m.61/1 c.2: yargı çevresine dâhil olduğu BİM'in bulunduğu "
                 "il merkezi dışında kalan ve SADECE BİR idare veya bir vergi mahkemesi bulunan yerlerdeki "
                 "idari yargı mercileri çalışmaya ara vermeden YARARLANAMAZ — dosyanın mahkemesi buysa "
-                "m.8/3 uzamasının işleyip işlemediği ayrıca değerlendirilir. Tereddütte istisnayı KALDIR "
-                "(bayraksız hesap güvenli taraftır).")
-        elif yargi == "ceza":
+                "m.8/3 uzamasının işleyip işlemediği ayrıca değerlendirilir. TEREDDÜTTE İKİ HESAP "
+                "(v0.5.18): kendi işlemini bu ERKEN tarihe göre planla, ama bu tarih geçti diye hakkı "
+                "terk etme (bayraksız tarihi de hesapla); karşı tarafa kesin dili ancak bayraksız (GEÇ) "
+                "tarih de aşılmışsa kur.")
+        elif rejim == "cmk331":
             rapor.append(f"CEZA KOLUNDA İSTİSNA BAYRAĞI — uzatma uygulanmadı: ham bitiş {son.isoformat()} "
                          f"({_gun_adi(son)}) 20 Tem–31 Ağu arasında olsa da UZATILMADI. Yalnız hafta "
                          f"sonu/tatil kayması yapılır.")
@@ -661,6 +1189,10 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 "tutuklu hükümler) — bu, sürenin uzamadığı anlamına GELMEZ. `--adli-tatil-istisna` "
                 "bayrağı HMK m.103 için tasarlanmıştır; ceza dosyasında kullanmak süreyi ÜÇ GÜN "
                 "KISALTIR ve dayanağı YOKTUR. Aksi bir dayanak teyit edilmedikçe bayrağı KALDIR.")
+        elif rejim == "uygulanmaz":
+            rapor.append(f"Adli tatil: UZATMA UYGULANMAZ (kuralın kendi rejimi) — ham bitiş {son.isoformat()} "
+                         f"({_gun_adi(son)}) UZATILMADI; --adli-tatil-istisna bayrağı bu kuralda sonucu "
+                         f"DEĞİŞTİRMEZ. Dayanak: {rj['adli_tatil_dayanak']}")
         else:
             rapor.append(f"HMK m.103 istisna işi — adli tatil uzatması uygulanmadı: ham bitiş {son.isoformat()} "
                          f"({_gun_adi(son)}) 20 Tem–31 Ağu arasında olsa da UZATILMADI. HMK m.103/1 bentleri: "
@@ -678,23 +1210,96 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 "hak kaybına yol açar. DAVACI SIFATINI TEYİT ET: m.103/1-ç istisnası 'işçilerin AÇTIKLARI davalar' "
                 "lafzıyla davacı sıfatına bağlıdır — İŞVERENİN açtığı iş davası bu bende girmez. Aynı şekilde "
                 "m.103/1-b nafakanın yanında soybağı, velayet ve vesayeti sayar; m.103/2 uyarınca tarafların "
-                "anlaşmasıyla bu işlerin görülmesi tatil sonrasına bırakılabilir. Tereddütte istisnayı KALDIR "
-                "(bayraksız hesap güvenli taraftır).")
+                "anlaşmasıyla bu işlerin görülmesi tatil sonrasına bırakılabilir. TEREDDÜTTE İKİ HESAP "
+                "(v0.5.18): kendi işlemini bu ERKEN tarihe göre planla, ama bu tarih geçti diye hakkı "
+                "terk etme (bayraksız tarihi de hesapla); karşı tarafa kesin dili ancak bayraksız (GEÇ) "
+                "tarih de aşılmışsa kur.")
     elif tur=="maddi" and aralik_icinde_mi(son):
         rapor.append("ⓘ Maddi hukuk süresi (zamanaşımı/hak düşürücü) — adli tatil UZATMASI UYGULANMADI "
                      "(usul süresi değildir). Yalnız son gün tatile rastlarsa kayar (aşağıda).")
+    # v0.5.18 — SINIR HÂLİ: tebliğ 19 Temmuz → süre tatilin İLK günü işlemeye başlar,
+    # tatil öncesinde hiç işlemez. Tatil içi tebliğe ilişkin YCGK çizgisi buraya da
+    # taşınabilir (tam süre 31 Ağu'dan sonra). Doğrudan karar bulunamadı: manşet ERKEN
+    # tarih kalır, diğer okuma karşı taraf kesin dil kapısına (alt_son) girer — ham
+    # bitişin tatilde olup olmamasından bağımsız (uzun sürelerde de).
+    if (tur == "usul" and birim != "isgunu" and not adli_tatil_istisna and rejim == "cmk331"
+            and not tatilde_teblig and aralik_icinde_mi(bas) and alt_son is None):
+        _sinir = sonraki_is_gunu(_sure_ekle(date(teblig.year, *ARA_BITIS), miktar, birim))
+        if _sinir > son:
+            alt_son = _sinir
+            uyarilar.append(
+                "SINIR HÂLİ — TEYİT BEKLİYOR (CMK m.331/4): tebliğ tatilin bir gün öncesinde; süre "
+                "tatilin ilk günü işlemeye başladığından tatil öncesinde HİÇ işlemedi. Tatil içi "
+                "tebliğe ilişkin YCGK çizgisi (E.2021/319 K.2022/846) buraya da uygulanırsa tam süre "
+                "31 Ağu'dan sonra işler → %s. Doğrudan karar bulunamadı: kendi işlemini yukarıdaki "
+                "ERKEN tarihe göre yap; karşı tarafın işlemi iki tarih arasındaysa kesin dil kurulmaz."
+                % alt_son.isoformat())
+    # v0.5.18 — rejimi TEYİTSİZ "uygulanmaz" kuralda diğer okumanın son günü (yalnız
+    # KARŞILAŞTIRMA: TEMKİNLİ uyarısı + karşı taraf kesin dil kapısı). Ham bitiş tatil
+    # dışında olsa bile hesaplanır (ör. İİK m.347'de öğrenme tatil içindeyse CMK okuması).
+    if (tur == "usul" and birim != "isgunu" and not adli_tatil_istisna and rejim == "uygulanmaz"
+            and not rj["adli_tatil_teyitli"] and alt_son is None):
+        _dogal = (_ONEK_REJIM.get(_onek, "hmk104") if rj.get("turetildi") == "ön ekten"
+                  else _TEMKINLI_ALTERNATIF.get(kural, "hmk104"))
+        alt_son = _alternatif_bitis(_dogal, teblig, ham, miktar, birim)
     if not is_gunu_mu(son):
-        eski = son; son = sonraki_is_gunu(son)
-        if hafta_sonu_mu(eski):
+        if hafta_sonu_mu(son):
             sebep = ("hafta sonu — Pazar 2429 s.K. genel tatil; Cumartesi yerleşik kabul/içtihatla tatil sayılır"
-                     if eski.weekday()==5 else "hafta sonu — Pazar (2429 s.K. genel tatil)")
+                     if son.weekday()==5 else "hafta sonu — Pazar (2429 s.K. genel tatil)")
         else:
-            sebep = f"resmî tatil ({resmi_tatil_mi(eski)}, 2429 s.K.)"
-        # A-7/A-1 (v0.5.14) — kayma dayanağı da yargı koluna göre yazılır:
-        # hukuk HMK m.93, idari İYUK m.8/2, ceza CMK m.39/4 (MCP teyitli 2026-08-31).
-        _kayma_capa = {"ceza": "CMK m.39/4", "idari": "İYUK m.8/2"}.get(yargi, "HMK m.93")
-        rapor.append(f"Tatil günü düzeltmesi : {eski.isoformat()} {sebep} → ilk iş günü {son.isoformat()} "
-                     f"({_kayma_capa}: yalnız SON GÜN tatile rastlarsa uzar; aradaki tatil günleri süreye DAHİLDİR)")
+            sebep = f"resmî tatil ({resmi_tatil_mi(son)}, 2429 s.K.)"
+        if not rj["son_gun_kaymasi"]:
+            # v0.5.18 — AİHM: süre Sözleşme ölçütüyle işler; iç hukuktaki kayma kuralı
+            # uygulanmaz (Sabri Güneş/Türkiye [BD] §§ 60-61: Pazar günü dolan süre).
+            rapor.append(f"Son gün kayması YOK   : {son.isoformat()} {sebep} — süre UZAMAZ. "
+                         f"Dayanak: {rj['adli_tatil_dayanak']}")
+        else:
+            eski = son; son = sonraki_is_gunu(son)
+            # A-7/A-1 (v0.5.14) — kayma dayanağı da kola göre yazılır: hukuk HMK m.93,
+            # idari İYUK m.8/2, ceza CMK m.39/4 (MCP teyitli 2026-08-31); v0.5.18: icra
+            # İİK m.19/3 (Y. 12. HD E.2009/1886 K.2009/10134), AYM için uygulama örneği.
+            if _onek == "aym":
+                _kayma_capa = ("AYM uygulaması — Ramazan Seçen, B. No: 2021/37483 § 2, 9: otuzuncu gün "
+                               "Cumartesi, Pazartesi başvurusu incelendi; genel dayanak TEYİT BEKLİYOR")
+            else:
+                _kayma_capa = {"ceza": "CMK m.39/4", "idari": "İYUK m.8/2",
+                               "icra": "İİK m.19/3"}.get(_kol, "HMK m.93")
+            rapor.append(f"Tatil günü düzeltmesi : {eski.isoformat()} {sebep} → ilk iş günü {son.isoformat()} "
+                         f"({_kayma_capa}: yalnız SON GÜN tatile rastlarsa uzar; aradaki tatil günleri süreye DAHİLDİR)")
+    if rj["son_gun_kaymasi"]:
+        if ihtiyat_son is not None and not is_gunu_mu(ihtiyat_son):
+            ihtiyat_son = sonraki_is_gunu(ihtiyat_son)
+        if alt_son is not None and not is_gunu_mu(alt_son):
+            alt_son = sonraki_is_gunu(alt_son)
+    if ihtiyat_son is not None and ihtiyat_son >= son:
+        ihtiyat_son = None
+    if alt_son is not None and alt_son == son:
+        alt_son = None
+    if tatilde_teblig:
+        if ihtiyat_son is not None:
+            rapor.append(f"İhtiyat planı         : {ihtiyat_son.isoformat()} ({_gun_adi(ihtiyat_son)}) — eski "
+                         f"daire uygulaması (tatil bitiminden itibaren üç gün); işlemi mümkünse buna göre yap")
+        uyarilar.append(
+            "CEZA ADLİ TATİLİ — TATİL İÇİNDE TEBLİĞ (CMK m.331/4): 'Adlî tatile rastlayan süreler "
+            "işlemez.' Tebliğ (%s) tatil içinde olduğundan süre tatilde İŞLEMEDİ; TAM süre tatilin "
+            "bittiği günden sonra işler → %s (YCGK E.2013/2-272 K.2013/524; YCGK E.2021/319 "
+            "K.2022/846 — TUTUKLU işlerde de aynı; 14.02.1934 t. 47/1 s. İBK; AYM Ramazan Seçen, "
+            "B. No: 2021/37483: süreyi tatilde işletmek mahkemeye erişim hakkını İHLAL eder). "
+            "İHTİYAT PLANI: bazı eski daire kararları tatil içi tebliğde de 'tatil bitiminden itibaren "
+            "üç gün' uygulamıştır (ör. Y. 11. CD E.2017/14079 K.2018/2400)%s — %s tarihine güvenmen "
+            "gerekirse YCGK 2022/846'yı dilekçede an. Tutuklu sanıkta CMK m.263 kanalı ayrıca "
+            "değerlendirilir." % (
+                teblig.isoformat(), son.isoformat(),
+                (" → mümkünse %s tarihine kadar başvur" % ihtiyat_son.isoformat())
+                if ihtiyat_son else "", son.isoformat()))
+    if alt_son is not None and rejim == "uygulanmaz":
+        uyarilar.append(
+            "TEMKİNLİ REJİM — TEYİT BEKLİYOR: '%s' için adli tatil rejimi resmî kaynakla teyit "
+            "EDİLEMEDİ; motor uzatma UYGULAMADI ve ERKEN tarihi verdi (%s). Diğer okumada (adli "
+            "tatil uzatması ya da süre tatilde işlemezse) son gün %s olurdu — bu GEÇ tarihe GÜVENME "
+            "(yalnız ikincil savunma). Karşı tarafın işlemi iki tarih arasındaysa kesin dil kurulmaz "
+            "(ARA TESPİT). Dayanak: %s" % (
+                kural or "--sure", son.isoformat(), alt_son.isoformat(), rj["adli_tatil_dayanak"]))
     # ── İDARİ İZİN KATMANI (uyarı — KAYDIRMA YAPILMAZ) ─────────────────────
     # Hukuki kural: idari izin (CB tasarrufu — Kararname/Karar/Genelge) 2429 anlamında resmî tatil
     # değildir; süreyi UZATMAZ, SÜREDEN SAYILIR. Riski görünür kılar, son günü değiştirmez.
@@ -704,7 +1309,7 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "İdari izin 2429 s.K. anlamında resmî tatil DEĞİLDİR — SÜREYİ UZATMAZ, SÜREDEN SAYILIR. "
             "Kamu birimleri (vergi dairesi, tapu, kalem, vezne) fiilen kapalı/eksik çalışıyor olabilir: "
             "fiziki işlem veya harç/vezne gerektiren adımı ÖNCEDEN tamamla; UYAP elektronik kanalı 23:59'a kadar açıktır. "
-            + _kurtarma_kapisi_notu(yargi))
+            + _kurtarma_kapisi_notu(_kol, kural))
     elif not idari_tanimli_mi(son.year) and dini_yakin_mi(son):
         uyarilar.append(f"İDARİ İZİN TARAMASI: Son gün bir dini bayrama bitişik ve {son.year} için tabloda idari izin kaydı yok. "
             "O yıl köprü günü idari izni ilan edilmiş olabilir — Mevzuat MCP'den ÜÇ enstrümanı birden "
@@ -712,6 +1317,36 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "NOT: idari izin süreyi UZATMAZ; bu tarama yalnızca fiilî erişim riskini görmek içindir.")
     if TATILLER.get("_tablo_yok"):
         uyarilar.append("tatiller.json bulunamadı; yalnızca sabit ulusal tatiller kullanıldı.")
+    # ── v0.5.18 / Y-08 — TATİL TAKVİMİ EKSİK: sessiz yanlış hesap yok ────────
+    # Dini bayram tarihleri tahmin edilmez (yalnız resmî kaynaktan tabloya işlenir).
+    # Tablo eksikse motor bayram gününü iş günü sanar: takvim günü süresinde son gün
+    # kaymaz, iş günü sayımında bayram günleri sayılır → tarih ERKEN tarafta kalır
+    # (bizim işlemimiz için güvenli) ama karşı tarafa kesin dil KURULAMAZ (main()).
+    _yillar = (set(range(teblig.year, son.year + 1)) if birim == "isgunu"
+               else {ham.year, son.year})
+    for _ek_tarih in (ihtiyat_son, alt_son):
+        if _ek_tarih is not None:
+            _yillar.add(_ek_tarih.year)
+    takvim_eksik = sorted(y for y in _yillar if not dini_tam_mi(y))
+    if takvim_eksik:
+        _yl = ", ".join(str(y) + (" (KISMİ kayıt)" if dini_tanimli_mi(y) else "")
+                        for y in takvim_eksik)
+        rapor.append(f"⚠ TATİL TAKVİMİ EKSİK : {_yl} — tatiller.json'da resmî dini bayram kaydı yok/eksik; "
+                     "son gün bayrama rastlıyorsa kayma YAPILAMADI (tarih erken tarafta kalır); TEYİT ET.")
+        if birim == "isgunu":
+            uyarilar.append(
+                f"TATİL TAKVİMİ EKSİK — TEYİT ET (Y-08): İŞ GÜNÜ sayımı {_yl} yılı dini bayram günlerini "
+                "BİLMİYOR ve onları iş günü saydı — gerçek son gün bu hesaptan DAHA GEÇ olabilir. Bizim "
+                "işlemimiz için bu tarih güvenli (erken) taraftır; karşı tarafın süresini denetlerken "
+                "bayram günlerini Diyanet/Resmî Gazete'den teyit edip tatiller.json'a işlemeden kesin "
+                "dil kurma ve yeniden hesapla.")
+        else:
+            uyarilar.append(
+                f"TATİL TAKVİMİ EKSİK — TEYİT ET (Y-08): {_yl} — tatiller.json'da resmî dini bayram "
+                "tarihleri yok ya da eksik (tahmin YAZILMAZ). Son gün bir bayram gününe rastlıyorsa motor onu iş günü "
+                "sandı ve KAYDIRMADI — gerçek son gün daha geç olabilir. Bizim işlemimiz için bu tarih "
+                "güvenli (erken) taraftır; karşı tarafa kesin dil kurmadan önce Diyanet/Resmî Gazete'den "
+                "teyit edip tatiller.json'a işle ve YENİDEN HESAPLA.")
     if not dini_tanimli_mi(son.year) or not dini_tanimli_mi(ham.year):
         yakin = []
         for yy in {son.year, ham.year}:
@@ -738,7 +1373,9 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     else:
         uyarilar.append("PARASAL KESİNLİK: Süre işlese de karar parasal sınırın altındaysa kanun yolu KAPALI "
             "olabilir. Sınırı o yıl için Mevzuat MCP'den teyit et.")
-    if yargi=="idari" and tur=="usul":
+    # Kol-özel uyarılar AYM/AİHM kuralında basılmaz (kol-bağımsız yollar).
+    _kol_ozel = _onek not in ("aym", "aihm")
+    if _kol_ozel and _kol=="idari" and tur=="usul":
         # A-5 (v0.5.14) — eski uyarı ("özel kanun süreleri olabilir") avukatı
         # YANLIŞ yöne bakmaya sevk ediyordu: en sık ıskalanan kısa süreler özel
         # kanunlarda değil, İYUK'un KENDİSİNDEDİR (m.20/A, m.20/B — MCP teyitli
@@ -754,7 +1391,7 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "itiraz edilemez (/d). İlgili kural adları: iyuk_dava_ivedi, iyuk_temyiz_ivedi, "
             "iyuk_dava_sinav, iyuk_temyiz_sinav. Ayrıca özel kanunlarda (memur disiplin, ihale vb.) "
             "başka süreler de olabilir — uygulanan kuralı Mevzuat MCP'den teyit et.")
-    if yargi=="ceza" and tur=="usul":
+    if _kol_ozel and _kol=="ceza" and tur=="usul":
         uyarilar.append(
             "CEZA KANUN YOLU KAPILARI: Başvuru süresi işlese de yol KAPALI olabilir — istinafta "
             "CMK m.272/3 (parasal sınır ve kesin hükümler), temyizde m.286 sınırlamaları kullanım "
@@ -783,11 +1420,18 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "yukarıdaki tarih, arabuluculukta geçen günleri DIŞARIDA BIRAKMAZ. Arabuluculuk "
             "başvurusu ile son tutanak arasındaki gün sayısını ELLE ekleyin ve sonucu ayrıca "
             "deftere işleyin.")
+        # v0.5.18 — 4857 süreleri HMK'nın tayin ettiği süre değildir: kural rejimi
+        # "uygulanmaz" (Y. 9. HD E.2016/1261 K.2016/22196). Eski metin uzatmanın
+        # yalnız --adli-tatil-istisna ile kalkacağını söylüyordu (bayraksız GEÇ tarih).
         uyarilar.append(
-            "ADLİ TATİL — İŞÇİNİN AÇTIĞI DAVA: HMK m.103/1-ç, 'hizmet akdi veya iş sözleşmesi "
-            "sebebiyle İŞÇİLERİN AÇTIKLARI davalar'ı adli tatilde görülen işler arasında sayar; "
-            "bu işlerde süre UZAMAZ (`--adli-tatil-istisna`). Bent DAVACI SIFATINA bağlıdır — "
-            "İŞVERENİN açtığı iş davası bu bende GİRMEZ ve orada uzatma işler. Sıfatı teyit et.")
+            "ADLİ TATİL — İŞ HUKUKU SÜRELERİ: Bu tablodaki 4857 süreleri HMK'nın tayin ettiği süreler "
+            "DEĞİLDİR; kuralın rejimi gereği HMK m.104 uzatması UYGULANMADI (Y. 9. HD E.2016/1261 "
+            "K.2016/22196: işe iade süresinde m.104 uzatması usul ve yasaya aykırı). Dava açıldıktan "
+            "sonraki HMK süreleri için: HMK m.103/1-ç, 'hizmet akdi veya iş sözleşmesi sebebiyle "
+            "İŞÇİLERİN AÇTIKLARI davalar'ı adli tatilde görülen işler arasında sayar — bu davalarda "
+            "HMK süreleri de UZAMAZ (`--adli-tatil-istisna`). Bent DAVACI SIFATINA bağlıdır — "
+            "İŞVERENİN açtığı iş davası bu bende GİRMEZ ve orada HMK sürelerine uzatma işler. "
+            "Sıfatı teyit et.")
     if kural == "is_ise_iade_dava":
         uyarilar.append(
             "BAŞLANGIÇ TARTIŞMALI (işe iade, iki hafta): 4857 m.20/1 süreyi 'son tutanağın "
@@ -807,6 +1451,29 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "sadece bunun hukuki sonuçları ile sorumlu olur' — kazanılmış işe iade kararı bu "
             "sürede işlevsizleşir. Başvuru İŞVERENE yapılır (mahkemeye değil) ve ULAŞTIĞI an "
             "esastır; ispat için iadeli taahhütlü/noter kanalını kullan.")
+    # ── v0.5.18 — AYM / AİHM başlangıç notları (başlangıç kapısının yol-özel ayağı) ──
+    if _onek == "aym":
+        uyarilar.append(
+            "AYM BAŞLANGIÇ (6216 m.47/5; İçtüzük m.64/1): otuz gün başvuru yollarının TÜKETİLDİĞİ, "
+            "yol yoksa ihlalin öğrenildiği tarihten işler. AYM kararlarında nihai kararın UYAP'tan "
+            "öğrenildiği tarih olay olarak kaydedilmektedir (ör. Ramazan Seçen, B. No: 2021/37483, "
+            "6/1/2026, § 9) — tebliğden ÖNCE öğrenme süreyi başlatabilir; genel ilke TEYİT BEKLİYOR. "
+            "Erken öğrenme kanıtı varsa --teblig olarak onu gir (plan ERKEN tarih). Son günün hafta "
+            "sonuna rastlaması hâlinde izleyen iş günü başvurusu incelenmiştir (aynı karar § 2, 9) — "
+            "yine de mümkünse hafta sonundan önce başvur.")
+    if _onek == "aihm":
+        uyarilar.append(
+            "AİHM BAŞLANGIÇ (AİHS m.35/1): süre nihai iç hukuk kararından işler; iç hukukta kararın "
+            "yazılı tebliği öngörülüyorsa TEBLİĞ tarihi esastır (Sabri Güneş/Türkiye [BD], no. "
+            "27396/06, § 53 — Worm/Avusturya'ya atıfla). AYM'nin 'UYAP'tan öğrenme' yaklaşımını "
+            "AİHM'e otomatik taşıma. Süre Sözleşme ölçütleriyle hesaplanır: son gün hafta sonu/resmî "
+            "tatile rastlasa da UZAMAZ (aynı karar §§ 60-61) — başvuruyu son güne bırakma.")
+        if teblig < date(2022, 2, 1):
+            uyarilar.append(
+                "AİHM SÜRE GEÇİŞİ (15 No'lu Protokol): süre altı aydan dört aya indirildi; 1.2.2022'den "
+                "ÖNCE kesinleşen iç hukuk kararlarında altı ay uygulanmış olabilir — geçiş kuralı TEYİT "
+                "BEKLİYOR. Bu hesap girilen süreyle (%d %s) yapıldı; geçiş kuralını Protokol metninden "
+                "teyit et." % (miktar, birim))
 
     # B-16 (v0.5.14) — SON SAĞLIK KONTROLÜ: son gün hiçbir koşulda başlangıç
     # tarihinden önce olamaz. Bu satır bir daha ASLA geçmeyecek olsa bile durur:
@@ -817,8 +1484,28 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "İÇ TUTARSIZLIK: hesaplanan son gün (%s) başlangıç tarihinden (%s) ÖNCE — "
             "sonuç kullanılamaz." % (son.isoformat(), teblig.isoformat()))
     rapor.append("")
-    rapor.append(f">>> HESAPLANAN SON GÜN  : {son.isoformat()} ({_gun_adi(son)}) — mesai bitimi <<<")
+    if _kapi["supheli"]:
+        # v0.5.18 — şüpheli tebliğde tek kesin tarih YOK: satır bilinçli olarak farklıdır
+        # (">>> HESAPLANAN SON GÜN" ayrıştıran araçlar bunu kesin tarih sanmasın).
+        rapor.append(f">>> İHTİYAT HEDEFİ (ŞÜPHELİ TEBLİĞ — tek kesin tarih DEĞİL): {son.isoformat()} "
+                     f"({_gun_adi(son)}) — mesai bitimi <<<")
+    else:
+        rapor.append(f">>> HESAPLANAN SON GÜN  : {son.isoformat()} ({_gun_adi(son)}) — mesai bitimi <<<")
+    # v0.5.18 — PLAN tarihi: kendi işlemimiz için EN ERKEN makul son gün (ihtiyat planı,
+    # tartışmalı uzatmanın uzamasız hâli). Manşet hukuki son günü korur; plan ayrı yazılır.
+    plan_son = min([son] + [g for g in (ihtiyat_son, alt_son) if g is not None])
+    if plan_son < son:
+        rapor.append(f"    ↳ PLAN (kendi işlemin için ERKEN tarih): {plan_son.isoformat()} "
+                     f"({_gun_adi(plan_son)}) — gerekçe uyarılarda")
+    if isinstance(_bilgi, dict):
+        _bilgi.update({"rejim": rejim, "rejim_teyitli": bool(rj["adli_tatil_teyitli"]),
+                       "rejim_kaynagi": rj.get("kaynak"), "rejim_turetildi": rj.get("turetildi") or "",
+                       "rejim_dayanak": rj["adli_tatil_dayanak"], "kol": _kol,
+                       "alt_son": alt_son, "ihtiyat_son": ihtiyat_son,
+                       "takvim_eksik": takvim_eksik, "kanitsiz": _kapi["kanitsiz"],
+                       "supheli": _kapi["supheli"], "plan_son": plan_son})
     return son, rapor, uyarilar
+
 
 def _pencere_kontrol(json_yol, cikti_yol=None):
     """M5 (Paket D, v0.5.5) — SÜRE PENCERE BİNDİRME KONTROLÜ: birden çok süre
@@ -992,7 +1679,7 @@ def _pencere_kontrol(json_yol, cikti_yol=None):
         sys.exit(1)
 
 
-def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur):
+def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur, ek_alanlar=None):
     """E4a (v0.5.8.5) — SÜRE BAĞI: hesaplanan son gün(ler) <kok>/_oa varsa
     `_oa/sureler.json`a OTOMATİK flag olarak işlenir (halüsinasyon çıpası —
     hesap yapıldı ama deftere hiç yazılmadı boşluğu kapanır). Kayıt biçimi
@@ -1002,7 +1689,9 @@ def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur):
     çağırmaz kuralıyla simetrik). <kok>/_oa YOKSA hiçbir şey yazılmaz (dava
     kökü değildir; defter İCAT EDİLMEZ) — dönüş (None, sebep). Aynı
     (son_gun, aciklama) çifti defterde zaten varsa TEKRAR eklenmez (tekrar
-    koşu defteri şişirmez). Dönüş: (yeni_eklenen_listesi, defter_yolu|sebep)."""
+    koşu defteri şişirmez). Dönüş: (yeni_eklenen_listesi, defter_yolu|sebep).
+    v0.5.18: `ek_alanlar` (ör. {"takvim_eksik": [2027]}) her yeni kayda eklenir —
+    nöbetçi tatil takvimi eksik son günü işaretler (Y-08)."""
     oa = os.path.join(kok, "_oa")
     if not os.path.isdir(oa):
         return None, f"{oa} yok — otomatik flag yazılmadı (dava kökü değil)"
@@ -1027,6 +1716,8 @@ def _sure_flagini_yaz(kok, son_gunler, aciklama_taban, kural, tur):
                  "kural": kural,
                  "kayit": _datetime.datetime.now().isoformat(timespec="seconds"),
                  "tur": tur}
+        if ek_alanlar:
+            kayit.update(ek_alanlar)
         d["flagler"].append(kayit)
         yeni.append(tarih_iso)
     if yeni:
@@ -1078,6 +1769,8 @@ def _asama_raporu(a):
     kullanilmayan = [b for b, v in (("--teblig", a.teblig), ("--islem", a.islem),
                                     ("--uets", a.uets), ("--sure", a.sure),
                                     ("--baslangic-turu", getattr(a, "baslangic_turu", None)),
+                                    ("--baslangic-kaniti", getattr(a, "baslangic_kaniti", None)),
+                                    ("--teblig-durumu", getattr(a, "teblig_durumu", None)),
                                     ("--adli-tatil-istisna", a.adli_tatil_istisna)) if v]
     _kaynak_adi = "gömülü tablo" if _ASAMA_TABLO_YOK else "sure_kurallari.json"
     if a.json:
@@ -1108,8 +1801,9 @@ def _asama_raporu(a):
     print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")
     print("  ! Aşamanın kapanıp kapanmadığını (cevap verildi mi / tahkikat bitti mi / hüküm "
           "verildi mi) DOSYADAN teyit et; script aşamayı bilmez, yalnız kuralı söyler.")
-    print("  ! Aşama bir tebliğle takvime bağlanırsa (ör. ön inceleme davetiyesi, HMK m.139/1-ç) "
-          "o an tarih kuralına geç: --teblig <tebliğ> --sure N --birim ... ile hesapla.")
+    print("  ! Aşama bir tebliğle takvime bağlanırsa (ör. ön inceleme davetiyesi, HMK m.139/1-ç → "
+          "--kural hmk_on_inceleme_belge_sunma) o an tarih kuralına geç: --kural <tarih kuralı> "
+          "--teblig <tebliğ> (tabloda yoksa --sure N --birim ...) ile hesapla.")
     print("=" * 66)
     if a.flagsiz:
         print("ⓘ --flagsiz: otomatik sureler.json flag yazımı istekle KAPALI.")
@@ -1130,6 +1824,47 @@ def _asama_raporu(a):
           "(pipeline_kayit.py) ve _oa/dosya.md üzerinden AVUKAT tarafından yürütülür.")
 
 
+# v0.5.18 — KESİN DİL KAPISI (karşı taraf denetimi). "Süre kaçırılmıştır" kesin
+# dili ancak şu üçü birlikteyken kurulur: başlangıç BELGELİ, tebliğ şüphesiz,
+# adli tatil rejimi ve tatil takvimi TEYİTLİ (references/baslangic-kapisi.md §3).
+# Takvim belirsizliği eşiği: en uzun dini bayram (Kurban: arife yarım + dört gün)
+# hafta sonu ve olası köprü idari izniyle birleşince ~9 güne çıkar; 10 gün marj.
+TAKVIM_BELIRSIZLIK_GUN = 10
+
+
+def _kesin_dil_engelleri(islem, son_ref, bilgi_ref, fark_ref, bilgi_ana):
+    """Kesin dilin eksik ŞARTLARINI insan-okur liste olarak döndürür (boş = engel yok).
+    son_ref/fark_ref: kesin dil için aşılması gereken en geç son gün ve işlemin ondan farkı."""
+    engel = []
+    if bilgi_ana.get("kanitsiz"):
+        engel.append("başlangıç BELGEYE bağlanmadı (--baslangic-kaniti beyan/yok/tanınmayan)")
+    if bilgi_ana.get("supheli") or bilgi_ref.get("supheli"):
+        engel.append("tebliğ ŞÜPHELİ (--teblig-durumu supheli) — tek kesin tarih yok")
+    if bilgi_ana.get("rejim_turetildi"):
+        engel.append("adli tatil rejimi TÜRETİLDİ (kural kaydında rejim alanı yok)")
+    _alt = bilgi_ref.get("alt_son")
+    if _alt is not None and min(son_ref, _alt) < islem <= max(son_ref, _alt):
+        engel.append("adli tatil rejimi TEYİTSİZ/TARTIŞMALI — diğer okumada son gün %s"
+                     % _alt.isoformat())
+    _te = sorted(set(bilgi_ana.get("takvim_eksik") or []) | set(bilgi_ref.get("takvim_eksik") or []))
+    if _te and 0 < fark_ref <= TAKVIM_BELIRSIZLIK_GUN:
+        engel.append("tatil takvimi EKSİK (%s) ve fark %d gün — son gün bayrama rastlıyorsa kayma "
+                     "eksik kalmış olabilir" % (", ".join(str(y) for y in _te), fark_ref))
+    return engel
+
+
+def _ara_tespit_yaz(rapor, uyarilar, son_ref, fark_ref, engeller):
+    rapor.append(f">>> ARA TESPİT — KESİN DİL KULLANMA: İşlem hesaplanan son günden ({son_ref.isoformat()}) "
+                 f"{fark_ref} gün SONRA görünüyor; ancak kesinlik şartları EKSİK:")
+    for _e in engeller:
+        rapor.append(f"    · {_e}")
+    rapor.append("    Eksikler giderilmeden 'süre kaçırılmıştır' kesin dili kullanılmaz; tespit "
+                 "'teyit kaydıyla' ara tespit olarak yazılır, teyitten sonra kesinleşir.")
+    uyarilar.append("KESİN DİL KULLANMA — KESİNLİK ŞARTI EKSİK: " + "; ".join(engeller) + ". Karşı "
+                    "tarafın süre aşımı ihtimali GİZLENMEZ (aktif usul itirazı malzemesidir) ama "
+                    "eksik şart belgelenip giderilmeden kesin dille yazılmaz.")
+
+
 def main():
     p = argparse.ArgumentParser(description="Deterministik Türk usul/maddi süre hesaplayıcı (v3)")
     p.add_argument("--teblig", help="Başlangıç tarihi: usulde tebliğ/öğrenme; maddi hukukta muacceliyet/öğrenme/fiil (YYYY-MM-DD)")
@@ -1143,11 +1878,13 @@ def main():
                    help="v0.5.16 — makine-okur çıktı: aşama kuralında YALNIZ JSON "
                         "({\"tur\":\"asama\",...}); tarih kuralında raporun sonuna "
                         "'[JSON] {...}' satırı eklenir.")
-    p.add_argument("--yargi", choices=["hukuk","idari","ceza"], default="hukuk",
-                   help="Yargı kolu — ADLİ TATİL REJİMİNİ belirler: hukuk = HMK m.104 "
-                        "(31 Ağu + 1 hafta); idari = İYUK m.8/3 (1 Eylül'den 7 gün); "
-                        "ceza = CMK m.331/4 (tatilin bittiği günden ÜÇ GÜN). cmk_* kuralları "
-                        "YALNIZ --yargi ceza ile koşulur (aksi hâlde hesap DURUR).")
+    p.add_argument("--yargi", choices=["hukuk","idari","ceza","icra"], default="hukuk",
+                   help="Yargı kolu. --kural VERİLDİYSE adli tatil rejimini KURALIN KENDİSİ "
+                        "taşır (v0.5.18; ör. iik_* = uzatma yok, İİK m.18/1). --kural yoksa "
+                        "rejimi kol belirler: hukuk = HMK m.104 (31 Ağu + 1 hafta); idari = "
+                        "İYUK m.8/3 (1 Eylül'den 7 gün); ceza = CMK m.331/4 (tatilde işlemez, "
+                        "bitiminden ÜÇ GÜN); icra = uzatma YOK (İİK m.18/1, HMK m.103/1-h). "
+                        "cmk_* kuralları YALNIZ --yargi ceza ile koşulur (aksi hâlde hesap DURUR).")
     p.add_argument("--tur", choices=["usul","maddi"], default="usul",
                    help="usul = kanun yolu/başvuru süresi (adli tatil uygulanır); "
                         "maddi = zamanaşımı/hak düşürücü (TBK/TMK/TTK/6183 vb. — adli tatil uygulanmaz)")
@@ -1160,6 +1897,19 @@ def main():
                         "istinaf-temyiz GEREKÇELİ KARARIN TEBLİĞİNDEN işler. "
                         "'belirsiz' verilirse iki senaryo uyarısı düşer ve plan ERKEN "
                         "tarihe göre yapılır.")
+    p.add_argument("--baslangic-kaniti", dest="baslangic_kaniti",
+                   choices=sorted(BASLANGIC_KANITLARI), default=None,
+                   help="v0.5.18 BAŞLANGIÇ KAPISI — süreyi başlatan olayın KANITI: mazbata, "
+                        "uets-kaydi (7201 s. TK m.7/a; iki senaryoyu kendiliğinden açar), "
+                        "kalem-tevdi (m.36), ilan (m.31), tefhim-tutanagi, uyap-erisim-kaydi, "
+                        "kesinlesme-serhi, beyan/yok (belgesiz → hesap ihtiyat amaçlı, karşı "
+                        "tarafa kesin dil KAPALI). Kanıtın işaret ettiği olay kuralın izinli "
+                        "başlangıç türüyle çelişirse uyarı basılır. Aritmetiği değiştirmez.")
+    p.add_argument("--teblig-durumu", dest="teblig_durumu",
+                   choices=sorted(TEBLIG_DURUMLARI), default=None,
+                   help="v0.5.18 — gecerli | usulsuz (7201 s. TK m.32: muttali olunan tarih "
+                        "tebliğ tarihi sayılır → --baslangic-turu ogrenme) | supheli (tarih "
+                        "okunamıyor/çelişkili → tek kesin tarih ÜRETİLMEZ, 'İHTİYAT HEDEFİ').")
     p.add_argument("--islem", metavar="YYYY-MM-DD",
                    help="Fiilî işlem/başvuru tarihi (özellikle KARŞI TARAF denetimi): hesaplanan son günle "
                         "karşılaştırılır; süre kaçırılmışsa NET ve KESİN tespit üretilir (çalışmaya eklenecek dille)")
@@ -1233,6 +1983,9 @@ def main():
         if a.kural.startswith("iyuk") and a.yargi!="idari":
             print("ⓘ Not: İYUK kuralı; --yargi idari önerilir (çalışmaya ara mekaniği). "
                   "Uzatma aritmetiği hukuk koluyla aynı sonucu verdiği için hesap DURDURULMADI.")
+        if a.kural.startswith("iik") and a.yargi == "hukuk":
+            print("ⓘ Not: İİK kuralı — adli tatil rejimini kural kendisi taşır (v0.5.18: uzatma "
+                  "YOK); --yargi icra önerilir (kayma dayanağı İİK m.19/3, kurtarma kapısı İİK m.65).")
     elif a.sure is not None and a.birim:
         # B-16 — eski `a.sure and a.birim` kontrolü `--sure 0`ı falsy görüp
         # "alan eksik" YALANINI söylüyordu (kullanıcı alanı VERMİŞTİ).
@@ -1242,14 +1995,24 @@ def main():
             p.error("--sure geçersiz: %s" % _mh)
     else:
         p.error("Ya --kural ver ya da --sure + --birim birlikte ver.")
+    # v0.5.18 — UETS kaydı kanıt olarak verildiyse iki senaryo ZORUNLUDUR (7201 s. TK
+    # m.7/a): ulaşma günü ile tebliğ-sayılma günü karıştırılmasın diye --uets açılır.
+    _uets_kendiliginden = bool(getattr(a, "baslangic_kaniti", None) == "uets-kaydi" and not a.uets)
+    if _uets_kendiliginden:
+        a.uets = True
+    bilgi = {}
     try:
         son,rapor,uyarilar = hesapla(teblig,miktar,birim,a.yargi,a.tur,a.adli_tatil_istisna,
-                                     getattr(a, "baslangic_turu", None), a.kural)
+                                     getattr(a, "baslangic_turu", None), a.kural,
+                                     baslangic_kaniti=getattr(a, "baslangic_kaniti", None),
+                                     teblig_durumu=getattr(a, "teblig_durumu", None),
+                                     _bilgi=bilgi)
     except (ValueError, OverflowError) as e:
         # B-22 — uç tarih/miktarda ham traceback yerine temiz mesaj.
         p.error("hesap yapılamadı: %s" % e)
     # ── E-TEBLİGAT / UETS (7201 m.7/a): ulaşma+5. gün karine senaryosunu çift hesapla ─
     son_karine = None
+    bilgi_k = {}
     if a.uets:
         # A-4 (v0.5.14) — E-TEBLİĞ DAYANAĞI KURALA GÖRE SEÇİLİR. Aritmetik her iki
         # rejimde de aynıdır (beşinci günün sonu), bu yüzden dayanak hatası sessiz
@@ -1268,9 +2031,13 @@ def main():
             _dayanak_kisa = "7201 m.7/a"
         karine_teblig = teblig + timedelta(days=5)
         son_karine, _rk, uyarilar_karine = hesapla(karine_teblig, miktar, birim, a.yargi,
-                                                   a.tur, a.adli_tatil_istisna, None, a.kural)
+                                                   a.tur, a.adli_tatil_istisna, None, a.kural,
+                                                   teblig_durumu=getattr(a, "teblig_durumu", None),
+                                                   _bilgi=bilgi_k)
         rapor.append("")
         rapor.append("── E-TEBLİGAT (UETS/e-tebligat) — İKİ SENARYO (çift hesap) ─────────")
+        if _uets_kendiliginden:
+            rapor.append("ⓘ --baslangic-kaniti uets-kaydi → iki senaryo KENDİLİĞİNDEN açıldı (--uets).")
         rapor.append(f"Dayanak               : {_dayanak}.")
         if _vergi_kanadi:
             rapor.append("    (Adli tebligat 7201 m.7/a'ya tabidir; burada VERGİ kanadı kuralı seçildiği için")
@@ -1322,7 +2089,11 @@ def main():
             gecti_s2 = fark_karine > 0
             rapor.append(f"    Senaryo-1 (okunma esas) son gün  : {son.isoformat()} → fark {fark:+d} gün")
             rapor.append(f"    Senaryo-2 (karine, ulaşma+5) son gün: {son_karine.isoformat()} → fark {fark_karine:+d} gün")
-            if gecti_s1 and gecti_s2:
+            # v0.5.18 — kesin dil için aşılması gereken EN GEÇ son gün karine senaryosudur.
+            _engeller = _kesin_dil_engelleri(islem, son_karine, bilgi_k, fark_karine, bilgi)
+            if gecti_s1 and gecti_s2 and _engeller:
+                _ara_tespit_yaz(rapor, uyarilar, son_karine, fark_karine, _engeller)
+            elif gecti_s1 and gecti_s2:
                 rapor.append(f">>> TESPİT — SÜRE KAÇIRILMIŞTIR (HER İKİ SENARYODA DA): İşlem, Senaryo-1 son gününden "
                              f"{fark} gün, Senaryo-2 (karine) son gününden {fark_karine} gün SONRA yapılmıştır.")
                 rapor.append("    Süresinden sonra yapılan işlem usul hukuku bakımından sonuç doğurmaz; süreye")
@@ -1344,6 +2115,21 @@ def main():
                 rapor.append(">>> TESPİT: İşlem SÜRESİ İÇİNDE yapılmıştır (her iki UETS senaryosunda da).")
         elif fark <= 0:
             rapor.append(f">>> TESPİT: İşlem SÜRESİ İÇİNDE yapılmıştır ({'son günde' if fark==0 else f'son günden {-fark} gün önce'}).")
+            # v0.5.18 — süresinde görünen işlem başka bir okumada geç olabilir: GÖRÜNÜR yaz
+            # (kesin dil değil; ikincil itiraz malzemesi — karar avukatın).
+            _alt = bilgi.get("alt_son")
+            if _alt is not None and _alt < islem:
+                rapor.append(f"    ⓘ Rejim teyitsiz/tartışmalı: diğer okumada son gün {_alt.isoformat()} — "
+                             "işlem ona göre GEÇ; yalnız ARA TESPİT / ikincil süre itirazı malzemesidir.")
+            _ih = bilgi.get("ihtiyat_son")
+            if _ih is not None and _ih < islem:
+                rapor.append(f"    ⓘ Eski daire uygulamasına göre (tatil bitiminden üç gün: {_ih.isoformat()}) "
+                             "geç sayılabilirdi; YCGK E.2021/319 K.2022/846 ve AYM Ramazan Seçen uyarınca "
+                             "SÜRESİNDEDİR — bu farka dayalı süre itirazı en fazla ikincildir.")
+        elif _kesin_dil_engelleri(islem, son, bilgi, fark, bilgi):
+            # v0.5.18 — KESİN DİL KAPISI: şartlardan biri eksikse ARA TESPİT.
+            _ara_tespit_yaz(rapor, uyarilar, son, fark,
+                            _kesin_dil_engelleri(islem, son, bilgi, fark, bilgi))
         else:
             rapor.append(f">>> TESPİT — SÜRE KAÇIRILMIŞTIR: İşlem, sürenin dolduğu {son.isoformat()} tarihinden")
             rapor.append(f"    {fark} GÜN SONRA yapılmıştır. Süresinden sonra yapılan işlem usul hukuku")
@@ -1374,11 +2160,19 @@ def main():
     if a.tur == "usul" and birim == "isgunu":
         _tur_notu = "usul — İŞ GÜNÜ sayımı; adli tatil UZATMASI uygulanmaz (tatiller zaten atlanır)"
     elif a.tur == "usul":
-        _tur_notu = "usul — adli tatil uygulanır"
+        _tur_notu = "usul — adli tatil rejimi aşağıda"
     else:
         _tur_notu = "maddi hukuk — zamanaşımı/hak düşürücü, adli tatil uygulanmaz"
     print(f"Süre türü             : {a.tur}  ({_tur_notu})")
-    print(f"Yargı kolu            : {a.yargi}")
+    _kural_kolu = kural_kolu(a.kural) if a.kural else None
+    print(f"Yargı kolu            : {a.yargi}"
+          + (f"  (kuralın kendi kolu: {_kural_kolu})" if _kural_kolu and _kural_kolu != a.yargi else ""))
+    if a.tur == "usul" and birim != "isgunu" and bilgi.get("rejim"):
+        # v0.5.18 (Y-01) — rejimin NEREDEN geldiği görünür: kural kaydı mı, --yargi mı.
+        print(f"Adli tatil rejimi     : {REJIM_ETIKET[bilgi['rejim']]} — kaynak: "
+              + ("kural kaydı" if bilgi.get("rejim_kaynagi") == "kural" else "--yargi " + a.yargi)
+              + ("" if bilgi.get("rejim_teyitli") else " · TEYİT BEKLİYOR (temkinli: erken tarih)")
+              + (" · TÜRETİLDİ (%s)" % bilgi["rejim_turetildi"] if bilgi.get("rejim_turetildi") else ""))
     for s in rapor: print(s)
     print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")
     for u in uyarilar: print(f"  ! {u}")
@@ -1392,13 +2186,24 @@ def main():
     if a.flagsiz:
         print("ⓘ --flagsiz: otomatik sureler.json flag yazımı istekle KAPALI.")
     else:
-        _acik_taban = a.aciklama or ((kaynak or f"{miktar} {birim} süre") + " — son gün")
-        _adaylar = [(son.isoformat(), a.aciklama)]
+        # v0.5.18 — şüpheli tebliğde kayıt "İHTİYAT HEDEFİ" etiketiyle yazılır (tek kesin
+        # tarih yok); CMK tatil-içi tebliğde eski daire uygulamasına göre ERKEN tarih ayrı
+        # kayıt olur (nöbetçi önce onu uyarır; avukat bilinçli kararla --iptal eder);
+        # tatil takvimi eksik yıl kayda işlenir (nöbetçi işaretler — Y-08).
+        _on_ek = "[İHTİYAT HEDEFİ — ŞÜPHELİ TEBLİĞ] " if bilgi.get("supheli") else ""
+        _acik_taban = _on_ek + (a.aciklama or ((kaynak or f"{miktar} {birim} süre") + " — son gün"))
+        _adaylar = [(son.isoformat(), (_on_ek + a.aciklama) if a.aciklama else None)]
+        if bilgi.get("ihtiyat_son") is not None:
+            _adaylar.append((bilgi["ihtiyat_son"].isoformat(),
+                             _acik_taban + " [ihtiyat planı: eski daire uygulaması, tatil bitiminden "
+                             "itibaren üç gün; YCGK 2022/846'ya göre son gün %s]" % son.isoformat()))
         if son_karine is not None:
             _adaylar.append((son_karine.isoformat(),
-                             (a.aciklama or _acik_taban) + " [UETS karine: ulaşma+5. gün]"))
+                             _acik_taban + " [UETS karine: ulaşma+5. gün]"))
+        _te = sorted(set(bilgi.get("takvim_eksik") or []) | set(bilgi_k.get("takvim_eksik") or []))
         try:
-            _yeni, _bilgi = _sure_flagini_yaz(a.kok, _adaylar, _acik_taban, a.kural, a.tur)
+            _yeni, _bilgi = _sure_flagini_yaz(a.kok, _adaylar, _acik_taban, a.kural, a.tur,
+                                              {"takvim_eksik": _te} if _te else None)
         except Exception as _e:   # yazım hesabı ASLA düşürmez — açık rapor, sessiz değil
             print(f"UYARI: süre flag'i yazılamadı ({_e}) — oa_hafiza.py sure-flag ile ELLE işle.")
         else:
@@ -1416,10 +2221,23 @@ def main():
     if a.json:
         # v0.5.16 / I5 — tarih kuralında makine-okur özet (insan-okur rapor korunur;
         # aşama kuralıyla simetrik alan adları: tur / kural / son_gun).
+        def _iso(g):
+            return g.isoformat() if g is not None else None
         print("[JSON] " + json.dumps(
             {"tur": a.tur, "kural": a.kural, "yargi": a.yargi, "teblig": teblig.isoformat(),
              "son_gun": son.isoformat(),
              "son_gun_uets_karine": son_karine.isoformat() if son_karine else None,
+             # v0.5.18 — rejim, temkinli/ihtiyat tarihleri ve başlangıç kapısı alanları
+             "adli_tatil_rejimi": bilgi.get("rejim"),
+             "rejim_teyitli": bilgi.get("rejim_teyitli"),
+             "alternatif_son_gun": _iso(bilgi.get("alt_son")),
+             "ihtiyat_son_gun": _iso(bilgi.get("ihtiyat_son")),
+             "plan_son_gun": _iso(bilgi.get("plan_son")),
+             "takvim_eksik": sorted(set(bilgi.get("takvim_eksik") or [])
+                                    | set(bilgi_k.get("takvim_eksik") or [])),
+             "baslangic_kaniti": getattr(a, "baslangic_kaniti", None),
+             "teblig_durumu": getattr(a, "teblig_durumu", None),
+             "kesin_tarih": not bilgi.get("supheli"),
              "uyarilar": uyarilar}, ensure_ascii=False))
 
 if __name__=="__main__":

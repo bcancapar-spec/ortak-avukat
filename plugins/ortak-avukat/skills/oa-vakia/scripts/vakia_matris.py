@@ -80,14 +80,18 @@ NOT_KARINE = ("karine ispat etmez, ispat yükünü kaydırır (HMK m.190/2 — M
 # ── v0.5.8.4 ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi HİÇBİR akış
 # çağırmıyordu — kullanıcı kararı: tetik oa-vakia'ya bağlanır). vakia_matris
 # matris kurarken taraf/özne yazım varyantlarını toplar ve kardeş motorun
-# jaro_winkler + eşikleriyle (BAGLA >= 0.92 / AVUKATA-SOR 0.80-0.92) damgalar.
+# kural setiyle damgalar. v0.5.18 (kullanıcı kararı 2026-10-05 — "yanlış
+# birleştirme fazladan sorudan daha kötü"): BAGLA yalnız yapısal eşdeğerlikte
+# (katlanmış parçalar / birleşik biçim / OCR jokeri); ayrıca `taraflar`
+# kaydındaki opsiyonel `tur` iki tarafta farklıysa BAGLA asla.
 # ADVISORY — karar vermez, `saglikli` hesabına GİRMEZ; varyant yoksa sessiz.
 
 def _ozne_eslestirici_modulu():
     """ozne_eslestirici.py'yi (aynı dizin) İN-PROCESS import eder — algoritma
-    TEKRARLANMAZ (tek-yazar kuralı; ozne_eslestirici.py DEĞİŞTİRİLMEZ, yalnız
-    kullanılır). Import çökerse None döner; çağıran taraf bunu GÖRÜNÜR uyarıya
-    çevirir (sessiz atlama yasağı)."""
+    TEKRARLANMAZ (tek-yazar kuralı: eşleştirme kuralları yalnız
+    ozne_eslestirici.py'de yaşar; bu dosya onları yalnız kullanır). Import
+    çökerse None döner; çağıran taraf bunu GÖRÜNÜR uyarıya çevirir (sessiz
+    atlama yasağı)."""
     yol = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "ozne_eslestirici.py")
     if not os.path.isfile(yol):
@@ -103,28 +107,52 @@ def _ozne_eslestirici_modulu():
 
 def _ozne_adlarini_topla(m):
     """Matris girdisindeki taraf/özne YAZIMLARINI deterministik sırayla toplar:
-    üst-düzey `taraflar` listesi (dize veya {"ad": ...}) + her olayın opsiyonel
-    `ozne` alanı. Birebir aynı dize TEK sayılır (aynı yazım varyant değildir)."""
-    adlar, gorulen = [], set()
+    üst-düzey `taraflar` listesi (dize veya {"ad": ..., "tur": ...}) + her
+    olayın opsiyonel `ozne` alanı. Birebir aynı dize TEK sayılır (aynı yazım
+    varyant değildir). v0.5.18: `taraflar` kaydındaki opsiyonel `tur`
+    (gercek_kisi | tuzel_kisi | kamu) eşleştiriciye taşınır — eskiden yalnız ad
+    toplanıyordu ve kişi ile şirketi ayıracak bilgi kayboluyordu. Döner:
+    [{"ad": ...} | {"ad": ..., "tur": ...}]."""
+    adlar, gorulen = [], {}
 
-    def _ekle(ad):
+    def _ekle(ad, tur=None):
         ad = str(ad or "").strip()
-        if ad and ad not in gorulen:
-            gorulen.add(ad); adlar.append(ad)
+        tur = str(tur).strip() if tur is not None and str(tur).strip() else None
+        if not ad:
+            return
+        if ad in gorulen:
+            # Aynı yazım iki farklı türle gelmişse ikinci tür sessizce düşmesin:
+            # ilk kayıt korunur, çelişki ozne_eslestirme_kur'da GÖRÜNÜR uyarı olur.
+            onceki = adlar[gorulen[ad]]
+            if tur and onceki.get("tur") and onceki["tur"] != tur:
+                onceki.setdefault("_tur_celiskisi", []).append(tur)
+            return
+        gorulen[ad] = len(adlar)
+        kayit = {"ad": ad}
+        if tur:
+            kayit["tur"] = tur
+        adlar.append(kayit)
 
     for t in m.get("taraflar", []) or []:
-        _ekle(t.get("ad") if isinstance(t, dict) else t)
+        if isinstance(t, dict):
+            _ekle(t.get("ad"), t.get("tur"))
+        else:
+            _ekle(t)
     for o in m.get("olaylar", []) or []:
         _ekle(o.get("ozne") if isinstance(o, dict) else None)
     return adlar
 
 
 def ozne_eslestirme_kur(m):
-    """tr_normalize sonrası aynı özneye ait GÖRÜNEN birden çok yazım varsa
-    ozne_eslestirici skorlarıyla `ozne_eslestirme` bölümünü kurar:
-      [{"varyantlar": [...], "skor": f, "karar": "BAGLA"|"AVUKATA-SOR"}]
+    """Birden çok taraf/özne yazımı varsa ozne_eslestirici kural setiyle
+    `ozne_eslestirme` bölümünü kurar:
+      [{"varyantlar": [...], "skor": f, "karar": "BAGLA"|"AVUKATA-SOR",
+        "kural": "...", "gerekce": "..."}]
     Varyant yoksa boş liste (sessiz). Döner: (bulgular, uyari) — `uyari`
-    yalnız kardeş modül import edilemezse dolar (görünür fail-open)."""
+    kardeş modül import edilemez/çökerse, çok uzun ad yalnız yazım
+    eşdeğerliğiyle karşılaştırılabildiyse, iş bütçesi aşıldıysa, `tur`
+    tanınmadıysa ya da aynı ad iki ayrı türle yazıldıysa dolar (görünür
+    fail-open — tanınmayan tür sessizce yok sayılmaz)."""
     adlar = _ozne_adlarini_topla(m)
     if len(adlar) < 2:
         return [], None
@@ -133,10 +161,30 @@ def ozne_eslestirme_kur(m):
         return [], ("ozne_eslestirici.py import edilemedi — özne yazım-varyantı "
                     "taraması YAPILAMADI (advisory; varyant birleştirme kararı "
                     "avukatta kalır)")
+    notlar = []
+    celiskiler = [(k["ad"], k["tur"], k.pop("_tur_celiskisi")) for k in adlar if "_tur_celiskisi" in k]
+    try:
+        eslesmeler = oe.eslestir(adlar, uyarilar=notlar)
+        uzunlar = oe.asiri_uzun_adlar(adlar)
+        taninmayan = [(k["ad"], k["tur"]) for k in adlar
+                      if k.get("tur") and oe.tur_normalize(k["tur"])[0] is None]
+    except Exception as e:  # advisory motor çökerse matris DÜŞMEZ, ama sessiz de kalmaz
+        return [], (f"özne yazım-varyantı taraması YAPILAMADI ({type(e).__name__}: "
+                    f"{str(e)[:160]}) — varyant birleştirme kararı avukatta kalır")
     bulgular = [{"varyantlar": [e["a"]["ad"], e["b"]["ad"]],
-                 "skor": e["skor"], "karar": e["karar"]}
-                for e in oe.eslestir(adlar)]
-    return bulgular, None
+                 "skor": e["skor"], "karar": e["karar"],
+                 "kural": e.get("kural", ""), "gerekce": e.get("gerekce", "")}
+                for e in eslesmeler]
+    if uzunlar:
+        notlar.append("çok uzun özne adı yalnız yazım eşdeğerliğiyle karşılaştırıldı (varyant "
+                      "taraması sınırlı): " + "; ".join(f"«{a}»" for a in uzunlar))
+    for ad, tur in taninmayan:
+        notlar.append(f"«{ad}» için tur «{tur}» tanınmadı ve YOK SAYILDI — gercek_kisi | tuzel_kisi | "
+                      "kamu yazın (usul rolü — davacı/davalı — tür değildir)")
+    for ad, tur, digerleri in celiskiler:
+        notlar.append(f"«{ad}» iki ayrı türle yazılmış ({tur} / {', '.join(digerleri)}) — ilk tür "
+                      "kullanıldı; avukatça teyit edin")
+    return bulgular, (" · ".join(notlar) if notlar else None)
 
 def iskelet():
     """v0.5.14 (B-26): STDOUT yalnız GEÇERLİ JSON taşır; banner ve açıklamalar
@@ -161,7 +209,9 @@ def iskelet():
     _not("olaylar[].caizlik değerleri (yalnız tanik):", ", ".join(sorted(TANIK_CAIZLIK)),
          "— yoksa 'bilinmiyor' (fail-closed → yalnız kısmi destek)")
     sablon = {
-        "taraflar": ["Taraf/özne adı (opsiyonel — yazım varyantları otomatik taranır, v0.5.8.4)"],
+        "taraflar": [{"ad": "Taraf adı",
+                      "tur": "gercek_kisi|tuzel_kisi|kamu (opsiyonel; taraflar düz ad listesi de "
+                             "olabilir — yazım varyantları taranır; tür farklıysa BAGLA asla, v0.5.18)"}],
         "iddialar": [{"id":"I1","metin":"İspatlanacak maddi iddia — bir cümle",
                       "tur":"|".join(sorted(IDDIA_TUR))
                              + " (vakia: delille ispatlanır; hukuki: nitelendirme, delil aranmaz)"}],
@@ -373,7 +423,8 @@ def dogrula(path, json_yol=None):
         for b in ozne_bulgular:
             isaret = "?" if b["karar"] == "AVUKATA-SOR" else "~"
             print(f"  {isaret} {b['karar']} [{b['skor']}] "
-                  + " ↔ ".join(f"«{v}»" for v in b["varyantlar"]))
+                  + " ↔ ".join(f"«{v}»" for v in b["varyantlar"])
+                  + (f" — {b['gerekce']}" if b.get("gerekce") else ""))
 
     # Özet
     # v0.5.16 (A-13): bölümleme iddia = belgeli_destekli + ispat_boslugu +

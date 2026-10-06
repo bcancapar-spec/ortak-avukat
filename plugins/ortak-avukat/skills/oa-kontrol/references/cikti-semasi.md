@@ -99,10 +99,15 @@ kilitler.**
 - `taslak_sha256` — taslağın makbuz anındaki tam sha256'sı
 - `tip` — dilekçe tipi (`--tip`)
 - `taraf` — taraf sıfatı (`--taraf`); verilmediyse `null`
-- `kapilar` — `[{ad, durum, exit}]`; durum ENUM'u {OK, BLOK, ATLA, BILGI}
+- `kapilar` — `[{ad, durum, exit}]`; durum ENUM'u {OK, BLOK, ATLA, BILGI}; (c)
+  Layer 0 kaydı tarama koştuysa ayrıca `tetik` taşır (v0.5.18 — `layer0_tetik` ile aynı değer)
 - `exit_kodu` — zincirin çıkış kodu (0 = TESLİME HAZIR)
 - `udf_yolu` — üretilen UDF'in yolu; üretilmediyse `null`
 - `udf_atlandi_istekle` — `--udf-yok` ile bilinçli atlama yapıldı mı
+- `layer0_tetik` — (c) Privacy Layer 0 taraması neden koştu (v0.5.18): `null` (koşmadı —
+  UDF'siz ve dış araçsız teslim) | `"dis-arac"` (`--dis-arac`) | `"udf-cli"` (teslim ürünü
+  UDF ve yazıcı udf-cli — dış araç çağrısı; KATI ENGEL, avukat kararı 2026-10-05) |
+  `"dis-arac+udf-cli"`
 - `ictihat_muhakeme_kanali` — sabit `"b2-tekil"` (çift-[F] koşumu yasağı izi)
 - `surum` — `OA_SURUM` damgası
 - `kismi_ingest` — `{n, m}` kısmi ingest sayacı; okunamazsa `null`

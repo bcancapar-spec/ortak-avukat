@@ -44,7 +44,10 @@ görünür (sessiz opt-out yok).
 Kullanım:
   python dilekce_denetim.py <taslak.md>
                             --tip dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal|genel
-                            [--taraf davaci|davali|sanik|katilan|mudahil|musteki]
+                                  (v0.5.18: + icra ailesi, idari-dava, yd-talebi,
+                                   ceza-istinaf — tam liste `--help`)
+                            [--taraf davaci|davali|sanik|katilan|mudahil|musteki|
+                                     alacakli|borclu|ucuncu-kisi]
                             [--udf YOL]
                             [--ictihat-muhakeme --kok KLASÖR]
 Çıkış kodu: 0 = temiz; 1 = eksik unsur / müvekkil-aleyhi sinyal / OCR-teyit şerhi
@@ -172,6 +175,64 @@ SANIK/ŞÜPHELİ/HÜKÜMLÜ/MAĞDUR/MÜŞTEKİ/KATILAN/MÜDAHİL/DAVACI/DAVALI/A
 BORÇLU/VEKİL(İ)/MÜVEKKİL/TANIK/İDARE/DAVA/KARAR/ESAS/MADDE (+KONU/MÜDAFİ(İ)/
 TARİH) etiketleri kısaltma DEĞİLDİR — [N] üretmez (örneklem, m.3).
 
+── v0.5.18 (aday) — İCRA AİLESİ + Y-06 KAPI SIKILAŞTIRMASI ────────────────
+NEDEN VAR: kapı icra dilekçelerini tanımıyordu (takip talebi, ödeme emrine/
+kambiyo itirazı, şikâyet, haciz/satış, ihalenin feshi, itirazın iptali/
+kaldırılması, menfi tespit, istihkak, icra ceza, usul işlemleri `--tip genel`
+ile denetleniyor, İİK'nın kendine özgü zorunlu içeriği hiç aranmıyordu) ve
+3 Ekim 2026 yetenek denetiminin Y-06 bulgusu dört açık saydı: dava değeri
+ayrı unsur değil; bileşik unsurda tek desen yetiyor; idari dava ve ceza
+istinafı tipi yok. Fikir kaynağı Yargı PRO 3-1…3-9, 2-6, 4-4 (yalnız fikir;
+metin/kod alınmadı); her madde Yargı PRO MCP ile resmî metinden 2026-10-05'te
+okundu — insan-okur cetvel: `references/icra-dilekce-ailesi.md`,
+`references/idari-ceza-tipleri.md`.
+  * UNSUR MODELİ: tekil unsur (desenlerden biri yeter — eski davranış) ·
+    `Bilesik` (her PARÇA ayrı ayrı karşılanmalı; eksik parça adıyla raporlanır)
+    · `Yakin` (çapanın ardındaki/önündeki pencerede arama — alacaklının adresi
+    borçlunun adres eksiğini, imza tarihi tebliğ tarihi eksiğini örtmez) ·
+    `Kosullu` (yalnız koşul metinde varsa zorunlu; istisna deseni koşulu
+    kaldırır). `denetle()`'nin imzası ve 5'li dönüşü DEĞİŞMEDİ; bileşik eksik
+    "ad — eksik parça: …" biçiminde [A] listesine düşer.
+  * SÜRE ↔ [A]: süre başlangıcının TARİHİ (tebliğ/öğrenme/ödeme/maninin
+    kalkması) olayın yanında aranır; "yedi gün içinde" gibi süre İFADESİ yasal
+    içerik değildir, aranmaz — süre [S] ile oa-sure'ye bağlanır. "Tebliğ
+    edilmemiştir/edilmeden" beyanı tarih unsurunu kaldırır (tebliğden önce
+    başvuru hakkı).
+  * YENİ TİPLER: takip-talebi, odeme-emrine-itiraz, kambiyo-itiraz,
+    gecikmis-itiraz, itirazin-kaldirilmasi, itirazin-iptali, menfi-tespit,
+    haciz-talebi, satis-talebi, haciz-ihbarnamesi-itiraz, kiymet-takdiri-sikayet,
+    ihalenin-feshi, icra-sikayet, istihkak-davasi, icra-ceza-sikayet, icra-usul,
+    idari-dava, yd-talebi, ceza-istinaf.
+  * SIKILAŞAN ESKİ TİPLER: istinaf (tebliğ tarihi HMK m.342/2-ç ayrı; mahkeme +
+    sayı ve tarih + imza birlikte), temyiz (HMK m.364/2-d tebliğ tarihi ayrı),
+    aym_bireysel (hak + Anayasa hükmü, kimlik + adres ayrı parçalar; ekler ve
+    vekâletname — 6216 m.47/3-4). Eski `dava` tipinde dava değeri (HMK
+    m.119/1-d) ve taraf adres/TCKN'si BLOKLAYICI DEĞİL, [A] altında görünür
+    uyarıdır (mevcut kilit testler değer satırsız para talepli taslağın temiz
+    geçmesini bekliyor — karar avukatın/ana ajanın).
+  * TİPE ÖZEL İSTİŞARİ UYARILAR (`tip_ozel_uyarilari` — exit koduna ASLA
+    dokunmaz): faizsiz takip, TCKN/VKN ("varsa" — m.58/2), imza/kira akdi
+    reddi (m.62 imza fıkrası, m.269/2), kötü niyet/inkâr tazminatı ve tedbir
+    istemleri, kambiyoda geçici durdurma (risk notuyla — m.169/a-6, m.170/3),
+    üçüncü kişinin dürüst borç beyanı (m.89/4, m.338/1), yanlış merci, istinafta
+    karar tarihi (HMK m.342/2-c), teminat ve ikinci YD istemi yasağı (İYUK
+    m.27/6, 27/10) gibi kalemler.
+  * [S] SÜRE BAĞLANTISI (bilgi, ASLA bloklamaz): tipin bağlı olduğu madde ve
+    `oa-sure/scripts/sure_kurallari.json` içinde o maddeyi taşıyan kural
+    kimliği ÇALIŞMA ANINDA aranır; bulunamazsa "TEYİT BEKLİYOR" yazılır. Süre
+    HESABI oa-sure'ündür — burada hesap YOKTUR.
+  * YENİ TARAF SIFATLARI: alacakli, borclu, ucuncu-kisi (icra kalıp setleri +
+    davacı/davalı eksenleri). `menfi-tespit` tipinde borçlu DAVACI, alacaklı
+    DAVALI konumundadır; `kambiyo-itiraz` tipinde borcun kısmen kabulü ayrıca
+    taranır (m.170/a-3); `haciz-ihbarnamesi-itiraz` tipinde üçüncü kişinin borç
+    beyanı BLOK değil uyarıdır — tarama ekseni tipe göre çevrilir
+    (`aleyhe_kapsami(taraf, tip)`; tek argümanlı eski çağrı aynen çalışır).
+  * `(?#kesin)` KALIPLAR: çekimli olumlu yüklemle biten ikrar kalıpları
+    ('itirazımızdan vazgeçiyoruz', 'borcun tamamını kabul ediyoruz') ±70 NEG
+    penceresinden muaftır — komşu 'aksi/değil/redd' sözcüğü gerçek ikrarı
+    BİLGİ'ye düşüremez. Olumsuz çekim ('vazgeçmiyoruz', 'vazgeçmeyeceğiz')
+    kalıp gövdesinde dışlanır; olumlu '-mek/-mekte' biçimleri yakalanır.
+
 ── İSTİSNA DEFTERİ (ortak şema, append-only) ───────────────────────────────
 `--istisna-gerekce METİN` verilirse [Y]/[T] BLOK bulguları avukat onayıyla
 görünür UYARIYA düşer (exit'e yansımaz) ve `_oa/defter/istisna-kayitlari.jsonl`
@@ -199,6 +260,144 @@ import subprocess
 import sys
 import zipfile
 
+# ── v0.5.18 — UNSUR MODELİ: tekil · bileşik · yakınlık · koşullu (Y-06) ──────
+# NEDEN VAR: unsurlar düz desen listesiyle tanımlıydı ve listedeki HERHANGİ bir
+# desen unsuru "var" saydırıyordu. Kanunun iki ayrı şart koyduğu yerde (6216
+# m.47/3 "ihlal edildiği ileri sürülen hak VE dayanılan Anayasa hükümleri";
+# HMK m.342/2-ç tebliğ tarihi) kapı tek şartı görüp geçiyordu — 'hak' kelimesi
+# tek başına AYM unsurunu, 'süre' kelimesi tek başına tebliğ tarihini
+# karşılıyordu. Eski düz-liste biçimi AYNEN geçerlidir (geri uyum); yeni
+# biçimler yalnız gerektiği yerde kullanılır.
+
+class Bilesik(tuple):
+    """BİLEŞİK unsur: (('parça etiketi', desenler), ...) — HER parça ayrı ayrı
+    karşılanmalı (parçalar arası VE, parça içi VEYA). Eksik parça adıyla
+    raporlanır ki avukat neyin eksik olduğunu aramak zorunda kalmasın.
+    Parça deseni düz liste ya da `Yakin` olabilir."""
+    __slots__ = ()
+
+
+class Yakin:
+    """YAKINLIK parçası: `capa` desenlerinden birinin geçtiği her yerin
+    ARDINDAKİ `pencere` (ve istenirse ÖNCESİNDEKİ `geri`) karakter içinde
+    `hedef` desenlerinden biri aranır.
+
+    NEDEN VAR: bileşik denetim belgenin tamamında arar; takip talebinde
+    alacaklının adresi borçlunun adres eksiğini örterdi (İİK m.58/2-1 ve 2-2
+    adresi TARAF BAŞINA ister; m.62 borçlunun yurt içi adresini ayrıca ister).
+    Aynı kör nokta tebliğ tarihinde vardı: 'tebliğ' kelimesi ile imza
+    tarihinin belgede AYRI AYRI geçmesi "tebliğ tarihi var" saydırıyordu
+    (Fable 5.1 salt okunur incelemesi, 2026-10-05); HMK m.342/2-ç ve
+    m.364/2-d zorunlu içeriği TARİHİN kendisidir. Türkçede tarih çoğu kez
+    fiilden ÖNCE gelir ("10.01.2026 tarihinde tebliğ edilen") — bu yüzden
+    `geri` penceresi vardır. Taraf penceresi bilinçli olarak geniştir (UYAP
+    başlık bloğunda etiket ile adres arasında TCKN/VKN, unvan satırı bulunur)."""
+    __slots__ = ("capa", "hedef", "pencere", "geri")
+
+    def __init__(self, capa, hedef, pencere=400, geri=0):
+        self.capa = list(capa)
+        self.hedef = list(hedef)
+        self.pencere = pencere
+        self.geri = geri
+
+
+class Kosullu:
+    """KOŞULLU unsur: `kosul` desenlerinden biri metinde geçerse (ve `istisna`
+    desenlerinden hiçbiri geçmezse) `desen` (düz liste / Bilesik / Yakin)
+    zorunlu olur. `kosul=None` → koşul her zaman doğmuş sayılır (yalnız
+    istisna işler — ör. İİK m.16/2 süresiz şikâyet hâlinde süre unsuru
+    aranmaz)."""
+    __slots__ = ("kosul", "desen", "istisna")
+
+    def __init__(self, kosul, desen, istisna=None):
+        self.kosul = list(kosul) if kosul else None
+        self.desen = desen
+        self.istisna = list(istisna) if istisna else []
+
+
+# Ortak desen yapı taşları — yeni tiplerde tekrar tekrar kullanılır. OCR'dan
+# geçmiş ya da Türkçe karaktersiz yazılmış metne dayanıklılık için kritik
+# sözcüklerde [cç]/[sş]/[gğ]/[oö]/[uü] sınıfları kullanılır (ailenin B6
+# konvansiyonu); ı/i/İ/I eşdeğerliğini Python'un re.I'si zaten sağlar.
+# Tarih: gg.aa.yyyy, gg/aa/yyyy, gg-aa-yyyy ve "10 Ocak 2026". Gruplanmıştır
+# çünkü başka desenlere eklenerek kullanılır (alternation önceliği bozulmasın).
+_TARIH = (r"(?:\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{1,2}\s+(?:ocak|[sş]ubat|mart|nisan|"
+          r"may[ıi]s|haziran|temmuz|a[gğ]ustos|eyl[üu]l|ekim|kas[ıi]m|aral[ıi]k)\s+\d{4})")
+_IMZA_D = [r"imza", r"\bvekil", r"\bav\.\s", r"avukat"]
+_TARIH_IMZA = Bilesik((("tarih", [_TARIH]), ("imza/vekil", _IMZA_D)))
+_ICRA_DAIRESI_D = [r"icra\s*daire", r"icra\s*m[üu]d[üu]rl[üu][gğ]"]
+_ICRA_MAHKEMESI_D = [r"icra\s*(?:hukuk\s*)?mahkeme", r"icra\s*h[âa]kimli"]
+_DOSYA_NO_D = [r"dosya\s*(?:no|numara|say[ıi])", r"esas\s*(?:no|numara|say[ıi])",
+               r"\b\d{4}\s*/\s*\d+\s*(?:E\b|Esas\b|Tal\b|Talimat\b)",
+               r"takip\s*(?:dosya|no\b|numara)"]
+_DOSYA_TAKIP = Bilesik((("icra dairesi", _ICRA_DAIRESI_D), ("esas/dosya no", _DOSYA_NO_D)))
+_ALACAKLI_D = [r"alacakl[ıi]"]
+_BORCLU_D = [r"bor[cç]lu"]
+_ADRES_D = [r"adres", r"yerle[sş]im\s*yeri", r"ikametg[âa]h"]
+_KIMLIK_D = [r"\bT\.?\s*C\.?\s*(?:kimlik\s*)?(?:no\b|numaras)", r"\bTCKN\b",
+             r"kimlik\s*(?:no\b|numaras)", r"\bVKN\b",
+             r"vergi\s*(?:kimlik\s*)?(?:no\b|numaras)", r"mersis",
+             r"\bT\.?\s*C\.?\s*:\s*\d"]
+_IBAN_D = [r"\bIBAN\b", r"\bTR\s?\d{2}[\s\d]{10,}", r"banka\s*(?:ad[ıi]|hesab)",
+           r"hesap\s*(?:no\b|numaras|bilgi)"]
+# Para tutarı — sınırlı tekrar (uzun rakam/nokta dizisinde felaket geri izleme
+# yok); "10.000,00 TL", "10.000,00-TL", "10.000.-TL", "10.000 Türk Lirası".
+_TL_TUTAR = r"\d[\d.]{0,24}(?:,\d{1,4})?[ \t]{0,3}-?[ \t]{0,2}(?:TL\b|₺|T[üu]rk\s*liras)"
+# 'tebligat' (ör. "tebligat gideri") tebliğ OLAYI değildir — dışlanır.
+_TEBLIG_D = [r"tebli[gğ](?!at)", r"tebell[üu][gğ]"]
+# Usulsüz tebliğde muhatabın tebliğe muttali olduğunu beyan ettiği tarih
+# tebliğ tarihi sayılır (Tebligat K. m.32); icra şikâyetinde süre öğrenmeden
+# işler (İİK m.16/1) — Yargı PRO MCP, 2026-10-05.
+_OGRENME_D = [r"[öo][gğ]ren", r"[ıi]tt[ıi]la", r"muttali"]
+# Tebliğ HENÜZ YAPILMAMIŞSA tarih yazılamaz; tebliğden önce başvurmak
+# müvekkilin hakkıdır (ör. gerekçeli karar tebliğ edilmeden istinaf). Açık
+# "tebliğ edilmemiştir / edilmeden" beyanı tarih unsurunu kaldırır. YALNIZ
+# olumsuz çekimler: 'tebliğ edilmesi' (ad-fiil) olumludur, istisna DEĞİLDİR.
+_TEBLIG_YOK_D = [r"tebli[gğ]\s*(?:edil|yap[ıi]l|olun)m(?:e(?:mi[sş]|di|den)|a(?:m[ıi][sş]|d[ıi]|dan))"]
+# Süre başlangıcının belgesi: tebliğ TARİHİ, tebliğ olayının YANINDA (Yakin;
+# Türkçede tarih çoğu kez fiilden önce gelir → `geri`). Süre İFADESİ ("yedi
+# gün içinde") dilekçenin yasal içeriği değildir — süreyi [S] satırı oa-sure'ye
+# bağlar (Fable 5.1 salt okunur incelemesi benimsendi, 2026-10-05).
+_TEBLIG_TARIHI = Kosullu(None, Yakin(_TEBLIG_D, [_TARIH], pencere=80, geri=100),
+                         istisna=_TEBLIG_YOK_D)
+_TEBLIG_OGRENME_TARIHI = Kosullu(None, Yakin(_TEBLIG_D + _OGRENME_D, [_TARIH], pencere=80,
+                                             geri=100),
+                                 istisna=_TEBLIG_YOK_D)
+_DEGER_D = [r"dava\s*de[gğ]eri", r"harca\s*esas\s*de[gğ]er", r"m[üu]ddeabih",
+            r"^[ \t]*(?:\*\*[ \t]*)?de[gğ]er[iİı]?[ \t]*(?:\*\*[ \t]*)?:", r"de[gğ]eri\s*:",
+            r"uyu[sş]mazl[ıi]k\s*konusu\s*miktar"]
+_INKAR_D = [r"ink[âa]r\s*tazminat"]
+_KOTU_NIYET_D = [r"k[öo]t[üu]\s*niyet\w*\s*tazminat", r"k[öo]t[üu]niyet\w*\s*tazminat"]
+# Kambiyo senedi adları Türkçe çekimiyle: 'bonoya/bononun/bonolar', 'çeke/çekin/
+# çekler'. Sözcük sınırı korunur — 'çekişme', 'çekilmiş', 'çekince' çek DEĞİLDİR.
+_BONO = r"\bbono\w*"
+_CEK = r"\b[çc]ek(?:ler\w*|in|e|i|te|ten|le)?\b"
+# 'senet' ünsüz yumuşamasıyla 'senedi/senedin/senede' olur; 'seneden/seneyi'
+# (yıl) alınmaz.
+_SENET = r"\bsenet|\bsened(?:i|e\b)"
+# TTK m.5/A-1 dava şartı arabuluculuk sinyali. Bilinçli olarak DAR: tek bir
+# 'A.Ş.' unvanı ya da 'fatura' kelimesi davayı ticari yapmaz (nispi ticari dava
+# iki tarafın ticari işletmesini ister — TTK m.4/1 ilk cümle); kambiyo senedi
+# ise TTK'da düzenlendiği için tarafların tacir olup olmadığına bakılmaksızın
+# ticari davadır (TTK m.4/1-a; bono TTK m.776 — Yargı PRO MCP, 2026-10-05).
+_TICARI_D = [r"ticari\s*(?:dava|i[sş]|alaca|ili[sş]ki|defter|i[sş]letme)", r"\btacir",
+             r"cari\s*hesap", r"kambiyo", _BONO, _CEK, r"poli[çc]e"]
+_TICARI_ISTISNA_D = [r"ticari\s*dava\s*(?:niteli[gğ]inde\s*)?(?:de[gğ]il|say[ıi]lmaz)",
+                     r"t[üu]ketici", r"arabuluculu[gğ]a\s*tabi\s*de[gğ]il",
+                     r"dava\s*[sş]art[ıi]\s*(?:arabuluculu[gğ]u\s*)?(?:kapsam[ıi]nda\s*)?de[gğ]il"]
+_DELIL_BELGE_D = [r"delil", r"belge", r"makbuz", r"dekont", r"\bekte\b",
+                  r"\bekler\w*", r"bilirki[sş]i"]
+_EKLER_D = [r"^[ \t]*(?:#+[ \t]*)?(?:\*\*[ \t]*)?ekler?\b", r"\bek\s*[-:.)]\s*\d",
+            r"\bekte\b", r"\bekli(?:dir)?\b", r"\bekler\w*"]
+_HUKUKI_SEBEP_D = [r"hukuki\s*sebep", r"hukuki\s*neden", r"dayanak"]
+_VAKIA_DELIL = Bilesik((("vakıalar", [r"a[çc][ıi]klama", r"vak[ıi]a", r"olay"]),
+                        ("deliller", [r"delil"])))
+_DAVACI_DAVALI = Bilesik((("davacı", [r"davac[ıi]"]), ("davalı", [r"daval[ıi]"])))
+_ADRES_KIMLIK = Bilesik((("adres", _ADRES_D), ("TCKN/VKN", _KIMLIK_D)))
+_TALEP_D = [r"talep\s*ed(?:erim|eriz|iyoruz|iyorum)", r"arz\s*(?:ve|ile)\s*talep",
+            r"karar\s*verilmesini"]
+
+
 # Tip → [(unsur adı, [anahtar desen/kelime])] — herhangi biri geçerse unsur VAR sayılır.
 GENEL = [
     ("Mahkeme/merci başlığı", [r"mahkeme", r"başkanlığı", r"hakimliği", r"\bmerci"]),
@@ -214,31 +413,568 @@ GENEL = [
 TIPLER = {
     "dava": GENEL,
     "cevap": GENEL + [("Cevap/ilk itiraz (varsa)", [r"cevap", r"ilk\s*itiraz", r"karşı\s*dava", r"itiraz"])],
+    # v0.5.18 (Y-06 / Yargı PRO 2-6 fikri): HMK m.342/2 — kararın mahkemesi
+    # ile SAYISI birlikte (c), kararın tebliğ tarihi AYRI (ç), imza (g).
+    # Eskiden 'süre' ya da 'iki hafta' kelimesi tebliğ tarihi unsurunu tek
+    # başına karşılıyordu; tebliğ tarihi yasal zorunlu içeriktir, süre ifadesi
+    # değildir (yedi kural #3: savunulmayan usulî noktayı savunma).
     "istinaf": [
-        ("Başvurulan BAM + ilk derece karar", [r"bölge\s*adliye", r"\bBAM\b", r"ilk\s*derece", r"esas\s*no", r"karar\s*no"]),
+        ("Kararın mahkemesi + sayısı (HMK m.342/2-c)",
+         Bilesik((("kararı veren mahkeme", [r"b[öo]lge\s*adliye", r"\bBAM\b", r"ilk\s*derece",
+                                            r"mahkemesi"]),
+                  ("sayı (esas/karar no)", [r"esas\s*no", r"karar\s*no", r"\bE\.\s*\d{4}",
+                                            r"\bK\.\s*\d{4}",
+                                            r"\d{4}\s*/\s*\d+\s*(?:E|K|Esas|Karar)\b"])))),
         ("Taraflar", [r"davac[ıi]", r"daval[ıi]", r"istinaf\s*eden"]),
         ("İstinaf sebepleri", [r"istinaf\s*sebep", r"istinaf\s*neden", r"kaldır", r"hukuka\s*aykırı"]),
         ("Talep (kaldırma/yeniden)", [r"netice-?i?\s*talep", r"kaldırıl", r"talep\s*(ederiz|ederim)"]),
-        ("Tebliğ tarihi + süre satırı", [r"tebliğ", r"süre", r"iki\s*hafta", r"\b2\s*hafta"]),
-        ("Tarih + imza", [r"\d{1,2}[./]\d{1,2}[./]\d{4}", r"imza", r"\bvekil"]),
+        ("Kararın tebliğ tarihi (HMK m.342/2-ç)", _TEBLIG_TARIHI),
+        ("Tarih + imza (HMK m.342/2-g)", _TARIH_IMZA),
     ],
+    # v0.5.18 (Y-06): HMK m.364/2-d — ilamın temyiz edene tebliğ edildiği
+    # tarih AYRI unsur; m.364/2-ğ imza.
     "temyiz": [
         ("Yargıtay ilgili dairesi", [r"yargıtay", r"\bdaire", r"hukuk\s*dairesi", r"ceza\s*dairesi"]),
         ("BAM kararı bilgisi", [r"bölge\s*adliye", r"\bBAM\b", r"esas\s*no", r"karar\s*no"]),
         ("Temyiz sebepleri", [r"temyiz\s*sebep", r"temyiz\s*neden", r"bozma", r"hukuka\s*aykırı"]),
         ("Talep", [r"netice-?i?\s*talep", r"boz", r"talep\s*(ederiz|ederim)"]),
-        ("Süre satırı", [r"tebliğ", r"süre", r"iki\s*hafta"]),
-        ("Tarih + imza", [r"\d{1,2}[./]\d{1,2}[./]\d{4}", r"imza"]),
+        ("İlamın tebliğ tarihi (HMK m.364/2-d)", _TEBLIG_TARIHI),
+        ("Tarih + imza (HMK m.364/2-ğ)", _TARIH_IMZA),
     ],
+    # v0.5.18 (Y-06): 6216 m.47/3 "kimlik VE adres", "ihlal edildiği ileri
+    # sürülen hak VE dayanılan Anayasa hükümleri" — iki parçalı unsurlar.
+    # Eskiden tek başına 'hak' kelimesi Anayasa maddesi unsurunu karşılıyordu.
+    # m.47/3 son cümle: deliller + işlem/karar aslı ya da örneği + harç belgesi
+    # eklenmesi ŞART; m.47/4: avukatla temsilde vekâletname.
     "aym_bireysel": [
-        ("Başvurucu bilgileri", [r"başvurucu", r"\bT\.?C\.?\b", r"kimlik"]),
-        ("İhlal edilen hak + Anayasa maddesi", [r"ihlal", r"anayasa[’']?n[ıi]n?\s*\d+", r"\bAY\s*m\.?\s*\d+", r"hak\b"]),
+        ("Başvurucu kimlik + adres bilgileri (6216 m.47/3)",
+         Bilesik((("başvurucu/kimlik", [r"başvurucu", r"\bT\.?C\.?\b", r"kimlik"]),
+                  ("adres", _ADRES_D)))),
+        ("İhlal edilen hak + dayanılan Anayasa hükümleri (6216 m.47/3)",
+         Bilesik((("ihlal edilen hak", [r"ihlal"]),
+                  ("Anayasa maddesi", [r"anayasa[’']?n[ıi]n?\s*\d+", r"\bAY\s*m\.?\s*\d+",
+                                       r"anayasa\s*m\.?\s*\d+",
+                                       r"anayasa\w*\s+\d+\s*\.?\s*(?:ve\s+\d+\s*\.?\s*)?madde"])))),
         ("Başvuru yollarının tüketilmesi", [r"yol.*tüket", r"tüketil", r"kesinleş"]),
         ("Süre (30 gün)", [r"süre", r"otuz\s*gün", r"\b30\s*gün", r"tebliğ", r"öğrenme"]),
         ("Talep", [r"talep", r"ihlalin\s*tespit", r"yeniden\s*yargılama"]),
+        ("Ekler — işlem/karar örneği + harç belgesi ya da adli yardım (6216 m.47/3 son cümle)",
+         Bilesik((("işlem/karar örneği", [r"karar\w*\s*(?:örne|suret|asl)",
+                                         r"(?:örne[gğ]|suret)\w*", r"\bekler\w*", r"\bekte\b"]),
+                  ("harç belgesi / adli yardım", [r"harç", r"adli\s*yardım"])))),
+        ("Vekâletname — avukatla temsilde (6216 m.47/4)",
+         Kosullu([r"\bvekil", r"\bav\.\s", r"avukat"], [r"vek[âa]letname"])),
     ],
     "genel": GENEL,
 }
+
+# ── v0.5.18 — İCRA AİLESİ TİPLERİ (İİK; fikir: Yargı PRO 3-1…3-9) ────────────
+# İnsan-okur cetvel + resmî metin künyeleri: references/icra-dilekce-ailesi.md.
+# Her unsur adı dayanak maddeyi taşır ki [A] EKSİK satırı avukata neyin NEDEN
+# zorunlu olduğunu da söylesin. Desenler yalnız VAR/YOK sinyalidir — hangi
+# yolun isabetli olduğu (ilamsız/kambiyo, kesin/geçici kaldırma, 67/68) avukat
+# kararıdır; script hukuki karar VERMEZ.
+_FAIZ_TUR_D = [r"(?:yasal|kanuni|kanun[îi]|avans|ticari|ticar[îi]|temerr[üu]t|reeskont|"
+               r"akdi|akd[îi]|s[öo]zle[sş]me(?:sel)?|mevduat)\s*faiz",
+               r"%\s*\d", r"y[üu]zde\s*\d", r"faiz\s*oran"]
+_FAIZ_BAS_D = [r"tarihinden\s*itibaren", r"takip\s*tarihinden", r"temerr[üu]t\s*tarih",
+               r"vade\s*tarihinden", r"i[sş]lemeye\s*ba[sş]la", r"itibaren\s*i[sş]le"]
+_SENET_SEBEP_D = [_SENET, _BONO, _CEK, r"poli[çc]e", r"\bfatura",
+                  r"s[öo]zle[sş]me", r"borcun\s*sebebi", r"\bilam", r"cari\s*hesap",
+                  r"[öo]d[üu]n[çc]", r"kira\s*(?:s[öo]zle[sş]me|bedel|alaca)", r"hizmet\s*bedel",
+                  r"sat[ıi][sş]\s*bedel"]
+_TAKIP_YOLU_D = [r"takip\s*yolu", r"takibin\s*yolu", r"ilams[ıi]z", r"ilaml[ıi]", r"kambiyo",
+                 r"rehnin\s*paraya", r"tahliye", r"genel\s*haciz", r"iflas\s*yolu",
+                 r"haciz\s*yolu"]
+_KAMBIYO_D = [r"kambiyo", _BONO, _CEK, r"poli[çc]e", r"emre\s*muharrer"]
+_BELGE_KOSUL_D = [_SENET, _BONO, _CEK, r"poli[çc]e", r"\bfatura",
+                  r"s[öo]zle[sş]me", r"\bilam"]
+_ITIRAZ_BEYAN_D = [r"itiraz\s*ed(?:iyoruz|iyorum|eriz|erim|ilmi[sş]tir)",
+                   r"itiraz(?:[ıi]m[ıi]z|[ıi]m)\s*(?:vard[ıi]r|bulunmaktad[ıi]r|mevcut)",
+                   r"(?:borca|borcun\s*tamam[ıi]na|faize|ferilerine|as[ıi]l\s*alaca[gğ]a|"
+                   r"yetkiye|imzaya)\s*(?:ve\s*\w+\s*)?itiraz"]
+_KISMI_D = [r"k[ıi]smen\s*itiraz", r"k[ıi]smi\s*itiraz", r"k[ıi]sm[ıi]na\s*itiraz"]
+_CIHET_D = [r"as[ıi]l\s*alaca", r"i[sş]lemi[sş]\s*faiz", r"\bfaiz", r"ferileri", r"masraf",
+            r"kalem", r"cihet", r"vek[âa]let\s*[üu]cret"]
+_KAMBIYO_TUR_D = [r"borca\s*itiraz", r"imzaya\s*itiraz",
+                  r"imza\w*\s*(?:m[üu]vekkil\w*\s*)?(?:ait\s*olmad|ink[âa]r|reddi)",
+                  r"kambiyo\s*senedi\s*(?:niteli|vasf)", r"vasf\w*\s*(?:y[öo]n[üu]nden|ili[sş]kin|"
+                  r"dair)?\s*[sş]ik[âa]yet", r"vas[ıi]f\s*[sş]ik[âa]yet",
+                  r"yetki(?:ye)?\s*itiraz", r"zamana[sş][ıi]m[ıi]\s*itiraz"]
+_KAMBIYO_SEBEP_D = [r"itfa", r"[öo]dendi|[öo]denmi[sş]|[öo]deme\s*yap[ıi]l", r"mehil",
+                    r"zamana[sş][ıi]m", r"bor[cç]lu\s*(?:olmad|de[gğ]il|bulunmad)",
+                    r"bedelsiz", r"hat[ıi]r\s*senedi", r"yetkisiz", r"vasf",
+                    r"imza\w*\s*(?:ait\s*olmad|sahte)", r"kar[sş][ıi]l[ıi]ks[ıi]z"]
+# İİK m.169/a-1: borcun olmadığı, itfa ya da imhal RESMÎ veya imzası ikrar
+# edilmiş belgeyle ispatlanır — belge YALNIZ bu sebeplerde zorunludur
+# (zamanaşımı senedin metninden, yetki dosyadan anlaşılır; imza itirazı m.68/a
+# usulüyle incelenir — m.170/3). 'Deliller' başlığı belge DEĞİLDİR.
+_BELGE_GEREKEN_SEBEP_D = [r"itfa", r"imhal", r"mehil", r"[öo]dendi|[öo]denmi[sş]|[öo]deme\s*yap[ıi]l",
+                          r"bor[cç]lu\s*(?:olmad|de[gğ]il|bulunmad)"]
+_ODEME_BELGE_D = [r"belge", r"makbuz", r"dekont", r"ibraname", r"ibra\s*senedi", r"noter",
+                  r"resm[îi]", r"imzas[ıi]\s*ikrar", r"\bekte\b", r"\bek\s*[-:.)]\s*\d",
+                  r"havale", r"\bEFT\b", r"banka\s*kayd"]
+_DURDURMA_D = [r"durdurul", r"\bdur(?:ma|mas[ıi])\b"]
+_KALDIRMA_BELGE_D = [r"68\s*/\s*a", r"68-a", r"(?:m\.?|madde)\s*68\b", r"68\s*\.?\s*madde",
+                     r"noter", r"resm[îi]\s*belge", r"imzas[ıi]\s*ikrar", r"bor[cç]\s*ikrar",
+                     r"imza\s*(?:inceleme|tatbik)"]
+_BORCLU_OLMAMA_D = [r"bor[cç]lu\s*(?:olmad|de[gğ]il|bulunmad|olunmad)",
+                    r"borcu\w*\s*(?:yok|bulunmad|bulunmamakta)",
+                    r"bor[cç]\w*\s*(?:sona\s*er|itfa|[öo]denmi[sş]|bulunmamakta)",
+                    r"bedelsiz", r"sahte", r"zamana[sş][ıi]m"]
+_MAL_D = [r"ta[sş][ıi]nmaz", r"ta[sş][ıi]n[ıi]r", r"\bara[çc]", r"plaka", r"banka",
+          r"maa[sş]", r"[üu]cret", r"hak\s*ve\s*alacak", r"\b89\b", r"tapu", r"menkul",
+          r"mal\w*\s*varl[ıi]", r"hesap", r"mahcuz", r"hacizli"]
+_HACIZ_TARIHI_D = [r"haciz\s*(?:tarih|tutana)", r"ha(?:ciz|cz)\w*\s*.{0,40}" + _TARIH,
+                   _TARIH + r".{0,40}ha(?:ciz|cz)"]
+_SURESIZ_SIKAYET_D = [r"s[üu]resiz", r"her\s*zaman\s*[sş]ik[âa]yet", r"s[üu]r[üu]ncemede",
+                      r"yerine\s*getirilmeme", r"16\s*/\s*2"]
+
+_ICRA_TIPLERI = {
+    # İİK m.58 (+ m.167 kambiyo, m.269 kira tahliyesi) — takip talebi.
+    "takip-talebi": [
+        ("Merci — icra dairesi (İİK m.58/1)", _ICRA_DAIRESI_D),
+        # m.58/2-1 TCKN/VKN'yi "varsa", m.58/2-2 borçlununkini "alacaklı
+        # tarafından biliniyorsa" ister — zorunlu parça DEĞİL; yokluğu istişari
+        # uyarıdır (TIP_UYARILARI; Fable 5.1 incelemesi benimsendi, MCP teyitli).
+        ("Alacaklı kimliği — ad/unvan + yerleşim yeri (İİK m.58/2-1)",
+         Bilesik((("alacaklı", _ALACAKLI_D),
+                  ("alacaklı adresi", Yakin(_ALACAKLI_D, _ADRES_D))))),
+        ("Ödeme hesabı — banka + hesap/IBAN bilgisi (İİK m.58/2-1)", _IBAN_D),
+        ("Borçlu kimliği — ad/unvan + adres (İİK m.58/2-2)",
+         Bilesik((("borçlu", _BORCLU_D), ("borçlu adresi", Yakin(_BORCLU_D, _ADRES_D))))),
+        ("Alacağın Türk parasıyla tutarı (İİK m.58/2-3)", [_TL_TUTAR]),
+        ("Faiz — oran/tür + işlemeye başladığı gün (İİK m.58/2-3)",
+         Kosullu([r"faiz"], Bilesik((("oran/tür", _FAIZ_TUR_D),
+                                     ("işlemeye başladığı gün", _FAIZ_BAS_D))))),
+        ("Senet ya da borcun sebebi (İİK m.58/2-4)", _SENET_SEBEP_D),
+        ("Takip yolu (İİK m.58/2-5)", _TAKIP_YOLU_D),
+        ("Belge eki — aslı ya da onaylı örnekleri (İİK m.58/3)",
+         Kosullu(_BELGE_KOSUL_D, _EKLER_D)),
+        # Vade parçası yok: vadesi gösterilmemiş bono görüldüğünde ödenecek
+        # sayılır (TTK m.777/2) — vadenin denetimi icra dairesinindir (İİK
+        # m.168/1); vadesiz senette 'vade' kelimesini aramak sahte BLOK üretirdi.
+        ("Kambiyo — senet aslı + borçlu adedince onaylı örnek (İİK m.167/2)",
+         Kosullu(_KAMBIYO_D, Bilesik((("senet aslı", [r"asl[ıi]"]),
+                                      ("onaylı örnek", [r"[öo]rne[gğk]", r"suret"]))))),
+        ("Kira tahliyesi — ihtar + tahliye istemi (İİK m.269/1)",
+         Kosullu([r"tahliye"], [r"ihtar"])),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.62 (+ m.269/2 kira) — ilamsız takipte ödeme emrine itiraz, icra dairesine.
+    # m.62'nin fıkra sırası mülga fıkra notu yüzünden belirsizdir — fıkralar
+    # KONUSUYLA anılır (Fable 5.1 incelemesi; metin MCP ile okundu).
+    "odeme-emrine-itiraz": [
+        ("Merci — takibi yapan icra dairesi (İİK m.62/1)", _ICRA_DAIRESI_D),
+        ("Takip dosyası (esas no)", _DOSYA_NO_D),
+        ("Borçlu + yurt içi adresi (İİK m.62, adres fıkrası — itirazla birlikte bildirilir)",
+         Bilesik((("borçlu", _BORCLU_D), ("borçlu adresi", Yakin(_BORCLU_D, _ADRES_D))))),
+        ("Ödeme emrinin tebliğ (ya da öğrenme) tarihi (süre başlangıcı — İİK m.62/1: 7 gün; "
+         "bkz. [S])", _TEBLIG_OGRENME_TARIHI),
+        ("Açık itiraz beyanı — borca/faize/ferilere (İİK m.62)", _ITIRAZ_BEYAN_D),
+        ("Kısmi itirazda cihet + miktar (İİK m.62, kısmi itiraz fıkrası — yoksa itiraz "
+         "edilmemiş sayılır)",
+         Kosullu(_KISMI_D, Bilesik((("miktar (TL)", [_TL_TUTAR]), ("cihet (kalem)", _CIHET_D))))),
+        ("Talep — takibin durdurulması (İİK m.66/1)", _DURDURMA_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.168/1-3,4,5; m.169, 169/a, 170 — kambiyo takibinde itiraz/şikâyet, icra mahkemesine.
+    # Geçici durdurma İSTEMİ [A] DEĞİLDİR: m.169/a-2 ve m.170/2 mahkemeye takdir
+    # verir ("karar verebilir") ve istem RİSK taşır — takip durdurulup itiraz
+    # reddedilirse borçlu tazminata (m.169/a-6; imzada ayrıca para cezası —
+    # m.170/3) mahkûm edilir. Karar avukatındır; yokluğu istişari uyarıdır
+    # (TIP_UYARILARI; Fable 5.1 incelemesi benimsendi, MCP teyitli).
+    "kambiyo-itiraz": [
+        ("Merci — icra mahkemesi (İİK m.168/1-3, 4, 5)", _ICRA_MAHKEMESI_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Taraflar — borçlu (itiraz eden) + alacaklı",
+         Bilesik((("borçlu", _BORCLU_D), ("alacaklı", _ALACAKLI_D)))),
+        ("Ödeme emrinin tebliğ (ya da öğrenme) tarihi (süre başlangıcı — İİK m.168/1: 5 gün; "
+         "bkz. [S])", _TEBLIG_OGRENME_TARIHI),
+        ("İtirazın türü açıkça — borca / imzaya / vasıf şikâyeti / yetki (İİK m.168/1-3, 4, 5)",
+         _KAMBIYO_TUR_D),
+        ("İtiraz sebebi (İİK m.168/1-5; m.169/a)", _KAMBIYO_SEBEP_D),
+        ("Dayanak belge — borçlu olmama / itfa / imhal iddiasında resmî ya da imzası ikrar "
+         "edilmiş belge (İİK m.169/a-1)",
+         Kosullu(_BELGE_GEREKEN_SEBEP_D, _ODEME_BELGE_D)),
+        ("Talep — itirazın kabulü / takibin iptali",
+         [r"itiraz(?:[ıi]m[ıi]z|[ıi]n)\w*\s*kabul", r"takibin\s*iptal"] + _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.65 — gecikmiş itiraz, icra mahkemesine.
+    "gecikmis-itiraz": [
+        ("Merci — icra mahkemesi (İİK m.65/3 — itirazı icra mahkemesi inceler)",
+         _ICRA_MAHKEMESI_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Mani (mazeret) + borçlunun kusursuzluğu (İİK m.65/1)",
+         Bilesik((("mani/mazeret", [r"mazeret", r"\bmani\b", r"m[âa]ni\b", r"engel"]),
+                  ("kusursuzluk", [r"kusur\w*\s*(?:olmaks|bulunmaks|yok|bulunmamakta)",
+                                   r"kusursuz", r"elinde\s*olmayan", r"iradesi\s*d[ıi][sş][ıi]nda"])))),
+        # m.65/2'nin üç günü maninin kalktığı GÜNDEN işler; o günün TARİHİ,
+        # süresinde başvurulduğunun dilekçedeki tek belgesidir.
+        ("Maninin kalktığı gün — tarihiyle (süre başlangıcı — İİK m.65/2: 3 gün; bkz. [S])",
+         Yakin([r"kalk(?:t|m)", r"sona\s*er", r"son\s*bul", r"taburcu"], [_TARIH],
+               pencere=80, geri=100)),
+        ("Mazereti gösterir deliller (İİK m.65/2)", _DELIL_BELGE_D + [r"rapor"]),
+        ("İtiraz + sebepleri (İİK m.65/2)", _ITIRAZ_BEYAN_D + [r"itiraz\s*sebep"]),
+        ("Harç ve masraf (İİK m.65/2 — itirazla birlikte ödenir)",
+         [r"har[çc]", r"masraf", r"gider\s*avans"]),
+        ("Talep — takibin tatili/durdurulması", _DURDURMA_D + [r"\btatil"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.68, m.68/a — itirazın kesin/geçici kaldırılması, icra mahkemesine (alacaklı).
+    # İnkâr tazminatı istemi [A] DEĞİLDİR: "diğer tarafın talebi üzerine" (m.68
+    # ve m.68/a son fıkraları) talebi stratejik kılar, dilekçenin yasal içeriği
+    # yapmaz — yokluğu istişari uyarıdır, aynı nitelikteki kötü niyet
+    # tazminatıyla tutarlı (Fable 5.1 incelemesi benimsendi, MCP teyitli).
+    "itirazin-kaldirilmasi": [
+        ("Merci — icra mahkemesi (İİK m.68, m.68/a)", _ICRA_MAHKEMESI_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Taraflar — alacaklı + borçlu",
+         Bilesik((("alacaklı", _ALACAKLI_D), ("borçlu", _BORCLU_D)))),
+        ("İtirazın tebliğ tarihi (süre başlangıcı — İİK m.68/1, m.68/a-1: 6 ay; bkz. [S])",
+         _TEBLIG_OGRENME_TARIHI),
+        ("Dayanak belgenin niteliği — m.68/1 belgesi ya da m.68/a imza incelemesi",
+         _KALDIRMA_BELGE_D),
+        ("Talep — itirazın (kesin/geçici) kaldırılması",
+         [r"itiraz\w*\s*(?:kesin(?:\s*olarak)?\s*|ge[çc]ici(?:\s*olarak)?\s*|muvakkaten\s*)?kald[ıi]r[ıi]l"]),
+        ("Deliller / belge ekleri", _DELIL_BELGE_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.67 — itirazın iptali davası (genel mahkeme; HMK m.119 unsurları).
+    "itirazin-iptali": [
+        ("Mahkeme — genel mahkeme (HMK m.119/1-a)", [r"mahkemesi", r"h[âa]kimli[gğ]i"]),
+        ("Davacı + davalı (HMK m.119/1-b)", _DAVACI_DAVALI),
+        ("Adres + davacının TCKN/VKN'si (HMK m.119/1-b, c)", _ADRES_KIMLIK),
+        ("Dava değeri (HMK m.119/1-d)", _DEGER_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("İtirazın tebliğ tarihi (süre başlangıcı — İİK m.67/1: 1 yıl; bkz. [S])",
+         _TEBLIG_OGRENME_TARIHI),
+        ("Vakıalar + deliller (HMK m.119/1-e, f)", _VAKIA_DELIL),
+        ("Hukuki sebepler (HMK m.119/1-g)", _HUKUKI_SEBEP_D),
+        ("Talep — itirazın iptali + takibin devamı (HMK m.119/1-ğ)",
+         Bilesik((("itirazın iptali", [r"itiraz\w*\s*iptal"]),
+                  ("takibin devamı", [r"takibin\s*devam"])))),
+        # Dava şartı yokluğu usulden ret demektir — kalem BLOK kalır, ama koşulu
+        # dardır (bkz. _TICARI_D) ve 'ticari dava değil / tüketici' beyanı
+        # koşulu kaldırır. İnkâr tazminatı istemi istişaridir (TIP_UYARILARI).
+        ("Dava şartı arabuluculuk — ticari alacakta son tutanak (TTK m.5/A-1)",
+         Kosullu(_TICARI_D, [r"arabulucu"], istisna=_TICARI_ISTISNA_D)),
+        ("Tarih + imza (HMK m.119/1-h)", _TARIH_IMZA),
+    ],
+    # İİK m.72 — menfi tespit (istirdat dahil); borçlu DAVACI konumunda.
+    "menfi-tespit": [
+        ("Mahkeme (HMK m.119/1-a)", [r"mahkemesi", r"h[âa]kimli[gğ]i"]),
+        ("Davacı + davalı (HMK m.119/1-b)", _DAVACI_DAVALI),
+        ("Adres + davacının TCKN/VKN'si (HMK m.119/1-b, c)", _ADRES_KIMLIK),
+        ("Dava değeri (HMK m.119/1-d)", _DEGER_D),
+        ("İcra takibiyle bağlantı — takip dosyası ya da 'takipten önce' beyanı (İİK m.72/1)",
+         [r"takip(?:ten)?\s*[öo]nce", r"icra\s*daire", r"\d{4}\s*/\s*\d+\s*(?:E\b|Esas\b)",
+          r"dosya\s*(?:no\b|numara)", r"esas\s*(?:no\b|numara)"]),
+        ("Borçlu olmama vakıası + deliller (İİK m.72/1)",
+         Bilesik((("borçlu olmama", _BORCLU_OLMAMA_D), ("deliller", [r"delil"])))),
+        ("Hukuki sebepler (HMK m.119/1-g)", _HUKUKI_SEBEP_D),
+        ("Talep — borçlu olunmadığının tespiti (istirdatta iade)",
+         [r"bor[cç]lu\s*ol(?:un)?mad\w*(?:\s+\w+)?\s+tespit", r"menfi\s*tespit", r"tespitine",
+          r"istirda[td]", r"iadesine", r"geri\s*veril"]),
+        # 'ödeme emri' ödeme OLAYI değildir — çapadan dışlanır (ödeme emrinin
+        # tebliğ tarihi istirdat süresinin başlangıcı değildir).
+        ("İstirdatta ödeme tarihi (süre başlangıcı — İİK m.72/7: ödemeden 1 yıl; bkz. [S])",
+         Kosullu([r"istirda[td]", r"geri\s*veril", r"iadesine"],
+                 Yakin([r"[öo]deme(?!\s*emr)", r"[öo]dendi", r"[öo]denmi[sş]", r"[öo]dedi",
+                        r"[öo]demi[sş]", r"[öo]deyerek", r"tahsil\s*edil"],
+                       [_TARIH], pencere=80, geri=100))),
+        ("Dava şartı arabuluculuk — ticari uyuşmazlıkta (TTK m.5/A-1: menfi tespit/istirdat)",
+         Kosullu(_TICARI_D, [r"arabulucu"], istisna=_TICARI_ISTISNA_D)),
+        ("Tarih + imza (HMK m.119/1-h)", _TARIH_IMZA),
+    ],
+    # İİK m.78 — haciz talebi, icra dairesine.
+    "haciz-talebi": [
+        ("Merci — icra dairesi (İİK m.78/1)", _ICRA_DAIRESI_D),
+        ("Takip dosyası (esas no)", _DOSYA_NO_D),
+        ("Haczi istenen mal, hak ya da alacak (somut)", _MAL_D),
+        ("Takibin kesinleştiği — ödeme emri süresi geçti / itiraz kaldırıldı (İİK m.78/1)",
+         [r"kesinle[sş]"]),
+        ("Talep — haciz konulması", [r"haciz\s*(?:konul|uygula|i[sş]lem)", r"hacz(?:ine|inin)",
+                                     r"haczedil"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.106, m.110 — satış talebi, icra dairesine.
+    "satis-talebi": [
+        ("Merci — icra dairesi", _ICRA_DAIRESI_D),
+        ("Takip dosyası (esas no)", _DOSYA_NO_D),
+        ("Haczedilen mal + haciz tarihi (İİK m.106/1 — hacizden 1 yıl)",
+         Bilesik((("mal", _MAL_D), ("haciz tarihi", _HACIZ_TARIHI_D)))),
+        ("Kıymet takdiri + satış giderlerinin peşin yatırılması (İİK m.106/3; yatırılmazsa "
+         "talep vaki olmamış sayılır — m.106/5)",
+         [r"gider\w*\s*(?:avans|pe[sş]in|yat[ıi]r)", r"masraf\w*\s*(?:pe[sş]in|yat[ıi]r)",
+          r"pe[sş]in(?:en)?\s*(?:olarak\s*)?yat[ıi]r", r"avans\w*\s*yat[ıi]r"]),
+        ("Motorlu araçta muhafaza + kıymet takdiri + satış birlikte (İİK m.106/4)",
+         Kosullu([r"\bara[çc]", r"plaka", r"motorlu", r"otomobil", r"kamyon"],
+                 Bilesik((("muhafaza", [r"muhafaza"]), ("kıymet takdiri", [r"k[ıi]ymet\s*takdir"]))))),
+        ("Talep — satış", [r"sat[ıi][sş](?:[ıi]n[ıi]n|[ıi]na)?\s*(?:yap[ıi]l|istenmesi|talep)",
+                           r"sat[ıi]lmas[ıi]", r"sat[ıi][sş]a\s*[çc][ıi]kar[ıi]l",
+                           r"sat[ıi][sş]\s*talep"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.89 — üçüncü kişinin haciz ihbarnamesine itirazı, icra dairesine.
+    "haciz-ihbarnamesi-itiraz": [
+        ("Merci — icra dairesi (İİK m.89/2)", _ICRA_DAIRESI_D),
+        ("Takip dosyası (esas no)", _DOSYA_NO_D),
+        ("İhbarname + tebliğ tarihi (süre başlangıcı — İİK m.89/2-3: 7 gün; bkz. [S])",
+         Bilesik((("ihbarname (1/2/3)", [r"ihbarname", r"89\s*/\s*[123]"]),
+                  ("tebliğ tarihi", _TEBLIG_OGRENME_TARIHI)))),
+        ("İtiraz sebebi — borç yok / mal yedinde değil / ödendi … (İİK m.89/2)",
+         [r"borcu(?:muz)?\s*(?:bulunma|yok)", r"bor[cç]\w*\s*(?:bulunmamakta|yoktur)",
+          r"(?:yedimizde|yedinde|elimizde)\s*(?:bulunmamakta|bulunmuyor|yok|de[gğ]il)",
+          r"[öo]denmi[sş]", r"alaca[gğ][ıi]\s*(?:bulunmamakta|yoktur)", r"rehin", r"telef",
+          r"istihlak"]),
+        ("Talep — itirazın kabulü/kayda alınması", [r"itiraz\w*\s*(?:kabul|kayda)"] + _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.128/a — kıymet takdirine şikâyet, icra mahkemesine.
+    "kiymet-takdiri-sikayet": [
+        ("Merci — raporu düzenleten icra dairesinin bulunduğu yer icra mahkemesi (İİK m.128/a-1)",
+         _ICRA_MAHKEMESI_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Kıymet takdiri raporu + tebliğ tarihi (süre başlangıcı — İİK m.128/a-1: 7 gün; "
+         "bkz. [S])",
+         Bilesik((("rapor", [r"k[ıi]ymet\s*takdir", r"bilirki[sş]i\s*rapor"]),
+                  ("tebliğ tarihi", _TEBLIG_OGRENME_TARIHI)))),
+        ("Somut değer itirazı — gerekçe/emsal",
+         [r"d[üu][sş][üu]k", r"y[üu]ksek", r"emsal", r"ger[çc]ek\s*de[gğ]er", r"piyasa\s*de[gğ]er",
+          r"rayi[çc]"]),
+        ("Yeniden bilirkişi incelemesi + masraf/ücretin şikâyetten itibaren 7 gün içinde "
+         "yatırılması (İİK m.128/a-1 — yatırılmazsa kesin ret)",
+         Bilesik((("bilirkişi incelemesi", [r"bilirki[sş]i"]),
+                  ("masraf/ücret", [r"masraf", r"[üu]cret", r"gider\s*avans"])))),
+        ("Talep — kıymet takdirinin düzeltilmesi / yeniden takdir",
+         [r"yeniden\s*(?:k[ıi]ymet\s*)?takdir", r"k[ıi]ymet\s*takdirinin\s*(?:iptal|d[üu]zeltil|"
+          r"kald[ıi]r[ıi]l)"] + _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.134/2 — ihalenin feshi şikâyeti, icra mahkemesine.
+    "ihalenin-feshi": [
+        ("Merci — icra mahkemesi (İİK m.134/2 — şikâyet yolu)", _ICRA_MAHKEMESI_D),
+        ("Takip dosyası + ihale tarihi",
+         Bilesik((("dosya", _DOSYA_NO_D + _ICRA_DAIRESI_D),
+                  ("ihale tarihi", [r"ihale\s*tarih", _TARIH + r".{0,40}ihale",
+                                    r"ihale\w*\s*.{0,40}" + _TARIH])))),
+        ("Talep edenin İİK m.134/2'de sayılan sıfatı (satış isteyen alacaklı, borçlu, sicilde "
+         "kayıtlı ilgili, sınırlı ayni hak sahibi, pey süren)",
+         [r"sat[ıi][sş]\s*isteyen", r"bor[cç]lu", r"alacakl[ıi]", r"tapu\s*sicil",
+          r"sicilde\s*kay[ıi]tl[ıi]", r"ipotek", r"s[ıi]n[ıi]rl[ıi]\s*ayn[îi]\s*hak",
+          r"pey\s*s[üu]r", r"ihaleye\s*(?:kat[ıi]l|i[sş]tirak)"]),
+        ("Yurt içinde adres (İİK m.134/2 — feshin koşulu)", _ADRES_D),
+        # Süre (ihaleden 7 gün; ıttıla hâlinde ıttıladan) [S] satırındadır;
+        # ihale tarihi yukarıdaki künye unsurunda zaten aranır.
+        ("Yolsuzluk sebepleri (ilan/tebliğ, kıymet, fesat, esaslı hata …)",
+         [r"usuls[üu]z", r"yolsuzluk", r"tebli[gğ]\s*edilmed", r"\bilan", r"fesa[td]",
+          r"esasl[ıi]\s*(?:vas[ıi]f|hata)", r"k[ıi]ymet\s*takdir", r"muhammen"]),
+        ("Menfaat ihlali — feshi isteyen kendi menfaatinin zarar gördüğünü ispatla yükümlü (İİK m.134)",
+         [r"menfaat", r"zarar(?:a\s*u[gğ]ra|[ıi]m[ıi]z|[ıi]\s*do[gğ])", r"daha\s*(?:y[üu]ksek|fazla)\s*bedel",
+          r"muhtel"]),
+        ("Talep — ihalenin feshi", [r"ihalenin\s*feshi"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.16 — icra dairesi işlemine şikâyet, icra mahkemesine.
+    "icra-sikayet": [
+        ("Merci — icra mahkemesi (İİK m.16/1)", _ICRA_MAHKEMESI_D),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Şikâyet olunan icra dairesi işlemi",
+         [r"i[sş]lem", r"muamele", r"m[üu]d[üu]rl[üu]k\s*karar", r"memur\w*\s*(?:karar|i[sş]lem)",
+          r"tutanak", r"talebimiz\w*\s*(?:red|ret)", r"\bkarar"]),
+        # Süre öğrenmeden işler (m.16/1) — tebliğ edilmemiş işlemde de öğrenme
+        # tarihi gerekir; bu yüzden 'tebliğ edilmemiştir' istisnası burada YOK.
+        ("Öğrenme/tebliğ tarihi (süre başlangıcı — İİK m.16/1: 7 gün; süresiz hâllerde "
+         "aranmaz: m.16/2; bkz. [S])",
+         Kosullu(None, Yakin(_TEBLIG_D + _OGRENME_D, [_TARIH], pencere=80, geri=100),
+                 istisna=_SURESIZ_SIKAYET_D)),
+        ("Şikâyet sebebi — kanuna aykırılık / olaya uygunsuzluk (İİK m.16/1)",
+         [r"kanuna\s*ayk[ıi]r[ıi]", r"yasaya\s*ayk[ıi]r[ıi]", r"usuls[üu]z", r"olaya\s*uygun",
+          r"hadiseye\s*uygun", r"hukuka\s*ayk[ıi]r[ıi]"]),
+        ("Talep — işlemin iptali / düzeltilmesi", [r"iptal", r"d[üu]zeltil", r"kald[ıi]r[ıi]l"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.96-97, 97/a — üçüncü kişinin istihkak davası, icra mahkemesinde.
+    "istihkak-davasi": [
+        ("Merci — icra mahkemesi (İİK m.97/6, 97/9)", _ICRA_MAHKEMESI_D),
+        ("Davacı (üçüncü kişi) + davalı(lar)", _DAVACI_DAVALI),
+        ("Adres + davacının TCKN/VKN'si (HMK m.119/1-b, c)", _ADRES_KIMLIK),
+        ("Dava değeri — haczedilen malın değeri (HMK m.119/1-d)", _DEGER_D),
+        ("Takip dosyası + haciz (tarih/tutanak)",
+         Bilesik((("dosya", _DOSYA_NO_D), ("haciz", _HACIZ_TARIHI_D)))),
+        ("Başlangıç olayının tarihi — tefhim/tebliğ ya da hacze ıttıla (süre başlangıcı — "
+         "İİK m.97/6, m.97/9: 7 gün; bkz. [S])",
+         Yakin([r"tefhim"] + _TEBLIG_D + _OGRENME_D, [_TARIH], pencere=80, geri=100)),
+        ("Mülkiyet karinesine karşı — iktisap sebebi + malın borçlu yanında bulunma sebebi (İİK m.97/a)",
+         Bilesik((("iktisap sebebi", [r"iktisap", r"sat[ıi]n\s*al", r"\bfatura", r"\bedin",
+                                      r"m[üu]lkiyet", r"miras"]),
+                  ("bulunma sebebi", [r"emanet", r"\bkira", r"ariyet", r"[öo]d[üu]n[çc]", r"yedinde",
+                                      r"elinde", r"zilyet", r"bulunma\w*\s*sebeb", r"ayn[ıi]\s*adres",
+                                      r"i[sş]yeri", r"depo"])))),
+        ("Deliller", [r"delil"]),
+        ("Talep — istihkakın kabulü + haczin kaldırılması",
+         [r"istihkak\w*\s*(?:iddia\w*\s*)?kabul", r"haczin\s*kald[ıi]r[ıi]l",
+          r"m[üu]lkiyet\w*\s*tespit"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.76, 337/a, 338, 340, 344 + usul m.347-351 — icra ceza şikâyeti.
+    "icra-ceza-sikayet": [
+        ("Merci — icra (ceza) mahkemesi (İİK m.349)", [r"icra\s*ceza"] + _ICRA_MAHKEMESI_D),
+        ("Şikâyetçi alacaklı + borçlu + adres",
+         Bilesik((("şikâyetçi/alacaklı", [r"[sş]ik[âa]yet[çc]i", r"m[üu][sş]teki", r"alacakl[ıi]"]),
+                  ("borçlu (sanık/şüpheli)", [r"bor[cç]lu", r"san[ıi]k", r"[sş][üu]pheli", r"maznun"]),
+                  ("adres", _ADRES_D)))),
+        ("Takip dosyası — icra dairesi + esas no", _DOSYA_TAKIP),
+        ("Fiil + dayanak madde (İİK m.76/337-a/338/340/344)",
+         Bilesik((("fiil", [r"taahh[üu][dt]\w*\s*(?:\S+\s+){0,3}ihlal", r"[öo]deme\s*[sş]art[ıi]n[ıi]\s*ihlal",
+                            r"mal\s*beyan", r"nafaka", r"hakikate\s*ayk[ıi]r[ıi]",
+                            r"ger[çc]e[gğ]e\s*ayk[ıi]r[ıi]", r"ticareti\s*terk", r"tazyik"]),
+                  ("dayanak madde", [r"\b(?:İİK|IIK|İcra\s*ve\s*İflas\s*Kanunu)\w*\s*(?:m\.?|madde)?\s*"
+                                     r"(?:76|337|338|340|344)\b",
+                                     r"\b(?:76|337/a|338|340|344)\s*(?:\.|['’]?\s*(?:nc[ıi]|nci|[üu]nc[üu]))?\s*madde"])))),
+        ("Öğrenme tarihi + fiil tarihi (İİK m.347 — öğrenmeden 3 ay, her hâlde fiilden 1 yıl; "
+         "hak düşürücü)",
+         Bilesik((("öğrenme tarihi", Yakin(_OGRENME_D, [_TARIH], pencere=80, geri=100)),
+                  ("fiil/ihlal tarihi", [r"(?:ihlal|fiil|taksit|vade|[öo]deme)\w*\s*(?:tarih|.{0,40}" + _TARIH + ")",
+                                         _TARIH + r".{0,60}(?:ihlal|[öo]denmed|[öo]demed|taksit)"])))),
+        ("Deliller — şikâyetçi dilekçesinde gösterdiği delillerle bağlıdır (İİK m.351/1)", [r"delil"]),
+        ("Talep — tazyik hapsi / cezalandırma",
+         [r"tazyik\s*hapsi", r"cezaland[ıi]r[ıi]l", r"hapis"] + _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # İİK m.33, 36, 71, 78, 96/2, 111 … — icra usul işlemleri (Yargı PRO 3-9 fikri).
+    "icra-usul": [
+        ("Merci — icra dairesi ya da icra mahkemesi", _ICRA_DAIRESI_D + _ICRA_MAHKEMESI_D),
+        ("Takip dosyası (esas no)", _DOSYA_NO_D),
+        ("Talep konusu + dayanak madde",
+         Bilesik((("talep konusu", [r"\bkonu\b", r"talep\w*\s*konusu"]),
+                  ("dayanak madde", [r"\b(?:İİK|IIK)\b", r"İcra\s*ve\s*İflas", r"\bmadde",
+                                     r"\bm\.\s*\d"])))),
+        ("Tehir-i icra — kanun yolu başvurusu + depo/teminat (İİK m.36/1)",
+         Kosullu([r"tehir[\s-]*i?\s*icra", r"icran[ıi]n\s*geri\s*b[ıi]rak[ıi]lmas[ıi]\s*i[çc]in\s*s[üu]re"],
+                 Bilesik((("kanun yolu başvurusu", [r"istinaf", r"temyiz"]),
+                          ("depo/teminat", [r"teminat", r"depo", r"kefalet", r"mahcuz"]))))),
+        # m.33/1: itfa/imhal iddiası resmî ya da usulüne göre onaylı/ikrar
+        # olunmuş senetle tevsik edilir — belge YALNIZ itfa/imhalde aranır
+        # (zamanaşımı itirazında belge koşulu yoktur; MCP teyitli).
+        ("İcranın geri bırakılması — icra emrinin tebliğ tarihi + itfa/imhal/zamanaşımı + "
+         "itfa/imhalde belge (İİK m.33/1: 7 gün; bkz. [S])",
+         Kosullu([r"icra\s*emri"],
+                 Bilesik((("tebliğ tarihi", _TEBLIG_OGRENME_TARIHI),
+                          ("itfa/imhal/zamanaşımı", [r"itfa", r"imhal", r"zamana[sş][ıi]m"]),
+                          ("belge (itfa/imhalde)",
+                           Kosullu([r"itfa", r"imhal"], [r"belge", r"makbuz", r"noter",
+                                                         r"resm[îi]", _SENET])))))),
+        # m.96/2: icra dairesi bildirimle ÜÇ GÜNLÜK mühlet verir; susma istihkak
+        # iddiasının kabulü sayılır (MCP teyitli).
+        ("İstihkak iddiasına itiraz — icra dairesi bildiriminin tarihi (İİK m.96/2: 3 gün; "
+         "susma kabul sayılır; bkz. [S])",
+         Kosullu([r"istihkak\s*iddia\w*\s*(?:na|s[ıi]na)\s*itiraz"],
+                 Kosullu(None, Yakin(_TEBLIG_D + _OGRENME_D + [r"bildiri"], [_TARIH],
+                                     pencere=80, geri=100),
+                         istisna=_TEBLIG_YOK_D))),
+        ("Talep", _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+}
+
+# ── v0.5.18 — İDARİ DAVA, YD TALEBİ, CEZA İSTİNAFI (Y-06; fikir: Yargı PRO 4-4) ──
+# İnsan-okur not + künyeler: references/idari-ceza-tipleri.md.
+_YD_IKI_KOSUL = Bilesik((
+    ("telafisi güç veya imkânsız zarar", [r"telafisi\s*(?:g[üu][çc]|imk[âa]ns[ıi]z)"]),
+    ("açıkça hukuka aykırılık", [r"a[çc][ıi]k(?:[çc]a)?\s*hukuka\s*ayk[ıi]r[ıi]"]),
+))
+_IDARI_CEZA_TIPLERI = {
+    # İYUK m.3 — idari dava dilekçesi.
+    "idari-dava": [
+        ("Merci — Danıştay / idare mahkemesi / vergi mahkemesi başkanlığına hitap (İYUK m.3/1)",
+         [r"idare\s*mahkemesi", r"vergi\s*mahkemesi", r"dan[ıi][sş]tay"]),
+        ("Taraflar + adres + gerçek kişi TCKN (İYUK m.3/2-a)",
+         Bilesik((("davacı", [r"davac[ıi]"]),
+                  ("davalı idare", [r"daval[ıi]", r"\bidare", r"bakanl[ıi][gğ]", r"belediye",
+                                    r"ba[sş]kanl[ıi][gğ]", r"m[üu]d[üu]rl[üu][gğ]", r"valili[gğ]",
+                                    r"kaymakaml[ıi][gğ]"]),
+                  ("adres", _ADRES_D), ("TCKN", _KIMLIK_D)))),
+        ("Davanın konusu + sebepleri (İYUK m.3/2-b)",
+         Bilesik((("konu", [r"\bkonu\b", r"dava\s*konusu"]),
+                  ("sebepler", [r"hukuka\s*ayk[ıi]r[ıi]", r"sebep", r"yetki", r"[sş]ekil", r"maksat",
+                                r"neden"])))),
+        ("Dayanılan deliller (İYUK m.3/2-b)", [r"delil"]),
+        # Tarih bildirim olayının YANINDA aranır (Yakin). Zımni retde yazılı
+        # bildirim yoktur; süre başvurudan otuz gün sonra işler (İYUK m.10/2 —
+        # MCP teyitli) → başvuru tarihi de bu unsuru karşılar.
+        ("Dava konusu işlemin yazılı bildirim tarihi (İYUK m.3/2-c; zımni retde başvuru "
+         "tarihi — m.10/2)",
+         Kosullu(None, Yakin(_TEBLIG_D + _OGRENME_D + [r"bildiri", r"ba[sş]vur"], [_TARIH],
+                             pencere=80, geri=100),
+                 istisna=_TEBLIG_YOK_D)),
+        ("Uyuşmazlık konusu miktar — mali yükümlerde ve tam yargıda (İYUK m.3/2-d)",
+         Kosullu([r"tam\s*yarg[ıi]", r"tazminat", r"vergi\s*mahkemesi", r"vergi\s*ziya[ıi]",
+                  r"tarhiyat", r"ihbarname", r"mali\s*y[üu]k[üu]ml[üu]"],
+                 [_TL_TUTAR, r"miktar"])),
+        ("Vergi davasında nevi + yıl + ihbarname tarih/no (İYUK m.3/2-e)",
+         Kosullu([r"vergi\s*mahkemesi", r"vergi\s*ziya[ıi]", r"tarhiyat", r"ihbarname"],
+                 Bilesik((("vergi/ceza nevi", [r"verg", r"ceza"]),
+                          ("yıl/dönem", [r"\b(?:19|20)\d{2}\b.{0,25}(?:y[ıi]l|d[öo]nem)",
+                                         r"(?:y[ıi]l|d[öo]nem)\w*\s*:?\s*(?:19|20)\d{2}"]),
+                          ("ihbarname tarih/no", [r"ihbarname\w*\s*.{0,60}(?:tarih|say[ıi]|no\b)"]))))),
+        ("Ekler — dava konusu işlem/belge aslı ya da örneği (İYUK m.3/3)", _EKLER_D),
+        ("Talep — iptal / yürütmenin durdurulması / tazminat",
+         [r"iptal", r"y[üu]r[üu]tmenin\s*durdurul", r"tazminat"] + _TALEP_D),
+        ("YD istendiyse iki koşul ayrı ayrı — zarar + açık hukuka aykırılık (İYUK m.27/2)",
+         Kosullu([r"y[üu]r[üu]tmenin\s*durdurul"], _YD_IKI_KOSUL)),
+        ("İmzalı dilekçe + tarih (İYUK m.3/1)", _TARIH_IMZA),
+    ],
+    # İYUK m.27 — yürütmenin durdurulması talebi (Yargı PRO 4-4 fikri).
+    "yd-talebi": [
+        ("Merci — Danıştay / idare / vergi mahkemesi ya da bölge idare mahkemesi",
+         [r"idare\s*mahkemesi", r"vergi\s*mahkemesi", r"dan[ıi][sş]tay", r"b[öo]lge\s*idare"]),
+        ("Dava dosyası ya da birlikte açılan dava", _DOSYA_NO_D + [r"dava\s*dilek[çc]e"]),
+        ("Dava konusu idari işlem", [r"i[sş]lem", r"\bkarar"]),
+        ("İki koşul ayrı ayrı — telafisi güç/imkânsız zarar + açıkça hukuka aykırılık (İYUK m.27/2)",
+         _YD_IKI_KOSUL),
+        ("YD kararına itirazda kararın tebliğ tarihi (süre başlangıcı — İYUK m.27/7: 7 gün, "
+         "bir defaya mahsus; bkz. [S])",
+         Kosullu([r"karar\w*\s*(?:kar[sş][ıi]\s*)?itiraz", r"YD\s*(?:karar\w*\s*)?itiraz",
+                  r"27\s*/\s*7"],
+                 _TEBLIG_TARIHI)),
+        ("Talep — yürütmenin durdurulması", [r"y[üu]r[üu]tmenin\s*durdurul"]),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+    # CMK m.273 — ceza istinafı (CMK m.294 temyizde sebep zorunluluğu: `temyiz`).
+    "ceza-istinaf": [
+        ("Merci — hükmü veren ceza mahkemesi (CMK m.273/1) + bölge adliye mahkemesi",
+         Bilesik((("hükmü veren ceza mahkemesi", [r"(?:a[gğ][ıi]r|asliye|sulh)\s*ceza",
+                                                  r"[çc]ocuk\s*(?:a[gğ][ıi]r\s*)?ceza",
+                                                  r"ceza\s*mahkeme"]),
+                  ("bölge adliye mahkemesi", [r"b[öo]lge\s*adliye", r"\bBAM\b", r"ceza\s*daire",
+                                              r"g[öo]nderilmek\s*[üu]zere"])))),
+        ("Hükmün künyesi — esas/karar no + hüküm",
+         Bilesik((("esas/karar no", [r"esas\s*(?:no\b|numara|say[ıi])", r"karar\s*(?:no\b|numara|say[ıi])",
+                                     r"\d{4}\s*/\s*\d+\s*(?:E|K|Esas|Karar)\b"]),
+                  ("hüküm", [r"h[üu]k[üu]m", r"h[üu]km[üu]", r"karar\s*tarih",
+                             r"tarihli\s*(?:karar|h[üu]k[üu]m)"])))),
+        ("Başvuranın sıfatı — sanık/müdafi, katılan/vekili, suçtan zarar gören (CMK m.273/4)",
+         [r"san[ıi]k", r"m[üu]dafi", r"kat[ıi]lan", r"su[çc]tan\s*zarar\s*g[öo]ren", r"m[üu][sş]teki"]),
+        # Gerekçeli hüküm henüz tebliğ edilmeden verilen (süre tutum) istinaf
+        # dilekçesinde tarih yazılamaz — 'tebliğ edilmemiştir' beyanı tarih
+        # parçasını kaldırır (bkz. _TEBLIG_YOK_D).
+        ("Gerekçeli hükmün tebliğ tarihi (süre başlangıcı — CMK m.273/1: 2 hafta; bkz. [S])",
+         Bilesik((("tebliğ tarihi", _TEBLIG_TARIHI),
+                  ("gerekçeli hüküm", [r"gerek[çc]eli", r"h[üu]km[üu]n\s*gerek[çc]e"])))),
+        ("İstinaf sebepleri (OA standardı — CMK m.273/4 yokluğu engel saymaz)",
+         [r"istinaf\s*sebep", r"istinaf\s*neden", r"hukuka\s*ayk[ıi]r[ıi]",
+          r"delil\w*\s*(?:de[gğ]erlendir|takdir)", r"eksik\s*(?:inceleme|ara[sş]t[ıi]rma)",
+          r"usul\w*\s*ayk[ıi]r[ıi]"]),
+        ("Talep — hükmün kaldırılması / beraat / yeniden hüküm",
+         [r"kald[ıi]r[ıi]l", r"beraat", r"bozul", r"yeniden\s*(?:h[üu]k[üu]m|yarg[ıi]la)"] + _TALEP_D),
+        ("Tarih + imza", _TARIH_IMZA),
+    ],
+}
+TIPLER.update(_ICRA_TIPLERI)
+TIPLER.update(_IDARI_CEZA_TIPLERI)
 
 # Tertip-düzen: hem BİÇİM (başlık/numaralandırma) hem de "avukata yakışan" dilekçenin
 # ZORUNLU UNSURLARININ VARLIĞI — tip ne olursa olsun (dava/cevap/istinaf/temyiz/aym_bireysel/
@@ -249,11 +985,19 @@ TIPLER = {
 # bu katman onu tamamlar. Script yalnız "unsur var/yok" der — "dilekçe iyi/kötü/kabule
 # elverişli" hükmü VERMEZ (sahte kesinlik yok); eksik olanı UYAR, nihai göz avukatındır.
 DUZEN = [
-    ("Belirgin başlık bloğu", [r"^#", r"mahkeme", r"başkanlığı"]),
+    # v0.5.18: icra dairesine hitap ('… İCRA DAİRESİNE' / '… İcra Müdürlüğüne')
+    # da belirgin başlıktır — eskiden yalnız mahkeme/başkanlık arandığından her
+    # icra talebi sahte [B] uyarısı alıyordu (istişari kapıda gürültü de zarardır).
+    ("Belirgin başlık bloğu", [r"^#", r"mahkeme", r"başkanlığı", r"icra\s*daire",
+                               r"m[üu]d[üu]rl[üu][gğ]"]),
     ("Numaralı/bölümlü açıklama düzeni", [r"^\s*\d+[.)]", r"^\s*[-*]\s", r"##"]),
-    ("Mahkeme/merci başlığı", [r"mahkeme", r"başkanlığı", r"hakimliği", r"\bmerci", r"dairesi", r"kurulu"]),
+    ("Mahkeme/merci başlığı", [r"mahkeme", r"başkanlığı", r"hakimliği", r"\bmerci", r"dairesi", r"kurulu",
+                               r"m[üu]d[üu]rl[üu][gğ]"]),
     ("Taraflar / vekil bilgisi", [r"davac[ıi]", r"daval[ıi]", r"başvurucu", r"müşteki", r"sanık",
-                                   r"katılan", r"müdahil", r"\bvekil", r"av\.\s"]),
+                                   r"katılan", r"müdahil", r"\bvekil", r"av\.\s",
+                                   # v0.5.18 — icra/idari taraf etiketleri
+                                   r"alacakl[ıi]", r"bor[cç]lu", r"[üu][çc][üu]nc[üu]\s*ki[sş]i",
+                                   r"[sş]ik[âa]yet[çc]i"]),
     ("Konu", [r"\bkonu\b"]),
     ("Açıklamalar / vakıalar", [r"açıklama", r"vak[ıi]a", r"olay"]),
     ("Hukuki sebepler", [r"hukuki\s*sebep", r"hukuki\s*neden", r"dayanak", r"hukuka\s*aykır"]),
@@ -269,7 +1013,21 @@ DUZEN = [
 # iken devreye girer; DUZEN listesinden BAĞIMSIZ yeni bir alan çifti EKLER,
 # denetle()'nin dönüş imzasını DEĞİŞTİRMEZ. Sahte kesinlik yok: yalnız
 # var/yok listesi döner, "iyi dilekçe" hükmü VERMEZ.
-KANUN_YOLU_TIPLERI = {"istinaf", "temyiz"}
+KANUN_YOLU_TIPLERI = {"istinaf", "temyiz", "ceza-istinaf"}  # v0.5.18: + ceza-istinaf
+
+# v0.5.18 — [B] TERTİP-DÜZEN muafiyetleri. NEDEN VAR: takip talebi, haciz ve
+# satış talebi gibi icra dairesine verilen FORM NİTELİKLİ talepler (İİK m.58,
+# m.78, m.106) delil/açıklama/hukuki sebep bölümü taşımaz; bu kalemlerin
+# yokluğunu her seferinde [B] UYARI olarak basmak istişari kapıyı gürültüye
+# boğar ve gerçek uyarıyı gömer (alarm yorgunluğu da zarardır). Muafiyet
+# YALNIZ [B]'dir; [A] zorunlu unsurları bundan etkilenmez.
+DUZEN_MUAF = {
+    "takip-talebi": {"Deliller", "Açıklamalar / vakıalar", "Hukuki sebepler"},
+    "haciz-talebi": {"Deliller", "Açıklamalar / vakıalar", "Hukuki sebepler"},
+    "satis-talebi": {"Deliller", "Açıklamalar / vakıalar", "Hukuki sebepler"},
+    "haciz-ihbarnamesi-itiraz": {"Deliller", "Hukuki sebepler"},
+    "icra-usul": {"Deliller"},
+}
 
 # B1 künye blok alan seti — DUZEN'de zaten denetlenen merci/taraflar/tarih
 # kalemleriyle ÇAKIŞMAYAN, kanun yoluna özgü iki alan.
@@ -370,18 +1128,48 @@ def _kanun_yolu_yapisal_eksik(metin):
 # Her taraf tipi kendi riskli kalıp setiyle taranır: davalı için kabul/ikrar/doğrudur ekseni,
 # davacı için vazgeçme/haksızlık ekseni, müşteki/katılan için şikayetten vazgeçme/uzlaşma
 # ekseni, sanık için suç ikrarı ekseni. "genel" seti her taraf için ek olarak taranır.
+
+# v0.5.18 — Türkçe çekim yardımcıları (Fable 5.1 salt okunur incelemesi
+# benimsendi, 2026-10-05). '-me/-ma' Türkçede hem OLUMSUZLUK hem AD-FİİL
+# ekidir: 'vazgeçmiyoruz / vazgeçmedik / vazgeçmeyeceğiz' olumsuzdur ama
+# 'vazgeçmek istiyoruz / vazgeçmekteyiz / vazgeçmeyi' OLUMLUDUR. Kaba bir
+# `(?!me)` olumlu '-mek/-mekte' biçimlerini de düşürür (sessiz yanlış-negatif);
+# bu yüzden YALNIZ gerçek olumsuz devamlar dışlanır.
+_VAZGEC = r"vazge[çc](?!(?:il)?me(?:d|z|yece|yiz|me|mi[sş]|ksizin)|(?:il)?miyor)"
+_GERI_AL = r"geri\s*al(?!(?:[ıi]n)?ma(?:d|z|yaca|y[ıi]z|ma|m[ıi][sş]|ks[ıi]z)|(?:[ıi]n)?m[ıi]yor)"
+_UGRA = r"u[gğ]ra(?!ma(?:d|z|yaca|y[ıi]z|ma|m[ıi][sş]|ks[ıi]z)|m[ıi]yor)"
+# `(?#kesin)` ile başlayan kalıp ±70 NEG penceresinden MUAFTIR (bkz. denetle).
+# Ön şartı: kalıp ÇEKİMLİ (bitmiş) OLUMLU yüklemle biter — olumsuzluk ve ortaç
+# ('kabul ettiğimiz anlamına gelmez') kalıbın kendi gövdesinde dışarıda kalır.
+# NEDEN: NEG listesindeki 'aksi', 'redd', 'değil' hukuk metninde çok sık geçer;
+# "Borcun tamamını kabul ediyoruz; aksi düşünülemez" gibi gerçek bir ikrar
+# komşu sözcük yüzünden BİLGİ'ye düşüp teslimden geçebiliyordu (anayasa m.6).
+_KESIN = "(?#kesin)"
+_OLUMLU_ET = (r"(?:ed(?:iyoruz|iyorum|iyor\b|eriz|erim|er\b|ece[gğ]iz|ece[gğ]im|"
+              r"ilmi[sş]tir|ildi\b|ilmektedir)|et(?:tik|tim|ti|mi[sş]tir|mi[sş]tik|"
+              r"mekteyiz|mekteyim|mektedir)\b)")
+_KABUL_K = r"(?:kabul|ikrar)(?:\s*ve\s*(?:ikrar|kabul|beyan))?\s*" + _OLUMLU_ET
+_VAZGEC_K = (r"vazge[çc](?:iyoruz|iyorum|iyor\b|eriz|erim|er\b|tik\b|tim\b|ti\b|mi[sş]tir|"
+             r"mi[sş]tik|mekteyiz|mekteyim|mektedir|ece[gğ]iz|ece[gğ]im|ilmi[sş]tir|ildi\b)")
+_GERI_AL_K = (r"geri\s*al(?:[ıi]yoruz|[ıi]yorum|[ıi]yor\b|[ıi]r[ıi]z|[ıi]r[ıi]m|d[ıi]k\b|"
+              r"d[ıi]m\b|d[ıi]\b|m[ıi][sş]t[ıi]r|m[ıi][sş]t[ıi]k|makta(?:y[ıi]z|y[ıi]m|d[ıi]r)|"
+              r"aca[gğ][ıi]z|aca[gğ][ıi]m|[ıi]nm[ıi][sş]t[ıi]r|[ıi]nd[ıi]\b)")
+# itiraz + iyelik/çoğul ekleri — birinci ağız ('itirazımızdan') ve müvekkil
+# anlatımı ('müvekkil itirazından vazgeçmiştir') birlikte.
+_ITIRAZ_EK = r"itiraz(?:[ıi]m[ıi]z|[ıi]m|[ıi]n|lar[ıi]m[ıi]z|lar[ıi]n)?"
+
 _ALEYHE_DAVALI = [
     r"davay[ıi]\s*kabul", r"kabul\s*ed(iyoruz|iyorum|eriz)", r"haklı\s*olduğunu\s*kabul",
     r"borcu(muzu)?\s*kabul", r"\bikrar\s*ed", r"talebi(ni)?\s*kabul", r"davanın\s*kabul",
     r"\bdoğrudur\b", r"iddia\s*doğrudur", r"kusurlu(yuz|yum)", r"sorumlu\s*olduğu(muzu|mu)",
 ]
 _ALEYHE_DAVACI = [
-    r"iddiam[ıi]zdan\s*vazgeç", r"haksız\s*olduğumuz", r"talebimizi\s*geri",
-    r"talebimizden\s*vazgeç", r"davadan\s*feragat", r"iddiam[ıi]zdan\s*feragat",
+    r"iddiam[ıi]zdan\s*" + _VAZGEC, r"haksız\s*olduğumuz", r"talebimizi\s*geri",
+    r"talebimizden\s*" + _VAZGEC, r"davadan\s*feragat", r"iddiam[ıi]zdan\s*feragat",
     r"haklı\s*değiliz", r"davamız\s*yersiz",
 ]
 _ALEYHE_MUSTEKI = [
-    r"şikayet(im|imiz)i\s*geri", r"şikayetten\s*vazgeç", r"affediyor",
+    r"şikayet(im|imiz)i\s*geri", r"şikayetten\s*" + _VAZGEC, r"affediyor",
     r"barıştık", r"şikayetçi\s*değil", r"davacı\s*olmak\s*istemiyor",
 ]
 # ── İŞ HUKUKU EKSENİ (2026-09-10 saha testi — iş mahkemeleri yönünden) ─────
@@ -431,6 +1219,110 @@ _ALEYHE_SANIK = [
     r"suçu\s*kabul", r"işlediğim(i)?\s*kabul", r"\bikrar\s*ed", r"pişman.*kabul",
     r"suçlu\s*olduğumu",
 ]
+
+# ── v0.5.18 — İCRA EKSENİ (İİK) — taraf-asimetrik, BİRİNCİ AĞIZDAN ikrarlar ──
+# NEDEN VAR: icra dilekçesinde müvekkili bitiren beyan genel medeni usul
+# dilinden farklı gelir: borçlu vekilinin "itirazımızdan vazgeçiyoruz" demesi
+# takibi kesinleştirir; alacaklı vekilinin istihkak iddiasını kabulü haczi
+# düşürür (m.96/2'de susma bile kabul sayılır). Kalıplar bilinçli olarak
+# BİRİNCİ AĞIZ ya da müvekkil anlatımı biçimindedir ('alacağımız',
+# 'itirazımız', 'müvekkil itirazından') — karşı tarafın iddiasını aktaran cümle
+# ('borçlunun borcun ödendiği iddiası') sinyal üretmesin diye. Olumsuz çekimi
+# kalıbın kendisi dışarıda bırakır (_VAZGEC/_GERI_AL/_UGRA); '-miş' evidential
+# olumludur ve yakalanır. Her eksen iki katmanlıdır: GENİŞ kalıp (NEG
+# korumalı) + `(?#kesin)` kalıp (çekimli olumlu yüklem — NEG'den muaf).
+# OCR'a dayanıklı sınıflar ([sş] [gğ] [cç] [oö] [uü]) ailenin B6 konvansiyonudur.
+_ALEYHE_ICRA_BORCLU = [
+    r"[öo]deme\s*emrine\s*itiraz\s*etmiyor",
+    _ITIRAZ_EK + r"dan\s*" + _VAZGEC,
+    _ITIRAZ_EK + r"[ıi]\s*" + _GERI_AL,
+    r"takibin\s*kesinle[sş]ti[gğ]ini\s*kabul",
+    r"bor[cç]lu\s*oldu[gğ]umuzu\s*(?:kabul|ikrar)",
+    r"borcun\s*(?:tamam[ıi]n[ıi]|t[üu]m[üu]n[üu])\s*kabul",
+    r"imza\s*(?:ink[âa]r[ıi]\s*)?" + _ITIRAZ_EK + r"(?:dan\s*" + _VAZGEC + r"|[ıi]\s*" + _GERI_AL + r")",
+    r"taahh[üu]d[üu](?:m[üu]z[üu])?\s*ihlal\s*etti(?:k|[gğ]imizi)",
+    # Davalı ekseninin 'kabul ed(iyoruz|iyorum|eriz)' kalıbının kaçırdığı
+    # birinci ağız çekimleri ('-mekte', geçmiş zaman) — NEG korumalı.
+    r"\bkabul\s*(?:et(?:tik|tim|mekteyiz|mekteyim)\b|ederim\b)",
+    _KESIN + _ITIRAZ_EK + r"dan\s*" + _VAZGEC_K,
+    _KESIN + _ITIRAZ_EK + r"[ıi]\s*" + _GERI_AL_K,
+    _KESIN + r"takibin\s*kesinle[sş]ti[gğ]ini\s*" + _KABUL_K,
+    _KESIN + r"bor[cç]lu\s*oldu[gğ]u(?:muzu|mu|nu)\s*" + _KABUL_K,
+    _KESIN + r"borcun\s*(?:tamam[ıi]n[ıi]|t[üu]m[üu]n[üu])\s*" + _KABUL_K,
+]
+# Kambiyo takibine ÖZGÜ: borcun kısmen ya da tamamen kabulü (ve imza inkârı
+# itirazının geri alınması) mahkemenin senedin kambiyo vasfını re'sen
+# gözetmesini kapatır (İİK m.170/a-3 — Yargı PRO MCP, 2026-10-05). İlamsız
+# takipte ise kısmi kabul + kısmi itiraz meşru ve sık bir stratejidir (m.62
+# kısmi itiraz fıkrası) — bu yüzden kalıp YALNIZ kambiyo-itiraz tipinde taranır
+# (Fable 5.1 incelemesi benimsendi).
+_ALEYHE_ICRA_BORCLU_KAMBIYO = [
+    r"borcun\s*(?:\S+\s+){0,3}?k[ıi]sm[ıi]n[ıi]\s*kabul", r"borcu\s*k[ıi]smen\s*kabul",
+    _KESIN + r"borcun\s*(?:\S+\s+){0,3}?k[ıi]sm[ıi]n[ıi]\s*" + _KABUL_K,
+    _KESIN + r"borcu\s*k[ıi]smen\s*" + _KABUL_K,
+]
+_ALEYHE_ICRA_ALACAKLI = [
+    # Yalnız TAMAMLANMIŞ çekim: 'alacağımızın tahsil EDİLMESİ için' (takip
+    # talebinin olağan amaç cümlesi) sinyal DEĞİLDİR; 'tahsil edilmiştir' ikrardır.
+    _KESIN + r"alaca[gğ][ıi]m[ıi]z(?:[ıi]n)?\s*(?:tamamen\s*|tamam[ıi]\s*)?"
+    r"(?:tahsil\s*edil(?:mi[sş]tir|di)|[öo]denmi[sş]tir|[öo]dendi)\b",
+    r"borcun\s*(?:tamamen\s*)?[öo]dendi[gğ]ini\s*kabul",
+    _KESIN + r"borcun\s*(?:tamamen\s*)?[öo]dendi[gğ]ini\s*" + _KABUL_K,
+    r"tak(?:ipten|ibimizden|ibinden)\s*feragat", r"tak(?:ipten|ibimizden|ibinden)\s*" + _VAZGEC,
+    _KESIN + r"tak(?:ipten|ibimizden|ibinden)\s*feragat\s*" + _OLUMLU_ET,
+    _KESIN + r"tak(?:ipten|ibimizden|ibinden)\s*" + _VAZGEC_K,
+    _KESIN + r"haczin\s*kald[ıi]r[ıi]lmas[ıi]na\s*muvafakat\s*" + _OLUMLU_ET,
+    r"alaca[gğ][ıi]m[ıi]z(?:[ıi]n)?\s*zamana[sş][ıi]m[ıi]na\s*" + _UGRA,
+    _KESIN + r"alaca[gğ][ıi]m[ıi]z\s*zamana[sş][ıi]m[ıi]na\s*u[gğ]ra(?:m[ıi][sş]t[ıi]r|d[ıi]\b|"
+    r"makta(?:d[ıi]r)?\b)",
+    r"itiraz(?:[ıi]n|[ıi])\s*hakl[ıi]\s*oldu[gğ]unu\s*kabul",
+    _KESIN + r"itiraz(?:[ıi]n|[ıi])\s*hakl[ıi]\s*oldu[gğ]unu\s*" + _KABUL_K,
+    r"istihkak\s*iddias[ıi]n[ıi]\s*kabul",
+    _KESIN + r"istihkak\s*iddias[ıi]n[ıi]\s*" + _KABUL_K,
+    r"[sş]ik[âa]yet(?:imiz)?den\s*" + _VAZGEC,
+    _KESIN + r"[sş]ik[âa]yet(?:imiz)?den\s*" + _VAZGEC_K,
+]
+# Üçüncü kişinin borçluya borcunu / yedindeki malın borçluya aitliğini kabul
+# eden cümleler. İstihkak davası gibi KENDİ hakkını ileri sürdüğü yerde
+# müvekkili bitirir → BLOK. Haciz ihbarnamesine itirazda (m.89) ise üçüncü kişi
+# gerçeği söylemek zorundadır — hakikate aykırı beyan hapis ve tazminat
+# doğurur (İİK m.89/4, m.338/1 — MCP teyitli); orada aynı cümle dürüst beyandır
+# ve BLOK DEĞİL istişari uyarıdır (TIP_UYARILARI; Fable 5.1 incelemesi).
+_UCUNCU_BORC_IKRAR_D = [
+    r"bor[cç]luya\s*(?:olan\s*)?borcumuz(?:un)?\s*(?:bulunmaktad[ıi]r|vard[ıi]r|mevcuttur)",
+    r"m[üu]vekkil\w*\s*bor[cç]luya\s*(?:olan\s*)?borcu\s*(?:bulunmaktad[ıi]r|vard[ıi]r|mevcuttur)",
+    r"bor[cç]luya\s*(?:olan\s*)?borcu(?:muzu)?\s*" + _KABUL_K,
+    r"mal(?:lar)?[ıi]n\s*bor[cç]luya\s*ait\s*oldu[gğ]unu\s*" + _KABUL_K,
+]
+_ALEYHE_ICRA_UCUNCU_KISI = [
+    r"bor[cç]luya\s*(?:olan\s*)?borcumuz(?:un)?\s*(?:bulunmaktad[ıi]r|vard[ıi]r|mevcuttur)",
+    r"m[üu]vekkil\w*\s*bor[cç]luya\s*(?:olan\s*)?borcu\s*(?:bulunmaktad[ıi]r|vard[ıi]r|mevcuttur)",
+    r"bor[cç]luya\s*(?:olan\s*)?borcu(?:muzu)?\s*kabul",
+    r"mal(?:lar)?[ıi]n\s*bor[cç]luya\s*ait\s*oldu[gğ]unu\s*kabul",
+    _KESIN + r"mal(?:lar)?[ıi]n\s*bor[cç]luya\s*ait\s*oldu[gğ]unu\s*" + _KABUL_K,
+    r"istihkak\s*iddiam[ıi]zdan\s*" + _VAZGEC,
+    _KESIN + r"istihkak\s*iddiam[ıi]zdan\s*" + _VAZGEC_K,
+]
+# Haciz ihbarnamesine itiraz eden üçüncü kişi: itirazından vazgeçmesi borcu
+# zimmetinde / malı yedinde saydırır (İİK m.89/3 — MCP teyitli).
+_ALEYHE_ICRA_UCUNCU_KISI_89 = [
+    _ITIRAZ_EK + r"dan\s*" + _VAZGEC,
+    _ITIRAZ_EK + r"[ıi]\s*" + _GERI_AL,
+    _KESIN + _ITIRAZ_EK + r"dan\s*" + _VAZGEC_K,
+    _KESIN + _ITIRAZ_EK + r"[ıi]\s*" + _GERI_AL_K,
+]
+# Borçlu setlerinde davalı ekseninin '\bikrar\s*ed' kalıbı edilgen 'imzası
+# ikrar EDİLMİŞ belge' (İİK m.68/1, m.169/a-1 — kanunun kendi terimi) ibaresini
+# ikrar sanıyordu: icra dilekçesinde sık geçen bu terim sahte BLOK üretirdi.
+_ALEYHE_DAVALI_ICRA = [r"\bikrar\s*ed(?!il)" if p == r"\bikrar\s*ed" else p
+                       for p in _ALEYHE_DAVALI]
+# Menfi tespitte borçlu DAVACIdır: davalı ekseninin usul kalıpları ('davanın
+# kabul') onun KENDİ talep cümlesidir — alınmaz; ama esasa ilişkin ikrar
+# kalıpları (borcu kabul, ikrar) aynen tehlikelidir → alınır.
+_ALEYHE_DAVALI_ESASA = [r"borcu(muzu)?\s*kabul", r"haklı\s*olduğunu\s*kabul",
+                        r"\bikrar\s*ed(?!il)", r"iddia\s*doğrudur", r"kusurlu(yuz|yum)",
+                        r"sorumlu\s*olduğu(muzu|mu)"]
+
 ALEYHE = {
     # İş davalarının ezici çoğunluğunda işçi DAVACI, işveren DAVALIdır — HMK
     # m.103/1-ç'nin lafzı da ("işçilerin AÇTIKLARI davalar") bu kabuldedir.
@@ -441,6 +1333,32 @@ ALEYHE = {
     "katilan": _ALEYHE_MUSTEKI,
     "sanik": _ALEYHE_SANIK,
     "genel": [r"karşı\s*taraf(ın)?\s*haklı", r"aleyhimize\s*kabul"],
+    # v0.5.18 — icra sıfatları. Varsayılan konum: alacaklı talep eden (davacı
+    # ekseni), borçlu karşı koyan (davalı ekseni), üçüncü kişi kendi hakkını
+    # ileri süren (istihkak davasında davacı — davacı ekseni). İş hukuku
+    # eksenleri aynı asimetriyle taşınır: alacaklı çoğunlukla işçi, borçlu
+    # çoğunlukla işverendir.
+    "alacakli": _ALEYHE_DAVACI + _ALEYHE_IS_ISCI_YANI + _ALEYHE_ICRA_ALACAKLI,
+    "borclu": _ALEYHE_DAVALI_ICRA + _ALEYHE_IS_ISVEREN_YANI + _ALEYHE_ICRA_BORCLU,
+    "ucuncu-kisi": _ALEYHE_DAVACI + _ALEYHE_ICRA_UCUNCU_KISI,
+    # Konum çevrimi (bkz. TARAF_KONUM_CEVRIMI): menfi tespitte borçlu DAVACI,
+    # alacaklı DAVALI'dır. Davalı kalıbı 'davanın kabul' borçlunun KENDİ talep
+    # cümlesidir ('davanın kabulüne') — eksen çevrilmezse sahte BLOK üretirdi;
+    # esasa ilişkin ikrar kalıpları ise korunur (_ALEYHE_DAVALI_ESASA).
+    "borclu@davaci": (_ALEYHE_DAVACI + _ALEYHE_DAVALI_ESASA + _ALEYHE_IS_ISVEREN_YANI
+                      + _ALEYHE_ICRA_BORCLU),
+    "alacakli@davali": _ALEYHE_DAVALI_ICRA + _ALEYHE_IS_ISCI_YANI + _ALEYHE_ICRA_ALACAKLI,
+    "borclu@kambiyo": (_ALEYHE_DAVALI_ICRA + _ALEYHE_IS_ISVEREN_YANI + _ALEYHE_ICRA_BORCLU
+                       + _ALEYHE_ICRA_BORCLU_KAMBIYO),
+    "ucuncu-kisi@89": _ALEYHE_DAVACI + _ALEYHE_ICRA_UCUNCU_KISI_89,
+}
+
+# v0.5.18 — tipe göre usul konumu çevrimi: (tip → {taraf: ALEYHE anahtarı}).
+# Yalnız konumun ya da riskin VARSAYILANDAN farklı olduğu tipler yazılır.
+TARAF_KONUM_CEVRIMI = {
+    "menfi-tespit": {"borclu": "borclu@davaci", "alacakli": "alacakli@davali"},
+    "kambiyo-itiraz": {"borclu": "borclu@kambiyo"},
+    "haciz-ihbarnamesi-itiraz": {"ucuncu-kisi": "ucuncu-kisi@89"},
 }
 
 # CLI'nin kabul ettiği ama ALEYHE'de KENDİ anahtarı olmayan taraf sıfatlarının
@@ -453,7 +1371,7 @@ TARAF_ESLEME = {
 }
 
 
-def aleyhe_kapsami(taraf):
+def aleyhe_kapsami(taraf, tip=None):
     """(setler, kismi_mi, sebep) — bu taraf sıfatı için HANGİ kalıp setlerinin
     taranacağı ve taramanın TAM mı KISMİ mi olduğu.
 
@@ -461,12 +1379,16 @@ def aleyhe_kapsami(taraf):
     verilmemiş ya da sözlükte karşılığı yoksa yalnız iki desenli 'genel' seti
     taranır — bu bir tarama DEĞİL, tarama YOKLUĞUdur ve çıktıda "bulunamadı"
     diye görünemez ("bakmadım" ile "bakıp bulamadım" aynı şey değildir).
+
+    v0.5.18: `tip` verilirse (ör. 'menfi-tespit') usul konumu tipe göre
+    çevrilir (TARAF_KONUM_CEVRIMI); tek argümanlı eski çağrı aynen çalışır.
     """
     t = (taraf or "").strip().lower()
     if not t:
         return ["genel"], True, "taraf sıfatı VERİLMEDİ"
     if t in ALEYHE:
-        return [t, "genel"], False, ""
+        anahtar = TARAF_KONUM_CEVRIMI.get((tip or "").strip().lower(), {}).get(t, t)
+        return [anahtar, "genel"], False, ""
     if t in TARAF_ESLEME:
         return list(TARAF_ESLEME[t]) + ["genel"], False, ""
     return ["genel"], True, "taraf sıfatı %r kalıp sözlüğünde YOK" % t
@@ -474,6 +1396,411 @@ def aleyhe_kapsami(taraf):
 
 def _bul(metin, desenler):
     return any(re.search(d, metin, re.I | re.M) for d in desenler)
+
+
+def _yakin_var(metin, y):
+    """`Yakin` parçası: çapanın geçtiği HER yerin ardındaki `pencere` (ve
+    önündeki `geri`) karakter içinde hedef desenlerden biri var mı (en az bir
+    çapa için yeterli). Pencere sınırlıdır — büyük girdide maliyet çapa
+    sayısıyla doğrusal kalır."""
+    for d in y.capa:
+        for m in re.finditer(d, metin, re.I | re.M):
+            pencere = metin[max(0, m.start() - y.geri): m.end() + y.pencere]
+            if _bul(pencere, y.hedef):
+                return True
+    return False
+
+
+def _parca_var(metin, des):
+    """Bileşik unsurun tek parçası — düz liste, `Yakin` ya da `Kosullu`
+    (koşulu doğmamış/istisnası geçen koşullu parça VAR sayılır)."""
+    if isinstance(des, Kosullu):
+        return not _unsur_degerlendir(metin, des)[0]
+    if isinstance(des, Yakin):
+        return _yakin_var(metin, des)
+    return _bul(metin, des)
+
+
+def _unsur_degerlendir(metin, des):
+    """(eksik_mi, eksik_parcalar, parca_sayisi) — v0.5.18 unsur modeli.
+
+    Düz liste → eski davranış (desenlerden biri yeter). `Kosullu` → koşul
+    doğmamışsa ya da istisna geçiyorsa unsur ARANMAZ (eksik sayılmaz).
+    `Bilesik` → her parça ayrı denetlenir; eksik parçaların etiketleri döner
+    (hepsi eksikse unsur bütünüyle eksiktir). Desen tanımları modül içinde
+    sabittir; her tipin derlenebilirliği testle kilitlidir."""
+    if isinstance(des, Kosullu):
+        if des.kosul is not None and not _bul(metin, des.kosul):
+            return False, [], 0
+        if des.istisna and _bul(metin, des.istisna):
+            return False, [], 0
+        return _unsur_degerlendir(metin, des.desen)
+    if isinstance(des, Bilesik):
+        eksikler = [etiket for etiket, d in des if not _parca_var(metin, d)]
+        return bool(eksikler), eksikler, len(des)
+    if isinstance(des, Yakin):
+        return (not _yakin_var(metin, des)), [], 1
+    return (not _bul(metin, des)), [], 1
+
+
+def zorunlu_unsur_eksikleri(metin, tip):
+    """[A] ZORUNLU UNSURLAR — tipin unsur listesini değerlendirir; eksik
+    unsurların adlarını döndürür. Bileşik unsurda parça eksikse ad
+    "unsur — eksik parça: a, b" biçimindedir (hepsi eksikse yalnız ad)."""
+    eksik = []
+    for ad, des in TIPLER.get(tip, TIPLER["genel"]):
+        eksik_mi, parcalar, toplam = _unsur_degerlendir(metin, des)
+        if not eksik_mi:
+            continue
+        if parcalar and len(parcalar) < toplam:
+            eksik.append("%s — eksik parça: %s" % (ad, ", ".join(parcalar)))
+        else:
+            eksik.append(ad)
+    return eksik
+
+
+# ── v0.5.18 — TİPE ÖZEL İSTİŞARİ UYARILAR ([A] altında, ASLA bloklamaz) ──────
+# NEDEN AYRI (zorunlu unsur değil): bu kalemlerin yokluğu ya bilinçli bir avukat
+# tercihi olabilir (imzayı kabul etmek, tazminat istememek) ya da eski bir tipte
+# kilit testleri bozmadan görünürlük gerekir (eski `dava` tipinde dava değeri —
+# Y-06). Kural biçimi:
+#   kosul : desenlerden biri YOKSA kural işlemez (None → her zaman işler)
+#   yoksa : desenlerin HİÇBİRİ yoksa uyarı (None → yokluk aranmaz)
+#   varsa : desenlerden biri VARSA uyarı; `bas` verilirse yalnız metnin ilk
+#           `bas` karakterinde (başlık bloğu) aranır
+# Mesajlar yalnız Yargı PRO MCP ile 2026-10-05'te okunan maddelere dayanır.
+_MALVARLIGI_D = [_TL_TUTAR, r"alaca[gğk]", r"tazminat", r"tahsil", r"\bbedel"]
+TIP_UYARILARI = {
+    "dava": [
+        {"kosul": _MALVARLIGI_D, "yoksa": _DEGER_D,
+         "mesaj": "dava değeri satırı görünmüyor (HMK m.119/1-d — malvarlığı davasında zorunlu "
+                  "içerik; harç ve kanun yolu parasal sınırı buna bağlanır). Y-06: eski 'dava' "
+                  "tipinde istişaridir; itirazın iptali / menfi tespit / istihkak tiplerinde [A] "
+                  "zorunlu unsurdur"},
+        {"kosul": [r"davac[ıi]"], "yoksa": _ADRES_D,
+         "mesaj": "tarafların adresi görünmüyor (HMK m.119/1-b) — eksiklikte hâkim bir haftalık "
+                  "kesin süre verir, tamamlanmazsa dava açılmamış sayılır (HMK m.119/2)"},
+        {"kosul": [r"davac[ıi]"], "yoksa": _KIMLIK_D,
+         "mesaj": "davacının TCKN'si görünmüyor (HMK m.119/1-c) — eksiklikte bir haftalık kesin "
+                  "süre, tamamlanmazsa dava açılmamış sayılır (HMK m.119/2)"},
+    ],
+    "takip-talebi": [
+        {"kosul": None, "yoksa": [r"faiz"],
+         "mesaj": "faiz istemi görünmüyor — faizli alacakta faizin miktarı/oranı ve işlemeye "
+                  "başladığı gün gösterilir (İİK m.58/2-3); faizsiz takip çoğu zaman müvekkil "
+                  "kaybıdır (karar avukatın)"},
+        {"kosul": None, "yoksa": _KIMLIK_D,
+         "mesaj": "TCKN/VKN görünmüyor — alacaklınınki 'varsa' (İİK m.58/2-1), borçlununki "
+                  "'alacaklı tarafından biliniyorsa' (m.58/2-2) gösterilir: gerçek kişide "
+                  "TCKN, tüzel kişide VKN yazın ya da bilinmediğini not edin"},
+    ],
+    "odeme-emrine-itiraz": [
+        {"kosul": [_SENET, _BONO, r"s[öo]zle[sş]me", r"\bfatura", _CEK],
+         "yoksa": [r"imza"],
+         "mesaj": "takip senede/sözleşmeye dayanıyor ama imza beyanı yok — imza reddedilecekse "
+                  "AYRICA VE AÇIKÇA yazılmalı, aksi hâlde icra takibi yönünden imza kabul "
+                  "edilmiş sayılır (İİK m.62, imza fıkrası); imzanın kabulü bilinçli tercih "
+                  "olabilir"},
+        {"kosul": [r"\bkira", r"tahliye"],
+         "yoksa": [r"kira\s*(?:akdi|s[öo]zle[sş]me|ili[sş]ki)\w*.{0,80}(?:red|ret|ink[âa]r|kabul\s*etm|"
+                   r"bulunmad|yoktur|mevcut\s*de[gğ]il)"],
+         "mesaj": "kira tahliye takibinde kira akdi ve sözleşmedeki imza AÇIK VE KESİN "
+                  "reddedilmezse akit kabul edilmiş sayılır (İİK m.269/2); akdin kabulü bilinçli "
+                  "tercih olabilir"},
+    ],
+    "kambiyo-itiraz": [
+        {"kosul": None, "yoksa": _KOTU_NIYET_D,
+         "mesaj": "kötü niyet tazminatı istemi görünmüyor — itirazın esasa ilişkin nedenlerle "
+                  "kabulünde kötü niyetli/ağır kusurlu alacaklı aleyhine (İİK m.169/a-6; imza "
+                  "itirazında m.170/4); koşulları varsa istemi kurun"},
+        {"kosul": None, "yoksa": [r"durdurul", r"\btatil", r"tehir", r"tedbir"],
+         "mesaj": "takibin geçici olarak durdurulması istemi görünmüyor — itiraz satış dışında "
+                  "takibi kendiliğinden durdurmaz (İİK m.169, m.170/1); mahkeme durdurmaya "
+                  "karar VEREBİLİR (m.169/a-2; imzada m.170/2). DİKKAT: takip durdurulur ve "
+                  "itiraz reddedilirse borçlu yüzde yirmiden az olmamak üzere tazminata "
+                  "(m.169/a-6), imza itirazında ayrıca yüzde on para cezasına (m.170/3) "
+                  "mahkûm edilir — istem bilinçli bir risk kararıdır (avukat)"},
+    ],
+    "itirazin-kaldirilmasi": [
+        {"kosul": None, "yoksa": _INKAR_D,
+         "mesaj": "icra inkâr tazminatı istemi görünmüyor — itirazın kaldırılması esasa ilişkin "
+                  "nedenlerle kabul edilirse borçlu, 'diğer tarafın talebi üzerine' yüzde "
+                  "yirmiden aşağı olmamak üzere tazminata mahkûm edilir (İİK m.68 ve m.68/a son "
+                  "fıkraları): talep yoksa hükmedilmez — istemi kurun ya da bilinçli tercih "
+                  "olduğunu not edin"},
+    ],
+    "itirazin-iptali": [
+        {"kosul": None, "varsa": [r"icra\s*(?:hukuk\s*)?mahkemesi"], "bas": 400,
+         "mesaj": "başlık bloğunda icra mahkemesi görünüyor — itirazın iptali genel mahkemede, "
+                  "genel hükümler dairesinde açılır (İİK m.67/1); icra mahkemesi yolu itirazın "
+                  "kaldırılmasıdır (İİK m.68, m.68/a): merciyi denetleyin"},
+        {"kosul": None, "yoksa": _INKAR_D,
+         "mesaj": "icra inkâr tazminatı istemi görünmüyor — borçlunun itirazının haksızlığına "
+                  "karar verilirse 'diğer tarafın talebi üzerine' hükmolunan meblağın yüzde "
+                  "yirmisinden aşağı olmamak üzere tazminata hükmedilir (İİK m.67/2): talep "
+                  "yoksa hükmedilmez — istemi kurun ya da bilinçli tercih olduğunu not edin"},
+    ],
+    "haciz-ihbarnamesi-itiraz": [
+        {"kosul": _UCUNCU_BORC_IKRAR_D,
+         "mesaj": "üçüncü kişinin borçluya borcu olduğunu / yedindeki malın borçluya ait "
+                  "olduğunu kabul eden cümle var — itiraz yalnız gerçeğe uygun kapsamda "
+                  "yapılabilir: alacaklı cevabın aksini ispatlarsa üçüncü kişi İİK m.338/1'e "
+                  "göre cezalandırılır ve tazminata mahkûm edilebilir (m.89/4). Bu yüzden "
+                  "cümle BLOK değildir; kabul edilen kısmın tutarını/kapsamını müvekkille "
+                  "yazılı teyit edin"},
+    ],
+    "istinaf": [
+        {"kosul": None,
+         "yoksa": [r"karar\s*tarih", r"tarihli\s*(?:karar|h[üu]k[üu]m|ilam)",
+                   _TARIH + r"\s*tarihli", r"\bT\.\s*" + _TARIH],
+         "mesaj": "kararın TARİHİ görünmüyor — HMK m.342/2-c kararın hangi mahkemeden "
+                  "verildiğini 'tarihi ile sayısı'yla birlikte ister; künyeye karar tarihini "
+                  "ekleyin (eski tipte istişari)"},
+    ],
+    "menfi-tespit": [
+        {"kosul": None, "yoksa": [r"tedbir"],
+         "mesaj": "ihtiyati tedbir istemi görünmüyor — takipten önce açılan davada yüzde on "
+                  "beşten az olmayan teminatla takibin durdurulması istenebilir (İİK m.72/2); "
+                  "takipten sonra takip durdurulamaz, aynı teminatla paranın alacaklıya "
+                  "ödenmemesi istenir (m.72/3)"},
+        {"kosul": None, "yoksa": _KOTU_NIYET_D,
+         "mesaj": "kötü niyet tazminatı istemi görünmüyor — takip haksız ve kötü niyetliyse "
+                  "TALEP ÜZERİNE, yüzde yirmiden az olmamak üzere (İİK m.72/5)"},
+    ],
+    "istihkak-davasi": [
+        {"kosul": None, "yoksa": [r"talik", r"tedbir", r"durdurul"],
+         "mesaj": "takibin talikı (tedbir) istemi görünmüyor — davacının talebi üzerine "
+                  "(İİK m.97/1, m.97/9); talik kararında teminat alınır (m.97/3)"},
+    ],
+    "ihalenin-feshi": [
+        {"kosul": [r"pey\s*s[üu]r", r"ihaleye\s*(?:kat[ıi]l|i[sş]tirak)"], "yoksa": [r"teminat"],
+         "mesaj": "pey süren gibi m.134/2 listesindeki alacaklı/borçlu/sicilde kayıtlı ilgili/"
+                  "sınırlı ayni hak sahibi DIŞINDAKİ ilgili için ihale bedelinin yüzde beşi "
+                  "teminat ve nispi harcın yarısı peşin (İİK m.134/3-4); eksikse iki haftalık "
+                  "kesin süre, sonra ret"},
+    ],
+    "icra-usul": [
+        {"kosul": [r"taahh[üu]t", r"taksit"],
+         "mesaj": "taahhüt/taksit metni var — İİK m.111 uyarınca ya da alacaklının muvafakatiyle "
+                  "kararlaştırılan ödeme şartını makbul sebep olmadan ihlal eden borçlu hakkında, "
+                  "alacaklının şikâyeti üzerine üç aya kadar tazyik hapsi (İİK m.340); borçlu "
+                  "vekiliyseniz müvekkili yazılı bilgilendirin"},
+    ],
+    "yd-talebi": [
+        {"kosul": None, "yoksa": [r"teminat"],
+         "mesaj": "teminat konusu görünmüyor — YD teminat karşılığı verilir; durumun "
+                  "gereklerine göre teminat aranmayabilir, idareden ve adli yardımdan "
+                  "yararlanandan alınmaz (İYUK m.27/6): teminatsız YD istemini açıkça kurun"},
+        {"kosul": [r"ikinci\s*kez", r"yeniden\s*(?:y[üu]r[üu]tmenin|YD)",
+                   r"daha\s*[öo]nce\w*\s*(?:y[üu]r[üu]tmenin|YD)", r"[öo]nceki\s*(?:YD|y[üu]r[üu]tmenin)"],
+         "yoksa": [r"farkl[ıi]\s*(?:sebep|gerek[çc]e|neden)", r"yeni\s*(?:sebep|olgu|delil|neden)"],
+         "mesaj": "önceki YD istemi anılıyor — aynı sebeplere dayanılarak ikinci kez YD "
+                  "istenemez (İYUK m.27/10); yeni/farklı sebebi açıkça kurun"},
+    ],
+    "idari-dava": [
+        {"kosul": [r"y[üu]r[üu]tmenin\s*durdurul"], "yoksa": [r"teminat"],
+         "mesaj": "YD isteniyor ama teminat konusu görünmüyor — teminat aranmayabilir, idareden "
+                  "ve adli yardımdan yararlanandan alınmaz (İYUK m.27/6): teminatsız YD istemini "
+                  "açıkça kurun"},
+    ],
+}
+
+
+def tip_ozel_uyarilari(metin, tip):
+    """Tipe özel İSTİŞARİ uyarılar — liste döner, exit koduna ASLA dokunmaz.
+    Asla istisna fırlatmaz; ama koşamadığında SESSİZ boş liste de dönmez
+    (boş liste 'uyarı yok' demektir, 'bakılamadı' DEĞİL — ailenin sessiz
+    atlama yasağı): tek görünür 'KOŞAMADI' satırı döner."""
+    try:
+        if metin is not None and not isinstance(metin, str):
+            raise TypeError("metin str değil (%s)" % type(metin).__name__)
+        metin = metin or ""
+        uyarilar = []
+        for kural in TIP_UYARILARI.get(tip, []):
+            kosul = kural.get("kosul")
+            if kosul is not None and not _bul(metin, kosul):
+                continue
+            yoksa = kural.get("yoksa")
+            varsa = kural.get("varsa")
+            if yoksa is not None and _bul(metin, yoksa):
+                continue
+            if varsa is not None:
+                alan = metin[:kural["bas"]] if kural.get("bas") else metin
+                if not _bul(alan, varsa):
+                    continue
+            uyarilar.append(kural["mesaj"])
+        return uyarilar
+    except Exception as e:
+        return ["tipe özel istişari uyarılar KOŞAMADI (%s) — bu bir temizlik beyanı "
+                "DEĞİLDİR; taslağı düz metin olarak verip yeniden koşun" % type(e).__name__]
+
+
+# ── v0.5.18 — [S] SÜRE BAĞLANTISI (bilgi; süre HESABI oa-sure'ündür) ──────────
+# NEDEN VAR: dilekçe kapısı süre hesaplamaz (tek yetkili: oa-sure); ama hangi
+# dilekçenin HANGİ süre kuralına bağlandığı yazılmazsa süre satırı boş kalır ya
+# da elle hesaplanır (Y-01: icra süresinin adli tatilde yanlış uzatılması tam
+# bu sınıftandır). Kural kimliği koda GÖMÜLMEZ: oa-sure tablosu ÇALIŞMA ANINDA
+# madde deseniyle aranır — kardeş ajan yeni kural eklediğinde bağ kendiliğinden
+# kurulur; kural yoksa "TEYİT BEKLİYOR" görünür (sessiz boşluk yok).
+# Biçim: tip → [(oa-sure 'kaynak' alanında aranacak madde deseni | None, açıklama)]
+def _md(kanun, no):
+    """oa-sure 'kaynak' metninde madde atfını yazım biçiminden bağımsız arar:
+    'İİK m.62', 'İİK md. 62', 'İİK madde 62', 'İİK 62/1' hepsi tutar (kardeş
+    ajanın yazım tercihi bağı sessizce koparmasın). `no` regex parçasıdır."""
+    return kanun + r"\s*(?:m(?:d|adde)?\.?\s*)?(?:" + no + r")\b"
+
+
+TIP_SURE = {
+    "takip-talebi": [
+        (_md("İİK", "62"), "İİK m.62/1 — borçlunun ödeme emrine itirazı: tebliğden 7 gün "
+                           "(karşı taraf süresi; kesinleşme izlenir)"),
+        (_md("İİK", "168"), "İİK m.168/1 — kambiyoda borçlunun itiraz/şikâyeti: tebliğden 5 gün"),
+        (_md("İİK", "78"), "İİK m.78/2 — haciz isteme hakkı: ödeme emrinin tebliğinden 1 yıl"),
+        (None, "alacağın zamanaşımı maddi süredir — oa-sure --tur maddi (kural alacağın türüne bağlı)"),
+    ],
+    "odeme-emrine-itiraz": [
+        (_md("İİK", "62"), "İİK m.62/1 — ödeme emrinin tebliğinden 7 gün"),
+        (_md("İİK", "269"), "İİK m.269/2 — kira tahliye takibinde 7 gün (eski BK m.260'taki "
+                            "6 günlük mühlet hâlinde 3 gün — m.269 son fıkra)"),
+    ],
+    "kambiyo-itiraz": [
+        (_md("İİK", "168"), "İİK m.168/1-3, 4, 5 — ödeme emrinin tebliğinden 5 gün"),
+    ],
+    "gecikmis-itiraz": [
+        (_md("İİK", "65"), "İİK m.65/2 — maninin kalktığı günden 3 gün (m.65/1: paraya "
+                           "çevirme bitinceye kadar)"),
+    ],
+    "itirazin-kaldirilmasi": [
+        (_md("İİK", "68"), "İİK m.68/1, m.68/a-1 — itirazın tebliğinden 6 ay (geçerse aynı "
+                           "alacak için yeniden ilamsız takip yapılamaz)"),
+    ],
+    "itirazin-iptali": [
+        (_md("İİK", "67"), "İİK m.67/1 — itirazın tebliğinden 1 yıl"),
+    ],
+    "menfi-tespit": [
+        (_md("İİK", "72"), "İİK m.72/7 — istirdat: ödemeden 1 yıl (menfi tespitin kendine "
+                           "özgü dava süresi yok)"),
+    ],
+    "haciz-talebi": [
+        (_md("İİK", "78"), "İİK m.78/2 — ödeme emrinin tebliğinden 1 yıl (itiraz/dava ve "
+                           "taksit sözleşmesi süresi sayılmaz)"),
+    ],
+    "satis-talebi": [
+        (_md("İİK", "106"), "İİK m.106/1 — hacizden itibaren 1 yıl; istenmezse haciz kalkar "
+                            "(m.110/1)"),
+    ],
+    "haciz-ihbarnamesi-itiraz": [
+        (_md("İİK", "89"), "İİK m.89/2-3 — ihbarnamenin tebliğinden 7 gün; 2. ihbarname 7 gün; "
+                           "3. bildirimde 15 gün + dava belgesi 20 gün"),
+    ],
+    "kiymet-takdiri-sikayet": [
+        (_md("İİK", "128"), "İİK m.128/a-1 — raporun tebliğinden 7 gün; masraf/ücret "
+                            "şikâyetten itibaren 7 gün"),
+    ],
+    "ihalenin-feshi": [
+        (_md("İİK", "134"), "İİK m.134/2 — ihale tarihinden 7 gün; ıttıla hâlinde ıttıladan, "
+                            "her hâlde e-satış ilanından 1 yıl"),
+    ],
+    "icra-sikayet": [
+        (_md("İİK", "16"), "İİK m.16/1 — öğrenmeden 7 gün (m.16/2 süresiz hâller)"),
+    ],
+    "istihkak-davasi": [
+        (_md("İİK", "9[67]"), "İİK m.97/6 — kararın tefhim/tebliğinden 7 gün; m.97/9 — hacze "
+                              "ıttıladan 7 gün; m.96/3 — iddia ıttıladan 7 gün"),
+    ],
+    "icra-ceza-sikayet": [
+        (_md("İİK", "347"), "İİK m.347 — fiilin öğrenilmesinden 3 ay, her hâlde fiilden 1 yıl "
+                            "(hak düşürücü)"),
+    ],
+    "icra-usul": [
+        (_md("İİK", "33"), "İİK m.33/1 — icranın geri bırakılması: icra emrinin tebliğinden 7 gün"),
+        (_md("İİK", "96"), "İİK m.96/2 — istihkak iddiasına itiraz: 3 gün (susma kabul sayılır)"),
+        (_md("İİK", "363"), "İİK m.363 — icra mahkemesi kararına istinaf: tebliğden 2 hafta"),
+    ],
+    "idari-dava": [
+        (_md("İYUK", "7"), "İYUK m.7 — dava açma süresi (idari 60 gün / vergi 30 gün; özel "
+                           "usuller ayrı)"),
+    ],
+    "yd-talebi": [
+        (_md("İYUK", "27"), "İYUK m.27/7 — YD kararına itiraz: tebliği izleyen günden 7 gün, "
+                            "bir defaya mahsus"),
+    ],
+    "ceza-istinaf": [
+        (_md("CMK", "273"), "CMK m.273/1 — gerekçeli hükmün tebliğinden 2 hafta"),
+    ],
+    "istinaf": [
+        (_md("HMK", "345"), "HMK m.345 — ilamın tebliğinden 2 hafta"),
+    ],
+    "temyiz": [
+        (_md("HMK", "361"), "HMK m.361 — tebliğden 2 hafta (hukuk)"),
+        (_md("CMK", "291"), "CMK m.291/1 — gerekçeli hükmün tebliğinden 2 hafta (ceza)"),
+    ],
+    # HMK m.127 ve m.317/2 — Yargı PRO MCP, 2026-10-05 (yazılı yargılamada ek süre
+    # en çok bir ay, basit yargılamada en çok iki hafta; ikisi de bir defaya mahsus).
+    "cevap": [
+        (_md("HMK", "127"), "HMK m.127 — yazılı yargılamada cevap: tebliğden 2 hafta (+ bir "
+                            "defaya mahsus, en çok 1 ay ek süre)"),
+        (_md("HMK", "317"), "HMK m.317/2 — basit yargılamada cevap: tebliğden 2 hafta (+ bir "
+                            "defaya mahsus, en çok 2 hafta ek süre)"),
+    ],
+    "aym_bireysel": [
+        (_md("6216", "47"), "6216 m.47/5 — yolların tüketilmesinden (yol yoksa öğrenmeden) 30 gün"),
+    ],
+}
+
+_SURE_TABLO_ONBELLEK = {}
+
+
+def _sure_kurallari_kaynaklari():
+    """oa-sure kural tablosunu (…/oa-sure/scripts/sure_kurallari.json) YALNIZ
+    OKUR ve {kural_kimliği: kaynak_metni} döndürür; okunamazsa None.
+    Modül seviyesinde OKUNMAZ (hook sıcak yolu yüklenmesin — CLAUDE.md
+    performans değişmezi); ilk çağrıda okunur, süreç içinde önbelleklenir."""
+    if "v" in _SURE_TABLO_ONBELLEK:
+        return _SURE_TABLO_ONBELLEK["v"]
+    yol = (pathlib.Path(__file__).resolve().parent.parent.parent
+           / "oa-sure" / "scripts" / "sure_kurallari.json")
+    sonuc = None
+    try:
+        with open(yol, encoding="utf-8") as f:
+            veri = json.load(f)
+        sonuc = {}
+        for blok in ("kurallar", "asama_kurallari"):
+            b = veri.get(blok) if isinstance(veri, dict) else None
+            if isinstance(b, dict):
+                for kimlik, kural in b.items():
+                    if isinstance(kural, dict):
+                        sonuc[kimlik] = str(kural.get("kaynak") or "")
+    except Exception:
+        sonuc = None
+    _SURE_TABLO_ONBELLEK["v"] = sonuc
+    return sonuc
+
+
+def sure_baglantisi(tip):
+    """[S] satırları — tipin bağlı olduğu süre maddesi + oa-sure kural
+    kimliği (çalışma anında aranır). Süre HESAPLAMAZ, ASLA bloklamaz."""
+    kalemler = TIP_SURE.get(tip)
+    if not kalemler:
+        return []
+    kaynaklar = _sure_kurallari_kaynaklari()
+    satirlar = []
+    for desen, aciklama in kalemler:
+        if desen is None:
+            satirlar.append(aciklama)
+        elif kaynaklar is None:
+            satirlar.append(f"{aciklama} → oa-sure kural tablosu OKUNAMADI (oa-sure kurulu mu?) — "
+                            "süreyi elle hesaplama; avukat teyidi")
+        else:
+            bulunan = sorted(k for k, kaynak in kaynaklar.items()
+                             if re.search(desen, kaynak, re.I))
+            if bulunan:
+                satirlar.append(f"{aciklama} → oa-sure kuralı: {', '.join(bulunan)}")
+            else:
+                satirlar.append(f"{aciklama} → TEYİT BEKLİYOR: oa-sure'de bu madde için kural "
+                                "yok — süreyi elle hesaplama; kural eklenene dek avukat teyidi "
+                                "ve en erken son gün")
+    return satirlar
 
 
 def _udf_yaz_yukle():
@@ -1194,6 +2521,10 @@ _N_BEYAZ_LISTE = {
     "HMK", "TTK", "TBK", "TMK", "CMK", "İYUK", "IYUK", "AYM", "BAM",
     "HD", "CD", "HGK", "CGK", "TCK", "İİK", "IIK", "AİHM", "AIHM", "KVKK",
     "TC", "UYAP", "OCR", "UDF", "RG",
+    # v0.5.18 — icra/idari dilekçelerin olağan kimlik/merci kısaltmaları
+    # (takip talebinde IBAN/VKN zorunlu içeriktir — İİK m.58/2-1; her icra
+    # talebinde [N] gürültüsü üretmesin). Örneklem, numerus clausus değil.
+    "IBAN", "VKN", "TCKN", "BİM", "BIM", "YD",
 }
 # H2 (v0.5.16, Hamle 11): TARAF/ROL ETİKETLERİ — dilekçe başlık bloğunda
 # 'SANIK : Ayşe Örnek', 'İDARE : …', 'KONU : …' biçiminde büyük harfle yazılan
@@ -1697,16 +3028,16 @@ def makine_bloklarini_maskele(metin):
 def denetle(metin, tip, taraf):
     # B-18: makine üretimi kaynakça bloğu denetim girdisi DEĞİLDİR.
     metin = makine_bloklarini_maskele(metin)
-    eksik, uyari = [], []
-    unsurlar = TIPLER.get(tip, TIPLER["genel"])
 
-    # A) zorunlu unsurlar
-    for ad, des in unsurlar:
-        if not _bul(metin, des):
-            eksik.append(ad)
+    # A) zorunlu unsurlar — v0.5.18: tekil/bileşik/yakınlık/koşullu modeli
+    # (Y-06). Düz-liste unsurlar eskisi gibi değerlendirilir; dönüş imzası
+    # ve 5'li arity DEĞİŞMEDİ.
+    eksik = zorunlu_unsur_eksikleri(metin, tip)
 
-    # B) tertip-düzen (+ [B2] kanun-yolu tip-koşullu yapısal kalemler — M3-2)
-    duzen_eksik = [ad for ad, des in DUZEN if not _bul(metin, des)]
+    # B) tertip-düzen (+ [B2] kanun-yolu tip-koşullu yapısal kalemler — M3-2;
+    # v0.5.18: form nitelikli icra taleplerinde DUZEN_MUAF kalemleri aranmaz)
+    muaf = DUZEN_MUAF.get(tip, set())
+    duzen_eksik = [ad for ad, des in DUZEN if ad not in muaf and not _bul(metin, des)]
     if tip in KANUN_YOLU_TIPLERI:
         duzen_eksik += _kanun_yolu_yapisal_eksik(metin)
 
@@ -1728,10 +3059,25 @@ def denetle(metin, tip, taraf):
     NEG = re.compile(r"anlamına\s*gelme|kaydıyla|etmedi[ğg]|etmiyor|etmemek|etmez|\bkabul\s*etme\b"
                      r"|redd|aksi|\bdeğil|olmaks[ıi]z[ıi]n|olmamak", re.I)
     aleyhe, aleyhe_notu = [], []
-    _setler, _kismi, _sebep = aleyhe_kapsami(taraf)
+    _setler, _kismi, _sebep = aleyhe_kapsami(taraf, tip)
+    # v0.5.18 — `(?#kesin)` kalıplar (çekimli olumlu yüklem; bkz. _KESIN) NEG
+    # penceresine bakılmadan sinyal verir. Aynı ifadeyi kapsayan GENİŞ kalıbın
+    # eşleşmesi ayrıca raporlanmaz — aynı cümle hem [UYARI] hem 'olumsuzlanmış'
+    # [BİLGİ] olarak çelişkili görünmesin. Kesin kalıp yoksa davranış aynen eskisidir.
+    kesin_araliklar = []
     for anahtar in _setler:
         for d in ALEYHE.get(anahtar, []):
+            if d.startswith(_KESIN):
+                for m in re.finditer(d, metin, re.I):
+                    aleyhe.append(m.group(0))
+                    kesin_araliklar.append((m.start(), m.end()))
+    for anahtar in _setler:
+        for d in ALEYHE.get(anahtar, []):
+            if d.startswith(_KESIN):
+                continue
             for m in re.finditer(d, metin, re.I):
+                if any(m.start() < b and a < m.end() for a, b in kesin_araliklar):
+                    continue
                 # EK-FİX (risk#2): pencere eşleşen kalıbın KENDİ aralığını İÇERMEZ.
                 # Bazı aleyhe kalıpları ('şikayetçi değil', 'haklı değiliz') 'değil'i
                 # kalıbın GÖVDESİ olarak taşır; eski kod pencereyi m.start()-70..m.end()+70
@@ -1754,9 +3100,12 @@ def main():
     ap.add_argument("taslak")
     ap.add_argument("--tip", default="genel",
                     choices=["dava", "cevap", "istinaf", "temyiz", "aym_bireysel",
-                             "yemin", "idari-kanal", "genel"])
+                             "yemin", "idari-kanal", "genel"]
+                    # v0.5.18 — icra ailesi + idari dava, YD talebi, ceza istinafı
+                    + sorted(set(_ICRA_TIPLERI) | set(_IDARI_CEZA_TIPLERI)))
     ap.add_argument("--taraf", default="",
-                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil", "musteki"])
+                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil", "musteki",
+                             "alacakli", "borclu", "ucuncu-kisi"])
     ap.add_argument("--udf", metavar="YOL", default="",
                     help="(opsiyonel) Üretilmiş .udf dosyasını da GEÇERLİLİK KAPISI ile "
                          "denetler — UDF-VARSAYILAN doktrini burada mekanik olarak kapanır.")
@@ -1823,6 +3172,11 @@ def main():
             print(f"   [EKSİK] {u}")
     else:
         print("   [OK] tip için beklenen unsurlar mevcut görünüyor")
+    # v0.5.18 — tipe özel İSTİŞARİ uyarılar (exit koduna dokunmaz; bilinçli
+    # avukat tercihi olabilecek ya da eski tipte kilit testleri bozmadan
+    # görünür kılınan kalemler — bkz. TIP_UYARILARI).
+    for u in tip_ozel_uyarilari(metin, a.tip):
+        print(f"   [UYARI] {u}")
 
     print("\n[B] TERTİP-DÜZEN (avukata yakışan biçim)")
     if duzen_eksik:
@@ -1830,6 +3184,20 @@ def main():
             print(f"   [UYARI] {u} — zayıf/görünmüyor")
     else:
         print("   [OK] başlık/bölüm/netice/imza düzeni kurulu")
+
+    print("\n[S] SÜRE BAĞLANTISI (bilgi — süre HESABI oa-sure'ündür, ASLA bloklamaz)")
+    s_satirlar = sure_baglantisi(a.tip)
+    if s_satirlar:
+        for s in s_satirlar:
+            print(f"   • {s}")
+        print("   (son gün: oa-sure/scripts/hesapla_sure.py ile, belgeli başlangıç tarihinden "
+              "hesaplanır — kapı tarih ÜRETMEZ)")
+    else:
+        # Etiketsiz madde işareti BİLİNÇLİDİR: '[BİLGİ]' etiketi zincirde
+        # (teslim_paketi.py (a) bölümü) "bir kapı atlandı/koşulmadı" anlamında
+        # okunur; süre bağlantısı tanımsız bir tip ise atlama değildir.
+        print("   • bu tip için tanımlı süre bağlantısı yok — süre doğuran bir işlem "
+              "varsa oa-sure ile ayrıca hesaplayın")
 
     print("\n[C] OCR/⚠ ALINTI TEYİDİ")
     if ocr_uyari:
@@ -1844,13 +3212,14 @@ def main():
     # 'genel' seti taranır; taraf-özel eksenler (kabul/ikrar, feragat, şikayetten
     # vazgeçme, suç ikrarı) HİÇ taranmaz — ve eski çıktı buna rağmen
     # "[OK] ... bulunamadı" basıp YANLIŞ GÜVENCE veriyordu.
-    _setler, _kismi, _sebep = aleyhe_kapsami(a.taraf)
+    _setler, _kismi, _sebep = aleyhe_kapsami(a.taraf, a.tip)
     if _kismi:
         print(f"   [UYARI] TARAMA KISMİ — {_sebep}. Yalnız 'genel' kalıp seti tarandı; "
               "taraf-özel eksenler (kabul/ikrar · feragat · şikayetten vazgeçme · "
-              "suç ikrarı) TARANMADI.")
-        print("           → --taraf davaci|davali|sanik|katilan|mudahil|musteki VERİP "
-              "YENİDEN KOŞ; aksi hâlde aşağıdaki sonuç bir TEMİZLİK BEYANI DEĞİLDİR.")
+              "suç ikrarı · icra itirazından vazgeçme) TARANMADI.")
+        print("           → --taraf davaci|davali|sanik|katilan|mudahil|musteki|alacakli|"
+              "borclu|ucuncu-kisi VERİP YENİDEN KOŞ; aksi hâlde aşağıdaki sonuç bir "
+              "TEMİZLİK BEYANI DEĞİLDİR.")
     else:
         print("   [KAPSAM] taranan kalıp setleri: %s" % ", ".join(_setler))
     if aleyhe:

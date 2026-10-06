@@ -123,9 +123,9 @@ sonucunu tek satır göstererek ilerle:
    "tur"). Eksikse Windows için UB-Mannheim kurulum sayfası linkini ver,
    kurulumda "Turkish" dilini seçmemi söyle ve ben kurana kadar bekle.
 3) Node.js/npx denetle (node --version). Yoksa nodejs.org LTS linkini ver ve
-   bekle. Varsa `npx -y udf-cli@latest login` başlat; tarayıcı onayı
+   bekle. Varsa `npx -y udf-cli@0.5.6 login` başlat; tarayıcı onayı
    gerektiğinde adresi ve kodu bana göster, ben onaylayınca
-   `npx -y udf-cli@latest whoami` ile doğrula.
+   `npx -y udf-cli@0.5.6 whoami` ile doğrula.
 4) Yargı Pro MCP bağlantısını kur (uç nokta:
    https://yargi.betaspacestudio.com/mcp). Bağlayıcı onayı benden isteniyorsa
    dur ve ne yapacağımı söyle. (Alternatif kanal kullanacaksam ben söylerim.)
@@ -160,8 +160,8 @@ sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
 | **MarkItDown** (Microsoft, pip paketi) | [github.com/microsoft/markitdown](https://github.com/microsoft/markitdown) | Office ve karışık formatlı evrakı (**.docx, .xlsx, .pptx**, HTML, e-posta, CSV/JSON, hatta bazı PDF'ler) tek elden **Markdown'a** çevirir. UYAP klasörü yalnız PDF/TIFF değildir: bilirkişi raporu Excel, ekler PowerPoint, yazışma Word olarak gelir. Bu araç olmadan o evraklar ya modele görüntü olarak yüklenir (token patlaması) ya da hiç okunmaz. Metne bir kez indirip her adımda o metni seçici okuma ekonomisinin Office ayağıdır. |
 | **Tesseract OCR + Türkçe dil paketi** | [github.com/UB-Mannheim/tesseract/wiki](https://github.com/UB-Mannheim/tesseract/wiki) | UYAP klasörlerindeki taranmış evrak (mazbata, eski dilekçe, TIFF) metne ancak OCR ile iner; çıktı "⚠ teyit gerek" damgası alır. Türkçe paket (`tur`) olmadan Türkçe evrak doğru okunmaz. |
 | **Node.js (LTS)** | [nodejs.org](https://nodejs.org/) | UDF üretim araçları npm ekosisteminde yaşar ve `npx` ile koşar. |
-| **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@latest login` gerekir. |
-| **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. |
+| **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@0.5.6 login` gerekir. Sürüm sabittir (`oa-dilekce/scripts/udf_yaz.py` `UDF_CLI_SURUM`); yalnız avukat onayıyla yükseltilir. |
+| **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. **İsteğe bağlı:** OA'nın kendi okuma hattı (`oa-ingest`) çok sayfalı TIFF'i ve taranmış PDF'i yerelde, ağsız okur (Tesseract). Bu iki araç ağ ve oturumla çalışan dış araçlardır; evrakın sunucuya gidip gitmediği ölçülmedi — müvekkil evrakında anayasa m.10 (Layer 0) kuralı uygulanır. |
 | **Yargı Pro MCP** (geliştirici: [@saidsurucu](https://github.com/saidsurucu)) | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Alternatif: açık kaynak [yargi-mcp](https://github.com/saidsurucu/yargi-mcp) (semantik arama için ayrıca AI API anahtarı gerekir). |
 
 Adım adım:
@@ -209,8 +209,8 @@ UYAP'a sunulacak `.udf` dosyası **yalnız** resmî `udf-cli` aracıyla üretile
 
 ```bash
 node --version
-npx -y udf-cli@latest login
-npx -y udf-cli@latest whoami
+npx -y udf-cli@0.5.6 login
+npx -y udf-cli@0.5.6 whoami
 ```
 
 Giriş tek seferliktir; token `~/.config/yargi/token.json`'da tutulur. Giriş

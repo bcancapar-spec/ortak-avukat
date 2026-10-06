@@ -64,6 +64,21 @@ Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
    checklist*tir, mekanik denetim değildir ve yalnız **öneri** üretir
    ("şu beyan tutanağa geçmemiş görünüyor"). Düzeltme talebi verilip
    verilmeyeceği **avukatın takdiridir**; sistem otomatik gündem oluşturmaz.
+   **Zabıt karşılaştırma yardımcısı (v0.5.18 adayı; Yargı PRO 16-2 fikri, OA
+   yöntemiyle):** `python scripts/zapt_denetim.py --kart _oa/cikti/NN-celse-karti.md
+   --zapt _oa/metin/NNN-durusma-zapti.md [--json]`. Kartın (c) bölümü madde
+   işaretli liste olarak yazılır ve başlığında "TUTANAĞA" geçer; script bu
+   kalemleri zabıtta kelime kökü düzeyinde arar ve her birini ADAY olarak
+   işaretler (GEÇMİŞ GÖRÜNÜYOR / KISMEN / GEÇMEMİŞ GÖRÜNÜYOR); ara kararları, süre
+   doğurabilecek ifadeleri (→ `oa-sure`; gün burada sayılmaz) ve gerekçe ibaresi
+   görülmeyen RET kararlarını ayrıca listeler. Dayanak: tarafların soruşturmaya
+   ilişkin istekleri ve ara kararlar mutlak olarak tutanağa yazılır (HMK m.154/3-g,
+   ğ); ön inceleme, tahkikat ve yargılama işlemleri ancak tutanakla ispat olunur
+   (m.156) — Mevzuat MCP teyit 2026-10-05. Script yukarıdaki "öneri" sınırını
+   DEĞİŞTİRMEZ: hâkim açıklamaları özetle kaydettirebilir (m.154/1), ilgili zabıt
+   paragrafı okunur, karar avukatındır. Tutanağın düzeltilmesi için HMK'da ayrı bir
+   süre maddesi bulunamadı (m.154-158 okundu) → **TEYİT BEKLİYOR**; fark celseyi
+   izleyen ilk iş günü avukata raporlanır (kanuni süre değil, ihtiyat).
 
 ## Kompozisyon (iki konum — v0.5.16 P0-3 hizalaması: `oa-pipeline` sabit hattıyla aynı sıra)
 - **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/06-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — v0.5.16'da önek adım numarasını izler: `06-antitez*`; ≤v0.5.15 adı `07-antitez*` pipeline bekçisi ve [G] kapısı (`*antitez*.json`) tarafından geriye uyumla kabul edilir). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).

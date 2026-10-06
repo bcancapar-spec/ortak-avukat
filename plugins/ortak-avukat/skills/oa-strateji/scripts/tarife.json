@@ -1,24 +1,64 @@
 {
-  "_aciklama": "oa-strateji maliyet_cetveli.py tarife dosyası (P1-11 / A-18, v0.5.16). SAYI UYDURMA YASAK: her rakam resmî kaynaktan (Mevzuat MCP / Resmî Gazete aracı) okunarak yazılır; okunamayan alan null bırakılır ve script o kalemi hesaplamaz (fail-closed). 'mcp_teyit_tarihi' boş ya da 'yil' hesap yılından farklıysa script hiç hesap yapmaz (exit 2). Yıl değişince bu dosya yeniden teyit edilip yeniden damgalanır.",
+  "_aciklama": "oa-strateji maliyet_cetveli.py tarife dosyası (P1-11 / A-18, v0.5.16; v0.5.18 adayı: merci kalemleri + oran kuralları). SAYI UYDURMA YASAK: her rakam resmî kaynaktan (Mevzuat MCP / Resmî Gazete aracı) okunarak yazılır; okunamayan alan null bırakılır ve script o kalemi hesaplamaz (fail-closed). 'mcp_teyit_tarihi' boş ya da 'yil' hesap yılından farklıysa script hiç hesap yapmaz (exit 2). Yıl değişince bu dosya yeniden teyit edilip yeniden damgalanır. Faiz/avans/reeskont ORANI bu dosyada TUTULMAZ: oran dönemseldir, her hesapta resmî kaynağı ve teyit tarihiyle ayrı verilir (bkz. oran_kurallari).",
   "yil": 2026,
-  "mcp_teyit_tarihi": "2026-09-07",
-  "kaynak": "492 s. Harçlar Kanunu (1) sayılı tarife — 2026 tutarları: Harçlar Kanunu Genel Tebliği (Seri No: 98), RG 31.12.2025 / 33124 (5. mükerrer) — resmi_gazete_getir 'resmi_gazete:20251231M5/28.pdf' + mevzuat.gov.tr (1) sayılı tarife 'Uygulanan Miktar' sütunu (mevzuat_getir mevzuatgov:kanun:5:492); peşin oran: 492 s.K. m.28/a (Mevzuat MCP teyit 2026-09-06). AAÜT: RG 04.11.2025 / 33067 (değ. 08.01.2026/33131 ve 28.03.2026/33207) — genel hükümler MCP'den okundu, ancak ikinci/üçüncü kısım EK TABLOLARI (maktu ücretler ve nispi dilimler) MCP/RG araçlarından çekilemedi → null.",
+  "mcp_teyit_tarihi": "2026-10-05",
+  "kaynak": "492 s. Harçlar Kanunu (1) sayılı tarife — 2026 tutarları: Harçlar Kanunu Genel Tebliği (Seri No: 98), RG 31.12.2025 / 33124 (5. mükerrer) — resmi_gazete_getir 'resmi_gazete:20251231M5/28.pdf' + mevzuat.gov.tr (1) sayılı tarife 'Uygulanan Miktar' sütunu (mevzuat_getir mevzuatgov:kanun:5:492); peşin oran: 492 s.K. m.28/a (Mevzuat MCP teyit 2026-09-06; yeniden teyit 2026-10-05). AAÜT: RG 04.11.2025 / 33067 (değ. 08.01.2026/33131 ve 28.03.2026/33207) — genel hükümler MCP'den okundu, ancak ikinci/üçüncü kısım EK TABLOLARI (maktu ücretler ve nispi dilimler) MCP/RG araçlarından çekilemedi → null.",
   "harc": {
     "basvuru_maktu": 732.0,
     "karar_ilam_nispi_binde": 68.31,
     "pesin_oran": 0.25,
+    "pesin_oran_olum_cismani": 0.05,
     "nispi_asgari": 732.0,
     "karar_maktu": 732.0,
     "ihtiyati_tedbir_haciz_karar_maktu": 1206.0,
     "istinaf_basvuru_maktu": 2002.0,
     "temyiz_basvuru_maktu": 3608.5,
     "kesif": 5188.0,
-    "_not": "Asliye/idare mahkemeleri satırı (I-2). Sulh/icra mahkemesi başvurma harcı (335,20 TL) ve diğer satırlar bu şemada yok; gerekirse ayrı anahtarla teyitli eklenir. 'nispi_asgari': (1) sayılı tarife III-1 'Nispi harçlar ... aşağı olamaz' haddi (Seri No:98 metni: 732 TL). ÇIPA — KAYNAK ÇELİŞKİSİ (2026-09-07 yeniden teyit): mevzuat.gov.tr konsolide (1) sayılı tarifede aynı satır 'Uygulanan Miktar' sütununda 427,60 TL görünmektedir (mevzuat_icinde_ara snippet); 2026 tutarlarının asli kaynağı RG 31.12.2025/33124 (5. mük.) Seri No:98 olduğundan 732 esas alındı — yalnız çok küçük dava değerinde (nispi harç < asgari had) etkilidir; avukat teyit etsin. Diğer tutarlar (732 başvuru asliye, binde 68,31, 1.206 tedbir/haciz, 3.608,50 temyiz, 2.002 istinaf, 5.188 keşif, 732 maktu karar) hem RG hem mevzuat.gov metninde birebir doğrulandı (2026-09-07). Bakiye karar harcı kararın tebliğinden itibaren bir ay içinde ödenir (m.28/a)."
+    "_not": "Asliye/idare mahkemeleri satırı (I-2). Sulh/icra tetkik mercii başvurma harcı ve vergi yargısı kalemleri 'harc_merci' bloğundadır (v0.5.18). 'nispi_asgari': (1) sayılı tarife III-1 'Nispi harçlar ... aşağı olamaz' haddi (Seri No:98 metni: 732 TL). ÇIPA — KAYNAK ÇELİŞKİSİ (2026-09-07 ve 2026-10-05 yeniden teyit): mevzuat.gov.tr konsolide (1) sayılı tarifede aynı had 'Uygulanan Miktar' sütununda 427,60 TL (2024 değeri) ve III-1-g altında 615,40 TL (2025 değeri) görünmektedir — konsolide metin bu satırlarda güncellenmemiş; 2026 tutarlarının asli kaynağı RG 31.12.2025/33124 (5. mük.) Seri No:98 olduğundan 732 esas alındı — yalnız çok küçük dava değerinde (nispi harç < asgari had) etkilidir; avukat teyit etsin. Diğer tutarlar (732 başvuru asliye, binde 68,31, 1.206 tedbir/haciz, 3.608,50 temyiz, 2.002 istinaf, 5.188 keşif, 732 maktu karar) hem RG hem mevzuat.gov metninde birebir doğrulandı (2026-09-07; 2026-10-05 yeniden). Bakiye karar harcı kararın tebliğinden itibaren bir ay içinde ödenir (m.28/a).",
+    "_pesin_oran_olum_cismani_kaynak": "492 s.K. m.28/a ikinci cümle: ölüm ve cismani zarar sebebiyle açılan maddi ve manevi tazminat davalarında peşin alınan harcın oranı yirmide bir (mevzuat_getir mevzuatgov:kanun:5:492 m28, teyit 2026-10-05). Davanın bu nitelikte olup olmadığı avukatın nitelendirmesidir; script yalnız --olum-cismani bayrağı verilince uygular."
+  },
+  "harc_merci": {
+    "_aciklama": "v0.5.18 (Y-07 kapatma) — merciye göre (1) ve (3) sayılı tarife kalemleri. Her kalem İKİ resmî kaynaktan okundu ve tutar her ikisinde AYNI çıktı: (a) RG 31.12.2025/33124 (5. mük.) Harçlar Kanunu Genel Tebliği (Seri No: 98) ekindeki tarifeler (resmi_gazete_getir 'resmi_gazete:20251231M5/28.pdf'); (b) mevzuat.gov.tr 492 s.K. tarifelerinin 'Uygulanan Miktar' sütunu (mevzuat_getir 'mevzuatgov:kanun:5:492:gecici1-6'). Asgari hadde iki kaynak ayrıştıysa RG esas alındı ve kalemin 'not' alanına yazıldı. RG OCR metninde (1) sayılı tarife A-I tutarları kalemlerden ayrı bir sütun olarak çıktığı için kalem↔tutar eşlemesi mevzuat.gov.tr metniyle kesinleştirildi.",
+    "rg": "31.12.2025 / 33124 (5. Mükerrer) — Harçlar Kanunu Genel Tebliği (Seri No: 98)",
+    "yururluk": "2026-01-01",
+    "teyit_tarihi": "2026-10-05",
+    "kalemler": {
+      "sulh_icra_tetkik_basvuru": {"tutar": 335.2, "satir": "(1) sayılı tarife A-I-1 — sulh mahkemeleri ve icra tetkik mercileri başvurma harcı"},
+      "asliye_idare_basvuru": {"tutar": 732.0, "satir": "(1) sayılı tarife A-I-2 — asliye mahkemeleri ve idare mahkemeleri başvurma harcı"},
+      "bam_bim_yargitay_danistay_basvuru": {"tutar": 1124.5, "satir": "(1) sayılı tarife A-I-3 — BAM, BİM, Yargıtay, Danıştay başvurma harcı"},
+      "aym_basvuru": {"tutar": 6024.1, "satir": "(1) sayılı tarife A-I-4 — Anayasa Mahkemesi başvurma harcı"},
+      "maktu_tashih_ret_yuksek_mahkeme": {"tutar": 1526.2, "satir": "(1) sayılı tarife A-III-2-b"},
+      "icranin_tehiri_karar": {"tutar": 1206.0, "satir": "(1) sayılı tarife A-III-2-c — icranın tehiri kararları"},
+      "arabuluculuk_karar_maktu": {"tutar": 732.0, "satir": "(1) sayılı tarife A-III-2-e — arabuluculuk son tutanağına dayalı kararlar"},
+      "danistay_temyiz": {"tutar": 3608.5, "satir": "(1) sayılı tarife A-IV-c — Danıştay'a temyiz başvurusu"},
+      "bim_istinaf": {"tutar": 2002.0, "satir": "(1) sayılı tarife A-IV-d — BİM'e istinaf (YD itirazları dahil)"},
+      "icraya_basvurma": {"tutar": 732.0, "satir": "(1) sayılı tarife B-I-1 — icraya başvurma harcı"},
+      "icra_degeri_belli_olmayan": {"tutar": 732.0, "satir": "(1) sayılı tarife B-I-2 — değeri belli olmayan icra takiplerinde icranın yerine getirilmesi harcı"},
+      "vergi_basvuru_vm_bim": {"tutar": 732.0, "satir": "(3) sayılı tarife I-a — vergi mahkemeleri ile BİM'e başvurma"},
+      "vergi_basvuru_danistay": {"tutar": 1526.2, "satir": "(3) sayılı tarife I-b — Danıştay'a başvurma"},
+      "vergi_temyiz_danistay": {"tutar": 3189.5, "satir": "(3) sayılı tarife I-c — Danıştay'a temyiz başvurusu"},
+      "vergi_istinaf_bim": {"tutar": 2121.7, "satir": "(3) sayılı tarife I-d — BİM'e istinaf başvurusu"},
+      "vergi_nispi_vm_bim_binde": {"tutar": 4.55, "asgari": 732.0, "satir": "(3) sayılı tarife II-a — vergi mahkemesi/BİM kararlarında nispi harç (binde)", "not": "asgari had RG metninde 732 TL; mevzuat.gov.tr konsolide metinde 615,40 TL (bayat 2025 değeri) — RG esas"},
+      "vergi_nispi_danistay_binde": {"tutar": 9.1, "asgari": 1526.2, "satir": "(3) sayılı tarife II-b — Danıştay kararlarında nispi harç (binde)", "not": "asgari had RG metninde 1.526,20 TL; mevzuat.gov.tr konsolide metinde 1.283,10 TL (bayat) — RG esas"},
+      "vergi_maktu_vm_bim": {"tutar": 732.0, "satir": "(3) sayılı tarife III-a — vergi mahkemesi/BİM maktu karar harcı"},
+      "vergi_maktu_danistay": {"tutar": 1526.2, "satir": "(3) sayılı tarife III-b — Danıştay maktu karar harcı"},
+      "vergi_yd_karar": {"tutar": 1526.2, "satir": "(3) sayılı tarife III-c — BİM ve Danıştay yürütmenin durdurulması kararları"}
+    }
   },
   "aaut": {
     "maktu_asliye": null,
     "nispi_dilimler": [],
     "rg": "04.11.2025 / 33067 (Türkiye Barolar Birliği); değişiklikler 08.01.2026/33131 (m.10/2 mülga), 28.03.2026/33207 (m.14/5)",
-    "_not": "EK tabloları (ikinci kısım ikinci bölüm maktu ücretler; üçüncü kısım nispi dilimler) MCP/RG araçlarıyla 2026-09-06'da ÇEKİLEMEDİ — null bırakıldı; script karşı vekâlet kalemini HESAPLAMAZ ve exit 2 verir. Doldururken şema: nispi_dilimler = [{\"ust\": <dilim üst sınırı TL veya null>, \"yuzde\": <oran>}, ...] kümülatif. Teyit edilen metin kuralları: m.3/1 (tarife miktarından az, üç katından çok olamaz), m.13/1-4 (maktu taban; kabul/ret tavanı; kısmi rette davacı vekili ücreti tavanı; tam rette maktu)."
+    "_not": "EK tabloları (ikinci kısım ikinci bölüm maktu ücretler; üçüncü kısım nispi dilimler) MCP/RG araçlarıyla 2026-09-06'da ÇEKİLEMEDİ — null bırakıldı; script karşı vekâlet kalemini HESAPLAMAZ ve exit 2 verir. 2026-10-05 yeniden deneme: RG 04.11.2025 fihristinde yalnız 'Genel Hükümler' (resmi_gazete:20251104/9.htm) var; mevzuat.gov.tr kaydı (mevzuatgov:teblig:5:42687) genel hükümleri veriyor, tablolar yalnız '9.5.42687-Ek.doc' eki olarak duruyor ve MCP ekleri getirmiyor → TEYİT BEKLİYOR (avukat tablo ekinden elle girip kaynak/teyit tarihini yazmalı). Doldururken şema: maktu ücret merciye göre ayrı anahtar ('maktu_asliye', 'maktu_sulh', 'maktu_icra_tetkik', 'maktu_idare', 'maktu_vergi' — script başka merci için asliye maktuunu KULLANMAZ); nispi_dilimler = [{\"ust\": <dilim üst sınırı TL veya null>, \"yuzde\": <oran>}, ...] kümülatif. Teyit edilen metin kuralları: m.3/1 (tarife miktarından az, üç katından çok olamaz), m.13/1-4 (davanın görüldüğü mahkemenin maktu ücreti taban; kabul/ret tavanı; kısmi rette davacı vekili ücreti tavanı; tam rette maktu), m.21 (avukatlık ücretinin takdirinde hukuki yardımın tamamlandığı veya hükmün verildiği tarihte yürürlükte olan Tarife esas alınır — bugünkü tarife gelecekteki hüküm için ÇIPADIR)."
+  },
+  "oran_kurallari": {
+    "_aciklama": "v0.5.18 (Yargı PRO 14-2 fikri, OA yöntemiyle) — faiz/oran hesabında MEKANİK HATIRLATICI verileri. Burada ORAN YOKTUR; yalnız oranın dönemle nasıl değiştiğine dair resmî metinden okunmuş kurallar vardır. Script bunlarla bir dilim yıl/yarıyıl ya da rejim sınırını kestiğinde görünür uyarı basar; oranın kendisi her hesapta kaynağı ve teyit tarihiyle ayrıca verilir.",
+    "yariyil_kurallari": [
+      {"turler": ["avans"], "gecerlilik_baslangici": null, "kaynak": "3095 s.K. m.2/2 (Değişik: 15/12/1999-4489/2): ticari işlerde temerrüt faizi TCMB'nin önceki yılın 31 Aralık günü kısa vadeli avanslara uyguladığı orandan istenebilir; 30 Haziran'da beş puan veya daha çok fark varsa yılın ikinci yarısında bu oran geçerlidir (mevzuat_getir mevzuatgov:kanun:5:3095 m2 — teyit 2026-10-05)"},
+      {"turler": ["kanuni", "temerrut"], "gecerlilik_baslangici": "2026-07-31", "kaynak": "3095 s.K. m.1 (Değişik: 16/7/2026-7589/10): kanuni faiz TCMB'nin önceki yılın 31 Aralık günü kısa vadeli kredi işlemlerinde uyguladığı reeskont oranının yüzde sekseni; 30 Haziran'da beş puan veya daha çok fark varsa ikinci yarıda 30 Haziran oranının yüzde sekseni; m.2/1 temerrüt faizi m.1 oranına bağlı — yürürlük 31.07.2026 (7589 m.26/1-c) (mevzuat_getir mevzuatgov:kanun:5:3095 m1, m2 — teyit 2026-10-05)"}
+    ],
+    "rejim_sinirlari": [
+      {"turler": ["kanuni", "temerrut"], "tarih": "2026-07-31", "kaynak": "3095 s.K. m.1 7589 s.K. m.10 ile değiştirildi (kanuni faiz: TCMB kısa vadeli kredi işlemleri reeskont oranının yüzde sekseni); yürürlük 7589 m.26/1-c 'yayımı tarihinde' — RG 31.07.2026 (mevzuat_ara mevzuat_no 7589; mevzuat_icinde_ara m.26 — teyit 2026-10-05). Bu tarihi kesen dilim tek oranla hesaplanamaz; eski dönem oranı ve varsa geçiş hükmü ayrıca teyit edilir."}
+    ]
   }
 }

@@ -51,6 +51,24 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
     hüküm verilinceye kadar; kanun yolunda istenemez (m.237/2). v0.5.13'te
     `oa-musteki-vekili` "olay tetikli kırmızı bayrak" olarak kurmuştu; bu sınıf onu hukuk
     koluna genelleştirir. (`cmk_katilma`)
+- **v0.5.18 — yeni HMK tarih kuralları (Mevzuat MCP teyit 2026-10-05):**
+  - **Ön inceleme belge sunma — TARİH AYAĞI:** davetiye tebliğ edilince çatal tarih kuralına
+    döner → `--kural hmk_on_inceleme_belge_sunma --teblig <davetiye tebliği>` (m.139/1-ç kesin
+    süre, m.140/5 vazgeçmiş sayılma; adli tatil HMK m.104).
+  - **Dosyanın gönderilmesi talebi — iki hafta (HMK m.20/1):** görevsizlik/yetkisizlik kararı
+    kesinse tebliğden; kanun yoluna gidilmeyip kesinleşmişse **kesinleşmeden**; kanun yolu
+    reddedilmişse ret kararının tebliğinden. Süresinde istenmezse dava **açılmamış sayılır**
+    (`hmk_dosya_gonderme`).
+  - **Basit yargılamada cevap — iki hafta (HMK m.317/2):** ek süre bu süre içinde istenirse bir
+    defaya mahsus ve **en çok iki hafta** — yazılı yargılamadaki bir aylık sınır (m.127) burada
+    YOKTUR; iş mahkemelerinde basit yargılama uygulanır (7036 m.7/1) (`hmk_cevap_basit`).
+  - **İhtiyati tedbire itiraz — bir hafta (HMK m.394/2-3):** uygulamada hazırsa uygulamadan,
+    değilse tutanağın tebliğinden; üçüncü kişi için öğrenmeden. HMK m.103/1-a işidir →
+    **adli tatilde uzamaz** (`hmk_tedbir_itiraz`).
+  - **Dava açılmadan verilen tedbirde esas dava — iki hafta (HMK m.397/1):** kararın
+    uygulanmasının talep edildiği tarihten; dava açıldığına dair evrak uygulayan memura
+    ibraz edilmezse tedbir **kendiliğinden kalkar**. Adli tatil rejimi **TEYİT BEKLİYOR** →
+    motor temkinli: uzatma YOK (`hmk_tedbir_esas_dava`).
 
 ### İcra-iflas (İİK 2004)
 - **İcra mahkemesi kararlarına karşı istinaf: iki hafta** — tebliğden (İİK m.363).
@@ -61,6 +79,34 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
   rejim geçerlidir — dosya tarihine bak. Değer/miktar eşiğinin (teyit et — güncel rakam yeniden değerlemeyle değişir) altı kesindir.
 - BAM kararlarının temyizi: İİK m.364 — süre ve eşik ayrıca teyit edilir.
 - İcra takibinde itiraz, şikâyet (m.16 — 7 gün), istihkak (m.96-97) gibi takip-içi süreler dosya bazında ayrı kontrol edilir.
+- **v0.5.18 / Y-01 — İCRA SÜRELERİ ADLİ TATİLDE UZAMAZ:** İİK m.18/1 icra mahkemesine arz
+  edilen hususları **ivedi** sayar; ivedi işler HMK m.103/1-h uyarınca adli tatilde görülür.
+  Yargıtay 12. HD yerleşik: icra dairelerinde ve icra mahkemelerinde HMK m.102/104 uygulanmaz,
+  süre tatilde de işler ve tatil bitiminden itibaren bir hafta uzatılmış sayılmaz — Y. 12. HD
+  E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869 (16.07.2024 tebliğ → 30.08.2024 temyizi
+  süre aşımı); E.2022/11578 K.2022/11538; ödeme emrine itiraz için Y. 23. HD E.2013/8404
+  K.2013/7933 (HMK m.104 HMK dışındaki sürelere uygulanmaz). **Eski motor `iik_*` kurallarını
+  hukuk koluna bağlayıp bir hafta uzatıyordu (10.08.2026 tebliğ → 07.09; doğrusu istinaf
+  24.08, şikâyet 17.08).** Son gün resmî tatil/hafta sonuna rastlarsa kayma **İİK m.19/3**
+  ile yapılır (Y. 12. HD E.2009/1886 K.2009/10134: Cumartesiye rastlayan beş günlük kambiyo
+  itiraz süresi Pazartesi doldu).
+- **v0.5.18 — yeni icra kuralları (Mevzuat MCP teyit 2026-10-05; rejim: uygulanmaz):**
+  temyiz iki hafta, tebliğden (m.364/2 — `iik_temyiz`); ödeme emrine itiraz yedi gün, tebliğden
+  (m.62/1 — `iik_odeme_emrine_itiraz`); gecikmiş itiraz, mânî kalkınca üç gün (m.65/2 —
+  `iik_gecikmis_itiraz`); itirazın kaldırılması altı ay (m.68/1, m.68/a — `iik_itirazin_kaldirilmasi`);
+  birinci/ikinci haciz ihbarnamesine itiraz yedi gün (m.89 — `iik_89_ihbarname_itiraz`); ihalenin
+  feshi yedi gün, ıttıla hâlinde portal ilanından itibaren en çok bir yıl (m.134/2 —
+  `iik_ihalenin_feshi`, `iik_ihalenin_feshi_azami`); kambiyo takibinde şikâyet/itiraz beş gün
+  (m.168/3-5 — `iik_kambiyo_itiraz`); ihtiyati hacze itiraz yedi gün (m.265/1-2 —
+  `iik_ihtiyati_haciz_itiraz`; HMK m.103/1-a işi).
+- **v0.5.18 — rejimi TEYİT BEKLİYOR olan icra kaynaklı süreler (motor temkinli: uzatma YOK,
+  alternatif tarih uyarıda):** itirazın iptali davası bir yıl (m.67/1 — `iik_itirazin_iptali`);
+  borçtan kurtulma davası yedi gün, tefhim veya tebliğden (m.69/2 — `iik_borctan_kurtulma`);
+  üçüncü ihbarname sonrası menfi tespit on beş gün (m.89/3 — `iik_89_menfi_tespit`); icra ceza
+  şikâyeti — öğrenmeden üç ay, her hâlde fiilden bir yıl, hak DÜŞER (m.347 —
+  `iik_icra_ceza_sikayet`, `iik_icra_ceza_sikayet_azami`). Bu sürelerde HMK m.104 veya CMK
+  m.331/4'ün uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi — kendi işlemini ERKEN
+  tarihe göre yap.
 - **TAKİP GÖVDESİ — üç çıpa (v0.5.13; aynı olaya bağlı iki ayrı süre):** itiraz üzerine
   alacaklının önünde İKİ yol ve İKİ farklı süre vardır, ikisi de **itirazın alacaklıya
   tebliği** tarihinden işler:
@@ -200,6 +246,28 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
 - Vekille temsilde **vekâletname şart** (m.47/4); başvuru **harca tabi** (m.47/2).
 - Dilekçe zorunlu içeriği (m.47/3): başvurucu/temsilci kimlik-adres; ihlal edildiği ileri sürülen hak; dayanılan Anayasa hükümleri; ihlal gerekçeleri; başvuru yollarının tüketilme aşamaları; tüketilme/öğrenme tarihi; varsa zarar; deliller + işlem/karar aslı veya örneği + harç belgesi.
 - **Tebliğ tarihi disiplini:** 30 gün, başvuru yolunun tüketildiği (genelde nihai kararın tebliğ edildiği) tarihten işler. Bu tarihi dosyaya **mutlaka netleştir** — pratikte en sık rastlanan açık uç budur.
+- **v0.5.18 — öğrenme ve adli tatil:** AYM kararlarında nihai kararın **UYAP'tan öğrenildiği**
+  tarih olay olarak kaydedilmektedir (ör. Ramazan Seçen, B. No: 2021/37483, 6/1/2026, § 9) —
+  tebliğden önce öğrenme süreyi başlatabilir; genel ilke **TEYİT BEKLİYOR**, erken öğrenme
+  kanıtı varsa onu esas al. 6216 ve İçtüzükte adli tatil/uzatma hükmü yok; 6216 m.49/7
+  hüküm bulunmayan hâllerde usul kanunlarının "bireysel başvurunun niteliğine uygun"
+  hükümlerine yollar — uzatmaya **güvenme**: motor temkinli (uzatma YOK; eski motor HMK m.104
+  ile uzatıyordu). Son günün hafta sonuna rastlaması hâlinde izleyen iş günü başvurusu
+  incelenmiştir (aynı karar § 2, 9: otuzuncu gün Cumartesi, Pazartesi başvuru). Kurallar:
+  `aym_bireysel`, `aym_bireysel_mazeret` (mazeretin kalkmasından on beş gün).
+
+### Avrupa İnsan Hakları Mahkemesi — bireysel başvuru (AİHS m.35/1) — v0.5.18
+- **Süre: dört ay** — nihai iç hukuk kararından (15 No'lu Protokol ile altı aydan dörde
+  indirildi; HUDOC sınıflaması "Four-month period (former six-month)"). **1.2.2022 öncesi**
+  kesinleşen kararlarda altı ay uygulanmış olabilir — geçiş kuralı **TEYİT BEKLİYOR**
+  (`aihm_basvuru`).
+- **Başlangıç:** iç hukukta kararın yazılı tebliği öngörülüyorsa **tebliğ** tarihi esastır
+  (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, § 53 — Worm/Avusturya'ya atıfla). AYM'nin
+  "UYAP'tan öğrenme" yaklaşımı AİHM'e otomatik taşınmaz.
+- **Son gün KAYMAZ:** süre Sözleşme ölçütleriyle hesaplanır; son gün hafta sonu/resmî tatile
+  rastlasa da uzamaz (Sabri Güneş §§ 60-61: 28.11.2005 tebliğ, süre 28.05.2006 Pazar günü
+  doldu, 29.05.2006 başvurusu süre dışı). Motor bu kuralda adli tatil uzatması ve son gün
+  kayması YAPMAZ.
 
 ### Ceza yargısı (CMK 5271) — v0.5.14'te çıpalandı
 
@@ -234,6 +302,23 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
   - **Ayrım kritik:** f.2-3 hangi **İŞLERİN** tatilde görüleceğine dairdir; **sürenin
     uzaması her hâlde f.4'e tabidir.** İşin fiilen yürüyor olması sürenin uzamadığı anlamına
     gelmez — ters yorum süreyi üç gün kısaltır.
+  - **TATİL İÇİNDE TEBLİĞ (v0.5.18 / Y-02):** *"Adlî tatile rastlayan süreler işlemez"* —
+    tebliğ tatil içindeyse süre tatilde hiç işlemez; **tam süre** tatilin bittiği günden sonra
+    işler (YCGK 26.11.2013 E.2013/2-272 K.2013/524: 04.08.2012 tebliğ, yedi günlük süre 1 Eylül'de
+    başlayıp 07.09.2012'de doldu; YCGK 27.12.2022 E.2021/319 K.2022/846: tutuklu işte de aynı —
+    21.07.2020 tebliğde 02.09.2020 temyizi süresinde; 14.02.1934 t. 47/1 s. İBK). AYM Ramazan
+    Seçen (B. No: 2021/37483): aynı tebliğde 31.08.2020 temyizini süre aşımı saymak mahkemeye
+    erişim hakkını **ihlal** eder. Eski motor süreyi tatilde işletiyordu (25.08.2026 → 08.09;
+    doğrusu **14.09.2026**). Bazı eski daire kararları tatil içi tebliğde de süreyi tatilde
+    işletmiş, bitiş tatile rastlayınca "tatil bitiminden itibaren üç gün" uygulamıştır (Y. 11. CD
+    E.2017/14079 K.2018/2400: 07.08.2014 tebliğ, bir haftalık süre tatilde bitti → 01.09'dan üç
+    gün) → motor bu eski okumanın ERKEN tarihini **İHTİYAT PLANI** olarak basar (bitiş tatil
+    dışındaysa ham bitiş: 25.08.2026 tebliğde 08.09), deftere ayrı kayıt yazar ve `--json`
+    `plan_son_gun` alanında taşır; avukat bilinçli kararla kapatır. Tebliğ tatilden ÖNCE, bitiş
+    tatil içinde → kural değişmedi: 31 Ağu + üç gün. **Sınır hâli (TEYİT BEKLİYOR):** tebliğ
+    19 Temmuz → süre tatilin ilk günü başlar, tatil öncesinde hiç işlemez; doğrudan karar
+    bulunamadı → manşet ERKEN (31 Ağu + üç gün), YCGK okuması (tam süre 31 Ağu'dan sonra)
+    karşı taraf kesin dil kapısına girer.
 - **Süre hesabı: CMK m.39** — gün ile belirlenen süreler tebligatın yapıldığının **ertesi
   günü** işler (f.1); hafta ile belirlenmişse son haftada **isim itibarıyla** karşılığı olan
   günün mesai bitiminde (f.2); ay ile belirlenmişse **sayı itibarıyla** karşılığı olan günde,
@@ -277,6 +362,7 @@ Süre yalnızca usul kanunlarında değil; **maddi hukuk mevzuatında** da olabi
   | Hukuk | HMK m.102/104 | 31 Ağu + **bir hafta** | 07.09.2026 | `--yargi hukuk` |
   | İdari | İYUK m.61 / **m.8/3** | ara bitimini izleyen tarihten **yedi gün** | 07.09.2026 | `--yargi idari` |
   | **Ceza** | **CMK m.331/4** | tatilin bittiği günden **ÜÇ GÜN** | **03.09.2026** | `--yargi ceza` |
+  | **İcra** (v0.5.18) | **İİK m.18/1** · HMK m.103/1-h | **UZATMA YOK** | 28.07.2026 (ham bitiş) | `--yargi icra` / `iik_*` |
 
   Ceza kolunda hukuk rejimini uygulamak son günü **dört gün geç** gösterir; 04–07 Eylül'de
   verilen istinaf/temyiz/itiraz **süreden reddedilir ve hüküm kesinleşir.** Motor, `cmk_*`
@@ -289,6 +375,15 @@ Süre yalnızca usul kanunlarında değil; **maddi hukuk mevzuatında** da olabi
   m.62 sınırlamasına tabi olmaksızın görevlerine devam eder. Dosyanın mahkemesi buysa m.8/3
   uzamasının işleyip işlemediği ayrıca değerlendirilir (**ölçülmemiş açık uç — varsayma**).
 - "Hafta" ile "gün" ayrımına dikkat: HMK ve CMK kanun yollarında **hafta**, İYUK ve AYM'de **gün** birimi kullanılır — karıştırma.
+- **Rejimi kural taşır (v0.5.18):** `--kural` verildiğinde yukarıdaki tablo kolun değil
+  **kuralın** `adli_tatil` alanına göre uygulanır (ör. `iik_*` hukuk kolunda koşulsa bile
+  uzamaz; `is_*` 4857 süreleri uzamaz — Y. 9. HD E.2016/1261 K.2016/22196; AİHM'de son gün de
+  kaymaz). Rejimi teyit edilemeyen kural temkinli (uzatma YOK) hesaplanır ve uyarı basar.
+- **TATİL TAKVİMİ EKSİK (v0.5.18 / Y-08):** dini bayram tarihleri tabloya yalnız resmî
+  kaynaktan işlenir; **2027 tarihleri 2026-10-05 itibarıyla teyit edilemedi** ve girilmedi.
+  Tabloda kaydı olmayan yıla düşen hesapta motor "TATİL TAKVİMİ EKSİK — TEYİT ET" uyarısı
+  basar (bayram iş günü sanılmış olabilir → gerçek son gün daha geç olabilir; bizim işlemimiz
+  için erken tarih güvenlidir, karşı tarafa kesin dil kurulmaz).
 
 ## Motor bayrakları — hangi işte hangi bayrak (v0.5.14; B-19)
 

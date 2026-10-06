@@ -10,9 +10,16 @@ GÖREV D (v0.5.5, UDF hattı — okuma tarafı): bu script eskiden `.udf`'i ham
 zip/`content.xml` regex'iyle KENDİSİ çözüyordu ("ham okuma denemesi"). Yargı
 Pro rehberi (`udf_tiff_pdf_guide` MCP aracı / `yargi-udf-tiff-pdf-guide` skill)
 UDF'in opak bir UYAP biçimi olduğunu ve okumanın da (yazma gibi) yalnız
-`udf-cli` ile yapılması gerektiğini söyler: `npx -y udf-cli@latest udf2md`.
+`udf-cli` ile yapılması gerektiğini söyler: `npx -y udf-cli@<sürüm> udf2md`.
 Bu yüzden ham okuma denemesi BIRAKILMIŞTIR — TEK yol artık gerçek `udf-cli`
-çağrısıdır. Başarısız olursa (npx yok / oturum gerekiyor / dosya gerçek bir
+çağrısıdır.
+
+SÜRÜM SABİTİ (v0.5.18): `@latest` KULLANILMAZ. Sabitlenmemiş sürüm, her
+çağrıda denetlenmemiş yeni bir upstream yayınını (ağ + oturumla) okuma
+zincirine sokuyordu. Sürümün TEK kaynağı `oa-dilekce/scripts/udf_yaz.py`'deki
+`UDF_CLI_SURUM` sabitidir; bu script onu import ETMEZ (yan etki/bağımlılık
+zinciri olmasın), dosyayı satır satır okur. Sabit bulunamazsa FAIL-CLOSED:
+`@latest`'e asla düşülmez, net hata verilir. Başarısız olursa (npx yok / oturum gerekiyor / dosya gerçek bir
 UDF değil) script FAIL-CLOSED çıkar: "UDF okunamadı" bahanesi ancak bu script
 fiilen başarısız OLURSA geçerlidir (o da manifeste açıkça yazılır — deftere/
 manifeste "okunamadı, manuel inceleme" notu düşülür).
@@ -39,32 +46,57 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import os
+import re
 import shutil
 import subprocess
 import sys
 
-_GIRIS_TALIMATI = (
-    "Giriş gerekli: İNSAN varsa 'npx -y udf-cli@latest login' (tarayıcıda "
-    "onaylayana kadar bekler). Başsız/otomasyon ortamda `issue_cli_login_code` "
-    "MCP aracını çağırıp dönen tek-kullanımlık kodla "
-    "'npx -y udf-cli@latest login --token <kod>' çalıştırın."
-)
+# Sürümün tek kaynağı (bkz. modül docstring'i — SÜRÜM SABİTİ).
+_UDF_YAZ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
+                        "oa-dilekce", "scripts", "udf_yaz.py")
+_SURUM_SATIRI = re.compile(r'UDF_CLI_SURUM = "(\d+\.\d+\.\d+)"[ \t]*$')
+
+
+def udf_cli_paketi(kaynak=None):
+    """`udf-cli@<UDF_CLI_SURUM>` döndürür; sabit okunamazsa None (FAIL-CLOSED —
+    çağıran `@latest`'e düşmez, hata verir). Kaynak yol ÇAĞRI anında çözülür."""
+    try:
+        with open(kaynak or _UDF_YAZ, encoding="utf-8") as f:
+            for satir in f:
+                m = _SURUM_SATIRI.match(satir.rstrip("\r\n"))
+                if m:
+                    return "udf-cli@" + m.group(1)
+    except OSError:
+        pass
+    return None
+
+
+def _giris_talimati(paket):
+    return ("Giriş gerekli: İNSAN varsa 'npx -y %s login' (tarayıcıda "
+            "onaylayana kadar bekler). Başsız/otomasyon ortamda `issue_cli_login_code` "
+            "MCP aracını çağırıp dönen tek-kullanımlık kodla "
+            "'npx -y %s login --token <kod>' çalıştırın." % (paket, paket))
 
 
 def udf2md_ile_metin_cikar(udf_yolu, npx_yolu="npx", zaman_asimi=60):
-    """Rehberin TEK okuma hattını çağırır: `npx -y udf-cli@latest udf2md
-    <udf_yolu>`. Ham zip/content.xml okuma denemesi YOKTUR — FAIL-CLOSED:
-    npx/udf-cli bulunamaz veya başarısız olursa metin YERİNE None + net hata
-    mesajı döner (çağıran taraf sys.exit eder, "okuyamadım ama okudum gibi
-    davrandım" sessiz-yanlışı ASLA üretilmez).
+    """Rehberin TEK okuma hattını çağırır: `npx -y udf-cli@<UDF_CLI_SURUM>
+    udf2md <udf_yolu>`. Ham zip/content.xml okuma denemesi YOKTUR — FAIL-CLOSED:
+    npx/udf-cli bulunamaz, sürüm sabiti okunamaz veya çağrı başarısız olursa
+    metin YERİNE None + net hata mesajı döner (çağıran taraf sys.exit eder,
+    "okuyamadım ama okudum gibi davrandım" sessiz-yanlışı ASLA üretilmez).
 
     Döner: (metin|None, hata|None)."""
+    paket = udf_cli_paketi()
+    if paket is None:
+        return None, ("udf-cli sürüm sabiti okunamadı (oa-dilekce/scripts/udf_yaz.py "
+                      "UDF_CLI_SURUM) — sabitlenmemiş sürüm çalıştırılmaz.")
     yol = shutil.which(npx_yolu)
     if yol is None:
         return None, ("npx bulunamadı (Node.js kurulu olmayabilir). Kurulum: "
-                       "https://nodejs.org — ardından " + _GIRIS_TALIMATI)
+                       "https://nodejs.org — ardından " + _giris_talimati(paket))
     try:
-        p = subprocess.run([yol, "-y", "udf-cli@latest", "udf2md", udf_yolu],
+        p = subprocess.run([yol, "-y", paket, "udf2md", udf_yolu],
                             capture_output=True, text=True, timeout=zaman_asimi,
                             encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
@@ -77,7 +109,7 @@ def udf2md_ile_metin_cikar(udf_yolu, npx_yolu="npx", zaman_asimi=60):
         return None, (
             "udf-cli udf2md başarısız (exit %s) — dosya bozuk/gerçek bir UDF "
             "olmayabilir YA DA oturum gerekiyor olabilir. %s\n--- udf-cli çıktısı ---\n%s"
-            % (p.returncode, _GIRIS_TALIMATI, hata))
+            % (p.returncode, _giris_talimati(paket), hata))
     return p.stdout, None
 
 

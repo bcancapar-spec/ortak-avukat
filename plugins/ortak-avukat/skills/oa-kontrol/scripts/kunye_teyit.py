@@ -53,9 +53,26 @@ olabilir)" ARA STATÜSÜ üretilir. Bu ara statü künye izi GERÇEK olduğu iç
 1 YAPMAZ; GÖRÜNÜR uyarı + ayrı sayaçtır. Hangi dairenin baktığı esas eşleşmesi
 oa-kontrol A-listesi muhakemesine bırakılır (mekanik iz ≠ daire doğruluğu).
 
+── v0.5.18 (aday) — ATIF KAPSAMI + DERİNLİK + DAVA GEÇMİŞİ ──
+(1) Y-09: «Anayasa m.36», «Anayasa'nın 36. maddesi», «Av.K. m.36», ek/geçici
+    madde («4857 sayılı Kanun geçici m.8», «Kanun'un ek 3. maddesi»), «4857
+    s.K.» kısaltması ve adıyla anılan kanunlar artık çıkarılır; İMK/TK/HUAK/
+    KMK/AvK numara eşlemesine girdi (numaralar resmî kaynaktan teyitli).
+    «Anayasa Mahkemesi» atıf değildir. Kanunsuz ek/geçici anış [BİLGİ]'dir.
+(2) B-21/B-03: TEYİTLİ atfın DERİNLİĞİ okunur (DOKUM-SINIFI, ARAMA izi,
+    ikinci el: künye/madde yalnız başka bir kararın kaydında/dökümünde) —
+    ADVISORY (⚠ + sayaç; exit'i değiştirmez).
+(3) B-17: `_oa/dosya.md`de (ya da `--kendi-kunye` ile) beyan edilen davanın
+    KENDİ geçmişi künyeleri muaf (birebir eşleşme; [BİLGİ] + istisna defteri).
+(4) Fable karşı-tez turu: mevzuat madde izi yalnız MADDE BAĞLAMINDA sayılır
+    (kütük satırının zaman damgası «:35:» artık «m.35» izi değildir; kanun
+    numarası tarih parçasından okunmaz); numaralı atıfta kimlik numaradır
+    («765 sayılı TCK» yeni TCK kaydıyla teyit edilmez); «TK»/«İMK» eşlemesi
+    raporda görünür.
+
 Kullanım:
   python kunye_teyit.py <taslak.md> [--kutuk _oa/teyit/kunye-teyit.md] \
-      [--dokum-dizin _oa/teyit/dokum] [--cikti-dizin _oa/cikti]
+      [--dokum-dizin _oa/teyit/dokum] [--cikti-dizin _oa/cikti] [--kendi-kunye "..."]
   python kunye_teyit.py <taslak.md> --kok "<klasör>"   # oa_hafiza.py/tam_tur.py simetrisi
   python kunye_teyit.py --once-bak "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678" \
       [--kutuk ... | --kok "<klasör>"]                 # F — önce-bak (advisory)
@@ -89,6 +106,7 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse
 import datetime
+import functools
 import json
 import os
 import re
@@ -116,6 +134,19 @@ KANUN_NO = {
     "AATUHK": "6183", "İK": "4857", "IK": "4857", "AY": "2709",
     "İSGK": "6331", "ISGK": "6331", "TKHK": "6502", "HSK": "6087",
     "SGK": "5510", "BK": "818", "MK": "743", "KDV": "3065",
+    # v0.5.18 (Y-09) — eşlemede OLMAYAN kısaltmalar. Numara + resmî ad
+    # mevzuat.gov.tr'den Yargı PRO `mevzuat_ara` ile teyit edildi (2026-10-05):
+    # 7036 İŞ MAHKEMELERİ KANUNU (RG 25.10.2017) · 7201 TEBLİGAT KANUNU
+    # (RG 19.02.1959) · 6325 HUKUK UYUŞMAZLIKLARINDA ARABULUCULUK KANUNU
+    # (RG 22.06.2012) · 634 KAT MÜLKİYETİ KANUNU (RG 02.07.1965) · 1136
+    # AVUKATLIK KANUNU (RG 07.04.1969). NEDEN: eşlemede olmayan kısaltma
+    # yalnız harfiyle aranıyordu — kütükte «7201 sayılı Tebligat Kanunu m.21»
+    # teyidi varken taslaktaki «TK m.21» TEYİTSİZ kalıyor, çıplak «TK 21»
+    # hiç çıkarılmıyordu (derlemde tebligat dersleri bu yazımla dolu).
+    # NOT: «İMK» iş hukuku yazınında İş Mahkemeleri Kanunu'dur; İmar Kanunu
+    # (3194) için bu kısaltma KULLANILMAZ — «3194 sayılı Kanun» yazılır.
+    "İMK": "7036", "IMK": "7036", "TK": "7201", "HUAK": "6325", "KMK": "634",
+    "AVK": "1136",
 }
 NO_KANUN = {v: k for k, v in KANUN_NO.items()}
 
@@ -124,11 +155,81 @@ NO_KANUN = {v: k for k, v in KANUN_NO.items()}
 BILINEN_BARE = set(KANUN_NO.keys()) | {"MÜLGA", "HUMK"}
 
 # Mahkeme/kurul markerları — kanun sanılmamaları için dışlanır.
+# v0.5.18: «EK»/«GEÇİCİ» madde türüdür, kanun DEĞİLDİR — kanunsuz yazılmış
+# «GEÇİCİ MADDE 8» eskiden «GEÇİCİ» adlı hayalî bir kanunun maddesi sanılıp
+# sahte TEYİTSİZ üretiyordu; artık kanun anahtarı sayılmaz (kanunsuz ek/geçici
+# atıf ayrı [BİLGİ] bloğunda görünür kalır).
 MERCILER = {
     "YARGITAY", "DANIŞTAY", "DANISTAY", "AYM", "BAM", "BİM", "BIM", "HGK",
     "CGK", "İBK", "IBK", "AİHM", "AIHM", "SAYIŞTAY", "HD", "CD", "İDDK",
     "IDDK", "VDDK", "KANUN", "SAYILI", "MADDE", "ESAS", "KARAR",
+    "EK", "GEÇİCİ", "GECICI",
 }
+# NOT (v0.5.18): «375 s. KHK m.28» gibi NUMARALI atıfta kimlik numaradır —
+# `_kanun_anahtarlari` numarayla tutarsız kısaltmayı («KHK», «765 sayılı TCK»
+# içindeki «TCK») anahtar yapmaz; «399 sayılı KHK m.28» teyidi o atfı
+# karşılamaz. Numarasız yalın «KHK m.28» / büyük harfli tablo-dışı kanun adı
+# («GÜMRÜK KANUNU MADDE 5» → «KANUNU») eski davranışını korur: çıkarılır ve
+# teyit ister (denetimsiz bırakılmaz; fail-closed).
+# v0.5.18 — iki anlamlı kısaltmalar: eşleme tek anlama bağlanır ve RAPORDA
+# görünür kılınır (avukat başka kanun kastetmişse fark etsin). «TK» uygulamada
+# Tebligat Kanunu'dur; eski ticaret yazınında Ticaret Kanunu için de görülür.
+# «İMK» iş hukukunda İş Mahkemeleri Kanunu'dur (İmar Kanunu 3194 için
+# kullanılmaz). Başka kanun kastediliyorsa atıf NUMARASIYLA yazılır.
+BELIRSIZ_KISALTMA = {
+    "TK": "7201 sayılı Tebligat Kanunu",
+    "İMK": "7036 sayılı İş Mahkemeleri Kanunu",
+    "IMK": "7036 sayılı İş Mahkemeleri Kanunu",
+}
+
+# ── v0.5.18 (Y-09) — ADIYLA ANILAN KANUNLAR (numarasız yazım) ──────────────
+# «Anayasa m.36», «Anayasa'nın 36. maddesi», «Av.K. m.36», «Türk Borçlar
+# Kanunu'nun 49. maddesi»... Eski `_KANUN` yalnız BÜYÜK HARF kısaltmayı ya da
+# «N sayılı» biçimini tanıyordu: bu yazımlar HİÇ çıkarılmıyor, denetimsiz
+# teslim ediliyordu (Y-09 — kapının kendi regex'iyle sınandı; derlem
+# taslaklarında 29 Anayasa atfı denetim dışı). Tablo KANUN NUMARASINA bağlıdır
+# (kimlik numaradır; ad ve kısaltma takma addır) ve İKİ YÖNDE aynı desenle
+# kullanılır (tek-yazar): taslaktan çıkarımda ve kütük/döküm eşleşmesinde.
+# Resmî adlar mevzuat.gov.tr'den Yargı PRO `mevzuat_ara` ile teyit edildi
+# (2026-10-05). YANLIŞ-POZİTİF KORUMALARI: «Anayasa Mahkemesi» bir atıf
+# değildir (negatif bakış); «Basın İş Kanunu»/«Deniz İş Kanunu» İş Kanunu
+# değildir; numara taşıyan yazımda («765 sayılı Türk Ceza Kanunu») kimlik
+# NUMARADIR — ad deseni o atfa başka numara EKLEMEZ (eski kanun yenisiyle
+# teyit edilmiş sayılmasın). Tablo örneklemdir (anayasa m.3): listede olmayan
+# kanun adıyla anılırsa çıkarılmaz; «N sayılı» ya da kısaltma yazımı kapıya
+# girer — tablo kullanıldıkça genişletilir.
+# Adlar BÜYÜK-KÜÇÜK HARF DUYARSIZDIR (`(?i:…)`; Python'un Unicode eşlemesi
+# i/İ/ı/I'yı birbirine bağlar): büyük harfli başlıktaki «ANAYASASI MADDE 36»
+# eskiden «AYASASI» adlı hayalî bir kanun sanılıp sahte TEYİTSİZ üretiyordu.
+# Anayasa deseni sağdan da sınırlıdır: «anayasal», «Anayasacı» ad sayılmaz
+# (eşleşme tarafında yanlış-teyit yüzeyi olurdu).
+KANUN_AD_DESENLERI = {
+    "2709": (r"(?i:Anayasa(?:s[ıi])?(?:n[ıi]n|n[ıi]|nda|na|da|ya)?"
+             r"(?![a-zçğıöşü])(?!\s*Mahkeme))",),
+    "1136": (r"(?i:Avukatl[ıi]k\s+Kanunu)", r"Av\.\s*K\b\.?", r"AvK\b"),
+    "7201": (r"(?i:Tebligat\s+Kanunu)",),
+    "7036": (r"(?i:İş\s+Mahkemeleri\s+Kanunu)",),
+    "634": (r"(?i:Kat\s+Mülkiyeti\s+Kanunu)",),
+    "6325": (r"(?i:Hukuk\s+Uyuşmazlıklarında\s+Arabuluculuk\s+Kanunu)",),
+    "6098": (r"(?i:Türk\s+Borçlar\s+Kanunu)",),
+    "4721": (r"(?i:Türk\s+Medeni\s+Kanunu)",),
+    "6102": (r"(?i:Türk\s+Ticaret\s+Kanunu)",),
+    "6100": (r"(?i:Hukuk\s+Muhakemeleri\s+Kanunu)",),
+    "5271": (r"(?i:Ceza\s+Muhakemesi\s+Kanunu)",),
+    "5237": (r"(?i:Türk\s+Ceza\s+Kanunu)",),
+    "2577": (r"(?i:İdari\s+Yargılama\s+Usulü\s+Kanunu)",),
+    "2004": (r"(?i:İcra\s+ve\s+İflas\s+Kanunu)",),
+    # «Basın İş», «Basın-İş», «Deniz İş Kanunu» İş Kanunu (4857) DEĞİLDİR.
+    "4857": (r"(?<!(?i:basın)[\s-])(?<!(?i:deniz)[\s-])(?i:İş\s+Kanunu)",),
+}
+_HARF_ONCESI_DEGIL = r"(?<![A-Za-zÇĞİÖŞÜçğıöşü])"
+_KANUN_AD_RX = {no: re.compile(_HARF_ONCESI_DEGIL + "(?:" + "|".join(ds) + ")")
+                for no, ds in KANUN_AD_DESENLERI.items()}
+_KANUN_ADLI = "(?:" + "|".join(_HARF_ONCESI_DEGIL + d
+                               for ds in KANUN_AD_DESENLERI.values() for d in ds) + ")"
+# Ad deseninin hemen önünde FARKLI bir «N sayılı» numarası varsa o geçiş bu
+# kanunun adı sayılmaz (eşleşme tarafında da kimlik numaradır).
+_AD_ONCESI_NO_RE = re.compile(r"(\d{3,5})\s*(?:[Ss]ayılı|[Ss]\.)\s*$")
 
 # ── İçtihat: esas/karar/daire çıkarımı — PAYLAŞIMLI (M2-3) ──
 # Bu script artık kendi ESAS_RE/KARAR_RE/_daire_key/_daire_kumesi tanımlarını
@@ -140,20 +241,54 @@ MERCILER = {
 _KANUN = (
     r"(?:\d{3,5}\s*[Ss]ayılı\s+[^\n]{0,50}?(?:[Kk]anun\w*|KHK)"   # 6098 sayılı ... Kanun
     r"|\d{3,5}\s*[Ss]ayılı\s+[A-ZÇĞİÖŞÜ]{2,7}"                    # 6098 sayılı TBK
-    r"|[A-ZÇĞİÖŞÜ]{2,7})"                                         # TBK, HMK, İYUK
+    # v0.5.18 (Y-09) — «s.» kısaltmalı numara: «4857 s.K.», «4857 s. Kanun»,
+    # «375 s. KHK». Hukuk yazımında yaygın (derlemde «4857 s.K. ek m.3»,
+    # «375 s. KHK geçici m.24» denetimsiz geçiyordu). Kanun sözcüğü «s.»nin
+    # HEMEN ardında aranır (pencere yok): «2019 s. 45» (sayfa) eşleşmez.
+    r"|\d{3,5}\s*[Ss]\.\s*K\b\.?"
+    r"|\d{3,5}\s*[Ss]\.\s*(?:[Kk]anun\w*|KHK|[A-ZÇĞİÖŞÜ]{2,7})"
+    r"|" + _KANUN_ADLI +                                           # v0.5.18: Anayasa / Av.K. / ad
+    # TBK, HMK, İYUK — v0.5.18: SOLDAN sözcük sınırlı (büyük harfli sözcüğün
+    # ortasından «AYASASI»/«KANUNU» gibi parça kanun anahtarı koparılmaz)
+    r"|" + _HARF_ONCESI_DEGIL + r"[A-ZÇĞİÖŞÜ]{2,7})"
 )
+# Kanun metninden kısaltma çıkarımı — TAM sözcük (2-7 büyük harf).
+_KISALTMA_RE = re.compile(_HARF_ONCESI_DEGIL + r"[A-ZÇĞİÖŞÜ]{2,7}(?![A-Za-zÇĞİÖŞÜçğıöşü])")
 _MADDE = r"\d+(?:\s*/\s*\d+)?(?:\s*[-–]\s*[a-zçğıöşü]\b)?"
+# v0.5.18 — iyelik/hâl eki: «TBK'nın», «HUAK'ın» (ünlüyle başlayan ek de),
+# «AİHS'in», «Anayasa'da». Eski desen yalnız n'li biçimi tanıyordu.
+_IYELIK = r"['’]?(?:[nN]?[ıiuü]n|[dt][ae])?"
+# v0.5.18 (Y-09/B-03) — EK / GEÇİCİ MADDE: kanun ile madde arasına giren tür
+# sözcüğü eski regex'i kırıyordu («4857 sayılı Kanun geçici m. 8», «ek m. 3»
+# listede yoktu). Zamanaşımı/geçiş hükümleri gibi SONUÇ BELİRLEYİCİ maddeler
+# bu sınıftadır — yanlış numaralı bir geçiş hükmü süre savunmasını çökertir.
+_TUR = r"(?:(?P<tur>[Gg]e[çc]ici|GE[ÇC][İI]C[İI]|[Ee]k|EK)\s*)"
 
 # "TBK m.49" / "6098 sayılı Kanun m.49" / "TCK md. 5" / "HMK madde 119"
+# v0.5.18: "4857 sayılı Kanun geçici m. 8" / "Anayasa m.36" / "Av.K. m.36"
 MEVZUAT_M_RE = re.compile(
-    r"(?P<kanun>" + _KANUN + r")\s*"
+    r"(?P<kanun>" + _KANUN + r")" + _IYELIK + r"\s*" + _TUR + r"?"
     r"(?:m\.\s*|md\.\s*|mad\.\s*|[Mm]adde\s*|MADDE\s*)(?P<madde>" + _MADDE + r")"
 )
 # Ters biçim: "TBK'nın 49. maddesi" / "HMK 119. madde"
+# v0.5.18: "Anayasa'nın 36. maddesi" / "4857 sayılı Kanun'un geçici 8. maddesi"
+# / "Anayasa'nın 36'ncı maddesi" (kesme işaretli sıra eki)
+# ReDoS KORUMASI (v0.5.18): madde ile «madde» sözcüğü arasında YALNIZ BİR
+# serbest `\s*` vardır; isteğe bağlı her parça (nokta, kesme, sıra eki) kendi
+# boşluğunu kendisi tüketir. Art arda isteğe bağlı `\s*` grupları uzun boşluk
+# dizisinde (maskelenmiş kaynakça bloğu binlerce boşluk üretir) polinom geri
+# izlemeye yol açardı — kapı büyük taslakta kilitlenmemeli.
+# Ek/geçici türde SIRA İŞARETİ (nokta ya da -inci eki) ZORUNLUDUR: «Kanuna ek
+# 2 maddeyle» (iki EK madde) bir «ek m.2» atfı değildir; «geçici 8. maddesi»,
+# «ek 3'üncü madde» atıftır (koşullu grup `(?(tur)…)`).
+_SIRA_EKI = r"(?:inci|nci|ıncı|ncı|uncu|ncu|üncü|ncü)"
 MEVZUAT_REV_RE = re.compile(
-    r"(?P<kanun>" + _KANUN + r")['’]?(?:[nN][ıiuü]n|[dt][ae])?\s*"
-    r"(?P<madde>\d+(?:\s*/\s*\d+)?)\s*\.?\s*"
-    r"(?:uncu|üncü|inci|ıncı|nci|ncı)?\s*[Mm]adde(?:si|sinde|sine|sindeki)?"
+    r"(?P<kanun>" + _KANUN + r")" + _IYELIK + r"\s*" + _TUR + r"?"
+    r"(?P<madde>\d+(?:\s*/\s*\d+)?)\s*"
+    r"(?(tur)(?:\.\s*(?:['’]\s*)?|(?:['’]\s*)?" + _SIRA_EKI + r"\s*)"
+    r"|(?:\.\s*)?(?:['’]\s*)?(?:" + _SIRA_EKI + r"\s*)?)"
+    r"(?:[Mm]adde|MADDE)"
+    r"(?:si|sinde|sine|sindeki|sinin|siyle|leri)?"
 )
 # Bare biçim: "HMK 119" (yalnız bilinen kısaltma + çıplak sayı)
 MEVZUAT_BARE_RE = re.compile(
@@ -161,6 +296,72 @@ MEVZUAT_BARE_RE = re.compile(
 )
 
 OCR_RE = re.compile(r"OCR|⚠")
+
+# v0.5.18 — KANUNSUZ ek/geçici madde anışı («geçici m.8», «Ek Madde 3»):
+# kanunu aynı ibarede yazılmadığı için mekanik teyit YAPILAMAZ. Engel
+# DEĞİLDİR (kanun önceki cümlede anılmış olabilir — alarm yorgunluğu da
+# zarardır) ama SESSİZ de geçmez: [BİLGİ] bloğunda listelenir.
+_TUR_DESEN = {"gecici": r"(?:[Gg]e[çc]ici|GE[ÇC][İI]C[İI])", "ek": r"(?:[Ee]k|EK)"}
+KANUNSUZ_EKGEC_RE = re.compile(
+    _HARF_ONCESI_DEGIL + r"(?:[Gg]e[çc]ici|GE[ÇC][İI]C[İI]|[Ee]k|EK)\s*"
+    r"(?:(?:[Mm]adde|MADDE|md\.|m\.)\s*\d+"
+    r"|\d+\s*(?:\.\s*)?(?:['’]\s*)?(?:(?:inci|nci|ıncı|ncı|uncu|ncu|üncü|ncü)\s*)?"
+    r"(?:[Mm]adde|MADDE))")
+_EKGEC_ONCESI_RE = re.compile(
+    r"(?:[Gg]e[çc]ici|GE[ÇC][İI]C[İI]|\b[Ee]k|\bEK)\s*(?:(?:[Mm]adde\w*|MADDE|md\.|m\.)\s*)?$")
+
+# ── v0.5.18 (Fable karşı-tez #1) — MADDE İZİ YALNIZ MADDE BAĞLAMINDA ─────────
+# YANLIŞ-TEYİT KAPATILDI: madde numarası kaynak segmentin HERHANGİ bir yerinde
+# aranıyordu. Her kütük satırı bir zaman damgası taşır («2026-10-05T10:35:47»)
+# ve tek segmenttir; damganın «10/35/47» parçaları 1-59 arası her maddenin
+# «izi» sayılıyordu: kütükte yalnız «HMK m.119» teyidi varken taslaktaki
+# «HMK m.35» TEYİTLİ geçebiliyordu. Aynı şekilde değişiklik notlarındaki
+# «(Ek:16/7/2026-7589/13 md.)» parçaları da sahte madde iziydi. Artık sayı
+# ancak MADDE BAĞLAMINDA iz sayılır: (a) önünde madde işareti («m.», «md.»,
+# «madde», «MADDE», «madde_no=», mevzuat kimliğindeki «:m51»), (b) ardında
+# «. madde(si)» / «'nci madde», (c) atfın kendi kısaltmasının hemen ardında
+# çıplak biçim («HMK 119»). Fail-closed: bağlamsız sayı iz DEĞİLDİR.
+_MADDE_ONCESI_RE = re.compile(
+    r"(?:" + _HARF_ONCESI_DEGIL
+    + r"(?:[Mm]\.|[Mm][Dd]\.|[Mm]ad\.|[Mm]adde|MADDE)(?:[\s_]?(?:no|NO))?[\"']?\s*(?:[:=]\s*)?"
+    r"|" + _HARF_ONCESI_DEGIL + r"m)$")
+_MADDE_SONRASI_RE = re.compile(
+    r"(?:\s*/\s*\d+)?(?:\s*[-–]\s*[a-zçğıöşü](?![a-zçğıöşü]))?\s*(?:\.\s*)?(?:['’]\s*)?"
+    r"(?:" + _SIRA_EKI + r"\s*)?(?:[Mm]adde|MADDE)")
+# Kanun NUMARASI aranırken tarih/saat parçaları maskelenir: «12.05.2004»
+# tarihindeki yıl 2004 (İİK) numarası sayılmasın; ISO damga, «16/7/2026».
+_TARIH_SAAT_RE = re.compile(
+    r"(?<!\d)(?:\d{4}-\d{1,2}-\d{1,2}(?:[T ]\d{1,2}[:\-]\d{2}(?:[:\-]\d{2})?)?"
+    r"|\d{1,2}[./]\d{1,2}[./]\d{4}"
+    r"|\d{8}T\d{4,6}"
+    r"|\d{1,2}:\d{2}(?::\d{2})?)(?!\d)")
+
+# ── v0.5.18 (B-21 / B-03) — TEYİT DERİNLİĞİ ────────────────────────────────
+# Kütük (oa_hafiza `teyit`) GETİR satırına DOKUM-SINIFI=tam-metin|ilgili-kisim,
+# ARAMA satırına «[ARAMA — tam metin çekilmedi]» yazıyor; bu kapı onları HİÇ
+# okumuyordu. Ayrıca bir künyenin izi yalnız BAŞKA bir kararın kaydında ya da
+# dökümünde (o karar içinde alıntı) bulunduğunda «TEYİTLİ» geçiyordu (B-21:
+# kaldırma kararı olan, kendisi hiç getirilmemiş BAM kararı) ve bir mevzuat
+# maddesi yalnız bir içtihat dökümünde anıldığı için «teyitli» sayılıyordu
+# (B-03: mevzuat sorgusu yok; iz ≠ teyit). Derinlik ADVISORY'dir: statüyü
+# ve exit kodunu DEĞİŞTİRMEZ (künye izi gerçektir), görünür ⚠ ve sayaç basar.
+# Araç ailesi ad ÖRÜNTÜSÜNDEN okunur (ad listesi kopyalanmaz — tek-yazar:
+# kanonik adlar oa_hafiza'dadır). Yalnız ALT ÇİZGİLİ araç adı biçimindeki
+# sözcükler sınıflanır (düz «mevzuat»/«anayasa» sözcüğü araç adı değildir);
+# aileler: *mevzuat* / resmi_gazete_* → mevzuat; *ictihat* / kurum_karari_* /
+# *bedesten* / *anayasa* / *yargitay* / *danistay* / *emsal* / *aihm* / aym_*
+# → içtihat. Tanınmayan ad → belirsiz (uyarı ÜRETMEZ — alarm yorgunluğu).
+_ARAC_ADI_RE = re.compile(r"[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+")
+_ARAC_MEVZUAT_PARCA = ("mevzuat", "resmi_gazete")
+_ARAC_ICTIHAT_PARCA = ("ictihat", "kurum_karari", "bedesten", "anayasa", "yargitay",
+                       "danistay", "emsal", "aihm", "aym_", "uyusmazlik")
+_IKINCI_EL_ISARET_RE = re.compile(
+    r"içinde\s+(?:alıntı|anıl|geç|atıf)|alıntıla\w*|alıntılı\b|alıntı\s+yap\w*"
+    r"|atıf\s+yapılan|atfen\b|naklen\b|ikinci\s+el")
+# Arama aracı satırı: «[ARAMA — tam metin çekilmedi]» işareti ya da *_ara /
+# search_* araç adı. Arama isabet listesinde görülen künye ikinci el DEĞİL,
+# «yalnız arama» düzeyidir (varlığı görüldü, içeriği çekilmedi).
+_ARAMA_ARAC_RE = re.compile(r"\b[a-z0-9_]*_ara\b|\bsearch_\w+", re.I)
 
 # ── B1 (v0.5.8.5) — KENDİ-DOSYA-NO İSTİSNASI ────────────────────────────────
 # Saha bulgusu: taslağın başlık/künye bloğundaki KENDİ dosya numarası satırı
@@ -216,6 +417,26 @@ def kendi_dosya_no_ayikla(atiflar, metin):
     return kalanlar, muaflar
 
 
+def dava_gecmisi_ayikla(atiflar, kendi_kunyeler):
+    """v0.5.18 (B-17) — davanın beyan edilmiş KENDİ geçmişine birebir uyan
+    içtihat atıflarını ayıklar. Döner: (kalanlar, [(atif, beyan), ...]).
+    Eşleşme kuralı tek kaynaktadır (`ko.dava_gecmisi_eslesmesi`)."""
+    if not kendi_kunyeler:
+        return atiflar, []
+    kalanlar, muaflar = [], []
+    for a in atiflar:
+        kn = None
+        if a.tur == "ictihat":
+            kn = ko.dava_gecmisi_eslesmesi(
+                {"esas": a.esas, "karar": a.karar, "daire_key": a.daire_key,
+                 "kunye_turu": a.kunye_turu, "metin": a.metin}, kendi_kunyeler)
+        if kn:
+            muaflar.append((a, kn))
+        else:
+            kalanlar.append(a)
+    return kalanlar, muaflar
+
+
 def _sikistir(s, n=140):
     s = re.sub(r"\s+", " ", s).strip()
     return s if len(s) <= n else s[: n - 1] + "…"
@@ -226,7 +447,10 @@ class Atif:
     __slots__ = ("tur", "metin", "esas", "karar", "kanun_anahtar", "madde",
                  "ocr_taslak", "satir_no", "durum", "kaynak", "kaynak_seg",
                  "merci", "daire_key", "merci_uyari", "merci_celiski",
-                 "cikti_izi", "cikti_seg")
+                 "cikti_izi", "cikti_seg",
+                 # v0.5.18
+                 "madde_turu", "kunye_turu", "derinlik", "derinlik_not",
+                 "bas", "son")
 
     def __init__(self, tur, metin):
         self.tur = tur          # 'ictihat' | 'mevzuat'
@@ -246,28 +470,70 @@ class Atif:
         self.merci_celiski = False   # izde FARKLI bir daire fiilen görüldü
         self.cikti_izi = None        # SADECE çalışma evrakı (BİLGİ) izi etiketi
         self.cikti_seg = None
+        self.madde_turu = None       # v0.5.18: None | 'gecici' | 'ek'
+        self.kunye_turu = None       # v0.5.18: içtihatta 'esas_karar'|'aym_bb'|'aihm_basvuru'
+        self.derinlik = None         # v0.5.18 (B-21): teyit derinliği sınıfı
+        self.derinlik_not = None
+        self.bas = None
+        self.son = None
 
     def anahtar(self):
-        """Tekilleştirme anahtarı."""
+        """Tekilleştirme anahtarı. v0.5.18: madde TÜRÜ de anahtardadır —
+        «İK m.8» ile «İK geçici m.8» ayrı maddelerdir, birleştirilemez."""
         if self.tur == "ictihat":
             return ("ictihat", self.esas, self.karar)
-        return ("mevzuat", tuple(sorted(self.kanun_anahtar)), self.madde)
+        return ("mevzuat", tuple(sorted(self.kanun_anahtar)), self.madde_turu,
+                self.madde)
+
+    def madde_goster(self):
+        """Rapor için madde yazımı («m.8» / «geçici m.8» / «ek m.3»)."""
+        on = {"gecici": "geçici ", "ek": "ek "}.get(self.madde_turu, "")
+        return f"{on}m.{self.madde}"
 
 
 def _kanun_anahtarlari(kanun_str):
-    """Kanun metninden eşleşme anahtarları (kısaltma + numara + eşlenik)."""
+    """Kanun metninden eşleşme anahtarları (kısaltma + numara + eşlenik).
+    v0.5.18: numara TAŞIMAYAN yazımda kanun ADI tablosu (`KANUN_AD_DESENLERI`)
+    numarayı verir («Anayasa» → 2709, «Av.K.» → 1136). Numara taşıyan yazımda
+    KİMLİK NUMARADIR: ad deseni başka numara eklemez («765 sayılı Türk Ceza
+    Kanunu» 5237 sayılmaz) ve yalnız o numarayla TUTARLI bilinen kısaltma
+    anahtar olur («6098 sayılı TBK» → TBK; «765 sayılı TCK» → TCK EKLENMEZ —
+    eski kanun atfı yeni TCK kaydıyla teyit edilmiş sayılmasın). Kısaltmalar
+    TAM sözcüktür ve ad tablosu eşleştiyse ad metnindeki büyük harfli
+    sözcükler anahtar olmaz («TÜRK BORÇLAR KANUNU» → 6098/TBK; «TÜRK»,
+    «KANUNU» gibi kimliksiz sözcük başka kanunun iziyle eşleşmesin)."""
     al = set()
-    for num in re.findall(r"\d{3,5}", kanun_str):
+    sayilar = re.findall(r"\d{3,5}", kanun_str)
+    for num in sayilar:
         al.add(num)
         if num in NO_KANUN:
             al.add(NO_KANUN[num])
-    for ab in re.findall(r"[A-ZÇĞİÖŞÜ]{2,7}", kanun_str):
-        if ab in MERCILER:
-            continue
-        al.add(ab)
-        if ab in KANUN_NO:
-            al.add(KANUN_NO[ab])
+    kisaltmalar = [ab for ab in _KISALTMA_RE.findall(kanun_str) if ab not in MERCILER]
+    if sayilar:
+        for ab in kisaltmalar:
+            if KANUN_NO.get(ab) in sayilar:
+                al.add(ab)
+        return al
+    ad_eslesti = False
+    for no, rx in _KANUN_AD_RX.items():
+        if rx.search(kanun_str):
+            ad_eslesti = True
+            al.add(no)
+            if no in NO_KANUN:
+                al.add(NO_KANUN[no])
+    if not ad_eslesti:
+        for ab in kisaltmalar:
+            al.add(ab)
+            if ab in KANUN_NO:
+                al.add(KANUN_NO[ab])
     return al
+
+
+def _tur_normalize(ham):
+    """'geçici'/'GEÇİCİ'/'gecici' → 'gecici'; 'ek'/'EK' → 'ek'; yoksa None."""
+    if not ham:
+        return None
+    return "ek" if ham.strip().lower() == "ek" else "gecici"
 
 
 def _satir_no(metin, konum):
@@ -302,6 +568,8 @@ def ictihat_cikar(metin):
         atif.esas = ham["esas"]
         atif.karar = ham["karar"]
         atif.satir_no = ham["satir_no"]
+        atif.kunye_turu = ham.get("kunye_turu")
+        atif.bas, atif.son = ham.get("bas"), ham.get("son")
         if ham.get("daire_key"):
             atif.daire_key = ham["daire_key"]
             dm = ko.DAIRE_RE.search(ham["metin"])
@@ -331,6 +599,12 @@ def mevzuat_cikar(metin):
             # Bare biçimde mahkeme/kurul markerlerini dışla
             if rx is MEVZUAT_BARE_RE and kanun_ham.upper() not in BILINEN_BARE:
                 continue
+            # v0.5.18 — çıplak biçimde (madde işareti yok) YIL gibi duran dört
+            # haneli sayı («HUAK 2012 yılında», «HMK 2011'de») madde sayılmaz:
+            # 1900–2099 aralığında madde numarası taşıyan bir kanun bilinmiyor;
+            # eşlemeye giren yeni kısaltmalar bu yanlış-pozitifi büyütmesin.
+            if rx is MEVZUAT_BARE_RE and re.fullmatch(r"(?:19|20)\d\d", m.group("madde").strip()):
+                continue
             anahtarlar = _kanun_anahtarlari(kanun_ham)
             if not anahtarlar:
                 continue
@@ -339,10 +613,28 @@ def mevzuat_cikar(metin):
             atif = Atif("mevzuat", _sikistir(m.group(0)))
             atif.kanun_anahtar = anahtarlar
             atif.madde = madde
+            atif.madde_turu = _tur_normalize(
+                m.groupdict().get("tur") if rx is not MEVZUAT_BARE_RE else None)
             atif.satir_no = _satir_no(metin, s)
             atif.ocr_taslak = bool(OCR_RE.search(_satir_metni(metin, s)))
+            atif.bas, atif.son = s, e
             atiflar.append(atif)
     return atiflar
+
+
+def kanunsuz_ekgec_anislari(metin, atiflar):
+    """v0.5.18 — kanunu aynı ibarede yazılmamış ek/geçici madde anışları
+    (çıkarılmış hiçbir mevzuat atfıyla örtüşmeyen). Döner: [{satir_no, metin}].
+    ADVISORY: teyit edilemediği görünür kılınır; teslim engeli değildir."""
+    spanlar = [(a.bas, a.son) for a in atiflar
+               if a.tur == "mevzuat" and a.bas is not None]
+    cikan = []
+    for m in KANUNSUZ_EKGEC_RE.finditer(metin):
+        if any(m.start() < b and a < m.end() for (a, b) in spanlar):
+            continue
+        cikan.append({"satir_no": _satir_no(metin, m.start()),
+                      "metin": _sikistir(m.group(0), 60)})
+    return cikan
 
 
 def atiflari_cikar(metin):
@@ -363,14 +655,34 @@ def _segmentler(ham):
     """Kaynak metninden eşleşme segmentleri: satırlar + kayan pencereler.
     (E/K bitişik satırlara bölünmüş olsa da yakalanabilsin diye pencere.)"""
     norm = re.sub(r"\s*/\s*", "/", ham)
-    segs = [s.strip() for s in norm.splitlines() if s.strip()]
+    # v0.5.18 — satır segmentinde iç boşluk da tekleştirilir: «geçici   madde
+    # 8» gibi geniş boşluklu yazım, ek/geçici geri-bakış penceresini aşıp
+    # olağan m.8 izi sayılmasın (pencereler zaten tekleştirilmişti).
+    segs = [re.sub(r"\s+", " ", s).strip() for s in norm.splitlines() if s.strip()]
     duz = re.sub(r"[ \t]+", " ", norm)
     duz = re.sub(r"\n+", " \n ", duz)
     duz = re.sub(r"\s+", " ", duz)
     W, step = 260, 130
     if duz:
-        for i in range(0, len(duz), step):
-            segs.append(duz[i:i + W])
+        n = len(duz)
+        for i in range(0, n, step):
+            bas, son = i, min(n, i + W)
+            # v0.5.18 — pencere SÖZCÜK/SAYI ORTASINDA başlamaz ve bitmez.
+            # Neden: kesik pencere «gecici 8»i «ecici 8» (olağan m.8 izi) ve
+            # «2023/1234»ü «2023/12» (sahte esas izi) gösterebiliyordu — ikisi
+            # de yanlış-teyit yüzeyidir. Başlangıç, kesik sözcüğün BAŞINA
+            # (en çok 40 karakter geri) çekilir — madde türü bağlamı korunur;
+            # bitiş ise kesik sözcük/sayı DIŞARIDA kalacak şekilde GERİ çekilir
+            # (pencereye yeni metin eklenmez; o parça sonraki pencerededir).
+            if bas > 0:
+                k = duz.rfind(" ", max(0, bas - 40), bas)
+                if k != -1:
+                    bas = k + 1
+            if son < n and duz[son] != " ":
+                k = duz.rfind(" ", max(bas + 1, son - 40), son)
+                if k != -1:
+                    son = k
+            segs.append(duz[bas:son])
     return segs
 
 
@@ -476,11 +788,74 @@ def _sayi_var(segment, sayi):
     return re.search(r"(?<!\d)" + re.escape(sayi) + r"(?!\d)", segment) is not None
 
 
+def _ad_var(segment, no):
+    """v0.5.18 — kanun numarası `no`nun ADI segmentte geçiyor mu? Ad geçişinin
+    hemen önünde FARKLI bir «N sayılı» numarası varsa o geçiş sayılmaz
+    («765 sayılı Türk Ceza Kanunu» 5237'nin teyidi değildir)."""
+    rx = _KANUN_AD_RX.get(no)
+    if rx is None:
+        return False
+    for m in rx.finditer(segment):
+        once = _AD_ONCESI_NO_RE.search(segment[max(0, m.start() - 30):m.start()])
+        if once and once.group(1) != no:
+            continue
+        return True
+    return False
+
+
 def _anahtar_var(segment, alias):
     if alias.isdigit():
-        return _sayi_var(segment, alias)
+        return _sayi_var(segment, alias) or _ad_var(segment, alias)
     return re.search(r"(?<![A-ZÇĞİÖŞÜ0-9])" + re.escape(alias) + r"(?![A-ZÇĞİÖŞÜ0-9])",
                      segment) is not None
+
+
+def _madde_baglaminda(segment, bas, son, aliaslar=()):
+    """v0.5.18 — `segment[bas:son]`deki sayı MADDE BAĞLAMINDA mı? (bkz.
+    `_MADDE_ONCESI_RE` açıklaması). Tarih/saat/değişiklik notu parçası değil."""
+    if _MADDE_ONCESI_RE.search(segment[max(0, bas - 24):bas]):
+        return True
+    if _MADDE_SONRASI_RE.match(segment, son):
+        return True
+    once = segment[max(0, bas - 24):bas]
+    for al in aliaslar:
+        if al.isdigit():
+            continue
+        if re.search(r"(?<![A-Za-zÇĞİÖŞÜçğıöşü0-9])" + re.escape(al)
+                     + r"(?:['’][a-zçğıöşü]{1,4})?\s+$", once):
+            return True
+    return False
+
+
+def _madde_var(segment, madde, tur=None, aliaslar=()):
+    """v0.5.18 — madde izi. Ek/geçici maddede sayının önünde AYNI TÜR sözcüğü
+    aranır («geçici m.8», «GEÇİCİ MADDE 8», mevzuat kimliğindeki «gecici8»;
+    fıkra/bent ayrıntısı aranmaz — teyit maddenin kendisinin çekilmesidir).
+    Olağan maddede ise önünde ek/geçici sözcüğü OLMAYAN ve MADDE BAĞLAMINDA
+    duran en az bir geçiş gerekir: «İK m.8» atfı kütükteki «geçici m.8»
+    teyidiyle, «HMK m.35» atfı satırın zaman damgasındaki «:35:» ile
+    karşılanmaz (Fable karşı-tez #1)."""
+    if tur in _TUR_DESEN:
+        taban = re.match(r"\d+", madde)
+        if not taban:
+            return False
+        return re.search(
+            _HARF_ONCESI_DEGIL + _TUR_DESEN[tur]
+            + r"\s*(?:(?:[Mm]adde\w*|MADDE|md\.|m\.)\s*)?(?:no\s*(?:[:.]\s*)?)?"
+            + re.escape(taban.group(0)) + r"(?!\d)", segment) is not None
+    for m in re.finditer(r"(?<!\d)" + re.escape(madde) + r"(?!\d)", segment):
+        if _EKGEC_ONCESI_RE.search(segment[max(0, m.start() - 24):m.start()]):
+            continue
+        if _madde_baglaminda(segment, m.start(), m.end(), aliaslar):
+            return True
+    return False
+
+
+@functools.lru_cache(maxsize=65536)
+def _tarih_maskele(segment):
+    """Kanun NUMARASI aramasından önce tarih/saat parçalarını boşlukla örter
+    (bkz. `_TARIH_SAAT_RE`). Saf fonksiyon — önbellek yalnız hız içindir."""
+    return _TARIH_SAAT_RE.sub(" ", segment)
 
 
 def segment_eslesir(atif, segment):
@@ -490,10 +865,13 @@ def segment_eslesir(atif, segment):
         if atif.karar and not _sayi_var(segment, atif.karar):
             return False
         return bool(atif.esas or atif.karar)
-    # mevzuat: madde numarası + en az bir kanun anahtarı aynı segmentte
-    if not atif.madde or not _sayi_var(segment, atif.madde):
+    # mevzuat: madde numarası (MADDE BAĞLAMINDA) + en az bir kanun anahtarı
+    # aynı segmentte; kanun numarası tarih/saat parçasından okunmaz.
+    if not atif.madde or not _madde_var(segment, atif.madde, atif.madde_turu,
+                                        atif.kanun_anahtar):
         return False
-    return any(_anahtar_var(segment, al) for al in atif.kanun_anahtar)
+    maskeli = _tarih_maskele(segment)
+    return any(_anahtar_var(maskeli, al) for al in atif.kanun_anahtar)
 
 
 def _merci_durumu(atif, seg):
@@ -552,7 +930,153 @@ def teyit_et(atif, teyit_kaynaklar, bilgi_kaynaklar):
     atif.durum = "TEYİTSİZ"
 
 
+# ───────────────── v0.5.18 (B-21 / B-03) — TEYİT DERİNLİĞİ ─────────────────
+def _arac_ailesi(metin):
+    """'mevzuat' | 'ictihat' | None — metindeki araç adı ailesi."""
+    aileler = set()
+    for ad in _ARAC_ADI_RE.findall(metin or ""):
+        k = ad.lower()
+        if any(p in k for p in _ARAC_MEVZUAT_PARCA):
+            aileler.add("mevzuat")
+        elif any(p in k for p in _ARAC_ICTIHAT_PARCA):
+            aileler.add("ictihat")
+    if "mevzuat" in aileler:
+        return "mevzuat"
+    return "ictihat" if aileler else None
+
+
+def _ikinci_el_isareti(satir):
+    return bool(_IKINCI_EL_ISARET_RE.search(ko._tr_kucuk(satir)))
+
+
+def _arama_satiri_mi(satir):
+    """Satır bir ARAMA kaydı mı? İşaret «[ARAMA» ya da YALNIZ arama aracı adı
+    taşıyan bir hücre (serbest metindeki «ictihat_ara sonrası» sayılmaz)."""
+    return "[ARAMA" in satir or any(
+        _ARAMA_ARAC_RE.fullmatch(h) for h in ko.kutuk_satir_hucreleri(satir) if h)
+
+
+def _satirin_kendi_kunyesi_mi(satir, esas, karar):
+    """Kütük satırının KENDİ künyesi (esas, karar) mı? DAMGA/AKIBET taşıyan
+    satırda kimlik script'in doğruladığı künyedir (`kutuk_satiri_kunyesi`);
+    taşımayan satırda herhangi bir hücrenin İLK tam künyesi (17 hücreli saha
+    düzeninde künye sütunu ilk sırada olmayabilir — Fable karşı-tez #5)."""
+    hedef = (esas, karar)
+    if "DAMGA=" in satir or "AKIBET=" in satir:
+        e, k, _d = ko.kutuk_satiri_kunyesi(satir)
+        return (e, k) == hedef
+    if any(ko.kunye_normalize(h) == hedef for h in ko.kutuk_satir_hucreleri(satir)):
+        return True
+    e, k, _d = ko.kutuk_satiri_kunyesi(satir)
+    return (e, k) == hedef
+
+
+def _dokum_kaynaklari(teyit_kaynaklar):
+    """`kaynaklari_yukle`nin zaten yüklediği döküm/ham kaynakları
+    [(dosya_adı, segmentler)] — dosyalar İKİNCİ KEZ okunmaz."""
+    return [(etiket.split(":", 1)[-1], segler) for etiket, segler in teyit_kaynaklar
+            if etiket.startswith("döküm")]
+
+
+def _ilk_kunye(segler):
+    """Dökümün başındaki İLK esas/karar künyesi (kararın kendi başlığı).
+    `_segmentler` önce satırları sırayla verir; ilk satırlar yeter."""
+    bas = "\n".join(segler[:80])[:4000]
+    for a in ko.esas_karar_atiflari(bas):
+        if a.get("esas") and a.get("karar"):
+            return a["esas"], a["karar"]
+    return None, None
+
+
+def teyit_derinligi(atif, kutuk_yolu, teyit_kaynaklar):
+    """TEYİTLİ bir atfın teyit DERİNLİĞİNİ sınıflar (advisory; statüyü
+    değiştirmez). Döner: (sinif, not) — sinif:
+      içtihat: 'tam-metin' | 'ilgili-kisim' | 'arama' | 'kendi-dokum' |
+               'ikinci-el' | None (belirsiz/eski kayıt — sessiz)
+      mevzuat: 'ikinci-el' (yalnız içtihat kaynaklarında anılıyor) | None
+    Kural MEKANİKTİR: kütük satırının KENDİ künyesi (`kutuk_satiri_kunyesi`)
+    atfın künyesiyse ve satırda «… içinde alıntılı» gibi ikinci el işareti
+    yoksa birinci el; aksi hâlde künye yalnız başka bir kararın kaydında ya da
+    dökümünde anılıyordur."""
+    dokumler = _dokum_kaynaklari(teyit_kaynaklar)
+    if atif.tur == "ictihat":
+        if not (atif.esas and atif.karar) or atif.kunye_turu not in (None, "esas_karar"):
+            return None, None
+        kendi, arama_izi = [], False
+        for satir in ko.kutuk_veri_satirlari(kutuk_yolu, "kunye_teyit.derinlik"):
+            # daire=None: merci uyuşmazlığı AYRI uyarıdır (⚠ MERCİ); derinlik
+            # sınıfı ona ikinci, yanlış bir «ikinci el» uyarısı eklemez.
+            if not ko.kutuk_satiri_kunyeyle_eslesir(satir, atif.esas, atif.karar, None):
+                continue
+            if "DAMGA=" in satir or "AKIBET=" in satir:
+                if _satirin_kendi_kunyesi_mi(satir, atif.esas, atif.karar):
+                    kendi.append(satir)
+                continue
+            if _ikinci_el_isareti(satir):
+                continue
+            if _satirin_kendi_kunyesi_mi(satir, atif.esas, atif.karar):
+                kendi.append(satir)
+            elif _arama_satiri_mi(satir):
+                arama_izi = True
+        if kendi:
+            if any("DOKUM-SINIFI=tam-metin" in s for s in kendi):
+                return "tam-metin", "kararın TAM METNİ okunup kütüğe işlenmiş (DOKUM-SINIFI=tam-metin)"
+            if any(("DOKUM-SINIFI=ilgili-kisim" in s) or ("DAMGA=" in s) for s in kendi):
+                return "ilgili-kisim", ("kararın yalnız İLGİLİ KISMI okunmuş "
+                                        "(tam-metin beyanı yok)")
+            if any(_arama_satiri_mi(s) for s in kendi):
+                return "arama", ("yalnız ARAMA sonucu — kararın tam metni çekilmemiş "
+                                 "(içerik/sonuç teyit edilmedi)")
+            return None, None
+        if arama_izi:
+            return "arama", ("künye yalnız bir ARAMA sonuç listesinde görüldü — kararın "
+                             "kendisi çekilmemiş (içerik/sonuç teyit edilmedi)")
+        for _ad, segler in dokumler:
+            if not any(segment_eslesir(atif, seg) for seg in segler):
+                continue
+            if _ilk_kunye(segler) == (atif.esas, atif.karar):
+                return "kendi-dokum", "kararın kendi dökümü var (kütükte kendi satırı yok)"
+        return "ikinci-el", ("kütükte bu künyenin KENDİ satırı ve kendi dökümü yok; "
+                             "iz yalnız BAŞKA bir kararın kaydında/dökümünde — kararın "
+                             "kendisi getirilmedi (kaldırma/geri gönderme gibi zayıf "
+                             "otorite olabilir). Kararı ictihat_getir ile çekip kütüğe "
+                             "işleyin ya da ikinci el olduğunu metinde açıkça belirtin (B-21)")
+    # mevzuat — önce içtihat-DIŞI (mevzuat/belirsiz) kaynaklar: biri eşleşirse
+    # ikinci el iddiası kurulamaz (erken çıkış; büyük döküm evreninde ucuz yol).
+    ictihat_kaynaklari = []
+    for satir in ko.kutuk_veri_satirlari(kutuk_yolu, "kunye_teyit.derinlik"):
+        if _arac_ailesi(satir) == "ictihat":
+            ictihat_kaynaklari.append([satir])
+        elif segment_eslesir(atif, satir):
+            return None, None
+    for ad, segler in dokumler:
+        if _arac_ailesi(ad) == "ictihat":
+            ictihat_kaynaklari.append(segler)
+        elif any(segment_eslesir(atif, seg) for seg in segler):
+            return None, None
+    if any(segment_eslesir(atif, seg) for segler in ictihat_kaynaklari for seg in segler):
+        return "ikinci-el", ("madde yalnız İÇTİHAT kaynaklarında anılıyor — "
+                             "mevzuat sorgusu (mevzuat_getir) kaydı yok; yürürlük "
+                             "ve güncel lafız teyit edilmedi (B-03)")
+    return None, None
+
+
 # ───────────────────────── RAPOR ─────────────────────────
+def _belirsiz_kisaltma_notu(atif):
+    """v0.5.18 — iki anlamlı kısaltma («TK», «İMK») NUMARASIZ yazıldıysa hangi
+    kanuna eşlendiğini döndürür (rapor notu); değilse None."""
+    if atif.tur != "mevzuat":
+        return None
+    for ab, ad in BELIRSIZ_KISALTMA.items():
+        if not re.search(_HARF_ONCESI_DEGIL + re.escape(ab) + r"(?![A-Za-zÇĞİÖŞÜçğıöşü])",
+                         atif.metin or ""):
+            continue
+        if KANUN_NO.get(ab) in re.findall(r"\d{3,5}", atif.metin or ""):
+            return None
+        return f"«{ab}» → {ad} olarak eşlendi"
+    return None
+
+
 def _ayristirilamayan_yazdir(izler):
     """B-2 (v0.5.14) — ayrıştırılamayan atıf iddialarını GÖRÜNÜR kılar."""
     if not izler:
@@ -620,13 +1144,19 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
                     print("             Ara statü: TEYİTLİ (⚠ MERCİ DOĞRULANAMADI — farklı "
                           "daire olabilir). Bu uyarı exit'i 1 YAPMAZ (künye izi gerçek); "
                           "doğru daire eşleşmesi oa-kontrol A-listesi muhakemesidir.")
+                # v0.5.18 (B-21/B-03) — teyit derinliği (advisory)
+                if a.derinlik == "ikinci-el":
+                    print(f"           ⚠ İKİNCİ EL TEYİT — {a.derinlik_not}. Bu uyarı "
+                          "exit'i 1 YAPMAZ (iz gerçek); karar avukatındır.")
+                elif a.derinlik in ("tam-metin", "ilgili-kisim", "arama", "kendi-dokum"):
+                    print(f"           ⓘ teyit derinliği: {a.derinlik_not}")
             else:
                 if a.tur == "ictihat":
                     ip = "esas/karar no"
                     ayr = f"E. {a.esas or '—'} / K. {a.karar or '—'}"
                 else:
                     ip = "kanun+madde"
-                    ayr = f"{'/'.join(sorted(a.kanun_anahtar))} m.{a.madde}"
+                    ayr = f"{'/'.join(sorted(a.kanun_anahtar))} {a.madde_goster()}"
                 print(f"           ↳ teyit edici kaynakta (kütük/ham döküm) {ip} izi YOK "
                       f"({ayr}) — çıktıya 'teyitli' giremez.")
                 if a.cikti_izi:
@@ -636,6 +1166,10 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
                     print(f"             iz: {a.cikti_seg}")
             if a.ocr_taslak:
                 print("           ⚠ Taslakta OCR şüphesi işareti — kaynak orijinalinden teyit şerhi.")
+            kis_notu = _belirsiz_kisaltma_notu(a)
+            if kis_notu:
+                print(f"           ⓘ kısaltma eşlemesi: {kis_notu} — başka kanun "
+                      "kastedildiyse atfı NUMARASIYLA yazın.")
 
     blok("İÇTİHAT KÜNYELERİ", ictihatlar)
     blok("MEVZUAT ATIFLARI", mevzuatlar)
@@ -645,10 +1179,16 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
     teyitsiz = len(atiflar) - teyitli
     merci_uyari = sum(1 for a in atiflar if a.merci_uyari)
     cikti_izli = sum(1 for a in atiflar if a.cikti_izi)
+    ikinci_el = sum(1 for a in atiflar if a.durum == "TEYİTLİ" and a.derinlik == "ikinci-el")
+    yalniz_arama = sum(1 for a in atiflar if a.durum == "TEYİTLİ" and a.derinlik == "arama")
     print("\n" + "-" * 72)
     ozet = f"ÖZET: {len(atiflar)} atıf  |  TEYİTLİ {teyitli}  |  TEYİTSİZ {teyitsiz}"
     if merci_uyari:
         ozet += f"  |  ⚠ MERCİ DOĞRULANAMADI {merci_uyari}"
+    if ikinci_el:
+        ozet += f"  |  ⚠ İKİNCİ EL {ikinci_el}"
+    if yalniz_arama:
+        ozet += f"  |  ⓘ yalnız-ARAMA {yalniz_arama}"
     print(ozet)
     if cikti_izli:
         print(f"NOT: {cikti_izli} teyitsiz künyenin izi YALNIZ çalışma evrakında "
@@ -662,6 +1202,9 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
         if merci_uyari:
             print("       ⚠ Ancak MERCİ DOĞRULANAMADI uyarılı künye(ler) var — daireyi "
                   "orijinal kaynaktan teyit et (exit 0'ı bloklamaz).")
+        if ikinci_el:
+            print("       ⚠ Ancak İKİNCİ EL teyitli atıf(lar) var — izi yalnız başka bir "
+                  "kaynağın içinde; kendisini resmî kaynaktan çekin (exit 0'ı bloklamaz).")
 
 
 # ───────────────────────── F) KÜNYE TEYİT ÖNCE-BAK ─────────────────────────
@@ -739,6 +1282,12 @@ def main():
                     help="Çalışma evrakı dizini — BİLGİ AMAÇLI, TEYİT EDİCİ DEĞİL "
                          "(model çıktısı; geriye uyum için kabul edilir, statüyü TEYİTLİ "
                          f"YAPMAZ). (varsayılan: --kok yoksa {VARSAYILAN_CIKTI}, varsa <KOK>/{VARSAYILAN_CIKTI})")
+    ap.add_argument("--kendi-kunye", action="append", default=None, metavar="KUNYE",
+                    help="v0.5.18 (B-17) — davanın KENDİ geçmişine ait künye (temyiz/istinaf "
+                         "edilen karar, ilk derece kararı); birden çok kez verilebilir. "
+                         "`_oa/dosya.md`deki «esas no / dava geçmişi / kendi künye» etiketli "
+                         "satırlar da OKUNUR. Yalnız BİREBİR eşleşen atıf muaf olur; muafiyet "
+                         "[BİLGİ] + istisna defteriyle görünür.")
     args = ap.parse_args()
 
     # --kok verilirse ve ilgili --X açıkça verilmemişse, <KOK>/_oa/... varsayılanına düş.
@@ -790,12 +1339,55 @@ def main():
                     "içtihat künyesi değil, taslağın kendi kimliği (B1 muafiyeti; "
                     "daire ve E./K. çifti taşımayan etiketli satır)")
 
+    # v0.5.18 (B-17) — DAVANIN KENDİ GEÇMİŞİ: `_oa/dosya.md`de (ya da
+    # --kendi-kunye ile) beyan edilen kendi künyeler içtihat taramasından muaf;
+    # her muafiyet [BİLGİ] + istisna defteri (sessiz atlama yasağı). Kök:
+    # --kok, yoksa kütük yolunun kökü (teslim_paketi cwd=kök ile çağırır).
+    dosya_koku = args.kok or os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(kutuk))))
+    kendi_kunyeler = ko.dava_gecmisi_kunyeleri(kok=dosya_koku,
+                                               ek_metinler=args.kendi_kunye or ())
+    atiflar, gecmis_muaflar = dava_gecmisi_ayikla(atiflar, kendi_kunyeler)
+    for a, kn in gecmis_muaflar:
+        print(f"[BİLGİ] (satır {a.satir_no}) '{a.metin}' — davanın KENDİ geçmişi "
+              f"(beyan: {kn['kaynak']}): içtihat künyesi taramasından MUAF tutuldu "
+              "(B-17; HMK m.342/2-c kararın mahkemesi/tarihi/sayısını zorunlu kılar); "
+              "istisna defterine kaydedildi.")
+        _istisna_kaydi_yaz(
+            args.kok, "kunye-istisna-dava-gecmisi",
+            ilgili=f"satır {a.satir_no}: {a.metin} (E. {a.esas or '—'} / K. {a.karar or '—'})",
+            gerekce=f"davanın kendi geçmişi — {kn['kaynak']} beyanıyla birebir eşleşti "
+                    "(B-17 muafiyeti; emsal atfı değildir)")
+    if kendi_kunyeler and ayristirilamayan:
+        kalan = []
+        for iz in ayristirilamayan:
+            if ko.dava_gecmisi_satiri_mi(_satir_metni_no(metin, iz["satir_no"]),
+                                        kendi_kunyeler):
+                print(f"[BİLGİ] (satır {iz['satir_no']}) '{iz['metin']}' — yalnız "
+                      "davanın kendi geçmişini anıyor (B-17): EKSİK KÜNYE taramasından "
+                      "muaf.")
+                continue
+            kalan.append(iz)
+        ayristirilamayan = kalan
+
+    # v0.5.18 — kanunu aynı ibarede yazılmamış ek/geçici madde (advisory)
+    kanunsuz = kanunsuz_ekgec_anislari(metin, atiflar)
+    if kanunsuz:
+        print(f"[BİLGİ] KANUNU BELİRSİZ EK/GEÇİCİ MADDE ANIŞI ({len(kanunsuz)}) — "
+              "mekanik teyit YAPILAMADI (teslim engeli değil):")
+        for iz in kanunsuz[:12]:
+            print(f"         (satır {iz['satir_no']}) {iz['metin']}")
+        print("         ↳ Atfı kanunuyla aynı ibarede yazın (ör. «4857 sayılı Kanun "
+              "geçici m.8») ki kapı denetleyebilsin.")
+
     teyit_kaynaklar, bilgi_kaynaklar, kutuk_var = kaynaklari_yukle(
         kutuk, dokum_dizin, cikti_dizin)
 
     if kutuk_var:
         for a in atiflar:
             teyit_et(a, teyit_kaynaklar, bilgi_kaynaklar)
+            if a.durum == "TEYİTLİ":
+                a.derinlik, a.derinlik_not = teyit_derinligi(a, kutuk, teyit_kaynaklar)
     # kütük yoksa: hepsi TEYİTSİZ kalır (yapısal blok)
 
     rapor_yaz(atiflar, kutuk_var, kutuk, ayristirilamayan)

@@ -69,6 +69,19 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; avukatı
      (ihtarname, cevap); **gönderim ve temas avukata aittir** ve bu kurala tabidir.
    Her iki madde de kullanım anında Mevzuat MCP'den teyit edilir; sır saklama
    yükümlülüğü (Av.K. m.36) ve Layer 0 (`oa-gizlilik`) bu kapının yanında durur.
+   - **(c) MESLEK KURALLARI KONTROL LİSTELERİ (v0.5.18 adayı; Yargı PRO
+     15-3/17-4/13-9/13-8 fikri, OA yöntemiyle) → `references/meslek-kurallari-kontrol.md`.**
+     Gerçek bir işlemden (sulh, feragat, kabul, ibra, ıslah, yemin, tahkim, haczin
+     kaldırılması, tevkil, kanun yolu…) önce **vekâlet kapsamı ve özel yetki**
+     (MK-1: HMK m.73, 74, 77; TBK m.504/3; Av.K. m.27/3, m.56); istifa, azil ya da
+     devirde **hak kaybı önleme** (MK-2: HMK m.77/4, 81-83; Av.K. m.41, 174; TBK
+     m.512 — HMK'nın iki haftası ile Av.K.'nın on beş günü EŞİTLENMEZ, iki tarih
+     ayrı hesaplanır: `oa-sure/scripts/hesapla_sure.py`); dilekçe sunulmadan önce
+     **müvekkil teyit-onam notu** (MK-3: HMK m.29; KVKK m.5, 6, 9, 10); iş kabulünde
+     **ücret sözleşmesi** (MK-4: Av.K. m.163, 164, 174; AAÜT m.1/3). Ortak ilke:
+     **taslak izni ≠ işlem izni** — eksik yetki taslağı durdurmaz, "sunuma hazır"
+     demeyi durdurur; belirsiz yetki YOK sayılır (fail-closed). Maddeler kullanım
+     anında Mevzuat MCP'den yeniden teyit edilir (son teyit 2026-10-05).
 1. **Meseleyi bir cümlede özetle ve avukata teyit ettir** — "Anladığım kadarıyla: …" diyerek anlayışını teyit et; yanlışsa avukat hemen düzeltsin. Özet, müvekkil anlatısını olgu gibi değil **iddia** gibi kurar ("müvekkil beyanına göre …").
 2. **Karar-kritik çekirdeği topla (ilk tur, toplu):**
    - **Talep:** somut, ölçülebilir hedef ne?
