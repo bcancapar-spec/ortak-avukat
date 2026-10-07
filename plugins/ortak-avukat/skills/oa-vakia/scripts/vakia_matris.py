@@ -26,7 +26,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, importlib.util, json, os, sys
+import argparse, hashlib, importlib.util, json, os, sys, time
 from datetime import date
 
 # ── v0.5.14 (B-10 / T5A) — İSPAT KÜMESİ ÜÇE BÖLÜNDÜ ────────────────────────
@@ -75,6 +75,103 @@ NOT_TANIK_BELIRSIZ = ("tanık caizliği belirsiz — senetle ispat kuralı/delil
                       "denetlenmeli (HMK m.200-203 — Mevzuat MCP teyit 2026-09-06)")
 NOT_KARINE = ("karine ispat etmez, ispat yükünü kaydırır (HMK m.190/2 — Mevzuat MCP "
               "teyit 2026-09-06)")
+
+
+# ── v0.5.18 (B-1(a)/S1 · B-4/S3) — KAYNAK BEYANI ve ATOMİK JSON YAZIMI ───────
+# NEDEN VAR (S1 — zincirleme tepki): denetim JSON'u hangi girdiden üretildiğini
+# BEYAN ETMİYORDU. Ingest yeniden koşup `00-kunye.json` değişince eski girdiye
+# göre üretilmiş matris yerinde duruyor, DURUM.md ve teslim yeşil kalıyordu
+# (Fable tutarlılık raporu 2026-10-07, B-1). Tüketici `oa-kontrol/
+# tazelik_denetim` bu beyanı okuyup sha8 farkından "bayat halka"yı GÖRÜNÜR
+# kılar. Sözleşme: `kaynaklar: [{rol, yol, sha8}]` (rol, yol) sıralı; `yol`
+# dosyayı içeren `_oa` dizinine göre POSIX göreli (dava klasörü taşınsa da,
+# cwd değişse de aynı bayt — determinizm kilidi); `sha8` = sha256[:8]
+# (tazelik_denetim.sha8 ile aynı formül). Roller: `girdi` (denetlenen model
+# girdisi) ve `kunye` (`<_oa>/metin/00-kunye.json` VARSA). `_oa` ağacı
+# dışındaki girdi (avukatın masaüstündeki taslak) → boş liste + not:
+# "denetim dışı", "temiz" DEĞİL. Not alanı her zaman yazılır (not yoksa null)
+# ki üst-düzey anahtar kümesi girdinin yerine göre değişmesin. Mevcut `girdi`
+# alanı GERİYE UYUM için AYNEN kalır (B-11 kararı: köke göreli kimlik
+# `kaynaklar[].yol` ile sağlanır, `girdi` komut satırının yankısıdır).
+# NEDEN VAR (S3 — atomik yazım): `open(yol, "w")` + json.dump yarıda kesilirse
+# hedefte YARIM JSON kalıyor; K2 graf kapısı okunamayan dosyayı sessizce
+# atlıyordu (B-4 fail-open — deneyle doğrulandı). Aynı dizinde geçici dosya +
+# `os.replace` (aynı birimde atomik yeniden adlandırma): hedef ya eski tam
+# içerik ya yeni tam içerik; kesintide eski dosya korunur, artık silinir.
+# Dört motor (vakia_matris · grafik_denetim · kiyas_denetim · antitez_matris)
+# aynı iki yardımcıyı taşır — paket yok, ortak modül yok (tests/README.md §1);
+# ad ve imza bilinçli olarak aynıdır (tests/test_v0518_uretici_atomik.py).
+OA_DISI_NOTU = "_oa dışı girdi — tazelik denetimi dışı"
+KUNYE_GORELI = ("metin", "00-kunye.json")
+
+
+def _oa_dizini_bul(yol):
+    """Dosyayı içeren EN YAKIN `_oa` dizini (mutlak); yoksa None."""
+    dizin = os.path.dirname(os.path.abspath(yol))
+    while True:
+        if os.path.basename(dizin) == "_oa":
+            return dizin
+        ust = os.path.dirname(dizin)
+        if ust == dizin:
+            return None
+        dizin = ust
+
+
+def kaynak_beyani(girdi_yolu):
+    """S1 → (kaynaklar, kaynaklar_notu). ASLA fırlatmaz: okunamayan kaynak
+    beyandan düşer ama NOTA yazılır (sessiz atlama yasağı)."""
+    try:
+        oa = _oa_dizini_bul(girdi_yolu)
+    except Exception:                          # noqa: BLE001 — beyan motoru düşürmez
+        oa = None
+    if oa is None:
+        return [], OA_DISI_NOTU
+    kayitlar, notlar = [], []
+
+    def _ekle(rol, dosya):
+        try:
+            with open(dosya, "rb") as f:
+                bayt = f.read()
+            goreli = os.path.relpath(os.path.abspath(dosya), oa).replace(os.sep, "/")
+        except Exception as e:                 # noqa: BLE001
+            notlar.append(f"{rol} kaynak beyanına alınamadı ({type(e).__name__})")
+            return
+        kayitlar.append({"rol": rol, "yol": goreli,
+                         "sha8": hashlib.sha256(bayt).hexdigest()[:8]})
+
+    _ekle("girdi", girdi_yolu)
+    kunye = os.path.join(oa, *KUNYE_GORELI)
+    if os.path.isfile(kunye):
+        _ekle("kunye", kunye)
+    kayitlar.sort(key=lambda k: (k["rol"], k["yol"]))
+    return kayitlar, (" · ".join(notlar) if notlar else None)
+
+
+def _atomik_json_yaz(yol, nesne):
+    """S3: aynı dizinde geçici dosyaya yaz, `os.replace` ile hedefe taşı.
+    Biçim dört motorda aynı (ensure_ascii=False, indent=2, sort_keys=True).
+    K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
+    `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
+    240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
+    durur, geçici silinir)."""
+    gecici = f"{yol}.{os.getpid()}.oa-tmp"
+    try:
+        with open(gecici, "w", encoding="utf-8") as f:
+            json.dump(nesne, f, ensure_ascii=False, indent=2, sort_keys=True)
+        for deneme in range(4):
+            try:
+                os.replace(gecici, yol)
+                break
+            except PermissionError:
+                if deneme == 3:
+                    raise
+                time.sleep(0.08)
+    except BaseException:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            pass
+        raise
 
 
 # ── v0.5.8.4 ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi HİÇBİR akış
@@ -216,6 +313,7 @@ def iskelet():
                       "tur":"|".join(sorted(IDDIA_TUR))
                              + " (vakia: delille ispatlanır; hukuki: nitelendirme, delil aranmaz)"}],
         "olaylar": [{
+            "id":"O1 (opsiyonel — olay kimliği, benzersiz; oa-kiyas vakıası `vakia_id` ile buna bağlanır — v0.5.18/S5)",
             "tarih":"YYYY-MM-DD","olgu":"Ne oldu (kısa)",
             "ozne":"Olayın öznesi/faili (opsiyonel — özne varyant taramasına girer)",
             "belge":"Dayanak belge/delil (sözleşme, ihtarname, tutanak, tanık...) veya boş",
@@ -300,6 +398,22 @@ def dogrula(path, json_yol=None):
     for g in _caiz_gecersiz:
         bilgi.append(f"caizlik etiketi kapalı kümede değil — {g} → 'bilinmiyor' sayıldı "
                      f"(geçerli: {', '.join(sorted(TANIK_CAIZLIK))})")
+
+    # v0.5.18 (S5 / B-3): opsiyonel olay kimliği `olaylar[].id` ŞEMA HATASI
+    # DEĞİLDİR — capraz_denetim kıyas vakıasını `vakia_id` ile buna bağlar
+    # (ad benzerliği yerine kimlik eşitliği). Mükerrer kimlik eşlemeyi
+    # belirsiz kılar ama olguyu geçersiz kılmaz → yalnız [BİLGİ], saglikli'ye
+    # girmez; karar avukatın. Sayaç girdi sırasını korur (determinizm).
+    _kimlik_sayac = {}
+    for o in olaylar:
+        kid = o.get("id")
+        if kid not in (None, ""):
+            _kimlik_sayac[str(kid)] = _kimlik_sayac.get(str(kid), 0) + 1
+    _mukerrer = [f"{k} ({n} kez)" for k, n in _kimlik_sayac.items() if n > 1]
+    if _mukerrer:
+        bilgi.append("olaylar: 'id' mükerrer: " + ", ".join(_mukerrer)
+                     + " — çapraz denetim kimlik eşlemesi belirsiz kalır; kimlikleri "
+                     "tekilleştirin (v0.5.18/S5)")
 
     tarihli, tarihsiz = [], []
     for o in olaylar:
@@ -450,8 +564,10 @@ def dogrula(path, json_yol=None):
     print("="*68)
 
     if json_yol:
+        kaynaklar, kaynaklar_notu = kaynak_beyani(path)      # v0.5.18 S1
         sonuc = {
             "arac": "vakia_matris", "girdi": path,
+            "kaynaklar": kaynaklar, "kaynaklar_notu": kaynaklar_notu,
             "kronoloji": kronoloji,
             "tarihsiz": [o.get("olgu","") for _,o in tarihsiz],
             "iddia_delil_matrisi": matris,
@@ -466,8 +582,7 @@ def dogrula(path, json_yol=None):
                      "hukuki_iddia": n_hukuki, "yuk_kaydiran_karine": n_karine},
             "saglikli": saglikli,
         }
-        with open(json_yol, "w", encoding="utf-8") as f:
-            json.dump(sonuc, f, ensure_ascii=False, indent=2, sort_keys=True)
+        _atomik_json_yaz(json_yol, sonuc)                      # v0.5.18 S3
         print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
 
 def main():

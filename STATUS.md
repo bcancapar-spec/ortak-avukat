@@ -1,7 +1,14 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-06 · **Sürüm:** 0.5.17.1 · **Commit:** `2a32f8d` + acil güvenlik yaması (B-23 sahipsiz yedek MCP, B-19 UDF iç iz sızıntısı; bkz. CHANGELOG)
-*(önceki kayıtlar: 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-06 · **Sürüm:** 0.5.18 · **Commit:** dal `guncelleme/0.5.18` (main `4b2f029` üzerine; bkz. CHANGELOG)
+*(önceki kayıtlar: 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+
+> **v0.5.18 (2026-10-06):** belge güvenlik kapısı (B-22) + görünürlük kâhini, OCR v1.9, Yargı PRO
+> uyarlamaları, 2026-10-06 kod denetimi düzeltmeleri (R1-R7, R9). Ölçülen: tam süit Python 3.12 ve
+> 3.14'te yeşil, kanca gecikmesi PERFORMANS-STATUS §11, OCR motor kıyası yeni donanımda (OCR planı
+> §10). **Ölçülmeyen (avukat kararı):** görünürlük kâhini ve 2026-10-06 düzeltmeleri gerçek evrakta
+> koşulmadı; OCR açık 2. geçiş ve büyük, zemin görselli PDF'lerde DENETLENEMEZ oranı v0.5.19'a kaldı.
+> Açık hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -49,7 +56,7 @@ bir satır ölçülmeden buraya girmez.
   `python3.12 -m pytest tests` → CI hedef sürümünde koşuldu ·
   Python 3.11'de derlenmeyen script **1 → 0** · hook katmanı kırmızısı **4 → 0** ·
   ikrarlı taslakta yakalanan sinyal (`--taraf davali`) **3 → 5**.
-- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** İndirilenler klasörüne bu
+- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** avukatın yerel evrak klasörüne bu
   oturumdan erişim YOK (bulutta izole konteyner) — test *gerçek dosya* yerine **gerçek ve
   güncel kaynak** üzerinden kuruldu (Yargı Pro MCP · Yargıtay 9. HD kararları).
   - **Süre motoru GEÇTİ (4/4).** Y. 9. HD E.2016/10425 K.2017/8620: ikale 29.08.2015 →
@@ -321,7 +328,7 @@ bayatlar.
 
 **Avukat kararı (2026-10-05):** "Layer 0'a dahil + sürüm sabitle". Sürüm tek
 sabitte: `oa-dilekce/scripts/udf_yaz.py` `UDF_CLI_SURUM = "0.5.6"` (bu
-makinenin npx önbelleğinde 2026-09-30'dan beri fiilen çalışan sürüm; npm
+geliştirme makinesinin npx önbelleğinde 2026-09-30'dan beri fiilen çalışan sürüm; npm
 kayıt defterinde o günün en son yayını). Diğer scriptler (`udf_metin.py`,
 `teslim_paketi.py`) sabiti dosyadan SATIR olarak okur; bulunamazsa `@latest`'e
 düşmez, FAIL-CLOSED hata verir. Aynı kural `docx2udf` için de uygulanır.

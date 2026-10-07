@@ -69,6 +69,22 @@ verilmezse bekçi hiç ateşlemez (opsiyonel kapı = ateşlemeyen kapı — oa-i
 Script raporlar: eksik bileşen, vakıaya eşlenmemiş norm unsuru (= boşluk),
 delile bağlanmamış küçük önerme, içtihatsız büyük önerme.
 
+**v0.5.18 — kaynak beyanı, atomik yazım, vakıa kimliği (Fable tutarlılık raporu 2026-10-07 B-1/B-4/B-3):**
+`--json` çıktısının üst düzeyine `kaynaklar` (`[{rol: girdi|kunye, yol: <_oa'ya göre
+POSIX göreli>, sha8: sha256[:8]}]`) ve `kaynaklar_notu` eklendi — kıyas girdisi ya da
+`00-kunye.json` değişince `oa-kontrol/tazelik_denetim` bayat denetimi DURUM.md'de
+görünür kılar (teslimi DURDURMAZ — karar avukatın). `_oa` dışı girdi → `kaynaklar: []` +
+not ("denetim dışı", temiz DEĞİL). JSON aynı dizinde geçici dosya + `os.replace` ile
+atomik yazılır. Küçük önerme vakıasında opsiyonel `vakia_id` (vakıa matrisindeki
+`olaylar[].id` ile aynı dize) şema hatası değildir ve çıktıya aynen taşınır —
+`capraz_denetim` önce kimlik eşitliğine bakar, ad benzerliği ikincildir; mükerrer
+`vakia_id` ⚠ uyarıdır, kritik boşluk değil. Üst-düzey anahtar kümesi bu iki alanla
+BİLİNÇLİ genişletildi (K1 ileri koruması kilidi yeni kümeyle sürer). **İkinci not
+biçimi (K-3):** bir kaynak okunamazsa `kaynaklar_notu` = `"<rol> kaynak beyanına
+alınamadı (<İstisna>)"` ve `kaynaklar` boş OLMAYABİLİR — tüketici notu AYNEN basar,
+etiketlemez. **Windows kilidi (K-4):** `os.replace` `PermissionError` verirse 3 kısa
+yeniden deneme (toplam <300 ms), sonra istisna aynen — eski dosya durur.
+
 **Norm unsurlara AYRILMAMIŞSA subsumtion denetimi hiç yapılmamıştır** ve bu
 artık **kritik boşluktur** (v0.5.14): "denetim yapılamadı" ile "denetim geçti"
 aynı hükmü üretemez. Aynı şekilde `karsilar` alanı **tanımsız** bir unsura

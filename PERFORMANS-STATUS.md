@@ -379,3 +379,29 @@ kaybolması) tam mekanizmasıdır. Bu yüzden BÜYÜKLÜK artık assert EDİLMEZ
 **CI:** ana koşu `pytest -rsfE -n auto -m "not perf"`, ayrı **seri** adım
 `pytest -rsfE -m perf -p no:xdist` (paralel işçiler birbirinin ölçümünü
 kirletir). Karantina değil YALITIM — kanarya her bacakta koşar.
+
+---
+
+## 11. v0.5.18 SÜRÜM ÖNCESİ DEFTER ÖLÇÜMÜ (2026-10-06, yeni bilgisayar)
+
+Komut: `python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu`
+(makine boşta; kancaların yorumlayıcısı). Ortam: Windows 11 · Python 3.14.8 · 16 çekirdek ·
+gerçekçi dava kökü · çıplak yorumlayıcı başlığı **19.67 ms** (§10'daki ölçümde 53.49 ms).
+
+| olay | giriş (ortanca) | NET | doğrudan yol | giriş kazancı |
+|---|---|---|---|---|
+| hook-prompt | 101.3 ms | 81.6 ms | 129.0 ms | +27.7 ms |
+| hook-pretool | 88.4 ms | 68.7 ms | 120.8 ms | +32.5 ms |
+| hook-postwrite | 136.3 ms | 116.7 ms | 164.3 ms | +28.0 ms |
+| hook-denetle | 134.3 ms | 114.6 ms | 179.4 ms | +45.1 ms |
+| hook-acilis | 88.4 ms | 68.7 ms | 129.5 ms | +41.1 ms |
+
+Bileşik: bir Write (Pre + Post) **224.7 ms** bloklama. Sıcak yol import dökümü: `hook-prompt`
+ve `hook-denetle` yolunda ağır modül YOK (102 import izlendi).
+
+**Gerekçe — hook-prompt kazancı 30 ms'nin altında (§10 defter kuralı):** kazanç sabit bir
+derleme maliyetidir; bu makine çıplak başlıkta ~2,7 kat hızlı olduğundan mutlak kazanç da
+küçüldü. Oran korunuyor: giriş/doğrudan farkı %21,5 (§10'daki yalıtılmış ölçümde %23).
+Kapı (`test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`) ve kanarya (`-m perf`) Python 3.12 ve
+3.14'te yeşil. v0.5.18'in yeni kanca işi (belge güvenlik bölümü DURUM.md'de) sıcak yola ağır
+modül eklemedi.

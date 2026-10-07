@@ -192,7 +192,8 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   → başvurma harcı, karar ve ilam harcı (dava değeri / hüküm değeri; 492 s.K.
   (1) sayılı tarife III-1-a), peşin karar harcı (m.28/a: dörtte bir), karşı
   vekâlet (AAÜT m.13 — kısmi ret oranıyla; maktu taban, kabul/ret tavanı, tam
-  rette maktu), yargılama gideri BANDI (HMK m.323 kalemleri; alt = açılış
+  rette maktu; `--merci vergi`de Av.K. m.168/2 gereği MAKTU — aşağıda), yargılama
+  gideri BANDI (HMK m.323 kalemleri; alt = açılış
   zorunlu, üst = tam harç + kanun yolu harçları + aleyhe vekâlet).
 - **FAIL-CLOSED:** `mcp_teyit_tarihi` boş VEYA tarife yılı ≠ hesap yılı →
   «TARİFE TEYİTSİZ/BAYAT — hesap yapılmadı», **exit 2**, hiçbir rakam basılmaz.
@@ -222,13 +223,40 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   eklenmez (eklenip eklenmeyeceğini avukat değerlendirir). `harc.basvuru_maktu`
   ile `harc_merci.asliye_idare_basvuru` farklıysa tarife TUTARSIZ sayılır
   (exit 2). **Çıkış kodları:** 0 tüm kalemler teyitli tarifeden/orandan · 2 KISMİ ya da
-  ÇIPA (null tarife alanı, bayat/teyitsiz tarife, teyitsiz faiz) · 1 girdi hatası
-  ya da oran verilmedi (script oran ÜRETMEZ).
+  ÇIPA (null tarife alanı, bayat/teyitsiz tarife, teyitsiz faiz, kuralı resmî metinden
+  okunamayan kalem — `hesaplanamayan`, ör. vergide kısmi kabul/ret dağılımı) · 1 girdi
+  hatası ya da oran verilmedi (script oran ÜRETMEZ).
 - Durum (2026-10-05): AAÜT tabloları hâlâ çekilemedi (RG fihristinde yalnız genel
   hükümler; mevzuat.gov.tr kaydında tablolar yalnız `.doc` eki) → `aaut.*` null,
   **TEYİT BEKLİYOR**. AAÜT m.21: ücret takdirinde hükmün verildiği tarihteki
   tarife esas alınır — bugünkü tarife gelecekteki hüküm için ÇIPADIR; cetvel bunu
   ZAMAN NOTU satırıyla yazar.
+- **Vergi/harç/6183 davasında karşı vekâlet MAKTU (K2 — Av.K. m.168/2; 2026-10-07):**
+  `--merci vergi` karşı vekâlet kolunda AAÜT üçüncü kısım nispi dilimini
+  UYGULAMAZ; esas `aaut.maktu_vergi`dir (`AVK168_MAKTU_MERCILER` — aynı rejimdeki
+  merciler için tek genişleme noktası). Av.K. m.168/2 (Ek cümle: 5904 s.K. m.35;
+  Yargı PRO `mevzuat_getir`): "vergi, resim, harç ve benzeri mali yükümlülükler …
+  ile … 6183 … uygulanmasından doğan her türlü davalar için avukatlık ücreti
+  tutarı maktu olarak belirlenir". Tam kabul → davacı lehine maktu, tam ret →
+  davalı lehine maktu (AAÜT m.15/1 "diğer durumlarda tamamına"; birinci savunma
+  dilekçesi süresinin bitimine kadar feragat/kabul/konusuz kalma → yarısı —
+  aşamayı script bilmez, avukat değerlendirir). KISMİ kabul/ret: maktu ücretin
+  taraflar arasında dağılımı ve m.13/2 tavanının maktu vergi ücretine uygulanması
+  AAÜT genel hükümlerinden okunamadı → rakam ÜRETİLMEZ; cetvel "HESAPLANAMAYAN"
+  satırıyla görünür not basar (yeni `hesaplanamayan` alanı; exit 2 — tarife.json
+  doldurmak bunu kapatmaz). m.3/1: maktu TABANDIR, üç katına kadar takdir (çıpa).
+  Eski davranış: `aaut.maktu_vergi` + `nispi_dilimler` dolunca vergi davasında da
+  nispi dilim uygulanırdı — tablolar boşken rakam üretmediği için görünmeyen kusur.
+  **Gider bandı ÜST satırı** (inceleme, 2026-10-07): kısmi kabul/rette aleyhe vekâlet
+  hesaplanamadıysa bilinen maktu ÜST bandına **ÜST SINIR** olarak eklenir ve satır
+  bunu söyler (müvekkil için güvenli yön); maktu da bilinmiyorsa satır "aleyhe
+  vekâlet DAHİL DEĞİL" der — azami maruziyet sessizce düşük gösterilmez. Notlar
+  (m.168/2 vd.) HARÇ bölümünde değil, KARŞI VEKÂLET bölümünde basılır.
+  **`--merci idare` uyarısı:** idare mahkemesinde görülen 6183/harç kaynaklı dava
+  (ör. ecrimisil, idari para cezası ödeme emri) da Av.K. m.168/2 "her türlü dava"
+  lafzıyla maktu rejimdedir; bu cetvel idare merciinde NİSPİ uygular ve karşı vekâlet
+  bölümünde görünür uyarı basar — davanın kaynağını avukat nitelendirir (kapsam
+  genişletilmedi, idare için maktu kol eklenmedi).
 
 ## GÜNCEL ORAN TEYİDİ — faiz/oran protokolü (v0.5.18 adayı; Yargı PRO 14-1/14-2 fikri, OA yöntemiyle)
 Faiz, avans, reeskont gibi ORANLAR dönemseldir ve resmî kaynakta değişir; "bildiğim

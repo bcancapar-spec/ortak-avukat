@@ -40,8 +40,23 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
   ölçülerek kapatıldı: DOCX'te koyu hücre/şekil üstündeki beyaz yazı, PDF'te üstüne aynı yazı
   yeniden basılmış kutu ve görünür yarı saydam filigran artık alarm vermiyor (piksel teyidi).
   Kalan PDF bulguları sayfa görüntüsünde gerçekten görünmeyen beyaz yazıdır.
+- **Görünürlük kâhini (PDF):** sayfa iki kez çizilir — biri olduğu gibi, biri yalnız yazısı
+  kaldırılmış (görsel ve çizimler yerinde); yazı silinince görüntü değişmiyorsa yazı gizlidir.
+  Baskın renk testinin iki yönlü yanılgısı kapandı (koyu eğri banttaki beyaz başlık gizli
+  sanılıyordu; üstünden çizgi geçen örtülü ya da saydam yazı görünür sanılıyordu); görsel zemin
+  üstündeki yazı artık denetlenir. Kâhin ölçemezse piksel teyidi ve sezgisel kural devreye girer.
+- **2026-10-06 kod denetimi düzeltmeleri:** esnek aramada üstel geri izleme (alt çizgili form
+  satırı evrak okumayı kilitleyebiliyordu) doğrusal yapıldı; döndürülmüş sayfada ölçüm doğru
+  koordinat uzayında; metne yazılan sahte sayfa ayracı damga kapsamını daraltamaz; tarama ya da
+  damgalama hatasında metin VERİ diye sarılır (fail-closed); kâhin eski PyMuPDF'te ya da hata
+  verdiğinde sessizce kapanmaz, raporda görünür not çıkar (`pymupdf>=1.24.2`).
+- **Bilinen sınırlar:** taranmış görüntünün piksel kanalı ölçülmez; metnin üstüne sonradan
+  konan görselle örtme ve HTML'de gizli öğe yalnız talimat diliyle bulgudur; DOCX tablo stili
+  koşullu zemininin hangi satıra düştüğü ve RTF gizli yazısı çözülmez. Temiz sonuç "belge
+  güvenlidir" değil, "denetlenen katmanlarda gizleme bulunmadı" demektir.
 - **Sertleştirme (bu sürüm):** zip bombası, girdi seli ve karesel desen sınırları; geçerli
-  evrakta çıktı değişmez (eşdeğerlik ölçümü kök CHANGELOG'da).
+  evrakta çıktı değişmez (eşdeğerlik ölçümü: kök CHANGELOG v0.5.18 kaydı ve
+  `oa-ingest/references/degisiklik-gunlugu.md`).
 
 ### 2.2 Okuma katmanı (19-1'deki açığın OA karşılığı) — OCR v1.9
 
@@ -131,6 +146,18 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
 - **Özne eşleştirici** (Semantica incelemesi + avukat kararı): kesin birleştirme yalnız yazım
   eşdeğerliğinde; kurgu çiftlerde farklı kişide yanlış birleştirme 0, aynı kişide sessiz kaçak 0.
   Bedeli: OCR varyantları ve "Ahmed/Ahmet" gibi yazım farkları avukata soru olarak gelir.
+
+### 2.7 Bağlantı katmanı: sahipsiz yedek MCP kaldırıldı (B-23) — `oa-ictihat`
+
+- **Bulgu (2026-10-06, ölçüldü):** v0.5.7.4'ten beri `plugin.json`'da ilan edilen yedek içtihat
+  sunucusunun alan adı ilgisiz bir sunucuya çözülüyor ve başka alan adının sertifikasını
+  sunuyordu; kaynak depo artık herkese açık değil. Bağlantı TLS ad uyuşmazlığıyla reddedildiği
+  için veri gitmedi; ama adı ele geçiren taraf geçerli sertifika alırsa eklentinin kendiliğinden
+  güvendiği sunucu sorguları okuyup "içtihat" diye sahte metin döndürebilirdi.
+- **OA'da:** ilan kaldırıldı; tek içtihat bağlayıcısı Yargı PRO'dur. Bağlantı katmanı güvenli
+  kapanışa çevrildi: Yargı PRO yoksa otomatik geçiş YOK → "teyit YAPILAMADI", künye iddia kalır.
+  v0.5.17.1 acil yamasıyla ayrıca yayımlandı (v0.5.7.4 yedek kararı bilinçli olarak tersine
+  çevrildi). Kilit: `tests/test_v0518_mcp_ilan.py`.
 
 ## 3. Kalan yol haritası
 

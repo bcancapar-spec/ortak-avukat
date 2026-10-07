@@ -299,6 +299,14 @@ ATLA_DOSYA = {"thumbs.db", "desktop.ini", ".ds_store", ".ingest-onbellek.json"}
 METIN_ESIK_KARAKTER_SAYFA = 40   # sayfa başına bu kadar anlamlı karakterin altı → OCR
 # v1.9 (OCR planı O-1/O-2/O-6) — sayfa düzeyi yönlendirme + OCR güveni.
 CIKARIM_SURUMU = "1.9"            # önbellek işareti: yönlendirme/güven kuralı değişince eski kayıt HIT sayılmaz
+# v0.5.18 (Görev 6) — DOCX'e ÖZGÜ önbellek işareti. NEDEN VAR: docx_isle'nin metin
+# sözleşmesi değişti (XML varlıkları çözülür; <w:tab/>, <w:br/>, <w:cr/> karaktere döner);
+# eski kayıtların metni BOZUKTUR ("A &amp; B Ltd.", "Davacı:Ahmet") ve BİR KEZ yeniden
+# çıkarılmalıdır. Küresel CIKARIM_SURUMU bilinçli olarak ARTIRILMADI: o, bütün evrakı
+# (taranmış PDF OCR'ı dahil — saatler) yeniden okutur. Bu işaret yalnız DOCX kaydı taşıyan
+# girdilere yazılır; eksik/eski işaret = v0.5.17 ve öncesi çıkarıcı (örtük "1") → MISS.
+# PDF/UDF/OCR/düz metin girdileri işareti taşımaz, denetlenmez, HIT kalır.
+DOCX_CIKARIM_SURUMU = "2"
 GORSEL_KAPSAMA_ESIGI = 0.30       # kısa metinli sayfada raster görsel kapsaması bunu aşarsa → taranmış sayfa (OCR)
 VEKTOR_YOL_ESIGI = 200            # kısa metinli sayfada bu kadar çizim yolu → yazı vektöre dönüştürülmüş (OCR)
 OCR_SAYFA_ZAMAN_ASIMI_SN = 600    # TEK Tesseract çağrısı için; aşılırsa yalnız o sayfa görsel incelemeye düşer
@@ -1457,6 +1465,40 @@ def udf_isle(yol, gorsel_dizin=None):
     return md, yontem, teyit, None, not_, [], kn
 
 
+# v0.5.18 (Görev 6) — DOCX METİN SADAKATİ. NEDEN VAR: word/document.xml'de metin XML
+# kaçışlıdır — Word "A & B Ltd." için `A &amp; B Ltd.` yazar. Etiketleri silip varlıkları
+# çözmeyen eski yol modele "&amp;" gönderiyordu (unvan, tırnak, açılı ayraç bozuk). Ayrıca
+# <w:tab/> ve <w:br/>/<w:cr/> İÇERİK taşıyan boş etiketlerdir: silinince kelime ve satır
+# birleşir ("Davacı:Ahmet"). Sıra ÖNEMLİDİR: (1) boş etiketler karaktere çevrilir, (2)
+# etiketler silinir, (3) varlıklar TEK GEÇİŞTE çözülür — çözüm etiket silmeden SONRA olduğu
+# için belgede yazılı `&lt;w:t&gt;` asla etiket sanılıp silinmez; tek geçiş `&amp;lt;` →
+# "&lt;" verir (belgede yazılı dizge aynen; çift çözme yok). Desenler `[^<>]`/`\s` ile
+# sınırlıdır: komşu etikete taşmaz, kapanmayan etiket selinde doğrusal kalır
+# (belge_guvenlik._etiket_sil ile aynı ReDoS disiplini; test: …_etiket_selinde_kilitlenmez).
+_DOCX_SEKME = re.compile(r"<w:tab\s*/>")           # YALNIZ özniteliksiz içerik sekmesi;
+#                                                    <w:tab w:val=… w:pos=…/> sekme DURAĞI tanımıdır
+_DOCX_SATIR_SONU = re.compile(r"<w:(?:br\b[^<>]*|cr\s*)/>")   # <w:br/>, <w:br w:type="page"/>, <w:cr/>
+_XML_VARLIK = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9A-Fa-f]+);")   # XML'in 5 adı + sayısal;
+#                                                    HTML adları (&nbsp; &copy; …) XML'de varlık DEĞİLDİR
+_XML_ADLI_VARLIK = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
+
+
+def _xml_varlik_coz(m):
+    ad = m.group(1)
+    if ad in _XML_ADLI_VARLIK:
+        return _XML_ADLI_VARLIK[ad]
+    kod = int(ad[2:], 16) if ad.startswith("#x") else int(ad[1:])
+    if kod <= 0 or kod > 0x10FFFF or 0xD800 <= kod <= 0xDFFF:
+        return m.group(0)      # XML 1.0'da geçersiz: chr() ile çökmek ya da yutmak yerine aynen kalır
+    return chr(kod)
+
+
+def _docx_kaydi_var(kayitlar):
+    """Önbellek girdisinin kayıtları arasında docx_isle ürünü var mı? Uzantıya değil YÖNTEME
+    bakılır: K8 yönlendirmesiyle '.udf' uzantılı gerçek-DOCX da 'docx' yöntemiyle kaydolur."""
+    return any(k.get("yontem") == "docx" for k in kayitlar if k)
+
+
 def docx_isle(yol):
     try:
         with zipfile.ZipFile(yol) as z:
@@ -1476,12 +1518,16 @@ def docx_isle(yol):
     except Exception as e:
         return "", "hata", True, None, f"DOCX açılamadı ({e})", []
     ham = ham.replace("</w:p>", "\n").replace("</w:tr>", "\n")
+    ham = _DOCX_SEKME.sub("\t", ham)             # v0.5.18 (Görev 6): etiket silinmeden ÖNCE
+    ham = _DOCX_SATIR_SONU.sub("\n", ham)
     # Etiket silme son '>'te biter: '>'sız '<' selinde `<[^>]+>` karesel geri izler; son
     # '>'ten sonra eşleşme olamaz → sonuç AYNI, süre doğrusal (bkz. belge_guvenlik._etiket_sil).
     son = ham.rfind(">")
     if son >= 0:
         ham = re.sub(r"<[^>]+>", "", ham[:son + 1]) + ham[son + 1:]
-    return re.sub(r"[ \t]{2,}", " ", ham).strip(), "docx", False, None, None, []
+    ham = _XML_VARLIK.sub(_xml_varlik_coz, ham)  # etiketler gittikten SONRA, tek geçiş
+    # Yalnız BOŞLUK dizileri katlanır (eski davranış); sekme ve satır sonu yapısaldır, katlanmaz.
+    return re.sub(r" {2,}", " ", ham).strip(), "docx", False, None, None, []
 
 
 def _yedi(d):
@@ -1962,6 +2008,15 @@ def _tara(klasor, hedef_abs, onbellek, yeniden, ocr_motor="tesseract"):
                     if _ocr and (onb.get("ocr_motor") or "tesseract") != ocr_motor:
                         it["hit"] = False; it["cached"] = None
                         it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
+                # v0.5.18 (Görev 6): DOCX çıkarıcısının metin sözleşmesi değişti — DOCX kaydı
+                # taşıyan girdi, biçime özgü işaret eksik/eskiyse BİR KEZ yeniden çıkarılır
+                # (hafif yol YOK: DOCX çıkarımı ucuzdur, bayat metin ise bozuktur). Diğer
+                # biçimler işareti taşımaz → bu dal onlara hiç bakmaz, HIT kalırlar.
+                if it["hit"]:
+                    _kk = [onb["kayit"]] if onb.get("kayit") else (onb.get("kayitlar") or [])
+                    if _docx_kaydi_var(_kk) and onb.get("docx_cikarim") != DOCX_CIKARIM_SURUMU:
+                        it["hit"] = False; it["cached"] = None
+                        it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
         items.append(it)
     return items
 
@@ -2381,6 +2436,8 @@ def main():
             # yeniden denensin (araç sonradan kurulunca bayat 'YÜKLENEMEDİ' tuzağı olmasın).
             if p["yontem"] not in _ARIZA_ONBELLEKSIZ:
                 giris = {"imza": it["imza"], "kayit": k, "cikarim": CIKARIM_SURUMU}
+                if _docx_kaydi_var([k]):                                   # v0.5.18 (Görev 6)
+                    giris["docx_cikarim"] = DOCX_CIKARIM_SURUMU
                 if k.get("ocr_motor") and not k["ocr_motor"].get("yedek"):   # v1.9 (O-4)
                     giris["ocr_motor"] = opts.get("ocr_motor")
                 if _guvenlik_tamam(p.get("guvenlik")):   # kısmi/denetlenemez → işaretsiz, yeniden denenir
@@ -2415,6 +2472,8 @@ def main():
         # bütün arşiv sessizce bayat kalır; önbellek olmadan bir sonraki koşuda yeniden açılır).
         if not any(k.get("yontem") in _ARIZA_ONBELLEKSIZ for k in arsiv_kayitlari):
             giris = {"imza": it["imza"], "kayitlar": arsiv_kayitlari, "cikarim": CIKARIM_SURUMU}
+            if _docx_kaydi_var(arsiv_kayitlari):                           # v0.5.18 (Görev 6)
+                giris["docx_cikarim"] = DOCX_CIKARIM_SURUMU
             _motorlu = [k for k in arsiv_kayitlari if k.get("ocr_motor")]
             if _motorlu and not any(k["ocr_motor"].get("yedek") for k in _motorlu):   # v1.9 (O-4)
                 giris["ocr_motor"] = opts.get("ocr_motor")

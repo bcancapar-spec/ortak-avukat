@@ -361,11 +361,11 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 | Adım | Parça | Aranan artefakt | Kademe |
 |---|---|---|---|
 | 1+ (İNGEST-ÖNCE) | (tümü) | `_oa/metin/00-kunye.json` | **BLOKLEYICI** (`--serh-kapi ingest-once`) |
-| adım-1 | oa-illiyet | `_oa/cikti/*.json` (`arac=grafik_denetim`) — `cevrimler`/`sema_hatalari`/`denetim_coktu` BOŞ olmalı; dosya yoksa kapı sessiz | **BLOKLEYICI — GRAF KAPISI** (K2, `--serh-kapi graf`) |
+| adım-1 | oa-illiyet | `_oa/cikti/*.json` (`arac=grafik_denetim`) — `cevrimler`/`sema_hatalari`/`denetim_coktu` BOŞ olmalı; dosya yoksa kapı sessiz; **v0.5.18/B-4: `_oa/cikti` altında OKUNAMAYAN (bozuk/yarım) bir `*.json` varken kapı KAPALI (fail-closed)** | **BLOKLEYICI — GRAF KAPISI** (K2, `--serh-kapi graf`) |
 | adım-3 | oa-ictihat | `_oa/teyit/kunye-teyit.md` (satır) VEYA `_oa/teyit/dokum/` (dolu) | UYARI |
-| adım-4 | oa-vakia | `_oa/cikti/04-vakia*` | UYARI |
-| adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
-| adım-6 | oa-antitez | `_oa/cikti/06-antitez*` (≤v0.5.15: `07-antitez*` de kabul) | UYARI |
+| adım-4 | oa-vakia | `_oa/cikti/04-vakia*` VEYA `arac=vakia_matris` damgalı `_oa/cikti/*.json` (v0.5.18/B-9) | UYARI |
+| adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE); **v0.5.18/B-2:** graf↔vakıa↔kıyas ortak kimlik uzayı kopuksa ek **UYARI** (bloklamaz) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
+| adım-6 | oa-antitez | `_oa/cikti/06-antitez*` (≤v0.5.15: `07-antitez*` de kabul) VEYA `arac=antitez_matris` damgalı `_oa/cikti/*.json` (v0.5.18/B-8) | UYARI |
 | adım-7 | oa-strateji | `_oa/cikti/07-strateji*` (≤v0.5.15: `06-strateji*` de kabul) | UYARI |
 | adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** (`--serh-kapi kontrol`) |
 
@@ -422,6 +422,8 @@ ulaşır. Graf bekçisi A grubunun yeni alanlarını taşır: `denetim_coktu` �
 `baglanmamis_deliller` → «bağlanmamış delil: <ad>»; `guc_beyansiz_kenarlar` →
 advisory satır. Köprü düğüm/`perde` etiketi yine ALINMAZ — karar-malzemesidir
 (oa-strateji/oa-antitez okur), uyarı değil.
+
+**ZİNCİRLEME TEPKİ (v0.5.18 — Fable tutarlılık raporu 2026-10-07, B-1…B-9; avukat kararı: GÖRÜNÜR UYARI, teslimi DURDURMAZ, karar avukatın):** delil → vakıa → illiyet → kıyas → antitez zincirinde bir halka değişince aşağı akış artık sessiz kalmaz. Dört motor (vakia_matris / grafik_denetim / kiyas_denetim / antitez_matris) denetim JSON'una **S1 kaynak beyanı** yazar (`"kaynaklar": [{"rol": "girdi"|"kunye", "yol": "<_oa'ya göreli POSIX yol>", "sha8": "<sha256[:8]>"}]`); DURUM.md tüketicileri bu beyanı okur. Yeni bölümler / satırlar (tümü advisory; `hook_prompt` ve PostToolUse erken-çıkış yollarına GİRMEZ — yalnız `_durum_md_yaz`, `--denetle`, Stop/SessionEnd kancası ve teslim zinciri): (1) **«🔴 Bayat Zincir Uyarısı»** — `tazelik_denetim.kok_denetle` in-process: `BAYAT — _oa/cikti/<ürün>: kaynağı <yol> üretiminden sonra değişti; ilgili motoru yeniden koşun`, `EKSİK-KAYNAK`, `DENETİM DIŞI` (`kaynaklar: []` + not → `_oa` dışı girdi, temiz SAYILMAZ); `kaynaklar`sız eski JSON **bayat değil, «beyansız»** (kademeli benimseme, yanlış alarm yok). (2) **«🔴 Çapraz Denetim Uyarısı»** — `capraz_denetim.caprazla_ayrintili` in-process; model girdileri ÖNCE S1 `kaynaklar[rol=girdi]` üzerinden, yoksa dizin taramasıyla bulunur; `ÇAPRAZ KOPUK (<tip>)` + `ÇAPRAZ BELİRSİZ` (kimliksiz, birebir olmayan **kelime sınırlı** ad eşleşmesi — alt-dize eşleşmesi kaldırıldı, S5 `id`/`vakia_id` kimliği önce gelir); adım-5/oa-kiyas UYGULANDI yazılırken kopukluk **UYARI** (RET değil). (3) **«🔴 Antitez Boşluk Uyarısı»** — S2 (`arac == antitez_matris`): `AÇIK CEPHE`, `ÇÜRÜTÜLMEMİŞ ANTİTEZ`, `çürütme dayanağı TEYİTSİZ`, listesiz `saglikli=false`. (4) **«Avukat Kararı Bekleyen»** listesine vakıa matrisinin `ozne_eslestirme` **AVUKATA-SOR** kayıtları düşer (iki yazım aynı kişi mi — script karar vermez). (5) **Kapı Durumu**'nda **«DENETİM JSON'U OKUNAMADI: <dosya>»** — bozuk/yarım denetim JSON'u 'temiz' SAYILMAZ; **K2 GRAF KAPISI bu hâlde adım-1'i FAIL-CLOSED kapatır** (ad graf/illiyet içeriyorsa «aday», içermiyorsa «damgası okunamadı — graf denetimi olabilir»; çıkış: onar/sil ya da `--serh-kapi graf`). Metinler R5 disipliniyle tek satıra indirgenir (satır sonu / `⟦⟧` taklidi DURUM.md'ye giremez). PostToolUse eşleştiricisi **Write|Edit kalır** (B-6 Ruling — her Bash çağrısına kanca süreci eklemek performans değişmezleriyle çatışır); Bash ile koşan motorun yazdığı damgalı JSON Stop/SessionEnd parmak izine (`_hook_denetle_ayirt`) zaten girer ve DURUM.md'yi tazeler (testli kilit). Teslim ucu: `teslim_paketi.py` makbuzuna `graf_kapisi` advisory alanı (bkz. oa-kontrol).
 
 **İNLİNE SAYAÇ — 3 TUR KURALI (H1, v0.5.16 — Hamle 11, karar #2: N=3):**
 PostToolUse inline denetimi (`dilekce_denetim.hizli_denetim`) aynı dosyada aynı

@@ -45,6 +45,42 @@ def _bolum(txt, bas, son=None):
     return _duz(txt[i:j])
 
 
+def _alinti_duz(s):
+    """Blok alıntının ("> ") satır başı işaretlerini atıp boşlukları tekler:
+    satır kırılan bir ifade de tek parça aranabilsin."""
+    return _duz(re.sub(r"(?m)^>[ \t]?", "", s))
+
+
+def test_ust_ilke_meslek_kurallarinda_otorite_yok_muvekkil_menfaati_esas():
+    """Avukat talimatı (Av. Bayram Can Çapar, 2026-10-07): "meslek kurallarında
+    otorite yoktur. Öncelikle müvekkilimizin menfaati esastır avukatlık kanunu
+    gereği." Üst ilke dosyanın EN BAŞINDA durur (fikir kaynağından ve listelerden
+    önce). Dayanaklar resmî metinden okundu (Yargı PRO mevzuat_getir, 2026-10-07):
+    Av.K. m.1/2, m.38/1-b, m.135/2-l, m.135/2-m, m.135/3-a (7571 s.K.); TBK m.506/2."""
+    txt = _oku(REF)
+    assert "**Fikir kaynağı:**" in txt
+    bas = _alinti_duz(txt.split("**Fikir kaynağı:**")[0])
+    for k in ("ÜST İLKE", "Meslek kurallarında otorite yoktur", "müvekkilin menfaati esastır",
+              "Avukatlık Kanunu gereği", "2026-10-07",
+              "Av.K. m.1/2", "bağımsız savunmayı serbestçe temsil eder", "Av.K. m.38/1-b",
+              "m.135/2-l", "m.135/2-m", "m.135/3-a", "7571",
+              "TBK m.506/2", "haklı menfaatlerini gözeterek, sadakat ve özenle",
+              "GİZLEMEZ", "karar avukatındır"):
+        assert k in bas, k
+    # "otorite" sözcüğü artık resmî metne yüklenmez: madde metninin hukuki ÖLÇÜTÜ resmî metindir
+    duz = _alinti_duz(txt)
+    assert "otorite resmî metindir" not in duz
+    assert "hukuki ölçüt resmî metindir" in duz
+
+
+def test_skill_md_c_maddesi_ust_ilkeyi_tasir():
+    """Model referans dosyasını açmadan önce SKILL.md'yi okur: üst ilke (c)
+    maddesinin içinde, listelere yönlendiren satırla birlikte görünmelidir."""
+    blok = _bolum(_oku(SKILL_MD), "**(c) MESLEK KURALLARI", "1. **Meseleyi bir cümlede")
+    for k in ("ÜST İLKE", "otorite yoktur", "müvekkilin menfaati esastır", "TBK m.506/2", "karar avukatındır"):
+        assert k in blok, k
+
+
 def test_dort_liste_ve_ortak_ilke():
     txt = _oku(REF)
     for b in ("## MK-1", "## MK-2", "## MK-3", "## MK-4"):

@@ -2,8 +2,9 @@ name: CI
 
 # ── RELEASE KAPISI — yeşil ne demek, ne DEMEZ ────────────────────────────────
 #
-# YEŞİL = "aile yapısı sağlam + teslim zincirinin MANTIĞI dört platformda
-#          (Ubuntu/Windows × py3.12/3.13) ayakta."
+# YEŞİL = "aile yapısı sağlam + teslim zincirinin MANTIĞI altı bacakta
+#          (Ubuntu/Windows × py3.12/3.13/3.14) ayakta." (3.14: v0.5.18 — avukatın
+#          makinesinde kancalar 3.14 ile çalışıyor.)
 #
 # YEŞİL ≠ "UDF hattı çalışıyor." Koşucularda `npx` VAR ama `udf-cli` OTURUMU
 # YOKTUR (`~/.config/yargi/token.json`); udf_yaz.py ise v0.5.5.1'den beri
@@ -48,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +138,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Bu iş TEK bir test dosyası koşuyor — `-n auto` burada işçi başlatma
-      # maliyetini kazançtan büyük yapar, o yüzden SERİ kalır.
+      # Bu iş yalnız iki OCR test dosyasını koşuyor — `-n auto` burada işçi
+      # başlatma maliyetini kazançtan büyük yapar, o yüzden SERİ kalır.
+      # v0.5.18: OCR planının gerçek Tesseract testleri (test_v0518_ocr.py)
+      # hiçbir işte koşmuyordu — matris koşucularında Tesseract yok.
       - name: OCR testleri (gerçek tesseract ile)
-        run: pytest -rsfE tests/test_oa_ingest_ocr_nobetci.py
+        run: pytest -rsfE tests/test_oa_ingest_ocr_nobetci.py tests/test_v0518_ocr.py

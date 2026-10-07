@@ -491,7 +491,64 @@ def _tazelik_uyarilari_topla(kok):
     for e in rapor.get("eksik") or []:
         uyarilar.append("EKSİK-KAYNAK: %s — beyan edilen %s bulunamadı/kök dışında"
                         % (e.get("urun"), e.get("kaynak")))
+    # v0.5.18 (B-1b) — JSON ürünlerinin iki dürüst hâli de makbuza girer:
+    # okunamayan denetim 'temiz' sayılmaz; `_oa` dışı girdi denetim dışıdır.
+    for o in rapor.get("okunamayan") or []:
+        uyarilar.append("OKUNAMADI: %s — %s; tazelik hükmü verilemez (temiz SAYILMAZ)"
+                        % (o.get("urun"), o.get("hata")))
+    for d in rapor.get("denetim_disi") or []:
+        uyarilar.append("DENETİM-DIŞI: %s — %s (kaynak beyanı boş; temiz SAYILMAZ)"
+                        % (d.get("urun"), d.get("not")))
     return uyarilar
+
+
+def _graf_kapisi_advisory(kok):
+    """B-5 (v0.5.18) — K2 GRAF KAPISI sorusu teslim zincirinde YENİDEN
+    sorulur; ADVISORY (avukat kararı 2026-10-07: çevrimli/şema hatalı/çökmüş
+    ya da OKUNAMAYAN graf denetimi teslimi DURDURMAZ, makbuz ve raporda
+    GÖRÜNÜR; karar avukatın). NEDEN VAR: K2 yalnız `--isle` anında
+    soruluyordu; adım-1 kapandıktan SONRA çevrim doğan graf teslimde yeşil
+    kalıyordu. Soru `pipeline_kayit._graf_kapisi_sorunu` ile AYNI fonksiyondan
+    (in-process, S6 imzası) sorulur — ikinci bir kural kümesi İCAT EDİLMEZ.
+    Döner: {durum: sorun|acik|denetlenemedi, mesaj, denetim_json_sayisi}.
+    `acik` + 0 denetim = «kapı sorulmadı» (temiz İDDİASI yok)."""
+    pk = _pipeline_kayit_modulu()
+    if pk is None or not callable(getattr(pk, "_graf_kapisi_sorunu", None)):
+        return {"durum": "denetlenemedi",
+                "mesaj": "pipeline_kayit.py yüklenemedi — graf kapısı sorulamadı "
+                         "(denetlenemeyen kapı temiz SAYILMAZ)",
+                "denetim_json_sayisi": None}
+    try:
+        sorun = pk._graf_kapisi_sorunu(kok)
+        sayac = getattr(pk, "_denetim_jsonlari", None)
+        n = len(sayac(kok, "grafik_denetim")) if callable(sayac) else None
+    except Exception as e:
+        return {"durum": "denetlenemedi",
+                "mesaj": ("graf kapısı sorgusu çöktü (%r) — temiz SAYILMAZ" % (e,))[:240],
+                "denetim_json_sayisi": None}
+    if sorun:
+        return {"durum": "sorun", "mesaj": sorun, "denetim_json_sayisi": n}
+    if not n:
+        return {"durum": "acik",
+                "mesaj": "graf denetim JSON'u (arac=grafik_denetim) yok — kapı sorulmadı "
+                         "(K2 sözleşmesi: dosya yoksa RET değil; grafik_denetim.py bu kökte "
+                         "koşmamış olabilir — temiz iddiası DEĞİLDİR)",
+                "denetim_json_sayisi": 0}
+    return {"durum": "acik", "mesaj": None, "denetim_json_sayisi": n}
+
+
+def _graf_kapisi_yazdir(gk, onek="    [ADVISORY] graf kapısı"):
+    """Tek satır görünürlük — kapı DEĞİL."""
+    if gk["durum"] == "sorun":
+        print("%s: %s — teslimi DURDURMAZ (avukat kararı); grafı düzelt ya da bilinçli "
+              "teslim et." % (onek, gk["mesaj"]))
+    elif gk["durum"] == "denetlenemedi":
+        print("%s: DENETLENEMEDİ — %s" % (onek, gk["mesaj"]))
+    elif gk.get("mesaj"):
+        print("%s: %s" % (onek, gk["mesaj"]))
+    else:
+        print("%s: açık (%s graf denetimi; çevrim/şema hatası/çökme yok)."
+              % (onek, gk.get("denetim_json_sayisi")))
 
 
 def _udf_imzali_mi(yol):
@@ -839,8 +896,11 @@ def _advisory_denetimler(taslak, kok):
     prov-tazelik (yan .prov.json sha karşılaştırması), yerel-damga taraması,
     tazelik advisory. Salt-okunur ve istisnasız — dict döndürür."""
     rapor = {"devralma_adaylari": [], "sekil": None, "prov_tazelik": None,
-             "yerel_damga": None, "tazelik_uyarilari": None}
+             "yerel_damga": None, "tazelik_uyarilari": None, "graf_kapisi": None}
     try:
+        # B-5 (v0.5.18) — graf kapısı sorusu RED yolunda da sorulur (B4
+        # advisory tamamlanma: ilk engel öteki bulguyu görünmez bırakmasın).
+        rapor["graf_kapisi"] = _graf_kapisi_advisory(kok)
         secili = None
         for aday in _udf_adaylari(taslak, kok):
             gecerli, sebep = _udf_hafif_gecerli_mi(aday)
@@ -932,6 +992,8 @@ def _advisory_yazdir(rapor):
               "ürünü teslime GİREMEZDİ." % yd.get("was_generated_by"))
     for u in rapor.get("tazelik_uyarilari") or []:
         print("    [ADVISORY] tazelik: %s" % u)
+    if rapor.get("graf_kapisi"):
+        _graf_kapisi_yazdir(rapor["graf_kapisi"])
     if rapor.get("hata"):
         print("    [ADVISORY] %s" % rapor["hata"])
 
@@ -1027,7 +1089,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.17.1"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.18"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -1737,6 +1799,15 @@ def _zincir():
         print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
               "kapı kapatmaz (amaç çizgisi: görünürlük).")
 
+    # ── B-5 (v0.5.18) — GRAF KAPISI ADVISORY (K2 sorusu teslimde yeniden) ───
+    # Avukat kararı (2026-10-07): zincirde bir halka değişince (çevrimli graf)
+    # teslimde GÖRÜNÜR UYARI — makbuzda satır; teslimi DURDURMAZ.
+    graf_kapisi = _graf_kapisi_advisory(kok)
+    _bolum("[g] GRAF KAPISI — advisory (K2 sorusu teslimde yeniden; kapı KAPATMAZ — "
+           "avukat kararı 2026-10-07)")
+    _graf_kapisi_yazdir(graf_kapisi, onek="    [ADVISORY] graf kapısı")
+    print("    [BILGI] makbuza `graf_kapisi` olarak geçti; karar avukatın.")
+
     # ── A2 (v0.5.9 ÇIKTI ŞEMASI) — 40-UYAP dış-çıktı dizini (ADVISORY) ──────
     # YEŞİL makbuz kesiliyor → dava kökünde muhatap-nötr dış-çıktı dizini
     # doğar; ürün KOPYALARI (asıl yerinde kalır) + damgalı makbuz-kopyası.
@@ -1782,6 +1853,7 @@ def _zincir():
                 "kenar_duzeltildi": kenar_duzeltildi,    # GÖREV 5
                 "sekil_imzali_sapma": sekil_imzali_sapma,  # v0.5.8.5 e-imza guard
                 "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
+                "graf_kapisi": graf_kapisi,               # B-5 (v0.5.18) — advisory
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
                 # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
                 "uyap_kopya": uyap_kopya,

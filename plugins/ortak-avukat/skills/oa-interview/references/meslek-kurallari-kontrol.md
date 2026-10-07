@@ -1,5 +1,28 @@
 # Meslek Kuralları Kontrol Listeleri (oa-interview · v0.5.18 adayı)
 
+> **ÜST İLKE — müvekkilin menfaati (avukat talimatı, Av. Bayram Can Çapar,
+> 2026-10-07).** Meslek kurallarında otorite yoktur: bu kontrol listeleri de,
+> TBB ve baro metinleri de avukatın yerine karar veren bir merci değildir.
+> Öncelikle müvekkilin menfaati esastır — Avukatlık Kanunu gereği. Dayanaklar
+> (resmî metin, Yargı PRO MCP `mevzuat_getir`, 2026-10-07):
+> - **Av.K. m.1/2** — avukat, yargının kurucu unsurlarından olan bağımsız
+>   savunmayı serbestçe temsil eder.
+> - **Av.K. m.38/1-b** — aynı işte menfaati zıt bir tarafa avukatlık etmiş ya da
+>   mütalaa vermiş avukat işi reddetmek zorundadır.
+> - **Av.K. m.135** (24/12/2025-7571 s.K. ile değişik) — müvekkile sadakat
+>   yaptırımla korunur: kanunun tanıdığı bir hakkın kullanımını bertaraf edecek
+>   şekilde müvekkile bilgi vermemek (m.135/2-l) ve takip ettiği işte özen
+>   yükümlülüğünü ihlal ederek hak kaybına sebebiyet vermek (m.135/2-m) kınama;
+>   görevini savsaklayarak ya da kötüye kullanarak müvekkilin zararına kendisine
+>   ya da başkasına menfaat sağlamak (m.135/3-a) para cezası sebebidir.
+> - **TBK m.506/2** — vekil, üstlendiği iş ve hizmetleri vekâlet verenin haklı
+>   menfaatlerini gözeterek, sadakat ve özenle yürütmekle yükümlüdür.
+>
+> **Uygulama:** her MK satırı müvekkilin menfaati gözüyle okunur — liste bu
+> menfaati korumanın ARACIDIR, amacı değildir. Bir kural ile müvekkilin menfaati
+> çatışıyor görünürse aile çatışmayı GİZLEMEZ ve kendisi ÇÖZMEZ: iki yanı
+> dayanağıyla avukata sunar; karar avukatındır.
+
 > **Fikir kaynağı:** Yargı PRO 15-3 (vekâlet yetki denetimi), 17-4 (vekâletin sona
 > ermesi), 13-9 (aydınlatılmış onam), 13-8 (avukatlık sözleşmesi). Metin ve kod
 > ALINMADI; OA yöntemiyle yeniden yazıldı: model kurar, avukat karar verir, olgu
@@ -9,7 +32,7 @@
 > m.29, 55, 73, 74, 77, 81, 82, 83 · Av.K. (1136) m.27, 36, 38, 39, 41, 56, 163,
 > 164, 165, 166, 174 · TBK (6098) m.504, 512, 513 · KVKK (6698) m.5, 6, 9, 10 ·
 > AAÜT (RG 04.11.2025/33067, mevzuat.gov.tr kaydı 42687) m.1/3. Maddeler kullanım
-> anında yeniden teyit edilir; bu dosya ÇIPADIR, otorite resmî metindir.
+> anında yeniden teyit edilir; bu dosya ÇIPADIR, hukuki ölçüt resmî metindir.
 >
 > **Önce iş kabulü (MK-0):** işin reddi zorunluluğu (Av.K. m.38 — menfaati zıt
 > tarafa avukatlık/mütalaa, aynı işte önceki hâkim/hakem/savcı/bilirkişi/memur
@@ -121,10 +144,24 @@ vekil bildirimi, baro ya da adli yardım görevlendirmesinden çekilme.
      `belgeli` olmalıdır.
    **OA temkin kuralı (hukuki yorum değil, hak kaybı önleme):** iki tarih ayrı
    satırda hesaplanır — `oa-sure/scripts/hesapla_sure.py --teblig <müvekkile
-   tebliğ> --sure 2 --birim hafta` ve `--sure 15 --birim gun`. Müvekkile "yeni
-   vekil bu tarihten ÖNCE" uyarısı ERKEN tarihle verilir; istifa eden avukat
-   süre ve duruşma takibini GEÇ tarihe kadar sürdürür. Adli tatilin bu sürelere
-   etkisi **TEYİT BEKLİYOR** — belirsizlikte erken tarih esas alınır.
+   tebliğ> --kural hmk_istifa_vekalet_devam` ve `--teblig <müvekkile tebliğ>
+   --kural avk_istifa_vekalet_devam`. Kuralsız (`--sure`/`--birim`) çağrı
+   KULLANILMAZ: rejimi `--yargi hukuk` varsayılanından alır ve ham bitiş adli
+   tatile düşerse HMK m.104 ile 31 Ağustos + bir haftaya uzatır — yaz aylarında
+   müvekkile GEÇ tarih verir (T5-1 kusuru, 2026-10-07: 25.07 tebliğde 07.09;
+   doğrusu 10.08). Müvekkile "yeni vekil bu tarihten ÖNCE" uyarısı manşetteki
+   ERKEN tarihle (uzatmasız) verilir; istifa eden avukat süre ve duruşma
+   takibini çıktıdaki GEÇ tarihe (geç okuma: 31 Ağustos + bir hafta) kadar
+   sürdürür — bu arada vekile yapılan tebligat süreyi başlatır (Y. 13. HD
+   E.2016/23630 K.2019/746; Y. 7. HD E.2013/26308 K.2013/21244). Adli tatilin
+   bu sürelere etkisi **TEYİT BEKLİYOR**: süre tatilde İŞLER (HMK m.103/3 — adli
+   tatilde her türlü tebligat yapılır; istifa tebliği tatilde geçerlidir); HMK
+   m.104'ün m.82/1'e uygulandığına ya da reddedildiğine dair karar bulunamadı;
+   Av.K. m.41 süresi HMK süresi değildir — HMK m.104 yalnız HMK'nın tayin
+   ettiği sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62
+   için; m.41'e uygulanması kıyastır). Belirsizlikte erken tarih esas alınır;
+   karşı tarafa kesin dil kurulmaz (metinler Yargı PRO `mevzuat_getir`/
+   `ictihat_getir`, 2026-10-07).
 4. **Azil — HMK m.83.** Vekil ile takip edilen davada azil hâlinde vekâlet veren
    davayı takip etmez ve **iki hafta** içinde başka vekil görevlendirmezse tarafın
    yokluğu hükümleri uygulanır. Okunan maddelerde (HMK m.81-83, Av.K. m.41)

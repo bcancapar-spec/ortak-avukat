@@ -169,7 +169,7 @@ def _kanit_artefakt_yolu_var_mi(kok, kanit):
 # P0-6'nın önkoşul-artefakt kapıları bu supabı TAŞIMAZ — v0.5.5'te baştan
 # itibaren aktiftir (eski jsonl'lerde de aynı fiziksel eksiklik varsa aynı
 # şekilde uygulanır; bu davranış farkı bilinçlidir, bkz. SKILL.md).
-OA_SURUM = "0.5.17.1"
+OA_SURUM = "0.5.18"
 
 
 def _surum_tuple(s):
@@ -942,13 +942,41 @@ _ONKOSUL_FONK = {
 }
 
 
+_TR_KUCUK = str.maketrans({"İ": "i", "I": "ı"})
+
+
+def _graf_adi_mi(ad):
+    """Dosya adı graf denetimini ima ediyor mu (graf / illiyet — Türkçe harf
+    katlamalı). Yalnız RET mesajının ipucunu seçer; kapı kararı ad-bağımsızdır."""
+    low = str(ad).translate(_TR_KUCUK).lower()
+    return "graf" in low or "illiyet" in low
+
+
 def _graf_kapisi_sorunu(kok):
     """K2 — GRAF KAPISI sorgusu. Döner: None (kapı açık) | 'GRAF KAPISI: <dosya>:
     <sebepler> — ...' metni. Yalnız `arac == grafik_denetim` damgalı `_oa/cikti/
     *.json` okur (bekçiyle AYNI süzgeç — ikinci bir kural kümesi İCAT EDİLMEZ);
-    dosya yoksa None (RET DEĞİL). ASLA fırlatmaz."""
+    dosya yoksa None (RET DEĞİL). ASLA fırlatmaz.
+
+    B-4 (v0.5.18) — FAIL-CLOSED: `_oa/cikti` altında OKUNAMAYAN bir `*.json`
+    varken kapı KAPALIDIR. Eskiden bozuk/yarım JSON sessizce atlanıyor, kapı
+    None (açık) dönüyordu — deneyle doğrulandı. Ad 'graf/illiyet' içeriyorsa
+    dosya graf denetimi ADAYIDIR; içermiyorsa damgası okunamadığı için graf
+    denetimi OLABİLİR (K1 ad-bağımsızlığı) — iki hâlde de okunamayan denetim
+    'temiz' sayılmaz. Çıkış yolu RET metninde: onar/sil + grafik_denetim.py,
+    ya da `--serh --serh-kapi graf` (gerekçeli, görünür)."""
     try:
-        for yol, m in _denetim_jsonlari(kok, "grafik_denetim"):
+        okunamayan = []
+        damgali = _denetim_jsonlari(kok, "grafik_denetim", okunamayan=okunamayan)
+        for yol, hata in okunamayan:
+            ad = os.path.relpath(yol, kok or ".").replace(os.sep, "/")
+            ipucu = ("adı graf/illiyet içeriyor — graf denetimi adayı" if _graf_adi_mi(ad)
+                     else "damgası okunamadı — graf denetimi OLABİLİR (K1: ad-bağımsız)")
+            return (f"GRAF KAPISI: {ad}: denetim JSON'u OKUNAMADI ({hata}) — {ipucu}; "
+                    "okunamayan denetim 'temiz' sayılmaz (fail-closed, B-4). Dosyayı onar ya "
+                    "da sil ve grafik_denetim.py'yi yeniden koş — ya da --serh --serh-kapi "
+                    "graf ile gerekçeli geçiş")
+        for yol, m in damgali:
             sebepler = []
             if any(isinstance(c, list) and c for c in (m.get("cevrimler") or [])):
                 sebepler.append("dairesel illiyet")
@@ -1017,6 +1045,16 @@ def _kismi_ingest_durumu(kok):
     return True, n, m
 
 
+# B-9 / B-8 (v0.5.18) — UYARI bekçisi dosya-adı deseni tutmazsa aracın KENDİ
+# `arac` damgasıyla da bakar (bekçi ↔ advisory tutarlılığı: eskiden bekçi ADA,
+# `_vakia_delilsiz_unsur_uyarisi` DAMGAYA bakıyordu — aynı dosya birine görünür
+# ötekine görünmez olabiliyordu). Damga = `_denetim_jsonlari` süzgeci (K1).
+_ONKOSUL_UYARI_DAMGALARI = {
+    (4, "oa-vakia"): "vakia_matris",
+    (6, "oa-antitez"): "antitez_matris",
+}
+
+
 def _onkosul_uyari_var_mi(kok, anahtar):
     if anahtar == (3, "oa-ictihat"):
         kutuk = os.path.join(kok or ".", "_oa", "teyit", "kunye-teyit.md")
@@ -1028,7 +1066,10 @@ def _onkosul_uyari_var_mi(kok, anahtar):
     if not desenler:
         return True
     import glob as _glob
-    return any(_glob.glob(os.path.join(kok or ".", "_oa", "cikti", desen)) for desen in desenler)
+    if any(_glob.glob(os.path.join(kok or ".", "_oa", "cikti", desen)) for desen in desenler):
+        return True
+    damga = _ONKOSUL_UYARI_DAMGALARI.get(anahtar)
+    return bool(damga and _denetim_jsonlari(kok, damga))
 
 
 def _adim_artefakt_var_mi(kok, adim, parca):
@@ -1233,6 +1274,21 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
         uyari_mesaj = ONKOSUL_UYARI[anahtar]
         if _kendine_atif_var_mi(kanit):
             uyari_mesaj += _KENDINE_ATIF_NOTU
+
+    # B-2 (v0.5.18) — adım-5/oa-kiyas UYGULANDI yazılırken graf↔vakıa↔kıyas
+    # ortak kimlik uzayı KOPUKSA görünür UYARI (RET DEĞİL — avukat kararı
+    # 2026-10-07: karar avukatın). Kıyasın dayandığı vakıa/delil kimliği
+    # zincirde karşılıksızsa subsumtion boşlukta kurulmuş olabilir; bu bir
+    # hukuki hüküm değil, yapısal gözlemdir.
+    if anahtar == (5, "oa-kiyas"):
+        kopuk, _belirsiz = _capraz_bosluk_hesapla(kok)
+        if kopuk:
+            tipler = sorted({str(k.get("tip")) for k in kopuk})
+            ek = (f"ÇAPRAZ DENETİM: {len(kopuk)} kopuk referans (graf↔vakıa↔kıyas ortak "
+                  f"kimlik uzayı — {', '.join(tipler)}) — kıyasın dayandığı vakıa/delil "
+                  "kimlikleri zincirde karşılıksız; DURUM.md «Çapraz Denetim» bölümüne bak, "
+                  "ayrıntı için capraz_denetim.py'yi koş (UYARI — bloklamaz, karar avukatın).")
+            uyari_mesaj = (uyari_mesaj + " ‖ " + ek) if uyari_mesaj else ek
 
     if serh_gecilen:
         return True, None, uyari_mesaj, (" ‖ ".join(m for _, m in serh_gecilen) + kapi_eki)
@@ -2737,6 +2793,10 @@ def _denetle_hesapla(kok, olaylar_yol, durum_yol, gate_g_atla=False, makbuz_kont
     mk_uyari = _muvekkil_karari_kapanis_uyarisi(d)
     if mk_uyari:
         uyarilar.append(mk_uyari)
+    # B-4 (v0.5.18) — okunamayan denetim JSON'u GÖRÜNÜR (Kapı Durumu +
+    # --denetle + kanca çıktısı); advisory — exit kodunu değiştirmez, bloklama
+    # yalnız K2 adım-1'de (`_graf_kapisi_sorunu`, fail-closed).
+    uyarilar.extend(_okunamayan_denetim_uyarisi(kok))
     return d, sorunlar, uyarilar
 
 
@@ -2895,28 +2955,91 @@ def _advisory_tavanla(uyarilar):
         f"… +{fazla} uyarı daha (tam liste ilgili _oa/cikti/*.json dosyasında)"]
 
 
-def _denetim_jsonlari(kok, arac):
+def _denetim_jsonlari(kok, arac, okunamayan=None):
     """K1 (v0.5.16, Hamle 2) — `_oa/cikti/*.json` içinden `arac == <arac>`
     damgalı denetim çıktılarını (sıralı, deterministik) verir: [(yol, dict)].
     Üç bekçi (graf/kıyas/usul) ve GRAF KAPISI (K2) TEK bu süzgeçten geçer —
     dosya-ADI sözleşmesi (`*graf*`/`*kiyas*`/`*usul*`) KALDIRILDI: SKILL.md'nin
     kendi örneği `01-illiyet-denetim.json` süzgeçten geçmiyordu (saha: bugün
-    0 uyarı). Damga = aracın kendi yazdığı `arac` alanı (tek kaynak). Bozuk/
-    yabancı/damgasız dosya SESSİZCE atlanır; ASLA fırlatmaz."""
+    0 uyarı). Damga = aracın kendi yazdığı `arac` alanı (tek kaynak). Yabancı/
+    damgasız dosya sessizce atlanır; ASLA fırlatmaz.
+
+    B-4 (v0.5.18): OKUNAMAYAN (bozuk/yarım/elle düzenlenmiş) `*.json` artık
+    sessiz DEĞİL — çağıran `okunamayan` listesi verirse `(yol, hata)` oraya
+    düşer (K2 kapısı ve DURUM.md «DENETİM JSON'U OKUNAMADI» hattı bunu okur);
+    dönüş listesi yine yalnız çözülen damgalı dosyaları taşır (sözleşme
+    korunur — mevcut bekçiler kör kalmaz)."""
     cdiz = os.path.join(kok or ".", "_oa", "cikti")
     if not os.path.isdir(cdiz):
         return []
-    sonuc = []
-    for yol in sorted(glob.glob(os.path.join(cdiz, "*.json"))):
-        try:
-            with open(yol, encoding="utf-8", errors="replace") as f:
-                m = json.load(f)
-        except Exception:
-            continue
-        if not isinstance(m, dict) or m.get("arac") != arac:
-            continue
-        sonuc.append((yol, m))
-    return sonuc
+    yollar = sorted(glob.glob(os.path.join(cdiz, "*.json")))
+    # v0.5.18 — SÜREÇ-İÇİ AYRIŞTIRMA ÖNBELLEĞİ. NEDEN VAR: bu süzgeç bir
+    # DURUM.md yazımında ~12 kez çağrılır (dört bekçi + K2 + çapraz girdileri +
+    # özne + antitez + okunamayan + önkoşul damgaları); 3000 evraklık dosyada
+    # 1,4 MB'lık graf girdisi her çağrıda yeniden ayrıştırılıyordu (ölçüldü:
+    # tek çağrı 15 ms → DURUM.md başına ~180 ms). Anahtar dizin, geçerlilik
+    # ANLIK GÖRÜNTÜ (ad + boyut + mtime_ns, sıralı): dosya listesi ya da tek
+    # bir bayt değişirse yeniden ayrıştırılır — bayat okuma yapısal olarak
+    # imkânsız. Salt okunur: önbellekteki sözlükler ÇAĞIRANLARCA DEĞİŞTİRİLMEZ
+    # (tüm tüketiciler `.get` ile okur). Veri kaybı bölgesine dokunmaz (yazım yok).
+    try:
+        anlik = tuple((os.path.basename(y), os.stat(y).st_size, os.stat(y).st_mtime_ns)
+                      for y in yollar)
+    except OSError:
+        anlik = None
+    anahtar = os.path.realpath(cdiz)
+    onbellek = _DENETIM_JSON_ONBELLEK.get(anahtar)
+    if anlik is not None and onbellek is not None and onbellek[0] == anlik:
+        okunan, okunamayanlar = onbellek[1], onbellek[2]
+    else:
+        okunan, okunamayanlar = [], []
+        for yol in yollar:
+            try:
+                with open(yol, encoding="utf-8", errors="replace") as f:
+                    m = json.load(f)
+            except Exception as e:  # noqa: BLE001 — görünür kayıt, sessiz atlama değil
+                okunamayanlar.append((yol, " ".join(f"{type(e).__name__}: {e}".split())[:120]))
+                continue
+            if not isinstance(m, dict):
+                continue
+            okunan.append((yol, m))
+        if anlik is not None:
+            _DENETIM_JSON_ONBELLEK.clear()           # tek dizinlik önbellek (bellek sınırı)
+            _DENETIM_JSON_ONBELLEK[anahtar] = (anlik, okunan, okunamayanlar)
+    if okunamayan is not None:
+        okunamayan.extend(okunamayanlar)
+    return [(yol, m) for yol, m in okunan if m.get("arac") == arac]
+
+
+_DENETIM_JSON_ONBELLEK = {}   # realpath(cikti) → (anlık görüntü, okunan, okunamayan)
+
+
+_HICBIR_DAMGA = object()   # hiçbir `arac` değeriyle eşleşmeyen nöbetçi
+
+
+def _okunamayan_denetim_jsonlari(kok):
+    """B-4 — `_oa/cikti/*.json` içinde ÇÖZÜLEMEYEN dosyalar: [(yol, hata)]
+    (sıralı). Damgası okunamayan dosya hangi motorun çıktısı olduğu
+    bilinemeyen dosyadır — K1 ad-bağımsızlığının bedeli: graf denetimi DE
+    olabilir. Tek tarama noktası `_denetim_jsonlari`dır (ikinci glob yok);
+    nöbetçi damga hiçbir dosyayla eşleşmez, yalnız okunamayanlar toplanır."""
+    okunamayan = []
+    _denetim_jsonlari(kok, _HICBIR_DAMGA, okunamayan=okunamayan)
+    return okunamayan
+
+
+def _okunamayan_denetim_uyarisi(kok):
+    """B-4 — DURUM.md Kapı Durumu / --denetle UYARILAR satırları: okunamayan
+    denetim JSON'u 'temiz' SAYILMAZ (Review Focus 1: yarım yazım / elle
+    düzenleme). Advisory — `--denetle` çıkış kodunu değiştirmez; bloklama
+    yalnız K2 adım-1'de (`_graf_kapisi_sorunu`)."""
+    uyarilar = []
+    for yol, hata in _okunamayan_denetim_jsonlari(kok):
+        ad = os.path.relpath(yol, kok or ".").replace(os.sep, "/")
+        uyarilar.append(f"DENETİM JSON'U OKUNAMADI: {ad} — {hata}; yarım yazım ya da elle "
+                        "düzenleme olabilir — bu dosya 'temiz' SAYILMAZ (K2 graf kapısı adım-1'i "
+                        "fail-closed kapatır); dosyayı onar ya da sil, ilgili motoru yeniden koş.")
+    return uyarilar
 
 
 def _graf_cokme_metni(m):
@@ -3013,6 +3136,301 @@ def _usul_bosluk_uyarisi(kok):
         for b in (m.get("bosluklar") or []):
             uyarilar.append(f"{ad}: {b}")
     return _advisory_tavanla(uyarilar)
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# v0.5.18 — ZİNCİRLEME TEPKİ (Fable tutarlılık raporu 2026-10-07, B-1…B-8;
+# avukat kararı 2026-10-07: halka değişince teslimde GÖRÜNÜR UYARI — DURUM.md
+# ve makbuzda satır; teslimi DURDURMAZ, karar avukatın).
+#
+# NEDEN VAR: delil → vakıa → illiyet → kıyas → antitez zincirinde bir halka
+# (yeni evrak → 00-kunye.json; düzeltilen graf; değişen vakıa matrisi)
+# değişince aşağı akıştaki denetim JSON'ları AYNEN duruyor ve DURUM.md/teslim
+# yeşil kalıyordu — zincirleme tepki yoktu. Dört motor artık denetim JSON'una
+# S1 kaynak beyanı (`kaynaklar: [{rol,yol,sha8}]`) yazar; buradaki tüketiciler
+# o beyanı okuyup bayat halkayı, kopuk kimliği, açık cepheyi ve okunamayan
+# denetimi GÖRÜNÜR uyarıya çevirir. Hepsi advisory renderer alanıdır:
+# `_vakia_delilsiz_unsur_uyarisi` ile aynı desen ve statü — salt-okur, aracın
+# KENDİ ürettiği JSON'u okur, ikinci bir denetim mantığı İCAT ETMEZ, asla
+# çökmez, asla bloklamaz. Yalnız `_durum_md_yaz` (→ denetle_calistir /
+# --denetle / Stop-SessionEnd kancası) ve teslim zincirinde koşar; hook_prompt
+# ve postwrite erken-çıkış yollarına GİRMEZ (CLAUDE.md performans değişmezleri).
+# ═════════════════════════════════════════════════════════════════════════
+
+# Kardeş modüller İN-PROCESS yüklenir (subprocess YASAK) ve süreç çapında TEK
+# örnek paylaşılır (CLAUDE.md #5 deseni — `_paylasimli_modul_al`): anahtar
+# dizeler bu dosyada tanımlıdır; başka bir yükleyici aynı modülü paylaşmak
+# isterse AYNI dizeyi kullanmalıdır (ayrışırsa paylaşım sessizce ölür).
+_OA_PAYLASIMLI_TAZELIK = "_oa_paylasimli_tazelik_denetim"
+_TAZELIK_DENETIM_MOD = None
+
+
+def _kardes_modul_yukle(anahtar, betik, gereken_nitelikler=()):
+    """`betik`i `sys.modules[anahtar]` altında bir kez yükler; zaten yüklü ve
+    kimliği doğrulanmış örnek varsa onu döndürür. Bulunamaz/çökerse None.
+    ASLA fırlatmaz (advisory tüketici — çağıranı düşürmez)."""
+    if not os.path.isfile(betik):
+        return None
+    mod = _paylasimli_modul_al(anahtar, betik, gereken_nitelikler)
+    if mod is not None:
+        return mod
+    try:
+        spec = importlib.util.spec_from_file_location(anahtar, betik)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[anahtar] = mod          # paylaşımın giriş kapısı (bkz. #5)
+        spec.loader.exec_module(mod)
+    except Exception:
+        sys.modules.pop(anahtar, None)      # yarım yüklü örnek paylaşıma GİRMEZ
+        return None
+    if not all(hasattr(mod, a) for a in gereken_nitelikler):
+        return None
+    return mod
+
+
+def _tazelik_denetim_modulu():
+    """oa-kontrol/scripts/tazelik_denetim.py — İN-PROCESS, paylaşımlı tek örnek."""
+    global _TAZELIK_DENETIM_MOD
+    if _TAZELIK_DENETIM_MOD is not None:
+        return _TAZELIK_DENETIM_MOD
+    skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    betik = os.path.join(skills_kok, "oa-kontrol", "scripts", "tazelik_denetim.py")
+    mod = _kardes_modul_yukle(_OA_PAYLASIMLI_TAZELIK, betik, ("kok_denetle",))
+    if mod is not None:
+        _TAZELIK_DENETIM_MOD = mod
+    return mod
+
+
+def _bayat_zincir_uyarisi(kok):
+    """B-1(c) — DURUM.md «Bayat Zincir» advisory hattı. tazelik_denetim.kok_
+    denetle (md bloğu + S1 JSON beyanı, TEK kaynak) in-process çağrılır; BAYAT /
+    EKSİK-KAYNAK / DENETİM DIŞI satırları döner. Okunamayan JSON'lar burada
+    DEĞİL `_okunamayan_denetim_uyarisi`nde (K2 ile aynı tarama) anılır —
+    aynı bilgi iki kez basılmaz. `_oa/cikti` yoksa sessiz. Kardeş modül
+    yüklenemezse sessiz KALMAZ: denetlenemeyen zincir 'temiz' sayılmaz."""
+    kok = kok or "."
+    if not os.path.isdir(os.path.join(kok, "_oa", "cikti")):
+        return []
+    mod = _tazelik_denetim_modulu()
+    if mod is None:
+        return ["ZİNCİR TAZELİĞİ DENETLENEMEDİ — oa-kontrol/scripts/tazelik_denetim.py "
+                "yüklenemedi; bayat halka olabilir (temiz SAYILMAZ)."]
+    try:
+        rapor = mod.kok_denetle(kok)
+    except Exception as e:
+        return ["ZİNCİR TAZELİĞİ DENETLENEMEDİ — tazelik_denetim çöktü "
+                f"({type(e).__name__}); temiz SAYILMAZ."]
+    if not rapor:
+        return []
+    uyarilar = []
+    for b in rapor.get("bayat") or []:
+        uyarilar.append(f"BAYAT — _oa/cikti/{b['urun']}: kaynağı {b['kaynak']} üretiminden "
+                        f"sonra değişti ({b['beyan']} → {b['simdiki']}); ilgili motoru "
+                        "yeniden koşun (zincirin aşağısı bu halkaya dayanıyor).")
+    for e in rapor.get("eksik") or []:
+        uyarilar.append(f"EKSİK-KAYNAK — _oa/cikti/{e['urun']}: beyan edilen {e['kaynak']} "
+                        "bulunamadı/kök dışında; ilgili motoru yeniden koşun.")
+    for d in rapor.get("denetim_disi") or []:
+        uyarilar.append(f"DENETİM DIŞI — _oa/cikti/{d['urun']}: kaynak beyanı boş "
+                        f"({d['not']}) — tazelik hükmü verilemez (temiz SAYILMAZ, bayat da değil).")
+    return _advisory_tavanla(uyarilar)
+
+
+# ── B-2 — ÇAPRAZ DENETİM (ortak kimlik uzayı) kapıya bağlanır ───────────────
+_OA_PAYLASIMLI_CAPRAZ = "_oa_paylasimli_capraz_denetim"
+_CAPRAZ_DENETIM_MOD = None
+# capraz_denetim.ANAHTAR adı → model girdisini denetleyen motorun `arac` damgası
+# (S1 `kaynaklar[rol=girdi]` beyanı o motorun denetim JSON'undan okunur).
+_CAPRAZ_GIRDI_DAMGALARI = (("graf", "grafik_denetim"), ("vakia", "vakia_matris"),
+                           ("kiyas", "kiyas_denetim"))
+
+
+def _capraz_denetim_modulu():
+    """oa-pipeline/scripts/capraz_denetim.py (kardeş betik) — İN-PROCESS,
+    paylaşımlı tek örnek. Bulunamaz/çökerse None."""
+    global _CAPRAZ_DENETIM_MOD
+    if _CAPRAZ_DENETIM_MOD is not None:
+        return _CAPRAZ_DENETIM_MOD
+    betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), "capraz_denetim.py")
+    mod = _kardes_modul_yukle(_OA_PAYLASIMLI_CAPRAZ, betik, ("caprazla", "_dosya_bul", "ANAHTAR"))
+    if mod is not None:
+        _CAPRAZ_DENETIM_MOD = mod
+    return mod
+
+
+def _oa_icinde_mi(kok, tam):
+    """`tam` (realpath) `<kok>/_oa` ağacının İÇİNDE mi — tazelik `_guvenli_yol`
+    ile aynı sınır (yol-kaçış koruması)."""
+    oa = os.path.realpath(os.path.join(kok, "_oa"))
+    return tam == oa or tam.startswith(oa + os.sep)
+
+
+def _capraz_girdi_yollari(kok, mod):
+    """Üç model girdisinin (graf/vakıa/kıyas) yolu: ÖNCE S1 beyanı — ilgili
+    motorun damgalı denetim JSON'undaki `kaynaklar[rol=="girdi"].yol` (`_oa`ya
+    göreli; `_oa` dışına kaçan yol OKUNMAZ); beyan yoksa/eskiyse
+    `capraz_denetim._dosya_bul` dizin taraması (ad sözleşmesi, damgalı çıktı
+    hariç). Döner: {ad: yol|None}."""
+    kok = kok or "."
+    cdiz = os.path.join(kok, "_oa", "cikti")
+    yollar = {}
+    for ad, arac in _CAPRAZ_GIRDI_DAMGALARI:
+        secili = None
+        for _yol, m in _denetim_jsonlari(kok, arac):
+            for k in (m.get("kaynaklar") or []):
+                if (isinstance(k, dict) and k.get("rol") == "girdi"
+                        and isinstance(k.get("yol"), str)):
+                    tam = os.path.realpath(os.path.join(kok, "_oa", k["yol"]))
+                    if _oa_icinde_mi(kok, tam) and os.path.isfile(tam):
+                        secili = tam
+                        break
+            if secili:
+                break
+        if secili is None:
+            aday = mod._dosya_bul(cdiz, None, mod.ANAHTAR[ad])
+            secili = aday if isinstance(aday, str) else None
+        yollar[ad] = secili
+    return yollar
+
+
+def _capraz_bosluk_hesapla(kok):
+    """(kopuk, belirsiz) ham listeleri — capraz_denetim.caprazla_ayrintili
+    in-process. Üç girdiden en az ikisi okunamıyorsa ([], []) (capraz_denetim
+    ile aynı eşik: tek dosyayla çapraz denetim olmaz). Okunamayan girdi
+    JSON'u burada anılmaz — `_okunamayan_denetim_uyarisi` zaten `_oa/cikti/
+    *.json` tümünü tarar. ASLA fırlatmaz."""
+    try:
+        kok = kok or "."
+        if not os.path.isdir(os.path.join(kok, "_oa", "cikti")):
+            return [], []
+        mod = _capraz_denetim_modulu()
+        if mod is None:
+            return [], []
+        yuklu = {}
+        for ad, yol in _capraz_girdi_yollari(kok, mod).items():
+            if not yol:
+                yuklu[ad] = None
+                continue
+            try:
+                yuklu[ad] = mod._yukle(yol)
+            except Exception:
+                yuklu[ad] = None
+        if sum(1 for v in yuklu.values() if isinstance(v, dict)) < 2:
+            return [], []
+        girdiler = (yuklu.get("graf") if isinstance(yuklu.get("graf"), dict) else None,
+                    yuklu.get("vakia") if isinstance(yuklu.get("vakia"), dict) else None,
+                    yuklu.get("kiyas") if isinstance(yuklu.get("kiyas"), dict) else None)
+        ayrintili = getattr(mod, "caprazla_ayrintili", None)
+        if callable(ayrintili):
+            kopuk, belirsiz = ayrintili(*girdiler)
+        else:                                   # eski kardeş sürüm — yalnız kopuk
+            kopuk, belirsiz = mod.caprazla(*girdiler), []
+        return list(kopuk or []), list(belirsiz or [])
+    except Exception:
+        return [], []
+
+
+def _capraz_bosluk_uyarisi(kok):
+    """B-2 — DURUM.md «Çapraz Denetim» advisory hattı: graf↔vakıa↔kıyas ortak
+    kimlik uzayındaki kopuk referanslar (`ÇAPRAZ KOPUK (<tip>)`) + kimliksiz
+    belirsiz ad eşleşmeleri (`ÇAPRAZ BELİRSİZ`), tavanlı. Bloklamaz."""
+    kopuk, belirsiz = _capraz_bosluk_hesapla(kok)
+    ogeler = ([("ÇAPRAZ KOPUK", k) for k in kopuk]
+              + [("ÇAPRAZ BELİRSİZ", b) for b in belirsiz])
+    # Tavan ÖNCE uygulanır: 3000 olaylı dosyada binlerce satırı biçimlendirip
+    # sonra 20'ye kırpmak boşa iştir; "no silent caps" korunur (düşen sayı yazılır).
+    uyarilar = [f"{etiket} ({_tek_satir(o.get('tip'))}): {_tek_satir(o.get('mesaj'))}"
+                for etiket, o in ogeler[:_ADVISORY_TAVAN]]
+    if len(ogeler) > _ADVISORY_TAVAN:
+        uyarilar.append(f"… +{len(ogeler) - _ADVISORY_TAVAN} uyarı daha "
+                        "(tam liste: capraz_denetim.py --json <yol>)")
+    return uyarilar
+
+
+def _tek_satir(metin, n=220):
+    """Model/motor üretimi metni DURUM.md satırına güvenle indirger (R5 dersi):
+    satır/paragraf ayırıcı ve denetim karakterleri boşluğa, `⟦⟧` damga
+    taklidi düz parantezlere; `n` karakterde kırpılır (kırpma işaretli)."""
+    s = "" if metin is None else str(metin)
+    s = "".join(" " if (ch.isspace() or ord(ch) < 32 or ord(ch) == 127) else ch for ch in s)
+    s = s.replace("⟦", "[").replace("⟧", "]")
+    s = " ".join(s.split())
+    return s if len(s) <= n else s[: n - 1] + "…"
+
+
+# ── B-8 — ANTİTEZ tüketicisi (S2: arac == antitez_matris) ───────────────────
+def _antitez_oge_metni(o):
+    """S2 liste öğesi dize ya da sözlük olabilir ({cephe, antitez, guc, …});
+    tek satırlık görünür metne indirger."""
+    if isinstance(o, dict):
+        cephe = o.get("cephe") or o.get("ad") or o.get("id")
+        antitez = o.get("antitez") or o.get("metin") or o.get("iddia")
+        if cephe and antitez:
+            return _tek_satir(f"[{cephe}] {antitez}")
+        if cephe or antitez:
+            return _tek_satir(cephe or antitez)
+        return _tek_satir(json.dumps(o, ensure_ascii=False, sort_keys=True))
+    return _tek_satir(o)
+
+
+def _antitez_bosluk_uyarisi(kok):
+    """B-8 — oa-antitez/scripts/antitez_matris.py `--dogrula … --json` (S2)
+    çıktısındaki açık cepheler, çürütülmemiş antitezler ve teyitsiz çürütme
+    dayanakları `arac == antitez_matris` damgalı `_oa/cikti/*.json`dan (K1:
+    ad-bağımsız) toplanır. Karşı tarafın en güçlü tezi görülmeden yol kararı
+    verilmez (P0-3) — görülmüş ama CEVAPSIZ kalan cephe DURUM.md'de görünür
+    olmalı. Hukuki değerlendirme DEĞİLDİR: aracın kendi listesini aktarır."""
+    uyarilar = []
+    for yol, m in _denetim_jsonlari(kok, "antitez_matris"):
+        ad = os.path.relpath(yol, kok)
+        bulundu = False
+        for o in (m.get("acik_cepheler") or []):
+            uyarilar.append(f"{ad}: AÇIK CEPHE — {_antitez_oge_metni(o)} (karşı tezin saldırısına "
+                            "çürütme yok — cephanelik tamamlanmalı)")
+            bulundu = True
+        for o in (m.get("curutulmemis") or []):
+            uyarilar.append(f"{ad}: ÇÜRÜTÜLMEMİŞ ANTİTEZ — {_antitez_oge_metni(o)}")
+            bulundu = True
+        for o in (m.get("teyitsiz_dayanak") or []):
+            uyarilar.append(f"{ad}: çürütme dayanağı TEYİTSİZ — {_antitez_oge_metni(o)} "
+                            "(künye resmî kaynaktan teyit edilmeden dayanak olamaz)")
+            bulundu = True
+        if m.get("saglikli") is False and not bulundu:
+            uyarilar.append(f"{ad}: antitez matrisi SAĞLIKSIZ (saglikli=false) — ayrıntı dosyada; "
+                            "antitez_matris.py --dogrula çıktısına bak")
+    return _advisory_tavanla(uyarilar)
+
+
+# ── B-7 — ÖZNE AVUKATA-SOR → «Avukat Kararı Bekleyen» ───────────────────────
+def _vakia_ozne_sor_uyarisi(kok):
+    """B-7 — vakia_matris denetim JSON'undaki `ozne_eslestirme` (S4) kayıtları
+    arasından `karar == "AVUKATA-SOR"` olanlar: iki yazım aynı özne mi (ör.
+    «Ahmet Kaya» ↔ «Ahmet Kara»)? Script bu kararı VERMEZ ve vermemeli — soru
+    DURUM.md «Avukat Kararı Bekleyen» listesine düşer; BAGLA kayıtları
+    girmez. Metin R5 disipliniyle tek satıra indirgenir."""
+    satirlar = []
+    for yol, m in _denetim_jsonlari(kok, "vakia_matris"):
+        ad = os.path.relpath(yol, kok)
+        for b in (m.get("ozne_eslestirme") or []):
+            if not isinstance(b, dict) or b.get("karar") != "AVUKATA-SOR":
+                continue
+            varyantlar = b.get("varyantlar")
+            if isinstance(varyantlar, list):
+                vs = " ↔ ".join(f"«{_tek_satir(v, 80)}»" for v in varyantlar)
+            else:
+                vs = _tek_satir(varyantlar, 160)
+            ayrinti = []
+            if b.get("skor") is not None:
+                ayrinti.append(f"skor {_tek_satir(b.get('skor'), 12)}")
+            if b.get("kural"):
+                ayrinti.append(_tek_satir(b.get("kural"), 40))
+            gerekce = _tek_satir(b.get("gerekce"), 120)
+            satirlar.append(
+                f"{ad}: ÖZNE AVUKATA-SOR — {vs}"
+                + (f" ({'; '.join(ayrinti)})" if ayrinti else "")
+                + (f" — {gerekce}" if gerekce else "")
+                + " — aynı kişi mi? Karar avukatın (vakıa matrisinde `ozne_eslestirme`).")
+    return _advisory_tavanla(satirlar)
 
 
 def _defter_nobetci_uyarisi(kok, olaylar_yol):
@@ -3752,6 +4170,35 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
             for u in usul_bosluk:
                 satirlar.append(f"- 🔴 {u}")
             satirlar.append("")
+        # v0.5.18 — ZİNCİRLEME TEPKİ bölümleri (advisory; avukat kararı
+        # 2026-10-07: görünür uyarı, teslimi DURDURMAZ).
+        bayat_zincir = _bayat_zincir_uyarisi(kok)
+        if bayat_zincir:
+            satirlar.append("## 🔴 Bayat Zincir Uyarısı (tazelik — v0.5.18)")
+            satirlar.append("> Bir halka (künye/graf/vakıa) üretiminden SONRA değişti; aşağı "
+                            "akıştaki denetim o hâli görmedi. İlgili motoru yeniden koşun — "
+                            "karar avukatın, kapı kapatmaz.")
+            for u in bayat_zincir:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        capraz = _capraz_bosluk_uyarisi(kok)
+        if capraz:
+            satirlar.append("## 🔴 Çapraz Denetim Uyarısı (ortak kimlik uzayı — v0.5.18)")
+            satirlar.append("> Graf ↔ vakıa ↔ kıyas birbirini tutmuyor: KOPUK = referans "
+                            "karşılıksız; BELİRSİZ = kimliksiz, birebir olmayan ad eşleşmesi. "
+                            "Yapısal gözlemdir, hukuki hüküm değil — karar avukatın.")
+            for u in capraz:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
+        antitez_bosluk = _antitez_bosluk_uyarisi(kok)
+        if antitez_bosluk:
+            satirlar.append("## 🔴 Antitez Boşluk Uyarısı (karşı tez — v0.5.18)")
+            satirlar.append("> Karşı tarafın en güçlü tezi görüldü ama cevapsız: açık cephe / "
+                            "çürütülmemiş antitez / teyitsiz çürütme dayanağı. Cephanelik "
+                            "(06-antitez) tamamlanmadan yol kararı (07-strateji) sağlam durmaz.")
+            for u in antitez_bosluk:
+                satirlar.append(f"- 🔴 {u}")
+            satirlar.append("")
         nobetci = _defter_nobetci_uyarisi(kok, olaylar_yol)
         if nobetci:
             satirlar.append("## 🔴 Defter Nöbetçisi Uyarısı (GÖRÜŞ 2026-08)")
@@ -3790,7 +4237,10 @@ def _durum_md_yaz(kok, onceden_hesaplanan=None):
         satirlar.append("")
         # H1 (v0.5.16) — inline sayaç M7 satırları (defter çatalları + inline
         # bulgu çatalları AYNI bölümde; kaynak `_oa/defter/inline-sayac.json`).
-        akb = _avukat_karari_bekleyen(d) + _inline_sayac_bekleyen(kok)
+        # B-7 (v0.5.18) — özne yazım-varyantı AVUKATA-SOR kayıtları da bu
+        # listeye düşer (aynı kişi mi? — script karar vermez, avukata sorar).
+        akb = (_avukat_karari_bekleyen(d) + _inline_sayac_bekleyen(kok)
+               + _vakia_ozne_sor_uyarisi(kok))
         satirlar.append("## Avukat Kararı Bekleyen")
         if akb:
             for k in akb:

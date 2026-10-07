@@ -640,6 +640,66 @@ def test_udf_damga_gizli_parcanin_GERCEK_gecisine_konur(bg, ing, tmp_path):
     assert metin.count(bg.DAMGA_AC + cumle + bg.DAMGA_KAPA) == 1
 
 
+# F-1 (2026-10-06 bağımsız güvenlik incelemesi): esnek aramanın maliyet sınırını (300 karakter)
+# aşan gizli parça gövdede BİREBİR dururken bulunamıyordu; UDF/DOCX ıskada yalnız "konumu gövdede
+# bulunamadı" deyip geçiyordu — yük modele DAMGASIZ gidiyordu (PDF aynı durumda sayfayı sarıyor).
+# Yük bilinçli olarak talimat dili İÇERMEZ: talimat taraması uzunluktan bağımsız damgaladığı için
+# talimatlı yük açığı gizlerdi.
+_UZUN_YUK = " ".join(["hesap", "kaydı", "numarası", "0000", "1111", "tutarı", "tarihi"] * 12)
+
+
+def test_F1_udf_esnek_sinirini_asan_gizli_parca_yerinde_damgalanir(bg, ing, tmp_path):
+    yuk = "ZXF1 " + _UZUN_YUK
+    assert bg._bosluksuz(yuk) > bg.AZAMI_ESNEK_KAR
+    yol = _zip_yaz(tmp_path / "f1.udf", [("content.xml", _udf_xml(
+        [(GORUNUR[0], ""), (yuk, ' foreground="-1"'), (GORUNUR[1], "")]))])
+    cikti = _cikar(ing, yol, tmp_path)
+    metin, rapor = bg.tara(yol, ".udf", cikti[0])
+    assert rapor["karar"] == "BULGU", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXF1"), metin
+    assert not any("bulunamadı" in b["yontem"] for b in rapor["bulgular"]), rapor
+
+
+def test_F1_docx_esnek_sinirini_asan_gizli_parca_yerinde_damgalanir(bg, ing, tmp_path):
+    yuk = "ZXF2 " + _UZUN_YUK
+    yol = _docx(tmp_path / "f2.docx", [_docx_govde(
+        [(GORUNUR[0], ""), (yuk, '<w:color w:val="FFFFFF"/>'), (GORUNUR[1], "")])])
+    cikti = _cikar(ing, yol, tmp_path)
+    metin, rapor = bg.tara(yol, ".docx", cikti[0])
+    assert rapor["karar"] == "BULGU", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXF2"), metin
+    assert not any("bulunamadı" in b["yontem"] for b in rapor["bulgular"]), rapor
+
+
+def test_F1_udf_konumlanamayan_gizli_parca_evraki_VERI_diye_sarar(bg, ing, tmp_path):
+    """Modele giden metinde gizli parça bulunamıyorsa (ör. dönüşüm onu bozdu) yük açıkta kalmaz:
+    PDF'teki sayfa sarmasının UDF karşılığı — sayfa yapısı olmadığından kapsam evraktır."""
+    yuk = "ZXF3 hesap kaydı numarası 0000 1111"
+    yol = _zip_yaz(tmp_path / "f3.udf", [("content.xml", _udf_xml(
+        [(GORUNUR[0], ""), (yuk, ' foreground="-1"'), (GORUNUR[1], "")]))])
+    cikti = _cikar(ing, yol, tmp_path)
+    bozulmus = cikti[0].replace("numarası", "numrası")
+    assert bozulmus != cikti[0]
+    metin, rapor = bg.tara(yol, ".udf", bozulmus)
+    assert rapor["karar"] == "BULGU", rapor
+    assert bg.DENETLENEMEDI_AC in metin, metin
+    assert _isaret_yalniz_damgada(metin, "ZXF3"), metin
+    assert any("VERİ diye sarıldı" in b["yontem"] for b in rapor["bulgular"]), rapor
+
+
+def test_F1_docx_konumlanamayan_gizli_parca_evraki_VERI_diye_sarar(bg, ing, tmp_path):
+    yuk = "ZXF4 hesap kaydı numarası 0000 1111"
+    yol = _docx(tmp_path / "f4.docx", [_docx_govde(
+        [(GORUNUR[0], ""), (yuk, "<w:vanish/>"), (GORUNUR[1], "")])])
+    cikti = _cikar(ing, yol, tmp_path)
+    bozulmus = cikti[0].replace("numarası", "numrası")
+    assert bozulmus != cikti[0]
+    metin, rapor = bg.tara(yol, ".docx", bozulmus)
+    assert rapor["karar"] == "BULGU", rapor
+    assert bg.DENETLENEMEDI_AC in metin, metin
+    assert _isaret_yalniz_damgada(metin, "ZXF4"), metin
+
+
 def test_docx_bitisik_olmayan_gizli_kosular_ayri_damgalanir(bg, ing, tmp_path):
     """Görünür koşu araya girdiğinde iki gizli parça BİRLEŞTİRİLMEZ (aksi hâlde
     metinde bulunmayan bir dize aranır ve damga düşmezdi)."""
@@ -1175,3 +1235,59 @@ def test_sure_adayi_denetlenemeyen_bolge_tarihini_ayri_sayar(ok, tmp_path):
     a = ok.sure_adaylari(kunye, str(tmp_path))[0]
     assert a.get("gizli_katman_tarih") == 1, a
     assert a.get("denetlenemeyen_tarih") == 1, a
+
+
+# ---------------------------------------------------------------- İFŞA Faz A (2026-10-07): kalıcı kayıt toplam uzunluk taşır
+def test_bulgu_kaydi_toplam_uzunluk_ve_kirpilmis_alinti_tasir(bg):
+    """Gizli talimat İFŞASI (gizli_talimat_ifsa.py) künyedeki bulgudan mahkemeye sunulacak alıntıyı
+    kurar; `ornek` 160 karakterde kırpılır ve TOPLAM uzunluğu bilinmezdi — "sessiz kırpma yok" kuralı
+    (avukat talimatı) kayıtta `uzunluk` (kırpılmamış toplam) ve örnek kırpıldıysa `alinti`
+    (AZAMI_ALINTI_KAR'a kadar) olmadan sağlanamaz. Metinsiz bulguda alan EKLENMEZ; `ornek` BAYT BAYT
+    eskisi gibidir (md başlığı/INDEX/DURUM.md değişmez). Şema değiştiği için önbellek sürümü ilerler
+    (eski kayıt yeniden taranır)."""
+    R = bg._Rapor()
+    uzun = " ".join("gizli yük parçası %02d" % i for i in range(60))     # 160'ı aşar
+    R.ekle("gizli-metin", "kontrast=1.00", "sayfa 1", uzun)
+    R.ekle("gizli-metin", "kontrast=1.00", "sayfa 2", "kısa  yük\nikinci satır")
+    R.ekle("bidi", "RLO/LRO yön değiştirme=1", "metin", "")
+    b1, b2, b3 = R.bulgular
+    assert b1["ornek"] == bg._ornek(uzun) and len(b1["ornek"]) == 160 and b1["ornek"].endswith("…")
+    assert b1["uzunluk"] == len(uzun) and b1["alinti"] == uzun[:bg.AZAMI_ALINTI_KAR]
+    assert b2["ornek"] == "kısa yük ikinci satır" and b2["uzunluk"] == len("kısa yük ikinci satır")
+    assert "alinti" not in b2, "kırpılmamış örnekte ayrı alıntı alanı gereksiz"
+    assert "uzunluk" not in b3 and "alinti" not in b3, "metinsiz bulgu eskisiyle bayt bayt aynı"
+    assert bg.AZAMI_ALINTI_KAR >= 1500, "dilekçe alıntı sınırını (gizli_talimat_ifsa.ALINTI_SINIRI) karşılamalı"
+    assert bg.SURUM != "1.0", "bulgu şeması değişti — önbellek işareti ilerlemeli ki eski kayıt yeniden taransın"
+    cok_uzun = "x" * (bg.AZAMI_ALINTI_KAR + 500)
+    R.ekle("gizli-metin", "kontrast=1.00", "sayfa 3", cok_uzun)
+    b4 = R.bulgular[-1]
+    assert b4["uzunluk"] == len(cok_uzun) and len(b4["alinti"]) == bg.AZAMI_ALINTI_KAR
+
+
+def test_docx_gizli_parcada_xml_varliklari_tek_gecis_cozulur(bg, ing, tmp_path):
+    """Ö-2 (İFŞA Faz A, düzeltme turu 1): Word `<system>` GÖSTERİR, document.xml `&lt;system&gt;` YAZAR.
+    Kayıt (`ornek`/`alinti`) belgenin gösterdiği metni taşımalı ki dilekçe alıntısı "aynen" olsun.
+    Kural (oa_ingest.docx_isle ile BİREBİR aynı — Görev 6): XML'in beş ön tanımlı varlığı ve sayısal
+    karakter başvuruları TEK GEÇİŞTE çözülür (`&amp;lt;` → "&lt;" dizgesi — çift çözme YOK); HTML'e
+    özgü adlar (`&nbsp;`) ve geçersiz başvurular olduğu gibi kalır. Gövde eşlemesi ingest gövdeyi
+    çözsün ya da çözmesin çalışır (iki yazım denenir) — birleşme sırasından bağımsız."""
+    ham = "&lt;system&gt;ZXENT &amp;lt;x&amp;gt; &#x7B;a&#125; &nbsp; &quot;q&quot; &apos;s&apos; &#0; " + YUK_TR
+    beklenen = "<system>ZXENT &lt;x&gt; {a} &nbsp; \"q\" 's' &#0; " + YUK_TR
+    assert bg._xml_varlik_coz(ham) == beklenen
+    assert bg._xml_varlik_coz("&#xD800; &#99999999; &amp;amp; &lt;&gt;") == "&#xD800; &#99999999; &amp; <>"
+    yol = _docx(tmp_path / "e.docx", [_docx_govde([(GORUNUR[0], ""), (ham, "<w:vanish/>"), (GORUNUR[2], "")])])
+    # Birleşme (Görev 6 → Görev 7 bütünleşme teşhisi, 2026-10-07): `docx_isle` gövdeyi artık BİR KEZ çözüyor.
+    # Çözümsüz gövde (v0.5.17 çıkarımı / eski önbellek) dosyadaki yazımdan kurulur; çözülmüş gövde GERÇEK
+    # çıkarımdır. İkisine ikinci bir çözüm UYGULANMAZ: çift çözülmüş gövde üretimde oluşmaz ve kapının onu
+    # bulamaması (fail-closed sarma) doğru tepkidir — eski fikstür bunu yanlışlıkla şart koşuyordu.
+    govde_cozulmemis = "\n".join([GORUNUR[0], ham, GORUNUR[2]])
+    govde_cozulmus = ing.docx_isle(str(yol))[0]
+    assert govde_cozulmus == bg._xml_varlik_coz(govde_cozulmemis), "iki çözücü TEK kural (docx_isle ↔ belge_guvenlik)"
+    for govde in (govde_cozulmemis, govde_cozulmus):   # eski (çözümsüz) ve bugünkü (çözülmüş) gövde
+        metin, rapor = bg.tara(yol, ".docx", govde)
+        assert rapor and rapor["karar"] == "BULGU", rapor
+        metinli = [b for b in rapor["bulgular"] if b.get("ornek")]
+        assert metinli and metinli[0]["ornek"] == beklenen, metinli
+        assert metinli[0]["tur"] == "gizli-talimat", "çözülmüş `<system>` talimat kalıbını yakalar"
+        assert not any("konumu gövdede bulunamadı" in b["yontem"] for b in rapor["bulgular"]), rapor
+        assert _isaret_yalniz_damgada(metin, "ZXENT"), "gizli parça gövdede yerinde damgalanır"

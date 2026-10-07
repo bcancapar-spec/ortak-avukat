@@ -390,12 +390,11 @@ liste onun insan-okur özetidir.
   çekim ("vazgeçmiyoruz", "vazgeçmeyeceğiz") kesin kalıba girmez; olumlu
   "-mek/-mekte" biçimleri ("vazgeçmek istiyoruz", "vazgeçmekteyiz") yakalanır.
   Yanlış pozitifi avukat gözü eler; yanlış negatif müvekkili batırır.
-- **Entegrasyon notu:** `oa-kontrol/scripts/teslim_paketi.py` `--taraf`
-  seçenekleri bu üç sıfatı henüz tanımıyor (o dosya bu paketin alanı dışında;
-  ana ajana raporlandı). O güne kadar teslim zincirinde alacaklı için
-  `--taraf davaci`, borçlu için `--taraf davali` verilir; icra kalıplarının
-  tamamı için `dilekce_denetim.py` doğrudan `--taraf alacakli|borclu|ucuncu-kisi`
-  ile koşulur.
+- **Teslim zinciri (oa-kontrol v0.5.18):** `oa-kontrol/scripts/teslim_paketi.py --taraf alacakli|borclu|ucuncu-kisi`
+  bu üç sıfatı tanır ve değeri `dilekce_denetim.py` (a) kapısına AYNEN geçirir
+  (kilit: `tests/test_v0518_teslim_layer0.py`). Alacaklıyı `--taraf davaci`,
+  borçluyu `--taraf davali` diye geçirmeyin: icraya özgü müvekkil-aleyhi
+  kalıplar yalnız doğru sıfatla taranır.
 
 ## 5. Okunan resmî metinler (Yargı PRO MCP, 2026-10-05)
 

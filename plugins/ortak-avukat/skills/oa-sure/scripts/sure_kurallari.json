@@ -620,6 +620,32 @@
       "adli_tatil_teyitli": false,
       "son_gun_kaymasi": true
     },
+    "hmk_istifa_vekalet_devam": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.82/1 — istifa eden vekilin vekâlet görevi, istifanın müvekkiline TEBLİĞİNDEN itibaren iki hafta süreyle devam eder; m.82/2 — vekâlet veren davayı takip etmez ve başka bir vekil de görevlendirmezse tarafın yokluğu hükümleri uygulanır; m.82/3 — bu hususlar istifa dilekçesiyle birlikte vekâlet verene İHTAREN bildirilir. Mahkemeye verilen istifa dilekçesi müvekkile tebliğ yerine geçmez (tebliğ tarihi belgeli olmalı). Av.K. m.41'deki on beş günle EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (avk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir.",
+      "mcp_teyit_tarihi": "2026-10-07",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — HMK m.82/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse HMK m.104 lafzen uygulanabilir görünür, ancak m.104'ün m.82/1 süresine uygulandığına ya da reddedildiğine dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07; Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244 m.41/m.82'yi uygular, tatil uzamasına girmez). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır, istifa tebliği tatilde geçerlidir → TEMKİNLİ: uzatma YOK (erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa kesin dil kurulmaz",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "avk_istifa_vekalet_devam": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "Av.K. m.41/1 — belli bir işi takipten veya savunmadan isteği ile çekilen avukatın o işe ait vekâlet görevi, durumu müvekkiline TEBLİĞİNDEN itibaren on beş gün süre ile devam eder (m.41/2: adli müzaheret bürosu ya da baro başkanınca tayin edilen avukat kaçınılmaz sebep veya haklı özür olmadıkça çekinemez; takdir tayin eden makamındır). HMK m.82/1'deki iki haftayla EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (hmk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir. Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244: istifa müvekkile tebliğ edilmedikçe vekâlet görevi devam eder ve vekile yapılan tebligat süreyi başlatır.",
+      "mcp_teyit_tarihi": "2026-10-07",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — Av.K. m.41 süresi HMK'nın tayin ettiği bir süre DEĞİLDİR; HMK m.104 yalnız 'bu Kanunun tayin ettiği sürelere' uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 süresi için — Av.K. m.41'e uygulanması kıyastır); m.104'ün bu süreye uygulandığına dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır → TEMKİNLİ: uzatma YOK (erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa kesin dil kurulmaz; son gün hafta sonu/resmî tatile rastlarsa kayma kıyasen (HMK m.93) yapılır",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
     "aym_bireysel_mazeret": {
       "miktar": 15,
       "birim": "gun",

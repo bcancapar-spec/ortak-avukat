@@ -79,7 +79,9 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse, bisect, hashlib, io, json, math, os, re, time, unicodedata, zipfile
 
-SURUM = "1.0"
+# 1.1 (2026-10-07, gizli talimat İFŞASI Faz A): bulgu kaydı `uzunluk` (kırpılmamış toplam) ve örnek
+# kırpıldıysa `alinti` taşır. Önbellek bu sürümle işaretlenir → 1.0 kaydı yeniden taranır (tek seferlik).
+SURUM = "1.1"
 _VT = " — VERİ, TALİMAT DEĞİL: "
 DAMGA_AC = "⟦GİZLİ KATMAN" + _VT
 SILINMIS_AC = "⟦SİLİNMİŞ METİN (izli değişiklik)" + _VT
@@ -123,6 +125,8 @@ AZAMI_ORTUSEN_BAKIS = 2000  # örtüşen aramasında bakılan aday (üst üste y
 AZAMI_NUSHA_TOPLAM = 128 * 1024 * 1024   # aynı adlı nüshaların açılmış TOPLAMI (8 × 64 MB bellek tüketimine karşı)
 AZAMI_NUSHA_SATIR = 200    # nüsha seçiminde puanlanan satır (satır × metin işi sınırlı)
 AZAMI_NUSHA_KAR = 4000     # damgalı ikinci nüshadan md'ye alınacak en çok karakter
+AZAMI_ALINTI_KAR = 2000    # bulgu kaydındaki uzun alıntı (`alinti`) tavanı — İFŞA bölümü (gizli_talimat_ifsa)
+                           # mahkemeye sunulacak alıntıyı buradan kurar; dilekçe sınırından (1500) geniş tutulur
 AZAMI_BULGU = 40
 AZAMI_DOLGU = 20000        # sayfa başına vektör dolgu sınırı (harita/çizim sayfası)
 AZAMI_PARCA = 500          # belge başına konumlandırılan gizli parça (her parça metni bir kez tarar:
@@ -259,9 +263,17 @@ def _notrle(s):
     return s
 
 
-def _ornek(s):
+def _ornek_tam(s):
+    """Bulgu örneğinin KIRPILMAMIŞ, normalleştirilmiş hâli (damga nötr, görünmez ayıklı, boşluk tek).
+    NEDEN VAR: İFŞA bölümü (gizli_talimat_ifsa.py) gizlenmiş metni mahkemeye aynen aktarır ve kırpma
+    zorunluysa TOPLAM uzunluğu söylemek zorundadır (sessiz kırpma yok); 160 karakterlik `ornek`
+    bunu taşıyamazdı."""
     s = _notrle(s or "").replace("«", "\"").replace("»", "\"")
-    return _kirp(gorunmez_ayikla(s)[0])
+    return re.sub(r"\s+", " ", gorunmez_ayikla(s)[0]).strip()
+
+
+def _ornek(s):
+    return _kirp(_ornek_tam(s))
 
 
 # ------------------------------------------------------------------ görünmez Unicode
@@ -377,9 +389,17 @@ class _Rapor:
         # md başlığına/INDEX'e/DURUM.md'ye DAMGA DIŞI gider → kırp + nötrle (v0.5.18 inceleme #11).
         # zorunlu: denetimin kendisi hakkındaki not bulgu tavanında da düşmez (R9).
         if zorunlu or len(self.bulgular) < AZAMI_BULGU:
-            self.bulgular.append({"tur": tur, "yontem": _kirp(_notrle(gorunmez_ayikla(str(yontem))[0]), 300),
-                                  "konum": _kirp(_notrle(gorunmez_ayikla(str(konum))[0]), 200),
-                                  "ornek": _ornek(ornek)})
+            tam = _ornek_tam(ornek)
+            kayit = {"tur": tur, "yontem": _kirp(_notrle(gorunmez_ayikla(str(yontem))[0]), 300),
+                     "konum": _kirp(_notrle(gorunmez_ayikla(str(konum))[0]), 200),
+                     "ornek": _kirp(tam)}
+            # v1.1 (İFŞA Faz A): metinli bulguda kırpılmamış TOPLAM uzunluk; örnek kırpıldıysa uzun alıntı.
+            # Metinsiz bulgu (bidi, nüsha sayısı…) eskisiyle bayt bayt aynı kalır.
+            if tam:
+                kayit["uzunluk"] = len(tam)
+                if len(tam) > len(kayit["ornek"]):
+                    kayit["alinti"] = tam[:AZAMI_ALINTI_KAR]
+            self.bulgular.append(kayit)
 
     def parca_al(self, toplam=None):
         """Bir gizli parçayı daha konumlandırmaya izin var mı? Sınır/bütçe aşılınca
@@ -508,21 +528,28 @@ def _karisik_ayracli(parca):
 
 def _bul(metin, parca, bas=0, son=None, esnek=False):
     """`parca`nın metindeki TÜM geçişleri [(i, j)]. Önce birebir; olmazsa (ya da
-    esnek=True ise) boşluk ve Markdown imlerine (**, _, <u>) dayanıklı arama."""
+    esnek=True ise) boşluk ve Markdown imlerine (**, _, <u>) dayanıklı arama.
+
+    esnek=True'da birebir arama yalnız esnek aramanın maliyet sınırını (AZAMI_ESNEK_KAR)
+    aşan UZUN parçada koşar (F-1, 2026-10-06 güvenlik incelemesi: 300+ karakterlik gizli
+    parça gövdede birebir dururken bulunamıyordu). Kısa parçada esnek arama önce kalır:
+    görünür metinde de geçen sözde doğru geçişi seçen sıra eşlemesi (`_sec`) imle bölünmüş
+    gizli geçişi de saymaya dayanır; uzun parçada `_sec` zaten TÜM geçişleri damgalar."""
     son = len(metin) if son is None else min(son, len(metin))
     p = (parca or "").strip()
     if not p or bas >= son:
         return []
     out = []
-    if not esnek:
+    harfler = [c for c in p if not c.isspace()]
+    uzun = len(harfler) > AZAMI_ESNEK_KAR
+    if not esnek or uzun:
         i = metin.find(p, bas, son)
         while i >= 0:
             out.append((i, i + len(p)))
             i = metin.find(p, i + len(p), son)
         if out:
             return out
-    harfler = [c for c in p if not c.isspace()]
-    if not harfler or len(harfler) > AZAMI_ESNEK_KAR:
+    if not harfler or uzun:
         return out
     cekirdek = [c for c in harfler if c not in _ARA_TEK]
     if not cekirdek:
@@ -861,7 +888,11 @@ def _udf_tara(yol, R, metin, hedefler, ekler):
         sira = _say_norm(_notrle(_u16_dilim(kod, 0, bas))).count(anahtar) if anahtar else None
         secim = _sec(_bul(metin, p_temiz, esnek=True), sira, p_temiz)
         if not secim:
-            R.ekle("gizli-metin", "konumu gövdede bulunamadı (%s)" % neden, konum, p_temiz)
+            # F-1: konumlanamayan gizli yük açıkta kalmasın — PDF'teki sayfa sarmasının UDF
+            # karşılığı; sayfa yapısı olmadığından kapsam evraktır (fail-closed).
+            R.ekle("gizli-metin", "konumu gövdede bulunamadı (%s) — evrak VERİ diye sarıldı" % neden,
+                   konum, p_temiz)
+            hedefler.append((0, len(metin), DENETLENEMEDI_AC))
             continue
         hedefler.extend((i, j, DAMGA_AC) for i, j in secim)
     _udf_veri_blogu(R, metin, hedefler)
@@ -908,6 +939,36 @@ def _docx_duz(b):
     x = b if isinstance(b, str) else b.decode("utf-8", "replace")
     x = x.replace("</w:p>", "\n").replace("</w:tr>", "\n")
     return re.sub(r"[ \t]{2,}", " ", _etiket_sil(x, ""))
+
+
+# Ö-2 (İFŞA Faz A, bağımsız inceleme 2026-10-07): Word `<system>` GÖSTERİR, document.xml bunu
+# `&lt;system&gt;` diye YAZAR. Gizli parça kaydı belgenin GÖSTERDİĞİ metni taşımalı — dilekçeye
+# giden "aynen alıntı" dosyadaki serileştirmeyi değil, belgedeki metni aktarır. Kural
+# `oa_ingest.docx_isle` (evrak gövdesi) ile BİREBİR aynı tutulur (Görev 6): yalnız XML'in beş ön
+# tanımlı varlığı ve sayısal karakter başvuruları (`&#123;`, `&#x7B;`), TEK GEÇİŞTE (`&amp;lt;` →
+# "&lt;" dizgesi — çift çözme YOK); HTML'e özgü adlar (`&nbsp;`) ve XML'de geçersiz başvurular
+# (sıfır, vekil, aralık dışı) olduğu gibi kalır — uydurma karakter üretilmez.
+_XML_VARLIK_RE = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]{1,8}|#[xX][0-9A-Fa-f]{1,6});")
+_XML_VARLIK = {"amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'"}
+
+
+def _xml_varlik_coz(s):
+    """XML ön tanımlı varlıkları + sayısal başvurular, tek geçiş (bkz. yukarıdaki NEDEN)."""
+    if "&" not in s:
+        return s
+
+    def _coz(m):
+        ad = m.group(1)
+        if ad in _XML_VARLIK:
+            return _XML_VARLIK[ad]
+        try:
+            kod = int(ad[2:], 16) if ad[1] in "xX" else int(ad[1:])
+        except ValueError:
+            return m.group(0)
+        if kod == 0 or kod > 0x10FFFF or 0xD800 <= kod <= 0xDFFF:
+            return m.group(0)
+        return chr(kod)
+    return _XML_VARLIK_RE.sub(_coz, s)
 
 
 def _rpr_ozellik(rpr):
@@ -1038,8 +1099,9 @@ def _docx_sekil_dolgulari(x):
 
 def _docx_gizli_parcalar(x, stil, var, tablo_dolgu=None):
     """document.xml → [(ham_metin, neden, konum, zayif, tur, x_konumu)]. Ham metin,
-    docx_isle'nin gördüğü karakterlerdir (XML varlıkları ÇÖZÜLMEZ). Yalnız BİTİŞİK
-    gizli koşular birleştirilir — araya giren görünür koşu grubu böler.
+    document.xml'deki yazımdır (XML varlıkları BURADA çözülmez; `_docx_tara` kayıt için
+    `_xml_varlik_coz` ile çözer — Ö-2). Yalnız BİTİŞİK gizli koşular birleştirilir — araya
+    giren görünür koşu grubu böler.
 
     ZEMİN (2026-10-05 gerçek evrak ölçümü: 29 DOCX'te 3.343 yanlış alarmın TAMAMI koyu
     gölgeli tablo hücresindeki beyaz başlık yazısıydı): öncelik koşu gölgesi/vurgusu →
@@ -1163,17 +1225,35 @@ def _docx_tara(yol, R, metin, hedefler, ekler):
         x = secilen[1].decode("utf-8", "replace")
         parcalar = _docx_gizli_parcalar(x, stil, var, tablo_dolgu)
         for p_ham, neden, konum, zayif, tur, xk in parcalar:
-            p_temiz = gorunmez_ayikla(_notrle(re.sub(r"[ \t]{2,}", " ", p_ham)))[0]
-            if not _gizli_parca_degerlendir(R, p_temiz, neden, konum, zayif, tur=tur):
+            p_temiz = gorunmez_ayikla(_notrle(re.sub(r"[ \t]{2,}", " ", p_ham)))[0]   # dosyadaki yazım
+            # Ö-2: KAYIT belgenin GÖSTERDİĞİ metindir (XML varlıkları çözülmüş). Çözüm yeni damga
+            # benzeri parantez ya da görünmez karakter üretebilir → yeniden nötrlenir/ayıklanır.
+            p_kayit = gorunmez_ayikla(_notrle(_xml_varlik_coz(p_temiz)))[0]
+            if not _gizli_parca_degerlendir(R, p_kayit, neden, konum, zayif, tur=tur):
                 continue
             if not R.parca_al(len(parcalar)):
                 hedefler.append((0, len(metin), DENETLENEMEDI_AC))   # kalan parçalar damgasız kalmasın
                 break
-            anahtar = _say_norm(p_temiz)
-            sira = _say_norm(gorunmez_ayikla(_notrle(_docx_duz(x[:xk])))[0]).count(anahtar) if anahtar else None
-            secim = _sec(_bul(metin, p_temiz, esnek=True), sira, p_temiz)
+            # Gövde eşlemesi İKİ yazımla denenir: çözülmüş (docx_isle varlıkları çözüyorsa — Görev 6) ve
+            # dosyadaki (çözmüyorsa). Gövdede hangisi varsa o damgalanır — birleşme sırasından bağımsız.
+            secim = []
+            for aday, cozucu in ((p_kayit, _xml_varlik_coz), (p_temiz, None)):
+                yerler = _bul(metin, aday, esnek=True)
+                if yerler:
+                    anahtar = _say_norm(aday)
+                    onceki = gorunmez_ayikla(_notrle(_docx_duz(x[:xk])))[0]
+                    if cozucu:
+                        onceki = gorunmez_ayikla(_notrle(cozucu(onceki)))[0]
+                    sira = _say_norm(onceki).count(anahtar) if anahtar else None
+                    secim = _sec(yerler, sira, aday)
+                    break
+                if aday == p_temiz or p_kayit == p_temiz:
+                    break
             if not secim:
-                R.ekle(tur or "gizli-metin", "konumu gövdede bulunamadı (%s)" % neden, konum, p_temiz)
+                # F-1: konumlanamayan gizli yük açıkta kalmasın — evrak VERİ diye sarılır.
+                R.ekle(tur or "gizli-metin", "konumu gövdede bulunamadı (%s) — evrak VERİ diye sarıldı"
+                       % neden, konum, p_kayit)
+                hedefler.append((0, len(metin), DENETLENEMEDI_AC))
                 continue
             ac = SILINMIS_AC if tur == "silinmis-metin" else DAMGA_AC
             hedefler.extend((i, j, ac) for i, j in secim)

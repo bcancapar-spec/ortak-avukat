@@ -1971,6 +1971,7 @@ def _antitez_anahtar_kelimeler(metin):
 
 def _antitez_matris_dosyalari(kok):
     """M3 düzeltmesi (Paket D sınav bulgusu) — `_oa/cikti/*antitez*.json`
+    (v0.5.18: + `arac == "antitez_matris"` damgalı .json)
     ADAYLARINI TEK YERDEN bulur; hem `antitez_cevap_capasi_uyarilari` hem de
     [G] kapısının CLI çıktısı AYNI listeyi kullanır — böylece 'matris hiç
     yok' ile 'matris var ve tam örtüşüyor' durumları AYRI etiketlenebilir
@@ -1980,12 +1981,47 @@ def _antitez_matris_dosyalari(kok):
     `_ictihat_muhakeme_atlama_sebebi`:375 ile SİMETRİK olarak CWD'ye
     (`"."`) düşer. Kanonik teslim hattı (`teslim_paketi.py`) CWD'yi zaten
     `kok`a eşitleyip çalıştırır (`_kos(..., cwd=kok)`) — dolayısıyla
-    `--kok` argümanı unutulsa bile [G] kapısı gerçek matrisi görür."""
+    `--kok` argümanı unutulsa bile [G] kapısı gerçek matrisi görür.
+
+    v0.5.18 (B-8 — Fable tutarlılık raporu 2026-10-07): dosya adı sözleşmesi
+    (`*antitez*.json`) KORUNUR; ona EK olarak adında 'antitez' geçmeyen ama
+    kökünde `"arac": "antitez_matris"` damgası taşıyan .json da adaydır (elle
+    damgalanmış/eski dosya; Ö-1'den sonra `--iskelet` şablonu damga YAZMAZ —
+    damga yalnız denetim çıktısındadır). Gerekçe: diğer üç motor için
+    v0.5.16'da kapatılan "ad sözleşmesi kopuşu" (model dosyaya başka ad verirse
+    bekçi hiç okumaz → sahte yeşil) antitezde açıktı.
+    K-1 (düzeltme turu 1): ADAY = `cepheler` LİSTESİ taşıyan dosya (glob ve
+    damga adayları için aynı süzgeç). Denetim çıktısı (`06-antitez-denetim.json`:
+    `arac` var, `cepheler` yok) adıyla globa, damgasıyla süzgece yakalanıyordu;
+    matris silinmiş/adı değişmişken yalnız o kalırsa [G] «[OK] … matris tam
+    örtüşüyor» sahte yeşilini basardı. Bozuk/yabancı JSON ve `cepheler`i liste
+    olmayan dosya sessizce dışarıda (advisory girdisi — ASLA fırlatmaz).
+    Bu tarama yalnız [G] kapısında (teslim zinciri / CLI) koşar; PostToolUse
+    sıcak yolundaki `hizli_denetim` bu fonksiyonu ÇAĞIRMAZ (CLAUDE.md
+    performans değişmezleri)."""
     taban = kok if kok else "."
     cikti_dizin = os.path.join(taban, "_oa", "cikti")
     if not os.path.isdir(cikti_dizin):
         return []
-    return sorted(glob.glob(os.path.join(cikti_dizin, "*antitez*.json")))
+    ad_adaylari = set(glob.glob(os.path.join(cikti_dizin, "*antitez*.json")))
+    adaylar = []
+    for yol in sorted(glob.glob(os.path.join(cikti_dizin, "*.json"))):
+        m = _antitez_json_koku(yol)
+        if not isinstance(m, dict) or not isinstance(m.get("cepheler"), list):
+            continue                            # K-1: matris değil (denetim çıktısı / bozuk / yabancı)
+        if yol in ad_adaylari or m.get("arac") == "antitez_matris":
+            adaylar.append(yol)
+    return adaylar
+
+
+def _antitez_json_koku(yol):
+    """v0.5.18 (B-8/K-1): `.json` kökünü okur; okunamayan/bozuk → None.
+    ASLA fırlatmaz (advisory girdisi)."""
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            return json.load(f)
+    except Exception:                          # noqa: BLE001 — [G] advisory, çökmez
+        return None
 
 
 def antitez_cevap_capasi_uyarilari(metin, kok):

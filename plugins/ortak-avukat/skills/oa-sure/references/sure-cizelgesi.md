@@ -69,6 +69,18 @@ Aşağıdaki süreler resmî kaynaktan teyitlidir; **parasal sınırlar yıllık
     uygulanmasının talep edildiği tarihten; dava açıldığına dair evrak uygulayan memura
     ibraz edilmezse tedbir **kendiliğinden kalkar**. Adli tatil rejimi **TEYİT BEKLİYOR** →
     motor temkinli: uzatma YOK (`hmk_tedbir_esas_dava`).
+  - **İstifada vekâletin devam süresi — iki hafta (HMK m.82/1) ve on beş gün (Av.K. m.41/1),
+    EŞİTLENMEZ (K1, 2026-10-07):** ikisi de istifanın müvekkile TEBLİĞİNDEN işler (mahkemeye
+    dilekçe ≠ tebliğ; m.82/3 ihtaren bildirim; m.82/2 tarafın yokluğu riski). Süre tatilde
+    İŞLER (HMK m.103/3 — adli tatilde her türlü tebligat yapılır); m.104 uzatmasının m.82/1'e
+    uygulanması kararla teyit edilemedi, Av.K. m.41 ise HMK süresi değildir (Y. 23. HD
+    E.2013/8404 K.2013/7933 — İİK m.62 için, kıyas) → motor temkinli: uzatma YOK, manşet
+    ERKEN tarih (müvekkile "yeni vekil bu tarihten ÖNCE"), geç okuma (31 Ağu + 1 hafta)
+    yalnız uyarıda (istifa eden avukatın takip sınırı; karşı tarafa kesin dil yok).
+    Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244: istifa
+    müvekkile tebliğ edilmedikçe görev sürer, vekile tebligat süreyi başlatır
+    (`hmk_istifa_vekalet_devam`, `avk_istifa_vekalet_devam`). Eski kuralsız çağrı yazın
+    GEÇ tarih veriyordu (25.07.2026 tebliğ → 07.09; doğrusu 10.08).
 
 ### İcra-iflas (İİK 2004)
 - **İcra mahkemesi kararlarına karşı istinaf: iki hafta** — tebliğden (İİK m.363).

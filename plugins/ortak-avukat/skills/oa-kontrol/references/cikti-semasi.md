@@ -126,7 +126,17 @@ kilitler.**
 - `udf_devralindi` — devralınan UDF `{yol, sha256}` (GÖREV 1)
 - `kenar_duzeltildi` — sayfa kenarı yaması uygulandı mı (GÖREV 5)
 - `sekil_imzali_sapma` — imzalı nüshada kenar sapması (yama YOK)
-- `tazelik_uyarilari` — advisory tazelik satırları (GÖREV 6)
+- `tazelik_uyarilari` — advisory tazelik satırları (GÖREV 6); v0.5.18/B-1b: damgalı
+  denetim JSON'larının S1 `kaynaklar` beyanından türeyen `BAYAT:`/`EKSİK-KAYNAK:`
+  satırları ile `OKUNAMADI:` (çözülemeyen JSON — temiz SAYILMAZ) ve `DENETİM-DIŞI:`
+  (`_oa` dışı girdi, kaynak beyanı boş) satırları da bu listeye girer
+- `graf_kapisi` — K2 GRAF KAPISI sorusunun teslimdeki ADVISORY cevabı (v0.5.18/B-5;
+  avukat kararı 2026-10-07: kapı KAPATMAZ): `{durum, mesaj, denetim_json_sayisi}` —
+  `durum` ∈ `sorun` (çevrim / şema hatası / çökme / OKUNAMAYAN denetim JSON'u;
+  `mesaj` = `pipeline_kayit._graf_kapisi_sorunu` metni) | `acik` (`denetim_json_sayisi`
+  0 ise «kapı sorulmadı» notu — temiz İDDİASI değildir) | `denetlenemedi`
+  (pipeline_kayit yüklenemedi/çöktü — temiz SAYILMAZ). Yeşil makbuzda doğrudan,
+  RED makbuzunda `advisory_denetimler.graf_kapisi` içinde yaşar
 - `teslim_sinifi_urunler` — filo kapsamı `[{dosya, sha12, muhur}]`;
   `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13)
 - `filo_uyarilari` — filo taramasının advisory satırları

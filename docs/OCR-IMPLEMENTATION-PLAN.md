@@ -76,9 +76,10 @@
 ## 5. Deney (önce deney, sonra iddia)
 
 - Resmî belge (paddlepaddle.org.cn, Windows pip): Python 3.9–3.13, 64-bit, MKL; **noavx
-  paketi yok** (AVX şart). Bu makine: AMD A8-4500M — AVX VAR, AVX2 YOK, 7,4 GB RAM.
+  paketi yok** (AVX şart). Eski geliştirme makinesi: AVX var, AVX2 yok, ~8 GB RAM.
 - Deney sonucu: §8'e yazılır (kurulum, model indirme, örnek sayfada doğruluk/süre). Hedef
-  makine (Core Ultra 7 255H) bu oturumda erişilebilir değil → **orada doğrulanmadı**.
+  makine (16 çekirdekli yeni dizüstü) o oturumda erişilebilir değildi; ölçüm 2026-10-06'da
+  orada yapıldı (§10).
 
 ## 6. Test planı (önce test)
 
@@ -86,7 +87,8 @@ Sentetik evrak testte üretilir (gerçek dava verisi yok): karma PDF (metin + ta
 boş kapak sayfası, düşük güvenli sayfa, kritik alan karışıklığı (O/0, I/1, B/8, S/5; geçersiz
 TCKN/IBAN), sahte Paddle işçisi (`OA_PADDLE_PY` ile stub — tesseract sahtesiyle aynı desen),
 yedeğe düşme, el yazısı şüphesi, regresyon (metin PDF/UDF/DOCX bayt-özdeş, seri == paralel).
-Kıyaslama: `tools/ocr_kiyas.py` (sentetik sayfalarda motor başına süre + karakter doğruluğu).
+Kıyaslama: `tools/ocr_kiyas.py` (sentetik sayfalarda motor başına süre + karakter doğruluğu +
+Türkçe harf korunumu; v0.5.18'de depoya alındı — motorları OA'nın kendi çağrı yolundan ölçer).
 
 ## 7. Kalite kapısı
 
@@ -126,7 +128,7 @@ Reddedilen: motorlar arası güven/karakter sayısı kıyasıyla seçim; görsel
 - **Tesseract txt+tsv (2026-10-05, Tesseract 5.4.0 + tur, Windows):** sentetik sayfada dosya `txt`
   ile stdout arasında tek fark satır sonu (CRLF/LF); evrensel satır sonuyla metin AYNI. TSV kelime
   güvenleri gerçek ve ayırt edici (bozuk glifli kelimeler %23–57, temiz kelimeler %90+).
-- **PaddleOCR kurulumu (2026-10-05, bu makine: AMD A8-4500M, AVX var/AVX2 yok, 7,4 GB):** yalıtılmış
+- **PaddleOCR kurulumu (2026-10-05, eski geliştirme makinesi: AVX var/AVX2 yok, ~8 GB):** yalıtılmış
   `paddle-deney` sanal ortamına PyPI'den paddlepaddle 3.3.0 + paddleocr 3.7.0 (paddlex 3.7.2)
   KURULDU (714 MB). PaddleOCR 3.7 Türkçeyi (Latin ailesi) varsayılan PP-OCRv6 medium det/rec
   modelleriyle işler. Çıkarım (model indirme + örnek sayfa) deneyi: §10.
@@ -142,3 +144,12 @@ Reddedilen: motorlar arası güven/karakter sayısı kıyasıyla seçim; görsel
 - PaddleOCR: model yükleme 30,2 sn · tepe bellek 1.213 MB · sayfa başına 104-128 sn · doğruluk temiz 0,989 · bulanık 0,989 · gürültülü **0,687** · eğik 0,989 · düşük DPI 0,989. Türkçe İ/ı ayrımında hata gözlendi ("ASLİYE" → "ASLIYE", "MAHKEMESİ" → "MAHKEMESi").
 
 **Sonuç:** bu donanımda Paddle'ı varsayılan motor yapmak için gerekçe YOK — temiz/bulanık/eğik/düşük DPI'da Tesseract ile aynı, gürültülüde daha kötü, ~70 kat yavaş. Varsayılan `tesseract` kalır; `--ocr-motor auto` Paddle'ı yalnız P0-9 kapısını geçemeyen sayfada dener ve ölçütle (P0-9 + Türkçe isabet) kabul eder; `paddle` isteğe bağlıdır. Sınır: sentetik ve az sayıda sayfa; gerçek taranmış evrakta, el yazısında ve yeni donanımda (çok çekirdek, MKL-DNN) sonuç farklı olabilir — yeni cihazda yeniden ölçülmeli.
+
+**Yeni donanımda yeniden ölçüm (2026-10-06, hedef dizüstü — 16 çekirdek, Windows 11; avukat onayıyla):** Tesseract 5.5.3 (`tur`); PaddleOCR 3.7.0 / paddlepaddle 3.3.0 ayrı Python 3.12 ortamında; modeller aynı sabit commit'ten indirildi ve `tools/ocr_kiyas.py --model-dogrula` ile 6/6 doğrulandı. Aynı beş sentetik sayfa. Ölçüm aracı `tools/ocr_kiyas.py` (OA çağrı yolu: `ocr_png_ayrintili` ve her sayfada yeniden başlayan `paddle_isci.py`); ayrıca modeli bir kez yükleyen "sıcak" ayar deneyi (depo dışı betik). Doğruluk ölçütü boş satırları ve satır kenarı boşluklarını saymaz — eski koşunun sayılarıyla birebir kıyaslanmaz.
+
+- Tesseract: sıcak 0,15 sn/sayfa (soğuk 0,3-0,4) · doğruluk temiz/bulanık/düşük DPI 0,993, eğik 0,989, gürültülü 0,702 · Türkçe harf korunumu 0,96 ("İğdır" → "İğdir"), gürültülüde 0,60. Gürültülü sayfada kritik alan bozuldu: "2024/1234" → "202411234", "2025/567" → "20251867" (kritik alan doğrulamasının gerekçesi).
+- PaddleOCR, OA işçisi (`cpu_threads=1`, MKL-DNN kapalı; her sayfada model yüklemesi 7,9 sn dahil): 27-29 sn/sayfa · doğruluk 0,989 (gürültülü 0,717) · Türkçe harf 0,92 ("ASLİYE" → "ASLIYE"), gürültülüde **0,88**.
+- PaddleOCR sıcak (model bir kez yüklenir): 1 iş parçacığı 18-24 sn/sayfa (yükleme 6,9 sn) · 8 iş parçacığı **7,8-10,3 sn/sayfa** (yükleme 3,1 sn) · 16 iş parçacığı 9,6-11,2 sn/sayfa (verim düşüyor). Üç ayarda okunan metin beş sayfanın beşinde birebir aynı.
+- MKL-DNN (`enable_mkldnn=True`) bu sürümde ÇALIŞMIYOR: `NotImplementedError: ConvertPirAttribute2RuntimeAttribute not support [pir::ArrayAttribute<pir::DoubleAttribute>]` (oneDNN yürütücüsü) — işçideki kapalı ayar zorunludur.
+
+**Sonuç (yeni donanım):** varsayılan `tesseract` KALIR — en iyi Paddle ayarından ~60 kat hızlı, temiz sayfalarda eşit ya da daha doğru, İ/ı ayrımını daha iyi koruyor. Paddle'ın tek üstünlüğü gürültülü sayfada Türkçe harf korunumu (0,88'e karşı 0,60); bu, `auto` kipinin Paddle'ı yalnız P0-9 kapısını geçemeyen sayfada denemesiyle örtüşür. v0.5.19 adayları (gerçek evrakta ölçülerek): işçide `cpu_threads=8` (sıcakta ~2,2 kat; bu ölçümde çıktı değişmedi) ve sayfa başına yeniden yükleme yerine kalıcı işçi (sayfa başına 3-8 sn tasarruf). Sınır aynen geçerli: sentetik beş sayfa; gerçek taranmış evrak bu sürümde ölçülmedi (avukat kararı — v0.5.18 gerçek evrak ölçümsüz yayımlanır).

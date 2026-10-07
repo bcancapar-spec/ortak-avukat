@@ -38,6 +38,12 @@ Güncelleme: [tarih]
 - ⏰ İstinaf süresi: [son gün]
 - ⚠ [yük taşıyan eksik delil / dispozitif risk]
 
+## Zincir bütünlüğü (v0.5.18 — `_oa/DURUM.md`den aktarılır; advisory, teslimi durdurmaz)
+- 🔴 BAYAT — [ürün]: kaynağı [yol] üretiminden sonra değişti → ilgili motoru yeniden koş
+- 🔴 ÇAPRAZ KOPUK ([tip]) / ÇAPRAZ BELİRSİZ — graf↔vakıa↔kıyas ortak kimlik uzayı
+- 🔴 AÇIK CEPHE / ÇÜRÜTÜLMEMİŞ ANTİTEZ — cephanelik (06-antitez) tamamlanmalı
+- ✗ DENETİM JSON'U OKUNAMADI: [dosya] — temiz sayılmaz; K2 adım-1'i fail-closed kapatır
+
 ## Toplanan teyitli künyeler (araştırma çıktısı — sonraki adımlar bununla sınırlı)
 - [künye 1 — kaynak: Yargı Pro]
 - [künye 2 — kaynak: Mevzuat MCP]
@@ -54,3 +60,7 @@ Güncelleme: [tarih]
   tarafından yeni hücreye eşlenir («eski hat sırası ≤v0.5.15 — adım eşlendi» notu).
 - **Müvekkil kararı:** avukat kararından ayrı egemenlik alanıdır; kapanmamış müvekkil
   kararı varken KAPANIŞ görünür UYARI üretir (bloklamaz).
+- **Zincirleme tepki (v0.5.18):** bir halka (künye/graf/vakıa) değişince aşağı akışın
+  denetim JSON'u BAYAT görünür; bayat halka üzerine kurulan kıyas/antitez/dilekçe
+  yeniden koşulmadan teslim edilirse bu bilinçli bir avukat kararıdır (makbuz
+  `tazelik_uyarilari` + `graf_kapisi` alanları izi taşır) — script durdurmaz, gösterir.

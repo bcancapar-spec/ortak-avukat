@@ -147,6 +147,13 @@ _GOMULU_KURALLAR = {
                         "HMK m.394/2-3 — karşı taraf dinlenmeden verilen ihtiyati tedbire itiraz bir hafta: uygulamada hazırsa UYGULAMADAN, değilse uygulama tutanağının TEBLİĞİNDEN; menfaati açıkça ihlal edilen üçüncü kişi için ÖĞRENMEDEN; itiraz kural olarak icrayı durdurmaz (m.394/1)."),
     "hmk_tedbir_esas_dava": (2, "hafta",
                         "HMK m.397/1 — dava açılmadan verilen ihtiyati tedbirde, kararın UYGULANMASINI TALEP ETTİĞİ tarihten itibaren iki hafta içinde esas dava açılmalı VE dava açıldığına dair evrak kararı uygulayan memura ibrazla dosyaya konup karşılığında belge alınmalıdır; aksi hâlde tedbir KENDİLİĞİNDEN kalkar."),
+    # ── v0.5.18 K1 (T5-1 CANLI KUSUR — 2026-10-07, resmî metin teyitli) ─────────
+    # İstifada vekâletin devam süresi: MK-2 kuralsız çağrısı (--sure/--birim) rejimi
+    # --yargi hukuk'tan alıp HMK m.104 ile uzatıyor, yazın müvekkile GEÇ tarih veriyordu.
+    "hmk_istifa_vekalet_devam": (2, "hafta",
+                        "HMK m.82/1 — istifa eden vekilin vekâlet görevi, istifanın müvekkiline TEBLİĞİNDEN itibaren iki hafta süreyle devam eder; m.82/2 — vekâlet veren davayı takip etmez ve başka bir vekil de görevlendirmezse tarafın yokluğu hükümleri uygulanır; m.82/3 — bu hususlar istifa dilekçesiyle birlikte vekâlet verene İHTAREN bildirilir. Mahkemeye verilen istifa dilekçesi müvekkile tebliğ yerine geçmez (tebliğ tarihi belgeli olmalı). Av.K. m.41'deki on beş günle EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (avk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir."),
+    "avk_istifa_vekalet_devam": (15, "gun",
+                        "Av.K. m.41/1 — belli bir işi takipten veya savunmadan isteği ile çekilen avukatın o işe ait vekâlet görevi, durumu müvekkiline TEBLİĞİNDEN itibaren on beş gün süre ile devam eder (m.41/2: adli müzaheret bürosu ya da baro başkanınca tayin edilen avukat kaçınılmaz sebep veya haklı özür olmadıkça çekinemez; takdir tayin eden makamındır). HMK m.82/1'deki iki haftayla EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (hmk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir. Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244: istifa müvekkile tebliğ edilmedikçe vekâlet görevi devam eder ve vekile yapılan tebligat süreyi başlatır."),
     "aym_bireysel_mazeret": (15, "gun",
                         "6216 m.47/5 (ikinci cümle) — haklı mazeret nedeniyle süresinde başvuramayan, MAZERETİN KALKTIĞI tarihten itibaren on beş gün içinde mazeretini belgeleyen delillerle başvurabilir; mazeretin kabulü Mahkemenin takdirindedir (AYM İçtüzüğü m.64/2)."),
     "aihm_basvuru":        (4, "ay",
@@ -202,6 +209,8 @@ _GOMULU_TEYIT = {
     "hmk_on_inceleme_belge_sunma": "2026-10-05",
     "hmk_tedbir_itiraz":   "2026-10-05",
     "hmk_tedbir_esas_dava": "2026-10-05",
+    "hmk_istifa_vekalet_devam": "2026-10-07",
+    "avk_istifa_vekalet_devam": "2026-10-07",
     "aym_bireysel_mazeret": "2026-10-05",
     "aihm_basvuru":        "2026-10-05",
 }
@@ -255,6 +264,8 @@ _GOMULU_BASLANGIC = {
     "hmk_on_inceleme_belge_sunma": ["teblig"],
     "hmk_tedbir_itiraz":      ["olay", "teblig", "ogrenme"],
     "hmk_tedbir_esas_dava":   ["olay"],
+    "hmk_istifa_vekalet_devam": ["teblig"],
+    "avk_istifa_vekalet_devam": ["teblig"],
     "aym_bireysel_mazeret":   ["olay"],
     "aihm_basvuru":           ["teblig", "ogrenme"],
 }
@@ -310,6 +321,29 @@ _RD_TEDBIR_DAVA = ("TEYİT BEKLİYOR — HMK m.397/1 HMK'nın kendi süresidir; 
                    "ve uzatmanın bu süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → "
                    "TEMKİNLİ: uzatma YOK (erken tarih); geç okuma (31 Ağu + 1 hafta) güçlü olduğundan "
                    "karşı tarafa kesin dil kurulmaz")
+# v0.5.18 K1 (T5-1) — İSTİFA SÜRELERİ: `hmk_tedbir_esas_dava` kalıbı. NEDEN VAR: müvekkile
+# giden tarih ERKEN olmalı (hak kaybı önleme); geç okuma yalnız avukatın takip sınırı.
+# Metinler Yargı PRO mevzuat_getir ile okundu (2026-10-07): HMK m.82, m.103/3, m.104;
+# Av.K. m.41. Kararlar ictihat_getir tam metin: Y. 23. HD E.2013/8404 K.2013/7933;
+# Y. 13. HD E.2016/23630 K.2019/746; Y. 7. HD E.2013/26308 K.2013/21244.
+_RD_ISTIFA_HMK = ("TEYİT BEKLİYOR — HMK m.82/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse "
+                  "HMK m.104 lafzen uygulanabilir görünür, ancak m.104'ün m.82/1 süresine uygulandığına "
+                  "ya da reddedildiğine dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07; Y. 13. HD "
+                  "E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244 m.41/m.82'yi uygular, "
+                  "tatil uzamasına girmez). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü "
+                  "tebligat yapılır, istifa tebliği tatilde geçerlidir → TEMKİNLİ: uzatma YOK (erken tarih) "
+                  "— müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç okuma (31 Ağu "
+                  "+ 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa kesin dil "
+                  "kurulmaz")
+_RD_ISTIFA_AVK = ("TEYİT BEKLİYOR — Av.K. m.41 süresi HMK'nın tayin ettiği bir süre DEĞİLDİR; HMK m.104 "
+                  "yalnız 'bu Kanunun tayin ettiği sürelere' uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, "
+                  "İİK m.62 süresi için — Av.K. m.41'e uygulanması kıyastır); m.104'ün bu süreye "
+                  "uygulandığına dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07). Süre tatilde "
+                  "İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır → TEMKİNLİ: uzatma YOK "
+                  "(erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç "
+                  "okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa "
+                  "kesin dil kurulmaz; son gün hafta sonu/resmî tatile rastlarsa kayma kıyasen (HMK m.93) "
+                  "yapılır")
 _RD_IS = ("4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK "
           "m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz "
           "(Y. 9. HD E.2016/1261 K.2016/22196)")
@@ -373,6 +407,8 @@ _GOMULU_REJIM_SATIRLARI = {
     "hmk_on_inceleme_belge_sunma": ("hmk104",     True, True, _RD_HMK104),
     "hmk_tedbir_itiraz":           ("uygulanmaz", True, True, _RD_TEDBIR),
     "hmk_tedbir_esas_dava":        ("uygulanmaz", False, True, _RD_TEDBIR_DAVA),
+    "hmk_istifa_vekalet_devam":    ("uygulanmaz", False, True, _RD_ISTIFA_HMK),
+    "avk_istifa_vekalet_devam":    ("uygulanmaz", False, True, _RD_ISTIFA_AVK),
     "aym_bireysel_mazeret":        ("uygulanmaz", False, True, _RD_AYM),
     "aihm_basvuru":                ("uygulanmaz", True, False, _RD_AIHM),
 }
@@ -458,7 +494,9 @@ _YARGI_REJIM_DAYANAK = {"hukuk": _RD_HMK104, "idari": _RD_IYUK8, "ceza": _RD_CMK
                         "icra": _RD_ICRA}
 # Ön ekin DOĞAL rejimi — yalnız türetme notunda ve TEMKİNLİ alternatif tarihte kullanılır.
 _ONEK_REJIM = {"hmk": "hmk104", "iik": "uygulanmaz", "cmk": "cmk331", "iyuk": "iyuk8",
-               "amme": "iyuk8", "is": "uygulanmaz", "aym": "uygulanmaz", "aihm": "uygulanmaz"}
+               "amme": "iyuk8", "is": "uygulanmaz", "aym": "uygulanmaz", "aihm": "uygulanmaz",
+               # v0.5.18 K1 — Avukatlık Kanunu süresi HMK'nın tayin ettiği süre değildir
+               "avk": "uygulanmaz"}
 REJIM_ETIKET = {"hmk104": "HMK m.104 (31 Ağu + 1 hafta)",
                 "iyuk8": "İYUK m.8/3 (1 Eylül'den itibaren 7 gün)",
                 "cmk331": "CMK m.331/4 (tatilde işlemez; tatil bitiminden itibaren +3 gün)",
@@ -579,8 +617,10 @@ ASAMA_KURALLAR, _ASAMA_TABLO_YOK = asama_kurallarini_yukle()
 # uzatma). AYM/AİHM kol-bağımsızdır (None). Adli tatil rejimini artık KOL değil
 # KURAL taşır (KURAL_REJIM); kol, kayma dayanağı/kurtarma kapısı/uyarılar ve
 # "kural ile beyan edilen kol birbirini yalanlıyor mu" denetimi içindir.
+# v0.5.18 K1: "avk" (Avukatlık Kanunu) kol-bağımsızdır — m.41 "takipten veya savunmadan"
+# çekilen avukat için her yargı kolunda işler (oa-usul [G9] bu sözlüğü AST ile okur).
 KURAL_KOLU = {"cmk": "ceza", "hmk": "hukuk", "iik": "icra", "is": "hukuk",
-              "iyuk": "idari", "amme": "idari", "aym": None, "aihm": None}
+              "iyuk": "idari", "amme": "idari", "aym": None, "aihm": None, "avk": None}
 # İcra ceza şikâyeti (İİK m.347) icra CEZA mahkemesine yapılır: ceza koluyla da çelişmez.
 _KOL_EK_IZIN = {"iik_icra_ceza_sikayet": {"ceza"}, "iik_icra_ceza_sikayet_azami": {"ceza"}}
 
@@ -817,6 +857,12 @@ def _kurtarma_kapisi_notu(yargi, kural=None):
     if str(kural or "").startswith("iik_icra_ceza"):
         return ("İcra ceza şikâyet süresi geçmekle şikâyet hakkı DÜŞER (İİK m.347): eski hâle getirme/"
                 "mazeret kapısına GÜVENME — şikâyeti son güne bırakma.")
+    if str(kural or "").endswith("_istifa_vekalet_devam"):
+        # v0.5.18 K1 — bu bir başvuru süresi değil, görevin DEVAM süresidir: kaçırılan
+        # süre için kurtarma kapısı yoktur; HMK m.95 önermek yanlış yere baktırır.
+        return ("Bu süre bir görev DEVAM süresidir (HMK m.82/1 / Av.K. m.41) — eski hâle getirme/"
+                "mazeret kapısı YOKTUR: müvekkil ve yeni vekil işlemlerini bu güne bırakmaz; istifa "
+                "eden avukat idari izin gününde de takibi sürdürür.")
     if _onek == "aym":
         return ("İşlem o gün fiilen imkânsızlaştıysa: 6216 m.47/5 — haklı mazeret hâlinde mazeretin "
                 "kalktığı tarihten itibaren ON BEŞ GÜN içinde mazereti belgeleyen delillerle başvuru "
@@ -1237,10 +1283,16 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     # v0.5.18 — rejimi TEYİTSİZ "uygulanmaz" kuralda diğer okumanın son günü (yalnız
     # KARŞILAŞTIRMA: TEMKİNLİ uyarısı + karşı taraf kesin dil kapısı). Ham bitiş tatil
     # dışında olsa bile hesaplanır (ör. İİK m.347'de öğrenme tatil içindeyse CMK okuması).
+    _alt_rejim = None    # alt_son'u üreten "diğer okuma" rejimi (etiket için — KÜÇÜK-2)
     if (tur == "usul" and birim != "isgunu" and not adli_tatil_istisna and rejim == "uygulanmaz"
             and not rj["adli_tatil_teyitli"] and alt_son is None):
         _dogal = (_ONEK_REJIM.get(_onek, "hmk104") if rj.get("turetildi") == "ön ekten"
                   else _TEMKINLI_ALTERNATIF.get(kural, "hmk104"))
+        # v0.5.18 K1 (KÜÇÜK-2): istifa süresinde idari dosyada "diğer okuma" İYUK m.8/3'tür —
+        # aritmetik aynıdır (1 Eylül'den 7 gün ≡ 31 Ağu + 1 hafta), yalnız etiket --yargi'ye uyar.
+        if str(kural or "").endswith("_istifa_vekalet_devam") and yargi == "idari":
+            _dogal = "iyuk8"
+        _alt_rejim = _dogal
         alt_son = _alternatif_bitis(_dogal, teblig, ham, miktar, birim)
     if not is_gunu_mu(son):
         if hafta_sonu_mu(son):
@@ -1300,6 +1352,28 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "(yalnız ikincil savunma). Karşı tarafın işlemi iki tarih arasındaysa kesin dil kurulmaz "
             "(ARA TESPİT). Dayanak: %s" % (
                 kural or "--sure", son.isoformat(), alt_son.isoformat(), rj["adli_tatil_dayanak"]))
+    # ── v0.5.18 K1 (T5-1) — İSTİFA SÜRESİ İKİ MUHATAPLIDIR ────────────────────
+    # NEDEN VAR: eski MK-2 çağrısı (kuralsız --sure/--birim) manşeti HMK m.104 ile uzatıp
+    # yazın müvekkile 2026-09-07 gibi GEÇ tarih veriyordu (doğrusu 2026-08-10). Manşet
+    # (erken tarih) MÜVEKKİLE söylenen tarihtir; geç okuma (alt_son) yalnız istifa eden
+    # avukatın kendi takip sınırıdır — iki tarih iki ayrı muhataba gider, karıştırılmaz.
+    if str(kural or "").endswith("_istifa_vekalet_devam"):
+        _gec = (("geç okumaya (%s — %s uygulanırsa) kadar"
+                 % (alt_son.isoformat(), REJIM_ETIKET.get(_alt_rejim or "hmk104", "HMK m.104")))
+                if alt_son is not None else
+                "en az bu tarihe kadar (ham bitiş adli tatil dışında: iki okuma aynı güne düşer)")
+        uyarilar.append(
+            "İSTİFA — İKİ TARİH, İKİ MUHATAP (HMK m.82 / Av.K. m.41): MÜVEKKİLE 'yeni vekil bu "
+            "tarihten ÖNCE' uyarısı manşetteki ERKEN tarihle (%s) verilir — belirsizlikte erken tarih "
+            "esastır; geç okumaya güvenip müvekkil temsilsiz bırakılmaz (HMK m.82/2: vekâlet veren "
+            "davayı takip etmez ve başka vekil görevlendirmezse tarafın yokluğu hükümleri uygulanır). "
+            "İSTİFA EDEN AVUKAT süre ve duruşma takibini %s sürdürür; bu arada vekile yapılan tebligat "
+            "süreyi başlatır (Y. 13. HD E.2016/23630 K.2019/746; Y. 7. HD E.2013/26308 K.2013/21244). "
+            "İki süre EŞİTLENMEZ: HMK m.82/1 iki hafta (hmk_istifa_vekalet_devam) ve Av.K. m.41 on beş "
+            "gün (avk_istifa_vekalet_devam) ayrı satırda hesaplanır. Başlangıç müvekkile TEBLİĞ "
+            "tarihidir (HMK m.82/3: istifa dilekçesiyle birlikte ihtaren bildirim) — mahkemeye dilekçe "
+            "vermek müvekkile tebliğ yerine geçmez; tebliğ tarihi BELGELİ olmalı."
+            % (son.isoformat(), _gec))
     # ── İDARİ İZİN KATMANI (uyarı — KAYDIRMA YAPILMAZ) ─────────────────────
     # Hukuki kural: idari izin (CB tasarrufu — Kararname/Karar/Genelge) 2429 anlamında resmî tatil
     # değildir; süreyi UZATMAZ, SÜREDEN SAYILIR. Riski görünür kılar, son günü değiştirmez.
@@ -1373,8 +1447,11 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     else:
         uyarilar.append("PARASAL KESİNLİK: Süre işlese de karar parasal sınırın altındaysa kanun yolu KAPALI "
             "olabilir. Sınırı o yıl için Mevzuat MCP'den teyit et.")
-    # Kol-özel uyarılar AYM/AİHM kuralında basılmaz (kol-bağımsız yollar).
-    _kol_ozel = _onek not in ("aym", "aihm")
+    # Kol-özel uyarılar AYM/AİHM/Av.K. kuralında ve istifa süresi kurallarında basılmaz
+    # (kol-bağımsız yollar / görev-devam süresi; v0.5.18 K1: kanun yolu kapısı uyarısı
+    # ilgisiz gürültüdür — dışlama öneke VE kural adına bakar, KÜÇÜK-1).
+    _kol_ozel = (_onek not in ("aym", "aihm", "avk")
+                 and not str(kural or "").endswith("_istifa_vekalet_devam"))
     if _kol_ozel and _kol=="idari" and tur=="usul":
         # A-5 (v0.5.14) — eski uyarı ("özel kanun süreleri olabilir") avukatı
         # YANLIŞ yöne bakmaya sevk ediyordu: en sık ıskalanan kısa süreler özel

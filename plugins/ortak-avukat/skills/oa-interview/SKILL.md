@@ -71,12 +71,19 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; avukatı
    yükümlülüğü (Av.K. m.36) ve Layer 0 (`oa-gizlilik`) bu kapının yanında durur.
    - **(c) MESLEK KURALLARI KONTROL LİSTELERİ (v0.5.18 adayı; Yargı PRO
      15-3/17-4/13-9/13-8 fikri, OA yöntemiyle) → `references/meslek-kurallari-kontrol.md`.**
+     **ÜST İLKE (avukat talimatı, 2026-10-07): meslek kurallarında otorite yoktur;
+     öncelikle müvekkilin menfaati esastır — Avukatlık Kanunu gereği** (Av.K. m.1/2,
+     m.38/1-b, m.135; TBK m.506/2 "haklı menfaat"). Liste bu menfaatin aracıdır; kural
+     ile menfaat çatışıyor görünürse çatışma gizlenmez, avukata sunulur — karar avukatındır.
      Gerçek bir işlemden (sulh, feragat, kabul, ibra, ıslah, yemin, tahkim, haczin
      kaldırılması, tevkil, kanun yolu…) önce **vekâlet kapsamı ve özel yetki**
      (MK-1: HMK m.73, 74, 77; TBK m.504/3; Av.K. m.27/3, m.56); istifa, azil ya da
      devirde **hak kaybı önleme** (MK-2: HMK m.77/4, 81-83; Av.K. m.41, 174; TBK
      m.512 — HMK'nın iki haftası ile Av.K.'nın on beş günü EŞİTLENMEZ, iki tarih
-     ayrı hesaplanır: `oa-sure/scripts/hesapla_sure.py`); dilekçe sunulmadan önce
+     ayrı hesaplanır: `oa-sure/scripts/hesapla_sure.py --kural hmk_istifa_vekalet_devam`
+     / `--kural avk_istifa_vekalet_devam`; müvekkile uyarı manşetteki ERKEN tarihle,
+     avukat takibi geç okumaya kadar — kuralsız `--sure` çağrısı yazın GEÇ tarih verir);
+     dilekçe sunulmadan önce
      **müvekkil teyit-onam notu** (MK-3: HMK m.29; KVKK m.5, 6, 9, 10); iş kabulünde
      **ücret sözleşmesi** (MK-4: Av.K. m.163, 164, 174; AAÜT m.1/3). Ortak ilke:
      **taslak izni ≠ işlem izni** — eksik yetki taslağı durdurmaz, "sunuma hazır"

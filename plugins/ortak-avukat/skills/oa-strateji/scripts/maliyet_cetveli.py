@@ -46,6 +46,14 @@ eklemeleri 2026-10-05):
     m.13/1-4; m.21 (ücret takdirinde hükmün verildiği tarihteki tarife esas —
     bugünkü tarife gelecekteki hüküm için ÇIPA). Maktu ücret MERCİYE göredir:
     script başka merci için asliye maktuunu KULLANMAZ ('aaut.maktu_<merci>').
+  * (v0.5.18 K2 — 2026-10-07) Av.K. m.168/2 (Ek cümle: 16/6/2009-5904/35): vergi,
+    resim, harç ve benzeri mali yükümlülükler, bunların zam ve cezaları ile
+    tarifelere ilişkin davalar ve 6183 s.K. uygulamasından doğan her türlü davada
+    avukatlık ücreti MAKTU belirlenir → `AVK168_MAKTU_MERCILER` mercilerinde nispi
+    dilim (AAÜT üçüncü kısım, m.13) UYGULANMAZ; tam kabul/ret → `aaut.maktu_<merci>`
+    (AAÜT m.15/1 "diğer durumlarda tamamına"); KISMİ kabul/ret dağılımı ve m.13/2
+    tavanının maktu ücrete uygulanması genel hükümlerden OKUNAMADI → o kalem
+    "HESAPLANAMAYAN" olarak görünür yazılır, rakam ÜRETİLMEZ (exit 2).
   * 3095 s.K. m.1 (Değişik: 7589/10; yürürlük RG 31.07.2026) ve m.2: kanuni
     faiz ve temerrüt faizi oranı TCMB oranına bağlıdır, yıllık belirlenir ve
     30 Haziran'da beş puan veya daha çok farkta yılın ikinci yarısı için değişir
@@ -94,6 +102,16 @@ MERCILER = {
 MERCI_ADI = {"asliye": "asliye mahkemesi", "idare": "idare mahkemesi (vergi dışı)",
              "sulh": "sulh mahkemesi", "icra_tetkik": "icra tetkik mercii (icra mahkemesi)",
              "vergi": "vergi mahkemesi ((3) sayılı tarife)"}
+# v0.5.18 K2 (T5-4 GİZLİ KUSUR) — Av.K. m.168/2 (Ek cümle: 16/6/2009-5904/35 md., Yargı PRO
+# mevzuat_getir 2026-10-07): "… genel bütçeye, il özel idareleri, belediye ve köylere ait
+# vergi, resim, harç ve benzeri mali yükümlülükler ve bunların zam ve cezaları ile
+# tarifelere ilişkin davalar ve 6183 sayılı Amme Alacaklarının Tahsil Usulü Hakkında
+# Kanunun uygulanmasından doğan her türlü davalar için avukatlık ücreti tutarı maktu
+# olarak belirlenir." NEDEN VAR: karşı vekâlet kolunda bu mercilerde AAÜT üçüncü kısım
+# nispi dilimi (m.13) UYGULANMAZ; `aaut.maktu_<merci>` esastır. Eski kod merci=vergi'de de
+# nispi dilim uyguluyordu — tablolar null olduğu için rakam üretmiyor, kusur görünmüyordu.
+# Aynı rejimdeki (harç/6183) başka bir merci eklenirse TEK genişleme noktası budur.
+AVK168_MAKTU_MERCILER = ("vergi",)
 FAIZ_TURLERI = ("kanuni", "temerrut", "avans", "sozlesme", "diger")
 
 
@@ -247,7 +265,9 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
         raise ValueError(f"bilinmeyen merci: {merci}")
     harc = tarife["harc"]
     aaut = tarife["aaut"]
-    eksik, notlar = [], []
+    # v0.5.18 K2 (KÜÇÜK-8): karşı vekâlete ait notlar HARÇ bölümüne değil, KARŞI VEKÂLET
+    # bölümüne basılır — okur dayanağı ilgili satırın yanında görür.
+    eksik, notlar, vekalet_notlari = [], [], []
     deger = float(deger)
     kabul = round(deger * kismi_kabul, 2)
     ret = round(deger - kabul, 2)
@@ -320,7 +340,48 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
     maktu = aaut.get(maktu_ad)
     dilimler = aaut.get("nispi_dilimler") or []
     lehe = aleyhe = None
-    if not _sayi_mi(maktu):
+    hesaplanamayan = []
+    if merci == "idare":
+        # v0.5.18 K2 (KÜÇÜK-9 — görünürlük, kapsam GENİŞLETİLMEDİ): idare mahkemesinde görülen
+        # 6183/harç kaynaklı dava (ecrimisil, idari para cezası ödeme emri…) Av.K. m.168/2
+        # "her türlü dava" lafzıyla maktu rejimdedir; bu cetvel idare merciinde nispi uygular.
+        # Nitelendirme avukatındır — script davanın kaynağını bilemez, yalnız uyarır.
+        vekalet_notlari.append(
+            "DİKKAT — Av.K. m.168/2 kapsamı: dava 6183 s.K. uygulamasından ya da vergi, resim, harç ve "
+            "benzeri mali yükümlülükten kaynaklanıyorsa (ör. ecrimisil, idari para cezası ödeme emri) "
+            "avukatlık ücreti MAKTU belirlenir ('her türlü dava'); bu cetvel `--merci idare`de nispi dilimi "
+            "(AAÜT m.13) uyguladı. Davanın kaynağını AVUKAT nitelendirir ve teyit eder; maktu rejimi "
+            "gerekiyorsa aşağıdaki karşı vekâlet satırları KULLANILMAZ (idare için maktu kol eklenmedi — "
+            "kapsam genişletilmedi).")
+    if merci in AVK168_MAKTU_MERCILER:
+        # v0.5.18 K2 — Av.K. m.168/2: ücret MAKTU; nispi dilim bu mercide UYGULANMAZ ve
+        # `aaut.nispi_dilimler` istenmez. Okunan genel hükümler (AAÜT m.3/1, m.13, m.15/1,
+        # m.21) kısmi kabul/ret hâlinde maktu ücretin taraflar arasında dağılımını ve
+        # m.13/2 tavanının maktu ücrete uygulanmasını SÖYLEMEZ → o hâlde rakam üretilmez.
+        vekalet_notlari.append(
+            "Av.K. m.168/2 (Ek cümle: 16/6/2009-5904/35): vergi, resim, harç ve benzeri mali yükümlülükler, "
+            "bunların zam ve cezaları ile tarifelere ilişkin davalar ve 6183 s.K. uygulamasından doğan her "
+            "türlü davada avukatlık ücreti MAKTU olarak belirlenir — nispi dilim (AAÜT üçüncü kısım, m.13) "
+            f"UYGULANMADI; esas `aaut.{maktu_ad}`. AAÜT m.15/1: birinci savunma dilekçesi süresinin bitimine "
+            "kadar feragat, kabul, konusuz kalma ya da bu nedenlerle ret → ücretin yarısı, diğer durumlarda "
+            "tamamı (aşamayı script bilmez; cetvel tamamını yazar, avukat değerlendirir). AAÜT m.3/1: "
+            "tarifede yazılı miktardan az ve üç katından çok olamaz — maktu tutar TABANDIR, üç katına kadar "
+            "takdir (ÇIPA). m.13/2 kabul/ret tavanının maktu vergi ücretine uygulanıp uygulanmayacağı genel "
+            "hükümlerden okunamadı — tavan uygulanmadı.")
+        if not _sayi_mi(maktu):
+            eksik.append(f"aaut.{maktu_ad}")
+        else:
+            maktu = float(maktu)
+            if ret <= 0:
+                lehe, aleyhe = maktu, 0.0            # tam kabul → davacı vekili lehine maktu
+            elif kabul <= 0:
+                lehe, aleyhe = 0.0, maktu            # tam ret → davalı (idare) vekili lehine maktu
+            else:
+                hesaplanamayan.append(
+                    "karşı vekâlet (vergi — kısmi kabul/ret): Av.K. m.168/2 maktu ücretin taraflar arasında "
+                    "kısmi kabul/ret dağılımı AAÜT genel hükümlerinden (m.3, m.13, m.15, m.21) okunamadı — "
+                    "rakam ÜRETİLMEDİ; Danıştay uygulaması bu turda teyit edilmedi, avukat değerlendirir.")
+    elif not _sayi_mi(maktu):
         eksik.append(f"aaut.{maktu_ad}")
     elif not dilimler:
         eksik.append("aaut.nispi_dilimler")
@@ -346,6 +407,7 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
     ret_orani = round(1.0 - kismi_kabul, 4)
     ek = float(bilirkisi or 0.0) + float(diger_gider or 0.0)
     band_alt = band_ust = None
+    ust_vekalet = None     # dahil | maktu_ust_sinir | haric — ÜST satırı bunu AÇIKÇA yazar
     if acilis is not None:
         band_alt = round(acilis + ek, 2)
     if basvuru is not None and karar_dava is not None:
@@ -353,8 +415,18 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
         for opsiyonel in (kesif, istinaf_h, temyiz_h):
             if _sayi_mi(opsiyonel):
                 ust += float(opsiyonel)
+        # v0.5.18 K2 (ÖNEMLİ-1, inceleme): aleyhe vekâlet HESAPLANAMADI iken ÜST bandı onu
+        # sessizce dışlıyor, etiket "aleyhe vekâlet dahil" diyordu → müvekkilin azami maruziyeti
+        # maktu kadar DÜŞÜK görünüyordu (hak kaybı yönü). Bilinen maktu ÜST SINIR olarak eklenir
+        # (müvekkil için güvenli yön); maktu da bilinmiyorsa band "haric" diye işaretlenir.
         if aleyhe is not None:
             ust += aleyhe
+            ust_vekalet = "dahil"
+        elif hesaplanamayan and _sayi_mi(maktu):
+            ust += float(maktu)
+            ust_vekalet = "maktu_ust_sinir"
+        else:
+            ust_vekalet = "haric"
         band_ust = round(ust, 2)
 
     return {
@@ -366,8 +438,13 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
                  "karar_ilam_pesin": pesin, "karar_ilam_hukum_degeri": karar_hukum,
                  "dava_acilis_toplam": acilis, "basvuru_satiri": (bas_kalem or {}).get("satir")},
         "karsi_vekalet": {"lehe_kabul_kismi": lehe, "aleyhe_ret_kismi": aleyhe},
-        "gider_bandi": {"alt": band_alt, "ust": band_ust},
+        "gider_bandi": {"alt": band_alt, "ust": band_ust, "ust_vekalet": ust_vekalet},
+        "vekalet_notlari": vekalet_notlari,
         "eksik_alanlar": eksik,
+        # v0.5.18 K2 — tarife alanı dolu olsa da KURALI okunamayan kalem (ör. vergide kısmi
+        # kabul/ret dağılımı): rakam yok, görünür not var; exit 2 (eksik_alanlar'dan ayrı —
+        # bu bir "tarife.json'u doldur" eksiği DEĞİLDİR).
+        "hesaplanamayan": hesaplanamayan,
         "notlar": notlar,
     }
 
@@ -623,13 +700,35 @@ def rapor(sonuc, tarife, tarife_yolu, faiz=None):
     for n in sonuc.get("notlar") or []:
         L.append(f"  NOT: {n}")
     L.append("")
-    L.append("KARŞI VEKÂLET (AAÜT m.13 — üçüncü kısım; maktu taban; kabul/ret tavanı)")
-    L.append(f"  Lehe (kabul edilen kısım)                  : {tl(kv['lehe_kabul_kismi'])}")
-    L.append(f"  ALEYHE (reddedilen kısım — müvekkil öder)  : {tl(kv['aleyhe_ret_kismi'])}")
+    if g["merci"] in AVK168_MAKTU_MERCILER:
+        L.append("KARŞI VEKÂLET (Av.K. m.168/2 — MAKTU; nispi dilim uygulanmaz; AAÜT m.15/1 tamamı/yarısı, "
+                 "m.3/1 taban)")
+    else:
+        L.append("KARŞI VEKÂLET (AAÜT m.13 — üçüncü kısım; maktu taban; kabul/ret tavanı)")
+
+    def _kv_yaz(x):
+        # v0.5.18 K2 — None iki ayrı sebeple doğar: tarife alanı null (EKSIK_MESAJ) ya da
+        # KURAL okunamadı (`hesaplanamayan`; tarife doludur). İkincisine "tarife alanı null"
+        # demek yanlış teşhistir — avukatı tarife.json doldurmaya yönlendirir, o da kapatmaz.
+        if x is None and sonuc.get("hesaplanamayan"):
+            return "HESAPLANAMADI — kural resmî metinden okunamadı (aşağıdaki HESAPLANAMAYAN satırı)"
+        return tl(x)
+
+    L.append(f"  Lehe (kabul edilen kısım)                  : {_kv_yaz(kv['lehe_kabul_kismi'])}")
+    L.append(f"  ALEYHE (reddedilen kısım — müvekkil öder)  : {_kv_yaz(kv['aleyhe_ret_kismi'])}")
+    for hk in sonuc.get("hesaplanamayan") or []:
+        L.append(f"  HESAPLANAMAYAN — kural resmî metinden okunamadı, rakam ÜRETİLMEDİ: {hk}")
+    for n in sonuc.get("vekalet_notlari") or []:
+        L.append(f"  NOT: {n}")
     L.append("")
     L.append("YARGILAMA GİDERİ BANDI (HMK m.323 kalemleri; paylaştırma m.326/2 — mahkeme takdiri, çıpa)")
     L.append(f"  ALT (açılış zorunlu + elle girilen gider)  : {tl(b['alt'])}")
-    L.append(f"  ÜST (tam harç + keşif/kanun yolu harçları + aleyhe vekâlet + elle gider): {tl(b['ust'])}")
+    _ust_ek = {
+        "maktu_ust_sinir": (" — aleyhe vekâlet: kısmi dağılım hesaplanamadı, bilinen MAKTU ÜST SINIR olarak "
+                            "eklendi (müvekkil için güvenli yön; gerçek tutar bundan düşük olabilir)"),
+        "haric": " — aleyhe vekâlet DAHİL DEĞİL (hesaplanamadı/teyitsiz): gerçek azami maruziyet bu rakamdan YÜKSEK",
+    }.get(b.get("ust_vekalet"), "")
+    L.append(f"  ÜST (tam harç + keşif/kanun yolu harçları + aleyhe vekâlet + elle gider): {tl(b['ust'])}{_ust_ek}")
     L.append(f"  Elle girilen: bilirkişi {tl(g['bilirkisi'])} · diğer {tl(g['diger_gider'])} "
              "(tarifesiz kalemler — avukat girer, script uydurmaz)")
     L.append("")
@@ -640,6 +739,10 @@ def rapor(sonuc, tarife, tarife_yolu, faiz=None):
         L.append("KISMİ CETVEL — şu tarife alanları null (MCP'den teyit edilemedi), ilgili kalemler "
                  "HESAPLANMADI: " + ", ".join(sonuc["eksik_alanlar"]))
         L.append("→ tarife.json'u resmî kaynaktan (Mevzuat MCP / Resmî Gazete) doldur, teyit tarihini yaz.")
+    if sonuc.get("hesaplanamayan"):
+        L.append("KISMİ CETVEL — HESAPLANAMAYAN KALEMLER (tarife dolu olsa da kural resmî metinden okunamadı; "
+                 "rakam ÜRETİLMEDİ, tarife.json doldurmak bunu kapatmaz): "
+                 + " | ".join(sonuc["hesaplanamayan"]))
     L.append("ZAMAN NOTU: kanun yolu harçları, bakiye karar harcı ve karşı vekâlet gelecekte doğar; bugünkü yıl "
              "tarifesiyle hesaplanan tutar ÇIPADIR (AAÜT m.21: ücret takdirinde hükmün verildiği tarihteki tarife).")
     L.append("NOT: Bu cetvel olasılık/kazanma şansı ÜRETMEZ; başarı bandı (güçlü/dengeli/zayıf/belirsiz) "
@@ -741,7 +844,7 @@ def main(argv=None):
     if a.json:
         print(json.dumps(sonuc, ensure_ascii=False, indent=2))
     teyitsiz_faiz = faiz is not None and not faiz["teyitli"]
-    return 2 if (sonuc["eksik_alanlar"] or teyitsiz_faiz) else 0
+    return 2 if (sonuc["eksik_alanlar"] or sonuc.get("hesaplanamayan") or teyitsiz_faiz) else 0
 
 
 if __name__ == "__main__":

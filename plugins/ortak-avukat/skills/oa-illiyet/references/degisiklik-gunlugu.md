@@ -58,3 +58,16 @@
 **SKILL.md:** karar/mahkeme tipi, kanun_yolu türü, kesme_flag dal listesi + "doktrin hatırlatması — hüküm değil" sınırı, `--taraf/--kok`, `--goc`, exit tablosu ve JSON alanları. **references/illiyet-doktrini.md:** §1 medeni/miras kesme (TBK m.52), §2 ceza kesme + ceza:magdur_kusuru hatırlatması (TCK m.22), §4 ticaret modelleme şablonu (karar #11: organik bağ ve perde için AYRI `hak` düğümleri — "alternatif değil, birlikte"; künye kütükten), §5 taraf yönü, §6 şema + **ENUM TABLOSU (doktrin↔kod kilidi)** + kanun yolu + göç. **references/cikti-blogu.md:** dal önekli kesme satırı, ticaret modelleme bloğu, kanun yolu zinciri bloğu, yön satırları.
 
 **Testler:** `tests/test_v0516_A.py` +37 (toplam 74); `test_grafik_denetim.py` kesme ref anahtar seti (`KESME_REF_ANAHTARLARI`) ve JSON anahtar seti kilidi BİLİNÇLİ güncellendi (docstring: G10/G9/G12); `test_v059_saf_semasi.py` JSON anahtar seti (sahiplik dışı, en küçük düzeltme).
+
+## v0.5.18 (aday) — 2026-10-07 · Zincir onarımı: kaynak beyanı + atomik yazım + zincir tavanı uyarısı (Görev 2)
+
+> Kaynak: Fable 5.1 tutarlılık raporu (2026-10-07) B-1(a), B-4, B-10, B-11.
+
+- **`scripts/grafik_denetim.py` — S1 kaynak beyanı:** `--json` çıktısına `kaynaklar` (`[{rol, yol, sha8}]`; `yol` `_oa`ya göre POSIX göreli, `sha8` sha256[:8]; roller `girdi` + VARSA `kunye`) ve `kaynaklar_notu`; `_oa` dışı girdi → `[]` + not. Çökme kaydı (`denetim_coktu: true`) da beyan taşır — bozuk girdinin sha8'i kaydın hangi baytlara ait olduğunu söyler. `girdi` alanı aynen (B-11).
+- **S3 atomik yazım:** normal çıktı ve çökme kaydı `<hedef>.<pid>.oa-tmp` + `os.replace` (B-4 üretici ayağı: K2 yarım JSON'u sessizce atlıyordu).
+- **B-10 zincir tavanı:** `zincir_analizi_tam()` `(zincirler, tavan_asildi)` döner; `zincir_analizi()` geriye uyumlu sarmal. Tavan (`en_cok*5`) aşılırsa §8'de ve JSON `zincir_uyarisi`nde `"zincir tavanı aşıldı — en zayıf halka listesi tam değil"`; çevrim uyarısıyla " · " ile birleşir. Exit kodu değişmez (advisory).
+- **JSON anahtar seti kilitleri BİLİNÇLİ genişletildi:** `tests/test_grafik_denetim.py`, `tests/test_v0516_A.py`, `tests/test_v059_saf_semasi.py` (+`kaynaklar`, `kaynaklar_notu`).
+- **SKILL.md:** `--json` alan listesi + v0.5.18 paragrafı.
+- **Testler:** `tests/test_zincir_analizi.py` (+3: tavan, tavan-altı, çevrim+tavan), `tests/test_v0518_uretici_kaynaklar.py`, `tests/test_v0518_uretici_atomik.py`; determinizm süiti değişmeden yeşil.
+- **Düzeltme turu 1 (Fable incelemesi K-2/K-3/K-4/K-5/K-6/K-9):** `zincir_uyarisi` sözleşmesi "İÇERİR" olarak belgelendi (tavan + çevrim " · " ile birleşir; tüketici `in` ile arar). S1 ikinci not biçimi (kısmi başarısızlık: `kaynaklar_notu` dolu, `girdi` rolü eksik olabilir — çökme kaydı; tüketici notu AYNEN basar). `_atomik_json_yaz` Windows kilidinde 3 kısa yeniden deneme, sonra istisna (K-4; çökme kaydı dahil). Dört motorun yardımcıları kaynak-metin kilidiyle eşit (K-5). İki `_oa` kökünde bayt-özdeşlik testi (K-6). `tests/test_zincir_analizi.py` yeni testleri `tmp_path` kullanır (K-9).
+

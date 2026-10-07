@@ -281,6 +281,23 @@ def test_taraf_listesi_dilekce_denetimin_alt_kumesi_ve_icra_taraflarini_tasir():
     assert {"alacakli", "borclu", "ucuncu-kisi", "musteki"} <= zincir
 
 
+def test_dilekce_belgeleri_zincirin_icra_sifatlarini_tanidigini_soyler():
+    """Bütünlük (2026-10-07, Fable 5.1 revizyonunun bulgusu): oa-dilekce SKILL.md ve icra
+    rehberi, teslim zincirinin icra sıfatlarını "henüz tanımadığını" yazıp alacaklıya
+    `--taraf davaci` vermeyi öğütlüyordu. Zincir v0.5.18'de bu sıfatları kabul ediyor; bayat
+    yönerge icraya özgü müvekkil-aleyhi kalıplarını (a) kapısında devre dışı bırakırdı."""
+    zincir = _taraf_secenekleri(GERCEK_TESLIM)
+    icra = {"alacakli", "borclu", "ucuncu-kisi"}
+    assert icra <= zincir
+    for yol in (SKILLS / "oa-dilekce" / "SKILL.md",
+                SKILLS / "oa-dilekce" / "references" / "icra-dilekce-ailesi.md"):
+        metin = yol.read_text(encoding="utf-8")
+        assert "henüz tanım" not in metin, "%s: bayat 'henüz tanımıyor' yönergesi" % yol.name
+        assert not re.search(r"alacaklı için\s*`(?:--taraf )?davaci`", metin), yol.name
+        assert "teslim_paketi.py --taraf alacakli" in metin, (
+            "%s: teslim zincirinin icra sıfatıyla nasıl koşulacağı yazılı değil" % yol.name)
+
+
 def test_icra_tarafi_a_kapisina_aynen_gecer_ve_makbuza_yazilir(ortam):
     (ortam["od"] / "dilekce_denetim.py").write_text(
         "import sys\nopen('DILEKCE-ARGV.txt', 'w', encoding='utf-8').write("
