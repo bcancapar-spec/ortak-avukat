@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **45.000+** satır eklenti kodu (Python) · **55.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **12.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **117.000+** satır · **3.516** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **56.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **12.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **118.000+** satır · **3.547** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -276,6 +276,15 @@ değil. **Yargı Pro bu prompt'un dışındadır:** ücretli üyelik ister, o ad
 siz yaparsınız ([5. adım](#5-yargı-pro--yetkilendirme-ücretli-üyelik)); prompt
 yalnız durumunu bildirir ve ne yapacağınızı söyler.
 
+Zincirin kanıt halkası projenin içindedir: **kurulum motoru**
+(`skills/ortak-avukat/scripts/oa_kurulum.py`) Python'u, Python paketlerini,
+Tesseract + Türkçe dil verisini, Node.js'i, eklentinin bütünlüğünü, ilk çağrı
+derlemesini ve aile yapısını denetler; her gereksinimi tek satırda TAMAM / EKSİK /
+ELİMDE diye yazar ve eksiğin resmî kurulum komutunu basar. Prompt bu motoru koşturur,
+eksikleri onayınızla tamamlatır ve motoru yeniden koşturur — Yargı Pro hariç hepsi
+TAMAM olana dek. Motor sistem yazılımı kurmaz; denetim kipi ağa çıkmaz. `--uygula`
+yalnız Python paketlerini (pip ile, PyPI'den) ve derlemeyi tamamlar.
+
 ```text
 Bu bilgisayara "Ortak Avukat" sistemini uçtan uca kur. Komutları sen çalıştır;
 ben yalnız insan eli gereken yerde (kurucu penceresi, UAC/yönetici onayı,
@@ -376,7 +385,14 @@ onaylarım, sen bekle.
    .pyc yazımını engeller; `compileall` yine yazar, kancalar hazır .pyc'yi
    okur. Bu yüzden derleme her kurulum ve güncellemeden sonra elle yinelenir;
    kancaları hızlandırmanın tek yolu budur.
-6) DOĞRULAMA (dosya kanıtı, beyan değil): etkin sürüm `claude plugin list`
+6) DOĞRULAMA (dosya kanıtı, beyan değil): önce projenin kurulum motorunu koş —
+   `python "<o klasör>/skills/ortak-avukat/scripts/oa_kurulum.py"`. Her
+   gereksinimi tek satırda TAMAM / EKSİK / ELİMDE / BİLGİ diye verir ve EKSİK
+   satırının yanına resmî komutu basar. Python paketleri ya da derleme eksikse
+   onayımla `--uygula` ekleyerek koş (yalnız pip ve compileall yapar, sistem
+   yazılımı kurmaz); öteki EKSİK komutlarını onayımla sen koş; sonra motoru
+   yeniden koş — Yargı Pro hariç hepsi TAMAM olana (çıkış kodu 0) dek zincir.
+   Ayrıca etkin sürüm `claude plugin list`
    çıktısındaki Version satırıdır (ortak-avukat@ortak-avukat enabled olmalı);
    önbellekte o sürümün klasörü var, içinde `.claude-plugin/plugin.json`
    sürümü klasör adıyla aynı; `skills/` altında 20 klasör; `hooks/hooks.json`

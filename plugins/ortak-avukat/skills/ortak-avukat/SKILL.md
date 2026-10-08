@@ -127,6 +127,8 @@ Bu **çekirdek**, sistemin omurgası ve orkestra şefidir; tek dev skill değild
 
 Parçalar ezber değil **harita + disiplin + deterministik araçtır**: madde, süre, parasal sınır ve künyeler kullanım anında resmî kaynaktan teyit edilir. Her parça kendi **öğrenme günlüğüyle** dosya tecrübesiyle büyür; yeni bir tuzak/daire kayması öğrenildiğinde ilgili parçaya işlenip yeniden paketlenir. Bu, "skill yönlendirmelerime ve işlerimize göre gelişsin" mekanizmasının somut hâlidir.
 
+**Kurulum denetimi:** avukat "kurulum tamam mı, bir şey eksik mi" diye sorduğunda beyan verilmez — `scripts/oa_kurulum.py` koşulur ve çıktısı gösterilir. Her gereksinimi (Python, paketler, Tesseract + Türkçe, Node.js, eklenti bütünlüğü, ilk çağrı derlemesi, aile yapısı) tek satırda TAMAM / EKSİK / ELİMDE diye verir, eksiğin resmî komutunu basar; `--uygula` yalnız pip paketlerini ve derlemeyi tamamlar (onayla). Yargı Pro kapsam dışıdır (ücretli üyelik; `/mcp` ile avukat yetkilendirir).
+
 ## Değişiklik Günlüğü
 Tam günlük `references/degisiklik-gunlugu.md`'dedir (bağlam ekonomisi için ayrıldı — içerik aynen korunur; yeni kayıtlar oraya işlenir). Güncel sürüm: **v3.26**.
 

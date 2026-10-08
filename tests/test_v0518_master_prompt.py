@@ -316,6 +316,21 @@ def test_master_prompt_dosya_kanitiyla_dogrular():
         assert parca in blok, "dosya kanıtı ögesi eksik: %r" % parca
 
 
+def test_master_prompt_dogrulama_adimi_kurulum_motorunu_zincirler():
+    """Avukat talimatı (2026-10-07): "projenin içerisinde mutlaka zincirleme şekilde, Yargı Pro
+    hariç kalan tüm gereksinimleri tek prompt'ta indirecek kısmı oluştur". Prompt'un 6. adımı
+    eklentinin İÇİNDEKİ kurulum motorunu koşturur, eksiği onayla tamamlatır ve motoru yeniden
+    koşturur (zincir); motorun yolu depoda gerçekten var; Yargı Pro zincirin dışında kalır."""
+    blok = _master_prompt_blogu()
+    adim6 = _bolum(blok, "6) DOĞRULAMA", "7) YARGI PRO")
+    yol = "skills/ortak-avukat/scripts/oa_kurulum.py"
+    assert yol in adim6 and (PLUGIN / yol).is_file(), "6. adım kurulum motorunu koşturmuyor"
+    _sirali(adim6, [yol, "--uygula", "yeniden koş", "Yargı Pro hariç hepsi TAMAM"])
+    assert "sistem" in adim6 and "kurmaz" in adim6, "motorun sistem yazılımı kurmadığı söylenmeli"
+    for metin in (_oku(KOK_README), _oku(PLUGIN_README)):
+        assert yol in metin, "README motoru tanıtmıyor"
+
+
 def test_master_prompt_tam_kapat_ve_tek_satir_rapor():
     blok = _master_prompt_blogu()
     assert re.search(r"TAM\s+KAPAT", blok, re.I), "'TAM kapatıp açın' hatırlatması yok"
