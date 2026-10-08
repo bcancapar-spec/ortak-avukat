@@ -273,6 +273,7 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse, glob, hashlib, json, os, re, shutil, subprocess, sys, tempfile, time, unicodedata, zipfile
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 
 # NOT (v0.5.16.3): `import xml.etree.ElementTree as ET` BURADAN KALDIRILDI —
 # ÖLÜ KODdu. Bu dosyada `ET.` kullanımı SIFIRDI (kelime-sınırlı `\bET\b`
@@ -2319,9 +2320,20 @@ def main():
             sonuclar[it["index"]] = p
             _profille(p)
     elif is_kalemleri:
-        toplam = len(is_kalemleri); tamam = 0
+        tamam = 0
         with ProcessPoolExecutor(max_workers=isci, initializer=_isci_init) as ex:
-            gel = {ex.submit(_cikar_is, it, opts): it for it in is_kalemleri}
+            gel = {}
+            for it in is_kalemleri:
+                # NEDEN VAR (CI, py3.14 Linux): zehirli evrak işçiyi gönderim döngüsü bitmeden
+                # öldürürse `submit` de BrokenProcessPool fırlatır. Korumasız gönderim ana süreci
+                # TÜMDEN düşürüyordu — tek evrak bütün klasörü okunmaz kılıyordu. Gönderilemeyen
+                # kalem çökmüş sayılır (None); aşağıdaki izole yeniden deneme onu tek tek kurtarır.
+                try:
+                    gel[ex.submit(_cikar_is, it, opts)] = it
+                except BrokenProcessPool as e:
+                    sonuclar[it["index"]] = None
+                    print(f"  ⚠ havuz gönderimde çöktü: {it['gorece']} ({e})", file=sys.stderr)
+            toplam = len(gel)
             for fut in as_completed(gel):
                 it = gel[fut]
                 try:

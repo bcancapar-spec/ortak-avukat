@@ -657,6 +657,19 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
 # hâlde çevrimdışı çalışma imkânsızlaşırdı. Ama makbuza/rapora bu hâliyle geçer.
 _RESMI_OKUYUCU_ASGARI_ORAN = 0.5   # resmî metin, CDATA metninin bu oranından kısaysa içerik kaybı
 
+# NEDEN VAR (CI, PR #8, windows-latest / py3.14): npx ya da kabuk udf-cli'yi HİÇ koşturamadığında
+# (eşzamanlı `npx -y` önbellek yarışı, bozuk npx önbelleği, eksik Node) gelen ileti dosya
+# hakkında hüküm değildir; RET sayılırsa geçerli UDF GEÇERSİZ ilan edilir ve teslim durur.
+# İmler aracın ADINA ya da kabuğun kalıbına bağlı — udf2md'nin kendi ret iletisiyle karışmaz.
+# Türkçe Windows'ta cmd iletisi OEM kod sayfasında gelir; utf-8 çözümünde bozulmayan ASCII
+# parçası ("program ya da toplu") kullanılır.
+_BASLATICI_HATA_IMLERI = (
+    "is not recognized as an internal or external command",   # Windows cmd (İngilizce)
+    "program ya da toplu",                                     # Windows cmd (Türkçe)
+    "udf-cli: not found", "udf-cli: command not found",        # POSIX kabukları
+    "could not determine executable to run",                   # npm / npx
+)
+
 
 def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
     """`npx -y udf-cli@<UDF_CLI_SURUM> udf2md <udf>` — dosyayı ÜRETEN aracın kendi
@@ -687,6 +700,12 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
         # dosyanın gerçekten reddedilmesinden ayırt edilir — aksi hâlde
         # login'i unutmuş bir avukatın geçerli dilekçesi "bozuk" ilan edilirdi.
         birlesik = ((p.stderr or "") + (p.stdout or "")).lower()
+        if any(im in birlesik for im in _BASLATICI_HATA_IMLERI):
+            return {"calisti": False, "basarili": False, "metin": "",
+                    "hata": "udf-cli başlatılamadı (exit %s) — npx aracı koşturamadı; dosya "
+                            "hakkında hüküm YOK. Node.js/npx kurulumunu denetleyin; aynı anda "
+                            "başka bir teslim sürüyorsa o bitince yeniden deneyin."
+                            % p.returncode}
         ortamsal = any(im in birlesik for im in
                        ("login", "giriş", "giris", "oturum", "unauthor", "quota",
                         "kota", "network", "ağ", "econn", "etimedout", "fetch failed"))

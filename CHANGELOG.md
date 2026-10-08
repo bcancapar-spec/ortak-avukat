@@ -66,6 +66,7 @@ gereği yalnız saha etiketiyle anılır.
 
 ### H. CI
 
+- **CI'nın yakaladığı iki üretim hatası (PR #8, yalnız 3.14 bacaklarında dönüşümlü kırmızı):** (1) `oa_ingest` — zehirli evrak işçiyi havuza gönderim sürerken öldürünce `submit` BrokenProcessPool fırlatıyor, gönderim korumasız olduğu için ana süreç TÜMDEN çöküyordu (tek evrak bütün klasörü okunmaz kılıyordu). Gönderilemeyen kalem artık çökmüş sayılır ve izole yeniden denemede kurtarılır. (2) `udf_yaz` resmî okuyucu — npx ya da kabuk udf-cli'yi hiç koşturamadığında (eşzamanlı `npx -y` önbellek yarışı, bozuk npx önbelleği, eksik Node; Türkçe Windows iletisi dahil) bu durum "resmî okuyucu REDDETTİ" sayılıp geçerli UDF GEÇERSİZ ilan ediliyordu. Artık başlatıcı hatası ortam hâlidir: "YAPILAMADI" görünür, dosya hakkında hüküm verilmez. Testler: `tests/test_oa_ingest_paralel.py::test_havuz_gonderimde_kirilirsa_ana_surec_cokmez_kalanlar_izole_kurtarilir`, `tests/test_udf_resmi_okuyucu.py::test_baslatici_hatasi_RET_degil_YAPILAMADI` (5 durum).
 - Test matrisine Python 3.14 bacağı eklendi (avukatın makinesinde kancalar 3.14 ile çalışıyor); OCR işi `test_v0518_ocr.py`'yi de koşar (gerçek Tesseract testleri hiçbir işte koşmuyordu).
 
 ### Davranış değişiklikleri (güncelleyenler için)

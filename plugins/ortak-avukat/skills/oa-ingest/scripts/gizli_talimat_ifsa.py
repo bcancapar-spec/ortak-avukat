@@ -180,9 +180,11 @@ def _sunan_taraf(kayit):
 
 def _sira_anahtari(k):
     """Künye sırası: `no` SAYISAL (dizgi sıralaması '1000' < '999' yapardı), sayı olmayan/boş `no` sona;
-    eşitlikte kaynak adı. Deterministik."""
+    eşitlikte kaynak adı. Deterministik. `isdecimal()` KULLANILIR (Y-2): `isdigit()` üst simge
+    rakamları ('²') da kabul eder ama `int()` onları çözmez — tek bozuk `no` K-1 ağına düşüp
+    TÜM ifşayı DENETLENEMEDİ'ye çeviriyordu; `isdecimal()` ile `int()` birebir uyumludur."""
     no = str(k.get("no") or "")
-    return ((0, int(no)) if no.isdigit() else (1, 0)), no, str(k.get("kaynak") or "")
+    return ((0, int(no)) if no.isdecimal() else (1, 0)), no, str(k.get("kaynak") or "")
 
 
 def _bulgu_normalize(b):

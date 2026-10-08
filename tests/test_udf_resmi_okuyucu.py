@@ -174,6 +174,39 @@ def test_oturum_ag_hatasi_RET_degil_YAPILAMADI(tmp_path, uy, monkeypatch, stderr
     assert r["basarili"] is False
 
 
+@pytest.mark.parametrize("stderr_metni", [
+    "'udf-cli' is not recognized as an internal or external command,\r\n"
+    "operable program or batch file.",
+    # Türkçe Windows: cmd iletisi OEM kod sayfasında gelir, utf-8 çözümünde Türkçe harfler
+    # bozulur — ASCII parçası ("program ya da toplu") bozulmadan kalır.
+    "'udf-cli' i� ya da d�� komut, �al��t�r�labilir "
+    "program ya da toplu i� dosyas� olarak tan�nm�yor.",
+    "sh: 1: udf-cli: not found",
+    "bash: udf-cli: command not found",
+    "npm error could not determine executable to run",
+])
+def test_baslatici_hatasi_RET_degil_YAPILAMADI(tmp_path, uy, monkeypatch, stderr_metni):
+    """NEDEN VAR (CI, PR #8, windows-latest / py3.14): paralel test işçileri aynı anda
+    `npx -y udf-cli@…` çağırınca Windows'ta npx önbelleği yarışa girdi ve cmd "'udf-cli' is
+    not recognized…" dedi. Bu, udf2md'nin dosya hakkında verdiği bir hüküm DEĞİL, aracın hiç
+    koşamadığı bir ORTAM hâlidir; RET sayılınca geçerli UDF GEÇERSİZ ilan edildi (dört test
+    kırmızı). Avukatın makinesinde de (bozuk npx önbelleği, eşzamanlı iki teslim) aynı yanlış
+    ret teslimi durdururdu. İleti oturum talimatı DEĞİL, başlatma sorununu söylemeli."""
+    class _P:
+        returncode = 1
+        stdout = ""
+        stderr = stderr_metni
+
+    monkeypatch.setattr(uy.shutil, "which", lambda _a: "npx")
+    monkeypatch.setattr(uy.subprocess, "run", lambda *a, **k: _P())
+
+    r = uy.npx_ile_udf_oku(str(tmp_path / "yok.udf"))
+
+    assert r["calisti"] is False, f"{stderr_metni!r} başlatıcı (ortam) hatası sayılmalıydı"
+    assert r["basarili"] is False
+    assert "başlatılamadı" in r["hata"], r["hata"]
+
+
 def test_gercek_bozukluk_RET_olarak_isaretlenir(tmp_path, uy, monkeypatch):
     class _P:
         returncode = 1
