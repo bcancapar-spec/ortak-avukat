@@ -12,6 +12,7 @@ Testler AĞSIZ koşar: dış süreç `okuyucu_fn` ile enjekte edilir.
 import importlib.util
 import io
 import os
+import pathlib
 import sys
 import zipfile
 
@@ -205,6 +206,105 @@ def test_baslatici_hatasi_RET_degil_YAPILAMADI(tmp_path, uy, monkeypatch, stderr
     assert r["calisti"] is False, f"{stderr_metni!r} başlatıcı (ortam) hatası sayılmalıydı"
     assert r["basarili"] is False
     assert "başlatılamadı" in r["hata"], r["hata"]
+
+
+@pytest.mark.parametrize("donus,stderr_metni", [
+    # CI, PR #8 ubuntu-latest / py3.12 — CI çıktısı (koşucu yolu ~ ile kısaltıldı, B-38): errno -39 → çıkış 217
+    (217, "npm error code ENOTEMPTY\nnpm error syscall rmdir\nnpm error path ~/.npm/_npx/"
+          "12165089bad8f415/node_modules/pako/lib/zlib\nnpm error errno -39\nnpm error ENOTEMPTY: directory "
+          "not empty, rmdir '~/.npm/_npx/12165089bad8f415/node_modules/pako/lib/zlib'"),
+    # CI, PR #8 windows-latest / py3.12-3.13 — birebir: libuv -4051 işaretsiz 32 bit döner
+    (4294963245, "npm warn cleanup Failed to remove some directories [\nnpm warn cleanup   [\nnpm warn cleanup"
+                 "     '\\\\?\\C:\\npm\\cache\\_npx\\12165089bad8f415\\node_modules\\zod',\nnpm warn cleanup "
+                 "    [Error: ENOTEMPTY: directory not empty, rmdir 'C:\\npm\\cache\\_npx\\12165089bad8f415"
+                 "\\node_modules\\zod\\v4\\locales'] {"),
+    (-9, ""),                                       # POSIX: süreç sinyalle öldürüldü — hüküm yok
+    (3221225477, "Segmentation fault"),             # Windows: node.exe yerel çöküşü (0xC0000005)
+    # CI, PR #8 ubuntu-latest / py3.13 — yarım kalan npx önbelleğinde aracın KENDİ bağımlılığı yok
+    # (çıkış 1 ama hüküm değil: udf2md hiç yüklenemedi). Koşucu yolu ~ ile kısaltıldı (B-38).
+    (1, "node:internal/modules/esm/resolve:205\n  const resolvedOption = FSLegacyMainResolve(pkgPath, "
+        "packageConfig.main, baseStringified);\n\nError: Cannot find package '~/.npm/_npx/12165089bad8f415/"
+        "node_modules/zod/index.js' imported from ~/.npm/_npx/12165089bad8f415/node_modules/udf-cli/dist/"
+        "index.js\n    at legacyMainResolve (node:internal/modules/esm/resolve:205:26) {\n  code: "
+        "'ERR_MODULE_NOT_FOUND'\n}"),
+    (1, "Error: Cannot find module 'zod'\nRequire stack:\n- ~/.npm/_npx/x/node_modules/udf-cli/dist/cli.js\n"
+        "    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15) {\n  code: "
+        "'MODULE_NOT_FOUND'\n}"),
+])
+def test_npm_altyapi_hatasi_RET_degil_YAPILAMADI(tmp_path, uy, monkeypatch, donus, stderr_metni):
+    """NEDEN VAR (CI, PR #8, 2026-10-08 — üç bacak): paralel test işçilerinin eşzamanlı `npx -y`
+    çağrıları npm'in KENDİ önbellek temizliğini ENOTEMPTY ile düşürdü; udf2md dosya hakkında hiç hüküm
+    vermeden süreç bitti ve bu "resmî okuyucu REDDETTİ" sayılıp geçerli UDF GEÇERSİZ ilan edildi. npm'in
+    sistem çağrısı hatası (`npm error code E…`, `npm error syscall`, `npm warn cleanup`) ile olağan dışı
+    çıkış kodu (Windows'ta 255 üstü işaretsiz errno/çöküş, POSIX'te sinyal) ORTAM hâlidir."""
+    class _P:
+        returncode = donus
+        stdout = ""
+        stderr = stderr_metni
+
+    monkeypatch.setattr(uy.shutil, "which", lambda _a: "npx")
+    monkeypatch.setattr(uy.subprocess, "run", lambda *a, **k: _P())
+
+    r = uy.npx_ile_udf_oku(str(tmp_path / "yok.udf"))
+
+    assert r["calisti"] is False, f"exit {donus} / {stderr_metni[:60]!r} ortam hâli sayılmalıydı"
+    assert r["basarili"] is False and "başlatılamadı" in r["hata"], r["hata"]
+
+
+def test_npm_komut_basarisizligi_hukum_sayilir_RET(tmp_path, uy, monkeypatch):
+    """İmler DAR kalmalı: çalıştırılan aracın KENDİ başarısızlığı (`npm error code 1` — sayısal kod,
+    errno değil; `command failed`) dosya hakkında bir hükümdür → RET. Geniş bir "npm error" imi gerçek
+    reddi YAPILAMADI'ya çevirip kapıyı açardı (fail-open)."""
+    class _P:
+        returncode = 1
+        stdout = ""
+        stderr = ("Error: invalid UDF structure — unexpected element\nnpm error code 1\nnpm error path /tmp\n"
+                  "npm error command failed\nnpm error command sh -c udf-cli udf2md yok.udf")
+
+    monkeypatch.setattr(uy.shutil, "which", lambda _a: "npx")
+    monkeypatch.setattr(uy.subprocess, "run", lambda *a, **k: _P())
+
+    r = uy.npx_ile_udf_oku(str(tmp_path / "yok.udf"))
+
+    assert r["calisti"] is True and r["basarili"] is False, r
+    assert "OKUYAMADI" in r["hata"]
+
+
+def test_aracin_calisma_hatasi_hukum_sayilir_RET(tmp_path, uy, monkeypatch):
+    """Modül imleri de DAR: ESM ana modülünde fırlayan gerçek bir çalışma hatasının yığını
+    `node:internal/modules/esm/module_job` çerçevesi taşır — bu bir HÜKÜMDÜR (araç yüklendi, dosyayı
+    okudu, reddetti) ve RET kalmalı. Yalnız çözümleme hatası (ERR_MODULE_NOT_FOUND, esm/resolve)
+    ortam hâlidir."""
+    class _P:
+        returncode = 1
+        stdout = ""
+        stderr = ("file:///x/node_modules/udf-cli/dist/index.js:120\n    throw new Error(\"Geçersiz UDF: content."
+                  "xml yok\");\n          ^\n\nError: Geçersiz UDF: content.xml yok\n    at udf2md (file:///x/"
+                  "node_modules/udf-cli/dist/index.js:120:11)\n    at ModuleJob.run (node:internal/modules/esm/"
+                  "module_job:271:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/"
+                  "loader:547:26)")
+
+    monkeypatch.setattr(uy.shutil, "which", lambda _a: "npx")
+    monkeypatch.setattr(uy.subprocess, "run", lambda *a, **k: _P())
+
+    r = uy.npx_ile_udf_oku(str(tmp_path / "yok.udf"))
+
+    assert r["calisti"] is True and r["basarili"] is False, r
+
+
+def test_ci_npx_onbellegi_testlerden_once_tek_kaynakli_surumle_isitilir():
+    """Yarışın kaynağı CI'da kapatılır: `npx` önbelleği testlerden ÖNCE bir kez ısıtılır (paralel
+    işçiler paketi aynı anda kurmaya çalışmasın). Sürüm TEK kaynaktan okunur (kopya `udf-cli@0.5.6`
+    yasak); ısıtma başarısızsa iş düşmez — ürün kodu ortam hâlini zaten YAPILAMADI diye işler."""
+    ci = (pathlib.Path(__file__).resolve().parents[1] / ".github" / "workflows" / "ci.yml").read_text(
+        encoding="utf-8")
+    isit = ci.find("- name: npx önbelleğini ısıt (udf-cli)")
+    assert isit >= 0, "ci.yml'de npx ısıtma adımı yok"
+    assert isit < ci.find("- name: Run tests"), "ısıtma testlerden ÖNCE olmalı"
+    adim = ci[isit:ci.find("- name: Run tests")]
+    assert "UDF_CLI_SURUM" in adim and "udf_yaz.py" in adim, "sürüm tek kaynaktan okunmalı"
+    assert "udf-cli@0." not in ci, "udf-cli sürümü ci.yml'ye KOPYALANMAMALI"
+    assert "|| echo" in adim, "ısıtma başarısızlığı işi düşürmemeli"
 
 
 def test_gercek_bozukluk_RET_olarak_isaretlenir(tmp_path, uy, monkeypatch):

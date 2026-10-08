@@ -71,6 +71,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt pytest-xdist
 
+      # v0.5.18 (PR #8 CI bulgusu): `udf_yaz.py`'yi doğrudan koşturan testlerde paralel işçiler
+      # `npx -y udf-cli@…`yu AYNI ANDA kurmaya çalışınca npm önbelleği yarışa giriyordu (ENOTEMPTY,
+      # yarım kalan bağımlılık → ERR_MODULE_NOT_FOUND). Paket testlerden ÖNCE bir kez kurulur; sürüm
+      # TEK kaynaktan (udf_yaz.UDF_CLI_SURUM) okunur. Isıtma başarısız olursa iş DÜŞMEZ: ürün kodu bu
+      # ortam hâlini zaten "YAPILAMADI" diye işler — ısıtma yalnız yarışı ortadan kaldırır.
+      - name: npx önbelleğini ısıt (udf-cli)
+        shell: bash
+        run: |
+          SURUM=$(python -c "import re,pathlib;print(re.search(r'^UDF_CLI_SURUM\s*=\s*\"([^\"]+)\"', pathlib.Path('plugins/ortak-avukat/skills/oa-dilekce/scripts/udf_yaz.py').read_text(encoding='utf-8'), re.M).group(1))")
+          npx -y "udf-cli@${SURUM}" --help > /dev/null 2>&1 || echo "uyarı: npx ısıtma başarısız — testler ortam hâlini YAPILAMADI diye işler"
+
       # -rsfE: atlanan her test GEREKÇESİYLE + düşen her test ADIYLA listelenir.
       # (Ders: yalın `-rs`, pytest'in varsayılan başarısızlık özetini SUSTURUR —
       # v0.5.7 koşusunda 10 kırmızının adları özetten kaybolmuştu.)

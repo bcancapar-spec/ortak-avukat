@@ -668,6 +668,15 @@ _BASLATICI_HATA_IMLERI = (
     "program ya da toplu",                                     # Windows cmd (Türkçe)
     "udf-cli: not found", "udf-cli: command not found",        # POSIX kabukları
     "could not determine executable to run",                   # npm / npx
+    # CI, PR #8 (2026-10-08, üç bacak): npm'in KENDİ önbellek/sistem çağrısı hatası — eşzamanlı `npx -y`
+    # önbelleği ENOTEMPTY ile düşürdü, udf2md hiç hüküm vermedi. Yalnız errno biçimli kod (`code E…`) ve
+    # `syscall` satırı; çalıştırılan aracın kendi başarısızlığı (`npm error code 1`) hükümdür, bu imlere
+    # GİRMEZ (geniş "npm error" imi gerçek reddi YAPILAMADI'ya çevirip kapıyı açardı).
+    "npm warn cleanup", "npm error code e", "npm err! code e", "npm error syscall", "npm err! syscall",
+    # CI, PR #8 ubuntu 3.13: yarım kalan npx önbelleğinde aracın KENDİ bağımlılığı yok — çıkış 1 ama
+    # udf2md hiç yüklenemedi. Yalnız ÇÖZÜMLEME hatası: genel yığın çerçeveleri (esm/module_job,
+    # cjs/loader) gerçek bir çalışma hatasında da görünür ve hükümdür, bu imlere GİRMEZ.
+    "err_module_not_found", "code: 'module_not_found'", "node:internal/modules/esm/resolve",
 )
 
 
@@ -700,7 +709,10 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
         # dosyanın gerçekten reddedilmesinden ayırt edilir — aksi hâlde
         # login'i unutmuş bir avukatın geçerli dilekçesi "bozuk" ilan edilirdi.
         birlesik = ((p.stderr or "") + (p.stdout or "")).lower()
-        if any(im in birlesik for im in _BASLATICI_HATA_IMLERI):
+        # Olağan dışı çıkış kodu da hüküm değildir: Windows'ta 255 üstü (işaretsiz libuv errno'su —
+        # ör. 4294963245 = -4051 — ya da 0xC0000005 gibi yerel çöküş), POSIX'te negatif (sinyal).
+        if (p.returncode < 0 or p.returncode > 255
+                or any(im in birlesik for im in _BASLATICI_HATA_IMLERI)):
             return {"calisti": False, "basarili": False, "metin": "",
                     "hata": "udf-cli başlatılamadı (exit %s) — npx aracı koşturamadı; dosya "
                             "hakkında hüküm YOK. Node.js/npx kurulumunu denetleyin; aynı anda "
