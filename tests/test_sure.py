@@ -76,7 +76,10 @@ def _son_gun(teblig, yargi="hukuk"):
     """Birincil: modül import → hesapla() doğrudan. Yedek: CLI subprocess."""
     if MOD is not None:
         miktar, birim = HMK_ISTINAF
-        son, _rapor, _uy = MOD.hesapla(date.fromisoformat(teblig), miktar, birim, yargi, "usul")
+        # HMK istinaf KURALIYLA (CLI yedeğiyle aynı): kuralsız serbest süre v0.5.18'de (Fable S3)
+        # TEMKİNLİ kalıba geçti — bu altın vakalar HMK'nın kendi süresini sınar.
+        son, _rapor, _uy = MOD.hesapla(date.fromisoformat(teblig), miktar, birim, yargi, "usul",
+                                       kural="hmk_istinaf")
         return son.isoformat()
     return _cli_son_gun(teblig, yargi=yargi)
 
@@ -138,10 +141,10 @@ def test_adli_tatil_istisna_modul_uzatmaz():
         pytest.skip("modül import edilemedi; istisna CLI testi ayrıca koşuyor")
     miktar, birim = HMK_ISTINAF
     t = date.fromisoformat(ISTISNA_TEBLIG)
-    son_ist, rapor, _uy = MOD.hesapla(t, miktar, birim, "hukuk", "usul", True)
+    son_ist, rapor, _uy = MOD.hesapla(t, miktar, birim, "hukuk", "usul", True, kural="hmk_istinaf")
     assert son_ist.isoformat() == ISTISNA_BEKLENEN
     # Bayraksız (varsayılan) davranış AYNEN korunur → uzar
-    son_def, _r, _u = MOD.hesapla(t, miktar, birim, "hukuk", "usul", False)
+    son_def, _r, _u = MOD.hesapla(t, miktar, birim, "hukuk", "usul", False, kural="hmk_istinaf")
     assert son_def.isoformat() == DEFAULT_BEKLENEN
     assert son_ist != son_def, "istisna bayrağı varsayılandan farklı sonuç vermeli"
     assert any(ISTISNA_NOTU in s for s in rapor), "m.103 istisna notu rapora düşmeli"
@@ -216,7 +219,8 @@ def test_iyuk_idari_calismaya_ara_dogru_uzuyor():
     """(kritik) İYUK m.8/3 idari dalı: 08 Eylül DEĞİL, 07 Eylül (Pazartesi) üretilmeli."""
     if MOD is None:
         pytest.skip("modül import edilemedi; CLI testi ayrıca koşuyor")
-    son, rapor, _uy = MOD.hesapla(date.fromisoformat(IYUK_IDARI_TEBLIG), 30, "gun", "idari", "usul")
+    son, rapor, _uy = MOD.hesapla(date.fromisoformat(IYUK_IDARI_TEBLIG), 30, "gun", "idari", "usul",
+                                  kural="iyuk_istinaf")
     assert son.isoformat() == IYUK_IDARI_BEKLENEN, (
         f"İYUK m.8/3 idari uzaması yanlış: {son.isoformat()} (beklenen {IYUK_IDARI_BEKLENEN}, "
         "eski hatalı davranış 2026-09-08 üretiyordu)"

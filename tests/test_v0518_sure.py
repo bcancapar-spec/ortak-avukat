@@ -152,9 +152,15 @@ def test_Y01_yargi_icra_serbest_sure_de_uzamaz():
     assert _son(out) == "2026-08-24"
 
 
-def test_Y01_hukuk_serbest_suresi_DEGISMEDI_regresyon():
+def test_Y01_hukuk_serbest_suresi_S3_ile_TEMKINLI():
+    """v0.5.18 (Fable denetimi S3) — BİLİNÇLİ DEĞİŞİKLİK: serbest (kuralsız) hukuk süresinde HMK
+    m.104 uzatması artık TEYİTLİ sayılmaz. m.104 yalnız "bu Kanunun tayin ettiği" sürelere uygulanır;
+    kuralsız sürenin HMK'nın kendi süresi mi, hâkimin verdiği süre mi, başka kanunun süresi mi olduğu
+    bilinemez → manşet uzamasız ERKEN tarih (24.08), uzamış okuma (07.09) çıktıda görünür. Eski
+    davranış 07.09'u manşete koyuyordu: süre başka kanundansa GEÇ tarih = hak kaybı."""
     rc, out = _cli("--teblig", "2026-08-10", "--sure", "2", "--birim", "hafta")
-    assert rc == 0 and _son(out) == "2026-09-07", out
+    assert rc == 0 and _son(out) == "2026-08-24", out
+    assert "KURALSIZ" in out and "2026-09-07" in out, out
 
 
 def test_Y01_icra_kurali_ceza_koluyla_DURUR():

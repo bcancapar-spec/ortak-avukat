@@ -125,6 +125,18 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **Kurulum motoru** `markitdown[all]` ekinin Office dönüştürücülerini (mammoth, openpyxl, python-pptx) de denetler.
 - Test: `tests/test_v0518_fable_teslim_guvenlik.py`; kurulum: `tests/test_v0518_kurulum.py`.
 
+**Süre hesabı:**
+- **Kuralsız hesap artık GEÇ tarih üretmez:** `--kural` verilmeden hukuk/idari usul süresi hesaplanınca HMK m.104 / İYUK m.8/3 uzatması TEYİTLİ sayılıyordu. İki hüküm yalnız kendi kanunlarının sürelerine uygulanır; süre İİK, İş Kanunu, TBK ya da Av.K. kaynaklıysa ya da hâkimin verdiği süreyse uzamaz. Örnek: 01.08 tebliğ, 15 gün → doğrusu 17.08 olabilirken motor 07.09 diyordu. Manşet artık erken tarih; uzamış okuma ayrıca görünür. Ceza kolu bilerek dışarıda (CMK m.331/4 sınırsız; tatil içi tebliğde ihtiyat planı zaten var).
+- **Sınır hâli:** ham bitiş tatilden önceyken son gün kaymasıyla 20 Temmuz'a düşerse uzatma okuması gösterilir; manşet erken kalır.
+- **Arife:** son gün bayram arifesiyse "fiziki işlemi öğleden önce tamamla" uyarısı basılır (2429 s.K.; arifeler tablodaki bayramlardan türetilir, tahmin yapılmaz).
+- **Parasal kesinlik** uyarısı yalnız istinaf ve temyiz kurallarında basılır (alarm yorgunluğu).
+
+**Künye teyidi (dördü v0.5.17.1'de de vardı; kapının "teyitsiz atıf → exit 1" sözleşmesini çiğniyordu):**
+- **İki kararın parçası** (bir kararın esası + ötekinin kararı) ve **esas–karar yer değiştirmiş** künye artık TEYİTLİ sayılmaz: iz, taslakla aynı ayrıştırıcıdan geçirilir ve çift karşılaştırılır. Ayrıştırıcının tanımadığı döküm biçimlerinde (ör. markdown kalın başlık) bugünkü sayı eşleşmesi korunur.
+- **Farklı daire:** izde aynı esas/karar başka bir daireye aitken künye artık TEYİTSİZ ve rapor "MERCİ ÇELİŞKİSİ" der (E/K her dairede yılda sıfırdan başlar). İzde hiç daire yoksa eski uyarı sürer.
+- **AYM başvuru numarası** yalnız AYM bağlamı olan izle eşleşir (Yargı PRO'nun "BB 2015/53" biçimi dahil); bir Yargıtay esas numarası AYM kararını teyit etmez.
+- Test: `tests/test_v0518_fable_sure_kunye.py`; iki kontrol testinin değeri mutasyonla kanıtlandı.
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
@@ -132,6 +144,9 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **UDF teslimde Layer 0 katı engel** (yukarıda E).
 - **Özne eşleştirici:** yalnız yazım eşdeğerliğinde birleştirir; aynı soyadlı farklı ön adlar ayrı kişidir; OCR varyantları ve yazım farkları avukata soru olarak gelir.
 - **AİHM süresi:** her dosyada dört ay (D).
+- **Kuralsız süre hesabı (M):** `--kural` verilmeyen hukuk/idari usul süresinde adli tatil uzatması artık manşete konmaz; manşet erken tarih, uzamış okuma ayrıca görünür. HMK ya da İYUK'un kendi süresi için `--kural` ile hesaplayın.
+- **Künye teyidi (M):** izde aynı esas/karar FARKLI daireye aitse künye TEYİTSİZ olur (eskiden yalnız uyarı + exit 0). İki kararın parçasından oluşan ya da esas–karar yer değiştirmiş künye teyitli sayılmaz.
+- **Teslim sonuç satırı (M):** UDF resmî okuyucuyla doğrulanamadıysa "TESLİME HAZIR — ⚠ … DOĞRULANAMADI" diye nitelenir; teslim durmaz.
 
 ### Yapılamayanlar / sınırlar
 

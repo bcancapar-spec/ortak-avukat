@@ -409,12 +409,16 @@ def test_mevzuat_maddesi_mevzuat_kaydiyla_birinci_el(tmp_path):
 
 
 def test_merci_uyusmazligi_ikinci_bir_ikinci_el_uyarisi_uretmez(tmp_path):
-    """Fable #5(b): daire farkı ayrı uyarıdır (⚠ MERCİ); derinlik satırı
-    daireden bağımsız okur — sahte «İKİNCİ EL» eklenmez."""
+    """Fable #5(b): daire farkı ayrı bir bulgudur — sahte «İKİNCİ EL» eklenmez.
+
+    v0.5.18 (Fable bağımsız denetimi K3, 2026-10-08): izde aynı E/K FARKLI daireye (9. HD) ait,
+    taslak 3. HD diyor → artık TEYİTSİZ (exit 1) ve «MERCİ ÇELİŞKİSİ». Eski «⚠ MERCİ DOĞRULANAMADI»
+    + exit 0, yanlış daireli künyeyi mahkemeye «teyitli» gönderiyordu (E/K her dairede yılda
+    sıfırdan başlar). Derinlik satırı yalnız teyitli künyede basıldığından burada beklenmez."""
     _iskele(tmp_path, "Yargıtay 3. HD, E. 2020/1111, K. 2021/2222 kararı.\n", [SATIR_X])
     kod, out = _cli(KT_YOL, ["taslak.md", "--kok", tmp_path], tmp_path)
-    assert kod == 0 and "MERCİ DOĞRULANAMADI" in out, out
-    assert "İKİNCİ EL" not in out and "TAM METNİ" in out, out
+    assert kod == 1 and "MERCİ ÇELİŞKİSİ" in out and "9. HD" in out, out
+    assert "İKİNCİ EL" not in out, out
 
 
 def test_arama_isabet_listesindeki_kunye_ikinci_el_degil_yalniz_arama(tmp_path):

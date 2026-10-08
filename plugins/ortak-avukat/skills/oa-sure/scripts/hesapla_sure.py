@@ -1011,6 +1011,20 @@ def _sure_ekle(bas, miktar, birim):
     return _ay_ekle(bas, miktar * 12)
 
 
+# v0.5.18 (Fable denetimi S1) — kayma sınır hâlinde tatil bitimine (31 Ağu) eklenen gün: HMK m.104
+# bir hafta; İYUK m.8/3 1 Eylül'den itibaren 7 gün (aritmetiği aynı); CMK m.331/4 üç gün.
+_SINIR_UZATMA_GUN = {"hmk104": 7, "iyuk8": 7, "cmk331": 3}
+
+
+def _arife_gunleri(yil):
+    """2429 s.K.: Ramazan ve Kurban Bayramı arifesi saat 13:00'ten itibaren tatildir. Arife, tablodaki
+    (tatiller.json `dini`) her bayram bloğunun ilk gününden bir önceki gündür — tablo dışında TAHMİN
+    YAPILMAZ (o yıl tablo boşsa küme boştur; eksik yıl zaten ayrı uyarıyla görünür)."""
+    gunler = sorted(date.fromisoformat(g) for g in DINI.get(str(yil), set()))
+    return {g - timedelta(days=1) for i, g in enumerate(gunler)
+            if i == 0 or (g - gunler[i - 1]).days > 1}
+
+
 def _alternatif_bitis(rejim, teblig, ham, miktar, birim):
     """Teyitsiz/sınır hâlde KARŞILAŞTIRMA için diğer okumanın son günü (kaymasız); yoksa None."""
     bitis = date(ham.year, *ARA_BITIS)
@@ -1047,6 +1061,20 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     rejim = rj["adli_tatil"]
     _kol = etkin_kol(kural, yargi)
     _onek = str(kural or "").split("_", 1)[0]
+    # v0.5.18 (Fable denetimi S3) — KURALSIZ usul hesabı (hukuk/idari): HMK m.104 yalnız "bu
+    # Kanunun tayin ettiği" sürelere, İYUK m.8/3 yalnız "bu Kanunda yazılı" sürelere uygulanır;
+    # hâkimin verdiği kesin süre ya da başka kanundan (İİK, İş K., TBK, Av.K. …) gelen süre UZAMAZ.
+    # Kural verilmeyince hangisi olduğu bilinemez → TEMKİNLİ kalıp: manşet uzamasız ERKEN tarih,
+    # uzamış tarih alt_son'da (eski motor 01.08 tebliğli 15 günlük süreyi 17.08 yerine 07.09'a
+    # uzatıyordu — GEÇ tarih). CEZA BİLEREK DIŞARIDA: CMK m.331/4 "Adlî tatile rastlayan süreler
+    # işlemez" sınırsız yazılmıştır ve tatil içi tebliğde YCGK'ya birebir bağlı Y-02 kararı ile
+    # ihtiyat planı (erken tarih) zaten vardır.
+    _kuralsiz_uzatma = None
+    if (rj.get("kaynak") == "yargi" and rejim in ("hmk104", "iyuk8") and tur == "usul"
+            and birim != "isgunu" and not adli_tatil_istisna):
+        _kuralsiz_uzatma = rejim
+        rejim = "uygulanmaz"
+        rj = dict(rj, adli_tatil="uygulanmaz", adli_tatil_teyitli=False)
     bas = teblig + timedelta(days=1)
     anahtar = None
     if baslangic_turu is not None:
@@ -1292,6 +1320,8 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
         # aritmetik aynıdır (1 Eylül'den 7 gün ≡ 31 Ağu + 1 hafta), yalnız etiket --yargi'ye uyar.
         if str(kural or "").endswith("_istifa_vekalet_devam") and yargi == "idari":
             _dogal = "iyuk8"
+        if _kuralsiz_uzatma:            # S3: diğer okuma = beyan edilen kolun kendi uzatması
+            _dogal = _kuralsiz_uzatma
         _alt_rejim = _dogal
         alt_son = _alternatif_bitis(_dogal, teblig, ham, miktar, birim)
     if not is_gunu_mu(son):
@@ -1318,6 +1348,30 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                                "icra": "İİK m.19/3"}.get(_kol, "HMK m.93")
             rapor.append(f"Tatil günü düzeltmesi : {eski.isoformat()} {sebep} → ilk iş günü {son.isoformat()} "
                          f"({_kayma_capa}: yalnız SON GÜN tatile rastlarsa uzar; aradaki tatil günleri süreye DAHİLDİR)")
+    # v0.5.18 (Fable denetimi S1) — SINIR HÂLİ: ham bitiş adli tatilden ÖNCE (hafta sonu/tatil)
+    # ama son gün kaymasıyla tatilin İLK gününe (20 Temmuz) düştü; uzatma testi ham bitişe
+    # yapıldığı için hiç sorulmuyordu. Uzatma (HMK m.104 / İYUK m.8-3 / CMK m.331-4) bu bitişe
+    # uygulanırsa son gün tatil bitimine uzar. Manşet ERKEN (güvenli) kalır; geç okuma alt_son'da.
+    if (tur == "usul" and birim != "isgunu" and not adli_tatil_istisna and alt_son is None
+            and rejim in _SINIR_UZATMA_GUN and son != ham and not aralik_icinde_mi(ham)
+            and aralik_icinde_mi(son)):
+        alt_son = date(son.year, *ARA_BITIS) + timedelta(days=_SINIR_UZATMA_GUN[rejim])
+        _alt_rejim = rejim
+        uyarilar.append(
+            "SINIR HÂLİ — SON GÜN ADLİ TATİLİN İLK GÜNÜNE (20 Temmuz) KAYDI: ham bitiş %s (%s) "
+            "tatilden önceydi; son gün kaymasıyla %s oldu. %s uzatması bu bitişe uygulanırsa son "
+            "gün %s olur — bu okumaya ilişkin doğrudan karar teyit edilmedi. Kendi işlemini ERKEN "
+            "tarihe (%s) göre yap; karşı tarafın işlemi iki tarih arasındaysa süre aşımı dili KESİN "
+            "kurulmaz." % (ham.isoformat(), _gun_adi(ham), son.isoformat(), REJIM_ETIKET[rejim],
+                          alt_son.isoformat(), son.isoformat()))
+    # v0.5.18 (Fable denetimi S2) — ARİFE: 2429 s.K. arifeyi saat 13:00'ten itibaren tatil sayar;
+    # yarım gün son günü kaydırmaz (tatiller.json `_arife_notu`), ama son gün arifeyse fiziki
+    # işlem öğleden sonra yapılamaz — not motorda hiç görünmüyordu.
+    if son in _arife_gunleri(son.year):
+        uyarilar.append(
+            "ARİFE — SON GÜN %s BAYRAM ARİFESİDİR (2429 s.K.: saat 13:00'ten itibaren tatil): fiziki "
+            "işlem/harç gerektiren işi öğleden ÖNCE tamamla; UYAP elektronik işlemde 23:59'a kadar "
+            "süre korunur ama riske girme." % son.isoformat())
     if rj["son_gun_kaymasi"]:
         if ihtiyat_son is not None and not is_gunu_mu(ihtiyat_son):
             ihtiyat_son = sonraki_is_gunu(ihtiyat_son)
@@ -1344,7 +1398,16 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
                 teblig.isoformat(), son.isoformat(),
                 (" → mümkünse %s tarihine kadar başvur" % ihtiyat_son.isoformat())
                 if ihtiyat_son else "", son.isoformat()))
-    if alt_son is not None and rejim == "uygulanmaz":
+    if alt_son is not None and rejim == "uygulanmaz" and _kuralsiz_uzatma:
+        uyarilar.append(
+            "KURALSIZ HESAP — UZATMA MANŞETE KONMADI: --kural verilmediği için sürenin hangi "
+            "kanundan geldiği bilinmiyor. %s uzatması yalnız o kanunun KENDİ tayin ettiği "
+            "sürelere uygulanır; hâkimin verdiği kesin süre ya da başka kanundan (İİK, İş K., "
+            "TBK, Av.K. …) gelen süre UZAMAZ. Manşet uzamasız ERKEN tarihtir (%s); süre gerçekten "
+            "o kanunun kendi süresiyse son gün %s olur — teyit edilene kadar ERKEN tarihe göre "
+            "işlem yap. Kural tablosunda karşılığı varsa --kural ile hesapla." % (
+                REJIM_ETIKET[_kuralsiz_uzatma], son.isoformat(), alt_son.isoformat()))
+    elif alt_son is not None and rejim == "uygulanmaz":
         uyarilar.append(
             "TEMKİNLİ REJİM — TEYİT BEKLİYOR: '%s' için adli tatil rejimi resmî kaynakla teyit "
             "EDİLEMEDİ; motor uzatma UYGULAMADI ve ERKEN tarihi verdi (%s). Diğer okumada (adli "
@@ -1444,7 +1507,9 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
             "ve başlangıç anını (muacceliyet/öğrenme/fiil tarihi) Mevzuat MCP'den teyit et — başlangıç çoğu kez "
             "tebliğ değildir. (b) Zamanaşımı KESİLİR/DURUR (TBK m.153-158), hak düşürücü süre kural olarak durmaz/kesilmez. "
             "(c) Bu durum/kesilme olaylarını script HESAPLAMAZ — elle değerlendir.")
-    else:
+    elif "istinaf" in str(kural or "") or "temyiz" in str(kural or ""):
+        # v0.5.18 (Fable denetimi S4): yalnız KANUN YOLU kurallarında — istifa, işverene başvuru,
+        # AİHM, icra şikâyeti ve kuralsız hesapta bu uyarı ilgisiz gürültüydü (alarm yorgunluğu).
         uyarilar.append("PARASAL KESİNLİK: Süre işlese de karar parasal sınırın altındaysa kanun yolu KAPALI "
             "olabilir. Sınırı o yıl için Mevzuat MCP'den teyit et.")
     # Kol-özel uyarılar AYM/AİHM/Av.K. kuralında ve istifa süresi kurallarında basılmaz
@@ -1573,6 +1638,7 @@ def hesapla(teblig, miktar, birim, yargi, tur="usul", adli_tatil_istisna=False,
     if isinstance(_bilgi, dict):
         _bilgi.update({"rejim": rejim, "rejim_teyitli": bool(rj["adli_tatil_teyitli"]),
                        "rejim_kaynagi": rj.get("kaynak"), "rejim_turetildi": rj.get("turetildi") or "",
+                       "kuralsiz_uzatma": _kuralsiz_uzatma,   # Fable S3: manşete konmayan uzatma
                        "rejim_dayanak": rj["adli_tatil_dayanak"], "kol": _kol,
                        "alt_son": alt_son, "ihtiyat_son": ihtiyat_son,
                        "takvim_eksik": takvim_eksik, "kanitsiz": _kapi["kanitsiz"],
@@ -2245,6 +2311,8 @@ def main():
         print(f"Adli tatil rejimi     : {REJIM_ETIKET[bilgi['rejim']]} — kaynak: "
               + ("kural kaydı" if bilgi.get("rejim_kaynagi") == "kural" else "--yargi " + a.yargi)
               + ("" if bilgi.get("rejim_teyitli") else " · TEYİT BEKLİYOR (temkinli: erken tarih)")
+              + (" · KURALSIZ — %s uzatması manşete konmadı" % REJIM_ETIKET[bilgi["kuralsiz_uzatma"]]
+                 if bilgi.get("kuralsiz_uzatma") else "")
               + (" · TÜRETİLDİ (%s)" % bilgi["rejim_turetildi"] if bilgi.get("rejim_turetildi") else ""))
     for s in rapor: print(s)
     print("\n--- UYARILAR (deterministik DEĞİL — elle teyit) ---")

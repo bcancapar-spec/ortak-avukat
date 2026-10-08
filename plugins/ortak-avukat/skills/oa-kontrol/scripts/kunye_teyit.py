@@ -858,13 +858,59 @@ def _tarih_maskele(segment):
     return _TARIH_SAAT_RE.sub(" ", segment)
 
 
+# v0.5.18 (Fable denetimi K4) — AYM başvuru künyesinin izi AYM bağlamı taşımalı: kütükteki bir
+# Yargıtay esas numarası (aynı «YYYY/N» dizesi) AYM kararının teyidi DEĞİLDİR. Yargı PRO AYM
+# aramaları künyeyi «BB 2015/53» biçiminde döndürür; ayrıştırıcı bu biçimi tanımadığından bağlam
+# ayrıca aranır.
+_AYM_IZ_BAGLAMI_RE = re.compile(
+    r"(?i:anayasa\s+mahkemesi)|\bAYM\b|\bBB\b|(?i:başvuru\s+(?:numarası|no))|\bB\s*\.?\s*(?i:no)\b")
+
+
+def _iz_celiskili_mi(atif, segment):
+    """Fable denetimi K1/K2/K4 (2026-10-08): numaraların segmentte GEÇMESİ tek başına iz değildir.
+    Segment taslakla AYNI ayrıştırıcıdan (`kunye_ortak.esas_karar_atiflari`) geçirilir; bizim
+    künyemizle ÇELİŞİYORSA bu segment eşleşme sayılmaz:
+      K1 — esasımız BAŞKA bir kararla ya da kararımız BAŞKA bir esasla eşli (iki kararın parçası);
+      K2 — esasımız yalnız karar rolünde / kararımız yalnız esas rolünde (yer değiştirmiş);
+      K4 — AYM/AİHM başvuru numarası bir E/K künyesinin parçası ya da iz o bağlamı taşımıyor.
+    Ayrıştırıcının TANIMADIĞI biçimde (ör. markdown kalın döküm başlığı) çelişki kanıtı yoktur →
+    False: bugünkü sayı varlığı korunur, haksız TEYİTSİZ üretilmez. Doğru künye kütük satırında
+    tam çift olarak bulunduğundan segment başına sıkılık iz kaybettirmez."""
+    try:
+        cozulen = ko.esas_karar_atiflari(segment)
+    except Exception:
+        return False
+    ciftler = [(c.get("esas"), c.get("karar")) for c in cozulen
+               if c.get("kunye_turu") == "esas_karar"]
+    if atif.kunye_turu in ("aym_bb", "aihm_basvuru"):
+        no = atif.esas
+        if any(c.get("kunye_turu") == atif.kunye_turu and c.get("esas") == no for c in cozulen):
+            return False
+        if any(no in cift for cift in ciftler):
+            return True
+        baglam = _AYM_IZ_BAGLAMI_RE if atif.kunye_turu == "aym_bb" else ko._AIHM_BAGLAM_RE
+        return not baglam.search(segment)
+    e, k = atif.esas, atif.karar
+    if not ciftler or (e, k) in ciftler:
+        return False
+    if e and k and (any(ce == e and ck and ck != k for ce, ck in ciftler)
+                    or any(ck == k and ce and ce != e for ce, ck in ciftler)):
+        return True
+    esas_rolu = {ce for ce, _ck in ciftler}
+    karar_rolu = {ck for _ce, ck in ciftler if ck}
+    return bool((e and e not in esas_rolu and e in karar_rolu)
+                or (k and k not in karar_rolu and k in esas_rolu))
+
+
 def segment_eslesir(atif, segment):
     if atif.tur == "ictihat":
         if atif.esas and not _sayi_var(segment, atif.esas):
             return False
         if atif.karar and not _sayi_var(segment, atif.karar):
             return False
-        return bool(atif.esas or atif.karar)
+        if not (atif.esas or atif.karar):
+            return False
+        return not _iz_celiskili_mi(atif, segment)
     # mevzuat: madde numarası (MADDE BAĞLAMINDA) + en az bir kanun anahtarı
     # aynı segmentte; kanun numarası tarih/saat parçasından okunmaz.
     if not atif.madde or not _madde_var(segment, atif.madde, atif.madde_turu,
@@ -908,6 +954,17 @@ def teyit_et(atif, teyit_kaynaklar, bilgi_kaynaklar):
                 merci_celiski = True
         if merci_ok:
             break
+
+    if ilk is not None and atif.daire_key and not merci_ok and merci_celiski:
+        # v0.5.18 (Fable denetimi K3): eşleşen izde aynı esas/karar FARKLI daireye ait, bizim
+        # dairemiz hiçbir izde yok. E/K her dairede yılda sıfırdan başladığından bu "farklı daire
+        # olabilir" değil, büyük olasılıkla YANLIŞ künyedir — mahkemeye "teyitli" diye gidemez.
+        # (İzde hiç daire yoksa — 'yok' — eski davranış: TEYİTLİ + ⚠ MERCİ DOĞRULANAMADI.)
+        atif.durum = "TEYİTSİZ"
+        atif.merci_celiski = True
+        atif.kaynak, seg = ilk
+        atif.kaynak_seg = _sikistir(seg, 160)
+        return
 
     if ilk is not None:
         atif.durum = "TEYİTLİ"
@@ -1150,6 +1207,11 @@ def rapor_yaz(atiflar, kutuk_var, kutuk_yolu, ayristirilamayan=()):
                           "exit'i 1 YAPMAZ (iz gerçek); karar avukatındır.")
                 elif a.derinlik in ("tam-metin", "ilgili-kisim", "arama", "kendi-dokum"):
                     print(f"           ⓘ teyit derinliği: {a.derinlik_not}")
+            elif a.tur == "ictihat" and a.merci_celiski:
+                print(f"           ↳ MERCİ ÇELİŞKİSİ — esas/karar no izde var ama FARKLI daireye ait "
+                      f"(kaynak: {a.kaynak} · iz: {a.kaynak_seg}). E/K her dairede yılda sıfırdan "
+                      f"başlar: taslaktaki '{a.merci}' büyük olasılıkla YANLIŞ. Daireyi orijinal "
+                      "kaynaktan doğrula; künyeyi düzelt ya da doğru kararın izini kütüğe işle.")
             else:
                 if a.tur == "ictihat":
                     ip = "esas/karar no"
@@ -1252,6 +1314,13 @@ def once_bak_calistir(kunye_metni, kutuk_yolu, dokum_dizin):
         if atif.merci_uyari:
             print("      ⚠ MERCİ DOĞRULANAMADI — daireyi ayrıca orijinalinden teyit edin.")
         print("SONUÇ: Bu künye için AYNI MCP teyit turu GEREKSİZDİR — tekrarlanmayabilir.")
+    elif atif.merci_celiski:
+        # Fable denetimi K3: aynı E/K kütükte FARKLI daireyle var — "yok" demek yanıltırdı.
+        print(f"[ÇELİŞKİ] {kunye_goster}: aynı esas/karar no kütükte/ham dökümde FARKLI daireyle "
+              "mevcut — daire büyük olasılıkla yanlış.")
+        print(f"      ↳ kaynak: {atif.kaynak}")
+        print(f"      ↳ iz    : {atif.kaynak_seg}")
+        print("SONUÇ: Daireyi orijinal kaynaktan (MCP) teyit et; bu künye bu hâliyle teyitli DEĞİL.")
     else:
         print(f"[YOK] {kunye_goster} kütükte/ham dökümde bulunamadı.")
         print("SONUÇ: MCP teyidi gerekli — bu künye kütüğe/ham döküme HENÜZ girmemiş.")
