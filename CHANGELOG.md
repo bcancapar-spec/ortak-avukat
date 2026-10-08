@@ -92,6 +92,12 @@ gereği yalnız saha etiketiyle anılır.
 - **Önbellek:** yalnız DOCX kayıtları bir kez yeniden çıkarılır ve yeniden taranır (`DOCX_CIKARIM_SURUMU` 3); OCR'lı evrak yeniden okunmaz.
 - Test: `tests/test_v0518_cozucu_birligi.py` (20).
 
+### L. Zincir tüketicileri sıkılaştı (2026-10-08)
+
+- **Kısmi kaynak beyanı "taze" sayılmaz:** bir halkanın denetim JSON'u girdisini beyan edemediyse (dosya okunamadı) bu DURUM.md'de ve makbuzda EKSİK-KAYNAK olarak görünür; eskiden "TAZE" deniyordu.
+- **Graf kapısı gerçek çevrimi gizlemez:** okunamayan bir denetim dosyası ile gerçek bir dairesel illiyet aynı anda varsa RET mesajı ikisini de söyler; şerhle geçişte şerh metni de ikisini taşır.
+- **Tek satır disiplini:** bayat zincir ve makbuz tazelik satırlarına satır sonu ya da damga taklidi sızamaz (R5).
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".

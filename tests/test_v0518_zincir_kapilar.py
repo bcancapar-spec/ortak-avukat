@@ -298,3 +298,23 @@ def test_bash_ile_yazilan_damgali_json_tur_sonunda_DURUM_md_tazeler(pk, tmp_path
     assert kod == 0, "hook ASLA bloklamaz"
     md = _durum_md(kok)
     assert "Graf Yapısal Boşluk" in md and "dairesel illiyet" in md
+
+
+# ═══════════════ Görev 1 incelemesi Ö-2 (Görev 9 — ana oturum, 2026-10-08) ═══════
+
+def test_k2_bozuk_dosya_gercek_cevrimi_gizlemez(pk, tmp_path):
+    """Ö-2: K2 ilk okunamayan dosyada erken dönüyordu — aynı kökteki GERÇEK çevrim RET mesajında
+    hiç görünmüyor, `--serh-kapi graf` ile geçişte şerh metnine bile girmiyordu. Artık bütün
+    sebepler tek mesajda: avukat neyi şerhle geçtiğini görür."""
+    kok = _kok_kur(tmp_path)
+    _yaz(kok, "05-kiyas.json", "{ bozuk")
+    _yaz(kok, "01-illiyet-denetim.json", json.dumps({"arac": "grafik_denetim", "cevrimler": [["A", "B", "A"]],
+                                                     "sema_hatalari": []}))
+    sorun = pk._graf_kapisi_sorunu(str(kok))
+    assert sorun and "OKUNAMADI" in sorun and "05-kiyas.json" in sorun, sorun
+    assert "dairesel illiyet" in sorun and "01-illiyet-denetim.json" in sorun, sorun
+    kod, out = _isle(kok, 1, "oa-illiyet",
+                     ["--serh", "Sentetik gerekçe: avukat bilinçli olarak bu kapıyı geçiyor (>=30 karakter).",
+                      "--serh-kapi", "graf"])
+    assert kod == 0 and "GRAF KAPISI ŞERH ile geçildi" in out, out
+    assert "dairesel illiyet" in out, "şerh metni gerçek çevrimi de taşımalı"

@@ -483,23 +483,33 @@ def _tazelik_uyarilari_topla(kok):
     except Exception:
         return None
     uyarilar = []
+    _t = _tek_satir_konsol
     for b in rapor.get("bayat") or []:
         uyarilar.append("BAYAT: %s — kaynağı %s üretiminden sonra değişti "
                         "(%s → %s); delta geçişi gerek"
-                        % (b.get("urun"), b.get("kaynak"),
-                           b.get("beyan"), b.get("simdiki")))
+                        % (_t(b.get("urun")), _t(b.get("kaynak")),
+                           _t(b.get("beyan")), _t(b.get("simdiki"))))
     for e in rapor.get("eksik") or []:
         uyarilar.append("EKSİK-KAYNAK: %s — beyan edilen %s bulunamadı/kök dışında"
-                        % (e.get("urun"), e.get("kaynak")))
+                        % (_t(e.get("urun")), _t(e.get("kaynak"))))
     # v0.5.18 (B-1b) — JSON ürünlerinin iki dürüst hâli de makbuza girer:
     # okunamayan denetim 'temiz' sayılmaz; `_oa` dışı girdi denetim dışıdır.
     for o in rapor.get("okunamayan") or []:
         uyarilar.append("OKUNAMADI: %s — %s; tazelik hükmü verilemez (temiz SAYILMAZ)"
-                        % (o.get("urun"), o.get("hata")))
+                        % (_t(o.get("urun")), _t(o.get("hata"))))
     for d in rapor.get("denetim_disi") or []:
         uyarilar.append("DENETİM-DIŞI: %s — %s (kaynak beyanı boş; temiz SAYILMAZ)"
-                        % (d.get("urun"), d.get("not")))
+                        % (_t(d.get("urun")), _t(d.get("not"))))
     return uyarilar
+
+
+def _tek_satir_konsol(deger):
+    """Ö-3 (makbuz ikizi): motor/model yazımı alanı konsol ve makbuz satırına güvenle indirger —
+    satır sonu ve denetim karakterleri boşluğa, `⟦⟧` damga taklidi düz parantezlere. Makbuz JSON'u
+    zaten güvenliydi; konsol satırı sahte satır üretebiliyordu."""
+    s = "" if deger is None else str(deger)
+    s = "".join(" " if (ch.isspace() or ord(ch) < 32 or ord(ch) == 127) else ch for ch in s)
+    return " ".join(s.replace("⟦", "[").replace("⟧", "]").split())
 
 
 def _graf_kapisi_advisory(kok):

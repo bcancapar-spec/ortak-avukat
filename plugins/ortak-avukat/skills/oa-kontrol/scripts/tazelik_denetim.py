@@ -132,6 +132,14 @@ def _json_urun_cozumle(kok, urun_yolu):
         else:
             bicimsiz.append("<biçimsiz kaynak kaydı: %s>" % " ".join(repr(k).split())[:80])
     bayatlar, eksikler = _beyan_karsilastir(kok, ciftler)
+    # Ö-1 (Görev 1 incelemesi): KISMİ beyan TAZE sayılmaz. Üretici okunamayan rolü listeden düşürüp
+    # sebebini `kaynaklar_notu`na yazar; liste doluyken not okunmuyor ve `girdi` rolünün yokluğu fark
+    # edilmiyordu — beyansız girdi sonradan değişse bayatlık hiç görünmez, CLI «TAZE» derdi.
+    notu = veri.get("kaynaklar_notu")
+    if notu:
+        bicimsiz.append("<beyan notu: %s>" % " ".join(str(notu).split())[:160])
+    if not any(isinstance(k, dict) and k.get("rol") == "girdi" for k in kaynaklar):
+        bicimsiz.append("<girdi beyanı yok — girdi değişse bayatlık ölçülemez>")
     return "beyanli", bayatlar, eksikler + bicimsiz, None
 
 

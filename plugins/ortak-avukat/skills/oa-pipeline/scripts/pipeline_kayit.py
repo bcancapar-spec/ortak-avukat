@@ -966,16 +966,18 @@ def _graf_kapisi_sorunu(kok):
     'temiz' sayılmaz. Çıkış yolu RET metninde: onar/sil + grafik_denetim.py,
     ya da `--serh --serh-kapi graf` (gerekçeli, görünür)."""
     try:
+        # Ö-2 (Görev 1 incelemesi): sebepler BİRİKTİRİLİR. Eskiden ilk okunamayan dosyada dönülüyordu —
+        # aynı kökteki GERÇEK çevrim RET mesajında hiç görünmüyor, `--serh-kapi graf` ile geçişte şerh
+        # metnine bile girmiyordu. Tek RET, tam liste: avukat neyi şerhle geçtiğini görür.
+        bulgular, okunamadi_var = [], False
         okunamayan = []
         damgali = _denetim_jsonlari(kok, "grafik_denetim", okunamayan=okunamayan)
         for yol, hata in okunamayan:
             ad = os.path.relpath(yol, kok or ".").replace(os.sep, "/")
             ipucu = ("adı graf/illiyet içeriyor — graf denetimi adayı" if _graf_adi_mi(ad)
                      else "damgası okunamadı — graf denetimi OLABİLİR (K1: ad-bağımsız)")
-            return (f"GRAF KAPISI: {ad}: denetim JSON'u OKUNAMADI ({hata}) — {ipucu}; "
-                    "okunamayan denetim 'temiz' sayılmaz (fail-closed, B-4). Dosyayı onar ya "
-                    "da sil ve grafik_denetim.py'yi yeniden koş — ya da --serh --serh-kapi "
-                    "graf ile gerekçeli geçiş")
+            bulgular.append(f"{ad}: denetim JSON'u OKUNAMADI ({hata}) — {ipucu}")
+            okunamadi_var = True
         for yol, m in damgali:
             sebepler = []
             if any(isinstance(c, list) and c for c in (m.get("cevrimler") or [])):
@@ -987,9 +989,13 @@ def _graf_kapisi_sorunu(kok):
                 sebepler.append(f"denetim çöktü ({cokme})")
             if sebepler:
                 ad = os.path.relpath(yol, kok or ".").replace(os.sep, "/")
-                return (f"GRAF KAPISI: {ad}: " + " / ".join(sebepler)
-                        + " — --serh --serh-kapi graf ile gerekçeli geçiş "
-                          "(ya da grafı düzeltip grafik_denetim.py'yi yeniden koş)")
+                bulgular.append(f"{ad}: " + " / ".join(sebepler))
+        if bulgular:
+            return ("GRAF KAPISI: " + " · ".join(bulgular)
+                    + (" — okunamayan denetim 'temiz' sayılmaz (fail-closed, B-4); dosyayı onar ya da "
+                       "sil" if okunamadi_var else " — grafı düzelt")
+                    + " ve grafik_denetim.py'yi yeniden koş — ya da --serh --serh-kapi graf ile "
+                      "gerekçeli geçiş")
     except Exception:
         return None
     return None
@@ -3223,16 +3229,19 @@ def _bayat_zincir_uyarisi(kok):
     if not rapor:
         return []
     uyarilar = []
+    # Ö-3 (R5): kaynak yolu, ürün adı ve beyan notu motor/model yazımıdır — DURUM.md kanca
+    # bağlamına satır sonu ya da `⟦⟧` damga taklidi sızmasın diye her alan tek satıra indirgenir.
+    t = _tek_satir
     for b in rapor.get("bayat") or []:
-        uyarilar.append(f"BAYAT — _oa/cikti/{b['urun']}: kaynağı {b['kaynak']} üretiminden "
-                        f"sonra değişti ({b['beyan']} → {b['simdiki']}); ilgili motoru "
+        uyarilar.append(f"BAYAT — _oa/cikti/{t(b['urun'])}: kaynağı {t(b['kaynak'])} üretiminden "
+                        f"sonra değişti ({t(b['beyan'])} → {t(b['simdiki'])}); ilgili motoru "
                         "yeniden koşun (zincirin aşağısı bu halkaya dayanıyor).")
     for e in rapor.get("eksik") or []:
-        uyarilar.append(f"EKSİK-KAYNAK — _oa/cikti/{e['urun']}: beyan edilen {e['kaynak']} "
+        uyarilar.append(f"EKSİK-KAYNAK — _oa/cikti/{t(e['urun'])}: beyan edilen {t(e['kaynak'])} "
                         "bulunamadı/kök dışında; ilgili motoru yeniden koşun.")
     for d in rapor.get("denetim_disi") or []:
-        uyarilar.append(f"DENETİM DIŞI — _oa/cikti/{d['urun']}: kaynak beyanı boş "
-                        f"({d['not']}) — tazelik hükmü verilemez (temiz SAYILMAZ, bayat da değil).")
+        uyarilar.append(f"DENETİM DIŞI — _oa/cikti/{t(d['urun'])}: kaynak beyanı boş "
+                        f"({t(d['not'])}) — tazelik hükmü verilemez (temiz SAYILMAZ, bayat da değil).")
     return _advisory_tavanla(uyarilar)
 
 
