@@ -98,6 +98,10 @@ gereği yalnız saha etiketiyle anılır.
 - **Kısmi kaynak beyanı "taze" sayılmaz:** bir halkanın denetim JSON'u girdisini beyan edemediyse (dosya okunamadı) bu DURUM.md'de ve makbuzda EKSİK-KAYNAK olarak görünür; eskiden "TAZE" deniyordu.
 - **Graf kapısı gerçek çevrimi gizlemez:** okunamayan bir denetim dosyası ile gerçek bir dairesel illiyet aynı anda varsa RET mesajı ikisini de söyler; şerhle geçişte şerh metni de ikisini taşır.
 - **Tek satır disiplini:** bayat zincir ve makbuz tazelik satırlarına satır sonu ya da damga taklidi sızamaz (R5).
+- **Zincir uçtan uca sınandı:** gerçek motorlar sentetik bir dava kökünde birlikte koşar (`tests/test_v0518_zincir_butunlesme.py`; yedi mutasyonla kanıtlı):
+  - künye değişince üç denetim (vakıa, graf, kıyas) BAYAT olur; bu DURUM.md'de ve makbuzda görünür, teslim durmaz;
+  - antitez damgası yalnız denetim çıktısında bulunur, sahte "sağlıksız" satırı çıkmaz;
+  - yarım kalmış graf denetimi adım 1'i RET eder; atomik yazımın geçici dosyası yanlış RET üretmez.
 
 ### Davranış değişiklikleri (güncelleyenler için)
 
