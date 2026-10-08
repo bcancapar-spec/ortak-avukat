@@ -307,7 +307,7 @@ CIKARIM_SURUMU = "1.9"            # önbellek işareti: yönlendirme/güven kura
 # (taranmış PDF OCR'ı dahil — saatler) yeniden okutur. Bu işaret yalnız DOCX kaydı taşıyan
 # girdilere yazılır; eksik/eski işaret = v0.5.17 ve öncesi çıkarıcı (örtük "1") → MISS.
 # PDF/UDF/OCR/düz metin girdileri işareti taşımaz, denetlenmez, HIT kalır.
-DOCX_CIKARIM_SURUMU = "2"
+DOCX_CIKARIM_SURUMU = "3"
 GORSEL_KAPSAMA_ESIGI = 0.30       # kısa metinli sayfada raster görsel kapsaması bunu aşarsa → taranmış sayfa (OCR)
 VEKTOR_YOL_ESIGI = 200            # kısa metinli sayfada bu kadar çizim yolu → yazı vektöre dönüştürülmüş (OCR)
 OCR_SAYFA_ZAMAN_ASIMI_SN = 600    # TEK Tesseract çağrısı için; aşılırsa yalnız o sayfa görsel incelemeye düşer
@@ -1476,22 +1476,35 @@ def udf_isle(yol, gorsel_dizin=None):
 # "&lt;" verir (belgede yazılı dizge aynen; çift çözme yok). Desenler `[^<>]`/`\s` ile
 # sınırlıdır: komşu etikete taşmaz, kapanmayan etiket selinde doğrusal kalır
 # (belge_guvenlik._etiket_sil ile aynı ReDoS disiplini; test: …_etiket_selinde_kilitlenmez).
-_DOCX_SEKME = re.compile(r"<w:tab\s*/>")           # YALNIZ özniteliksiz içerik sekmesi;
-#                                                    <w:tab w:val=… w:pos=…/> sekme DURAĞI tanımıdır
-_DOCX_SATIR_SONU = re.compile(r"<w:(?:br\b[^<>]*|cr\s*)/>")   # <w:br/>, <w:br w:type="page"/>, <w:cr/>
-_XML_VARLIK = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9A-Fa-f]+);")   # XML'in 5 adı + sayısal;
-#                                                    HTML adları (&nbsp; &copy; …) XML'de varlık DEĞİLDİR
-_XML_ADLI_VARLIK = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
+_DOCX_SEKME = re.compile(r"<w:tab\s*/>|<w:tab\s*>\s*</w:tab>")   # YALNIZ özniteliksiz içerik sekmesi;
+#   <w:tab w:val=… w:pos=…/> sekme DURAĞI tanımıdır. Açık-kapalı boş biçim de (K-1) — bazı serileştiriciler yazar.
+_DOCX_SATIR_SONU = re.compile(r"<w:(?:br\b[^<>]*|cr\s*)/>|<w:br\b[^<>/]*>\s*</w:br>|<w:cr\s*>\s*</w:cr>")
+_XML_VARLIK_RE = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9A-Fa-f]+);")   # XML'in 5 adı + sayısal
+_XML_ADLI = {"amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'"}
 
 
-def _xml_varlik_coz(m):
-    ad = m.group(1)
-    if ad in _XML_ADLI_VARLIK:
-        return _XML_ADLI_VARLIK[ad]
-    kod = int(ad[2:], 16) if ad.startswith("#x") else int(ad[1:])
-    if kod <= 0 or kod > 0x10FFFF or 0xD800 <= kod <= 0xDFFF:
-        return m.group(0)      # XML 1.0'da geçersiz: chr() ile çökmek ya da yutmak yerine aynen kalır
-    return chr(kod)
+def _xml_varlik_coz(s):
+    """XML 1.0 §4.1 TEK KURAL — oa_ingest ile belge_guvenlik'te KAYNAK-METİN ÖZDEŞ (test kilitler; biri
+    değişirse öbürü de değişir). Beş ön tanımlı ad + sayısal başvuru (`&#65;`; onaltılık YALNIZ küçük `x`:
+    `&#x41;`), TEK GEÇİŞ (`&amp;lt;` → "&lt;" dizgesi — çift çözme yok). Geçersiz başvuru (sıfır, vekil,
+    U+10FFFF üstü), büyük `X` ve HTML adları (`&nbsp;`) aynen kalır — uydurma karakter üretilmez. Sekizden
+    çok anlamlı basamak `int()`e hiç gitmez: 4300+ basamakta ValueError evrakı okunmaz kılıyordu (E-2)."""
+    if "&" not in s:
+        return s
+
+    def _coz(m):
+        ad = m.group(1)
+        if ad in _XML_ADLI:
+            return _XML_ADLI[ad]
+        onaltilik = ad[1] == "x"
+        rakam = (ad[2:] if onaltilik else ad[1:]).lstrip("0")
+        if len(rakam) > 8:
+            return m.group(0)
+        kod = int(rakam or "0", 16 if onaltilik else 10)
+        if kod == 0 or kod > 0x10FFFF or 0xD800 <= kod <= 0xDFFF:
+            return m.group(0)
+        return chr(kod)
+    return _XML_VARLIK_RE.sub(_coz, s)
 
 
 def _docx_kaydi_var(kayitlar):
@@ -1526,7 +1539,7 @@ def docx_isle(yol):
     son = ham.rfind(">")
     if son >= 0:
         ham = re.sub(r"<[^>]+>", "", ham[:son + 1]) + ham[son + 1:]
-    ham = _XML_VARLIK.sub(_xml_varlik_coz, ham)  # etiketler gittikten SONRA, tek geçiş
+    ham = _xml_varlik_coz(ham)                   # etiketler gittikten SONRA, tek geçiş
     # Yalnız BOŞLUK dizileri katlanır (eski davranış); sekme ve satır sonu yapısaldır, katlanmaz.
     return re.sub(r" {2,}", " ", ham).strip(), "docx", False, None, None, []
 

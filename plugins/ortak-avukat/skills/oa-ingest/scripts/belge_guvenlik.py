@@ -684,14 +684,24 @@ def _nusha_denetle(R, kopyalar, metin, govde_fn, kanonik, hedefler, ekler):
     for i, g in enumerate(govdeler):
         if i != ki:
             diger |= {_satir_norm(s) for s in g.splitlines()} - {""}
-    ornek = ""
+    ornek, bulunamayan = "", 0
     for s in govdeler[ki].splitlines():
         n = _satir_norm(s)
         if n and n not in diger and _bosluksuz(n) >= MIN_DAMGA_KAR:
             if not R.parca_al():
                 hedefler.append((0, len(metin), DENETLENEMEDI_AC))   # kalan fark satırları damgasız kalmasın
                 break
-            hedefler.extend((i, j, FARK_AC) for i, j in _bul(metin, n, esnek=_bosluksuz(n) <= AZAMI_ESNEK_KAR))
+            yerler = _bul(metin, n, esnek=_bosluksuz(n) <= AZAMI_ESNEK_KAR)
+            if not yerler:
+                # E-1 (fail-open kapatıldı): modele giden nüshanın fark satırı gövdede KONUMLANAMADI —
+                # damgasız kalmasın, kayıt "damgalandı" demesin: evrak VERİ diye sarılır (F-1 eşdeğeri).
+                if not bulunamayan:
+                    R.ekle("arsiv-nushasi", "nüsha farkı satırı gövdede bulunamadı — evrak VERİ diye sarıldı",
+                           kanonik, "")
+                    hedefler.append((0, len(metin), DENETLENEMEDI_AC))
+                bulunamayan += 1
+                continue
+            hedefler.extend((i, j, FARK_AC) for i, j in yerler)
             ornek = ornek or n
     for i, g in enumerate(govdeler):
         if i == ki:
@@ -704,7 +714,10 @@ def _nusha_denetle(R, kopyalar, metin, govde_fn, kanonik, hedefler, ekler):
             ekler.append(NUSHA_AC + _ad_goster(adlar[i]) + " " + _notrle(ek) + DAMGA_KAPA)
             ornek = ornek or fark[0]
     R.ekle("arsiv-nushasi", "%d nüsha (%s), içerikleri FARKLI — insanın gördüğü ile modele giden nüsha "
-           "ayrışabilir; farklı satırlar damgalandı" % (len(kopyalar), ", ".join(adlar)), kanonik, ornek)
+           "ayrışabilir; %s" % (len(kopyalar), ", ".join(adlar),
+                                "farklı satırlar damgalandı" if not bulunamayan else
+                                "%d fark satırı gövdede bulunamadı (evrak VERİ diye sarıldı)" % bulunamayan),
+           kanonik, ornek)
     return kopyalar[ki]
 
 
@@ -934,11 +947,20 @@ _W_RPR_SIL = re.compile(r"<w:rPr>.*?</w:rPr>", re.S)
 _W_SHD = re.compile(r"<w:shd\b[^<>]*w:fill=\"([0-9A-Fa-f]{6})\"")
 
 
-def _docx_duz(b):
-    """docx_isle (oa_ingest) ile AYNI düzleştirme (son strip hariç)."""
+def _docx_duz(b, coz=True):
+    """`oa_ingest.docx_isle` ile AYNI gövde düzleştirmesi (son strip hariç; çapraz kilit testi
+    `_docx_duz(xml).strip() == docx_isle(...)[0]`): paragraf/satır sonları, boş `<w:tab/>` → sekme,
+    `<w:br/>`/`<w:cr/>` → satır sonu, etiket silme, XML varlıkları TEK geçiş, yalnız BOŞLUK dizileri
+    katlanır. NEDEN: nüsha farkı satırı çözülmüş gövdede aranır — kural ayrışırsa varlıklı satır
+    bulunamaz ve damgasız kalır (E-1). `coz=False` yalnız çözümsüz (v0.5.17 öncesi) gövde eşlemesi içindir."""
     x = b if isinstance(b, str) else b.decode("utf-8", "replace")
     x = x.replace("</w:p>", "\n").replace("</w:tr>", "\n")
-    return re.sub(r"[ \t]{2,}", " ", _etiket_sil(x, ""))
+    x = _DOCX_SEKME.sub("\t", x)
+    x = _DOCX_SATIR_SONU.sub("\n", x)
+    x = _etiket_sil(x, "")
+    if coz:
+        x = _xml_varlik_coz(x)
+    return re.sub(r" {2,}", " ", x)
 
 
 # Ö-2 (İFŞA Faz A, bağımsız inceleme 2026-10-07): Word `<system>` GÖSTERİR, document.xml bunu
@@ -948,23 +970,31 @@ def _docx_duz(b):
 # tanımlı varlığı ve sayısal karakter başvuruları (`&#123;`, `&#x7B;`), TEK GEÇİŞTE (`&amp;lt;` →
 # "&lt;" dizgesi — çift çözme YOK); HTML'e özgü adlar (`&nbsp;`) ve XML'de geçersiz başvurular
 # (sıfır, vekil, aralık dışı) olduğu gibi kalır — uydurma karakter üretilmez.
-_XML_VARLIK_RE = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]{1,8}|#[xX][0-9A-Fa-f]{1,6});")
-_XML_VARLIK = {"amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'"}
+_DOCX_SEKME = re.compile(r"<w:tab\s*/>|<w:tab\s*>\s*</w:tab>")   # YALNIZ özniteliksiz içerik sekmesi;
+#   <w:tab w:val=… w:pos=…/> sekme DURAĞI tanımıdır. Açık-kapalı boş biçim de (K-1) — bazı serileştiriciler yazar.
+_DOCX_SATIR_SONU = re.compile(r"<w:(?:br\b[^<>]*|cr\s*)/>|<w:br\b[^<>/]*>\s*</w:br>|<w:cr\s*>\s*</w:cr>")
+_XML_VARLIK_RE = re.compile(r"&(amp|lt|gt|quot|apos|#[0-9]+|#x[0-9A-Fa-f]+);")   # XML'in 5 adı + sayısal
+_XML_ADLI = {"amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'"}
 
 
 def _xml_varlik_coz(s):
-    """XML ön tanımlı varlıkları + sayısal başvurular, tek geçiş (bkz. yukarıdaki NEDEN)."""
+    """XML 1.0 §4.1 TEK KURAL — oa_ingest ile belge_guvenlik'te KAYNAK-METİN ÖZDEŞ (test kilitler; biri
+    değişirse öbürü de değişir). Beş ön tanımlı ad + sayısal başvuru (`&#65;`; onaltılık YALNIZ küçük `x`:
+    `&#x41;`), TEK GEÇİŞ (`&amp;lt;` → "&lt;" dizgesi — çift çözme yok). Geçersiz başvuru (sıfır, vekil,
+    U+10FFFF üstü), büyük `X` ve HTML adları (`&nbsp;`) aynen kalır — uydurma karakter üretilmez. Sekizden
+    çok anlamlı basamak `int()`e hiç gitmez: 4300+ basamakta ValueError evrakı okunmaz kılıyordu (E-2)."""
     if "&" not in s:
         return s
 
     def _coz(m):
         ad = m.group(1)
-        if ad in _XML_VARLIK:
-            return _XML_VARLIK[ad]
-        try:
-            kod = int(ad[2:], 16) if ad[1] in "xX" else int(ad[1:])
-        except ValueError:
+        if ad in _XML_ADLI:
+            return _XML_ADLI[ad]
+        onaltilik = ad[1] == "x"
+        rakam = (ad[2:] if onaltilik else ad[1:]).lstrip("0")
+        if len(rakam) > 8:
             return m.group(0)
+        kod = int(rakam or "0", 16 if onaltilik else 10)
         if kod == 0 or kod > 0x10FFFF or 0xD800 <= kod <= 0xDFFF:
             return m.group(0)
         return chr(kod)
@@ -1241,9 +1271,9 @@ def _docx_tara(yol, R, metin, hedefler, ekler):
                 yerler = _bul(metin, aday, esnek=True)
                 if yerler:
                     anahtar = _say_norm(aday)
-                    onceki = gorunmez_ayikla(_notrle(_docx_duz(x[:xk])))[0]
-                    if cozucu:
-                        onceki = gorunmez_ayikla(_notrle(cozucu(onceki)))[0]
+                    # Sıra sayımı adayla AYNI yazımda: _docx_duz artık çözer (E-1) — çözülmüş aday için
+                    # ikinci bir çözüm ÇİFT çözme olurdu; çözümsüz aday için çözümsüz düzleştirme.
+                    onceki = gorunmez_ayikla(_notrle(_docx_duz(x[:xk], coz=cozucu is not None)))[0]
                     sira = _say_norm(onceki).count(anahtar) if anahtar else None
                     secim = _sec(yerler, sira, aday)
                     break

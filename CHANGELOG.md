@@ -85,6 +85,13 @@ gereği yalnız saha etiketiyle anılır.
 - **Teslim makbuzu:** `ifsa_durumu` alanı (bölüm dilekçede / bilinçli atlandı / bulgu yok / denetlenemedi …, künye sha8'iyle); teslimi durdurmaz.
 - Ayrıntı: `plugins/ortak-avukat/skills/oa-ingest/references/gizli-talimat-ifsasi.md` §10. Test: `tests/test_v0518_ifsa_faz_b.py` (16).
 
+### K. Belge güvenlik kapısı: iki XML çözücüsü tek kural, nüsha açığı kapandı (2026-10-08)
+
+- **E-1 (fail-open kapandı):** Word evrakında birden çok `word/document.xml` nüshası varsa modele giden nüshadaki fark satırı damgalanır. Satır `A &amp; B` gibi XML varlığı taşıdığında çözülmüş gövdede bulunamıyor ve damgasız kalıyordu; kayıt yine "damgalandı" diyordu. Artık yerinde damgalanır; konumlanamayan satır evrakı VERİ diye sarar ve kayıt bunu açıkça söyler.
+- **E-2:** iki modülde tek, kaynak-metin özdeş XML çözücüsü (XML 1.0 §4.1); çok uzun sayısal başvuru evrakı okunmaz kılmıyor. Açık-kapalı boş etiketler karaktere döner.
+- **Önbellek:** yalnız DOCX kayıtları bir kez yeniden çıkarılır ve yeniden taranır (`DOCX_CIKARIM_SURUMU` 3); OCR'lı evrak yeniden okunmaz.
+- Test: `tests/test_v0518_cozucu_birligi.py` (20).
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
