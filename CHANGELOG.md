@@ -77,6 +77,14 @@ gereği yalnız saha etiketiyle anılır.
 - **Maliyet cetveli ifadesi (Görev 3 yeniden incelemesi KÜÇÜK-1):** vergi davasında kısmi kabulde ÜST banda eklenen bilinen maktu artık "ÜST SINIR" diye değil ÇIPA diye yazılır: maktu tarife TABANIDIR (AAÜT m.3/1 — üç katına kadar takdir); satır iki yönü de söyler (kısmi dağılımla düşük, takdirle yüksek olabilir). JSON anahtarı `maktu_ust_sinir` sözleşme olarak korundu.
 - **Belge düzeltmeleri (Görev 2 yeniden incelemesi):** oa-antitez SKILL.md'de pipeline bekçisinin yalnız dosya adına baktığı (`cepheler` kuralı yalnız [G] kapısınındır), eski test docstring'i (Ruling 16: `--iskelet` şablonu damga taşımaz) ve dört motorun ortak atomik yazım docstring'i (kilitli geçici `.oa-tmp` kalabilir, `*.json` tüketicileri görmez).
 
+### J. Gizli talimat ifşası Faz B — dilekçeye bağlama (2026-10-08)
+
+- **Avukat talimatı:** "karşı tarafın gizli talimatı da ifşa edilsin, oluşacak dilekçeye girsin — siber hukuk güvenliği için". Kesin bulgu (karar BULGU) varsa ifşa bölümü dilekçeye VARSAYILAN olarak girer (oa-dilekce "İFŞA BÖLÜMÜ" pası). Bölüm olgusaldır; niyet/suç iddiası taşımaz, değerlendirme Mahkemenindir.
+- **Dilekçe denetimi [İ] İFŞA** (advisory, çıkış kodu değişmez): bölüm yoksa, bayatsa, yer tutucu doldurulmadıysa, BULGU yokken bölüm varsa (yanlış ifşa riski) ya da denetlenemediyse görünür uyarı.
+- **Bilinçli atlama:** `gizli_talimat_ifsa.py --kok <kök> --atla --gerekce "<gerekçe>"` — gerekçe zorunlu; kayıt ortak istisna defterine güncel bulgu parmak iziyle yazılır, bulgular değişince bayatlar ve uyarı geri gelir.
+- **Teslim makbuzu:** `ifsa_durumu` alanı (bölüm dilekçede / bilinçli atlandı / bulgu yok / denetlenemedi …, künye sha8'iyle); teslimi durdurmaz.
+- Ayrıntı: `plugins/ortak-avukat/skills/oa-ingest/references/gizli-talimat-ifsasi.md` §10. Test: `tests/test_v0518_ifsa_faz_b.py` (16).
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".

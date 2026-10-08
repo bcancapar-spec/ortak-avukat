@@ -137,6 +137,13 @@ kilitler.**
   0 ise «kapı sorulmadı» notu — temiz İDDİASI değildir) | `denetlenemedi`
   (pipeline_kayit yüklenemedi/çöktü — temiz SAYILMAZ). Yeşil makbuzda doğrudan,
   RED makbuzunda `advisory_denetimler.graf_kapisi` içinde yaşar
+- `ifsa_durumu` — gizli talimat ifşasının teslimdeki ADVISORY durumu (v0.5.18 Faz B; Ruling 11:
+  kapı KAPATMAZ): `{durum, seviye, satir, kunye_sha8}` (`kunye_sha8`: bölümün dayandığı
+  `_oa/metin/00-kunye.json`'un sha8'i — izlenebilirlik) — `durum` ∈ `bolum-dilekcede` | `bolum-bayat`
+  (güncel tespitin alıntısı taslakta yok) | `bilincli-atlandi` (gerekçeli kayıt ortak istisna
+  defterinde, güncel bulgu parmak iziyle) | `bolum-yok` | `bulgu-yok` | `yanlis-ifsa-riski`
+  (BULGU yokken bölüm var) | `denetlenemedi` (temiz SAYILMAZ). Zaman damgası taşımaz. Yeşil
+  makbuzda doğrudan, RED makbuzunda `advisory_denetimler.ifsa_durumu` içinde yaşar
 - `teslim_sinifi_urunler` — filo kapsamı `[{dosya, sha12, muhur}]`;
   `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13)
 - `filo_uyarilari` — filo taramasının advisory satırları

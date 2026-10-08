@@ -1957,6 +1957,48 @@ def _antitez_matris_modulu():
     return mod
 
 
+_GIZLI_TALIMAT_IFSA_MOD = None
+
+
+def _gizli_talimat_ifsa_modulu():
+    """Kardeş skill oa-ingest'in `gizli_talimat_ifsa.py`sini İN-PROCES yükler — [İ] ifşa
+    görünürlüğünün TEK kaynağı (başlık, parmak izi, atlama kuralı burada TEKRARLANMAZ).
+    Yüklenemezse None döner; [İ] bunu 'denetlenemedi' diye GÖRÜNÜR yazar (temiz sayılmaz)."""
+    global _GIZLI_TALIMAT_IFSA_MOD
+    if _GIZLI_TALIMAT_IFSA_MOD is not None:
+        return _GIZLI_TALIMAT_IFSA_MOD
+    yol = (pathlib.Path(__file__).resolve().parent.parent.parent
+           / "oa-ingest" / "scripts" / "gizli_talimat_ifsa.py")
+    if not yol.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_oa_dilekce_gizli_talimat_ifsa", yol)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _GIZLI_TALIMAT_IFSA_MOD = mod
+    return mod
+
+
+def ifsa_gorunurluk_satirlari(metin, kok):
+    """[İ] (v0.5.18 Faz B) — ADVISORY: (seviye, satır) listesi. ASLA bloklamaz, çıkış kodunu
+    değiştirmez (Ruling 11: karar avukatın). Yalnız CLI/teslim zincirinde koşar; hızlı kipe
+    (PostToolUse) GİRMEZ — künye okuması sıcak yola konmaz (CLAUDE.md)."""
+    if not kok:
+        return [("BİLGİ", "ifşa durumu ARANAMADI (kök belirsiz — --kok verilmedi); sonuç kanıt sayılmaz")]
+    mod = _gizli_talimat_ifsa_modulu()
+    if mod is None:
+        return [("UYARI", "ifşa motoru (oa-ingest/scripts/gizli_talimat_ifsa.py) yüklenemedi — ifşa durumu "
+                          "denetlenemedi, temiz SAYILMAZ")]
+    try:
+        sonuc = mod.ifsa_uret(kok)
+        d = mod.taslak_ifsa_durumu(metin, sonuc, mod.atlama_durumu(kok, sonuc))
+    except Exception as e:                     # noqa: BLE001 — advisory, çökmez
+        return [("UYARI", "ifşa durumu denetlenemedi (%s) — temiz SAYILMAZ" % type(e).__name__)]
+    return [(d["seviye"], d["satir"])]
+
+
 _ANTITEZ_DURAK_KELIME = {
     "ve", "veya", "ile", "için", "gibi", "ama", "fakat", "ancak", "değil",
     "olan", "olarak", "üzere", "göre", "kadar", "daha", "her", "hiç", "ise",
@@ -3365,7 +3407,15 @@ def main():
         # olgu beyanına ÇEVİRME: 'koşulmamış olabilir' yalnız kök BİLİNİYORKEN
         # (ve orada gerçekten yoksa) söylenir; kök belirsizse yalnız arama
         # yapılamadığı söylenir.
-        if a.kok:
+        _adaylar = (sorted(glob.glob(os.path.join(a.kok, "_oa", "cikti", "*antitez*.json")))
+                    if a.kok else [])
+        if _adaylar:
+            # Görev 2 yeniden incelemesi: antitez adlı ama bozuk ya da `cepheler`siz dosya
+            # varken "bulunamadı" demek lafzen yanlıştı — dosya VAR, matris olarak okunamıyor.
+            print("   [BİLGİ] antitez matrisi okunamadı/biçimsiz: %s — `cepheler` listesi yok ya da "
+                  "JSON bozuk (denetim çıktısı matris sayılmaz); ANTİTEZ PASI girdisini kontrol et"
+                  % ", ".join(os.path.basename(x) for x in _adaylar))
+        elif a.kok:
             print("   [BİLGİ] _oa/cikti/*antitez*.json bulunamadı — ANTİTEZ PASI "
                   "koşulmamış olabilir (M3: zorunlu pas girdisi)")
         else:
@@ -3373,6 +3423,10 @@ def main():
                   "--kok verilmedi, CWD'ye göre arandı) — sonuç kanıt sayılmaz")
     else:
         print("   [OK] karşılıksız DUYULMUŞ antitez sinyali bulunamadı (matris tam örtüşüyor)")
+
+    print("\n[İ] İFŞA — karşı tarafın gizli talimatı (advisory — v0.5.18 Faz B, ASLA bloklamaz)")
+    for _seviye, _satir in ifsa_gorunurluk_satirlari(metin, a.kok):
+        print(f"   [{_seviye}] {_satir}")
 
     print("\n[H] GÖRÜNMEZ İSKELET TARAMASI (advisory — P1-11 ek kural, ASLA bloklamaz)")
     h_uyarilar = _gorunmez_iskelet_uyarilari(metin)

@@ -1,4 +1,4 @@
-# Gizli talimat İFŞASI — Faz A (`scripts/gizli_talimat_ifsa.py`)
+# Gizli talimat İFŞASI — Faz A + Faz B (`scripts/gizli_talimat_ifsa.py`)
 
 > Avukat talimatı (2026-10-07, bağlayıcı): "karşı tarafın gizli talimatı da ifşa edilsin,
 > oluşacak dilekçeye girsin — siber hukuk güvenliği için". Bu belge motorun NEDEN böyle
@@ -12,7 +12,7 @@ görmediği katmanı **bulur ve damgalar**; o katmanı okuyan model için anayas
 bulgularını (karar `BULGU`) **mahkemeye sunulabilir, olgusal** bir dilekçe bölümüne çevirir.
 Kendi başına tarama yapmaz, ikinci bir denetim icat etmez — yalnız kapının kalıcı kaydını okur.
 
-Faz A bu motoru ve kalıcı kaydı kurar. **Faz B** (ayrı görev, birleştirmeden sonra): oa-dilekce
+Faz A bu motoru ve kalıcı kaydı kurar. **Faz B** (v0.5.18, 2026-10-08 — uygulandı, bkz. §10): oa-dilekce
 akışında BULGU varsa bölüm varsayılan olarak dilekçeye; dilekçe denetiminde `[İFŞA]` görünür
 uyarısı (BULGU var + bölüm yok + bilinçli atlama kaydı yok); teslim makbuzunda satır; SOZLUK
 terimi; vitrinde "ifşa".
@@ -206,3 +206,51 @@ beklenmedik istisna → 3, şema dışı bulgu, gösterim kuralı, URL/e-posta, 
 sayısal `no` sırası.
 `tests/test_v0518_belge_guvenlik.py` (2) — kapı kaydı 1.1; DOCX gizli parçada XML varlıklarının tek
 geçiş çözümü ve iki yazımlı gövde eşlemesi. Gerçek evrak YOK; tüm fikstür sentetik (anayasa m.7).
+
+## 10. Faz B — uygulanan (v0.5.18, 2026-10-08)
+
+**Tek kaynak motordur.** Dilekçe denetimi ve teslim makbuzu yalnız şu üç fonksiyonu çağırır;
+başlık, parmak izi ve atlama kuralı onlarda TEKRARLANMAZ (test, başlık literalinin iki tüketicide
+de kopyalanmadığını kilitler):
+- `bulgu_parmak_izi(sonuc)` — dilekçeye giren tespitlerin (evrak, tür, konum, alıntı sha256)
+  sıralı listesinin sha256'sı, ilk 16 hane; tespit yoksa `''`.
+- `atlama_durumu(kok, sonuc)` → `{gecerli, bayat, gerekce}` ve `atlama_kaydi_yaz(kok, sonuc, gerekce)`.
+- `taslak_ifsa_durumu(taslak, sonuc, atlama)` → `{durum, seviye, satir}`.
+
+**Akış (oa-dilekce SKILL.md "İFŞA BÖLÜMÜ"):** yazımdan önce motor koşulur; çıkış 1 → bölüm
+dilekçeye VARSAYILAN girer; çıkış 0 → girmez; çıkış 3 → üretilmez, iç notta görünür uyarı.
+
+**Bilinçli atlama:** `gizli_talimat_ifsa.py --kok <kök> --atla --gerekce "<gerekçe>"`. Gerekçe
+zorunlu (boş/yalnız boşluk → çıkış 2, kayıt yok); yalnız karar BULGU iken (kesin bulgu yoksa ya da
+denetlenemiyorsa çıkış 2 — denetlenemeyen şey atlanamaz). Kayıt ayrı bir durum dosyasına DEĞİL,
+ortak istisna defterine (`_oa/defter/istisna-kayitlari.jsonl`, append-only, şema `{zaman, tur,
+ilgili, gerekce, onay, imza}`) yazılır: `tur = "ifsa-bilincli-atlama"`, `ilgili = "ifsa:<parmak izi>"`.
+NEDEN: sistemin "hiçbir muafiyet sessiz kalmaz" ilkesi tek defterde yaşar; iz silinmez. Bulgu
+kümesi değişince kayıt BAYATLAR ve uyarı geri gelir; defter okunamıyorsa atlama geçerli SAYILMAZ.
+
+**Bayat bölüm alıntıyla ölçülür, bölüm metniyle değil:** avukat `[SUNAN TARAF — avukat teyidi]`
+yer tutucusunu doldurur, cümleyi düzeltebilir; birebir metin kıyası her düzeltmede yanlış alarm
+üretirdi. Güncel her tespitin alıntısı taslakta birebir yoksa bölüm eski bulgu kümesine aittir.
+
+**Dilekçe denetimi [İ] İFŞA** (`dilekce_denetim.py`, advisory — çıkış kodu DEĞİŞMEZ): bölüm yok
+(+ geçerli atlama yok) → `[UYARI] [İFŞA] …` (eklemenin ve bilinçli atlamanın komutuyla); bölüm bayat
+→ UYARI; yer tutucu doldurulmamış → UYARI; BULGU yokken bölüm var → yanlış ifşa riski UYARI
+(anayasa m.6); DENETLENEMEDİ → UYARI ("temiz" denmez); geçerli atlama → BİLGİ. Hızlı kipe
+(PostToolUse) girmez — künye okuması sıcak yola konmaz.
+
+**Teslim makbuzu:** `ifsa_durumu = {durum, seviye, satir, kunye_sha8}` — yeşil makbuzda doğrudan,
+RED makbuzunda `advisory_denetimler.ifsa_durumu`; teslimi DURDURMAZ; zaman damgası taşımaz.
+
+**Plandan (§8) bilinçli sapmalar:**
+- Yer tutucu taslakta kalmışsa §8 "RET" diyordu; uygulanan GÖRÜNÜR UYARI'dır — Ruling 11 (görünür
+  uyarı, karar avukatın) ve dilekçe denetiminin çıkış kodu sözleşmesi korunur. Bloklayıcıya terfi
+  avukat kararıdır.
+- pipeline_kayit DURUM.md'ye "ifşa bölümü üretildi/üretilmedi" satırı bu turda EKLENMEDİ
+  (pipeline_kayit zincir onarımı görevinin dosyasıdır); bölüm durumu dilekçe denetimi ve makbuzda
+  görünür. Açık iş olarak kayıtlıdır.
+- Vitrin ve SOZLUK "ifşa" terimi vitrin turunda işlenir.
+
+**Testler:** `tests/test_v0518_ifsa_faz_b.py` (16) — parmak izi; gerekçesiz / bulgusuz /
+denetlenemeyen atlamanın reddi; ortak deftere parmak iziyle yazım ve bayatlama; bozuk defter;
+taslak durumunun yedi hâli; dilekçe denetimi [İ] satırı ve çıkış kodunun değişmemesi; başlığın
+tüketicilerde kopyalanmaması; makbuz satırı (künye sha8'i, determinizm); SKILL.md akışı.

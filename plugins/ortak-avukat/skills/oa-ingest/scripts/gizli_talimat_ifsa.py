@@ -49,6 +49,7 @@ for _s in (_sys.stdout, _sys.stderr):
         pass
 
 import argparse
+import datetime
 import hashlib
 import importlib.util
 import json
@@ -683,6 +684,134 @@ def ifsa_uret(kok):
                               % (type(e).__name__, str(e)[:160]), kaynaklar)
 
 
+# ------------------------------------------------------------------ Faz B: dilekçeye bağlama
+# NEDEN VAR (avukat talimatı 2026-10-07 — "karşı tarafın gizli talimatı da ifşa edilsin, oluşacak
+# dilekçeye girsin"): Faz A bölümü üretir; Faz B onun dilekçede olup olmadığını, güncel olup
+# olmadığını ve avukatın bilinçli olarak atlayıp atlamadığını TEK yerden söyler. Dilekçe denetimi
+# ([İ]) ve teslim makbuzu bu fonksiyonları çağırır — başlık, parmak izi ve atlama kuralı orada
+# TEKRARLANMAZ. Hiçbiri bloklamaz (Ruling 11: görünür uyarı, karar avukatın).
+ATLAMA_TUR = "ifsa-bilincli-atlama"
+ISTISNA_DEFTERI = ("defter", "istisna-kayitlari.jsonl")   # `_oa` altında — ortak, append-only
+_BOLUM_KOMUTU = "gizli_talimat_ifsa.py --kok <kök> --md <bölüm.md>"
+_ATLAMA_KOMUTU = 'gizli_talimat_ifsa.py --kok <kök> --atla --gerekce "<gerekçe>"'
+
+
+def _girenler(sonuc):
+    return [b for b in (sonuc.get("bulgular") or []) if isinstance(b, dict) and b.get("dilekceye_girdi")]
+
+
+def bulgu_parmak_izi(sonuc):
+    """Dilekçeye giren (karar BULGU) tespitlerin deterministik parmak izi: (evrak, tür, konum,
+    alıntı sha256) sıralı listesinin sha256'sı, ilk 16 hane; tespit yoksa ''. Bilinçli atlama ve
+    bayat bölüm GÜNCEL bulgu kümesine bağlanır — bir kez yazılan kayıt sonsuza dek susturmasın."""
+    ogeler = sorted([str(b.get("evrak") or ""), str(b.get("tur") or ""), str(b.get("konum") or ""),
+                     hashlib.sha256(str(b.get("alinti") or "").encode("utf-8")).hexdigest()]
+                    for b in _girenler(sonuc))
+    if not ogeler:
+        return ""
+    return hashlib.sha256(json.dumps(ogeler, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+
+
+def _defter_yolu(kok):
+    return os.path.join(kok, "_oa", *ISTISNA_DEFTERI)
+
+
+def atlama_kaydi_yaz(kok, sonuc, gerekce):
+    """Avukatın AÇIK komutuyla bilinçli atlama: ortak istisna defterine tek satır (append-only;
+    şema {zaman, tur, ilgili, gerekce, onay, imza} — "hiçbir muafiyet sessiz kalmaz"). Gerekçe
+    zorunlu; yalnız karar BULGU iken (atlanacak kesin bulgu yoksa ya da denetlenemiyorsa kayıt
+    yazılmaz — denetlenemeyen şey atlanamaz). İhlal → IfsaHatasi (CLI çıkış 2)."""
+    gerekce = (gerekce or "").strip()
+    if not gerekce:
+        raise IfsaHatasi("gerekçe zorunlu — boş ya da yalnız boşluk gerekçeyle atlama kaydedilmez")
+    if sonuc.get("karar") != KARAR_VAR:
+        raise IfsaHatasi("atlanacak kesin bulgu yok (karar %s) — kayıt yazılmadı" % sonuc.get("karar"))
+    yol = _defter_yolu(kok)
+    os.makedirs(os.path.dirname(yol), exist_ok=True)
+    kayit = {"zaman": datetime.datetime.now().isoformat(timespec="seconds"), "tur": ATLAMA_TUR,
+             "ilgili": "ifsa:" + bulgu_parmak_izi(sonuc), "gerekce": gerekce, "onay": "avukat",
+             "imza": "gizli_talimat_ifsa.py/%s" % SURUM}
+    with open(yol, "a", encoding="utf-8") as f:
+        f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    return yol
+
+
+def atlama_durumu(kok, sonuc):
+    """{gecerli, bayat, gerekce}: defterde bu türden bir kayıt GÜNCEL parmak izini taşıyorsa
+    geçerli; kayıt var ama hiçbiri güncel değilse bayat (bulgu kümesi değişti → uyarı geri gelir).
+    Defter ya da satır okunamıyorsa geçerli SAYILMAZ — uyarı görünür kalır (fail-closed)."""
+    d = {"gecerli": False, "bayat": False, "gerekce": None}
+    pi = bulgu_parmak_izi(sonuc)
+    yol = _defter_yolu(kok)
+    if not pi or not os.path.isfile(yol):
+        return d
+    try:
+        with open(yol, encoding="utf-8", errors="replace") as f:
+            satirlar = f.read().splitlines()
+    except OSError:
+        return d
+    var = False
+    for s in satirlar:
+        try:
+            k = json.loads(s)
+        except ValueError:
+            continue
+        if not isinstance(k, dict) or k.get("tur") != ATLAMA_TUR:
+            continue
+        var = True
+        gerekce = str(k.get("gerekce") or "").strip()
+        if k.get("ilgili") == "ifsa:" + pi and gerekce:
+            d.update(gecerli=True, gerekce=gerekce)
+    d["bayat"] = var and not d["gecerli"]
+    return d
+
+
+def _taslak_d(durum, seviye, satir):
+    return {"durum": durum, "seviye": seviye, "satir": satir}
+
+
+def taslak_ifsa_durumu(taslak, sonuc, atlama=None):
+    """Dilekçe taslağında ifşa bölümünün durumu: {durum, seviye (OK | BİLGİ | UYARI), satir}.
+    Bayatlık bölüm metniyle DEĞİL alıntılarla ölçülür: avukat yer tutucuyu doldurur, cümleyi
+    düzeltebilir; ama güncel her tespitin alıntısı taslakta birebir yoksa bölüm eski bulgu
+    kümesine aittir. BULGU yokken bölüm varsa yanlış ifşa riski görünür (anayasa m.6)."""
+    taslak = taslak or ""
+    atlama = atlama or {"gecerli": False, "bayat": False, "gerekce": None}
+    bolum_var = BOLUM_BASLIGI in taslak
+    karar = sonuc.get("karar")
+    if karar == KARAR_DENETLENEMEDI:
+        neden = next(iter(sonuc.get("ic_not") or []), "bulgu kaydı okunamadı")
+        return _taslak_d("denetlenemedi", "UYARI",
+                         "DENETLENEMEDİ — ifşa kararı verilemedi, temiz SAYILMAZ (%s)%s"
+                         % (neden, "; dilekçedeki ifşa bölümü doğrulanamıyor" if bolum_var else ""))
+    if karar != KARAR_VAR:
+        if bolum_var:
+            return _taslak_d("yanlis-ifsa-riski", "UYARI",
+                             "yanlış ifşa riski: dilekçede ifşa bölümü var ama güncel kayıtta kesin bulgu "
+                             "(BULGU) yok — bölümü çıkarın ya da evrakı yeniden tarayın (anayasa m.6)")
+        return _taslak_d("bulgu-yok", "OK", "ifşa edilecek kesin bulgu yok (bu bir güvenlik beyanı değildir)")
+    girenler = _girenler(sonuc)
+    if bolum_var:
+        eksik = [b for b in girenler if str(b.get("alinti") or "") not in taslak]
+        if eksik:
+            return _taslak_d("bolum-bayat", "UYARI",
+                             "ifşa bölümü GÜNCEL DEĞİL: %d tespitin alıntısı taslakta yok — motoru yeniden "
+                             "koşup bölümü yenileyin (%s)" % (len(eksik), _BOLUM_KOMUTU))
+        if YER_TUTUCU_SUNAN in taslak:
+            return _taslak_d("bolum-dilekcede", "UYARI",
+                             "ifşa bölümü dilekçede ama %s yer tutucusu doldurulmadı — teslimden önce evrakı "
+                             "sunan tarafı yazın" % YER_TUTUCU_SUNAN)
+        return _taslak_d("bolum-dilekcede", "OK", "ifşa bölümü dilekçede ve güncel bulgu kümesiyle örtüşüyor")
+    if atlama.get("gecerli"):
+        return _taslak_d("bilincli-atlandi", "BİLGİ", "bilinçli atlandı (avukat): %s" % atlama.get("gerekce"))
+    ek = (" Önceki bilinçli atlama ESKİ bulgu kümesine ait — yeniden karar verin."
+          if atlama.get("bayat") else "")
+    return _taslak_d("bolum-yok", "UYARI",
+                     "[İFŞA] karşı tarafın evrakında insan gözüyle görünmeyen metin için kesin bulgu var "
+                     "(%d tespit) ama dilekçede ifşa bölümü yok — bölümü ekleyin (%s) ya da bilinçli "
+                     "atlayın (%s).%s" % (len(girenler), _BOLUM_KOMUTU, _ATLAMA_KOMUTU, ek))
+
+
 # ------------------------------------------------------------------ CLI
 def _atomik_yaz(yol, metin):
     """tmp + os.replace: yarım dosya nihai adda görünmez. Ebeveyn dizin yoksa açılır (ör. _oa/cikti)."""
@@ -729,7 +858,20 @@ def main(argv=None):
     ap.add_argument("--kok", required=True, help="dava kökü (içinde _oa/metin/00-kunye.json)")
     ap.add_argument("--md", help="dilekçe bölümü Markdown çıktısı (yalnız BULGU varsa yazılır)")
     ap.add_argument("--json", dest="json_yol", help="makine-okur sonuç (her kararda yazılır)")
+    ap.add_argument("--atla", action="store_true",
+                    help="avukatın bilinçli atlama kararı: ortak istisna defterine gerekçeli kayıt (Faz B)")
+    ap.add_argument("--gerekce", help="--atla için ZORUNLU gerekçe")
     a = ap.parse_args(argv)
+    if a.atla:
+        sonuc = ifsa_uret(a.kok)
+        try:
+            yol = atlama_kaydi_yaz(a.kok, sonuc, a.gerekce)
+        except IfsaHatasi as e:
+            print("RET: %s." % e)
+            return 2
+        print("Bilinçli atlama kaydedildi: %s (bulgu parmak izi %s) — bulgular değişirse kayıt "
+              "bayatlar ve dilekçe denetimindeki [İFŞA] uyarısı geri gelir." % (yol, bulgu_parmak_izi(sonuc)))
+        return 0
     try:
         sonuc = ifsa_uret(a.kok)
     except Exception as e:   # ifsa_uret kendi yakalar; çift sigorta — 1 ('BULGU var') ile çakışma olmasın

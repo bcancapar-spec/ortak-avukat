@@ -537,6 +537,49 @@ def _graf_kapisi_advisory(kok):
     return {"durum": "acik", "mesaj": None, "denetim_json_sayisi": n}
 
 
+_GIZLI_TALIMAT_IFSA_MOD = None
+
+
+def _gizli_talimat_ifsa_modulu():
+    """oa-ingest/gizli_talimat_ifsa.py — ifşa durumunun TEK kaynağı (in-process; alt süreç yok)."""
+    global _GIZLI_TALIMAT_IFSA_MOD
+    if _GIZLI_TALIMAT_IFSA_MOD is not None:
+        return _GIZLI_TALIMAT_IFSA_MOD
+    betik = _script("oa-ingest", "gizli_talimat_ifsa.py")
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_oa_teslim_paketi_gizli_talimat_ifsa", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _GIZLI_TALIMAT_IFSA_MOD = mod
+    return mod
+
+
+def _ifsa_durumu(kok, taslak):
+    """v0.5.18 Faz B — makbuz satırı: taslaktaki ifşa bölümünün durumu {durum, seviye, satir}
+    (motorun TEK kaynağından). ADVISORY — teslimi DURDURMAZ (Ruling 11); zaman damgası taşımaz
+    (makbuz determinizmi). Okunamayan/yüklenemeyen hâl temiz SAYILMAZ."""
+    mod = _gizli_talimat_ifsa_modulu()
+    if mod is None:
+        return {"durum": "denetlenemedi", "seviye": "UYARI", "kunye_sha8": None,
+                "satir": "ifşa motoru yüklenemedi — ifşa durumu denetlenemedi, temiz SAYILMAZ"}
+    try:
+        with open(taslak, encoding="utf-8", errors="replace") as f:
+            metin = f.read()
+        sonuc = mod.ifsa_uret(kok)
+        d = mod.taslak_ifsa_durumu(metin, sonuc, mod.atlama_durumu(kok, sonuc))
+        # Hangi künyeden üretildiği izlenebilsin (makbuz okuyucusu bayat künyeyi ayırt eder).
+        d["kunye_sha8"] = next((k.get("sha8") for k in sonuc.get("kaynaklar") or []
+                                if isinstance(k, dict) and k.get("rol") == "kunye"), None)
+        return d
+    except Exception as e:
+        return {"durum": "denetlenemedi", "seviye": "UYARI", "kunye_sha8": None,
+                "satir": "ifşa durumu denetlenemedi (%s) — temiz SAYILMAZ" % type(e).__name__}
+
+
 def _graf_kapisi_yazdir(gk, onek="    [ADVISORY] graf kapısı"):
     """Tek satır görünürlük — kapı DEĞİL."""
     if gk["durum"] == "sorun":
@@ -896,11 +939,13 @@ def _advisory_denetimler(taslak, kok):
     prov-tazelik (yan .prov.json sha karşılaştırması), yerel-damga taraması,
     tazelik advisory. Salt-okunur ve istisnasız — dict döndürür."""
     rapor = {"devralma_adaylari": [], "sekil": None, "prov_tazelik": None,
-             "yerel_damga": None, "tazelik_uyarilari": None, "graf_kapisi": None}
+             "yerel_damga": None, "tazelik_uyarilari": None, "graf_kapisi": None,
+             "ifsa_durumu": None}
     try:
         # B-5 (v0.5.18) — graf kapısı sorusu RED yolunda da sorulur (B4
         # advisory tamamlanma: ilk engel öteki bulguyu görünmez bırakmasın).
         rapor["graf_kapisi"] = _graf_kapisi_advisory(kok)
+        rapor["ifsa_durumu"] = _ifsa_durumu(kok, taslak)   # v0.5.18 Faz B — RED yolunda da görünür
         secili = None
         for aday in _udf_adaylari(taslak, kok):
             gecerli, sebep = _udf_hafif_gecerli_mi(aday)
@@ -994,6 +1039,8 @@ def _advisory_yazdir(rapor):
         print("    [ADVISORY] tazelik: %s" % u)
     if rapor.get("graf_kapisi"):
         _graf_kapisi_yazdir(rapor["graf_kapisi"])
+    if rapor.get("ifsa_durumu"):
+        print("    [ADVISORY] ifşa [%s]: %s" % (rapor["ifsa_durumu"]["seviye"], rapor["ifsa_durumu"]["satir"]))
     if rapor.get("hata"):
         print("    [ADVISORY] %s" % rapor["hata"])
 
@@ -1808,6 +1855,14 @@ def _zincir():
     _graf_kapisi_yazdir(graf_kapisi, onek="    [ADVISORY] graf kapısı")
     print("    [BILGI] makbuza `graf_kapisi` olarak geçti; karar avukatın.")
 
+    # ── v0.5.18 Faz B — İFŞA DURUMU (advisory; teslimi DURDURMAZ — Ruling 11) ──
+    # Avukat talimatı (2026-10-07): karşı tarafın gizli talimatı dilekçeye girsin. Makbuz,
+    # bölümün dilekçede olup olmadığını / bilinçli atlandığını / denetlenemediğini taşır.
+    ifsa_durumu = _ifsa_durumu(kok, taslak)
+    _bolum("[if] İFŞA DURUMU — advisory (gizli_talimat_ifsa; kapı KAPATMAZ — karar avukatın)")
+    print("    [%s] %s" % (ifsa_durumu["seviye"], ifsa_durumu["satir"]))
+    print("    [BILGI] makbuza `ifsa_durumu` olarak geçti.")
+
     # ── A2 (v0.5.9 ÇIKTI ŞEMASI) — 40-UYAP dış-çıktı dizini (ADVISORY) ──────
     # YEŞİL makbuz kesiliyor → dava kökünde muhatap-nötr dış-çıktı dizini
     # doğar; ürün KOPYALARI (asıl yerinde kalır) + damgalı makbuz-kopyası.
@@ -1854,6 +1909,7 @@ def _zincir():
                 "sekil_imzali_sapma": sekil_imzali_sapma,  # v0.5.8.5 e-imza guard
                 "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
                 "graf_kapisi": graf_kapisi,               # B-5 (v0.5.18) — advisory
+                "ifsa_durumu": ifsa_durumu,               # v0.5.18 Faz B — advisory
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
                 # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
                 "uyap_kopya": uyap_kopya,
