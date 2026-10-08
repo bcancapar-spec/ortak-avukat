@@ -3,6 +3,14 @@
 **Tarih:** 2026-10-06 · **Sürüm:** 0.5.18 · **Commit:** dal `guncelleme/0.5.18` (main `4b2f029` üzerine; bkz. CHANGELOG)
 *(önceki kayıtlar: 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
+> **v0.5.18 son tur (2026-10-07/08, PR #8):** zincirleme tepki (zincir tüketicileri + üreticiler),
+> v0.5.18 adayının iki hukuki kusuru (istifa süresi, vergi davasında maktu vekâlet), gizli talimat
+> ifşası Faz A + Faz B (dilekçeye bağlama), DOCX metin sadakati ve iki XML çözücüsünün tek kuralı
+> (nüsha fail-open kapandı), kurulum motoru, anayasa m.11 ek düzenlemesi, künye + ölçülmüş satır
+> sayıları, CI'nın yakaladığı iki üretim hatası. Her adım tam süit Python 3.14 ve 3.12'de yeşil
+> (OA-SUIT-SAYISI). **Açık:** bütünleşme testleri (a)(b)(c), GATE G zamanlama analizi (e), seri
+> perf koşusu ve sakin makinede `hook_olc`, son bütün-dal incelemesi, DURUM.md ifşa satırı.
+
 > **v0.5.18 (2026-10-06):** belge güvenlik kapısı (B-22) + görünürlük kâhini, OCR v1.9, Yargı PRO
 > uyarlamaları, 2026-10-06 kod denetimi düzeltmeleri (R1-R7, R9). Ölçülen: tam süit Python 3.12 ve
 > 3.14'te yeşil, kanca gecikmesi PERFORMANS-STATUS §11, OCR motor kıyası yeni donanımda (OCR planı

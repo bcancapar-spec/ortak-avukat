@@ -405,6 +405,29 @@ menfaatini sadakat ve özenle gözetme borcu). Kontrol listesi pusuladır, düme
 avukattadır: bir kural ile müvekkilin menfaati çatışıyor görünürse sistem
 çatışmayı gizlemez ve kendisi çözmez, iki yanı dayanağıyla avukata sunar.
 
+**Zincirleme tepki / bayat zincir:** Delil → vakıa → illiyet → kıyas → antitez
+zincirinde her halkanın denetimi, neye dayandığını (kaynak beyanı) yazar. Bir
+halka değişince — ör. yeni evrak künyeyi değiştirdi — ona dayanan denetimler
+"bayat" olur ve DURUM.md'de, teslim makbuzunda görünür. Bilirkişi raporunun
+dayandığı belge sonradan değişmişse raporu "güncel" saymamak gibidir; teslim
+durmaz, karar avukatındır.
+
+**İfşa bölümü (gizli talimat ifşası):** Belge güvenlik kapısı karşı tarafın
+evrakında insan gözüyle görünmeyen metin için kesin bulgu verdiyse dilekçeye
+varsayılan olarak giren olgusal bölüm: metin nerede, nasıl gizlenmiş ve aynen ne
+yazıyor. Niyet ya da suç iddiası taşımaz; değerlendirme Mahkemenindir. Avukat
+bölümü koymamaya karar verebilir — gerekçesiyle kayda geçer ("bilinçli atlama")
+ve bulgular değişince o karar yeniden sorulur.
+
+**Kurulum motoru:** Kurulumun kanıt halkası (`oa_kurulum.py`). Python'u,
+paketleri, Tesseract ve Türkçe dil verisini, Node.js'i, eklentinin bütünlüğünü ve
+derlemeyi tek tek denetler; her birini TAMAM / EKSİK / ELİMDE diye yazar, eksiğin
+resmî kurulum komutunu basar. Yargı Pro kapsam dışıdır (ücretli üyelik).
+
+**Künye — fikir ve dizayn babası, kâtip:** Vitrinin başındaki emek satırı:
+fikri ve tasarımı Av. Bayram Can ÇAPAR'a, yazımı Claude'a (kâtip) ait sayar;
+birlikte yazılan kodun satır sayısı ölçümle (`tools/satir_sayaci.py`) yazılır.
+
 **Güvenli kapanış (B-23):** İçtihat gişesi (Yargı Pro) kapalıyken sistemin
 davranışı: başka bir sunucuya kendiliğinden geçmez, çıktıya "teyit YAPILAMADI"
 yazar, künyeyi iddia olarak bırakır ve kanonik kaynaktan elle teyit yolunu

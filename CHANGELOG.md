@@ -43,7 +43,7 @@ gereği yalnız saha etiketiyle anılır.
 
 ### D. Yargı PRO uyarlamaları (fikir; resmî metinle doğrulanarak)
 
-- oa-sure: adli tatil rejimi kuralın kendisinde (icra işlerinde uzatma yok — eskiden geç tarih); başlangıç kapısı; AYM/AİHM süreleri; eksik tatil takvimi uyarısı. Kural kataloğu 27 → 48.
+- oa-sure: adli tatil rejimi kuralın kendisinde (icra işlerinde uzatma yok — eskiden geç tarih); başlangıç kapısı; AYM/AİHM süreleri; eksik tatil takvimi uyarısı. Kural kataloğu 27 → 50 (istifa süresinin iki kuralı 2026-10-07'de).
 - oa-dilekce: icra dilekçe ailesi, unsur modeli, taraf bilinçli aleyhe tarama.
 - oa-usul / oa-kontrol: AYM bireysel başvuru ve AİHM yolu; atıf kapısı sertleştirmesi. AİHM başvuru süresi her dosyada dört ay (R7 — avukat kararı; oa-usul ile oa-sure ayrışıyordu, 1.2.2022 öncesi geçiş kapsam dışı).
 - oa-pipeline / oa-strateji / oa-interview / oa-vakia / oa-antitez: revizyon farkı, maliyet cetveli, meslek kuralları, delil/tanık planı, zabıt denetimi, katı özne eşleştirici.

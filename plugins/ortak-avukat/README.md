@@ -4,7 +4,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **56.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.586** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **56.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.591** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -220,7 +220,7 @@ uzatma uygulanmaz (eski hesap geç tarih üretiyordu; geç tarih hak kaybettirir
 **başlangıç kapısı** sürenin hangi olaydan ve hangi kanıtla başladığını sorar —
 kanıtsız başlangıçta ya da usulsüz/şüpheli tebliğde hesap bunu görünür uyarıyla
 söyler, tek kesin tarih vermez; AYM ve AİHM başvuru süreleri eklendi — AİHM her
-dosyada dört ay. Kural kataloğu 27 → 48.
+dosyada dört ay. Kural kataloğu 27 → 50.
 
 #### `oa-gizlilik` — Layer 0
 Dış araca (bulut MCP, web, e-posta, üçüncü parti bağlayıcı) çıkacak her içeriği,
@@ -573,7 +573,16 @@ güncelleyenin adım adım listesi kök README'nin
 - **Süre motoru:** icra sürelerinde adli tatil uzatması uygulanmaz (eski hesap geç tarih
   üretiyordu); başlangıcı kanıtsız ya da tebliği usulsüz/şüpheli süre görünür uyarı alır
   (başlangıç kapısı); AYM ve AİHM süreleri eklendi — AİHM başvuru süresi her dosyada dört
-  ay. Kural kataloğu 27 → 48.
+  ay. Kural kataloğu 27 → 50.
+- **Zincirleme tepki:** delil → vakıa → illiyet → kıyas → antitez zincirinde bir halka
+  değişince aşağı akış denetimleri BAYAT görünür (DURUM.md + teslim makbuzu; teslim durmaz);
+  kısmi kaynak beyanı "taze" sayılmaz; graf kapısı gerçek çevrimi gizlemez.
+- **Gizli talimat ifşası (avukat talimatı):** kesin bulgu varsa karşı tarafın evrakındaki
+  görünmeyen metin olgusal bir bölümle dilekçeye varsayılan olarak girer; bölüm yoksa
+  dilekçe denetiminde görünür uyarı; gerekçeli bilinçli atlama kayda geçer; makbuzda
+  ifşa durumu.
+- **Kurulum motoru:** `skills/ortak-avukat/scripts/oa_kurulum.py` — Yargı Pro hariç her
+  gereksinimi TAMAM / EKSİK / ELİMDE diye denetler (bkz. Kurulum).
 - **Dilekçe ve kontrol:** icra dilekçe ailesi; AYM bireysel başvuru ve AİHM yolu kontrol
   listesi. **UDF teslimde Layer 0 katı engel:** dilekçe metninde müvekkil verisi varsa dış
   araçla (`udf-cli`) UDF üretilmez; teslim `--udf-yok` ile kapanır ve UDF'i UYAP

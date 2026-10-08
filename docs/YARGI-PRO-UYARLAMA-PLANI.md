@@ -80,7 +80,7 @@ değiştirme gibi OA ilkelerine aykırı tasarımlar da alınmadı.
 ### 2.4 Süre motoru (fikirler: 12-1 adli tatil, 12-2 tebligat, 12-3 öğrenme) — `oa-sure`
 
 - **Adli tatil rejimi kuralın kendisinde:** her kural kendi rejimini taşır (`sure_kurallari.json`,
-  27 → 48 kural). İcra mahkemesi işlerinde tatil uzatması yoktur (İİK m.18/1): 10 Ağustos'ta
+  27 → 50 kural). İcra mahkemesi işlerinde tatil uzatması yoktur (İİK m.18/1): 10 Ağustos'ta
   tebliğ edilen kararda istinaf için son gün 24 Ağustos, şikâyet için 17 Ağustos'tur; motor
   eskiden ikisinde de 7 Eylül veriyordu — hak kaybı riski kapandı.
 - **Ceza yargılamasında tatil içinde tebliğ:** süre tatilde işlemez; daha erken sonuç veren

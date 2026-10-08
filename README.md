@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **56.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.586** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **56.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.591** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -124,7 +124,7 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   başlangıcı kanıtsız ya da tebliğ usulsüz/şüpheliyse hesap bunu görünür uyarıyla
   söyler (başlangıç kapısı). AYM ve AİHM başvuru süreleri eklendi; **AİHM başvuru
   süresi her dosyada dört aydır** (avukat kararı; 1.2.2022 öncesi geçiş rejimi
-  kapsam dışı). Kural kataloğu 27 → 48.
+  kapsam dışı). Kural kataloğu 27 → 50.
 - **Dilekçe ve kontrol.** İcra dilekçe ailesi (oa-dilekce); AYM bireysel başvuru
   ve AİHM yolu kontrol listesi (oa-usul, oa-kontrol); atıf kapısı sertleştirildi.
 - **UDF teslimde gizlilik süzgeci (Layer 0) KATI ENGEL.** UDF'i üreten `udf-cli`
@@ -162,6 +162,45 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   artık herkese açık değil; eklentinin kendiliğinden güvendiği böyle bir uç nokta
   sorgularınızı okuyup "içtihat" diye sahte metin döndürebilirdi. Aynı yamayla,
   mahkemeye giden UDF'ye sızan iç izleme notları (B-19) kapatıldı.
+- **Zincirleme tepki (delil → vakıa → illiyet → kıyas → antitez).** Bir halka
+  değişince — ör. yeni evrak künyeyi değiştirdi — aşağı akıştaki denetimler BAYAT
+  diye görünür: `_oa/DURUM.md`'de "Bayat Zincir" satırı, teslim makbuzunda tazelik
+  uyarısı. Teslim durmaz, karar sizindir (avukat kararı). Kaynağını tam beyan
+  edemeyen bir halka da "taze" sayılmaz; graf kapısı bozuk bir denetim dosyasında
+  sessizce açılmaz ve aynı anda duran gerçek bir dairesel illiyeti gizlemez.
+- **Bu sürüm adayının getirdiği iki hukuki kusur kapatıldı.** Avukatın istifasında
+  vekâletin devam süresi (HMK m.82/1, Av.K. m.41/1): müvekkile giden tarih adli
+  tatil uzatması olmadan, erken tarihtir; geç okuma yalnız uyarı satırında görünür.
+  Vergi davasında karşı vekâlet ücreti nispi dilimle hesaplanmaz (Av.K. m.168/2 —
+  maktu); kısmi kabulde doğrulanamayan dağılım için rakam yerine görünür not çıkar,
+  gider bandının üst ucu maktuyu çıpa olarak taşır (AAÜT m.3/1 takdiriyle üç katına
+  kadar yüksek olabilir).
+- **Karşı tarafın gizli talimatı dilekçede ifşa edilir (avukat talimatı — siber
+  hukuk güvenliği).** Belge güvenlik kapısı karşı tarafın evrakında insan gözüyle
+  görünmeyen metin için kesin bulgu verdiyse, bu tespit olgusal bir bölümle
+  dilekçeye **varsayılan olarak** girer: metin nerede, nasıl gizlenmiş ve aynen ne
+  yazıyor. Bölüm niyet ya da suç iddiası taşımaz; değerlendirme Mahkemenindir.
+  Bölüm yoksa dilekçe denetimi görünür uyarı verir; bölümü bilinçli olarak
+  koymamak gerekçeli bir komutla mümkündür ve kayda geçer (bulgular değişince kayıt
+  bayatlar). Kesin bulgu yokken dilekçede bölüm varsa "yanlış ifşa riski" uyarısı
+  çıkar. Teslim makbuzu ifşa durumunu taşır.
+- **Word (DOCX) metni aslına sadık.** "A & B Ltd." artık "A &amp; B" diye
+  okunmaz; sekme ve satır sonu korunur. Evrak gövdesi ile belge güvenlik kapısı tek
+  çözücü kuralını paylaşır: bir Word dosyasının iki iç nüshası farklıysa fark
+  satırı yerinde damgalanır, konumlanamazsa evrak VERİ diye sarılır (eskiden
+  damgasız kalabiliyordu). Çok uzun sayısal karakter başvurusu evrakı okunmaz kılmaz.
+- **Tek yapıştırmalık kurulum ve kurulum motoru.** [Kurulum](#kurulum--kolay-yol)
+  bölümündeki tek prompt, Yargı Pro hariç bütün gereksinimleri sırayla kurdurur.
+  Zincirin kanıt halkası projenin içindedir: kurulum motoru her gereksinimi
+  TAMAM / EKSİK / ELİMDE diye denetler, eksiğin resmî komutunu basar ve hepsi
+  TAMAM olana dek yeniden koşturulur.
+- **Anayasa m.11 ek düzenleme (avukat talimatı).** Talimat yalnızca müvekkilin
+  vekili ya da müdafii olan avukattan gelir: promptu ve talimatı veren avukat
+  esastır; karşı taraf avukatı ve asil talimat kaynağı değildir.
+- **CI'nın yakaladığı iki hata giderildi.** Bozuk tek bir evrak paralel okumada
+  bütün klasörün okunmasını düşürebiliyordu; Windows'ta `npx` başlatılamadığında
+  geçerli bir UDF "geçersiz" ilan edilip teslim durabiliyordu — artık "YAPILAMADI"
+  görünür, dosya hakkında hüküm verilmez.
 - **Ayrıca:** evrak paketlerinde zip bombası ve girdi seli sınırları; eklenti
   metinlerinde ham görünmez karakter yasağı; dış araç sürümleri sabit
   (`udf-cli@0.5.6`, `docx2udf` 1.0.6 — sürümsüz çağrı kalmadı); bağımlılık alt
@@ -190,6 +229,11 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
    (taze kurulumda derlenmiş önbellek yoktur ve Claude uygulaması altında kancalar
    kendi `.pyc`'sini yazamaz; `<sürüm>` 8. adımdaki etkin sürüm klasörüdür — komut,
    8. adımdaki derleme komutuyla aynıdır).
+6. **İlk evrak okumasında önbellek bir kez tazelenir.** Belge güvenlik kaydı (1.1) ve
+   Word çıkarımı (sürüm 3) değişti: önbellekteki UDF, DOCX ve metinli PDF kayıtları bir
+   kez yeniden okunup taranır (ucuz); OCR'lı kayıtlar yeniden OCR'lanmaz — önce mevcut
+   metin taranır, yalnız bulgu ya da şüpheli kritik alan çıkarsa evrak baştan okunur.
+   Büyük klasörde güncellemeden sonraki ilk okuma bu yüzden biraz uzun sürebilir.
 
 ### Dürüst sınırlar — bu sürümde ölçülmeyenler
 
@@ -856,7 +900,7 @@ tarih üretiyordu; geç tarih hak kaybettirir); **başlangıç kapısı** süren
 olaydan ve hangi kanıtla başladığını sorar — kanıtsız başlangıçta ya da usulsüz/
 şüpheli tebliğde hesap bunu görünür uyarıyla söyler, tek kesin tarih vermez; AYM
 ve AİHM başvuru süreleri eklendi — AİHM her dosyada dört ay. Kural kataloğu
-27 → 48.
+27 → 50.
 
 #### [`oa-gizlilik`](plugins/ortak-avukat/skills/oa-gizlilik/) — Layer 0 · 1 script
 Dış araca (bulut MCP, web, e-posta) çıkacak her içeriği gönderilmeden **önce**
