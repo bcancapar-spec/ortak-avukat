@@ -7,9 +7,11 @@
 > v0.5.18 adayının iki hukuki kusuru (istifa süresi, vergi davasında maktu vekâlet), gizli talimat
 > ifşası Faz A + Faz B (dilekçeye bağlama), DOCX metin sadakati ve iki XML çözücüsünün tek kuralı
 > (nüsha fail-open kapandı), kurulum motoru, anayasa m.11 ek düzenlemesi, künye + ölçülmüş satır
-> sayıları, CI'nın yakaladığı iki üretim hatası. Her adım tam süit Python 3.14 ve 3.12'de yeşil
-> (OA-SUIT-SAYISI). **Açık:** bütünleşme testleri (a)(b)(c), GATE G zamanlama analizi (e), seri
-> perf koşusu ve sakin makinede `hook_olc`, son bütün-dal incelemesi, DURUM.md ifşa satırı.
+> sayıları, CI'nın yakaladığı üretim hataları (npx önbellek yarışı dahil). Her adım tam süit Python
+> 3.14 ve 3.12'de yeşil (OA-SUIT-SAYISI). Zincir gerçek motorlarla uçtan uca sınandı. GATE G titrek
+> testinin kaynağı test sırasıydı, ürün değişmedi. Kanca gecikmesi sürüm defterinde
+> (PERFORMANS-STATUS §12): standart kökte fark yok, zincir ürünleri olan büyük dosyada Stop +79 ms.
+> **Açık:** son bütün-dal incelemesi, DURUM.md ifşa satırı.
 
 > **v0.5.18 (2026-10-06):** belge güvenlik kapısı (B-22) + görünürlük kâhini, OCR v1.9, Yargı PRO
 > uyarlamaları, 2026-10-06 kod denetimi düzeltmeleri (R1-R7, R9). Ölçülen: tam süit Python 3.12 ve

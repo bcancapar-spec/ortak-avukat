@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.605** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **119.000+** satır · **3.606** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -197,10 +197,11 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 - **Anayasa m.11 ek düzenleme (avukat talimatı).** Talimat yalnızca müvekkilin
   vekili ya da müdafii olan avukattan gelir: promptu ve talimatı veren avukat
   esastır; karşı taraf avukatı ve asil talimat kaynağı değildir.
-- **CI'nın yakaladığı iki hata giderildi.** Bozuk tek bir evrak paralel okumada
-  bütün klasörün okunmasını düşürebiliyordu; Windows'ta `npx` başlatılamadığında
-  geçerli bir UDF "geçersiz" ilan edilip teslim durabiliyordu — artık "YAPILAMADI"
-  görünür, dosya hakkında hüküm verilmez.
+- **CI'nın yakaladığı hatalar giderildi.** Bozuk tek bir evrak paralel okumada
+  bütün klasörün okunmasını düşürebiliyordu. `npx` başlatılamadığında ya da npm'in
+  kendi önbelleği bozulduğunda (aynı anda iki çağrı) geçerli bir UDF "geçersiz"
+  ilan edilip teslim durabiliyordu. Artık "YAPILAMADI" görünür, dosya hakkında
+  hüküm verilmez.
 - **Ayrıca:** evrak paketlerinde zip bombası ve girdi seli sınırları; eklenti
   metinlerinde ham görünmez karakter yasağı; dış araç sürümleri sabit
   (`udf-cli@0.5.6`, `docx2udf` 1.0.6 — sürümsüz çağrı kalmadı); bağımlılık alt
@@ -250,7 +251,7 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 - Teyit bekleyen hukuki noktalar ayrı listededir:
   [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek `udf-cli` ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
-- Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §11.
+- Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
 
 ---
 

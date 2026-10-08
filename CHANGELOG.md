@@ -75,6 +75,10 @@ gereği yalnız saha etiketiyle anılır.
   - Kırmızının kaynağı testin kendisiydi: fikstür `--kaydet`ten SONRA `_oa/cikti`'ya yeni evrak yazıyordu. O anda kayıt gerçekten bayattı ve test ancak iki yazım 2 sn içinde kaldıkça geçiyordu.
   - Gerçek 2,5 sn gecikmeyle kanıtlandı: eski sıra CANLI-SENKRON ile RET, yeni sıra temiz.
   - Toleransı yükseltmek "onarım" değildir, gerçek bayatlığı gizler. Testle kilitli: beş mutasyonun beşi de yakalandı.
+- **Testler deponun ortak `.pyc` önbelleğine dokunmaz (ürün değişmedi).** Yerel tam süitte (Python 3.14) sözdizimi kapısı, sağlam `tazelik_denetim.py`'yi "derlenmiyor" diye raporladı (`WinError 5`).
+  - Kapı her betiği deponun `__pycache__`'ine derliyordu. Paralel işçilerdeki kanca alt süreçleri aynı `.pyc`'yi okurken Windows üzerine yazmayı reddetti.
+  - Aynı sınıftan iki test daha vardı. Biri `hook_giris`'i oraya derliyordu. Öteki `pipeline_kayit`'in `.pyc`'sini siliyordu; `PYTHONDONTWRITEBYTECODE=1` ortamında (masaüstü uygulaması) kanca onu yeniden yazamadığı için hiçbir şey denetlemeden dönüyordu.
+  - Üçü de artık kendi dizininde çalışır. Bayt kodu testi değişkeni alt süreçten çıkarır ve her ortamda gerçekten denetler. Yeni kilit testi kırmızıdan yeşile geçti; mutasyonla doğrulandı.
 
 ### I. Vitrin künyesi, kurulum prompt'u ve kapanış küçükleri (2026-10-08)
 
@@ -122,7 +126,10 @@ gereği yalnız saha etiketiyle anılır.
 - Gerçek evrak ölçümleri (yukarıda C).
 - TEYİT BEKLİYOR hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek udf-cli ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
-- Kanca ölçümü: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §11 — hook-prompt 101 ms ortanca; giriş betiği kazancı 27,7 ms (defter kuralının 30 ms eşiğinin altında; gerekçe: makine ~2,7 kat hızlı, oran korunuyor).
+- Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
+  - Standart kökte ölçülebilir fark yok: Python 3.14'te en çok +2,4 ms, 3.12'de +1,6 ms. Giriş betiği kazancı 31–40 ms; ağır modül yok.
+  - Zincir ürünleri olan büyük dosyada (3000 evrak temsili) Stop kancası +79 ms (~%20). Kaynağı çapraz denetim; v0.5.19'da girdi özetine bağlı önbellek önerilir.
+  - Önceki ölçüm §11'de (2026-10-06).
 
 ## v0.5.17.1 — ACİL GÜVENLİK YAMASI: SAHİPSİZ YEDEK MCP (B-23) + UDF İÇ İZ SIZINTISI (B-19) (2026-10-06)
 

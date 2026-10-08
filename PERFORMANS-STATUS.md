@@ -405,3 +405,92 @@ küçüldü. Oran korunuyor: giriş/doğrudan farkı %21,5 (§10'daki yalıtılm
 Kapı (`test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`) ve kanarya (`-m perf`) Python 3.12 ve
 3.14'te yeşil. v0.5.18'in yeni kanca işi (belge güvenlik bölümü DURUM.md'de) sıcak yola ağır
 modül eklemedi.
+
+## 12. v0.5.18 SÜRÜM DEFTERİ ÖLÇÜMÜ — v0.5.17.1 ↔ v0.5.18 adayı (2026-10-08)
+
+Komut: `python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu`.
+
+- **Taban:** `origin/main` 4b2f029 (v0.5.17.1, kullanıcıların elindeki sürüm); `git archive` ile ayrı dizine çıkarıldı.
+- **Araç:** iki ağaçta aynı sürüm (`git diff origin/main HEAD -- tools/hook_olc.py` boş).
+- **Koşul:** iki ağaç `compileall` ile eşit `.pyc` sıcaklığında; A/B/A/B dönüşümlü; her koşudan önce boşta denetimi (0 yabancı python süreci, CPU %2–14).
+- **Ortam:** Windows 11 · 16 çekirdek · gerçekçi dava kökü. Python 3.14.8 (kancaların yorumlayıcısı; çıplak başlık 22,5–24,9 ms) ve 3.12.15.
+- Ham çıktılar yerel ölçüm klasöründe (depo dışı).
+
+### 12.1 Standart kök — Python 3.14.8 (ortanca ms, iki tur)
+
+| olay | v0.5.17.1 | v0.5.18 | fark (ortalama) |
+|---|---|---|---|
+| hook-prompt | 83,4 / 85,8 | 88,8 / 85,1 | +2,4 |
+| hook-pretool | 79,1 / 80,0 | 81,4 / 79,8 | +1,1 |
+| hook-postwrite | 108,0 / 107,1 | 108,2 / 107,7 | +0,4 |
+| hook-denetle | 112,6 / 108,0 | 111,5 / 113,8 | +2,4 |
+| hook-acilis | 82,9 / 81,1 | 80,5 / 82,3 | −0,6 |
+
+- Bileşik (bir Write, Pre+Post): 187,1 / 187,1 → 189,6 / 187,5 ms.
+- Giriş betiği kazancı (hook-prompt, doğrudan − giriş): 37,0 / 33,9 → 37,5 / 40,3 ms. §10 kuralının 30 ms eşiğinin üstünde; gerekçe gerekmez.
+- Import dökümü: dört koşuda da `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (102 import izlendi).
+
+**Sonuç:** standart kökte v0.5.18 kanca yoluna ölçülebilir maliyet eklemedi. En büyük fark +2,4 ms; turlar arası oynamanın içinde.
+
+### 12.2 Standart kök — Python 3.12.15 (aynı protokol)
+
+| olay | v0.5.17.1 | v0.5.18 | fark (ortalama) |
+|---|---|---|---|
+| hook-prompt | 80,6 / 81,0 | 83,0 / 80,6 | +1,0 |
+| hook-pretool | 74,8 / 77,1 | 77,8 / 75,8 | +0,9 |
+| hook-postwrite | 106,0 / 119,9 | 105,1 / 108,2 | −6,3 |
+| hook-denetle | 109,0 / 104,8 | 109,2 / 107,7 | +1,6 |
+| hook-acilis | 77,9 / 76,8 | 78,4 / 80,6 | +2,2 |
+
+- `hook-postwrite`'taki −6,3, ana dalın ikinci turundaki geniş dağılımdan gelir (104,6–146,2 ms); gerçek bir kazanç değildir.
+- Çıplak başlık 34,5–37,0 ms. Bileşik: 180,8 / 197,0 → 182,8 / 184,0 ms.
+- Giriş betiği kazancı (hook-prompt): 31,4 / 31,6 → 36,3 / 31,6 ms; eşiğin üstünde.
+- Import dökümü: ağır modül YOK (78 import izlendi).
+
+### 12.3 Ölçek kökü — v0.5.18'in yeni işinin gerçek bedeli (Python 3.14.8)
+
+Standart kökte `_oa/cikti`'da denetim JSON'u yoktur. v0.5.18'in zincir işi (çapraz denetim, bayat zincir, S1 kaynak beyanı) orada boş koşar. Bu yüzden Görev 1'in ölçek senaryosu da aynı protokolle ölçüldü. Senaryo 3000 evraklık bir dosyayı temsil eder:
+- 1,4 MB graf (6000 düğüm);
+- 3000 olaylı vakıa;
+- 300 kıyas vakıası;
+- dört damgalı denetim JSON'u.
+
+| olay | v0.5.17.1 | v0.5.18 | fark |
+|---|---|---|---|
+| hook-denetle | 389,9 / 393,8 | 470,7 / 468,1 | **+77,6 (~%20)** |
+| hook-prompt | 87,0 / 90,4 | 84,1 / 87,1 | −3,1 |
+| hook-pretool | 80,4 / 79,5 | 85,4 / 79,5 | +2,5 |
+| hook-acilis | 80,8 / 82,0 | 81,8 / 80,5 | −0,3 |
+
+- `hook-postwrite` bu protokolde güvenilir değildir. Tetik "son 60 sn içinde taslak yazıldı mı" koşuluna bağlıdır; kökün yaşına göre ya tam gövdeyi (395,7 → 459,2) ya erken çıkışı (80,0 → 82,5) ölçer.
+- **Tam yol kontrolü:** her çağrıdan önce bir çalışma evrakı güncellenerek alınan ölçüm standartla aynıdır: 387,8 / 388,2 → 468,7 / 468,6, fark +80,7. İki ölçümün ortalaması **+79 ms**.
+  - Gövde her çağrıda tam koşar. "Boş çıktı" yalnız değişmeyen çıktının BASIMININ susturulmasıdır (`_hook_cikti_degisti_mi`).
+  - Dedup kısa devresi yalnız aynı saniyede devreye girer; `--bekle 1.1` onu yener.
+
+**Kaynak (cProfile, tek çağrı, ısıtmadan sonra):** artışın neredeyse tamamı B-2 çapraz denetimidir.
+- `_capraz_bosluk_uyarisi` → `capraz_denetim.caprazla_ayrintili`: graf, vakıa ve kıyas kimlikleri ortak uzayda eşleştirilir (25.799 `_norm` çağrısı).
+- Bayat zincir ~17 ms.
+- v0.5.18'in süreç-içi JSON ayrıştırma önbelleği maliyetin bir kısmını geri kazanır: `_denetim_jsonlari` 4 çağrı / 49,5 ms → 10 çağrı / 18,5 ms.
+- Bunlar profilli sürelerdir; cProfile çok sayıda küçük çağrıyı şişirir. Profilsiz fark ~+79 ms'dir.
+
+**Gerekçe:** bu maliyet zincirleme tepkinin kendisidir. Üç halkanın aynı kişiyi ve olayı aynı kimlikle anıp anmadığı her Stop'ta yeniden denetlenir. Maliyet yalnız zincir motorlarının çıktısı olan büyük dosyada görünür; standart kökte sıfırdır.
+
+**v0.5.19 adayı (ölçüldü, uygulanmadı):** çapraz denetimin sonucu girdilerin içerik özetine (sha) bağlanıp kanca çağrıları arasında önbelleklenebilir; girdiler çoğu turda değişmez. Bu türetilmiş bir önbellektir; gerçeğin kaynağı (defter) değişmez.
+
+### 12.4 Görev 1'in "+27,5 ms" ölçümüyle uzlaşma
+
+Görev 1'in raporu, `hook-denetle` için +27,5 ms ölçmüştü (Python 3.12.15, taban: zincir onarımının başlangıç commit'i). Son kodda, aynı araçla, iki yorumlayıcıda ve A/B/A/B koşulduğunda bu fark **yeniden üretilmedi**: 3.14'te +2,4, 3.12'de +1,6 ms.
+
+- Görev 1'in karar ölçümü tek bir ÖNCE/SONRA çiftiydi. Aynı çiftte dokunulmayan `hook-acilis` +10,0 ms oynamıştı; gürültü tabanı ±10 ms mertebesindeydi.
+- Ölçülen kod, birleştirme öncesi ara hâldi.
+- Kalıcı bedel standart kökte değil, zincir ürünleri olan büyük dosyada görünür (§12.3).
+
+### 12.5 Diğer sürüm kapıları (aynı gün)
+
+- Zamanlama kanaryası (`-m perf -p no:xdist`): Python 3.14 ve 3.12'de geçti, uyarı yok.
+- `hook_doktor --servis-atla`: TÜM MEKANİK KONTROLLER GEÇTİ.
+  - Sürüm mutabakatı 0.5.18.
+  - `plugin.json`'da çift hooks bildirimi yok.
+  - 6 olay kayıtlı; altısı da exit 0.
+  - [5] "servis edilen nesil" bu makinede BAYAT görünür, çünkü kurulu eklenti 0.5.17.1'dir. Bu, sürüm main'e birleşip `/plugin` ile güncellenene kadar beklenen ortam hâlidir; kod arızası değildir.
+- `aile_dogrula`: AİLE YAPI DENETİMİ TEMİZ (20 parça).
