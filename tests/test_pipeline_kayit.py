@@ -10,6 +10,7 @@ TESLİM ENGELİ (exit 1) vermesi — fiziksel işletim protokolünün garantör�
 """
 import importlib.util
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -200,8 +201,11 @@ def test_arac_hata_kaydedilir_ve_goster_de_gorunur(tmp_path):
 
 # ── Gate G — KALICILIK KAPISI: --denetle, tam_tur'un mekanik --durum'unu sorar ──
 
-def _tum_adim_katmanlari_isle(tmp_path):
-    _p06_onkosul_fixture_kur(tmp_path)
+def _tum_adim_katmanlari_isle(tmp_path, fikstur=True):
+    # fikstur=False: çağıran P0-6 çalışma evrakını ZATEN yazmıştır — yeniden yazmak `_oa/cikti`
+    # damgalarını tazeler ve tam_tur --kaydet'ten sonra working memory'yi GERÇEKTEN bayatlatır.
+    if fikstur:
+        _p06_onkosul_fixture_kur(tmp_path)
     uzun_kanit = "Fiilen script/MCP çağrısı yapıldı ve sonucu belgelendi (>=20 karakter)."
     for no, (_ad, parcalar) in pk.ADIMLAR.items():
         for parca in parcalar:
@@ -262,7 +266,15 @@ def test_gate_g_analiz_md_eksikken_denetle_teslim_engeli(tmp_path):
 
 def test_gate_g_tam_tur_tamamlandiginda_denetle_temiz_gecer(tmp_path):
     """tam_tur.py GERÇEKTEN --kaydet ile tamamlanmışsa (dosya-analiz.md fiziksel
-    kanıtı taze) Gate G engellemez — pozitif kontrast vaka."""
+    kanıtı taze) Gate G engellemez — pozitif kontrast vaka.
+
+    v0.5.18 (e) — YAZIM SIRASI gerçek akıştaki gibidir: çalışma evrakı `--kaydet`ten ÖNCE.
+    Eskiden P0-6 fikstürü `_oa/cikti`'ya `--kaydet`ten SONRA yeni evrak yazıyordu; o andan
+    itibaren dosya-analiz.md GERÇEKTEN bayattı ve test yalnız iki yazım arasındaki süre
+    CANLI-SENKRON toleransının (2 sn) altında kaldıkça yeşildi — yük altında kırmızıya
+    dönüyordu. Ürün haklıydı, test sırası yanlıştı. Son kilit: hiçbir tam_tur/pipeline
+    komutu `_oa/cikti`'ya yazmaz; yazsaydı working memory yavaş makinede kendini bayatlatırdı."""
+    _p06_onkosul_fixture_kur(tmp_path)          # çalışma evrakı --kaydet'ten ÖNCE (gerçek akış)
     metin_dizin = tmp_path / "_oa" / "metin"
     metin_dizin.mkdir(parents=True, exist_ok=True)
     (metin_dizin / "00-kunye.json").write_text(
@@ -273,6 +285,9 @@ def test_gate_g_tam_tur_tamamlandiginda_denetle_temiz_gecer(tmp_path):
     cikti_dizin = tmp_path / "_oa" / "cikti"
     cikti_dizin.mkdir(parents=True, exist_ok=True)
     (cikti_dizin / "01-parca.md").write_text("çalışma evrakı", encoding="utf-8")
+    # Anlık görüntü İLK tam_tur komutundan ÖNCE: kilit --baslat/--kaydet'i de kapsar (ikisinden
+    # sonra alınsaydı --kaydet'in md'den SONRA cikti'ya yazması görünmezdi — mutasyonla görüldü).
+    cikti_once = {p.name: p.stat().st_mtime_ns for p in cikti_dizin.iterdir()}
 
     # tam_tur.py --baslat/--kaydet doğrudan tam_tur.py üzerinden çağrılır.
     r1 = subprocess.run([sys.executable, str(TAM_TUR_SCRIPT), "--baslat",
@@ -285,10 +300,42 @@ def test_gate_g_tam_tur_tamamlandiginda_denetle_temiz_gecer(tmp_path):
     assert (tmp_path / "_oa" / "analiz" / "dosya-analiz.md").exists()
 
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
-    _tum_adim_katmanlari_isle(tmp_path)
+    # P0-6 fikstürünün künyesi eski sıradaki gibi --kaydet'ten SONRA yazılır (`_oa/metin` —
+    # CANLI-SENKRON karşılaştırmasına girmez); `_oa/cikti` yeniden YAZILMAZ.
+    (metin_dizin / "00-kunye.json").write_text(
+        json.dumps({"toplam_evrak": 0, "kayitlar": []}), encoding="utf-8")
+    _tum_adim_katmanlari_isle(tmp_path, fikstur=False)
     kod, cikti = _cli(["--denetle", "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod == 0, f"tam_tur GERÇEKTEN tamamlanmışken Gate G engellememeli:\n{cikti}"
     assert "DENETİM TEMİZ" in cikti
+    assert {p.name: p.stat().st_mtime_ns for p in cikti_dizin.iterdir()} == cikti_once, \
+        "tam_tur/pipeline komutları `_oa/cikti`'ya yazmamalı (working memory kendini bayatlatır)"
+
+
+def test_canli_senkron_bayatlik_YAZIM_SIRASINA_bagli_GECEN_SUREYE_degil(tmp_path):
+    """v0.5.18 (e) — 2 sn tolerans yavaş makinede sahte BAYAT üretir mi? HAYIR. Karşılaştırılan
+    iki şey de disk damgasıdır: dosya-analiz.md ↔ `_oa/cikti`'daki en yeni çalışma evrakı.
+    Evrak md'den ÖNCE yazıldıysa aradan ne kadar zaman geçerse geçsin bayat DEĞİLDİR; md'den
+    SONRA (toleranstan fazla) yazıldıysa gerçekten bayattır — md o evrakı görmemiştir. Yavaşlık
+    ikinci durumu yalnız GÖRÜNÜR kılar, birinciyi yaratamaz. Tolerans kaba damga çözünürlüğü
+    (ör. FAT/exFAT 2 sn) içindir; yükseltmek gerçek bayatlığı gizler."""
+    analiz = tmp_path / "_oa" / "analiz"
+    analiz.mkdir(parents=True)
+    (analiz / "dosya-analiz.json").write_text("{}", encoding="utf-8")
+    md = analiz / "dosya-analiz.md"
+    md.write_text("# kayıt", encoding="utf-8")
+    cikti = tmp_path / "_oa" / "cikti"
+    cikti.mkdir()
+    evrak = cikti / "05-kiyas.md"
+    evrak.write_text("çalışma evrakı", encoding="utf-8")
+    t = 1_700_000_000                                   # sabit, GEÇMİŞ epoch — saat okunmaz
+    os.utime(evrak, (t, t))
+    os.utime(md, (t + 600, t + 600))                    # md evraktan 10 dk SONRA (yavaş makine)
+    assert pk._canli_senkron_bayat_mi(str(tmp_path)) is None
+    os.utime(md, (t - 1.5, t - 1.5))                    # evrak md'den 1,5 sn sonra: tolerans bandı
+    assert pk._canli_senkron_bayat_mi(str(tmp_path)) is None
+    os.utime(md, (t - 3, t - 3))                        # evrak md'den 3 sn SONRA: gerçek bayatlık
+    assert "CANLI-SENKRON" in (pk._canli_senkron_bayat_mi(str(tmp_path)) or "")
 
 
 def test_arac_hata_denetle_uyari_verir_ama_tek_basina_bloklamaz(tmp_path):
