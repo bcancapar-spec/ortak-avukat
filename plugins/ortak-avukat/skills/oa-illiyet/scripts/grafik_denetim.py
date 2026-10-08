@@ -210,7 +210,8 @@ def _atomik_json_yaz(yol, nesne):
     K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
     `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
     240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
-    durur, geçici silinir)."""
+    durur, geçici silinmeye çalışılır — o da kilitliyse `.oa-tmp` kalabilir;
+    ad `.json` ile bitmediği için `*.json` tüketicileri onu görmez)."""
     gecici = f"{yol}.{os.getpid()}.oa-tmp"
     try:
         with open(gecici, "w", encoding="utf-8") as f:

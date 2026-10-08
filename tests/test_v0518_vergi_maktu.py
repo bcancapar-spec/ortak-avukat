@@ -209,9 +209,13 @@ def test_cli_vergi_kismi_kabul_rakam_yerine_gorunur_not_exit2(tmp_path):
     # KÜÇÜK-6: '%' denetimi ilgili bölüme daraltılır; JSON bloğu ayırt ediciyle ayrılır
     vekalet_blok = out[out.index("KARŞI VEKÂLET"):out.index("YARGILAMA GİDERİ BANDI")]
     assert "%" not in vekalet_blok, vekalet_blok
-    # ÖNEMLİ-1: ÜST bandı bilinen maktuyu ÜST SINIR olarak içerir ve bunu satırda söyler
+    # ÖNEMLİ-1: ÜST bandı bilinen maktuyu içerir ve bunu satırda söyler. Yeniden inceleme
+    # KÜÇÜK-1 (2026-10-08): maktu bir ÜST SINIR değil, tarife TABANIDIR (AAÜT m.3/1: üç katına
+    # kadar takdir) — satır iki yönü de söyler: kısmi dağılımla düşük, takdirle yüksek olabilir.
     ust_satiri = next(s for s in out.splitlines() if s.strip().startswith("ÜST ("))
-    assert "2.530,00 TL" in ust_satiri and "ÜST SINIR" in ust_satiri, ust_satiri
+    assert "2.530,00 TL" in ust_satiri and "ÇIPA" in ust_satiri, ust_satiri
+    assert "düşük" in ust_satiri and "yüksek" in ust_satiri and "AAÜT m.3/1" in ust_satiri, ust_satiri
+    assert "ÜST SINIR" not in ust_satiri, "maktu üst sınır değildir (AAÜT m.3/1 takdiri)"
     js = json.loads(out[out.index("\n{\n") + 1:])      # json.dumps(indent=2): '{' tek başına satırda
     assert js["hesaplanamayan"] and js["karsi_vekalet"]["lehe_kabul_kismi"] is None
     assert js["gider_bandi"]["ust_vekalet"] == "maktu_ust_sinir"

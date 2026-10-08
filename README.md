@@ -15,6 +15,10 @@
 
 **Sürüm:** 0.5.18 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **[Güncelleme notları](#güncelleme-notları)**
 
+**Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
+
+**Birlikte yazılan:** **45.000+** satır eklenti kodu (Python) · **55.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **12.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **117.000+** satır · **3.516** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
 > geliştirme zinciri **149 gerçek davada** test edildi (v0.5.17–0.5.18 denetim,
@@ -338,8 +342,10 @@ onaylarım, sen bekle.
      https://github.com/tesseract-ocr/tessdata/raw/main/tur.traineddata
      dosyasını onayımla indir; "C:\Program Files\Tesseract-OCR\tessdata"
      klasörüne kopyalamak yönetici onayı ister — dur, bana söyle.
-     Kurucu PATH'e eklemez. `tesseract` bulunamıyorsa önce TAM YOLLA doğrula:
-     `& "C:\Program Files\Tesseract-OCR\tesseract.exe" --list-langs`. Kalıcı
+     Kurucu PATH'e eklemez. `tesseract` bulunamıyorsa önce TAM YOLLA doğrula —
+     PowerShell'de: `& "C:\Program Files\Tesseract-OCR\tesseract.exe" --list-langs`;
+     Bash aracında (Git Bash): `"/c/Program Files/Tesseract-OCR/tesseract.exe" --list-langs`
+     (baştaki `&` yalnız PowerShell çağrı operatörüdür, Bash'te hata verir). Kalıcı
      PATH için onayımla PowerShell'de YALNIZ kullanıcı kapsamını oku ve ekle:
      `[Environment]::SetEnvironmentVariable('Path', ([Environment]::GetEnvironmentVariable('Path','User').TrimEnd(';') + ';C:\Program Files\Tesseract-OCR'), 'User')`
      (kullanıcı PATH'i boşsa yalnız yeni yolu yaz). `setx PATH` KULLANMA:
@@ -393,11 +399,12 @@ onaylarım, sen bekle.
    edilmez."
 8) ESKİ YEDEK: `/mcp` listesinde ya da connectors bölümünde `yargi-mcp-yedek`
    adlı bir bağlantı görüyorsam (0.5.17 ve öncesinden kalır; v0.5.17.1'de
-   kaldırıldı) silinmesini ÖNER, onayım olmadan silme: `claude mcp get
-   yargi-mcp-yedek` kullanıcı ya da yerel kapsamda bir kayıt gösteriyorsa
-   onayımla `claude mcp remove yargi-mcp-yedek`; eklenti kalıntısıysa Claude
-   Code'u tamamen kapatıp açmamı, hâlâ duruyorsa connectors bölümünden silmemi
-   söyle.
+   kaldırıldı) silinmesini ÖNER, onayım olmadan silme; o adı `claude mcp
+   get` ile YOKLAMA (onaylı sunucuya ağ sağlık denetimi yapar — sahipsiz uç
+   noktaya dokunulmaz). Onayımdan sonra doğrudan
+   `claude mcp remove yargi-mcp-yedek` koş; "bulunamadı" derse kayıt eklenti
+   kalıntısı ya da connector'dır: Claude Code'u tamamen kapatıp açmamı, hâlâ
+   duruyorsa connectors bölümünden silmemi söyle.
 9) ÖZET: adım adım liste (tablo değil): TAMAM / EKSİK / ELİMDE — ELİMDE olanlar
    için ne yapacağımı tek cümleyle yaz; her satıra kanıt olan komut çıktısından
    bir parça ekle. En sonda hatırlat: Claude Code'u TAM KAPATIP AÇMAM gerekir
@@ -491,8 +498,10 @@ Bu araç **yerelde** çalışır; evrak dışarı gönderilmez (Layer 0 gizlili�
   dil seçtirmez: `tur` için resmî [tessdata](https://github.com/tesseract-ocr/tessdata)
   deposundan `tur.traineddata` indirip `C:\Program Files\Tesseract-OCR\tessdata`
   klasörüne (yönetici onayı) koymanız gerekir. Kurucu PATH'e eklemez; `tesseract`
-  komutu bulunamıyorsa önce tam yolla deneyin
-  (`& "C:\Program Files\Tesseract-OCR\tesseract.exe" --list-langs`), kalıcı eklemek
+  komutu bulunamıyorsa önce tam yolla deneyin — PowerShell'de
+  `& "C:\Program Files\Tesseract-OCR\tesseract.exe" --list-langs`, Git Bash'te
+  `"/c/Program Files/Tesseract-OCR/tesseract.exe" --list-langs` (baştaki `&` yalnız
+  PowerShell'e aittir) —, kalıcı eklemek
   için PowerShell'de yalnız kullanıcı kapsamını okuyup ekleyin:
   `[Environment]::SetEnvironmentVariable('Path', ([Environment]::GetEnvironmentVariable('Path','User').TrimEnd(';') + ';C:\Program Files\Tesseract-OCR'), 'User')`
   — `setx PATH` kullanmayın (birleşik PATH'i kullanıcı PATH'ine kopyalar ve 1024

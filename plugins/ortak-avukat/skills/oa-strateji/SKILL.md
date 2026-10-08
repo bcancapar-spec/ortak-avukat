@@ -248,9 +248,11 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   Eski davranış: `aaut.maktu_vergi` + `nispi_dilimler` dolunca vergi davasında da
   nispi dilim uygulanırdı — tablolar boşken rakam üretmediği için görünmeyen kusur.
   **Gider bandı ÜST satırı** (inceleme, 2026-10-07): kısmi kabul/rette aleyhe vekâlet
-  hesaplanamadıysa bilinen maktu ÜST bandına **ÜST SINIR** olarak eklenir ve satır
-  bunu söyler (müvekkil için güvenli yön); maktu da bilinmiyorsa satır "aleyhe
-  vekâlet DAHİL DEĞİL" der — azami maruziyet sessizce düşük gösterilmez. Notlar
+  hesaplanamadıysa bilinen maktu ÜST bandına **ÇIPA** olarak eklenir ve satır iki
+  yönü de söyler: kısmi dağılımla gerçek tutar düşük, AAÜT m.3/1 takdiriyle üç
+  katına kadar yüksek olabilir (maktu tarife tabanıdır, üst sınır değil); maktu da
+  bilinmiyorsa satır "aleyhe vekâlet DAHİL DEĞİL" der — azami maruziyet sessizce
+  düşük gösterilmez. Notlar
   (m.168/2 vd.) HARÇ bölümünde değil, KARŞI VEKÂLET bölümünde basılır.
   **`--merci idare` uyarısı:** idare mahkemesinde görülen 6183/harç kaynaklı dava
   (ör. ecrimisil, idari para cezası ödeme emri) da Av.K. m.168/2 "her türlü dava"

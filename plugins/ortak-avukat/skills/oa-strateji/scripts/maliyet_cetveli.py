@@ -417,8 +417,9 @@ def hesapla(deger, kismi_kabul, tarife, bilirkisi=0.0, diger_gider=0.0, merci="a
                 ust += float(opsiyonel)
         # v0.5.18 K2 (ÖNEMLİ-1, inceleme): aleyhe vekâlet HESAPLANAMADI iken ÜST bandı onu
         # sessizce dışlıyor, etiket "aleyhe vekâlet dahil" diyordu → müvekkilin azami maruziyeti
-        # maktu kadar DÜŞÜK görünüyordu (hak kaybı yönü). Bilinen maktu ÜST SINIR olarak eklenir
-        # (müvekkil için güvenli yön); maktu da bilinmiyorsa band "haric" diye işaretlenir.
+        # maktu kadar DÜŞÜK görünüyordu (hak kaybı yönü). Bilinen maktu ÇIPA olarak eklenir — üst
+        # sınır DEĞİL: AAÜT m.3/1 tabandır, üç katına kadar takdir (yeniden inceleme KÜÇÜK-1);
+        # maktu da bilinmiyorsa band "haric" diye işaretlenir.
         if aleyhe is not None:
             ust += aleyhe
             ust_vekalet = "dahil"
@@ -724,8 +725,10 @@ def rapor(sonuc, tarife, tarife_yolu, faiz=None):
     L.append("YARGILAMA GİDERİ BANDI (HMK m.323 kalemleri; paylaştırma m.326/2 — mahkeme takdiri, çıpa)")
     L.append(f"  ALT (açılış zorunlu + elle girilen gider)  : {tl(b['alt'])}")
     _ust_ek = {
-        "maktu_ust_sinir": (" — aleyhe vekâlet: kısmi dağılım hesaplanamadı, bilinen MAKTU ÜST SINIR olarak "
-                            "eklendi (müvekkil için güvenli yön; gerçek tutar bundan düşük olabilir)"),
+        # Anahtar adı (JSON sözleşmesi) korunur; metin dürüst: maktu tarife TABANIDIR, üst sınır değil.
+        "maktu_ust_sinir": (" — aleyhe vekâlet: kısmi dağılım hesaplanamadı, bilinen MAKTU ÇIPA olarak "
+                            "eklendi (gerçek tutar kısmi dağılımla bundan düşük, AAÜT m.3/1 takdiriyle "
+                            "üç katına kadar yüksek olabilir)"),
         "haric": " — aleyhe vekâlet DAHİL DEĞİL (hesaplanamadı/teyitsiz): gerçek azami maruziyet bu rakamdan YÜKSEK",
     }.get(b.get("ust_vekalet"), "")
     L.append(f"  ÜST (tam harç + keşif/kanun yolu harçları + aleyhe vekâlet + elle gider): {tl(b['ust'])}{_ust_ek}")

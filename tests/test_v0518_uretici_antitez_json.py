@@ -18,10 +18,12 @@ Sözleşme (S2 — Görev 2 üretir, Görev 1 `_antitez_bosluk_uyarisi` tüketir
 Görev 1 en az `arac`, `saglikli`, `acik_cepheler`, `curutulmemis` okur.
 Ek (Ruling, bu dosyada): `uyarilar` (list[str]) — advisory kanal; `hedef`
 biçim uyarıları buraya düşer, `saglikli`ye GİRMEZ (brief: "bilinmeyen biçim
-UYARI olur", şema hatası değil). `--iskelet` şablonu `"arac": "antitez_matris"`
-taşır; cephe kaydında opsiyonel `hedef: {"halka": "vakia|illiyet|kiyas", "id": str}`.
+UYARI olur", şema hatası değil). `--iskelet` şablonu `arac` TAŞIMAZ (Ruling 16 / Ö-1:
+damga YALNIZ `--dogrula … --json` denetim çıktısında); cephe kaydında opsiyonel
+`hedef: {"halka": "vakia|illiyet|kiyas", "id": str}`.
 `dilekce_denetim._antitez_matris_dosyalari` dosya adına EK olarak
-`arac == "antitez_matris"` damgalı `.json`ları da tanır (bozuk/yabancı sessizce dışarıda).
+`arac == "antitez_matris"` damgalı `.json`ları da — `cepheler` listesi taşıyorsa — tanır
+(K-1: denetim çıktısı ve bozuk/yabancı dosya matris sayılmaz).
 Bütün veriler kurgudur (anayasa m.7).
 """
 import importlib.util

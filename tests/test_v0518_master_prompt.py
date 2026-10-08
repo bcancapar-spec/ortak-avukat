@@ -365,6 +365,41 @@ def test_master_prompt_kurallar_blogu(parca):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Görev 11 ekleri (yeniden inceleme Y-1 / Y-2) — ağ dokunuşu yok, kabuk açık
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_y1_eski_yedek_adiminda_mcp_get_yok_once_oner_sonra_remove():
+    """Y-1: `claude mcp get <ad>` onaylı sunucuya ağ sağlık denetimi yapar —
+    sahipsiz uç noktaya (B-23) gereksiz temas. Prompt o adı AĞLA YOKLAMAZ:
+    önce silinmesini ÖNERİR, onaydan sonra doğrudan `claude mcp remove`;
+    eklenti kalıntısıysa tam kapat/aç + connectors talimatı korunur."""
+    blok = _master_prompt_blogu()
+    assert re.search(r"mcp\s+get\s+yargi-mcp-yedek", blok) is None, (
+        "prompt `claude mcp get yargi-mcp-yedek` ile ağa dokunuyor (Y-1)")
+    # "connectors" adımın ilk satırında da geçer; sıra, son talimatın kendisiyle denetlenir.
+    _sirali(blok, ["ESKİ YEDEK", "ÖNER", "claude mcp remove yargi-mcp-yedek",
+                   "connectors bölümünden silmemi"])
+    assert "onayım olmadan silme" in blok
+
+
+def test_y2_tam_yollu_tesseract_dogrulamasi_kabugu_soyler():
+    """Y-2: baştaki `&` PowerShell çağrı operatörüdür; Claude Code'un Bash
+    aracında (Git Bash) sözdizimi hatasıdır. Her `& "C:\\Program Files\\…"`
+    satırı kabuğunu (PowerShell) söyler ve Git Bash karşılığı da verilir."""
+    bash_karsiligi = '"/c/Program Files/Tesseract-OCR/tesseract.exe" --list-langs'
+    ps_komut = '& "C:\\Program Files\\Tesseract-OCR\\tesseract.exe" --list-langs'
+    blok = _master_prompt_blogu()
+    adim3 = _bolum(_oku(KOK_README), "### 3.", "### 4.")
+    for ad, metin in (("prompt", blok), ("README 3. adım", adim3)):
+        assert bash_karsiligi in metin, "%s: Git Bash tam yol karşılığı yok (Y-2)" % ad
+        konumlar = [m.start() for m in re.finditer(re.escape(ps_komut), metin)]
+        assert konumlar, "%s: PowerShell tam yollu doğrulama satırı yok" % ad
+        for k in konumlar:
+            assert "PowerShell" in metin[max(0, k - 160):k], (
+                "%s: `& …tesseract.exe` satırı hangi kabukta koşacağını söylemiyor (Y-2)" % ad)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Emek etiketi — harfi harfine
 # ═══════════════════════════════════════════════════════════════════════════
 
