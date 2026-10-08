@@ -137,6 +137,18 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **AYM başvuru numarası** yalnız AYM bağlamı olan izle eşleşir (Yargı PRO'nun "BB 2015/53" biçimi dahil); bir Yargıtay esas numarası AYM kararını teyit etmez.
 - Test: `tests/test_v0518_fable_sure_kunye.py`; iki kontrol testinin değeri mutasyonla kanıtlandı.
 
+**Belge güvenlik kapısı (kapı sürümü 1.2; önbellekteki 1.1 kayıtları bir kez yeniden taranır):**
+- **Öznitelik sırası:** DOCX desenleri `w:val`'ı ilk öznitelik sanıyordu. `<w:color w:themeColor="background1" w:val="FFFFFF"/>` gibi şema-geçerli bir yazımla beyaz, 1 punto, gizli, %5 ölçekli ya da sıkıştırılmış yazı damgasız geçiyordu. Artık öznitelikler sıradan bağımsız okunur; tema rengi varken Word'ün yaptığı gibi o esas alınır. Aynı kural stil başvurularında da geçerli.
+- **Alternatif içerik:** Word 2010+ `mc:Choice`'u çizer, `mc:Fallback`'i göstermez; çıkarıcı ise ikisini de modele verir. Choice'ta olmayan Fallback metni artık gizli katman sayılır. Meşru yedek (aynı metin) alarm üretmez.
+- **Açılamayan evrak "temiz" sayılmaz:** ZIP olarak açılamayan ya da ana belgesi olmayan DOCX'te, açılamayan ya da parolalı PDF'te, dizini bozuk ya da ne ZIP ne XML olan UDF'te tarama sessizce dönüyordu. En somut hâli: merkez dizini bozuk UDF'te çıkarıcı içeriği ham deflate ile kurtarıp modele veriyor, kapı ise arşivi açamayınca hiçbir şey demiyordu; beyaz, 1 puntoluk yük damgasız geçiyordu. Artık karar DENETLENEMEZ, gerekçe görünür ve denetlenmemiş metin VERİ diye sarılır. Sınır aşımında da metin artık sarılır.
+- **İmzalı nüsha (bu doğrulamada bulundu):** imzalı UDF nüshalarında prolog öncesi BOM ya da boşluk görülür. Çıkarıcı bunu silip okurken kapı silmeden ayrıştırıyor ve gizli katman taramasını sessizce atlıyordu. Kapı artık çıkarıcıyla aynı toleransı taşır; gerçekten bozuk XML DENETLENEMEZ olur.
+- Test: `tests/test_v0518_belge_guvenlik.py` (+20).
+
+**OCR kritik alan teyidi (belirsizlik gizlenmez):**
+- **Kesme görünür, tür kaybolmaz:** liste ilk 30 kalemde sessizce duruyordu. Tarama sırası tarih → esas/karar → TCKN → IBAN olduğundan 30 şüpheli tarih kotayı doldurunca IBAN ve TCKN şüphesi hiç görünmüyordu. Karma PDF'te kesme sayfa süzgecinden önce yapıldığı için OCR sayfasının kalemi de kaybolabiliyordu. Artık her türden en az bir kalem korunur, süzgeç kesmeden önce gelir; kesilince md, künye (`dogrulama_kesildi`) ve DURUM.md gerçek toplamı ve "KESİLDİ" notunu gösterir.
+- **Çöken teyit "şüphe yok" değildir:** teyit çökünce hata yutuluyor, künyede alanın olmaması "şüpheli alan yakalanmadı" diye okunuyordu. Artık künyede `dogrulama_denetlenemedi`, md'de 🔴 satırı, DURUM.md'de "teyidi YAPILAMADI" görünür.
+- Test: `tests/test_v0518_fable_ingest_belirsizlik.py` (10); iki kontrol testinin değeri mutasyonla kanıtlandı.
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
@@ -147,6 +159,8 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **Kuralsız süre hesabı (M):** `--kural` verilmeyen hukuk/idari usul süresinde adli tatil uzatması artık manşete konmaz; manşet erken tarih, uzamış okuma ayrıca görünür. HMK ya da İYUK'un kendi süresi için `--kural` ile hesaplayın.
 - **Künye teyidi (M):** izde aynı esas/karar FARKLI daireye aitse künye TEYİTSİZ olur (eskiden yalnız uyarı + exit 0). İki kararın parçasından oluşan ya da esas–karar yer değiştirmiş künye teyitli sayılmaz.
 - **Teslim sonuç satırı (M):** UDF resmî okuyucuyla doğrulanamadıysa "TESLİME HAZIR — ⚠ … DOĞRULANAMADI" diye nitelenir; teslim durmaz.
+- **Belge güvenlik kapısı 1.2 (M):** önbellekte 1.1 ile işaretli evrak bir kez yeniden taranır (OCR'lı kayıtta yalnız md metni; bulgu ya da şüpheli alan varsa tam yeniden çıkarım). Açılamayan, parolalı ya da yapısı bozuk evrak artık "temiz" değil DENETLENEMEZ görünür.
+- **Kritik alan listesi (M):** 30'dan fazla şüpheli alanda liste her türü korur; md ve DURUM.md gerçek toplamı ve "KESİLDİ" notunu gösterir.
 
 ### Yapılamayanlar / sınırlar
 

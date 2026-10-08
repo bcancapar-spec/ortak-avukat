@@ -1291,3 +1291,183 @@ def test_docx_gizli_parcada_xml_varliklari_tek_gecis_cozulur(bg, ing, tmp_path):
         assert metinli[0]["tur"] == "gizli-talimat", "çözülmüş `<system>` talimat kalıbını yakalar"
         assert not any("konumu gövdede bulunamadı" in b["yontem"] for b in rapor["bulgular"]), rapor
         assert _isaret_yalniz_damgada(metin, "ZXENT"), "gizli parça gövdede yerinde damgalanır"
+
+
+# ── v0.5.18 Fable bağımsız denetimi (2026-10-08) — B1 / B2 ──────────────────────────────
+
+@pytest.mark.parametrize("rpr", [
+    '<w:color w:themeColor="background1" w:val="FFFFFF"/>',   # renk: w:val İKİNCİ öznitelik
+    '<w:color w:val="000000" w:themeColor="background1"/>',   # themeColor varken Word w:val'ı YOK SAYAR
+    '<w:sz w:ek="1" w:val="2"/>',                              # 1 punto
+    '<w:vanish w:ek="1"/>',                                    # gizli
+    '<w:w w:ek="1" w:val="5"/>',                               # yatay ölçek %5
+    '<w:spacing w:ek="1" w:val="-300"/>',                      # harf aralığı sıkıştırma
+])
+def test_fable_B1_oznitelik_sirasi_gizlemeyi_kacirmaz(bg, ing, tmp_path, rpr):
+    """Fable denetimi B1: XML'de öznitelik sırası anlamsızdır; desenler `w:val`'ı İLK öznitelik
+    sanıyordu → `<w:color w:themeColor="background1" w:val="FFFFFF"/>` (şema-geçerli, Word beyaz
+    çizer) damgasız modele gidiyordu. Düşmanca evrak sırayı kendi seçer."""
+    yol = _docx(tmp_path / "b1.docx", [_docx_govde(
+        [(GORUNUR[0], ""), ("ZXB1 " + YUK_TR, rpr), (GORUNUR[1], ""), (GORUNUR[2], "")])])
+    cikti = _cikar(ing, yol, tmp_path)
+    metin, rapor = bg.tara(yol, ".docx", cikti[0], yontem=cikti[1])
+    assert rapor is not None and rapor["karar"] == "BULGU", (rpr, rapor)
+    assert "ZXB1" in metin and _isaret_yalniz_damgada(metin, "ZXB1"), metin
+
+
+def _mc_govde(secim, yedek):
+    """mc:AlternateContent taşıyan gövde: Choice (Word 2010+ çizer) / Fallback (çizmez)."""
+    def _kosu(m):
+        return '<w:r><w:t xml:space="preserve">%s</w:t></w:r>' % m
+    ac = ('<w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><w:txbxContent><w:p>%s</w:p>'
+          '</w:txbxContent></w:drawing></mc:Choice><mc:Fallback><w:pict><w:txbxContent><w:p>%s</w:p>'
+          '</w:txbxContent></w:pict></mc:Fallback></mc:AlternateContent></w:r>' % (_kosu(secim), _kosu(yedek)))
+    govde = "".join("<w:p>%s</w:p>" % _kosu(s) for s in GORUNUR[:2]) + "<w:p>%s</w:p>" % ac
+    return ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.'
+            'openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/'
+            'markup-compatibility/2006"><w:body>%s</w:body></w:document>' % govde).encode("utf-8")
+
+
+def test_fable_B2_fallbackteki_choiceta_olmayan_metin_gizli_sayilir(bg, ing, tmp_path):
+    """Fable denetimi B2: Word 2010+ `mc:Choice`'u çizer, `mc:Fallback`'i göstermez; çıkarıcı ise
+    ikisini de modele verir. Choice'ta olmayan Fallback metni insan gözüyle görünmeyen metindir."""
+    yol = _docx(tmp_path / "b2.docx", [_mc_govde("Ek kutu", "ZXB2 " + YUK_TR)])
+    cikti = _cikar(ing, yol, tmp_path)
+    metin, rapor = bg.tara(yol, ".docx", cikti[0], yontem=cikti[1])
+    assert rapor is not None and rapor["karar"] == "BULGU", rapor
+    assert "ZXB2" in metin and _isaret_yalniz_damgada(metin, "ZXB2"), metin
+
+
+def test_fable_B2_meru_yedek_ayni_metni_tasir_alarm_yok(bg, ing, tmp_path):
+    """Kontrol (alarm yorgunluğu): Word'ün metin kutusu yedeği Choice'taki metnin AYNISINI taşır —
+    meşru evrakların çoğunda vardır, bulgu üretmemeli."""
+    yol = _docx(tmp_path / "b2k.docx", [_mc_govde("Ek-1 kutusu", "Ek-1 kutusu")])
+    cikti = _cikar(ing, yol, tmp_path)
+    _metin, rapor = bg.tara(yol, ".docx", cikti[0], yontem=cikti[1])
+    assert rapor is None or rapor["karar"] != "BULGU", rapor
+
+
+def test_fable_B1_stil_basvurusu_oznitelik_sirasi_kacirmaz(bg, ing, tmp_path):
+    """Fable denetimi B1 (aynı sınıf): gizleme bir karakter stiline konup `w:rStyle` başvurusu `w:val`
+    İKİNCİ öznitelikle yazılınca stil hiç uygulanmıyordu (rStyle/pStyle/basedOn/tblStyle)."""
+    stiller = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.'
+               'openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="character" w:styleId="Taban">'
+               '<w:rPr><w:vanish/></w:rPr></w:style><w:style w:type="character" w:styleId="Gizli">'
+               '<w:basedOn w:ek="1" w:val="Taban"/></w:style></w:styles>').encode("utf-8")
+    yol = _docx(tmp_path / "b1s.docx", [_docx_govde(
+        [(GORUNUR[0], ""), ("ZXB1S " + YUK_TR, '<w:rStyle w:ek="1" w:val="Gizli"/>'), (GORUNUR[1], "")])],
+        stiller=stiller)
+    cikti = _cikar(ing, yol, tmp_path)
+    metin, rapor = bg.tara(yol, ".docx", cikti[0], yontem=cikti[1])
+    assert rapor is not None and rapor["karar"] == "BULGU", rapor
+    assert "ZXB1S" in metin and _isaret_yalniz_damgada(metin, "ZXB1S"), metin
+
+
+# ── v0.5.18 Fable denetimi B5 — açılamayan evrak "temiz" SAYILMAZ ───────────────────────
+
+def _dizini_kirik(yol):
+    """ZIP merkez dizinini (ve EOCD'yi) keser: `zipfile` açamaz, yerel başlıklar durur —
+    udf_md'nin ham deflate kurtarması içeriği yine çıkarır (K8/arşiv)."""
+    ham = pathlib.Path(yol).read_bytes()
+    kes = ham.find(b"PK\x01\x02")
+    assert kes > 0
+    pathlib.Path(yol).write_bytes(ham[:kes])
+    return str(yol)
+
+
+def test_fable_B5_dizini_bozuk_UDF_gizli_yuk_denetimsiz_GECMEZ(bg, ing, tmp_path):
+    """Fable denetimi B5 (en somut hâli): merkez dizini bozuk UDF'te çıkarıcı (udf_md) content.xml'i
+    ham deflate ile KURTARIP modele verir; kapı ise `zipfile` açamayınca SESSİZCE dönüyordu →
+    beyaz/1 punto yük damgasız geçiyordu. Bakamadığımız evrak temiz değildir."""
+    yol = _dizini_kirik(_zip_yaz(tmp_path / "kirik.udf", [("content.xml", _udf_xml(
+        [(GORUNUR[0], ""), ("ZXB5U " + YUK_TR, ' foreground="-1" size="1"'), (GORUNUR[1], "")]))]))
+    cikti = _cikar(ing, yol, tmp_path)
+    assert "ZXB5U" in (cikti[0] or ""), "ön koşul: çıkarıcı içeriği ham deflate ile kurtarır"
+    metin, rapor = bg.tara(yol, ".udf", cikti[0], yontem=cikti[1])
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5U"), metin
+
+
+def test_fable_B5_ne_zip_ne_xml_udf_DENETLENEMEZ(bg, tmp_path):
+    yol = tmp_path / "garip.udf"
+    yol.write_bytes(b"\x00\x01garip-icerik" * 4)
+    metin, rapor = bg.tara(str(yol), ".udf", "ZXB5G " + GORUNUR[0], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5G"), metin
+
+
+def test_fable_B5_sinir_asan_udf_metni_de_VERI_sarili(bg, tmp_path, monkeypatch):
+    """Sınır aşımında gerekçe zaten yazılıyordu ama metin SARILMIYORDU: karar DENETLENEMEZ iken
+    denetlenmemiş metin modele çıplak gidiyordu (R6 fail-closed ilkesiyle çelişki)."""
+    yol = _zip_yaz(tmp_path / "iri.udf", [("content.xml", _temiz_udf())])
+    monkeypatch.setattr(bg, "AZAMI_DOSYA_BAYT", 16)
+    metin, rapor = bg.tara(yol, ".udf", "ZXB5S " + GORUNUR[0], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert "aşıyor" in rapor["denetlenemedi"], "ilk (asıl) gerekçe korunur"
+    assert _isaret_yalniz_damgada(metin, "ZXB5S"), metin
+
+
+def test_fable_B5_zip_olmayan_docx_DENETLENEMEZ_ve_VERI_sarili(bg, tmp_path):
+    yol = tmp_path / "bozuk.docx"
+    yol.write_bytes(b"PK\x03\x04" + b"\x00" * 64)
+    metin, rapor = bg.tara(str(yol), ".docx", "ZXB5D " + GORUNUR[0], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert "DOCX" in rapor["denetlenemedi"], rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5D"), metin
+
+
+def test_fable_B5_ana_belgesi_baska_adda_docx_DENETLENEMEZ(bg, tmp_path):
+    """OPC'de ana parça ilişkiyle bulunur, adı zorunlu değildir: `word/document.xml` yoksa kapı
+    hiçbir katmana bakmadan dönüyordu (rapor None = "temiz")."""
+    govde = _docx_govde([(GORUNUR[0], ""), ("ZXB5A " + YUK_TR, "<w:vanish/>")])
+    yol = _zip_yaz(tmp_path / "anasiz.docx", [("[Content_Types].xml", DOCX_TIPLER),
+                                               ("word/document2.xml", govde)])
+    metin, rapor = bg.tara(yol, ".docx", GORUNUR[0] + "\nZXB5A " + GORUNUR[1], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5A"), metin
+
+
+def test_fable_B5_parolali_pdf_DENETLENEMEZ(bg, tmp_path):
+    doc = fitz.open()
+    doc.new_page().insert_text((60, 80), GORUNUR_EN[0], fontsize=11, fontname="helv")
+    yol = str(tmp_path / "parolali.pdf")
+    doc.save(yol, encryption=fitz.PDF_ENCRYPT_AES_256, owner_pw="sahip-x", user_pw="kullanici-x")
+    doc.close()
+    metin, rapor = bg.tara(yol, ".pdf", "ZXB5P " + GORUNUR_EN[0], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert "parola" in rapor["denetlenemedi"].lower(), rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5P"), metin
+
+
+def test_fable_B5_acilamayan_pdf_DENETLENEMEZ(bg, tmp_path):
+    yol = tmp_path / "bozuk.pdf"
+    yol.write_bytes(b"bu dosya PDF degil " * 8)
+    metin, rapor = bg.tara(str(yol), ".pdf", "ZXB5Q " + GORUNUR_EN[0], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB5Q"), metin
+
+
+
+@pytest.mark.parametrize("on", [b"\xef\xbb\xbf\r\n", b"\r\n", b"  "], ids=["BOM+CRLF", "CRLF", "bosluk"])
+def test_fable_B6_imzali_nusha_prologu_gizli_katman_taramasini_KORLEMEZ(bg, ing, tmp_path, on):
+    """B6 (B5 doğrulamasında bulundu): imzalı UDF nüshalarında prolog öncesi BOM/boşluk görülür
+    (udf_md._xml_ayristir notu). Çıkarıcı bunu siler ve okur; kapı SİLMEDEN ayrıştırıyordu →
+    ParseError → `_udf_kok` None → gizli katman taraması SESSİZCE atlanıyordu. Kapı, modele giden
+    metni üreten ayrıştırmayla AYNI toleransı taşımalı (çıkarıcı okuyor, kapı okuyamıyor = kör nokta)."""
+    xml = on + _udf_xml([(GORUNUR[0], ""), ("ZXB6 " + YUK_TR, ' foreground="-1" size="1"'), (GORUNUR[1], "")])
+    yol = _zip_yaz(tmp_path / "imzali.udf", [("content.xml", xml)])
+    cikti = _cikar(ing, yol, tmp_path)
+    assert "ZXB6" in (cikti[0] or ""), "ön koşul: çıkarıcı bu nüshayı okur"
+    metin, rapor = bg.tara(yol, ".udf", cikti[0], yontem=cikti[1])
+    assert rapor is not None and rapor["karar"] == "BULGU", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB6"), metin
+
+
+def test_fable_B6_gercekten_bozuk_xml_DENETLENEMEZ(bg, tmp_path):
+    """Kontrol: gerçekten bozuk XML'de (çıkarıcı CDATA'dan düz metin kurtarır) katmanlar
+    belirlenemez → DENETLENEMEZ + VERİ sarımı; temiz SAYILMAZ."""
+    xml = _udf_xml([(GORUNUR[0], ""), ("ZXB6K " + GORUNUR[1], "")]).replace(b"</elements>", b"</elementz>")
+    yol = _zip_yaz(tmp_path / "bozukxml.udf", [("content.xml", xml)])
+    metin, rapor = bg.tara(yol, ".udf", GORUNUR[0] + "\nZXB6K " + GORUNUR[1], yontem=None)
+    assert rapor is not None and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert _isaret_yalniz_damgada(metin, "ZXB6K"), metin

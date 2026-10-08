@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **46.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **120.000+** satır · **3.652** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **120.000+** satır · **3.682** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -230,7 +230,7 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
    (taze kurulumda derlenmiş önbellek yoktur ve Claude uygulaması altında kancalar
    kendi `.pyc`'sini yazamaz; `<sürüm>` 8. adımdaki etkin sürüm klasörüdür — komut,
    8. adımdaki derleme komutuyla aynıdır).
-6. **İlk evrak okumasında önbellek bir kez tazelenir.** Belge güvenlik kaydı (1.1) ve
+6. **İlk evrak okumasında önbellek bir kez tazelenir.** Belge güvenlik kaydı (1.2) ve
    Word çıkarımı (sürüm 3) değişti: önbellekteki UDF, DOCX ve metinli PDF kayıtları bir
    kez yeniden okunup taranır (ucuz); OCR'lı kayıtlar yeniden OCR'lanmaz — önce mevcut
    metin taranır, yalnız bulgu ya da şüpheli kritik alan çıkarsa evrak baştan okunur.

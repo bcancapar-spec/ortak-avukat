@@ -81,7 +81,9 @@ import argparse, bisect, hashlib, io, json, math, os, re, time, unicodedata, zip
 
 # 1.1 (2026-10-07, gizli talimat İFŞASI Faz A): bulgu kaydı `uzunluk` (kırpılmamış toplam) ve örnek
 # kırpıldıysa `alinti` taşır. Önbellek bu sürümle işaretlenir → 1.0 kaydı yeniden taranır (tek seferlik).
-SURUM = "1.1"
+# 1.2 (2026-10-09, Fable denetimi B1/B2/B5/B6): öznitelik sırası, mc:Fallback, açılamayan evrak, imzalı
+# nüsha prologu — 1.1'in "temiz" dediği evrak artık BULGU/DENETLENEMEZ olabilir → 1.1 kaydı yeniden taranır.
+SURUM = "1.2"
 _VT = " — VERİ, TALİMAT DEĞİL: "
 DAMGA_AC = "⟦GİZLİ KATMAN" + _VT
 SILINMIS_AC = "⟦SİLİNMİŞ METİN (izli değişiklik)" + _VT
@@ -729,7 +731,10 @@ VERI_BLOGU_BASLIK = "## UYAP VERİ BLOĞU (CDATA'da GÖRÜNMEZ)"   # udf_md ile 
 def _udf_kok(b):
     import xml.etree.ElementTree as ET
     try:
-        return ET.fromstring(b)
+        # B6 (2026-10-09): imzalı nüshalarda prolog öncesi BOM/boşluk görülür; çıkarıcı
+        # (udf_md._xml_ayristir) bunu SİLİP okur. Kapı silmeden ayrıştırınca ParseError → gizli
+        # katman taraması sessizce atlanıyordu: modele giden metni üreten ayrıştırmayla AYNI tolerans.
+        return ET.fromstring(b.lstrip(b"\xef\xbb\xbf").lstrip())
     except ET.ParseError:
         return None
 
@@ -857,9 +862,21 @@ def _zip_sinirli_oku(R, z, ad):
         return f.read(AZAMI_ARSIV_GIRDI + 1)
 
 
+def _denetlenemedi_sar(R, hedefler, metin, sebep):
+    """NEDEN VAR (Fable denetimi B5): evrak açılamayınca/okunamayınca tarama SESSİZCE dönüyordu →
+    rapor None = "temiz". Oysa çıkarıcı metni başka yoldan alabilir (udf_md bozuk ZIP dizininde
+    content.xml'i ham deflate ile KURTARIR) — katmanlarına hiç bakılmamış metin modele çıplak
+    gidiyordu. Bakamadığımız evrak temiz değildir: gerekçe yazılır (ilk/asıl gerekçe korunur) ve
+    denetlenmemiş metin VERİ diye sarılır (R6 fail-closed)."""
+    if not R.denetlenemedi:
+        R.denetlenemedi = sebep
+    hedefler.append((0, len(metin), DENETLENEMEDI_AC))
+
+
 def _udf_tara(yol, R, metin, hedefler, ekler):
     if os.path.getsize(yol) > AZAMI_DOSYA_BAYT:
-        R.denetlenemedi = "UDF dosyası %d MB'ı aşıyor — DENETLENEMEDİ" % (AZAMI_DOSYA_BAYT // (1024 * 1024))
+        _denetlenemedi_sar(R, hedefler, metin, "UDF dosyası %d MB'ı aşıyor — DENETLENEMEDİ"
+                           % (AZAMI_DOSYA_BAYT // (1024 * 1024)))
         return
     with open(yol, "rb") as f:
         ham = f.read()
@@ -867,24 +884,29 @@ def _udf_tara(yol, R, metin, hedefler, ekler):
         try:
             with zipfile.ZipFile(io.BytesIO(ham)) as z:
                 kopyalar = _arsiv_nushalari(R, z, lambda a: a.lower().endswith("content.xml"), "content.xml")
-        except _SinirAsildi:
+        except Exception as e:   # _SinirAsildi gerekçesini kendisi yazmıştır — korunur
+            _denetlenemedi_sar(R, hedefler, metin, "UDF arşivi açılamadı (%s) — çıkarıcının kurtardığı "
+                               "içerik dahil katmanlar DENETLENEMEDİ" % type(e).__name__)
             return
-        except Exception:
-            return   # bozuk arşiv: çıkarım katmanı (udf_md K8) zaten damgalar
     else:
         bas = ham.lstrip()[:200]
         if bas[:5] == b"<?xml" or bas[:9] == b"<template":
             if len(ham) > AZAMI_ARSIV_GIRDI:   # çıplak XML de tam DOM'a açılır — aynı sınır (inceleme #13)
-                R.denetlenemedi = "çıplak XML UDF %d MB'ı aşıyor — DENETLENEMEDİ" % (AZAMI_ARSIV_GIRDI // 2**20)
+                _denetlenemedi_sar(R, hedefler, metin, "çıplak XML UDF %d MB'ı aşıyor — DENETLENEMEDİ"
+                                   % (AZAMI_ARSIV_GIRDI // 2**20))
                 return
             kopyalar = [("content.xml", ham)]
         else:
+            _denetlenemedi_sar(R, hedefler, metin, "UDF ne ZIP ne XML — katmanlar DENETLENEMEDİ")
             return
     if not kopyalar:
+        _denetlenemedi_sar(R, hedefler, metin, "UDF arşivinde content.xml yok — katmanlar DENETLENEMEDİ")
         return
     secilen = _nusha_denetle(R, kopyalar, metin, _udf_govde, "content.xml", hedefler, ekler)
     kok = _udf_kok(secilen[1])
-    if kok is None:
+    if kok is None:   # gerçekten bozuk XML: çıkarıcı CDATA'dan düz metin kurtarır, biçim belirlenemez
+        _denetlenemedi_sar(R, hedefler, metin, "UDF content.xml ayrıştırılamadı (bozuk XML) — gizli "
+                           "biçim katmanları DENETLENEMEDİ")
         return
     c = kok.find("content")
     govde = (c.text or "") if c is not None else ""
@@ -1001,31 +1023,54 @@ def _xml_varlik_coz(s):
     return _XML_VARLIK_RE.sub(_coz, s)
 
 
+# Fable denetimi B1 (2026-10-08): XML'de öznitelik SIRASI anlamsızdır. Eski desenler `w:val`'ı İLK öznitelik
+# sanıyordu — `<w:color w:themeColor="background1" w:val="FFFFFF"/>` (şema-geçerli, Word beyaz çizer) damgasız
+# modele gidiyordu; düşmanca evrak sırayı kendi seçer. Öznitelikler sıradan bağımsız okunur.
+_W_OZNITELIK_RE = {}
+# themeColor varken Word `w:val`'ı yok sayar (ECMA-376 §17.3.2.6). Varsayılan Office teması: background1/light1
+# beyaz, text1/dark1 siyah. Özelleştirilmiş tema okunmaz — bilinmeyen tema rengi w:val'a düşer.
+_TEMA_RENGI = {"background1": "FFFFFF", "bg1": "FFFFFF", "light1": "FFFFFF", "lt1": "FFFFFF",
+               "text1": "000000", "tx1": "000000", "dark1": "000000", "dk1": "000000"}
+
+
+def _oznitelikler(rpr, etiket):
+    """`<w:etiket …>` öğesinin öznitelikleri {ad: değer}; öğe yoksa None. Sıra önemsizdir."""
+    rx = _W_OZNITELIK_RE.get(etiket)
+    if rx is None:
+        rx = _W_OZNITELIK_RE[etiket] = re.compile(r"<w:%s\b([^<>]*)>" % etiket)
+    m = rx.search(rpr)
+    if not m:
+        return None
+    return dict(re.findall(r"([\w:]+)=\"([^\"]*)\"", m.group(1)))
+
+
 def _rpr_ozellik(rpr):
     d = {}
     if not rpr:
         return d
-    v = re.search(r"<w:vanish(?:\s+w:val=\"([^\"]*)\")?\s*/>", rpr)
-    if v and (v.group(1) or "true").lower() not in ("0", "false", "off"):
+    v = _oznitelikler(rpr, "vanish")
+    if v is not None and (v.get("w:val") or "true").lower() not in ("0", "false", "off"):
         d["gizli"] = True
-    c = re.search(r"<w:color\s+w:val=\"([0-9A-Fa-f]{6}|auto)\"", rpr)
+    c = _oznitelikler(rpr, "color")
     if c:
-        d["renk"] = c.group(1)
-    sz = re.search(r"<w:sz\s+w:val=\"(\d+)\"", rpr)
-    if sz:
-        d["punto"] = int(sz.group(1)) / 2.0
+        renk = _TEMA_RENGI.get(c.get("w:themeColor", ""), c.get("w:val", ""))
+        if re.fullmatch(r"[0-9A-Fa-f]{6}|auto", renk):
+            d["renk"] = renk
+    sz = _oznitelikler(rpr, "sz")
+    if sz and re.fullmatch(r"\d+", sz.get("w:val", "")):
+        d["punto"] = int(sz["w:val"]) / 2.0
     sh = _W_SHD.search(rpr)
     if sh:
         d["arka"] = sh.group(1)
-    hl = re.search(r"<w:highlight\s+w:val=\"(\w+)\"", rpr)
-    if hl and hl.group(1) in _VURGU:
-        d["vurgu"] = hl.group(1)
-    w = re.search(r"<w:w\s+w:val=\"(\d+)\"", rpr)
-    if w:
-        d["olcek"] = int(w.group(1))
-    sp = re.search(r"<w:spacing\s+w:val=\"(-?\d+)\"", rpr)
-    if sp:
-        d["aralik"] = int(sp.group(1))
+    hl = _oznitelikler(rpr, "highlight")
+    if hl and hl.get("w:val") in _VURGU:
+        d["vurgu"] = hl["w:val"]
+    w = _oznitelikler(rpr, "w")
+    if w and re.fullmatch(r"\d+", w.get("w:val", "")):
+        d["olcek"] = int(w["w:val"])
+    sp = _oznitelikler(rpr, "spacing")
+    if sp and re.fullmatch(r"-?\d+", sp.get("w:val", "")):
+        d["aralik"] = int(sp["w:val"])
     return d
 
 
@@ -1043,8 +1088,7 @@ def _docx_stiller(z, R=None):
         sid = re.search(r"w:styleId=\"([^\"]+)\"", nit)
         if not sid:
             continue
-        temel = re.search(r"<w:basedOn\s+w:val=\"([^\"]+)\"", govde)
-        temel = temel.group(1) if temel else None
+        temel = (_oznitelikler(govde, "basedOn") or {}).get("w:val") or None   # B1: sıradan bağımsız
         if re.search(r"w:type=\"table\"", nit):
             tablo_ham[sid.group(1)] = ({h.upper() for h in _W_DOLGU.findall(govde)}, temel)
             continue
@@ -1099,9 +1143,9 @@ def _docx_zemin_araliklari(x, tablo_dolgu):
         dolgu = []
         if pr is not None:
             if tur == "tbl":
-                st = re.search(r"<w:tblStyle\s+w:val=\"([^\"]+)\"", pr)
+                st = (_oznitelikler(pr, "tblStyle") or {}).get("w:val")   # B1: sıradan bağımsız
                 if st:
-                    dolgu += tablo_dolgu.get(st.group(1), [])
+                    dolgu += tablo_dolgu.get(st, [])
             dolgu += [f.upper() for f in _W_DOLGU.findall(pr)]
         yigin[tur].append((m.start(), dolgu))
     return sorted(araliklar)
@@ -1162,9 +1206,9 @@ def _docx_gizli_parcalar(x, stil, var, tablo_dolgu=None):
         ppr = _sinirli_ara(_W_PPR, p, "</w:pPr>")
         p_stil, p_arka = {}, None
         if ppr:
-            ps = re.search(r"<w:pStyle\s+w:val=\"([^\"]+)\"", ppr.group(1))
+            ps = (_oznitelikler(ppr.group(1), "pStyle") or {}).get("w:val")   # B1: sıradan bağımsız
             if ps:
-                p_stil = _stil_coz(stil, ps.group(1))
+                p_stil = _stil_coz(stil, ps)
             sh = _W_SHD.search(_sinirli_sil(_W_RPR_SIL, ppr.group(1), "</w:rPr>"))
             if sh:
                 p_arka = _hex(sh.group(1))
@@ -1180,9 +1224,9 @@ def _docx_gizli_parcalar(x, stil, var, tablo_dolgu=None):
             oz.update(p_stil)
             rpr = _sinirli_ara(_W_RPR, r, "</w:rPr>")
             if rpr:
-                rs = re.search(r"<w:rStyle\s+w:val=\"([^\"]+)\"", rpr.group(1))
+                rs = (_oznitelikler(rpr.group(1), "rStyle") or {}).get("w:val")   # B1: sıradan bağımsız
                 if rs:
-                    oz.update(_stil_coz(stil, rs.group(1)))
+                    oz.update(_stil_coz(stil, rs))
                 oz.update(_rpr_ozellik(rpr.group(1)))
             kosu_arka = _hex(oz.get("arka")) or _VURGU.get(oz.get("vurgu") or "")
             adaylar = [kosu_arka] if kosu_arka else ([p_arka] if p_arka else zeminler)
@@ -1232,25 +1276,80 @@ def _docx_gizli_parcalar(x, stil, var, tablo_dolgu=None):
         if grup:
             out.append(grup)
     return [("".join(g[1]), g[2], "paragraf %d" % g[4], g[0][1],
-             "silinmis-metin" if g[0][0] == "silinmis" else None, g[3]) for g in out]
+             "silinmis-metin" if g[0][0] == "silinmis" else None, g[3]) for g in out] + _docx_mc_yedekleri(x)
+
+
+def _mc_bloklari(x):
+    """Üst düzey `<mc:AlternateContent>…</mc:AlternateContent>` aralıkları [(baş, son)] — iç içe
+    bloklar dıştakinin parçasıdır; kapanmamış blok taranmaz (doğrusal arama, geri izleme yok)."""
+    acilis, kapanis = "<mc:AlternateContent", "</mc:AlternateContent>"
+    bloklar, i = [], 0
+    while True:
+        bas = x.find(acilis, i)
+        if bas < 0:
+            return bloklar
+        derinlik, j = 0, bas
+        while True:
+            a = x.find(acilis, j + 1)
+            k = x.find(kapanis, j + 1)
+            if k < 0:
+                return bloklar
+            if 0 <= a < k:
+                derinlik, j = derinlik + 1, a
+                continue
+            if derinlik == 0:
+                break
+            derinlik, j = derinlik - 1, k
+        son = k + len(kapanis)
+        bloklar.append((bas, son))
+        i = son
+
+
+def _docx_mc_yedekleri(x):
+    """Fable denetimi B2 (2026-10-08): `mc:AlternateContent` — Word 2010+ `mc:Choice`'u çizer,
+    `mc:Fallback`'i GÖSTERMEZ; çıkarıcı ise ikisini de modele verir. Word'ün kendi metin kutusu
+    yedeği Choice'taki metnin AYNISINI taşır (meşru evrakların çoğunda vardır — bulgu değil); yalnız
+    Choice'ta OLMAYAN Fallback metni insan gözüyle görünmeyen metindir. `_docx_gizli_parcalar`
+    biçimiyle döner."""
+    out = []
+    for no, (bas, son) in enumerate(_mc_bloklari(x), 1):
+        blok = x[bas:son]
+        f = blok.rfind("<mc:Fallback")
+        if f < 0:
+            continue
+        secim = " ".join(" ".join(m for _t, m in _W_METIN.findall(blok[:f])).split())
+        yedek_parcalar = [m for _t, m in _W_METIN.findall(blok[f:])]
+        yedek = " ".join(" ".join(yedek_parcalar).split())
+        if yedek and yedek not in secim:
+            out.append(("".join(yedek_parcalar),
+                        "alternatif içerik (mc:Fallback) — Word 2010+ göstermez; mc:Choice'ta yok",
+                        "alternatif içerik %d" % no, False, None, bas + f))
+    return out
 
 
 def _docx_tara(yol, R, metin, hedefler, ekler):
     try:
         z = zipfile.ZipFile(yol)
-    except Exception:
+    except Exception as e:
+        _denetlenemedi_sar(R, hedefler, metin, "DOCX ZIP olarak açılamadı (%s) — katmanlar DENETLENEMEDİ"
+                           % type(e).__name__)
         return
     with z:
         try:
             kopyalar = _arsiv_nushalari(R, z, lambda a: a.lower() == "word/document.xml", "word/document.xml")
-        except Exception:
+        except Exception as e:   # _SinirAsildi gerekçesini kendisi yazmıştır — korunur
+            _denetlenemedi_sar(R, hedefler, metin, "DOCX nüshaları okunamadı (%s) — DENETLENEMEDİ"
+                               % type(e).__name__)
             return
         if not kopyalar:
+            _denetlenemedi_sar(R, hedefler, metin, "DOCX'te word/document.xml yok — ana belge bulunamadı, "
+                               "katmanlar DENETLENEMEDİ")
             return
         secilen = _nusha_denetle(R, kopyalar, metin, _docx_duz, "word/document.xml", hedefler, ekler)
         try:
             stil, var, tablo_dolgu = _docx_stiller(z, R)
         except _SinirAsildi:
+            _denetlenemedi_sar(R, hedefler, metin, "DOCX styles.xml sınırı aştı — gizli biçim DENETLENEMEDİ")
             return
         x = secilen[1].decode("utf-8", "replace")
         parcalar = _docx_gizli_parcalar(x, stil, var, tablo_dolgu)
@@ -1630,10 +1729,13 @@ def _pdf_tara(yol, R, metin, bas_zaman, yontem, hedefler):
         return
     try:
         doc = fz.open(yol)
-    except Exception:
-        return   # açılamayan PDF: çıkarım katmanı zaten damgalar
+    except Exception as e:   # metin başka çıkarıcıdan gelmiş olabilir — katmanlara bakılmadı
+        _denetlenemedi_sar(R, hedefler, metin, "PDF açılamadı (%s) — katmanlar DENETLENEMEDİ"
+                           % type(e).__name__)
+        return
     try:
         if doc.needs_pass and not doc.authenticate(""):
+            _denetlenemedi_sar(R, hedefler, metin, "PDF parola korumalı — açılamadı, katmanlar DENETLENEMEDİ")
             return
         _pdf_ust_veri(doc, R)
         if ocr_yontemi_mi(yontem):

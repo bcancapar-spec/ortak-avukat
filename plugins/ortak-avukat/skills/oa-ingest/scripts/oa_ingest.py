@@ -1323,7 +1323,8 @@ def _ocr_ek_tamamla(metin, yontem, ek):
                   or "harici-ocr" in kaynak)
         if not ocr_mu or not (metin or "").strip():
             return ek
-        kalemler = _kritik_alan().tara(metin)
+        ka = _kritik_alan()
+        kalemler = ka.tara_tum(metin)   # I3: kesme sayfa süzgecinden SONRA (sinirla)
         if kaynak and yontem in ("pdf-karma", "pdf-metin(PyMuPDF)"):
             izinli = set()
             for sinif in ("ocr", "harici-ocr"):
@@ -1332,10 +1333,18 @@ def _ocr_ek_tamamla(metin, yontem, ek):
                         a, _, b = parca.partition("-")
                         izinli.update(range(int(a), int(b or a) + 1))
             kalemler = [k for k in kalemler if k.get("sayfa") in izinli]
+        kalemler, toplam = ka.sinirla(kalemler)
         if kalemler:
             ek["dogrulama_gerekli"] = kalemler
-    except Exception:
-        pass
+            if toplam > len(kalemler):   # I3: kesme GÖRÜNÜR — gerçek toplam künyede
+                ek["dogrulama_kesildi"] = toplam
+    except Exception as e:
+        # I2 (Fable denetimi): teyit çökünce alan YOK kalıyordu = "şüpheli alan yakalanmadı" okunuyordu.
+        # Teyit hiç yapılmadıysa bu söylenir — belirsizlik gizlenmez.
+        if isinstance(ek, dict):
+            ek.pop("dogrulama_gerekli", None)
+            ek.pop("dogrulama_kesildi", None)
+            ek["dogrulama_denetlenemedi"] = "kritik alan teyidi YAPILAMADI (%s)" % type(e).__name__
     return ek
 
 
@@ -1795,7 +1804,10 @@ def md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik):
             bas.append("- OCR güveni (Tesseract ölçümü, bant): " + " · ".join(parca)
                        + " — düşük güvenli bölgeler künyede (`ocr_guven`); o bölgeleri orijinal görüntüden oku.")
     if kayit.get("dogrulama_gerekli"):  # v1.9 (O-3): kritik alan — metin DÜZELTİLMEDİ
-        bas.extend(_kritik_alan().md_satirlari(kayit["dogrulama_gerekli"]))
+        bas.extend(_kritik_alan().md_satirlari(kayit["dogrulama_gerekli"], toplam=kayit.get("dogrulama_kesildi")))
+    if kayit.get("dogrulama_denetlenemedi"):   # I2: teyit YAPILAMADI — "şüpheli alan yok" SAYILMAZ
+        bas.append("- 🔴 **KRİTİK ALAN TEYİDİ YAPILAMADI** — OCR'lı tarih/esas no/TCKN/IBAN orijinalden "
+                   "TEYİT edilmeli; 'şüpheli alan yok' SAYILMAZ (künye: dogrulama_denetlenemedi).")
     if kayit["teyit_gerek"]:
         bas.append("- ⚠ **OCR/zayıf çıkarım — künye ve sayısal veri için orijinalden TEYİT gerekir.**")
     if kayit.get("ocr_durum") == OCR_ARAC_HATA_DURUM:
@@ -1875,6 +1887,10 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
             kayit["ocr_zaman_asimi_sayfalar"] = ocr_ek["zaman_asimi_sayfalar"]
         if ocr_ek.get("dogrulama_gerekli"):
             kayit["dogrulama_gerekli"] = ocr_ek["dogrulama_gerekli"]
+        if ocr_ek.get("dogrulama_kesildi"):          # I3: kesilmeden önceki gerçek toplam
+            kayit["dogrulama_kesildi"] = ocr_ek["dogrulama_kesildi"]
+        if ocr_ek.get("dogrulama_denetlenemedi"):    # I2: teyit yapılamadı
+            kayit["dogrulama_denetlenemedi"] = ocr_ek["dogrulama_denetlenemedi"]
         if ocr_ek.get("ocr_motor"):
             kayit["ocr_motor"] = ocr_ek["ocr_motor"]
     # ---- v1.8 (P0-2): ARAÇ HATASI ayrı sınıf — OCR-BOŞ değil, YÜKLENEMEDİ değil,

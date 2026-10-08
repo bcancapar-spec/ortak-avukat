@@ -3838,7 +3838,13 @@ def _ocr_teyit_uyarisi(kok):
         supheli = [d for d in (k.get("dogrulama_gerekli") or []) if isinstance(d, dict)]
         if supheli:
             turler = ", ".join(sorted({str(d.get("tur")) for d in supheli}))
-            parca.append(f"🔎 {len(supheli)} şüpheli kritik alan ({turler}) — metin DÜZELTİLMEDİ")
+            # I3 (Fable denetimi): liste 30'da kesilir; gerçek toplam `dogrulama_kesildi`'de.
+            toplam = k.get("dogrulama_kesildi")
+            toplam = max(toplam if isinstance(toplam, int) else 0, len(supheli))
+            kesik = f" — KESİLDİ: künyede {len(supheli)}" if toplam > len(supheli) else ""
+            parca.append(f"🔎 {toplam} şüpheli kritik alan ({turler}){kesik} — metin DÜZELTİLMEDİ")
+        if k.get("dogrulama_denetlenemedi"):   # I2: teyit hiç yapılamadı — "şüphe yok" değil
+            parca.append("🔴 kritik alan teyidi YAPILAMADI — OCR'lı değerler orijinalden teyit edilmeli")
         guven = k.get("ocr_guven") if isinstance(k.get("ocr_guven"), dict) else {}
         dusuk = [s for s, g in guven.items() if isinstance(g, dict) and g.get("bant") in ("düşük", "ölçülemedi")]
         if dusuk:

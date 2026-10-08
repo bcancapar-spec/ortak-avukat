@@ -21,7 +21,8 @@ alanları bulur ve ŞÜPHELİ olanları işaretler.
   4. Maskeli değer (123*****456) işaretlenmez; IBAN 26 karaktere tamamlanamıyorsa
      "geçersiz" değil "okunamadı" denir.
 
-Kullanım (modül): tara(metin) → [{sayfa, tur, ham, neden}]
+Kullanım (modül): tara(metin) → [{sayfa, tur, ham, neden}]  (≤ AZAMI_KALEM, her türden en az biri)
+                  tara_tum(metin) → kesmesiz liste; sinirla(liste) → (seçilen, gerçek toplam)
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -34,8 +35,12 @@ for _s in (_sys.stdout, _sys.stderr):
 import datetime, re
 
 SURUM = "1.0"
-__all__ = ["tara", "md_satirlari", "tarih_adaylari_supheli", "SURUM"]
+__all__ = ["tara", "tara_tum", "sinirla", "md_satirlari", "tarih_adaylari_supheli", "SURUM"]
 AZAMI_KALEM = 30
+# Kesmesiz taramanın BELLEK tavanı (düşmanca evrakta binlerce harfli tarih). Süre etkilenmez:
+# eski kesme de eşleşme döngülerini sonuna kadar koşturuyordu. Tavan aşılsa da her türün ilk
+# kalemi saklanır (I3 türü-koruma sözü tavanda da geçerli).
+SAKLAMA_TAVANI = 10000
 CIPA_KOMSULUK = 80
 YIL_ALT, YIL_UST = 1950, 2099   # SABİT aralık: sonuç bugünün tarihine bağlı olmasın (determinizm)
 # OCR'ın rakam yuvasına koyabildiği harfler (ölçü: Tesseract tur çıktısında görülen karışıklıklar).
@@ -102,18 +107,46 @@ def _iban_gecerli(iban):
 
 
 def tara(metin):
-    """OCR'lı metinde şüpheli kritik alanlar: [{sayfa, tur, ham, neden}]. ASLA düzeltmez."""
+    """OCR'lı metinde şüpheli kritik alanlar: [{sayfa, tur, ham, neden}] (≤ AZAMI_KALEM, her türden
+    en az biri). ASLA düzeltmez. Gerçek toplam gerekiyorsa: sinirla(tara_tum(metin))."""
+    return sinirla(tara_tum(metin))[0]
+
+
+def sinirla(kalemler):
+    """NEDEN VAR (Fable denetimi I3): tarama ilk 30 kalemde SESSİZCE duruyordu. Sıra tarih → esas/karar
+    → TCKN → IBAN olduğundan 30 şüpheli tarih kotayı doldurunca IBAN mod-97 / TCKN şüphesi HİÇ
+    görünmüyordu ve md "30 alan" diyordu. Şimdi her türün İLK kalemi korunur, kalan kota özgün
+    sırayla dolar; seçilenler özgün sırada döner. Dönüş: (seçilen, gerçek toplam) — kesme görünür."""
+    toplam = len(kalemler)
+    if toplam <= AZAMI_KALEM:
+        return list(kalemler), toplam
+    ilk = {}
+    for i, k in enumerate(kalemler):
+        ilk.setdefault(k["tur"], i)
+    secim = set(sorted(ilk.values())[:AZAMI_KALEM])
+    for i in range(toplam):
+        if len(secim) >= AZAMI_KALEM:
+            break
+        secim.add(i)
+    return [kalemler[i] for i in sorted(secim)], toplam
+
+
+def tara_tum(metin):
+    """Kesmesiz tarama (bellek tavanı SAKLAMA_TAVANI). Kesme çağıranın süzgecinden SONRA yapılmalı:
+    karma PDF'te sayfa süzgeci kesmeden önce gelmezse metin-katmanı kalemleri kotayı doldurup
+    süzülür, OCR sayfasının kalemi kaybolur (I3)."""
     if not metin:
         return []
     harita = _sayfa_haritasi(metin)
     kucuk = _kucuk(metin)
-    out, gorulen = [], set()
+    out, gorulen, turler = [], set(), set()
 
     def ekle(konum, tur, ham, neden):
         anahtar = (tur, ham, neden)
-        if anahtar in gorulen or len(out) >= AZAMI_KALEM:
+        if anahtar in gorulen or (len(out) >= SAKLAMA_TAVANI and tur in turler):
             return
         gorulen.add(anahtar)
+        turler.add(tur)
         out.append({"sayfa": _sayfa(harita, konum), "tur": tur, "ham": ham, "neden": neden})
 
     # 1) çıpalı tarih — süre bu tarihten işler
@@ -187,15 +220,21 @@ def tarih_adaylari_supheli(metin):
     return out
 
 
-def md_satirlari(kalemler):
-    """md başlığı için satırlar (yalnız şüphe varsa)."""
+def md_satirlari(kalemler, toplam=None):
+    """md başlığı için satırlar (yalnız şüphe varsa). toplam: kesilmeden önceki gerçek sayı (I3) —
+    verilmezse ya da liste kadarsa çıktı eskisiyle AYNI."""
     if not kalemler:
         return []
+    toplam = max(toplam or 0, len(kalemler))
     satirlar = ["- 🔎 **KRİTİK ALAN TEYİDİ: %d alan şüpheli** — OCR metni DÜZELTİLMEDİ; değerleri "
                 "orijinal evraktan teyit et (liste 'doğrulandı' anlamına gelmez; rakam→rakam "
-                "hatası bu taramayla yakalanamaz)." % len(kalemler)]
+                "hatası bu taramayla yakalanamaz)." % toplam]
     for k in kalemler[:8]:
         satirlar.append("  - sayfa %s · %s · «%s» — %s" % (k.get("sayfa") or "?", k["tur"], k["ham"], k["neden"]))
     if len(kalemler) > 8:
         satirlar.append("  - … +%d alan daha (künye: dogrulama_gerekli)" % (len(kalemler) - 8))
+    if toplam > len(kalemler):
+        satirlar.append("  - ⚠ **KESİLDİ** — künyede %d alan var (her türden en az biri); kalan %d şüpheli "
+                        "alan listelenmedi: evrakın TAMAMINI orijinalden teyit et." % (len(kalemler),
+                                                                                      toplam - len(kalemler)))
     return satirlar
