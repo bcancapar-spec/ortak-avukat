@@ -44,6 +44,9 @@ BEKLENEN_PARCA = 20
 ASGARI_PYTHON = (3, 12)
 ONERILEN_PYTHON = (3, 14)
 WINDOWS_TESSERACT = pathlib.Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+# `markitdown[all]` ekinin Office dönüştürücüleri (markitdown 0.1.8 bağımlılık bildirimiyle doğrulandı):
+# .docx → mammoth, .xlsx → openpyxl, .pptx → python-pptx (README "Office evrakı" satırı).
+MARKITDOWN_OFIS_EKLERI = ("mammoth", "openpyxl", "python-pptx")
 
 TAMAM, EKSIK, ELIMDE, BILGI = "TAMAM", "EKSİK", "ELİMDE", "BİLGİ"
 _SURUM_KLASORU = re.compile(r"^\d+(\.\d+)+$")
@@ -66,8 +69,26 @@ def _paket_surumu(ad):
         return None
 
 
+def _guvenli_which(ad):
+    """Programı PATH'ten çözer; ÇALIŞMA DİZİNİNDEKİ bir dosyayı asla seçmez.
+
+    NEDEN VAR (v0.5.18 Fable denetimi): Windows'ta `shutil.which`, NoDefaultCurrentDirectoryInExePath
+    tanımlı değilse aramaya çalışma dizinini öne koyar. Araçlar dava kökünde koşar; karşı tarafın
+    evrakıyla gelen bir `npx.cmd` / `tesseract.bat` / `node.bat` çalıştırılabilirdi. Değişken bu süreç
+    ve çocukları için tanımlanır; PATH'e '.' konmuş olsa bile çalışma dizinindeki sonuç reddedilir.
+    Açık yol verilmişse (dizin bileşeni var) kullanıcının seçimine dokunulmaz. Dört betikte
+    (udf_yaz, udf_metin, oa_ingest, oa_kurulum) özdeştir — testle kilitli."""
+    os.environ.setdefault("NoDefaultCurrentDirectoryInExePath", "1")
+    yol = shutil.which(ad)
+    if yol and not os.path.dirname(ad) and os.path.exists(yol):
+        if (os.path.normcase(os.path.dirname(os.path.abspath(yol)))
+                == os.path.normcase(os.path.abspath(os.getcwd()))):
+            return None
+    return yol
+
+
 def _komut_bul(ad):
-    return shutil.which(ad)
+    return _guvenli_which(ad)
 
 
 def _dosya_var(yol):
@@ -176,6 +197,14 @@ def _pip_adimi(kok):
             durumlar.append("%s %s < %s" % (ad, surum, asgari))
         else:
             durumlar.append("%s %s" % (ad, surum))
+    # Fable denetimi P3 (2026-10-08): README Office evrakı için `markitdown[all]` ister; düz
+    # `markitdown` .docx/.xlsx/.pptx dönüştürücülerini getirmez. Paket varken ekler yoksa aynı
+    # pip komutu (idempotent) eksikleri tamamlar.
+    if _paket_surumu("markitdown") is not None:
+        eksik_ek = [ek for ek in MARKITDOWN_OFIS_EKLERI if _paket_surumu(ek) is None]
+        if eksik_ek:
+            eksik.append('"markitdown[all]"')
+            durumlar.append("markitdown[all] ekleri yok (%s)" % ", ".join(eksik_ek))
     if eksik:
         return _adim("pip_paketleri", "Python paketleri", EKSIK, "; ".join(durumlar),
                      "%s -m pip install %s   (ya da: oa_kurulum.py --uygula)" % (_py(), " ".join(eksik)))

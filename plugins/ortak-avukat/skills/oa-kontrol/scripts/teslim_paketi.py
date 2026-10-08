@@ -590,6 +590,42 @@ def _ifsa_durumu(kok, taslak):
                 "satir": "ifşa durumu denetlenemedi (%s) — temiz SAYILMAZ" % type(e).__name__}
 
 
+def _udf_dogrulanmadi_isareti(udf_yolu):
+    """v0.5.18 (Fable denetimi T2) — `<udf>.DOGRULANMADI` işareti varsa yolunu döndürür.
+    udf_yaz, resmî okuyucu (udf2md) dosyayı doğrulayamayınca bu işareti bırakır. Teslim
+    DURMAZ (karar avukatın); ama makbuz ve sonuç satırı bunu taşır — belirsizlik iç içe bir
+    satırda kalmasın."""
+    if not udf_yolu:
+        return None
+    isaret = udf_yolu + ".DOGRULANMADI"
+    return isaret if os.path.isfile(isaret) else None
+
+
+def _teslime_hazir_satiri(udf_isaret):
+    """Başarı sonuç satırı: doğrulanamayan UDF varsa NİTELENİR (teslimi durdurmaz)."""
+    if not udf_isaret:
+        return "SONUÇ: TESLİME HAZIR"
+    return ("SONUÇ: TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI: UYAP Doküman "
+            "Editörü'nde açıp görsel teyit etmeden yüklemeyin (işaret: %s)"
+            % os.path.basename(udf_isaret))
+
+
+def _tazelik_bolumu_yazdir(tazelik_uyarilari):
+    """GÖREV 6 bölümü. None = denetim hiç koşamadı → GÖRÜNÜR satır (Fable denetimi T4: konsolda
+    'temiz' ile ayırt edilemiyordu); boş liste = temiz → sessiz (gürültü yok)."""
+    if tazelik_uyarilari is None:
+        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
+        print("    [ADVISORY] tazelik: DENETLENEMEDİ — tazelik_denetim.py koşamadı ya da çıktısı "
+              "çözülemedi; zincir tazeliği temiz SAYILMAZ (makbuzda alan None).")
+        return
+    if tazelik_uyarilari:
+        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
+        for uyari in tazelik_uyarilari:
+            print("    [UYARI-BİLGİ] %s" % uyari)
+        print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
+              "kapı kapatmaz (amaç çizgisi: görünürlük).")
+
+
 def _graf_kapisi_yazdir(gk, onek="    [ADVISORY] graf kapısı"):
     """Tek satır görünürlük — kapı DEĞİL."""
     if gk["durum"] == "sorun":
@@ -1849,12 +1885,7 @@ def _zincir():
 
     # ── GÖREV 6 — TAZELİK BİLGİ KAPISI (advisory; kapı KAPATMAZ) ────────────
     tazelik_uyarilari = _tazelik_uyarilari_topla(kok)
-    if tazelik_uyarilari:
-        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
-        for uyari in tazelik_uyarilari:
-            print("    [UYARI-BİLGİ] %s" % uyari)
-        print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
-              "kapı kapatmaz (amaç çizgisi: görünürlük).")
+    _tazelik_bolumu_yazdir(tazelik_uyarilari)
 
     # ── B-5 (v0.5.18) — GRAF KAPISI ADVISORY (K2 sorusu teslimde yeniden) ───
     # Avukat kararı (2026-10-07): zincirde bir halka değişince (çevrimli graf)
@@ -1892,15 +1923,20 @@ def _zincir():
     for u in uyap_uyarilar:
         print("    [UYARI] %s" % u)
 
+    # v0.5.18 (Fable denetimi T2) — udf_yaz'ın bıraktığı `.DOGRULANMADI` işareti (üretim de
+    # devralma da) sonuç satırını niteler ve makbuza girer; teslimi DURDURMAZ.
+    udf_isaret = _udf_dogrulanmadi_isareti(udf_cikti) if udf_uretildi else None
     print()
     print(CIZGI)
-    print("SONUÇ: TESLİME HAZIR")
+    print(_teslime_hazir_satiri(udf_isaret))
     print(CIZGI)
     print("Açılan engelleyici kapı(lar): " + (", ".join(gecen) if gecen else "—") + ".")
     print("Üretilen / ilgili dosyalar:")
     print("   - Taslak : %s" % taslak)
     if udf_uretildi:
         print("   - UDF    : %s" % udf_cikti)
+        if udf_isaret:
+            print("   - UYARI  : %s — resmî okuyucu dosyayı doğrulayamadı" % udf_isaret)
     elif a.udf_yok:
         print("   - UDF    : (üretilmedi — --udf-yok istekle)")
     else:
@@ -1920,6 +1956,8 @@ def _zincir():
                 "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
                 "graf_kapisi": graf_kapisi,               # B-5 (v0.5.18) — advisory
                 "ifsa_durumu": ifsa_durumu,               # v0.5.18 Faz B — advisory
+                # v0.5.18 Fable T2 — resmî okuyucu doğrulayamadıysa işaret yolu (yoksa None)
+                "udf_dogrulanmadi_isareti": udf_isaret,
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
                 # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
                 "uyap_kopya": uyap_kopya,

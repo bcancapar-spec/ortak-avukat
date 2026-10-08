@@ -144,6 +144,10 @@ kilitler.**
   defterinde, güncel bulgu parmak iziyle) | `bolum-yok` | `bulgu-yok` | `yanlis-ifsa-riski`
   (BULGU yokken bölüm var) | `denetlenemedi` (temiz SAYILMAZ). Zaman damgası taşımaz. Yeşil
   makbuzda doğrudan, RED makbuzunda `advisory_denetimler.ifsa_durumu` içinde yaşar
+- `udf_dogrulanmadi_isareti` — v0.5.18 (Fable denetimi T2): udf_yaz'ın bıraktığı
+  `<udf>.DOGRULANMADI` işaretinin yolu (resmî okuyucu udf2md dosyayı doğrulayamadı); yoksa
+  `null`. ADVISORY — teslimi durdurmaz; yeşil makbuzda doğrudan yaşar ve sonuç satırı
+  «TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI» diye nitelenir
 - `teslim_sinifi_urunler` — filo kapsamı `[{dosya, sha12, muhur}]`;
   `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13)
 - `filo_uyarilari` — filo taramasının advisory satırları

@@ -113,6 +113,18 @@ gereği yalnız saha etiketiyle anılır.
   - antitez damgası yalnız denetim çıktısında bulunur, sahte "sağlıksız" satırı çıkmaz;
   - yarım kalmış graf denetimi adım 1'i RET eder; atomik yazımın geçici dosyası yanlış RET üretmez.
 
+### M. Fable bağımsız denetimi — doğrulanan bulgular kapandı (2026-10-08)
+
+Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 denetçisi (her biri en çok 4 dakika) dalın en riskli alanlarını inceledi. Her bulgu ana oturumda yeniden üretildi ya da çürütüldü; düzeltmeler önce kırmızı testle yazıldı.
+
+**Teslim ve güvenlik:**
+- **Dava kökündeki program çalıştırılmaz (güvenlik):** Windows'ta `shutil.which` aramaya çalışma dizinini öne koyuyordu. Araçlar dava kökünde koştuğundan karşı tarafın evrakıyla gelen bir `npx.cmd`, `tesseract.bat` ya da `node.bat` çalıştırılabilirdi; denetçi kanıtladı. Dört betik (udf_yaz, udf_metin, oa_ingest, oa_kurulum) programı tek, özdeş bir yardımcıyla çözer.
+- **UDF resmî okuyucu — bu dalın gerilemesi kapandı:** CI düzeltmesi 2'deki `npm warn cleanup` imi yalnız bir UYARI satırıydı ama gerçek reddi "YAPILAMADI"ya çevirip geçersiz UDF'yi teslime açabiliyordu. İm kaldırıldı; o CI vakası çıkış kodu kuralıyla zaten yakalanır. İmler artık yalnız stderr'de aranır ve "ağ" sözcük sınırlıdır ("aşağıdaki" ortam hatası sayılmaz).
+- **Doğrulanamayan UDF görünür:** html2udf yolu da `.DOGRULANMADI` işareti bırakır (okuyucu OK deyince bayat işaret kalkar). Teslim makbuzu işareti taşır ve sonuç satırı "TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI" diye nitelenir; teslim durmaz, karar avukatın.
+- **Tazelik denetimi koşamazsa** teslim çıktısında "DENETLENEMEDİ" satırı görünür (eskiden "temiz" ile ayırt edilemiyordu).
+- **Kurulum motoru** `markitdown[all]` ekinin Office dönüştürücülerini (mammoth, openpyxl, python-pptx) de denetler.
+- Test: `tests/test_v0518_fable_teslim_guvenlik.py`; kurulum: `tests/test_v0518_kurulum.py`.
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".

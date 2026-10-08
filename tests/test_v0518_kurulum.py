@@ -53,7 +53,8 @@ def _udf_surum():
 def mod(monkeypatch):
     """Her şeyin TAMAM olduğu sahte bir Windows makinesi; testler tek sondayı bozar."""
     m = _yukle()
-    surumler = {"pymupdf": _pymupdf_asgari(), "pillow": "11.0.0", "markitdown": "0.1.2"}
+    surumler = {"pymupdf": _pymupdf_asgari(), "pillow": "11.0.0", "markitdown": "0.1.2",
+                "mammoth": "1.11.0", "openpyxl": "3.1.5", "python-pptx": "1.0.2"}
     komutlar = {"tesseract": r"C:\Tesseract\tesseract.exe", "node": r"C:\node\node.exe",
                 "npx": r"C:\node\npx.cmd", "npm": r"C:\node\npm.cmd"}
 
@@ -113,6 +114,16 @@ def test_eksik_paketler_tek_pip_komutunda(mod):
     assert a["durum"] == "EKSİK" and "pillow" in a["komut"] and '"markitdown[all]"' in a["komut"]
     assert "pymupdf" not in a["komut"], "kurulu ve yeterli paket yeniden kurulmaz"
     assert "--break-system-packages" not in a["komut"]
+
+
+def test_markitdown_ofis_ekleri_yoksa_eksik_ve_all_komutu(mod):
+    """Fable denetimi P3 (2026-10-08): README Office evrakı için `markitdown[all]` ister; düz
+    `markitdown` kurulumu .docx/.xlsx/.pptx dönüştürücülerini getirmez ama motor TAMAM diyordu."""
+    mod._sahte["surumler"].pop("mammoth")
+    a = _adim(mod.denetle(), "pip_paketleri")
+    assert a["durum"] == "EKSİK", a
+    assert '"markitdown[all]"' in a["komut"] and "mammoth" in a["ayrinti"], a
+    assert a["komut"].count("markitdown") == 1, "aynı paket iki kez istenmez"
 
 
 def test_tesseract_pathte_yok_ama_windows_standart_yolunda_bulunur(mod, monkeypatch):

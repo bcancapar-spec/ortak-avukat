@@ -79,6 +79,24 @@ def _giris_talimati(paket):
             "'npx -y %s login --token <kod>' çalıştırın." % (paket, paket))
 
 
+def _guvenli_which(ad):
+    """Programı PATH'ten çözer; ÇALIŞMA DİZİNİNDEKİ bir dosyayı asla seçmez.
+
+    NEDEN VAR (v0.5.18 Fable denetimi): Windows'ta `shutil.which`, NoDefaultCurrentDirectoryInExePath
+    tanımlı değilse aramaya çalışma dizinini öne koyar. Araçlar dava kökünde koşar; karşı tarafın
+    evrakıyla gelen bir `npx.cmd` / `tesseract.bat` / `node.bat` çalıştırılabilirdi. Değişken bu süreç
+    ve çocukları için tanımlanır; PATH'e '.' konmuş olsa bile çalışma dizinindeki sonuç reddedilir.
+    Açık yol verilmişse (dizin bileşeni var) kullanıcının seçimine dokunulmaz. Dört betikte
+    (udf_yaz, udf_metin, oa_ingest, oa_kurulum) özdeştir — testle kilitli."""
+    os.environ.setdefault("NoDefaultCurrentDirectoryInExePath", "1")
+    yol = shutil.which(ad)
+    if yol and not os.path.dirname(ad) and os.path.exists(yol):
+        if (os.path.normcase(os.path.dirname(os.path.abspath(yol)))
+                == os.path.normcase(os.path.abspath(os.getcwd()))):
+            return None
+    return yol
+
+
 def udf2md_ile_metin_cikar(udf_yolu, npx_yolu="npx", zaman_asimi=60):
     """Rehberin TEK okuma hattını çağırır: `npx -y udf-cli@<UDF_CLI_SURUM>
     udf2md <udf_yolu>`. Ham zip/content.xml okuma denemesi YOKTUR — FAIL-CLOSED:
@@ -91,7 +109,7 @@ def udf2md_ile_metin_cikar(udf_yolu, npx_yolu="npx", zaman_asimi=60):
     if paket is None:
         return None, ("udf-cli sürüm sabiti okunamadı (oa-dilekce/scripts/udf_yaz.py "
                       "UDF_CLI_SURUM) — sabitlenmemiş sürüm çalıştırılmaz.")
-    yol = shutil.which(npx_yolu)
+    yol = _guvenli_which(npx_yolu)
     if yol is None:
         return None, ("npx bulunamadı (Node.js kurulu olmayabilir). Kurulum: "
                        "https://nodejs.org — ardından " + _giris_talimati(paket))

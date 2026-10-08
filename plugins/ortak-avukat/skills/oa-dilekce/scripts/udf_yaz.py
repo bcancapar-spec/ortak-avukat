@@ -557,12 +557,30 @@ _GIRIS_TALIMATI = (
 )
 
 
+def _guvenli_which(ad):
+    """Programı PATH'ten çözer; ÇALIŞMA DİZİNİNDEKİ bir dosyayı asla seçmez.
+
+    NEDEN VAR (v0.5.18 Fable denetimi): Windows'ta `shutil.which`, NoDefaultCurrentDirectoryInExePath
+    tanımlı değilse aramaya çalışma dizinini öne koyar. Araçlar dava kökünde koşar; karşı tarafın
+    evrakıyla gelen bir `npx.cmd` / `tesseract.bat` / `node.bat` çalıştırılabilirdi. Değişken bu süreç
+    ve çocukları için tanımlanır; PATH'e '.' konmuş olsa bile çalışma dizinindeki sonuç reddedilir.
+    Açık yol verilmişse (dizin bileşeni var) kullanıcının seçimine dokunulmaz. Dört betikte
+    (udf_yaz, udf_metin, oa_ingest, oa_kurulum) özdeştir — testle kilitli."""
+    os.environ.setdefault("NoDefaultCurrentDirectoryInExePath", "1")
+    yol = shutil.which(ad)
+    if yol and not os.path.dirname(ad) and os.path.exists(yol):
+        if (os.path.normcase(os.path.dirname(os.path.abspath(yol)))
+                == os.path.normcase(os.path.abspath(os.getcwd()))):
+            return None
+    return yol
+
+
 def npx_kullanilabilir_mi(npx_yolu="npx", zaman_asimi=20):
     """npx + udf-cli oturum durumunu hızlıca sınar (ağ + login gerektirir).
     Yalnız TANI/TEST amaçlı — üretim akışı bunu önden çağırmaz, doğrudan
     `npx_ile_udf_uret` dener ve kendi hatasını raporlar. Döner: (uygun mu,
     açıklama)."""
-    yol = shutil.which(npx_yolu)
+    yol = _guvenli_which(npx_yolu)
     if yol is None:
         return False, "npx bulunamadı (Node.js kurulu olmayabilir)"
     try:
@@ -588,7 +606,7 @@ def npx_ile_udf_uret(html_yolu, cikti_yolu, npx_yolu="npx", zaman_asimi=180):
 
     Döner: dict — basarili(bool), exit_kod(int|None), stdout(str), stderr(str),
     hata(str|None — yalnız basarisiz ise)."""
-    yol = shutil.which(npx_yolu)
+    yol = _guvenli_which(npx_yolu)
     if yol is None:
         return {"basarili": False, "exit_kod": None, "stdout": "", "stderr": "",
                 "hata": ("FAIL-CLOSED: npx bulunamadı (Node.js kurulu olmayabilir). "
@@ -672,12 +690,18 @@ _BASLATICI_HATA_IMLERI = (
     # önbelleği ENOTEMPTY ile düşürdü, udf2md hiç hüküm vermedi. Yalnız errno biçimli kod (`code E…`) ve
     # `syscall` satırı; çalıştırılan aracın kendi başarısızlığı (`npm error code 1`) hükümdür, bu imlere
     # GİRMEZ (geniş "npm error" imi gerçek reddi YAPILAMADI'ya çevirip kapıyı açardı).
-    "npm warn cleanup", "npm error code e", "npm err! code e", "npm error syscall", "npm err! syscall",
+    # `npm warn cleanup` BİLEREK YOK (Fable denetimi T1): yalnız bir UYARIDIR, araç yine koşup dosyayı
+    # reddedebilir — im olsaydı gerçek ret "YAPILAMADI" olur, geçersiz UDF teslime giderdi. O CI vakası
+    # (Windows, çıkış 4294963245) zaten "çıkış kodu > 255" kuralıyla ortam hâli sayılır.
+    "npm error code e", "npm err! code e", "npm error syscall", "npm err! syscall",
     # CI, PR #8 ubuntu 3.13: yarım kalan npx önbelleğinde aracın KENDİ bağımlılığı yok — çıkış 1 ama
     # udf2md hiç yüklenemedi. Yalnız ÇÖZÜMLEME hatası: genel yığın çerçeveleri (esm/module_job,
     # cjs/loader) gerçek bir çalışma hatasında da görünür ve hükümdür, bu imlere GİRMEZ.
     "err_module_not_found", "code: 'module_not_found'", "node:internal/modules/esm/resolve",
 )
+# "ağ" (network) yalnız SÖZCÜK olarak: "aşağıdaki", "bağlantı", "sağlanamadı" içindeki 'ağ' ortam
+# hatası değildir (Fable denetimi T3 — udf-cli 0.5.7'den itibaren Türkçe ret iletileri geliyor).
+_AG_SOZCUGU_RE = re.compile(r"(?<![a-zçğıöşü])ağ(?:a|da|dan)?(?![a-zçğıöşü])")
 
 
 def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
@@ -688,7 +712,7 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
       metin (str): okunan markdown
       hata (str|None): calisti=False ise SEBEP (ortam), True+basarisiz ise RET gerekçesi
     """
-    yol = shutil.which(npx_yolu)
+    yol = _guvenli_which(npx_yolu)
     if yol is None:
         return {"calisti": False, "basarili": False, "metin": "",
                 "hata": "npx bulunamadı (Node.js kurulu olmayabilir)"}
@@ -708,19 +732,23 @@ def npx_ile_udf_oku(udf_yolu, npx_yolu="npx", zaman_asimi=120):
         # Oturum/ağ hatası bir ORTAM koşuludur (dosya hakkında hüküm DEĞİL);
         # dosyanın gerçekten reddedilmesinden ayırt edilir — aksi hâlde
         # login'i unutmuş bir avukatın geçerli dilekçesi "bozuk" ilan edilirdi.
-        birlesik = ((p.stderr or "") + (p.stdout or "")).lower()
+        # İmler YALNIZ stderr'de aranır (Fable denetimi T3): stdout belgenin kendi içeriğini taşıyabilir —
+        # düşmanca bir evrakın kısmi çıktısındaki "oturum"/"ağ"/"program ya da toplu" sözcükleri gerçek
+        # reddi ortam hâline çevirmesin. Başlatıcı, npm ve oturum iletilerinin hepsi stderr'e yazılır.
+        hata_metni = (p.stderr or "").lower()
         # Olağan dışı çıkış kodu da hüküm değildir: Windows'ta 255 üstü (işaretsiz libuv errno'su —
         # ör. 4294963245 = -4051 — ya da 0xC0000005 gibi yerel çöküş), POSIX'te negatif (sinyal).
         if (p.returncode < 0 or p.returncode > 255
-                or any(im in birlesik for im in _BASLATICI_HATA_IMLERI)):
+                or any(im in hata_metni for im in _BASLATICI_HATA_IMLERI)):
             return {"calisti": False, "basarili": False, "metin": "",
                     "hata": "udf-cli başlatılamadı (exit %s) — npx aracı koşturamadı; dosya "
                             "hakkında hüküm YOK. Node.js/npx kurulumunu denetleyin; aynı anda "
                             "başka bir teslim sürüyorsa o bitince yeniden deneyin."
                             % p.returncode}
-        ortamsal = any(im in birlesik for im in
-                       ("login", "giriş", "giris", "oturum", "unauthor", "quota",
-                        "kota", "network", "ağ", "econn", "etimedout", "fetch failed"))
+        ortamsal = (any(im in hata_metni for im in
+                        ("login", "giriş", "giris", "oturum", "unauthor", "quota",
+                         "kota", "network", "econn", "etimedout", "fetch failed"))
+                    or _AG_SOZCUGU_RE.search(hata_metni) is not None)
         if ortamsal:
             return {"calisti": False, "basarili": False, "metin": "",
                     "hata": "udf-cli udf2md ortam hatası (exit %s) — %s"
@@ -757,7 +785,7 @@ def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=1
     Döner: dict — basarili(bool), exit_kod(int|None), aciklama(str — çıkış
     kodu tablosundan), cikti_yolu(str|None — başarılıysa gerçek dosya yolu),
     stdout(str), stderr(str)."""
-    yol = shutil.which(npx_yolu)
+    yol = _guvenli_which(npx_yolu)
     if yol is None:
         return {"basarili": False, "exit_kod": None,
                 "aciklama": "npx bulunamadı (Node.js kurulu olmayabilir).",
@@ -1179,6 +1207,42 @@ def _ym_icerik_xml(ham_metin, ham_mod=False, format_id=_YM_FORMAT_ID):
     return xml_str, tam, len(paragraflar)
 
 
+def _dogrulanmadi_isareti_guncelle(cikti_yolu, dogrulama, motor):
+    """`<udf>.DOGRULANMADI` işaretini resmî okuyucu hükmüne göre yazar ya da kaldırır; işaret
+    yolunu (ya da None) döndürür. `motor`: "yerel" | "html2udf".
+
+    NEDEN VAR (v0.5.18 Fable denetimi T2): yalnız yerel motor işaret bırakıyordu; html2udf yolunda
+    okuyucu "YAPILAMADI" deyince belirsizlik iç içe bir satırda kalıyor, teslim makbuzuna
+    geçmiyordu (teslim_paketi işareti okur). OK gelince eski işaret KALDIRILIR — bayat işaret
+    doğrulanmış dosyayı şüpheli göstermesin."""
+    isaret = cikti_yolu + ".DOGRULANMADI"
+    if dogrulama.get("resmi_okuyucu") == "OK":
+        try:
+            os.remove(isaret)
+        except OSError:
+            pass
+        return None
+    if motor == "yerel":
+        uretici = ("yerel motor (--yerel-motor-riskli, bilinçli risk).\n"
+                   "372 sahası: bu hattın ürünleri UYAP'ta açılmadı (7 dosya karantina).")
+    else:
+        uretici = ("%s (udf-cli) — dosyayı üreten aracın kendi okuyucusu (udf2md) hüküm "
+                   "veremedi." % motor)
+    try:
+        with open(isaret, "w", encoding="utf-8") as f:
+            f.write("Bu .udf dosyasının UYAP tarafında AÇILDIĞI DOĞRULANMADI.\n"
+                    "Üretici: %s\n"
+                    "resmî okuyucu: %s — %s\n"
+                    "Teslimden ÖNCE UYAP Doküman Editörü'nde açıp görsel teyit "
+                    "ZORUNLUDUR; teyit sonrası bu işaret dosyasını avukat siler.\n"
+                    % (uretici, dogrulama.get("resmi_okuyucu"),
+                       dogrulama.get("resmi_okuyucu_not")
+                       or "; ".join(dogrulama.get("hatalar", [])) or "ayrıntı yok"))
+    except OSError:
+        return None  # yazılamadıysa görünürlük stdout/stderr uyarısına kalır
+    return isaret
+
+
 def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False, npx_yolu="npx"):
     """--yerel-motor-riskli gövdesi (v0.5.8.4): üret → ATOMİK yaz →
     udf_dogrula RESMÎ OKUYUCU DAHİL (resmi_okuyucu=True — 372 dersi: kendi
@@ -1206,26 +1270,9 @@ def yerel_motor_ile_uret(metin, cikti_yolu, ham_mod=False, npx_yolu="npx"):
         cikti_yolu, resmi_okuyucu=True,
         okuyucu_fn=lambda yol: npx_ile_udf_oku(yol, npx_yolu=npx_yolu))
 
-    isaret = None
-    if dogrulama.get("resmi_okuyucu") != "OK":
-        # üretim KIRILMAZ; ama dosyanın UYAP tarafında açıldığı DOĞRULANMADI —
-        # işaret dosyası, teslim anında gözden kaçmasın diye çıktının yanında.
-        isaret = cikti_yolu + ".DOGRULANMADI"
-        try:
-            with open(isaret, "w", encoding="utf-8") as f:
-                f.write(
-                    "Bu .udf dosyasının UYAP tarafında AÇILDIĞI DOĞRULANMADI.\n"
-                    "Üretici: yerel motor (--yerel-motor-riskli, bilinçli risk).\n"
-                    "372 sahası: bu hattın ürünleri UYAP'ta açılmadı (7 dosya "
-                    "karantina).\n"
-                    "resmî okuyucu: %s — %s\n"
-                    "Teslimden ÖNCE UYAP Doküman Editörü'nde açıp görsel teyit "
-                    "ZORUNLUDUR; teyit sonrası bu işaret dosyasını avukat siler.\n"
-                    % (dogrulama.get("resmi_okuyucu"),
-                       dogrulama.get("resmi_okuyucu_not") or
-                       "; ".join(dogrulama.get("hatalar", [])) or "ayrıntı yok"))
-        except OSError:
-            isaret = None  # yazılamadıysa görünürlük stderr uyarısına kalır
+    # üretim KIRILMAZ; ama okuyucu OK demediyse dosyanın UYAP tarafında açıldığı
+    # DOĞRULANMADI — işaret dosyası, teslim anında gözden kaçmasın diye çıktının yanında.
+    isaret = _dogrulanmadi_isareti_guncelle(cikti_yolu, dogrulama, "yerel")
 
     return {"basarili": True, "paragraf": paragraf, "karakter": len(tam),
             "hatalar": dogrulama.get("hatalar", []),
@@ -1563,12 +1610,16 @@ def main():
             sys.exit(sonuc["exit_kod"] or 1)
 
         dogrulama = udf_dogrula(cikti)
+        dogrulanmadi = _dogrulanmadi_isareti_guncelle(cikti, dogrulama, "html2udf")
         print("UDF yazıldı (npx %s html2udf): %s" % (UDF_CLI_PAKET, cikti))
         if dogrulama["paragraf_sayisi"] is not None:
             print("  paragraf sayısı  : %d" % dogrulama["paragraf_sayisi"])
         if dogrulama["karakter_sayisi"] is not None:
             print("  karakter (CDATA) : %d" % dogrulama["karakter_sayisi"])
         _resmi_okuyucu_bas(dogrulama)
+        if dogrulanmadi:
+            print("  [UYARI] resmî okuyucu dosyayı DOĞRULAYAMADI — işaret: %s (teslimden önce "
+                  "UYAP Doküman Editörü'nde açıp teyit edin; teslim makbuzu bunu taşır)" % dogrulanmadi)
         print("  GEÇERLİLİK KAPISI: %s" % ("GEÇERLİ ✓" if dogrulama["gecerli"] else "GEÇERSİZ ✗"))
         # v0.5.8.4 ÜRETİM MAKBUZU (best-effort): .udf fiilen üretildi —
         # defter varsa iz düşülür (dogrulama alanı sonucu OLDUĞU GİBİ taşır;

@@ -326,9 +326,27 @@ BUYUK_ESIK_KARAKTER = 40000        # Gate A: bu eşiği aşan evrak için sayfa/
 # bağımsız sınanır; (b) sahada PATH dışı kurulum. Değer bir yol/adsa which ile
 # çözülür; çözülemezse OLDUĞU GİBİ kullanılır → çağrıda OSError = görünür araç hatası
 # (sessizce PATH'e düşülmez: avukat "şu ikiliyi kullan" dediyse o kullanılır).
+def _guvenli_which(ad):
+    """Programı PATH'ten çözer; ÇALIŞMA DİZİNİNDEKİ bir dosyayı asla seçmez.
+
+    NEDEN VAR (v0.5.18 Fable denetimi): Windows'ta `shutil.which`, NoDefaultCurrentDirectoryInExePath
+    tanımlı değilse aramaya çalışma dizinini öne koyar. Araçlar dava kökünde koşar; karşı tarafın
+    evrakıyla gelen bir `npx.cmd` / `tesseract.bat` / `node.bat` çalıştırılabilirdi. Değişken bu süreç
+    ve çocukları için tanımlanır; PATH'e '.' konmuş olsa bile çalışma dizinindeki sonuç reddedilir.
+    Açık yol verilmişse (dizin bileşeni var) kullanıcının seçimine dokunulmaz. Dört betikte
+    (udf_yaz, udf_metin, oa_ingest, oa_kurulum) özdeştir — testle kilitli."""
+    os.environ.setdefault("NoDefaultCurrentDirectoryInExePath", "1")
+    yol = shutil.which(ad)
+    if yol and not os.path.dirname(ad) and os.path.exists(yol):
+        if (os.path.normcase(os.path.dirname(os.path.abspath(yol)))
+                == os.path.normcase(os.path.abspath(os.getcwd()))):
+            return None
+    return yol
+
+
 _TESSERACT_ORTAM = (os.environ.get("OA_TESSERACT_YOL") or "").strip()
-TESSERACT = (shutil.which(_TESSERACT_ORTAM) or _TESSERACT_ORTAM) if _TESSERACT_ORTAM \
-    else shutil.which("tesseract")
+TESSERACT = (_guvenli_which(_TESSERACT_ORTAM) or _TESSERACT_ORTAM) if _TESSERACT_ORTAM \
+    else _guvenli_which("tesseract")
 BOS_SHA = hashlib.sha256(b"").hexdigest()[:16]   # metinsiz kayıtlar için sabit içerik imzası
 # P1-9 DÜZELTME (sinav bulgusu, tek-kaynak) — --onbakis'ın yazdığı MEŞRU dizin
 # adı burada TEK yerde tanımlanır; pipeline_kayit.py bekçisi bunu İN-PROCESS
