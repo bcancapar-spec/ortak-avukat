@@ -11,11 +11,11 @@ Türk hukuku için **Claude Code eklentisi** (`plugins/ortak-avukat`): çekirdek
 19 `oa-*` beceri (skill) tek pakette. Python ≥ 3.12. Yargı Pro MCP ile
 içtihat/mevzuat doğrulaması.
 
-- Kod: `plugins/ortak-avukat/skills/*/scripts/*.py` (176 dosya)
+- Kod: `plugins/ortak-avukat/skills/*/scripts/*.py` (sayı ve satır: `python tools/satir_sayaci.py`)
 - Beceri metinleri: `plugins/ortak-avukat/skills/*/SKILL.md`
 - Hook ağı: `plugins/ortak-avukat/hooks/` (`hooks.json` + `run-hook.cmd`)
-- Testler: `tests/` (2340 test — tek kaynak: `tests/README.md`'deki
-  `OA-SUIT-SAYISI` işaretçisi; `test_b35` ikisini karşılaştırır)
+- Testler: `tests/` (test sayısının tek kaynağı: `tests/README.md`'deki
+  `OA-SUIT-SAYISI` işaretçisi; `test_b35` onu gerçek toplamayla karşılaştırır)
 - **Hedef ortam: Windows** (masaüstü Claude Code, cp1254 konsol)
 
 ---
@@ -217,7 +217,11 @@ almaz (`__pycache__` yalnızca IMPORT edilen modüller için). Hook ağı
 yeniden derleniyordu (~38-46 ms).
 
 - `run-hook.cmd`'yi `pipeline_kayit.py`'ye geri yönlendirmeyin.
-- `PYTHONDONTWRITEBYTECODE` **ayarlı olmamalı** — kazancı tümüyle yok eder.
+- `PYTHONDONTWRITEBYTECODE` gerçeği (ölçüldü, 3.12 ve 3.14): Claude masaüstü uygulaması bu
+  değişkeni alt süreçlerine KENDİSİ verir. Etkisi: import sırasında `.pyc` YAZILMAZ; ama
+  `python -m compileall` YAZAR ve hazır `.pyc` OKUNUR. Değişkene dokunmayın, kaldırmayı da
+  önermeyin — kazanç `compileall` ile alınır; kurulum ve her güncellemeden sonra ZORUNLUDUR
+  (`oa_kurulum.py` `.pyc` tazeliğini Python'un kendi başlık doğrulamasıyla denetler).
 - `hook_giris.py` `sys.path`'i kirletmez; bu deseni bozmayın.
 - **Taze kurulumda `.pyc` YOKTUR** (`.gitignore` `__pycache__/` dışlıyor ve
   eklenti her güncellemede yeni bir sürümlü dizine açılır). İlk çağrı tam

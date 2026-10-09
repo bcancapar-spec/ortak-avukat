@@ -421,6 +421,24 @@ def test_b39_ci_ocr_bacagi_gercekten_kosuyor():
         "OCR testleri adıyla koşulmuyor (B-39)")
 
 
+def test_v0518_ci_ocr_isi_v0518_ocr_testlerini_de_kosar():
+    """v0.5.18: OCR planının gerçek Tesseract testleri (`test_v0518_ocr.py`) hiçbir CI işinde
+    koşmuyordu — matris koşucularında Tesseract yok, OCR işi yalnız nöbetçi dosyasını koşuyordu."""
+    metin = _oku(CI_YML)
+    ocr_isi = metin.split("\n  ocr:", 1)[1]
+    assert "tests/test_v0518_ocr.py" in ocr_isi, "OCR işi test_v0518_ocr.py'yi koşmuyor"
+
+
+def test_v0518_ci_matrisi_python_3_14_bacagini_icerir():
+    """Avukat kararı (2026-10-06): kancalar avukatın makinesinde Python 3.14 ile çalışıyor;
+    CI o sürümü de sınar."""
+    metin = _oku(CI_YML)
+    m = re.search(r"python-version:\s*\[([^\]]*)\]", metin)
+    assert m, "test matrisi python-version listesi bulunamadı"
+    surumler = [s.strip().strip("'\"") for s in m.group(1).split(",")]
+    assert {"3.12", "3.13", "3.14"} <= set(surumler), surumler
+
+
 def test_b39_ci_yesil_ne_demez_listesi_ocr_bacagini_aniyor():
     """CI başlığındaki 'yeşil ne DEMEZ' istisna listesi OCR bacağını da
     anmalı — istisna beyan edilmeyen atlama, sessiz atlamadır."""

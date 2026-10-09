@@ -1,7 +1,24 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-06 · **Sürüm:** 0.5.17.1 · **Commit:** `2a32f8d` + acil güvenlik yaması (B-23 sahipsiz yedek MCP, B-19 UDF iç iz sızıntısı; bkz. CHANGELOG)
-*(önceki kayıtlar: 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-06 · **Sürüm:** 0.5.18 · **Commit:** dal `guncelleme/0.5.18` (main `4b2f029` üzerine; bkz. CHANGELOG)
+*(önceki kayıtlar: 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+
+> **v0.5.18 son tur (2026-10-07/08, PR #8):** zincirleme tepki (zincir tüketicileri + üreticiler),
+> v0.5.18 adayının iki hukuki kusuru (istifa süresi, vergi davasında maktu vekâlet), gizli talimat
+> ifşası Faz A + Faz B (dilekçeye bağlama), DOCX metin sadakati ve iki XML çözücüsünün tek kuralı
+> (nüsha fail-open kapandı), kurulum motoru, anayasa m.11 ek düzenlemesi, künye + ölçülmüş satır
+> sayıları, CI'nın yakaladığı üretim hataları (npx önbellek yarışı dahil). Her adım tam süit Python
+> 3.14 ve 3.12'de yeşil (OA-SUIT-SAYISI). Zincir gerçek motorlarla uçtan uca sınandı. GATE G titrek
+> testinin kaynağı test sırasıydı, ürün değişmedi. Kanca gecikmesi sürüm defterinde
+> (PERFORMANS-STATUS §12): standart kökte fark yok, zincir ürünleri olan büyük dosyada Stop +79 ms.
+> **Açık:** son bütün-dal incelemesi, DURUM.md ifşa satırı.
+
+> **v0.5.18 (2026-10-06):** belge güvenlik kapısı (B-22) + görünürlük kâhini, OCR v1.9, Yargı PRO
+> uyarlamaları, 2026-10-06 kod denetimi düzeltmeleri (R1-R7, R9). Ölçülen: tam süit Python 3.12 ve
+> 3.14'te yeşil, kanca gecikmesi PERFORMANS-STATUS §11, OCR motor kıyası yeni donanımda (OCR planı
+> §10). **Ölçülmeyen (avukat kararı):** görünürlük kâhini ve 2026-10-06 düzeltmeleri gerçek evrakta
+> koşulmadı; OCR açık 2. geçiş ve büyük, zemin görselli PDF'lerde DENETLENEMEZ oranı v0.5.19'a kaldı.
+> Açık hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
 > [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
@@ -49,7 +66,7 @@ bir satır ölçülmeden buraya girmez.
   `python3.12 -m pytest tests` → CI hedef sürümünde koşuldu ·
   Python 3.11'de derlenmeyen script **1 → 0** · hook katmanı kırmızısı **4 → 0** ·
   ikrarlı taslakta yakalanan sinyal (`--taraf davali`) **3 → 5**.
-- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** İndirilenler klasörüne bu
+- **İŞ MAHKEMELERİ SAHA TESTİ (aynı gün, avukat talebi):** avukatın yerel evrak klasörüne bu
   oturumdan erişim YOK (bulutta izole konteyner) — test *gerçek dosya* yerine **gerçek ve
   güncel kaynak** üzerinden kuruldu (Yargı Pro MCP · Yargıtay 9. HD kararları).
   - **Süre motoru GEÇTİ (4/4).** Y. 9. HD E.2016/10425 K.2017/8620: ikale 29.08.2015 →
@@ -140,8 +157,8 @@ bir satır ölçülmeden buraya girmez.
     tablosu; DENETIM-v0516.md kök tablosu buna bağlı.
   - `git push origin main` (kimlik engeli — `gh auth login -h github.com`).
   - Avukat kararı bekleyen: **B-4** `git filter-repo` (geçmiş commit'lerde dosya kimliği —
-    geçmiş yeniden yazımı yalnız avukat kararıyla) · **udf-cli pin** (A5/B-6, iki yönlü
-    bedel) · **tarife doldurma** (`maliyet_cetveli` tarife.json — AAÜT ek tabloları MCP'den
+    geçmiş yeniden yazımı yalnız avukat kararıyla) · ~~**udf-cli pin**~~ (A5/B-6 — 2026-10-05
+    karara bağlandı: sabitle + Layer 0, v0.5.18 adayı) · **tarife doldurma** (`maliyet_cetveli` tarife.json — AAÜT ek tabloları MCP'den
     alınamadı; fail-closed boş kalır).
   - Belge bayatlık taraması (DEVAM-PLANI §9) H2 kalemiyle sınırlı yapıldı; tam tarama açık.
   - MCP'den teyit edilemeyen çıpalar CHANGELOG v0.5.16 «Yapılamayanlar» listesinde
@@ -314,10 +331,30 @@ değiştirdiğinde bizi eski sürümde çakılı bırakır. Karar: pinleme **ert
 gerçek bir kırılma görülene kadar aksiyon alınmayacak (kullanıcı kararı,
 2026-07-29). Bozulma olursa ilk bakılacak yer bu satırdır.
 
-### A5 · `udf-cli@latest` 33 yerde pinsiz — ORTA (ERTELENDİ)
+### A5 · ~~`udf-cli@latest` 33 yerde pinsiz~~ → **KARARA BAĞLANDI (v0.5.18 adayı)** — ORTA
 Teslim hattının tek yazıcısı ve tek doğrulayıcısı sürüm kilidi olmadan
-çağrılıyor. Pinlemek de bedelli: UYAP biçim değişirse pinli sürüm sessizce
-bayatlar. Karar gerektirir.
+çağrılıyordu. Pinlemek de bedelli: UYAP biçim değişirse pinli sürüm sessizce
+bayatlar.
+
+**Avukat kararı (2026-10-05):** "Layer 0'a dahil + sürüm sabitle". Sürüm tek
+sabitte: `oa-dilekce/scripts/udf_yaz.py` `UDF_CLI_SURUM = "0.5.6"` (bu
+geliştirme makinesinin npx önbelleğinde 2026-09-30'dan beri fiilen çalışan sürüm; npm
+kayıt defterinde o günün en son yayını). Diğer scriptler (`udf_metin.py`,
+`teslim_paketi.py`) sabiti dosyadan SATIR olarak okur; bulunamazsa `@latest`'e
+düşmez, FAIL-CLOSED hata verir. Aynı kural `docx2udf` için de uygulanır.
+Bayatlama bedeli için yükseltme yöntemi: sürüm yalnız avukat onayıyla, yayım
+notları okunarak ve testler geçerek değişir (oa-dilekce SKILL.md). Teslim
+kapısı UDF ürününde Layer 0 gizlilik taramasını artık atlamaz (oa-kontrol).
+
+**Bedel ölçüldü ve bilerek kabul edildi (2026-10-05):** 911 okunabilir gerçek
+UDF metninin 908'i `gizlilik_tara` (strict) kapısından geçmiyor (430 kesin
+engel: TC kimlik no, IBAN, "e-imza" ifadesi, KVKK m.6 verisi; 478 onay ister:
+esas no + taraf adı, telefon). Dava dilekçesinde TC kimlik no zorunlu olduğundan
+maskeleme çoğu zaman uygun değildir. Avukat kararı: **katı engel** — bulgu
+varsa UDF udf-cli ile üretilmez; teslim `--udf-yok` ile sürer ve UDF UYAP
+editöründe üretilir. Açık soru: udf-cli'nin dilekçe metnini sunucuya gönderip
+göndermediği ölçülmedi (sentetik dilekçeyle ağ ölçümü — yapılırsa karar
+yeniden değerlendirilebilir).
 
 ---
 
@@ -548,8 +585,8 @@ En büyük üç script tek başına 6.128 satır: `pipeline_kayit.py` (2.977),
 2. **Ağırlık nereye?** Jürinin ortak itirazı: dört bakir klasör dururken
    sentetik test yazmak. v0.5.6 sahaya mı dönsün (playbook hazır), repoda mı
    kalsın?
-3. **`udf-cli` pinlensin mi?** (A5 — iki yönlü bedel; hangi yönde olursa olsun
-   gerçek sürüm teslim makbuzuna damgalanacak)
+3. ~~**`udf-cli` pinlensin mi?**~~ → **Karar verildi (2026-10-05):** sabitle +
+   Layer 0'a dahil et (bkz. A5). Sürüm teslim makbuzuna damgalanır.
 4. **`_oa/arastirma/` meşrulaştırılsın mı**, yoksa anatomi mevcut dizinlere mi
    yazsın? (gölge-hat bekçisini zayıflatmadan) — **ve `maruziyet.md` nereye?** (A6)
 

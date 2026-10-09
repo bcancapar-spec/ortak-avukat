@@ -163,7 +163,7 @@ Taslağın A4'ü antitez turunda en ağır hasarı aldı (iki mercekten dört ö
 - **KVKK sırası ters:** imha/saklama ritüeli yazılmadan (P2 ⬜) kalıcı davalar-arası kütük kurulamaz;
   sqlite'ta DELETE imha değildir (secure_delete + VACUUM + WAL artıkları tasarlanmadan KVKK "yok etme"
   gerçekleşmez); konum disiplini yoksa OneDrive-senkron dizine düşen tek dosya, TÜM müvekkil
-  örüntülerini Layer 0'a görünmeden buluta çıkarır (bu makinede OneDrive mevcut) [doğrulandı].
+  örüntülerini Layer 0'a görünmeden buluta çıkarır (geliştirme makinesinde senkron klasör mevcuttu) [doğrulandı].
 - **Ölü depo dinamiği + kurucu direktif:** oa-arsiv "pratik faydası düşük" gerekçesiyle Can kararıyla
   kaldırılmıştı; FTS5 unicode61 Türkçe gövdeleme yapmaz; tek avukat kapanış hızında arama gerektirecek
   kütle yıllar alır [doğrulandı].

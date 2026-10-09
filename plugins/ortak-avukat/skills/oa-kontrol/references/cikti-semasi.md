@@ -99,10 +99,26 @@ kilitler.**
 - `taslak_sha256` — taslağın makbuz anındaki tam sha256'sı
 - `tip` — dilekçe tipi (`--tip`)
 - `taraf` — taraf sıfatı (`--taraf`); verilmediyse `null`
-- `kapilar` — `[{ad, durum, exit}]`; durum ENUM'u {OK, BLOK, ATLA, BILGI}
+- `kapilar` — `[{ad, durum, exit}]`; durum ENUM'u {OK, BLOK, ATLA, BILGI}; (c)
+  Layer 0 kaydı tarama koştuysa ayrıca `tetik` taşır (v0.5.18 — `layer0_tetik` ile aynı değer)
 - `exit_kodu` — zincirin çıkış kodu (0 = TESLİME HAZIR)
 - `udf_yolu` — üretilen UDF'in yolu; üretilmediyse `null`
 - `udf_atlandi_istekle` — `--udf-yok` ile bilinçli atlama yapıldı mı
+- `layer0_tetik` — (c) Privacy Layer 0 taraması neden koştu (v0.5.18): `null` (koşmadı —
+  UDF'siz ve dış araçsız teslim) | `"dis-arac"` (`--dis-arac`) | `"udf-cli"` (teslim ürünü
+  UDF ve yazıcı udf-cli — dış araç çağrısı; KATI ENGEL, avukat kararı 2026-10-05) |
+  `"dis-arac+udf-cli"`
+- `halusinasyon_kapisi` — (c2) HALÜSİNASYON MOTORLARI kapısının cevabı (v0.5.18 saha testi):
+  `null` (zincir (a)-(c)'de durdu, kapıya ulaşılmadı) | `{durum, eksik, …}` — `durum` ∈
+  `tamam` (dört motorun — grafik_denetim, vakia_matris, kiyas_denetim, antitez_matris —
+  kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u diskte) | `eksik` (BLOK; `mesaj` eksik
+  motorları ve tek komutu — `motor_koprusu.py` — taşır) | `serh` (adım-8 gerekçeli avukat
+  şerhiyle geçildi — `--serh-kapi halusinasyon|tumu`; `serh_gerekce` + `serh_metni` taşır,
+  istisna defterine `tur: halusinasyon-kapisi`, `onay: avukat-serhi` satırı düşer) |
+  `defter-yok` (pipeline defteri yok — kapı SORULMADI, BİLGİ) | `denetlenemedi`
+  (pipeline_kayit yüklenemedi/çöktü — fail-closed, ATLA). `eksik` = damgası olmayan /
+  çökmüş / BAYAT motorların listesi. Kapı statüye değil DİSKE bakar: BILGI-EKSIK/GEREKSIZ
+  yazmak onu açmaz
 - `ictihat_muhakeme_kanali` — sabit `"b2-tekil"` (çift-[F] koşumu yasağı izi)
 - `surum` — `OA_SURUM` damgası
 - `kismi_ingest` — `{n, m}` kısmi ingest sayacı; okunamazsa `null`
@@ -121,7 +137,30 @@ kilitler.**
 - `udf_devralindi` — devralınan UDF `{yol, sha256}` (GÖREV 1)
 - `kenar_duzeltildi` — sayfa kenarı yaması uygulandı mı (GÖREV 5)
 - `sekil_imzali_sapma` — imzalı nüshada kenar sapması (yama YOK)
-- `tazelik_uyarilari` — advisory tazelik satırları (GÖREV 6)
+- `tazelik_uyarilari` — advisory tazelik satırları (GÖREV 6); v0.5.18/B-1b: damgalı
+  denetim JSON'larının S1 `kaynaklar` beyanından türeyen `BAYAT:`/`EKSİK-KAYNAK:`
+  satırları ile `OKUNAMADI:` (çözülemeyen JSON — temiz SAYILMAZ) ve `DENETİM-DIŞI:`
+  (`_oa` dışı girdi, kaynak beyanı boş) satırları da bu listeye girer
+- `graf_kapisi` — K2 GRAF KAPISI sorusunun teslimdeki ADVISORY cevabı (v0.5.18/B-5;
+  avukat kararı 2026-10-07: kapı KAPATMAZ): `{durum, mesaj, denetim_json_sayisi}` —
+  `durum` ∈ `sorun` (çevrim / şema hatası / çökme / OKUNAMAYAN denetim JSON'u;
+  `mesaj` = `pipeline_kayit._graf_kapisi_sorunu` metni) | `acik` (`denetim_json_sayisi`
+  0 ise «kapı sorulmadı» notu — temiz İDDİASI değildir) | `denetlenemedi`
+  (pipeline_kayit yüklenemedi/çöktü — temiz SAYILMAZ). Yeşil makbuzda doğrudan,
+  RED makbuzunda `advisory_denetimler.graf_kapisi` içinde yaşar
+- `ifsa_durumu` — gizli talimat ifşasının teslimdeki ADVISORY durumu (v0.5.18 Faz B; Ruling 11:
+  kapı KAPATMAZ): `{durum, seviye, satir, kunye_sha8}` (`kunye_sha8`: bölümün dayandığı
+  `_oa/metin/00-kunye.json`'un sha8'i — izlenebilirlik) — `durum` ∈ `bolum-dilekcede` | `bolum-bayat`
+  (güncel tespitin alıntısı taslakta yok) | `bilincli-atlandi` (gerekçeli, `onay: avukat` ve en az
+  1.2 imzalı kayıt ortak istisna defterinde, güncel bulgu parmak iziyle) | `model-atladi` (v0.5.18 G-5:
+  güncel atlama kaydı yalnız MODEL BEYANI — avukat onayı yok, uyarı açık kalır; anayasa m.9; onay
+  bayrağından önceki 1.1 sürümünün her kayda yazdığı `avukat` etiketi de buraya düşer) | `bolum-yok` | `bulgu-yok` | `yanlis-ifsa-riski`
+  (BULGU yokken bölüm var) | `denetlenemedi` (temiz SAYILMAZ). Zaman damgası taşımaz. Yeşil
+  makbuzda doğrudan, RED makbuzunda `advisory_denetimler.ifsa_durumu` içinde yaşar
+- `udf_dogrulanmadi_isareti` — v0.5.18 (Fable denetimi T2): udf_yaz'ın bıraktığı
+  `<udf>.DOGRULANMADI` işaretinin yolu (resmî okuyucu udf2md dosyayı doğrulayamadı); yoksa
+  `null`. ADVISORY — teslimi durdurmaz; yeşil makbuzda doğrudan yaşar ve sonuç satırı
+  «TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI» diye nitelenir
 - `teslim_sinifi_urunler` — filo kapsamı `[{dosya, sha12, muhur}]`;
   `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13)
 - `filo_uyarilari` — filo taramasının advisory satırları

@@ -3,7 +3,19 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (2026-10-06 · v0.5.17.1)
+## DURUM — son (2026-10-08 · v0.5.18)
+
+- Son tur (PR #8): zincirleme tepki, iki hukuki kusurun kapatılması, gizli talimat ifşası (Faz A + B), DOCX metin
+  sadakati ve tek çözücü kuralı, kurulum motoru, anayasa m.11 ek düzenlemesi — her biri tam süit
+  Python 3.14 ve 3.12'de yeşil. Bütünleşme testleri, GATE G analizi ve kanca ölçümü
+  (PERFORMANS-STATUS §12) tamam. Sıradaki: son bütün-dal incelemesi; sonra avukatın gerçek dava
+  testleri; v0.5.19 (Aşama 4 teyitli sonuçlar toplu; çapraz denetim önbelleği).
+
+## DURUM — 2026-10-06 · v0.5.18 (önceki)
+- **Paket v0.5.18:** belge güvenlik kapısı (B-22) ve görünürlük kâhini, OCR v1.9 (sayfa düzeyi yönlendirme, gerçek güven, kritik alan teyidi, yalnız yerel Paddle yönlendiricisi), Yargı PRO uyarlamaları (süre motoru, icra dilekçe ailesi, AYM/AİHM yolu, atıf kapısı), kaynak tüketimi sınırları ve 2026-10-06 kod denetimi düzeltmeleri (R1-R7, R9). CI'a Python 3.14 bacağı ve OCR işine `test_v0518_ocr.py` eklendi.
+- **Sıradaki (v0.5.19):** gerçek evrak ölçümleri (kâhin yanlış alarmı, OCR açık 2. geçiş, DENETLENEMEZ oranı — avukat kararıyla bu sürümde yapılmadı); İP-1 teslim zinciri (dönüşüm sonrası HTML sızıntı kapısı, devralmada sürüm şartı); Paddle işçisinde 8 iş parçacığı + kalıcı işçi (ölçümle); hukuki teyit turunun onaylanan sonuçları.
+
+## DURUM — 2026-10-06 · v0.5.17.1 (önceki)
 - **Acil güvenlik yaması** (v0.5.18 adayından ayrıldı): B-23 sahipsiz yedek MCP ilanı kaldırıldı; B-19 kurulu önbellekteki `md_udf_html.py` / `kunye_ortak.py` saha yamaları depoya alındı (B-18 iç iz sızıntısı kapandı; B-20 kararı: kaynakça teslim nüshasına girmez). v0.5.18 işi `guncelleme/0.5.18` dalında sürüyor.
 
 ## DURUM — 2026-09-12 · v0.5.17 (önceki)

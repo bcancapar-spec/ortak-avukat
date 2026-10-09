@@ -108,13 +108,13 @@ def durum_metni():
             "kipinde kosar; GERCEK .udf uretimini iddia eden testler ATLANIR. "
             "KAPSAM EKSIKTIR: bu ortamda yesil CI 'yapi + zincir mantigi saglam' "
             "demektir, 'UDF hatti calisiyor' DEMEZ. Acmak icin: "
-            "npx -y udf-cli@latest login" % aciklama)
+            "npx -y udf-cli@<UDF_CLI_SURUM> login (surum: udf_yaz.py)" % aciklama)
 
 
 # (B) grubu için işaret — GERÇEK .udf artefaktı iddia eden testler.
 gercek_udf_yazici_gerekli = pytest.mark.skipif(
     not gercek_udf_yazici_var(),
-    reason=("GERCEK UDF yazicisi/oturumu yok (`npx -y udf-cli@latest login`). "
+    reason=("GERCEK UDF yazicisi/oturumu yok (`npx -y udf-cli@<UDF_CLI_SURUM> login`). "
             "udf_yaz.py FAIL-CLOSED oldugu icin bu testin iddia ettigi .udf "
             "artefakti bu ortamda URETILEMEZ. Kod hatasi degil, ortam "
             "eksikligi -- bkz. tests/oa_udf_ortam.py"),

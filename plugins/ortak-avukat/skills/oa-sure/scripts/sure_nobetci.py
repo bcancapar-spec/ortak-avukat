@@ -44,6 +44,12 @@ kendi "id" alanı varsa o kullanılır.
 az biri hayalettir — nöbetçi bunu adıyla raporlar ve DİKKAT (exit 3) sınıfına
 alır (bozuk kayıt ile aynı sınıf; ayrı bir çıkış kodu İCAT EDİLMEZ).
 
+TATİL TAKVİMİ EKSİK (v0.5.18 / Y-08): hesapla_sure.py son günü, tatiller.json'da
+resmî dini bayram kaydı OLMAYAN bir yıla düşen kayda `"takvim_eksik": [yıl, ...]`
+alanı ekler (bayram iş günü sanılmış olabilir → gerçek son gün daha geç olabilir).
+Nöbetçi bu kayıtları satırında işaretler ve ayrı bir özet satırı basar; çıkış
+kodu sözleşmesi DEĞİŞMEZ (bilgi işaretidir, acil sınıfı değildir).
+
 Kullanım (Windows/PowerShell — 'python'):
   python sure_nobetci.py [--kok <klasör>]
     --kok : çalışma kökü; defter <kök>/_oa/sureler.json (varsayılan: .)
@@ -176,6 +182,14 @@ def _kural(kayit):
     return ""
 
 
+def _takvim_eksik(kayit):
+    """v0.5.18 / Y-08 — kayıttaki `takvim_eksik` yılları (geçerli tam sayılar); yoksa []."""
+    if not isinstance(kayit, dict) or not isinstance(kayit.get("takvim_eksik"), list):
+        return []
+    return sorted({y for y in kayit["takvim_eksik"]
+                   if isinstance(y, int) and not isinstance(y, bool) and 1900 <= y <= 9999})
+
+
 def _kayit_kimligi(kayit):
     """8 haneli deterministik parmak izi — kaydı ADRESLENEBİLİR yapar.
 
@@ -234,11 +248,13 @@ def _yaz_kayit(isaret, ham_gun, etiket, tur_tag, aciklama, kimlik=""):
     print("%-6s%-12s%-27s%-8s%s%s" % (isaret, ham_gun, etiket, tur_tag, kim, aciklama))
 
 
-# Aynı kural altında BİLİNÇLİ olarak iki son gün üreten tek üretici:
+# Aynı kural altında BİLİNÇLİ olarak iki son gün üreten üreticiler:
 # `hesapla_sure.py --uets` 7201 m.7/a karine senaryosunu AYRI kayıt olarak
-# yazar (kayıpsızlık — iki son gün de görünür). Bu bir çelişki DEĞİLDİR;
-# çelişki taramasının dışında tutulur, listede normal şekilde görünmeye devam eder.
-CELISKI_DISI_IZLER = ("uets karine",)
+# yazar (kayıpsızlık — iki son gün de görünür); v0.5.18'den itibaren CMK tatil
+# içi tebliğde eski daire uygulamasına göre ERKEN "ihtiyat planı" tarihi de ayrı
+# kayıttır (YCGK 2022/846 tarihinin yanında). Bunlar çelişki DEĞİLDİR; çelişki
+# taramasının dışında tutulur, listede normal şekilde görünmeye devam eder.
+CELISKI_DISI_IZLER = ("uets karine", "ihtiyat planı")
 
 
 def _celiski_disi(aciklama):
@@ -418,7 +434,7 @@ def main():
             gecerli.append({"gun": gun, "anahtar": anahtar, "isaret": isaret,
                             "etiket": etiket, "tur": _tur_etiketi(kayit),
                             "aciklama": _aciklama(kayit), "kimlik": kimlik,
-                            "kural": _kural(kayit)})
+                            "kural": _kural(kayit), "takvim_eksik": _takvim_eksik(kayit)})
 
     # en yakın/geçmiş üste: son güne göre artan (en geçmiş → en ileri)
     gecerli.sort(key=lambda x: (x["gun"], x["aciklama"]))
@@ -444,8 +460,19 @@ def main():
 
     # ── liste ──────────────────────────────────────────────────────────────
     for g in gecerli:
+        _isaret_te = ("  [⚠ takvim eksik: %s]" % ", ".join(str(y) for y in g["takvim_eksik"])
+                      if g["takvim_eksik"] else "")
         _yaz_kayit(g["isaret"], g["gun"].isoformat(), g["etiket"], g["tur"],
-                   g["aciklama"], g["kimlik"])
+                   g["aciklama"] + _isaret_te, g["kimlik"])
+    _te_kayit = [g for g in gecerli if g["takvim_eksik"]]
+    if _te_kayit:
+        # v0.5.18 / Y-08 — bilgi işareti: çıkış kodunu DEĞİŞTİRMEZ.
+        _te_yil = sorted({y for g in _te_kayit for y in g["takvim_eksik"]})
+        print()
+        print("⚠ Takvim eksik: %d kayıtta son gün, tatiller.json'da resmî dini bayram kaydı "
+              "olmayan yıla düşüyor (%s) — bayram/idari izin Diyanet/Resmî Gazete'den teyit "
+              "edilip hesapla_sure.py ile yeniden hesaplanmadan kesin sayılmaz."
+              % (len(_te_kayit), ", ".join(str(y) for y in _te_yil)))
 
     if asama:
         # v0.5.16 / I5 — AYRI BLOK: takvim listesine karışmaz, sayılmaz.

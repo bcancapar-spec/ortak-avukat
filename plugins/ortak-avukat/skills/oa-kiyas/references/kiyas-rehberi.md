@@ -13,6 +13,9 @@ Açık kıyas bunu üç önermeye böler:
     haczin varlığı · zilyetlik durumu (m.97/a karinesi)
 - **Küçük önerme:** Somut maddi vakıa. Her vakıa, büyük önermenin bir veya birden
   çok unsurunu **karşılar** (`karsilar` alanı). Her vakıa delile bağlıdır.
+  Opsiyonel `vakia_id` (vakıa matrisindeki `olaylar[].id` ile aynı dize — v0.5.18)
+  çapraz denetimde kimlik eşitliği sağlar; yoksa ad benzerliğiyle eşlenir
+  ("ad-eşleşmesi (belirsiz)" etiketli). Mükerrer `vakia_id` ⚠ uyarıdır, kritik değil.
 - **Sonuç:** Tüm unsurlar karşılanırsa hukuki sonuç doğar. Karşılanmayan unsur =
   ispat boşluğu veya hukuki dayanak yetersizliği → sonuç o ölçüde zayıflar.
 
@@ -139,7 +142,9 @@ Kurallar:
 - JSON çıktısında **`buyuk_onerme.yarisan_normlar`** listesi (her öğe: norm ·
   zamanasimi · kusur_sarti · ispat_kolayligi · faiz · secim_gerekcesi ·
   secili); tekil şemada boş liste — eski dosyalar değişmeden çalışır.
-  ÜST-DÜZEY anahtar kümesi değişmez (K1 ileri koruması, v0.5.14).
+  ÜST-DÜZEY anahtar kümesi değişmez (K1 ileri koruması, v0.5.14); v0.5.18'de
+  BİLİNÇLİ olarak `kaynaklar` + `kaynaklar_notu` ile genişletildi (S1 kaynak
+  beyanı — bkz. Kullanım).
 - Zamanaşımı/faiz madde çıpaları bu tabloda **iddia**dır; kullanım anında
   Mevzuat MCP'den teyit edilir, hafızadan yazılmaz.
 
@@ -150,3 +155,9 @@ Norm hiç unsurlara ayrılmamışsa denetim YAPILAMAMIŞ sayılır ve kritik bo�
 basılır ("yapı bütün" DEĞİL). Girdi okunamaz/bozuk ya da kökü sözlük değilse
 traceback yerine tek satırlık hata + exit 1 döner.
 Yorum ve nihai sonuç avukata aittir.
+
+**v0.5.18:** `--json` çıktısı `kaynaklar` (`girdi` + varsa `kunye`: dosyayı içeren
+`_oa` dizinine göre POSIX göreli yol + sha256[:8], (rol, yol) sıralı) ve
+`kaynaklar_notu` taşır; `_oa` dışı girdi → boş liste + "tazelik denetimi dışı" notu
+(denetim dışı ≠ temiz). Dosya atomik yazılır (aynı dizinde geçici + `os.replace`).
+`girdi` alanı komut satırının yankısı olarak kalır.

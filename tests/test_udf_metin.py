@@ -2,8 +2,9 @@
 """oa-pipeline / udf_metin.py için testler.
 
 GÖREV D (v0.5.5, UDF hattı — okuma tarafı): script artık ham zip/content.xml
-okuma DENEMEZ (bu deneme BIRAKILDI) — TEK okuma yolu `npx -y udf-cli@latest
-udf2md`. Bu yüzden testler:
+okuma DENEMEZ (bu deneme BIRAKILDI) — TEK okuma yolu `npx -y udf-cli@<sürüm>
+udf2md` (v0.5.18: sürüm `oa-dilekce/scripts/udf_yaz.py` UDF_CLI_SURUM'dan
+okunur; `@latest` yok). Bu yüzden testler:
   - FAIL-CLOSED (npx yok/başarısız → None + hata, CLI'de exit != 0, net mesaj)
     ağsız/deterministiktir, her zaman koşar.
   - Gerçek `udf-cli udf2md` uçtan-uca testi yalnız npx/oturum kullanılabilirse

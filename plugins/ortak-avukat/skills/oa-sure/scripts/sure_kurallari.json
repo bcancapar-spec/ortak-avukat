@@ -1,58 +1,76 @@
 {
   "_aciklama": "SÜRE KURALLARI tablosu (güncellenebilir). hesapla_sure.py bu dosya varsa buradan okur; yoksa/bozuksa script içindeki GÖMÜLÜ tabloya düşer ve bunu GÖRÜNÜR şekilde raporlar (v0.5.14 / B-21 — sessiz fallback kaldırıldı). İki tablo BİREBİR aynıdır ve tests/test_v0514_sure.py::test_B21_gomulu_ve_json_kural_tablosu_BIREBIR_ayni ile mekanik olarak kilitlidir. Her kural: sürenin KAÇ gün/hafta olduğunu, dayanağını (kaynak), MCP teyit tarihini ve hukuken izinli başlangıç türlerini taşır. Script yalnızca DATE ARİTMETİĞİNİ deterministik yapar; sürenin miktarı/birimi HUKUKİ kuraldir ve resmî kaynaktan (Mevzuat MCP) TEYİT edilmelidir.",
   "_teyit_notu": "mcp_teyit_tarihi: kuralın Mevzuat MCP'den (veya Resmî Gazete/güncel kanun metninden) en son teyit edildiği tarih (YYYY-MM-DD). BOŞ ise kural HENÜZ teyit edilmemiştir — kullanmadan önce teyit et ve bu alanı doldur. Teyit tarihi YALNIZ bu alanda tutulur; 'kaynak' metnine YAZILMAZ (v0.5.14 / B-21 — ikiz beyan yasağı). Süreler kanun değişiklikleriyle değişebilir (ör. 6183 m.58 7→15 gün, 7061 s.K.); tabloya körlemesine güvenme.",
-  "_dikkat_cmk": "CMK kanun yolu süreleri Mevzuat MCP'den TEYİTLİDİR (2026-08-31): istinaf m.273/1 İKİ HAFTA, temyiz m.291/1 İKİ HAFTA, itiraz m.268/1 İKİ HAFTA. Her iki kanun yolu maddesinde de hazır bulunmayanlara ilişkin ikinci fıkralar 2/3/2024 tarihli 7499 s.K. ile MÜLGA edilmiştir; dolayısıyla eski 'istinaf yedi gün / temyiz on beş gün' rejimi YÜRÜRLÜKTE DEĞİLDİR. Tutuklu sanık yönünden CMK m.263 (ceza infaz kurumu müdürüne başvuru — süreleri KESER) her üç maddede de saklıdır. ADLİ TATİL: ceza sürelerine HMK m.104 (bir hafta) DEĞİL, CMK m.331/4 (ÜÇ GÜN) uygulanır — hesap `--yargi ceza` ile koşulur, aksi hâlde script DURUR.",
+  "_dikkat_cmk": "CMK kanun yolu süreleri Mevzuat MCP'den TEYİTLİDİR (2026-08-31): istinaf m.273/1 İKİ HAFTA, temyiz m.291/1 İKİ HAFTA, itiraz m.268/1 İKİ HAFTA. Her iki kanun yolu maddesinde de hazır bulunmayanlara ilişkin ikinci fıkralar 2/3/2024 tarihli 7499 s.K. ile MÜLGA edilmiştir; dolayısıyla eski 'istinaf yedi gün / temyiz on beş gün' rejimi YÜRÜRLÜKTE DEĞİLDİR. Tutuklu sanık yönünden CMK m.263 (ceza infaz kurumu müdürüne başvuru — süreleri KESER) her üç maddede de saklıdır. ADLİ TATİL: ceza sürelerine HMK m.104 (bir hafta) DEĞİL, CMK m.331/4 (ÜÇ GÜN) uygulanır — hesap `--yargi ceza` ile koşulur, aksi hâlde script DURUR. TATİL İÇİNDE TEBLİĞ (v0.5.18): süre tatilde İŞLEMEZ, TAM süre tatilin bitiminden sonra işler (YCGK E.2013/2-272 K.2013/524; YCGK E.2021/319 K.2022/846; 14.02.1934 t. 47/1 s. İBK).",
   "_baslangic_notu": "izinli_baslangic_turleri: kuralın hukuken hangi olaydan işlediği. `--baslangic-turu` bu kümenin DIŞINDA verilirse script UYARI basar (nitelendirme yapmaz, aritmetiği değiştirmez). Boş liste = kısıt kaydedilmemiş.",
+  "_rejim_notu": "v0.5.18 (Y-01/Y-02 — 2026-10-03 denetimi): ADLİ TATİL REJİMİ ARTIK KURAL DÜZEYİNDEDİR. Eskiden rejim kuralın ön ekinden türetiliyordu (KURAL_KOLU['iik'] = 'hukuk' → icra süreleri HMK m.104 ile yanlışlıkla bir hafta uzatılıyordu). Alanlar: adli_tatil ∈ {hmk104, iyuk8, cmk331, uygulanmaz}; adli_tatil_dayanak (madde + içtihat); adli_tatil_teyitli (false = resmî kaynakla teyit edilemedi, TEMKİNLİ erken tarih seçildi — karşı tarafa kesin dil kurulmaz); son_gun_kaymasi (false = son gün tatile rastlasa da kaymaz; yalnız AİHM). Gömülü ikiz: hesapla_sure.py _GOMULU_REJIM (tests/test_v0518_sure.py ile kilitli).",
   "_asama_notu": "v0.5.16 / I5 (P1-3 / A-10) — AŞAMA TETİKLİ SÜRE SINIFI: 'asama_kurallari' bölümündeki kurallar takvimle değil yargılamanın bir AŞAMASIYLA kapanır (ilk itiraz cevap dilekçesiyle, delil bildirimi dilekçeler aşamasında, ıslah tahkikat bitene kadar, katılma hüküm verilinceye kadar). miktar/birim YOKTUR; hesapla_sure.py bu kurallarda TARİH ARİTMETİĞİ YAPMAZ (yanlış tarih üretme yasağı), yalnız aşamayı ve bağlı pipeline adımını (oa-pipeline ADIMLAR 0-10; bu adım TAMAMLANMADAN işlem yapılmalı) basar. Defter kaydı {tur:'asama', asama, pipeline_adimi, aciklama, kural} — son_gun YOK; sure_nobetci.py bu kayıtları AYRI blokta gösterir, tarih sayımına katmaz. Ceza kolundaki katılma anı deseni (v0.5.13, CMK m.237) hukuk koluna genellendi. Gömülü tablo (_GOMULU_ASAMA_KURALLAR) ile BİREBİR aynı tutulur (tests/test_v0516_I5.py). Tarih kuralları tablosu ('kurallar', 21 kural) DEĞİŞMEDİ.",
   "kurallar": {
     "hmk_istinaf": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "HMK m.345 — istinaf, ilamın tebliğinden",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "kaynak": "HMK m.345/1 — istinaf iki hafta; süre ilamın usulen taraflardan HER BİRİNE TEBLİĞİYLE işlemeye başlar (tefhim süreyi BAŞLATMAZ). İstinaf süresine ilişkin özel kanun hükümleri saklıdır.",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
-        "teblig",
-        "tefhim"
-      ]
+        "teblig"
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "hmk_temyiz": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "HMK m.361 — temyiz, BAM kararının tebliğinden",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "kaynak": "HMK m.361/1 — BAM nihai kararına temyiz iki hafta; TEBLİĞ tarihinden işler (tefhim süreyi BAŞLATMAZ).",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
-        "teblig",
-        "tefhim"
-      ]
+        "teblig"
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "hmk_cevap": {
       "miktar": 2,
       "birim": "hafta",
-      "kaynak": "HMK m.127 — cevap (kural; uzatma ayrı)",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "kaynak": "HMK m.127 — YAZILI yargılamada cevap iki hafta (dava dilekçesinin tebliğinden); ek süre bu süre içinde istenirse bir defaya mahsus ve EN ÇOK BİR AY. BASİT yargılamada (iş mahkemeleri dahil — 7036 m.7/1) kural hmk_cevap_basit'tir (HMK m.317/2: ek süre en çok iki hafta).",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iik_istinaf": {
       "miktar": 2,
       "birim": "hafta",
       "kaynak": "İİK m.363 — icra mah. istinaf (ESKİ 10 GÜN DEĞİL) · 7499 s.K. (yür. 1/6/2024) süreyi iki haftaya çıkardı VE \"tefhim veya\" ibaresini metinden ÇIKARDI — süre artık YALNIZ tebliğden işler.",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
-        "teblig",
-        "tefhim"
-      ]
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iik_sikayet": {
       "miktar": 7,
       "birim": "gun",
-      "kaynak": "İİK m.16 — icra mahkemesine şikâyet; kural 7 gün (SÜRESİZ şikâyet halleri ayrıktır — m.16/2)",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "kaynak": "İİK m.16/1 — icra ve iflas dairelerinin işlemlerine şikâyet; işlemin ÖĞRENİLDİĞİ tarihten itibaren yedi gün (m.16/2: hakkın yerine getirilmemesi veya sebepsiz sürüncemede bırakılması hâlinde SÜRESİZ).",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
         "ogrenme",
         "teblig"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "cmk_itiraz": {
       "miktar": 2,
@@ -63,7 +81,11 @@
         "ogrenme",
         "teblig",
         "tefhim"
-      ]
+      ],
+      "adli_tatil": "cmk331",
+      "adli_tatil_dayanak": "CMK m.331/4 — adli tatile rastlayan süreler İŞLEMEZ ve tatilin bittiği günden itibaren ÜÇ GÜN uzar; tatil İÇİNDE tebliğde süre tatilde işlemez, TAM süre tatil bitiminden sonra işler (YCGK 26.11.2013 E.2013/2-272 K.2013/524; YCGK 27.12.2022 E.2021/319 K.2022/846; 14.02.1934 t. 47/1 s. İBK); tutuklu işlerde de aynıdır (YCGK E.2021/319 K.2022/846; AYM Ramazan Seçen, B. No: 2021/37483, 6/1/2026)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "cmk_istinaf": {
       "miktar": 2,
@@ -72,7 +94,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "cmk331",
+      "adli_tatil_dayanak": "CMK m.331/4 — adli tatile rastlayan süreler İŞLEMEZ ve tatilin bittiği günden itibaren ÜÇ GÜN uzar; tatil İÇİNDE tebliğde süre tatilde işlemez, TAM süre tatil bitiminden sonra işler (YCGK 26.11.2013 E.2013/2-272 K.2013/524; YCGK 27.12.2022 E.2021/319 K.2022/846; 14.02.1934 t. 47/1 s. İBK); tutuklu işlerde de aynıdır (YCGK E.2021/319 K.2022/846; AYM Ramazan Seçen, B. No: 2021/37483, 6/1/2026)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "cmk_temyiz": {
       "miktar": 2,
@@ -81,7 +107,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "cmk331",
+      "adli_tatil_dayanak": "CMK m.331/4 — adli tatile rastlayan süreler İŞLEMEZ ve tatilin bittiği günden itibaren ÜÇ GÜN uzar; tatil İÇİNDE tebliğde süre tatilde işlemez, TAM süre tatil bitiminden sonra işler (YCGK 26.11.2013 E.2013/2-272 K.2013/524; YCGK 27.12.2022 E.2021/319 K.2022/846; 14.02.1934 t. 47/1 s. İBK); tutuklu işlerde de aynıdır (YCGK E.2021/319 K.2022/846; AYM Ramazan Seçen, B. No: 2021/37483, 6/1/2026)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_dava_idare": {
       "miktar": 60,
@@ -91,7 +121,11 @@
       "izinli_baslangic_turleri": [
         "teblig",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_dava_vergi": {
       "miktar": 30,
@@ -101,7 +135,11 @@
       "izinli_baslangic_turleri": [
         "teblig",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_istinaf": {
       "miktar": 30,
@@ -110,7 +148,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_temyiz": {
       "miktar": 30,
@@ -119,7 +161,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_yd_itiraz": {
       "miktar": 7,
@@ -128,7 +174,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_dava_ivedi": {
       "miktar": 30,
@@ -138,7 +188,11 @@
       "izinli_baslangic_turleri": [
         "teblig",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_temyiz_ivedi": {
       "miktar": 15,
@@ -147,7 +201,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_dava_sinav": {
       "miktar": 10,
@@ -157,7 +215,11 @@
       "izinli_baslangic_turleri": [
         "teblig",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_temyiz_sinav": {
       "miktar": 5,
@@ -166,7 +228,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_temyiz_cevap": {
       "miktar": 30,
@@ -175,7 +241,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "iyuk_temyiz_ozel_7gun": {
       "miktar": 7,
@@ -184,7 +254,11 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 — İYUK'ta yazılı sürenin bitimi çalışmaya ara vermeye rastlarsa ara vermenin sona erdiği günü izleyen tarihten itibaren YEDİ GÜN uzar; İYUK m.62 nöbetçi işlerinde uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "amme_6183_m58": {
       "miktar": 15,
@@ -193,17 +267,25 @@
       "mcp_teyit_tarihi": "2026-08-31",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "iyuk8",
+      "adli_tatil_dayanak": "İYUK m.8/3 uzatmasının ÖZEL KANUN süresine uygulanması TARTIŞMALIDIR (Danıştay 7. D. E.2000/5685 K.2002/3522 oyçokluğu — A-20); motor uzatır ama GÜVENLİ PLAN ham bitiştir",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
     },
     "aym_bireysel": {
       "miktar": 30,
       "birim": "gun",
-      "kaynak": "6216 m.47/5 — AYM bireysel başvuru",
-      "mcp_teyit_tarihi": "2026-08-31",
+      "kaynak": "6216 m.47/5 — bireysel başvuru otuz gün: başvuru yollarının TÜKETİLDİĞİ tarihten; başvuru yolu öngörülmemişse ihlalin ÖĞRENİLDİĞİ tarihten (AYM İçtüzüğü m.64/1 aynı). Haklı mazerette mazeretin kalktığı tarihten on beş gün (aym_bireysel_mazeret); eksik evrak için verilen süre en çok on beş gün (m.47/6).",
+      "mcp_teyit_tarihi": "2026-10-05",
       "izinli_baslangic_turleri": [
         "teblig",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — 6216 sayılı Kanun ve AYM İçtüzüğünde adli tatil/süre uzatması hükmü yok (Mevzuat MCP içinde-ara 'tatil' → yalnız 6216 m.8, üye seçimi); 6216 m.49/7 hüküm bulunmayan hâllerde ilgili usul kanunlarının 'bireysel başvurunun niteliğine uygun' hükümlerine yollasa da uzatmaya GÜVENME → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
     },
     "is_ise_iade_arabulucu": {
       "miktar": 1,
@@ -212,7 +294,11 @@
       "mcp_teyit_tarihi": "2026-09-10",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz (Y. 9. HD E.2016/1261 K.2016/22196)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "is_ise_iade_dava": {
       "miktar": 2,
@@ -221,7 +307,11 @@
       "mcp_teyit_tarihi": "2026-09-10",
       "izinli_baslangic_turleri": [
         "olay"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz (Y. 9. HD E.2016/1261 K.2016/22196)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "is_ise_iade_arabulucu_ret": {
       "miktar": 2,
@@ -230,7 +320,11 @@
       "mcp_teyit_tarihi": "2026-09-10",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz (Y. 9. HD E.2016/1261 K.2016/22196)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "is_ise_baslatma_basvuru": {
       "miktar": 10,
@@ -239,7 +333,11 @@
       "mcp_teyit_tarihi": "2026-09-10",
       "izinli_baslangic_turleri": [
         "teblig"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz (Y. 9. HD E.2016/1261 K.2016/22196)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "is_ise_baslatma_isveren": {
       "miktar": 1,
@@ -248,7 +346,11 @@
       "mcp_teyit_tarihi": "2026-09-10",
       "izinli_baslangic_turleri": [
         "olay"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "4857 süresi (HMK'nın değil) — HMK m.104 uygulanmaz; işçinin açtığı iş davası HMK m.103/1-ç ile adli tatilde görülür ve işe iade süresinde m.104 uzatması uygulanamaz (Y. 9. HD E.2016/1261 K.2016/22196)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
     },
     "is_zamanasimi_5yil": {
       "miktar": 5,
@@ -258,7 +360,318 @@
       "izinli_baslangic_turleri": [
         "olay",
         "ogrenme"
-      ]
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "maddi hukuk süresi (zamanaşımı) — adli tatil uzatması yok; durma/kesilme TBK m.153-158 (script hesaplamaz)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_temyiz": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "İİK m.364/2 (Değişik: 7499 s.K.) — icra mahkemesi işlerinde BAM kararına temyiz iki hafta; TEBLİĞ tarihinden işler, inceleme HMK'ya göre yapılır (m.364/1 miktar/değer eşiği — kullanım anında teyit et).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_odeme_emrine_itiraz": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.62/1 — genel haciz yoluyla takipte ödeme emrine itiraz yedi gün; ödeme emrinin TEBLİĞİNDEN itibaren icra dairesine dilekçeyle veya sözlü; imza itirazı ayrıca ve açıkça bildirilmezse imza kabul edilmiş sayılır (m.62/son). Süresinde itiraz edilmezse takip kesinleşir; mazeret hâlinde İİK m.65 (iik_gecikmis_itiraz).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538; ödeme emrine itiraz süresi için ayrıca Y. 23. HD E.2013/8404 K.2013/7933 (HMK m.104 HMK dışındaki sürelere uygulanmaz)",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_gecikmis_itiraz": {
+      "miktar": 3,
+      "birim": "gun",
+      "kaynak": "İİK m.65/2 — borçlu kusuru olmaksızın bir mani yüzünden süresinde itiraz edemediyse MANİİN KALKTIĞI günden itibaren üç gün içinde mazeret delilleriyle itiraz eder ve masrafı öder; dış sınır m.65/1: paraya çevirme işlemi bitinceye kadar.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_itirazin_iptali": {
+      "miktar": 1,
+      "birim": "yil",
+      "kaynak": "İİK m.67/1 — itirazın iptali davası, itirazın alacaklıya TEBLİĞİNDEN itibaren bir yıl içinde genel mahkemede açılır; süre geçerse genel hükümlere göre dava hakkı saklıdır (m.67/son) ama takibin bu dava yoluyla sürdürülmesi ve icra inkâr tazminatı imkânı kaybedilir.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK'nın koyduğu süre (HMK'nın değil) — HMK m.104 yalnız HMK'nın tayin ettiği sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 için); bu gerekçenin genel mahkemede açılan dava süresine aynen uygulanacağı ayrıca TEYİT EDİLMEDİ → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "iik_itirazin_kaldirilmasi": {
+      "miktar": 6,
+      "birim": "ay",
+      "kaynak": "İİK m.68/1 ve m.68/a-1 — itirazın kesin veya geçici kaldırılması, itirazın alacaklıya TEBLİĞİNDEN itibaren altı ay içinde icra mahkemesinden istenir; bu süre içinde istenmezse YENİDEN İLÂMSIZ TAKİP YAPILAMAZ (m.68/1 son cümle).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_borctan_kurtulma": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.69/2 — itirazın muvakkaten kaldırılması kararının TEFHİM veya TEBLİĞİNDEN itibaren yedi gün içinde borçtan kurtulma davası; dinlenebilmesi için alacağın yüzde on beşi ilk duruşmaya kadar depo/teminat edilmeli; süresinde açılmazsa kaldırma kararı ve muvakkat haciz kesinleşir (m.69/3).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "tefhim"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK'nın koyduğu süre (HMK'nın değil) — HMK m.104 yalnız HMK'nın tayin ettiği sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 için); bu gerekçenin genel mahkemede açılan dava süresine aynen uygulanacağı ayrıca TEYİT EDİLMEDİ → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "iik_89_ihbarname_itiraz": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.89/2-3 — birinci ve ikinci haciz ihbarnamesine üçüncü şahsın itirazı: ihbarnamenin kendisine TEBLİĞİNDEN itibaren yedi gün içinde icra dairesine yazılı veya sözlü; itiraz edilmezse mal yedinde veya borç zimmetinde sayılır.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_89_menfi_tespit": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "İİK m.89/3 — üçüncü ihbarnameyi alan üçüncü şahıs on beş gün içinde parayı ödemek veya malı teslim etmek YA DA menfi tespit davası açmak zorundadır; dava açıldığına dair belge bildirimden itibaren yirmi gün içinde icra dairesine teslim edilirse cebri icra işlemleri durur.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK'nın koyduğu süre (HMK'nın değil) — HMK m.104 yalnız HMK'nın tayin ettiği sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 için); bu gerekçenin genel mahkemede açılan dava süresine aynen uygulanacağı ayrıca TEYİT EDİLMEDİ → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "iik_ihalenin_feshi": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.134/2 — ihalenin feshi, icra mahkemesinden şikâyet yoluyla İHALE TARİHİNDEN itibaren yedi gün içinde (talep hakkı maddede sayılan kişilere aittir); satış ilanı tebliğ edilmemişse veya esaslı hata/fesada sonradan vakıf olunmuşsa süre ITTILA tarihinden başlar, ancak ihale kararının elektronik satış portalında ilanından itibaren BİR YILI geçemez (iik_ihalenin_feshi_azami).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay",
+        "ogrenme"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_ihalenin_feshi_azami": {
+      "miktar": 1,
+      "birim": "yil",
+      "kaynak": "İİK m.134 (ıttıla hâli) — ihalenin feshi şikâyetinde öğrenmeye bağlı süre, ihalenin yapıldığına ilişkin kararın elektronik satış portalında İLAN EDİLDİĞİ tarihten itibaren bir yılı geçemez (dış sınır).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_kambiyo_itiraz": {
+      "miktar": 5,
+      "birim": "gun",
+      "kaynak": "İİK m.168/3-5 — kambiyo senetlerine dayalı takipte ödeme emrinin TEBLİĞİNDEN itibaren beş gün içinde icra mahkemesine: senedin kambiyo vasfına şikâyet (b.3), imza itirazı (b.4), borca veya yetkiye itiraz (b.5).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "İİK m.18/1 — icra mahkemesine arz edilen hususlar İVEDİ işlerdendir (HMK m.103/1-h); icra dairelerinde ve icra mahkemelerinde adli tatil hükümleri (HMK m.102/104) uygulanmaz: son gün ADLİ TATİLE rastlasa da süre UZAMAZ (resmî tatil/hafta sonu kayması ayrıca İİK m.19/3 ile yapılır) — Y. 12. HD E.2025/7548 K.2025/7898; E.2024/7040 K.2024/10869; E.2022/11578 K.2022/11538",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_ihtiyati_haciz_itiraz": {
+      "miktar": 7,
+      "birim": "gun",
+      "kaynak": "İİK m.265/1-2 — ihtiyati hacze itiraz yedi gün: borçlu için huzurunda yapılan hacizlerde HACZİN TATBİKİNDEN, aksi hâlde haciz TUTANAĞININ TEBLİĞİNDEN; menfaati ihlal edilen üçüncü kişi için ÖĞRENMEDEN; kararı veren mahkemeye.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay",
+        "teblig",
+        "ogrenme"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "HMK m.103/1-a — ihtiyati haciz talepleri ile bunlara karşı itiraz ve diğer başvurular adli tatilde GÖRÜLÜR (adli tatile tabi iş değildir); HMK m.104 uzatması yalnız adli tatile tabi işlerdeki sürelere uygulanır — İİK m.265 itiraz süresi uzamaz",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "iik_icra_ceza_sikayet": {
+      "miktar": 3,
+      "birim": "ay",
+      "kaynak": "İİK m.347 — icra ceza bölümündeki fiillerden şikâyet hakkı fiilin ÖĞRENİLDİĞİ tarihten itibaren üç ay ve her hâlde fiilin işlendiği tarihten itibaren bir yıl geçmekle DÜŞER — iki sınır birlikte denetlenir (iik_icra_ceza_sikayet_azami).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "ogrenme"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — İİK m.347 süresi geçmekle şikâyet hakkı DÜŞER (hak düşürücü); HMK m.104 yalnız HMK'nın tayin ettiği sürelere ilişkindir, CMK m.331/4'ün bu hak düşürücü süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "iik_icra_ceza_sikayet_azami": {
+      "miktar": 1,
+      "birim": "yil",
+      "kaynak": "İİK m.347 — şikâyet hakkı her hâlde fiilin İŞLENDİĞİ tarihten itibaren bir yıl geçmekle düşer (dış sınır).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — İİK m.347 süresi geçmekle şikâyet hakkı DÜŞER (hak düşürücü); HMK m.104 yalnız HMK'nın tayin ettiği sürelere ilişkindir, CMK m.331/4'ün bu hak düşürücü süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "hmk_dosya_gonderme": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.20/1 — görevsizlik veya yetkisizlik kararından sonra dosyanın gönderilmesi talebi iki hafta: karar verildiği anda kesinse TEBLİĞDEN; kanun yoluna başvurulmayıp kesinleşmişse KESİNLEŞME tarihinden; kanun yoluna başvurulmuşsa başvurunun reddi kararının TEBLİĞİNDEN; aksi hâlde dava AÇILMAMIŞ SAYILIR (resen).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "olay"
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "hmk_cevap_basit": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.317/2 — BASİT yargılamada (iş mahkemeleri dahil — 7036 m.7/1) cevap süresi dava dilekçesinin TEBLİĞİNDEN itibaren iki hafta; ek süre ancak bu süre içinde istenirse, bir defaya mahsus ve EN ÇOK İKİ HAFTA (cevap süresinin bitiminden işler) — yazılı yargılamadaki bir aylık sınır (m.127) burada YOKTUR.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "hmk_on_inceleme_belge_sunma": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.139/1-ç — ön inceleme davetiyesinin TEBLİĞİNDEN itibaren iki haftalık KESİN süre: dilekçede gösterilip sunulmayan belgeler sunulur, başka yerden getirtilecekler için gereken açıklama yapılır; m.140/5 — yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ sayılma kararı verilir.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "hmk104",
+      "adli_tatil_dayanak": "HMK m.104 — adli tatile tabi dava ve işlerde HMK'nın tayin ettiği sürenin bitimi tatile rastlarsa süre tatilin bittiği günden itibaren BİR HAFTA uzar; HMK m.103 kapsamındaki işte (ör. işçinin açtığı dava, nafaka, ivedi iş) uzatma YOKTUR → --adli-tatil-istisna",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "hmk_tedbir_itiraz": {
+      "miktar": 1,
+      "birim": "hafta",
+      "kaynak": "HMK m.394/2-3 — karşı taraf dinlenmeden verilen ihtiyati tedbire itiraz bir hafta: uygulamada hazırsa UYGULAMADAN, değilse uygulama tutanağının TEBLİĞİNDEN; menfaati açıkça ihlal edilen üçüncü kişi için ÖĞRENMEDEN; itiraz kural olarak icrayı durdurmaz (m.394/1).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay",
+        "teblig",
+        "ogrenme"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "HMK m.103/1-a — ihtiyati tedbir, ihtiyati haciz ve delil tespiti talepleri ile bunlara karşı itiraz ve diğer başvurular adli tatilde görülür; HMK m.104 uzatması uygulanmaz",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": true
+    },
+    "hmk_tedbir_esas_dava": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.397/1 — dava açılmadan verilen ihtiyati tedbirde, kararın UYGULANMASINI TALEP ETTİĞİ tarihten itibaren iki hafta içinde esas dava açılmalı VE dava açıldığına dair evrak kararı uygulayan memura ibrazla dosyaya konup karşılığında belge alınmalıdır; aksi hâlde tedbir KENDİLİĞİNDEN kalkar.",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — HMK m.397/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse HMK m.104 lafzen uygulanabilir görünür, ancak tedbirin kendisi HMK m.103/1-a işidir ve uzatmanın bu süreye uygulanıp uygulanmayacağı resmî kaynakla teyit edilemedi → TEMKİNLİ: uzatma YOK (erken tarih); geç okuma (31 Ağu + 1 hafta) güçlü olduğundan karşı tarafa kesin dil kurulmaz",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "hmk_istifa_vekalet_devam": {
+      "miktar": 2,
+      "birim": "hafta",
+      "kaynak": "HMK m.82/1 — istifa eden vekilin vekâlet görevi, istifanın müvekkiline TEBLİĞİNDEN itibaren iki hafta süreyle devam eder; m.82/2 — vekâlet veren davayı takip etmez ve başka bir vekil de görevlendirmezse tarafın yokluğu hükümleri uygulanır; m.82/3 — bu hususlar istifa dilekçesiyle birlikte vekâlet verene İHTAREN bildirilir. Mahkemeye verilen istifa dilekçesi müvekkile tebliğ yerine geçmez (tebliğ tarihi belgeli olmalı). Av.K. m.41'deki on beş günle EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (avk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir.",
+      "mcp_teyit_tarihi": "2026-10-07",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — HMK m.82/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse HMK m.104 lafzen uygulanabilir görünür, ancak m.104'ün m.82/1 süresine uygulandığına ya da reddedildiğine dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07; Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244 m.41/m.82'yi uygular, tatil uzamasına girmez). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır, istifa tebliği tatilde geçerlidir → TEMKİNLİ: uzatma YOK (erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa kesin dil kurulmaz",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "avk_istifa_vekalet_devam": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "Av.K. m.41/1 — belli bir işi takipten veya savunmadan isteği ile çekilen avukatın o işe ait vekâlet görevi, durumu müvekkiline TEBLİĞİNDEN itibaren on beş gün süre ile devam eder (m.41/2: adli müzaheret bürosu ya da baro başkanınca tayin edilen avukat kaçınılmaz sebep veya haklı özür olmadıkça çekinemez; takdir tayin eden makamındır). HMK m.82/1'deki iki haftayla EŞİTLENMEZ — iki tarih ayrı satırda hesaplanır (hmk_istifa_vekalet_devam); müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı ERKEN tarihle verilir. Y. 13. HD E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244: istifa müvekkile tebliğ edilmedikçe vekâlet görevi devam eder ve vekile yapılan tebligat süreyi başlatır.",
+      "mcp_teyit_tarihi": "2026-10-07",
+      "izinli_baslangic_turleri": [
+        "teblig"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — Av.K. m.41 süresi HMK'nın tayin ettiği bir süre DEĞİLDİR; HMK m.104 yalnız 'bu Kanunun tayin ettiği sürelere' uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62 süresi için — Av.K. m.41'e uygulanması kıyastır); m.104'ün bu süreye uygulandığına dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır → TEMKİNLİ: uzatma YOK (erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa kesin dil kurulmaz; son gün hafta sonu/resmî tatile rastlarsa kayma kıyasen (HMK m.93) yapılır",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "aym_bireysel_mazeret": {
+      "miktar": 15,
+      "birim": "gun",
+      "kaynak": "6216 m.47/5 (ikinci cümle) — haklı mazeret nedeniyle süresinde başvuramayan, MAZERETİN KALKTIĞI tarihten itibaren on beş gün içinde mazeretini belgeleyen delillerle başvurabilir; mazeretin kabulü Mahkemenin takdirindedir (AYM İçtüzüğü m.64/2).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "olay"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "TEYİT BEKLİYOR — 6216 sayılı Kanun ve AYM İçtüzüğünde adli tatil/süre uzatması hükmü yok (Mevzuat MCP içinde-ara 'tatil' → yalnız 6216 m.8, üye seçimi); 6216 m.49/7 hüküm bulunmayan hâllerde ilgili usul kanunlarının 'bireysel başvurunun niteliğine uygun' hükümlerine yollasa da uzatmaya GÜVENME → TEMKİNLİ: uzatma YOK (erken tarih)",
+      "adli_tatil_teyitli": false,
+      "son_gun_kaymasi": true
+    },
+    "aihm_basvuru": {
+      "miktar": 4,
+      "birim": "ay",
+      "kaynak": "AİHS m.35/1 — 15 No'lu Protokol ile altı aydan DÖRT aya indirildi (HUDOC sınıflaması: 'Four-month period (former six-month)'); nihai iç hukuk kararından itibaren, iç hukukta yazılı tebliğ öngörülüyorsa TEBLİĞDEN işler (Sabri Güneş/Türkiye [BD] § 53 — Worm/Avusturya); son gün hafta sonu veya resmî tatile rastlasa da UZAMAZ (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ 60-61).",
+      "mcp_teyit_tarihi": "2026-10-05",
+      "izinli_baslangic_turleri": [
+        "teblig",
+        "ogrenme"
+      ],
+      "adli_tatil": "uygulanmaz",
+      "adli_tatil_dayanak": "AİHS m.35/1 — süre Sözleşme ölçütleriyle hesaplanır, iç hukukun tatil ve uzatma kuralları dikkate alınmaz (Sabri Güneş/Türkiye [BD], no. 27396/06, 29.06.2012, §§ 48-49, 60-61): adli tatil uzatması YOK, son gün kayması YOK",
+      "adli_tatil_teyitli": true,
+      "son_gun_kaymasi": false
     }
   },
   "asama_kurallari": {
@@ -283,7 +696,7 @@
       "asama": "ön inceleme (davetiye ihtarı → belge sunma kesin süresi)",
       "pipeline_adimi": 4,
       "kaynak": "HMK m.139/1-ç — ön inceleme davetiyesinin tebliğinden itibaren İKİ HAFTALIK KESİN SÜRE içinde dilekçede gösterilip henüz sunulmayan belgeler sunulur / getirtilecek belgeler için gereken açıklama yapılır; m.140/5 (7251 s.K.) — ihtara rağmen yerine getirilmezse o delile dayanmaktan VAZGEÇMİŞ SAYILMA kararı verilir.",
-      "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--teblig <davetiye tebliği> --sure 2 --birim hafta` ile hesapla (m.139/1-ç kesin süre). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
+      "aciklama": "Aşama tetikli ÇATAL: davetiye tebliğ edilene kadar tarih YOKTUR; davetiye tebliğ edilince tarih kuralına dönüşür — o an `--kural hmk_on_inceleme_belge_sunma --teblig <davetiye tebliği>` ile hesapla (m.139/1-ç kesin süre; v0.5.18). Belgeler adım 4 (OLGU/DELİL) kapanmadan toplanmış ve MANİFEST'e bağlanmış olmalı.",
       "mcp_teyit_tarihi": "2026-09-07"
     },
     "hmk_islah": {

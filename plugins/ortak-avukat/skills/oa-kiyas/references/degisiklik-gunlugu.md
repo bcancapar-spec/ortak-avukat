@@ -56,3 +56,16 @@
 ### Entegratör notu (2026-09-07)
 
 - **Entegrasyon (H2/P0-3):** `references/ictihat-muhakeme-sablonu.md` cephanelik ürün deseni `06-antitez*` (≤v0.5.15 `07-antitez*`).
+
+## v0.5.18 (aday) — 2026-10-07 · Zincir onarımı: kaynak beyanı + atomik yazım + vakıa kimliği (Görev 2)
+
+> Kaynak: Fable 5.1 tutarlılık raporu (2026-10-07) B-1(a), B-4, B-11, B-3/S5.
+
+- **`scripts/kiyas_denetim.py` — S1 kaynak beyanı:** `--json` çıktısına `kaynaklar` (`[{rol, yol, sha8}]`, (rol, yol) sıralı; `yol` `_oa`ya göre POSIX göreli, `sha8` sha256[:8]; roller `girdi` + VARSA `kunye`) ve `kaynaklar_notu`; `_oa` dışı girdi → `[]` + `"_oa dışı girdi — tazelik denetimi dışı"`. `girdi` aynen (B-11).
+- **S3 atomik yazım:** `<hedef>.<pid>.oa-tmp` + `os.replace` (B-4 üretici ayağı).
+- **S5:** `kucuk_onerme.vakialar[].vakia_id` opsiyonel — şema hatası değil, çıktıya aynen taşınır; mükerrer kimlik `⚠ kucuk_onerme.vakialar: 'vakia_id' mükerrer: …` (kritik boşluk DEĞİL; exit 0 sözleşmesi ve `kritik_bosluk` değişmez).
+- **K1 ileri koruması BİLİNÇLİ genişletildi:** üst-düzey küme += `kaynaklar`, `kaynaklar_notu` (`tests/test_kiyas_denetim.py`, `tests/test_v0514_muhakeme.py` docstring gerekçeli). Tüketici `_denetim_jsonlari` yalnız `arac` damgasına bakar.
+- **SKILL.md / `references/kiyas-rehberi.md`:** yeni alanlar ve `vakia_id`.
+- **Testler:** `tests/test_v0518_uretici_kaynaklar.py`, `tests/test_v0518_uretici_atomik.py`, `tests/test_v0518_uretici_kimlik.py`; determinizm süiti değişmeden yeşil.
+- **Düzeltme turu 1 (Fable incelemesi K-3/K-4/K-5/K-6/K-8):** S1 ikinci not biçimi belgelendi (kısmi başarısızlıkta `kaynaklar_notu` dolu, `kaynaklar` boş olmayabilir; tüketici notu AYNEN basar). `_atomik_json_yaz` Windows kilidinde 3 kısa yeniden deneme, sonra istisna (K-4). Dört motorun yardımcıları kaynak-metin kilidiyle eşit (K-5). İki `_oa` kökünde bayt-özdeşlik testi (K-6). `tests/test_v0514_muhakeme.py` kilit adı `test_kiyas_ust_duzey_anahtar_YALNIZ_S1_ILE_GENISLEDI` (K-8).
+

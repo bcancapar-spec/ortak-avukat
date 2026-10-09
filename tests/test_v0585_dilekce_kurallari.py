@@ -381,21 +381,25 @@ def test_istisna_kaydi_append_only_ortak_sema(tmp_path):
         kayit = json.loads(satir)
         assert set(kayit) == {"zaman", "tur", "ilgili", "gerekce", "onay", "imza"}
         assert kayit["tur"] == "yanlis-pozitif-ilani"
-        assert kayit["onay"] == "avukat"
+        # v0.5.18 (G-5 kardeşi, anayasa m.9): onay VARSAYILMAZ — çağıran açıkça
+        # "avukat" demedikçe kayıt model beyanıdır.
+        assert kayit["onay"] == "model-beyani"
         assert "dilekce_denetim" in kayit["imza"]
 
 
 def test_main_istisna_gerekce_blok_dusurur_ve_deftere_yazar(tmp_path, capsys):
-    """Avukat onaylı istisna: [Y]/[T] BLOK bulguları --istisna-gerekce ile
-    görünür uyarıya düşer (exit 0) ve gerekçe istisna defterine append-only
-    yazılır — kapı muhakemeyi ENGELLEMEZ, kaydını tutarak yol verir."""
+    """Avukat onaylı istisna: [Y]/[T] BLOK bulguları --istisna-gerekce ve
+    --istisna-onay avukat ile görünür uyarıya düşer (exit 0) ve gerekçe istisna
+    defterine append-only yazılır — kapı muhakemeyi ENGELLEMEZ, kaydını tutarak
+    yol verir."""
     taslak = tmp_path / "taslak.md"
     taslak.write_text(
         TEMIZ_TASLAK + '\nEmsal kararda "eşit davranma borcu esastır..."\n',
         encoding="utf-8")
     kod = _main_kos([str(taslak), "--tip", "dava", "--taraf", "davaci",
                      "--kok", str(tmp_path),
-                     "--istisna-gerekce", "alıntı bilinçli kısaltıldı, avukat inceledi"])
+                     "--istisna-gerekce", "alıntı bilinçli kısaltıldı, avukat inceledi",
+                     "--istisna-onay", "avukat"])
     cikti = capsys.readouterr().out
     assert kod == 0, cikti
     assert "istisna" in cikti.lower()
@@ -404,6 +408,26 @@ def test_main_istisna_gerekce_blok_dusurur_ve_deftere_yazar(tmp_path, capsys):
     kayit = json.loads(yol.read_text(encoding="utf-8").strip().splitlines()[0])
     assert kayit["tur"] == "yanlis-pozitif-ilani"
     assert kayit["gerekce"] == "alıntı bilinçli kısaltıldı, avukat inceledi"
+    assert kayit["onay"] == "avukat"
+
+
+def test_main_istisna_avukat_onaysiz_model_beyani_blok_surer(tmp_path, capsys):
+    """v0.5.18 (G-5 kardeşi — anayasa m.9, m.8): yanlış pozitif ilanı kimin
+    yaptığına bakmadan "avukat onayı" diye kaydediliyor ve [Y] (havada kalan
+    alıntı) / [T] (makbuzsuz hazır beyanı) kapısını açıyordu; kapıyı model de
+    açabiliyordu. Artık onaysız ilan MODEL BEYANI olarak kayda geçer (sessiz
+    opt-out yok), BLOK sürer ve çıktı avukat onayının yolunu gösterir."""
+    taslak = tmp_path / "taslak.md"
+    taslak.write_text(TEMIZ_TASLAK + "\nDurum: TESLİME HAZIR.\n", encoding="utf-8")
+    kod = _main_kos([str(taslak), "--tip", "dava", "--taraf", "davaci",
+                     "--kok", str(tmp_path),
+                     "--istisna-gerekce", "makbuz başka kökte üretildi"])
+    cikti = capsys.readouterr().out
+    assert kod == 1, cikti
+    assert "MODEL BEYANI" in cikti and "--istisna-onay avukat" in cikti, cikti
+    yol = tmp_path / "_oa" / "defter" / "istisna-kayitlari.jsonl"
+    kayit = json.loads(yol.read_text(encoding="utf-8").strip().splitlines()[0])
+    assert kayit["onay"] == "model-beyani" and kayit["tur"] == "yanlis-pozitif-ilani"
 
 
 def test_main_istisna_gerekce_bulgu_yokken_defter_yazilmaz(tmp_path, capsys):

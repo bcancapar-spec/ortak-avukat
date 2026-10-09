@@ -143,7 +143,30 @@ kanonik-dışı `sonuc`) advisory'dir — exit'i değiştirmez.
 `yetim_dugumler`, `baglanmamis_deliller`, `desteksiz_kenarlar`,
 `guc_beyansiz_kenarlar`, `kopru_dugumler[].etiket`,
 `kesme_adaylari[].{kesme_flag, dal, not}`, `yuk_tasiyan_kenarlar`, `zincirler`,
-`zincir_uyarisi`, `taraf`, `yon`, `kanun_yolu_zinciri[].{yol, sonuclar}`.
+`zincir_uyarisi`, `taraf`, `yon`, `kanun_yolu_zinciri[].{yol, sonuclar}`,
+`kaynaklar[].{rol, yol, sha8}`, `kaynaklar_notu` (v0.5.18).
+
+**v0.5.18 — kaynak beyanı, atomik yazım, zincir tavanı (Fable tutarlılık raporu 2026-10-07 B-1/B-4/B-10):**
+`kaynaklar` = denetimin üretildiği girdi baytlarının beyanı (`rol: girdi|kunye`;
+`yol` dosyayı içeren `_oa` dizinine göre POSIX göreli; `sha8` = sha256[:8] —
+`tazelik_denetim.sha8` ile aynı formül). Graf ya da `00-kunye.json` değişince
+`oa-kontrol/tazelik_denetim` bayat denetimi DURUM.md'de ve teslim makbuzunda
+görünür kılar (teslimi DURDURMAZ — karar avukatın). `_oa` dışı girdi →
+`kaynaklar: []` + `kaynaklar_notu: "_oa dışı girdi — tazelik denetimi dışı"`
+("denetim dışı", temiz DEĞİL). `girdi` alanı komut satırının yankısı olarak
+kalır (geriye uyum). JSON — çökme kaydı (`denetim_coktu`) dahil — aynı dizinde
+geçici dosya + `os.replace` ile ATOMİK yazılır: K2 hiçbir anda yarım dosya görmez.
+§8 zincir güven analizi maksimal yol sayımını tavanda (10×5) keser; tavan
+aşılırsa `zincir_uyarisi` = `"zincir tavanı aşıldı — en zayıf halka listesi tam
+değil"` (çevrim uyarısıyla birlikteyse " · " ile birleşir) — eskiden sessizdi.
+Advisory: exit kodu değişmez. **Sözleşme "İÇERİR"dir (K-2):** `zincir_uyarisi`
+birden çok uyarıyı " · " ile birleştirebildiği için tüketici bu dizeyi `in` ile
+arar, `==` ile değil. **İkinci not biçimi (K-3):** bir kaynak okunamazsa
+`kaynaklar_notu` = `"<rol> kaynak beyanına alınamadı (<İstisna>)"` ve
+`kaynaklar` boş OLMAYABİLİR (çökme kaydında girdi dosyası yoksa yalnız `kunye`)
+— tüketici notu AYNEN basar, etiketlemez. **Windows kilidi (K-4):** `os.replace`
+`PermissionError` verirse 3 kısa yeniden deneme (toplam <300 ms), sonra istisna
+aynen — çökme kaydı dahil.
 
 Script şunları kesin tespit eder ve raporlar:
 - **Şema hatası (exit 3)** — eksik `id`/`tip`/`usul_rolu`, **mükerrer düğüm id**

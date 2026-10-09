@@ -39,8 +39,99 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
+import hashlib
 import json
+import os
 import sys
+import time
+
+
+# ── v0.5.18 (B-1(a)/S1 · B-4/S3) — KAYNAK BEYANI ve ATOMİK JSON YAZIMI ───────
+# NEDEN VAR: denetim JSON'u hangi girdiden üretildiğini BEYAN ETMİYORDU —
+# künye/vakıa değişince eski kıyas denetimi yerinde duruyor, DURUM.md ve
+# teslim yeşil kalıyordu (Fable tutarlılık raporu 2026-10-07, B-1 "zincirleme
+# tepki yok"); ayrıca `open(yol, "w")` yarıda kesilirse hedefte yarım JSON
+# kalıyordu (B-4 — K2 okunamayan dosyayı sessizce atlıyordu). Sözleşme ve
+# gerekçenin tamamı oa-vakia/scripts/vakia_matris.py'de aynı başlık altında;
+# dört motor aynı iki yardımcıyı (ad + imza) bilinçli olarak taşır — paket
+# yok, ortak modül yok (tests/README.md §1). `yol` `_oa`ya göre POSIX göreli,
+# `sha8` = sha256[:8] (tazelik_denetim.sha8 ile aynı); `_oa` dışı girdi →
+# [] + not ("denetim dışı", temiz DEĞİL). Üst-düzey anahtar kümesine
+# `kaynaklar` + `kaynaklar_notu` eklendi — K1 ileri koruması kilitleri
+# (test_v0514_muhakeme, test_kiyas_denetim) gerekçesiyle genişletildi;
+# tüketici `_denetim_jsonlari` yalnız `arac` damgasına bakar, küme okumaz.
+OA_DISI_NOTU = "_oa dışı girdi — tazelik denetimi dışı"
+KUNYE_GORELI = ("metin", "00-kunye.json")
+
+
+def _oa_dizini_bul(yol):
+    """Dosyayı içeren EN YAKIN `_oa` dizini (mutlak); yoksa None."""
+    dizin = os.path.dirname(os.path.abspath(yol))
+    while True:
+        if os.path.basename(dizin) == "_oa":
+            return dizin
+        ust = os.path.dirname(dizin)
+        if ust == dizin:
+            return None
+        dizin = ust
+
+
+def kaynak_beyani(girdi_yolu):
+    """S1 → (kaynaklar, kaynaklar_notu). ASLA fırlatmaz: okunamayan kaynak
+    beyandan düşer ama NOTA yazılır (sessiz atlama yasağı)."""
+    try:
+        oa = _oa_dizini_bul(girdi_yolu)
+    except Exception:                          # noqa: BLE001 — beyan motoru düşürmez
+        oa = None
+    if oa is None:
+        return [], OA_DISI_NOTU
+    kayitlar, notlar = [], []
+
+    def _ekle(rol, dosya):
+        try:
+            with open(dosya, "rb") as f:
+                bayt = f.read()
+            goreli = os.path.relpath(os.path.abspath(dosya), oa).replace(os.sep, "/")
+        except Exception as e:                 # noqa: BLE001
+            notlar.append(f"{rol} kaynak beyanına alınamadı ({type(e).__name__})")
+            return
+        kayitlar.append({"rol": rol, "yol": goreli,
+                         "sha8": hashlib.sha256(bayt).hexdigest()[:8]})
+
+    _ekle("girdi", girdi_yolu)
+    kunye = os.path.join(oa, *KUNYE_GORELI)
+    if os.path.isfile(kunye):
+        _ekle("kunye", kunye)
+    kayitlar.sort(key=lambda k: (k["rol"], k["yol"]))
+    return kayitlar, (" · ".join(notlar) if notlar else None)
+
+
+def _atomik_json_yaz(yol, nesne):
+    """S3: aynı dizinde geçici dosyaya yaz, `os.replace` ile hedefe taşı.
+    Biçim dört motorda aynı (ensure_ascii=False, indent=2, sort_keys=True).
+    K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
+    `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
+    240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
+    durur, geçici silinmeye çalışılır — o da kilitliyse `.oa-tmp` kalabilir;
+    ad `.json` ile bitmediği için `*.json` tüketicileri onu görmez)."""
+    gecici = f"{yol}.{os.getpid()}.oa-tmp"
+    try:
+        with open(gecici, "w", encoding="utf-8") as f:
+            json.dump(nesne, f, ensure_ascii=False, indent=2, sort_keys=True)
+        for deneme in range(4):
+            try:
+                os.replace(gecici, yol)
+                break
+            except PermissionError:
+                if deneme == 3:
+                    raise
+                time.sleep(0.08)
+    except BaseException:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            pass
+        raise
 
 
 # ── v0.5.14 (T7/T8) — İSPAT YÜKÜ KAPALI ENUM'LARI ──────────────────────────
@@ -222,6 +313,18 @@ def denetle(k):
         rapor.append("  ✗ Küçük önerme: vakıa eksik"); eksik_kritik = True
     else:
         rapor.append(f"  ✓ Küçük önerme: {len(kucuk['vakialar'])} vakıa")
+    # v0.5.18 (S5 / B-3): opsiyonel `vakialar[].vakia_id` ŞEMA HATASI DEĞİLDİR
+    # — capraz_denetim önce kimlik eşitliğine bakar (ad benzerliği ikincil).
+    # Mükerrer kimlik eşlemeyi belirsiz kılar → uyarı; kritik boşluk DEĞİL
+    # (exit 0 sözleşmesi ve `kritik_bosluk` değişmez). Sayaç girdi sırasını korur.
+    sayac = {}
+    for v in _liste(kucuk.get("vakialar")):
+        if isinstance(v, dict) and v.get("vakia_id") not in (None, ""):
+            sayac[str(v["vakia_id"])] = sayac.get(str(v["vakia_id"]), 0) + 1
+    mukerrer = [f"{k} ({n} kez)" for k, n in sayac.items() if n > 1]
+    if mukerrer:
+        rapor.append("  ⚠ kucuk_onerme.vakialar: 'vakia_id' mükerrer: " + ", ".join(mukerrer)
+                     + " — çapraz denetim kimlik eşlemesi belirsiz kalır; kimlikleri tekilleştirin")
     if not sonuc:
         rapor.append("  ⚠ Sonuç henüz yazılmamış")
     else:
@@ -397,9 +500,9 @@ def main(yol, json_yol=None):
     print(cizgi)
 
     if json_yol:
-        veri["girdi"] = yol
-        with open(json_yol, "w", encoding="utf-8") as f:
-            json.dump(veri, f, ensure_ascii=False, indent=2, sort_keys=True)
+        veri["girdi"] = yol                                    # B-11: komut satırının yankısı (geriye uyum)
+        veri["kaynaklar"], veri["kaynaklar_notu"] = kaynak_beyani(yol)   # v0.5.18 S1
+        _atomik_json_yaz(json_yol, veri)                       # v0.5.18 S3
         print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
 
 

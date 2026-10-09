@@ -189,9 +189,15 @@ def test_vakia_beyan_ve_belgeli_birlikte_ise_alt_satir_basilmaz(izole_dizin):
     assert satir["belgeli"] is True and satir["kismi_destek"] is True
 
 
-def test_vakia_ust_duzey_json_semasi_DEGISMEDI(izole_dizin):
+def test_vakia_ust_duzey_json_semasi_YALNIZ_S1_ILE_GENISLEDI(izole_dizin):
     """T5A YAPILMAYACAK kilidi: matris SATIRINA `kismi_destek` eklenir ama
-    ÜST-DÜZEY JSON anahtar kümesi değişmez (yeni anahtar YOK)."""
+    ÜST-DÜZEY JSON anahtar kümesi T5A/A-13 ile DEĞİŞMEZ.
+
+    v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme, avukat kararı 2026-10-07):
+    küme YALNIZ `kaynaklar` + `kaynaklar_notu` ile genişledi (girdi + künye
+    sha8 beyanı — zincirleme tepki; tazelik_denetim okur). Kilit kaldırılmadı,
+    yeni küme tam eşitlikle kilitlendi (ad içerikle uyumlu — inceleme K-8);
+    bkz. tests/test_v0518_uretici_kaynaklar.py."""
     yol = _yaz(izole_dizin, "vakia.json", _vakia_saglikli())
     hedef = izole_dizin / "sonuc.json"
     kod, out, err = _kos(VAKIA, "--dogrula", yol, "--json", hedef)
@@ -200,6 +206,7 @@ def test_vakia_ust_duzey_json_semasi_DEGISMEDI(izole_dizin):
         "arac", "girdi", "kronoloji", "tarihsiz", "iddia_delil_matrisi",
         "ispat_bosluklari", "yetim_deliller", "gecersiz_referans",
         "gecersiz_ispat_durumu", "ozne_eslestirme", "ozet", "saglikli",
+        "kaynaklar", "kaynaklar_notu",            # v0.5.18 S1 — kaynak beyanı
     }
     # v0.5.16 (A-13 / GRUP F): matris SATIRI `tur`, `yuk_kaydiran`,
     # `tanik_caizlik_belirsiz` ile genişledi (ispat ontolojisi); bu kilidin
@@ -398,9 +405,15 @@ def test_kiyas_vakia_varsa_yuk_karsida_olsa_bile_durum_degismez(izole_dizin):
     assert veri["unsur_vakia_eslesme"][0]["durum"] == "karsilanan_delilli"
 
 
-def test_kiyas_yeni_ust_duzey_anahtar_URETMEZ(izole_dizin):
+def test_kiyas_ust_duzey_anahtar_YALNIZ_S1_ILE_GENISLEDI(izole_dizin):
     """K1 ileri koruması: T7/T8 ve B-11 hiçbir yeni ÜST-DÜZEY JSON anahtarı
-    üretmez (tüketici `pipeline_kayit.py` tam-küme okur)."""
+    üretmez.
+
+    v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme, avukat kararı 2026-10-07):
+    küme YALNIZ `kaynaklar` + `kaynaklar_notu` ile genişledi (kaynak beyanı —
+    zincirleme tepki). T7/T8 ve B-11 yine anahtar üretmez; kilit yeni kümeyle
+    tam eşitlik olarak sürer (ad içerikle uyumlu — inceleme K-8). Tüketici
+    `_denetim_jsonlari` yalnız `arac` damgasına bakar (küme okumaz)."""
     unsur = {"id": "k", "ad": "Kusur", "ispat_yuku": "karsi_taraf",
              "ispat_yuku_kaynak": "TBK m.112", "curutme_hazirligi": ["z"]}
     yol = _yaz(izole_dizin, "kiyas.json", _kiyas_tek_unsur(unsur))
@@ -409,7 +422,8 @@ def test_kiyas_yeni_ust_duzey_anahtar_URETMEZ(izole_dizin):
     veri = json.loads(hedef.read_text(encoding="utf-8"))
     assert set(veri.keys()) == {
         "arac", "buyuk_onerme", "kucuk_onerme", "sonuc", "teyitsiz_ictihat",
-        "unsur_vakia_eslesme", "yetim_vakialar", "kritik_bosluk", "girdi"}
+        "unsur_vakia_eslesme", "yetim_vakialar", "kritik_bosluk", "girdi",
+        "kaynaklar", "kaynaklar_notu"}            # v0.5.18 S1 — kaynak beyanı
 
 
 def test_kiyas_eslesme_kaydi_yalniz_uc_anahtar_tasir(izole_dizin):
@@ -527,11 +541,19 @@ def test_antitez_iskelet_stdout_gecerli_json():
     v0.5.16 (P1-5/A-20 — BİLİNÇLİ karakterizasyon değişikliği): cephe sayısı
     8 → 9 (`bilirkisi_teknik` eklendi). Kör noktayı görünür kılan bu değişiklik
     şablonun JSON geçerliliğini/alan adlarını etkilemez; ayrıntı
-    `tests/test_v0516_I2.py`."""
+    `tests/test_v0516_I2.py`.
+
+    v0.5.18 düzeltme turu 1 (Ö-1, ana oturum kararı): şablon `arac` damgası
+    TAŞIMAZ — damga YALNIZ `--dogrula … --json` denetim çıktısındadır (K1 damga
+    sözleşmesi = motor çıktısı damgası; vakia/graf/kıyas ile aynı anlam). Girdi
+    matrisi ile denetim çıktısı aynı damgayı taşısa damgaya bakan tüketiciler
+    girdiyi denetim sanırdı. Şablon kümesi `{"tez", "cepheler"}` KORUNUR;
+    ayrıntı `tests/test_v0518_uretici_antitez_json.py`."""
     kod, out, err = _kos(ANTITEZ, "--iskelet")
     assert kod == 0
     sablon = json.loads(out)
     assert set(sablon) == {"tez", "cepheler"}
+    assert "arac" not in sablon
     assert len(sablon["cepheler"]) == 9
     assert sablon["cepheler"][0]["duyulmus"] is False
 

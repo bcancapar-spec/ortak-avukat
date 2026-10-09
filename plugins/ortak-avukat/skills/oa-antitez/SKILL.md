@@ -35,9 +35,12 @@ Script hukuki içeriği üretmez; **eksiksizliği ve bütünlüğü** garanti ed
 python scripts/antitez_matris.py --iskelet
 
 # 2) Matrisi muhakemeyle doldur (her cephe için antitez + çürütme + dayanak + artık risk),
-#    sonra bütünlüğünü denetle:
-python scripts/antitez_matris.py --dogrula _oa/cikti/06-antitez-matris.json
+#    sonra bütünlüğünü denetle (--json ZORUNLU — DURUM.md hattı ve teslim makbuzu açık
+#    cepheyi / çürütülmemiş antitezi bu dosyadan okur; opsiyonel kapı = ateşlemeyen kapı):
+python scripts/antitez_matris.py --dogrula _oa/cikti/06-antitez-matris.json --json _oa/cikti/06-antitez-denetim.json
 ```
+
+**v0.5.18 — K1 sözleşmesi, `--json`, `hedef` (Fable tutarlılık raporu 2026-10-07, B-8; avukat kararı #3; düzeltme turu 1 Ö-1/K-1):** `arac: "antitez_matris"` damgası YALNIZ `--dogrula … --json` denetim çıktısındadır (K1 damga sözleşmesi = motor çıktısı damgası — vakia/graf/kıyas ile aynı anlam). `--iskelet` şablonu ve girdi matrisi damga TAŞIMAZ (ana oturum kararı Ö-1: aynı damga iki nesnede olsa damgaya bakan her tüketici — `_denetim_jsonlari`, [G], adım-6 bekçisi — girdiyi denetim sanıp DURUM.md'ye sahte "sağlıksız" satırı yazabilirdi). `dilekce_denetim.py` [G] kapısı girdi matrisini dosya adıyla (`*antitez*.json`) ve **`cepheler` listesiyle** tanır (adım-6 pipeline bekçisi YALNIZ dosya adına bakar: `06-antitez*` / `07-antitez*`); `arac` damgalı ama `cepheler`siz dosya (denetim çıktısı) matris sayılmaz (K-1 — yalnız denetim çıktısı kalınca sahte "tam örtüşüyor" yok). `--dogrula … --json <yol>` makine-okur denetim yazar (**`--json` ZORUNLU — pipeline**; stderr de öyle der): `arac`, `girdi` (komut satırının yankısı), `kaynaklar` (`[{rol: girdi|kunye, yol: <_oa'ya göre POSIX göreli>, sha8: sha256[:8]}]` — matris ya da `00-kunye.json` değişince `oa-kontrol/tazelik_denetim` bayat denetimi görünür kılar; `_oa` dışı girdi → `[]` + `kaynaklar_notu`), `acik_cepheler`, `curutulmemis`, `teyitsiz_dayanak`, `dayanaksiz_guclu`, `artik_riskler`, `gecersiz`, `uyarilar`, `saglikli`; dosya atomik yazılır (aynı dizinde geçici + `os.replace`; Windows'ta kilitli hedefte `PermissionError` → 3 kısa yeniden deneme, toplam <300 ms, sonra istisna aynen — eski dosya durur). Kısmi başarısızlıkta `kaynaklar_notu` = `"<rol> kaynak beyanına alınamadı (<İstisna>)"` ve `kaynaklar` boş olmayabilir — tüketici notu AYNEN basar, etiketlemez. Cephe kaydında opsiyonel **`hedef: {"halka": "vakia|illiyet|kiyas", "id": "<o halkanın kimliği>"}`** cephenin zincirin HANGİ halkasına saldırdığını kimlikle bağlar (vakia `olaylar[].id`/`iddialar[].id`, graf düğümü/kenarı, kıyas unsuru); biçimsiz `hedef` **UYARIDIR** (`uyarilar` + «HEDEF UYARISI» bloğu), şema hatası değil — `saglikli`ye girmez; bağ yoksa alanı yazmayın. Exit kodu sözleşmesi değişmedi (bulguda da 0; görünürlük DURUM.md hattıyla).
 
 Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): usul · maddi vakıa · ispat/delil · hukuki niteleme · içtihat · zamanaşımı · def'i/karşı talep · müvekkil zaafı · **bilirkişi/teknik** (v0.5.16). Denetim deterministik olarak şunları yakalar: **açık cepheler** (değerlendirilmemiş = kör nokta), **çürütülmemiş antitezler** (ne çürütme ne risk işareti), **teyitsiz dayanak** (atıf denetimi → `oa-kontrol` A / `oa-ictihat`), güçlü antiteze dayanaksız çürütme, ve dürüst **artık riskler**.
 
@@ -64,9 +67,24 @@ Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
    checklist*tir, mekanik denetim değildir ve yalnız **öneri** üretir
    ("şu beyan tutanağa geçmemiş görünüyor"). Düzeltme talebi verilip
    verilmeyeceği **avukatın takdiridir**; sistem otomatik gündem oluşturmaz.
+   **Zabıt karşılaştırma yardımcısı (v0.5.18 adayı; Yargı PRO 16-2 fikri, OA
+   yöntemiyle):** `python scripts/zapt_denetim.py --kart _oa/cikti/NN-celse-karti.md
+   --zapt _oa/metin/NNN-durusma-zapti.md [--json]`. Kartın (c) bölümü madde
+   işaretli liste olarak yazılır ve başlığında "TUTANAĞA" geçer; script bu
+   kalemleri zabıtta kelime kökü düzeyinde arar ve her birini ADAY olarak
+   işaretler (GEÇMİŞ GÖRÜNÜYOR / KISMEN / GEÇMEMİŞ GÖRÜNÜYOR); ara kararları, süre
+   doğurabilecek ifadeleri (→ `oa-sure`; gün burada sayılmaz) ve gerekçe ibaresi
+   görülmeyen RET kararlarını ayrıca listeler. Dayanak: tarafların soruşturmaya
+   ilişkin istekleri ve ara kararlar mutlak olarak tutanağa yazılır (HMK m.154/3-g,
+   ğ); ön inceleme, tahkikat ve yargılama işlemleri ancak tutanakla ispat olunur
+   (m.156) — Mevzuat MCP teyit 2026-10-05. Script yukarıdaki "öneri" sınırını
+   DEĞİŞTİRMEZ: hâkim açıklamaları özetle kaydettirebilir (m.154/1), ilgili zabıt
+   paragrafı okunur, karar avukatındır. Tutanağın düzeltilmesi için HMK'da ayrı bir
+   süre maddesi bulunamadı (m.154-158 okundu) → **TEYİT BEKLİYOR**; fark celseyi
+   izleyen ilk iş günü avukata raporlanır (kanuni süre değil, ihtiyat).
 
 ## Kompozisyon (iki konum — v0.5.16 P0-3 hizalaması: `oa-pipeline` sabit hattıyla aynı sıra)
-- **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/06-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — v0.5.16'da önek adım numarasını izler: `06-antitez*`; ≤v0.5.15 adı `07-antitez*` pipeline bekçisi ve [G] kapısı (`*antitez*.json`) tarafından geriye uyumla kabul edilir). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).
+- **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/06-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — v0.5.16'da önek adım numarasını izler: `06-antitez*`; ≤v0.5.15 adı `07-antitez*` pipeline bekçisi (yalnız dosya adı) ve [G] kapısı (`*antitez*.json` + `cepheler` listesi — v0.5.18/K-1; `arac` damgalı ama `cepheler`siz denetim çıktısı matris sayılmaz) tarafından geriye uyumla kabul edilir). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).
 - **Geç (sağlamlık) = YAZIM (adım 8) sonrası / KONTROL (adım 9) öncesi:** dilekçe taslağı çıkınca matris yeniden dolaşılır — taslaktaki her argüman çökertilmeye karşı test edilmiş, DUYULMUŞ cephelerin çürütmesi metne çapalanmış olsun; `oa-kontrol` C2/[G] bu geç pasın mekanik aynasıdır.
 Çürütme dayanakları daima `oa-ictihat` üzerinden teyitli; bu parça `oa-kontrol`'ün protokol temelinin üstüne kurulu deterministik motordur.
 

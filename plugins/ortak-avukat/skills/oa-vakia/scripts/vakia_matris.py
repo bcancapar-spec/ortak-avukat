@@ -26,7 +26,7 @@ for _s in (_sys.stdout, _sys.stderr):
     except Exception:
         pass
 
-import argparse, importlib.util, json, os, sys
+import argparse, hashlib, importlib.util, json, os, sys, time
 from datetime import date
 
 # ── v0.5.14 (B-10 / T5A) — İSPAT KÜMESİ ÜÇE BÖLÜNDÜ ────────────────────────
@@ -77,17 +77,119 @@ NOT_KARINE = ("karine ispat etmez, ispat yükünü kaydırır (HMK m.190/2 — M
               "teyit 2026-09-06)")
 
 
+# ── v0.5.18 (B-1(a)/S1 · B-4/S3) — KAYNAK BEYANI ve ATOMİK JSON YAZIMI ───────
+# NEDEN VAR (S1 — zincirleme tepki): denetim JSON'u hangi girdiden üretildiğini
+# BEYAN ETMİYORDU. Ingest yeniden koşup `00-kunye.json` değişince eski girdiye
+# göre üretilmiş matris yerinde duruyor, DURUM.md ve teslim yeşil kalıyordu
+# (Fable tutarlılık raporu 2026-10-07, B-1). Tüketici `oa-kontrol/
+# tazelik_denetim` bu beyanı okuyup sha8 farkından "bayat halka"yı GÖRÜNÜR
+# kılar. Sözleşme: `kaynaklar: [{rol, yol, sha8}]` (rol, yol) sıralı; `yol`
+# dosyayı içeren `_oa` dizinine göre POSIX göreli (dava klasörü taşınsa da,
+# cwd değişse de aynı bayt — determinizm kilidi); `sha8` = sha256[:8]
+# (tazelik_denetim.sha8 ile aynı formül). Roller: `girdi` (denetlenen model
+# girdisi) ve `kunye` (`<_oa>/metin/00-kunye.json` VARSA). `_oa` ağacı
+# dışındaki girdi (avukatın masaüstündeki taslak) → boş liste + not:
+# "denetim dışı", "temiz" DEĞİL. Not alanı her zaman yazılır (not yoksa null)
+# ki üst-düzey anahtar kümesi girdinin yerine göre değişmesin. Mevcut `girdi`
+# alanı GERİYE UYUM için AYNEN kalır (B-11 kararı: köke göreli kimlik
+# `kaynaklar[].yol` ile sağlanır, `girdi` komut satırının yankısıdır).
+# NEDEN VAR (S3 — atomik yazım): `open(yol, "w")` + json.dump yarıda kesilirse
+# hedefte YARIM JSON kalıyor; K2 graf kapısı okunamayan dosyayı sessizce
+# atlıyordu (B-4 fail-open — deneyle doğrulandı). Aynı dizinde geçici dosya +
+# `os.replace` (aynı birimde atomik yeniden adlandırma): hedef ya eski tam
+# içerik ya yeni tam içerik; kesintide eski dosya korunur, artık silinir.
+# Dört motor (vakia_matris · grafik_denetim · kiyas_denetim · antitez_matris)
+# aynı iki yardımcıyı taşır — paket yok, ortak modül yok (tests/README.md §1);
+# ad ve imza bilinçli olarak aynıdır (tests/test_v0518_uretici_atomik.py).
+OA_DISI_NOTU = "_oa dışı girdi — tazelik denetimi dışı"
+KUNYE_GORELI = ("metin", "00-kunye.json")
+
+
+def _oa_dizini_bul(yol):
+    """Dosyayı içeren EN YAKIN `_oa` dizini (mutlak); yoksa None."""
+    dizin = os.path.dirname(os.path.abspath(yol))
+    while True:
+        if os.path.basename(dizin) == "_oa":
+            return dizin
+        ust = os.path.dirname(dizin)
+        if ust == dizin:
+            return None
+        dizin = ust
+
+
+def kaynak_beyani(girdi_yolu):
+    """S1 → (kaynaklar, kaynaklar_notu). ASLA fırlatmaz: okunamayan kaynak
+    beyandan düşer ama NOTA yazılır (sessiz atlama yasağı)."""
+    try:
+        oa = _oa_dizini_bul(girdi_yolu)
+    except Exception:                          # noqa: BLE001 — beyan motoru düşürmez
+        oa = None
+    if oa is None:
+        return [], OA_DISI_NOTU
+    kayitlar, notlar = [], []
+
+    def _ekle(rol, dosya):
+        try:
+            with open(dosya, "rb") as f:
+                bayt = f.read()
+            goreli = os.path.relpath(os.path.abspath(dosya), oa).replace(os.sep, "/")
+        except Exception as e:                 # noqa: BLE001
+            notlar.append(f"{rol} kaynak beyanına alınamadı ({type(e).__name__})")
+            return
+        kayitlar.append({"rol": rol, "yol": goreli,
+                         "sha8": hashlib.sha256(bayt).hexdigest()[:8]})
+
+    _ekle("girdi", girdi_yolu)
+    kunye = os.path.join(oa, *KUNYE_GORELI)
+    if os.path.isfile(kunye):
+        _ekle("kunye", kunye)
+    kayitlar.sort(key=lambda k: (k["rol"], k["yol"]))
+    return kayitlar, (" · ".join(notlar) if notlar else None)
+
+
+def _atomik_json_yaz(yol, nesne):
+    """S3: aynı dizinde geçici dosyaya yaz, `os.replace` ile hedefe taşı.
+    Biçim dört motorda aynı (ensure_ascii=False, indent=2, sort_keys=True).
+    K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
+    `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
+    240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
+    durur, geçici silinmeye çalışılır — o da kilitliyse `.oa-tmp` kalabilir;
+    ad `.json` ile bitmediği için `*.json` tüketicileri onu görmez)."""
+    gecici = f"{yol}.{os.getpid()}.oa-tmp"
+    try:
+        with open(gecici, "w", encoding="utf-8") as f:
+            json.dump(nesne, f, ensure_ascii=False, indent=2, sort_keys=True)
+        for deneme in range(4):
+            try:
+                os.replace(gecici, yol)
+                break
+            except PermissionError:
+                if deneme == 3:
+                    raise
+                time.sleep(0.08)
+    except BaseException:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            pass
+        raise
+
+
 # ── v0.5.8.4 ÖZNE TETİĞİ (372 karnesi: ozne_eslestirici'yi HİÇBİR akış
 # çağırmıyordu — kullanıcı kararı: tetik oa-vakia'ya bağlanır). vakia_matris
 # matris kurarken taraf/özne yazım varyantlarını toplar ve kardeş motorun
-# jaro_winkler + eşikleriyle (BAGLA >= 0.92 / AVUKATA-SOR 0.80-0.92) damgalar.
+# kural setiyle damgalar. v0.5.18 (kullanıcı kararı 2026-10-05 — "yanlış
+# birleştirme fazladan sorudan daha kötü"): BAGLA yalnız yapısal eşdeğerlikte
+# (katlanmış parçalar / birleşik biçim / OCR jokeri); ayrıca `taraflar`
+# kaydındaki opsiyonel `tur` iki tarafta farklıysa BAGLA asla.
 # ADVISORY — karar vermez, `saglikli` hesabına GİRMEZ; varyant yoksa sessiz.
 
 def _ozne_eslestirici_modulu():
     """ozne_eslestirici.py'yi (aynı dizin) İN-PROCESS import eder — algoritma
-    TEKRARLANMAZ (tek-yazar kuralı; ozne_eslestirici.py DEĞİŞTİRİLMEZ, yalnız
-    kullanılır). Import çökerse None döner; çağıran taraf bunu GÖRÜNÜR uyarıya
-    çevirir (sessiz atlama yasağı)."""
+    TEKRARLANMAZ (tek-yazar kuralı: eşleştirme kuralları yalnız
+    ozne_eslestirici.py'de yaşar; bu dosya onları yalnız kullanır). Import
+    çökerse None döner; çağıran taraf bunu GÖRÜNÜR uyarıya çevirir (sessiz
+    atlama yasağı)."""
     yol = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                        "ozne_eslestirici.py")
     if not os.path.isfile(yol):
@@ -103,28 +205,52 @@ def _ozne_eslestirici_modulu():
 
 def _ozne_adlarini_topla(m):
     """Matris girdisindeki taraf/özne YAZIMLARINI deterministik sırayla toplar:
-    üst-düzey `taraflar` listesi (dize veya {"ad": ...}) + her olayın opsiyonel
-    `ozne` alanı. Birebir aynı dize TEK sayılır (aynı yazım varyant değildir)."""
-    adlar, gorulen = [], set()
+    üst-düzey `taraflar` listesi (dize veya {"ad": ..., "tur": ...}) + her
+    olayın opsiyonel `ozne` alanı. Birebir aynı dize TEK sayılır (aynı yazım
+    varyant değildir). v0.5.18: `taraflar` kaydındaki opsiyonel `tur`
+    (gercek_kisi | tuzel_kisi | kamu) eşleştiriciye taşınır — eskiden yalnız ad
+    toplanıyordu ve kişi ile şirketi ayıracak bilgi kayboluyordu. Döner:
+    [{"ad": ...} | {"ad": ..., "tur": ...}]."""
+    adlar, gorulen = [], {}
 
-    def _ekle(ad):
+    def _ekle(ad, tur=None):
         ad = str(ad or "").strip()
-        if ad and ad not in gorulen:
-            gorulen.add(ad); adlar.append(ad)
+        tur = str(tur).strip() if tur is not None and str(tur).strip() else None
+        if not ad:
+            return
+        if ad in gorulen:
+            # Aynı yazım iki farklı türle gelmişse ikinci tür sessizce düşmesin:
+            # ilk kayıt korunur, çelişki ozne_eslestirme_kur'da GÖRÜNÜR uyarı olur.
+            onceki = adlar[gorulen[ad]]
+            if tur and onceki.get("tur") and onceki["tur"] != tur:
+                onceki.setdefault("_tur_celiskisi", []).append(tur)
+            return
+        gorulen[ad] = len(adlar)
+        kayit = {"ad": ad}
+        if tur:
+            kayit["tur"] = tur
+        adlar.append(kayit)
 
     for t in m.get("taraflar", []) or []:
-        _ekle(t.get("ad") if isinstance(t, dict) else t)
+        if isinstance(t, dict):
+            _ekle(t.get("ad"), t.get("tur"))
+        else:
+            _ekle(t)
     for o in m.get("olaylar", []) or []:
         _ekle(o.get("ozne") if isinstance(o, dict) else None)
     return adlar
 
 
 def ozne_eslestirme_kur(m):
-    """tr_normalize sonrası aynı özneye ait GÖRÜNEN birden çok yazım varsa
-    ozne_eslestirici skorlarıyla `ozne_eslestirme` bölümünü kurar:
-      [{"varyantlar": [...], "skor": f, "karar": "BAGLA"|"AVUKATA-SOR"}]
+    """Birden çok taraf/özne yazımı varsa ozne_eslestirici kural setiyle
+    `ozne_eslestirme` bölümünü kurar:
+      [{"varyantlar": [...], "skor": f, "karar": "BAGLA"|"AVUKATA-SOR",
+        "kural": "...", "gerekce": "..."}]
     Varyant yoksa boş liste (sessiz). Döner: (bulgular, uyari) — `uyari`
-    yalnız kardeş modül import edilemezse dolar (görünür fail-open)."""
+    kardeş modül import edilemez/çökerse, çok uzun ad yalnız yazım
+    eşdeğerliğiyle karşılaştırılabildiyse, iş bütçesi aşıldıysa, `tur`
+    tanınmadıysa ya da aynı ad iki ayrı türle yazıldıysa dolar (görünür
+    fail-open — tanınmayan tür sessizce yok sayılmaz)."""
     adlar = _ozne_adlarini_topla(m)
     if len(adlar) < 2:
         return [], None
@@ -133,10 +259,30 @@ def ozne_eslestirme_kur(m):
         return [], ("ozne_eslestirici.py import edilemedi — özne yazım-varyantı "
                     "taraması YAPILAMADI (advisory; varyant birleştirme kararı "
                     "avukatta kalır)")
+    notlar = []
+    celiskiler = [(k["ad"], k["tur"], k.pop("_tur_celiskisi")) for k in adlar if "_tur_celiskisi" in k]
+    try:
+        eslesmeler = oe.eslestir(adlar, uyarilar=notlar)
+        uzunlar = oe.asiri_uzun_adlar(adlar)
+        taninmayan = [(k["ad"], k["tur"]) for k in adlar
+                      if k.get("tur") and oe.tur_normalize(k["tur"])[0] is None]
+    except Exception as e:  # advisory motor çökerse matris DÜŞMEZ, ama sessiz de kalmaz
+        return [], (f"özne yazım-varyantı taraması YAPILAMADI ({type(e).__name__}: "
+                    f"{str(e)[:160]}) — varyant birleştirme kararı avukatta kalır")
     bulgular = [{"varyantlar": [e["a"]["ad"], e["b"]["ad"]],
-                 "skor": e["skor"], "karar": e["karar"]}
-                for e in oe.eslestir(adlar)]
-    return bulgular, None
+                 "skor": e["skor"], "karar": e["karar"],
+                 "kural": e.get("kural", ""), "gerekce": e.get("gerekce", "")}
+                for e in eslesmeler]
+    if uzunlar:
+        notlar.append("çok uzun özne adı yalnız yazım eşdeğerliğiyle karşılaştırıldı (varyant "
+                      "taraması sınırlı): " + "; ".join(f"«{a}»" for a in uzunlar))
+    for ad, tur in taninmayan:
+        notlar.append(f"«{ad}» için tur «{tur}» tanınmadı ve YOK SAYILDI — gercek_kisi | tuzel_kisi | "
+                      "kamu yazın (usul rolü — davacı/davalı — tür değildir)")
+    for ad, tur, digerleri in celiskiler:
+        notlar.append(f"«{ad}» iki ayrı türle yazılmış ({tur} / {', '.join(digerleri)}) — ilk tür "
+                      "kullanıldı; avukatça teyit edin")
+    return bulgular, (" · ".join(notlar) if notlar else None)
 
 def iskelet():
     """v0.5.14 (B-26): STDOUT yalnız GEÇERLİ JSON taşır; banner ve açıklamalar
@@ -161,11 +307,14 @@ def iskelet():
     _not("olaylar[].caizlik değerleri (yalnız tanik):", ", ".join(sorted(TANIK_CAIZLIK)),
          "— yoksa 'bilinmiyor' (fail-closed → yalnız kısmi destek)")
     sablon = {
-        "taraflar": ["Taraf/özne adı (opsiyonel — yazım varyantları otomatik taranır, v0.5.8.4)"],
+        "taraflar": [{"ad": "Taraf adı",
+                      "tur": "gercek_kisi|tuzel_kisi|kamu (opsiyonel; taraflar düz ad listesi de "
+                             "olabilir — yazım varyantları taranır; tür farklıysa BAGLA asla, v0.5.18)"}],
         "iddialar": [{"id":"I1","metin":"İspatlanacak maddi iddia — bir cümle",
                       "tur":"|".join(sorted(IDDIA_TUR))
                              + " (vakia: delille ispatlanır; hukuki: nitelendirme, delil aranmaz)"}],
         "olaylar": [{
+            "id":"O1 (opsiyonel — olay kimliği, benzersiz; oa-kiyas vakıası `vakia_id` ile buna bağlanır — v0.5.18/S5)",
             "tarih":"YYYY-MM-DD","olgu":"Ne oldu (kısa)",
             "ozne":"Olayın öznesi/faili (opsiyonel — özne varyant taramasına girer)",
             "belge":"Dayanak belge/delil (sözleşme, ihtarname, tutanak, tanık...) veya boş",
@@ -250,6 +399,22 @@ def dogrula(path, json_yol=None):
     for g in _caiz_gecersiz:
         bilgi.append(f"caizlik etiketi kapalı kümede değil — {g} → 'bilinmiyor' sayıldı "
                      f"(geçerli: {', '.join(sorted(TANIK_CAIZLIK))})")
+
+    # v0.5.18 (S5 / B-3): opsiyonel olay kimliği `olaylar[].id` ŞEMA HATASI
+    # DEĞİLDİR — capraz_denetim kıyas vakıasını `vakia_id` ile buna bağlar
+    # (ad benzerliği yerine kimlik eşitliği). Mükerrer kimlik eşlemeyi
+    # belirsiz kılar ama olguyu geçersiz kılmaz → yalnız [BİLGİ], saglikli'ye
+    # girmez; karar avukatın. Sayaç girdi sırasını korur (determinizm).
+    _kimlik_sayac = {}
+    for o in olaylar:
+        kid = o.get("id")
+        if kid not in (None, ""):
+            _kimlik_sayac[str(kid)] = _kimlik_sayac.get(str(kid), 0) + 1
+    _mukerrer = [f"{k} ({n} kez)" for k, n in _kimlik_sayac.items() if n > 1]
+    if _mukerrer:
+        bilgi.append("olaylar: 'id' mükerrer: " + ", ".join(_mukerrer)
+                     + " — çapraz denetim kimlik eşlemesi belirsiz kalır; kimlikleri "
+                     "tekilleştirin (v0.5.18/S5)")
 
     tarihli, tarihsiz = [], []
     for o in olaylar:
@@ -373,7 +538,8 @@ def dogrula(path, json_yol=None):
         for b in ozne_bulgular:
             isaret = "?" if b["karar"] == "AVUKATA-SOR" else "~"
             print(f"  {isaret} {b['karar']} [{b['skor']}] "
-                  + " ↔ ".join(f"«{v}»" for v in b["varyantlar"]))
+                  + " ↔ ".join(f"«{v}»" for v in b["varyantlar"])
+                  + (f" — {b['gerekce']}" if b.get("gerekce") else ""))
 
     # Özet
     # v0.5.16 (A-13): bölümleme iddia = belgeli_destekli + ispat_boslugu +
@@ -399,8 +565,10 @@ def dogrula(path, json_yol=None):
     print("="*68)
 
     if json_yol:
+        kaynaklar, kaynaklar_notu = kaynak_beyani(path)      # v0.5.18 S1
         sonuc = {
             "arac": "vakia_matris", "girdi": path,
+            "kaynaklar": kaynaklar, "kaynaklar_notu": kaynaklar_notu,
             "kronoloji": kronoloji,
             "tarihsiz": [o.get("olgu","") for _,o in tarihsiz],
             "iddia_delil_matrisi": matris,
@@ -415,8 +583,7 @@ def dogrula(path, json_yol=None):
                      "hukuki_iddia": n_hukuki, "yuk_kaydiran_karine": n_karine},
             "saglikli": saglikli,
         }
-        with open(json_yol, "w", encoding="utf-8") as f:
-            json.dump(sonuc, f, ensure_ascii=False, indent=2, sort_keys=True)
+        _atomik_json_yaz(json_yol, sonuc)                      # v0.5.18 S3
         print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
 
 def main():

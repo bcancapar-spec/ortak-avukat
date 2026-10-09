@@ -24,7 +24,8 @@ Zincir (ilk exit != 0'da DURUR — kalan kapılar çalıştırılmaz):
        TAMAMLAYICIDIR — (b) künyenin kaynakta İZİNİ, (b2) o künyenin GERÇEKTEN
        MUHAKEME EDİLİP EDİLMEDİĞİNİ ve DAMGA'sına göre dış-çıktıya girip
        giremeyeceğini denetler.
-  (c)  gizlilik_tara.py <taslak>   [yalnız --dis-arac ise]  → Privacy Layer 0
+  (c)  gizlilik_tara.py <taslak>   [--dis-arac ise YA DA teslim ürünü UDF ve UDF
+       yazıcısı udf-cli ise — v0.5.18]  → Privacy Layer 0
   (d)  pipeline_kayit.denetle_calistir(kok, makbuz_kontrolu=False) [yalnız defter
        varsa] → defter boşluğu — P0-5 (v0.5.5): artık İN-PROCESS import (subprocess
        DEĞİL — 'kapı başka kapıyı subprocess ile çağırmaz' ilkesi); makbuz bütünlüğü
@@ -42,8 +43,9 @@ Hepsi geçerse:
   zip/content.xml) "hızlı yapısal ön-kapı" TAMAMEN KALDIRILDI — saha dosyası A
   sahasında bu motorun ürettiği .udf UYAP editöründe AÇILMADI, ama zincir
   yine de "TESLİME HAZIR" basıyordu (sessiz-yanlış). udf_yaz.py artık BAŞKA
-  bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@latest
-  login`) GEREKTİRİR. npx/udf-cli yoksa veya oturum gerekiyorsa udf_yaz.py
+  bir yazma motoru TAŞIMIYOR; bu adım ağ+oturum (`npx -y udf-cli@<sürüm>
+  login`; sürüm udf_yaz.py'deki `UDF_CLI_SURUM` sabitine BAĞLIDIR — v0.5.18,
+  `@latest` kullanılmaz) GEREKTİRİR. npx/udf-cli yoksa veya oturum gerekiyorsa udf_yaz.py
   FAIL-CLOSED döner (hiçbir .udf yazılmaz) ve bu adım mevcut (rc != 0 → BLOK)
   dalından TESLİMİ DURDURUR — bu KASITLIDIR: bozuk-ama-"üretildi" görünen bir
   UDF, dürüst bir "ağ/oturum eksik" engelinden DAHA KÖTÜDÜR. Avukat
@@ -84,6 +86,19 @@ mühürle sha uyuşmazlığı BAYAT değil TÜREV'dir; was_derived_from zinciri
 kurulmuşsa YEŞİL, kurulmamışsa "imzalı türev mühürsüz" uyarısı + best-effort
 e-imzali-nusha mührü (istisna defterine dogrulama-toleransi satırı düşer).
 
+v0.5.18 — UDF TESLİMİ = DIŞ ARAÇ ÇAĞRISI (avukat kararı, 2026-10-05): UDF'i
+üreten/okuyan tek yazıcı `npx udf-cli` AĞ + OTURUM kullanır; dilekçe metninin
+sunucuya gidip gitmediği ÖLÇÜLMEDİ. Belirsizlikte fail-closed: teslim ürünü
+UDF ise (--udf-yok YOK) ve zincirin UDF yazıcısı udf-cli ise (udf_yaz.py
+IMPORT EDİLMEDEN okunur: sütun-0 `UDF_CLI_PAKET =` tanımı ya da `def
+npx_ile_udf_uret(`; dosya okunamazsa udf-cli VARSAYILIR), (c) Layer 0 taraması `--dis-arac`
+verilmese de ZORUNLU koşar ve BLOK sonucu teslimi durdurur (--dis-arac
+kapısıyla AYNI semantik: gizlilik_tara exit != 0 → BLOK; script yoksa
+fail-closed). «İçerik dışarı çıkmıyor» varsayımı UDF teslimlerinde artık
+yapılmaz; tetik makbuzda görünür (`layer0_tetik`, (c) kaydında `tetik`).
+UDF olmayan (--udf-yok, dış araçsız) teslimde davranış DEĞİŞMEZ (anayasa
+m.10: Layer 0 her dış-araç çağrısını sarar).
+
 Alt scriptler bu scriptin __file__ konumundan GÖRELİ keşfedilir
 (../../<skill>/scripts/...); bulunamazsa `OA_SKILLS_KOK` ortam değişkeni
 fallback denenir (P0-5(b) path-fix). "Script bulunamadı/çalıştırılamadı" artık
@@ -98,8 +113,10 @@ Kullanım (Windows/PowerShell — 'python'):
   python teslim_paketi.py <taslak.md> --tip <tip> --taraf <taraf> [--dis-arac] [--kok <klasör>] [--udf-yok]
     --tip   : dava|cevap|istinaf|temyiz|aym_bireysel|yemin|idari-kanal|genel
               (dilekce_denetim'e VE ictihat_muhakeme_denetim'e geçer)
-    --taraf : davaci|davali|sanik|katilan|mudahil            (boş bırakılabilir)
+    --taraf : davaci|davali|sanik|katilan|mudahil|musteki|alacakli|borclu|ucuncu-kisi
+              (boş bırakılabilir; v0.5.18: icra tarafları + musteki)
     --dis-arac : çıktı dış araca (web/bulut/e-posta) gidecekse Layer 0 taramasını ekler
+                 (UDF teslimde — udf-cli dış araçtır — bayraksız da ZORUNLU koşar, v0.5.18)
     --kok   : çalışma kökü; _oa/... göreli yolları buradan çözülür (varsayılan: bulunulan klasör)
     --udf-yok : kurucu kural 'varsayılan çıktı UDF'yi BİLİNÇLİ atla (makbuza yazılır)
 
@@ -296,6 +313,64 @@ def _udf_yaz_modulu():
     return _modul_yukle("oa-dilekce", "udf_yaz.py", "_oa_tp_udf_yaz_inproc")
 
 
+# v0.5.18 — udf_yaz.py IMPORT EDİLMEDEN satır satır okunur (yan etkisiz,
+# yükleme hatasından bağımsız): sabitlenmiş udf-cli sürümü (Ajan B,
+# `UDF_CLI_SURUM`) ve yazıcının udf-cli olup olmadığı (`UDF_CLI_PAKET`
+# sabiti / `npx_ile_udf_uret` fonksiyonu) sütun-0 tanımlarından okunur.
+_UDF_CLI_SURUM_RE = re.compile(r'^UDF_CLI_SURUM = "(\d+\.\d+\.\d+)"$')
+_UDF_CLI_YAZICI_RE = re.compile(r"^(?:UDF_CLI_PAKET\s*=|def npx_ile_udf_uret\()")
+
+
+def _udf_yaz_satirlari():
+    """Çözülen udf_yaz.py'nin satırları; bulunamaz/okunamazsa None."""
+    try:
+        with open(_script("oa-dilekce", "udf_yaz.py"), encoding="utf-8",
+                  errors="replace") as f:
+            return f.read().splitlines()
+    except OSError:
+        return None
+
+
+def _udf_cli_surumu():
+    """udf_yaz.py'de sabitlenmiş udf-cli sürümü ('0.5.6' gibi) ya da None."""
+    for satir in _udf_yaz_satirlari() or ():
+        m = _UDF_CLI_SURUM_RE.match(satir)
+        if m:
+            return m.group(1)
+    return None
+
+
+def _udf_cli_paket_metni():
+    """Kullanıcı mesajı için paket adı. Sürüm okunamazsa @latest'e DÜŞÜLMEZ
+    (sabitlenmemiş sürüm UYAP'ta açılmayan UDF riskidir) — sabitin yeri
+    gösterilir."""
+    surum = _udf_cli_surumu()
+    return ("udf-cli@" + surum) if surum else "udf-cli@<udf_yaz.py UDF_CLI_SURUM>"
+
+
+def _udf_yazici_udf_cli_mi():
+    """v0.5.18 — zincirin UDF yazıcısı udf-cli (npx; ağ + oturum) mi?
+    MEKANİK: udf_yaz.py'de sütun-0 `UDF_CLI_PAKET =` tanımı ya da `def
+    npx_ile_udf_uret(` varsa EVET. Dosya bulunamaz/okunamazsa yazıcı
+    BİLİNMİYORDUR → fail-closed: udf-cli VARSAYILIR (Layer 0 koşar)."""
+    satirlar = _udf_yaz_satirlari()
+    if satirlar is None:
+        return True
+    return any(_UDF_CLI_YAZICI_RE.match(s) for s in satirlar)
+
+
+def _layer0_tetigi(a):
+    """v0.5.18 — (c) Layer 0 neden koşuyor? None (koşmaz — eski davranış) |
+    'dis-arac' | 'udf-cli' | 'dis-arac+udf-cli'. UDF teslimi (--udf-yok
+    yok) + udf-cli yazıcısı = dış araç çağrısı (anayasa m.10)."""
+    tetik = []
+    if a.dis_arac:
+        tetik.append("dis-arac")
+    if not a.udf_yok and _udf_yazici_udf_cli_mi():
+        tetik.append("udf-cli")
+    return "+".join(tetik) or None
+
+
 def _udf_content_xml(yol):
     """UDF zip'inden content.xml metnini döndürür; açılamazsa/yoksa None."""
     try:
@@ -408,15 +483,161 @@ def _tazelik_uyarilari_topla(kok):
     except Exception:
         return None
     uyarilar = []
+    _t = _tek_satir_konsol
     for b in rapor.get("bayat") or []:
         uyarilar.append("BAYAT: %s — kaynağı %s üretiminden sonra değişti "
                         "(%s → %s); delta geçişi gerek"
-                        % (b.get("urun"), b.get("kaynak"),
-                           b.get("beyan"), b.get("simdiki")))
+                        % (_t(b.get("urun")), _t(b.get("kaynak")),
+                           _t(b.get("beyan")), _t(b.get("simdiki"))))
     for e in rapor.get("eksik") or []:
         uyarilar.append("EKSİK-KAYNAK: %s — beyan edilen %s bulunamadı/kök dışında"
-                        % (e.get("urun"), e.get("kaynak")))
+                        % (_t(e.get("urun")), _t(e.get("kaynak"))))
+    # v0.5.18 (B-1b) — JSON ürünlerinin iki dürüst hâli de makbuza girer:
+    # okunamayan denetim 'temiz' sayılmaz; `_oa` dışı girdi denetim dışıdır.
+    for o in rapor.get("okunamayan") or []:
+        uyarilar.append("OKUNAMADI: %s — %s; tazelik hükmü verilemez (temiz SAYILMAZ)"
+                        % (_t(o.get("urun")), _t(o.get("hata"))))
+    for d in rapor.get("denetim_disi") or []:
+        uyarilar.append("DENETİM-DIŞI: %s — %s (kaynak beyanı boş; temiz SAYILMAZ)"
+                        % (_t(d.get("urun")), _t(d.get("not"))))
     return uyarilar
+
+
+def _tek_satir_konsol(deger):
+    """Ö-3 (makbuz ikizi): motor/model yazımı alanı konsol ve makbuz satırına güvenle indirger —
+    satır sonu ve denetim karakterleri boşluğa, `⟦⟧` damga taklidi düz parantezlere. Makbuz JSON'u
+    zaten güvenliydi; konsol satırı sahte satır üretebiliyordu."""
+    s = "" if deger is None else str(deger)
+    s = "".join(" " if (ch.isspace() or ord(ch) < 32 or ord(ch) == 127) else ch for ch in s)
+    return " ".join(s.replace("⟦", "[").replace("⟧", "]").split())
+
+
+def _graf_kapisi_advisory(kok):
+    """B-5 (v0.5.18) — K2 GRAF KAPISI sorusu teslim zincirinde YENİDEN
+    sorulur; ADVISORY (avukat kararı 2026-10-07: çevrimli/şema hatalı/çökmüş
+    ya da OKUNAMAYAN graf denetimi teslimi DURDURMAZ, makbuz ve raporda
+    GÖRÜNÜR; karar avukatın). NEDEN VAR: K2 yalnız `--isle` anında
+    soruluyordu; adım-1 kapandıktan SONRA çevrim doğan graf teslimde yeşil
+    kalıyordu. Soru `pipeline_kayit._graf_kapisi_sorunu` ile AYNI fonksiyondan
+    (in-process, S6 imzası) sorulur — ikinci bir kural kümesi İCAT EDİLMEZ.
+    Döner: {durum: sorun|acik|denetlenemedi, mesaj, denetim_json_sayisi}.
+    `acik` + 0 denetim = «kapı sorulmadı» (temiz İDDİASI yok)."""
+    pk = _pipeline_kayit_modulu()
+    if pk is None or not callable(getattr(pk, "_graf_kapisi_sorunu", None)):
+        return {"durum": "denetlenemedi",
+                "mesaj": "pipeline_kayit.py yüklenemedi — graf kapısı sorulamadı "
+                         "(denetlenemeyen kapı temiz SAYILMAZ)",
+                "denetim_json_sayisi": None}
+    try:
+        sorun = pk._graf_kapisi_sorunu(kok)
+        sayac = getattr(pk, "_denetim_jsonlari", None)
+        n = len(sayac(kok, "grafik_denetim")) if callable(sayac) else None
+    except Exception as e:
+        return {"durum": "denetlenemedi",
+                "mesaj": ("graf kapısı sorgusu çöktü (%r) — temiz SAYILMAZ" % (e,))[:240],
+                "denetim_json_sayisi": None}
+    if sorun:
+        return {"durum": "sorun", "mesaj": sorun, "denetim_json_sayisi": n}
+    if not n:
+        return {"durum": "acik",
+                "mesaj": "graf denetim JSON'u (arac=grafik_denetim) yok — kapı sorulmadı "
+                         "(K2 sözleşmesi: dosya yoksa RET değil; grafik_denetim.py bu kökte "
+                         "koşmamış olabilir — temiz iddiası DEĞİLDİR)",
+                "denetim_json_sayisi": 0}
+    return {"durum": "acik", "mesaj": None, "denetim_json_sayisi": n}
+
+
+_GIZLI_TALIMAT_IFSA_MOD = None
+
+
+def _gizli_talimat_ifsa_modulu():
+    """oa-ingest/gizli_talimat_ifsa.py — ifşa durumunun TEK kaynağı (in-process; alt süreç yok)."""
+    global _GIZLI_TALIMAT_IFSA_MOD
+    if _GIZLI_TALIMAT_IFSA_MOD is not None:
+        return _GIZLI_TALIMAT_IFSA_MOD
+    betik = _script("oa-ingest", "gizli_talimat_ifsa.py")
+    if not os.path.isfile(betik):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_oa_teslim_paketi_gizli_talimat_ifsa", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    _GIZLI_TALIMAT_IFSA_MOD = mod
+    return mod
+
+
+def _ifsa_durumu(kok, taslak):
+    """v0.5.18 Faz B — makbuz satırı: taslaktaki ifşa bölümünün durumu {durum, seviye, satir}
+    (motorun TEK kaynağından). ADVISORY — teslimi DURDURMAZ (Ruling 11); zaman damgası taşımaz
+    (makbuz determinizmi). Okunamayan/yüklenemeyen hâl temiz SAYILMAZ."""
+    mod = _gizli_talimat_ifsa_modulu()
+    if mod is None:
+        return {"durum": "denetlenemedi", "seviye": "UYARI", "kunye_sha8": None,
+                "satir": "ifşa motoru yüklenemedi — ifşa durumu denetlenemedi, temiz SAYILMAZ"}
+    try:
+        with open(taslak, encoding="utf-8", errors="replace") as f:
+            metin = f.read()
+        sonuc = mod.ifsa_uret(kok)
+        d = mod.taslak_ifsa_durumu(metin, sonuc, mod.atlama_durumu(kok, sonuc))
+        # Hangi künyeden üretildiği izlenebilsin (makbuz okuyucusu bayat künyeyi ayırt eder).
+        d["kunye_sha8"] = next((k.get("sha8") for k in sonuc.get("kaynaklar") or []
+                                if isinstance(k, dict) and k.get("rol") == "kunye"), None)
+        return d
+    except Exception as e:
+        return {"durum": "denetlenemedi", "seviye": "UYARI", "kunye_sha8": None,
+                "satir": "ifşa durumu denetlenemedi (%s) — temiz SAYILMAZ" % type(e).__name__}
+
+
+def _udf_dogrulanmadi_isareti(udf_yolu):
+    """v0.5.18 (Fable denetimi T2) — `<udf>.DOGRULANMADI` işareti varsa yolunu döndürür.
+    udf_yaz, resmî okuyucu (udf2md) dosyayı doğrulayamayınca bu işareti bırakır. Teslim
+    DURMAZ (karar avukatın); ama makbuz ve sonuç satırı bunu taşır — belirsizlik iç içe bir
+    satırda kalmasın."""
+    if not udf_yolu:
+        return None
+    isaret = udf_yolu + ".DOGRULANMADI"
+    return isaret if os.path.isfile(isaret) else None
+
+
+def _teslime_hazir_satiri(udf_isaret):
+    """Başarı sonuç satırı: doğrulanamayan UDF varsa NİTELENİR (teslimi durdurmaz)."""
+    if not udf_isaret:
+        return "SONUÇ: TESLİME HAZIR"
+    return ("SONUÇ: TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI: UYAP Doküman "
+            "Editörü'nde açıp görsel teyit etmeden yüklemeyin (işaret: %s)"
+            % os.path.basename(udf_isaret))
+
+
+def _tazelik_bolumu_yazdir(tazelik_uyarilari):
+    """GÖREV 6 bölümü. None = denetim hiç koşamadı → GÖRÜNÜR satır (Fable denetimi T4: konsolda
+    'temiz' ile ayırt edilemiyordu); boş liste = temiz → sessiz (gürültü yok)."""
+    if tazelik_uyarilari is None:
+        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
+        print("    [ADVISORY] tazelik: DENETLENEMEDİ — tazelik_denetim.py koşamadı ya da çıktısı "
+              "çözülemedi; zincir tazeliği temiz SAYILMAZ (makbuzda alan None).")
+        return
+    if tazelik_uyarilari:
+        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
+        for uyari in tazelik_uyarilari:
+            print("    [UYARI-BİLGİ] %s" % uyari)
+        print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
+              "kapı kapatmaz (amaç çizgisi: görünürlük).")
+
+
+def _graf_kapisi_yazdir(gk, onek="    [ADVISORY] graf kapısı"):
+    """Tek satır görünürlük — kapı DEĞİL."""
+    if gk["durum"] == "sorun":
+        print("%s: %s — teslimi DURDURMAZ (avukat kararı); grafı düzelt ya da bilinçli "
+              "teslim et." % (onek, gk["mesaj"]))
+    elif gk["durum"] == "denetlenemedi":
+        print("%s: DENETLENEMEDİ — %s" % (onek, gk["mesaj"]))
+    elif gk.get("mesaj"):
+        print("%s: %s" % (onek, gk["mesaj"]))
+    else:
+        print("%s: açık (%s graf denetimi; çevrim/şema hatası/çökme yok)."
+              % (onek, gk.get("denetim_json_sayisi")))
 
 
 def _udf_imzali_mi(yol):
@@ -440,6 +661,40 @@ def _goreli_guvenli(kok, yol):
         return os.path.relpath(yol, kok).replace("\\", "/")
     except ValueError:
         return os.path.basename(yol)
+
+
+def _halusinasyon_kapisi(kok):
+    """(c2) kapısı (v0.5.18). Döner: (makbuz durumu OK|BLOK|ATLA|BILGI, makbuz
+    alanı). Hüküm pipeline_kayit.halusinasyon_kapisi_durumu'ndan gelir — adım-8
+    kapısıyla aynı fonksiyon; burada ikinci bir kural tutulmaz. Sıra (d) ile
+    AYNIDIR: önce defter sorulur — defter yoksa kapı SORULMAZ (BİLGİ; modül
+    bulunamasa da). Defter varken kardeş modül yüklenemez/çökerse ATLA (çağıran
+    fail-closed kapatır)."""
+    defter = _defter_var_mi(kok)
+    pk = _pipeline_kayit_modulu()
+    h, hata = None, None
+    if pk is not None and hasattr(pk, "halusinasyon_kapisi_durumu"):
+        try:
+            h = pk.halusinasyon_kapisi_durumu(kok)
+        except Exception as e:  # noqa: BLE001 — denetlenemeyen kapı açık sayılmaz
+            hata = repr(e)[:120]
+    if not defter:
+        # Bilgi amaçlı: modül varsa eksik motorlar yine görünür (kapı kapatmaz).
+        return "BILGI", {"durum": "defter-yok", "eksik": list(h["eksik"]) if h else None}
+    if h is None:
+        alan = {"durum": "denetlenemedi", "eksik": None}
+        if hata:
+            alan["hata"] = hata
+        return "ATLA", alan
+    alan = {"durum": h["durum"], "eksik": list(h["eksik"])}
+    if h["durum"] == "tamam":
+        return "OK", alan
+    if h["durum"] == "serh":
+        alan["serh_metni"] = h.get("serh_metni")
+        alan["serh_gerekce"] = h.get("serh_gerekce")
+        return "OK", alan
+    alan["mesaj"] = h.get("mesaj")
+    return "BLOK", alan
 
 
 def _istisna_kaydi_dus(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
@@ -764,8 +1019,13 @@ def _advisory_denetimler(taslak, kok):
     prov-tazelik (yan .prov.json sha karşılaştırması), yerel-damga taraması,
     tazelik advisory. Salt-okunur ve istisnasız — dict döndürür."""
     rapor = {"devralma_adaylari": [], "sekil": None, "prov_tazelik": None,
-             "yerel_damga": None, "tazelik_uyarilari": None}
+             "yerel_damga": None, "tazelik_uyarilari": None, "graf_kapisi": None,
+             "ifsa_durumu": None}
     try:
+        # B-5 (v0.5.18) — graf kapısı sorusu RED yolunda da sorulur (B4
+        # advisory tamamlanma: ilk engel öteki bulguyu görünmez bırakmasın).
+        rapor["graf_kapisi"] = _graf_kapisi_advisory(kok)
+        rapor["ifsa_durumu"] = _ifsa_durumu(kok, taslak)   # v0.5.18 Faz B — RED yolunda da görünür
         secili = None
         for aday in _udf_adaylari(taslak, kok):
             gecerli, sebep = _udf_hafif_gecerli_mi(aday)
@@ -857,6 +1117,10 @@ def _advisory_yazdir(rapor):
               "ürünü teslime GİREMEZDİ." % yd.get("was_generated_by"))
     for u in rapor.get("tazelik_uyarilari") or []:
         print("    [ADVISORY] tazelik: %s" % u)
+    if rapor.get("graf_kapisi"):
+        _graf_kapisi_yazdir(rapor["graf_kapisi"])
+    if rapor.get("ifsa_durumu"):
+        print("    [ADVISORY] ifşa [%s]: %s" % (rapor["ifsa_durumu"]["seviye"], rapor["ifsa_durumu"]["satir"]))
     if rapor.get("hata"):
         print("    [ADVISORY] %s" % rapor["hata"])
 
@@ -952,7 +1216,7 @@ def _kismi_ingest_alani(kok):
     return {"n": n, "m": m}
 
 
-OA_SURUM = "0.5.17.1"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
+OA_SURUM = "0.5.18"  # P0-5 — makbuz şemasındaki olay-bazlı sürüm damgası
 
 
 def _makbuz_yaz(kok, veri, basarili):
@@ -994,6 +1258,12 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
         "tip": a.tip, "taraf": a.taraf or None,
         "kapilar": kapilar, "exit_kodu": exit_kodu, "udf_yolu": udf_yolu,
         "udf_atlandi_istekle": bool(a.udf_yok),
+        # v0.5.18 — Layer 0 neden koştu (None = koşmadı; 'udf-cli' = UDF
+        # teslimi dış araç çağrısı sayıldı; 'dis-arac' = --dis-arac)
+        "layer0_tetik": getattr(a, "layer0_tetik", None),
+        # v0.5.18 — (c2) HALÜSİNASYON MOTORLARI kapısının cevabı (None = kapıya
+        # ulaşılmadı: zincir (a)-(c)'de durdu)
+        "halusinasyon_kapisi": getattr(a, "halusinasyon_kapisi", None),
         "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
         "kismi_ingest": _kismi_ingest_alani(kok),
         "durdu": durdu,
@@ -1113,8 +1383,15 @@ def _zincir():
                     help="dilekçe tipi (dava|cevap|istinaf|temyiz|aym_bireysel|yemin|"
                          "idari-kanal|genel); dilekce_denetim.py'ye VE "
                          "ictihat_muhakeme_denetim.py'ye geçer (varsayılan: genel)")
+    # v0.5.18 — icra tarafları (alacakli/borclu/ucuncu-kisi) ve musteki:
+    # dilekce_denetim.py (a) kapısı bu sıfatların müvekkil-aleyhi kalıp
+    # setlerini taşıyor; zincir onları REDDEDİYORDU (argparse hatası) —
+    # icra dosyasında tek komut teslim hiç koşamıyordu. Değer (a)'ya AYNEN
+    # geçer; liste dilekce_denetim'in kabul ettiği kümenin ALT kümesidir
+    # (test_v0518_teslim_layer0.py kilitler).
     ap.add_argument("--taraf", default="",
-                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil"],
+                    choices=["", "davaci", "davali", "sanik", "katilan", "mudahil",
+                             "musteki", "alacakli", "borclu", "ucuncu-kisi"],
                     help="taraf sıfatı (müvekkil-aleyhi taraması için); boş bırakılabilir")
     ap.add_argument("--dis-arac", action="store_true",
                     help="çıktı dış araca gidecekse Privacy Layer 0 (gizlilik_tara) kapısını ekle")
@@ -1141,12 +1418,20 @@ def _zincir():
         print("HATA: kök klasör yok: %s" % kok, file=sys.stderr)
         sys.exit(1)
 
+    # v0.5.18 — Layer 0 tetiği (UDF teslimi = udf-cli dış araç çağrısı)
+    a.layer0_tetik = _layer0_tetigi(a)
+
     print(CIZGI)
     print("TESLİM PAKETİ — tek komut teslim zinciri (oa-kontrol)")
     print(CIZGI)
     print("Taslak    : %s" % taslak)
     print("tip/taraf : %s / %s" % (a.tip, a.taraf or "—"))
-    print("Dış araç  : %s" % ("EVET (Layer 0 taraması dahil)" if a.dis_arac else "hayır"))
+    if a.dis_arac:
+        print("Dış araç  : EVET (Layer 0 taraması dahil)")
+    elif a.layer0_tetik:
+        print("Dış araç  : UDF/udf-cli (Layer 0 taraması ZORUNLU — v0.5.18)")
+    else:
+        print("Dış araç  : hayır")
     print("Kök (_oa) : %s" % kok)
 
     gecen = []           # açılan (OK) kapılar
@@ -1210,16 +1495,34 @@ def _zincir():
         elif sonuc == "OK":
             gecen.append("(b2) içtihat muhakeme zinciri")
 
-    # ── (c) gizlilik / Privacy Layer 0 — yalnız --dis-arac ise ─────────────
+    # ── (c) gizlilik / Privacy Layer 0 — --dis-arac YA DA UDF teslimi (udf-cli)
+    # v0.5.18 (avukat kararı): UDF yazıcısı udf-cli ağ + oturum kullanan bir
+    # DIŞ ARAÇTIR; metnin sunucuya gidip gitmediği ölçülmedi → UDF teslimde
+    # «içerik dışarı çıkmıyor» varsayımı YAPILMAZ, tarama ZORUNLU koşar (fail-
+    # closed; semantik --dis-arac kapısıyla AYNI). UDF'siz teslim değişmez.
     if kapanan is None:
         _bolum("[c] GİZLİLİK / PRIVACY LAYER 0  (gizlilik_tara.py)")
-        if not a.dis_arac:
+        if not a.layer0_tetik:
             print("    [BILGI] --dis-arac verilmedi; içerik dışarı çıkmıyor sayıldı — "
                   "Layer 0 taraması ATLANDI.")
             kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": "BILGI", "exit": None})
         else:
+            if "udf-cli" in a.layer0_tetik:
+                print("    [ZORUNLU] teslim ürünü UDF ve UDF yazıcısı udf-cli (npx %s; ağ + "
+                      "oturum) — dış araç çağrısıdır (anayasa m.10: Layer 0 her dış-araç "
+                      "çağrısını sarar). «İçerik dışarı çıkmıyor» varsayımı UDF teslimde "
+                      "YAPILMAZ; tarama --dis-arac olmadan da koşar." % _udf_cli_paket_metni())
             sonuc, rc = _kapi(S_GIZLILIK, [taslak], kok)
-            kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": sonuc, "exit": rc})
+            kapilar_makbuz.append({"ad": "(c) GİZLİLİK / LAYER 0", "durum": sonuc, "exit": rc,
+                                   "tetik": a.layer0_tetik})
+            if sonuc in ("BLOK", "ATLA") and "udf-cli" in a.layer0_tetik:
+                # Avukat kararı (2026-10-05, ölçüm sonrası): KATI ENGEL, onay
+                # bayrağı YOK — yol, UDF'i yerelde üretmektir.
+                print("    [BILGI] UDF teslimde Layer 0 kapandı: metin dış araca (udf-cli) "
+                      "GÖNDERİLMEDİ. YOL: teslim_paketi'ni --udf-yok ile yeniden koş ve "
+                      "UDF'i yerelde UYAP editöründe üret. Dilekçede TCKN zorunlu "
+                      "olduğundan (HMK m.119/1-c) maskeleme çoğu zaman uygun değildir; "
+                      "yalnız zorunlu OLMAYAN hassas veri çıkarılabilir.")
             if sonuc == "ATLA":
                 atlanan.append("(c) gizlilik_tara.py")
                 kapanan = ("(c) GİZLİLİK / LAYER 0", rc)
@@ -1227,6 +1530,50 @@ def _zincir():
                 kapanan = ("(c) GİZLİLİK / LAYER 0", rc)
             elif sonuc == "OK":
                 gecen.append("(c) gizlilik/Layer 0")
+
+    # ── (c2) halüsinasyon motorları — damga DİSKTE mi? (v0.5.18 saha testi) ──
+    # NEDEN VAR: saha testinde vakıa/illiyet/antitez/kıyas motorları hiç koşmadı;
+    # motor parçaları BILGI-EKSIK yazılıp geçildi (5 kez) ve (d) kapısı yalnız
+    # statünün VARLIĞINA baktığı için açık kaldı. (c2) statüye değil DİSKE bakar:
+    # motorun KENDİ yazdığı damgalı, çökmemiş ve taze denetim çıktısı. Karar
+    # pipeline_kayit.halusinasyon_kapisi_durumu'ndan gelir (adım-8 kapısıyla TEK
+    # kaynak). Tek çıkış adım-8'deki gerekçeli avukat şerhidir; şerhli her geçiş
+    # ortak istisna defterine yazılır. Defter yoksa (d) gibi BİLGİ (sorulmadı).
+    if kapanan is None:
+        _bolum("[c2] HALÜSİNASYON MOTORLARI — vakıa/illiyet/antitez/kıyas damgası  "
+               "(pipeline_kayit, in-process)")
+        sonuc, alan = _halusinasyon_kapisi(kok)
+        a.halusinasyon_kapisi = alan
+        eksik_metni = ", ".join(alan.get("eksik") or []) or "yok"
+        if sonuc == "BILGI":
+            print("    [BILGI] pipeline defteri yok — halüsinasyon kapısı bu teslimde "
+                  "SORULMADI (motor damgası eksik: %s)." % eksik_metni)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "BILGI", "exit": None})
+        elif sonuc == "ATLA":
+            print("    [ATLA→BLOK] pipeline_kayit.py yüklenemedi/çöktü — FAIL-CLOSED: kapı "
+                  "KAPALI sayılır (sessiz atlama yok).")
+            atlanan.append("(c2) pipeline_kayit.py")
+            kapanan = ("(c2) HALÜSİNASYON MOTORLARI", None)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "ATLA", "exit": None})
+        elif sonuc == "BLOK":
+            print("    [BLOK] KAPI KAPALI — %s" % alan.get("mesaj"))
+            print("    Bilinçli geçiş yalnız avukat şerhiyle: adım-8'i --serh \"gerekçe "
+                  "(>=30 kr)\" --serh-kapi halusinasyon ile işle.")
+            kapanan = ("(c2) HALÜSİNASYON MOTORLARI", 1)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "BLOK", "exit": 1})
+        else:
+            if alan["durum"] == "serh":
+                gerekce = alan.get("serh_gerekce") or alan.get("serh_metni") or ""
+                print("    [ŞERH] kapı adım-8 avukat şerhiyle geçildi — motor damgası eksik: %s; "
+                      "gerekçe: %s (istisna defterine yazıldı)." % (eksik_metni, gerekce))
+                _istisna_kaydi_dus(kok, "halusinasyon-kapisi", _goreli_guvenli(kok, taslak),
+                                   "eksik motor damgası: %s — avukat şerhi: %s"
+                                   % (eksik_metni, gerekce), onay="avukat-serhi")
+                gecen.append("(c2) halüsinasyon motorları (ŞERHLİ)")
+            else:
+                print("    [OK] dört motorun damgalı ve taze denetim çıktısı diskte.")
+                gecen.append("(c2) halüsinasyon motorları")
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "OK", "exit": 0})
 
     # ── (d) pipeline defter boşluğu — yalnız defter varsa ──────────────────
     # P0-5 dairesel-bağımlılık kırıcı: İN-PROCESS `denetle_calistir(kok,
@@ -1354,7 +1701,8 @@ def _zincir():
                   "rehbere birebir) — ağ + oturum gerektirir. `--yerel-motor` KALDIRILDI "
                   "(B5 saha bulgusu: o motorun ürettiği .udf UYAP'ta açılmıyordu); "
                   "npx/oturum yoksa bu adım FAIL-CLOSED BLOK olur (bkz. oa-dilekce/"
-                  "scripts/udf_yaz.py, 'npx -y udf-cli@latest login').")
+                  "scripts/udf_yaz.py, 'npx -y %s login' — sürüm udf_yaz.py "
+                  "UDF_CLI_SURUM sabitine bağlı)." % _udf_cli_paket_metni())
             bulundu, rc, cikti = _kos(
                 S_UDF, ["--girdi", taslak, "--cikti", udf_cikti], kok)
             if not bulundu:
@@ -1618,12 +1966,24 @@ def _zincir():
 
     # ── GÖREV 6 — TAZELİK BİLGİ KAPISI (advisory; kapı KAPATMAZ) ────────────
     tazelik_uyarilari = _tazelik_uyarilari_topla(kok)
-    if tazelik_uyarilari:
-        _bolum("[i] TAZELİK BİLGİ KAPISI — advisory (tazelik_denetim.py; BLOK DEĞİL)")
-        for uyari in tazelik_uyarilari:
-            print("    [UYARI-BİLGİ] %s" % uyari)
-        print("    [BILGI] bu satırlar makbuza `tazelik_uyarilari` olarak geçti; "
-              "kapı kapatmaz (amaç çizgisi: görünürlük).")
+    _tazelik_bolumu_yazdir(tazelik_uyarilari)
+
+    # ── B-5 (v0.5.18) — GRAF KAPISI ADVISORY (K2 sorusu teslimde yeniden) ───
+    # Avukat kararı (2026-10-07): zincirde bir halka değişince (çevrimli graf)
+    # teslimde GÖRÜNÜR UYARI — makbuzda satır; teslimi DURDURMAZ.
+    graf_kapisi = _graf_kapisi_advisory(kok)
+    _bolum("[g] GRAF KAPISI — advisory (K2 sorusu teslimde yeniden; kapı KAPATMAZ — "
+           "avukat kararı 2026-10-07)")
+    _graf_kapisi_yazdir(graf_kapisi, onek="    [ADVISORY] graf kapısı")
+    print("    [BILGI] makbuza `graf_kapisi` olarak geçti; karar avukatın.")
+
+    # ── v0.5.18 Faz B — İFŞA DURUMU (advisory; teslimi DURDURMAZ — Ruling 11) ──
+    # Avukat talimatı (2026-10-07): karşı tarafın gizli talimatı dilekçeye girsin. Makbuz,
+    # bölümün dilekçede olup olmadığını / bilinçli atlandığını / denetlenemediğini taşır.
+    ifsa_durumu = _ifsa_durumu(kok, taslak)
+    _bolum("[if] İFŞA DURUMU — advisory (gizli_talimat_ifsa; kapı KAPATMAZ — karar avukatın)")
+    print("    [%s] %s" % (ifsa_durumu["seviye"], ifsa_durumu["satir"]))
+    print("    [BILGI] makbuza `ifsa_durumu` olarak geçti.")
 
     # ── A2 (v0.5.9 ÇIKTI ŞEMASI) — 40-UYAP dış-çıktı dizini (ADVISORY) ──────
     # YEŞİL makbuz kesiliyor → dava kökünde muhatap-nötr dış-çıktı dizini
@@ -1644,15 +2004,20 @@ def _zincir():
     for u in uyap_uyarilar:
         print("    [UYARI] %s" % u)
 
+    # v0.5.18 (Fable denetimi T2) — udf_yaz'ın bıraktığı `.DOGRULANMADI` işareti (üretim de
+    # devralma da) sonuç satırını niteler ve makbuza girer; teslimi DURDURMAZ.
+    udf_isaret = _udf_dogrulanmadi_isareti(udf_cikti) if udf_uretildi else None
     print()
     print(CIZGI)
-    print("SONUÇ: TESLİME HAZIR")
+    print(_teslime_hazir_satiri(udf_isaret))
     print(CIZGI)
     print("Açılan engelleyici kapı(lar): " + (", ".join(gecen) if gecen else "—") + ".")
     print("Üretilen / ilgili dosyalar:")
     print("   - Taslak : %s" % taslak)
     if udf_uretildi:
         print("   - UDF    : %s" % udf_cikti)
+        if udf_isaret:
+            print("   - UYARI  : %s — resmî okuyucu dosyayı doğrulayamadı" % udf_isaret)
     elif a.udf_yok:
         print("   - UDF    : (üretilmedi — --udf-yok istekle)")
     else:
@@ -1670,6 +2035,10 @@ def _zincir():
                 "kenar_duzeltildi": kenar_duzeltildi,    # GÖREV 5
                 "sekil_imzali_sapma": sekil_imzali_sapma,  # v0.5.8.5 e-imza guard
                 "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
+                "graf_kapisi": graf_kapisi,               # B-5 (v0.5.18) — advisory
+                "ifsa_durumu": ifsa_durumu,               # v0.5.18 Faz B — advisory
+                # v0.5.18 Fable T2 — resmî okuyucu doğrulayamadıysa işaret yolu (yoksa None)
+                "udf_dogrulanmadi_isareti": udf_isaret,
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-
                 # göreli yolu (40-UYAP kurulamadıysa None) + ürün kopyaları
                 "uyap_kopya": uyap_kopya,

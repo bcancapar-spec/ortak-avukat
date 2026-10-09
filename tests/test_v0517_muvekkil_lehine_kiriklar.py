@@ -32,7 +32,7 @@ import dilekce_denetim as dd  # noqa: E402
 
 # ── B1 — HER SCRIPT DERLENEBİLİR OLMAK ZORUNDA ────────────────────────────
 
-def test_b1_tum_scriptler_calisan_python_ile_derlenebilir():
+def test_b1_tum_scriptler_calisan_python_ile_derlenebilir(tmp_path):
     """Bir script'in İMPORT EDİLEMEMESİ, o script'in koruduğu kapının
     kapanması değil YOK SAYILMASIdır.
 
@@ -47,16 +47,53 @@ def test_b1_tum_scriptler_calisan_python_ile_derlenebilir():
     Bu test, sözdizimi düzeyindeki uyum kırığını süitin koştuğu HER Python
     sürümünde yakalar — kapının koruduğu araç, kapıdan önce ayakta olmalıdır.
     """
-    kirik = []
-    for yol in sorted(REPO.glob("plugins/**/*.py")) + sorted(REPO.glob("tools/*.py")):
-        cp = subprocess.run([sys.executable, "-m", "py_compile", str(yol)],
-                            capture_output=True, text=True, encoding="utf-8",
-                            errors="replace")
-        if cp.returncode != 0:
-            kirik.append("%s\n%s" % (yol.relative_to(REPO), (cp.stderr or "").strip()))
+    yollar = sorted(REPO.glob("plugins/**/*.py")) + sorted(REPO.glob("tools/*.py"))
+    kirik = ["%s\n%s" % (yol.relative_to(REPO), hata)
+             for yol, hata in _derlenemeyenler(yollar, tmp_path)]
     assert not kirik, (
         "Şu script(ler) bu Python sürümünde DERLENMİYOR — import edilemeyen bir "
         "script, koruduğu kapıyı kapatmaz, YOK ETTİRİR:\n\n" + "\n\n".join(kirik))
+
+
+# Aynı `py_compile`, ayrı süreç (süitin uyarı ayarı karışmaz) — ama bytecode ÇAĞIRANIN dizinine.
+_DERLE = ("import py_compile, sys\n"
+          "try:\n"
+          "    py_compile.compile(sys.argv[1], cfile=sys.argv[2], doraise=True)\n"
+          "except py_compile.PyCompileError as e:\n"
+          "    sys.exit(e.msg)\n")
+
+
+def _derlenemeyenler(yollar, cikis_dizini):
+    """[(yol, hata)] — `yollar`dan süiti koşturan Python'da DERLENMEYENLER. Bytecode
+    `cikis_dizini`ne yazılır, deponun ORTAK `__pycache__`'ine DEĞİL: kancalar o dosyaları
+    paralel okur ve Windows açık dosyanın üzerine yazmayı reddeder (bkz. aşağıdaki test)."""
+    kirik = []
+    for i, yol in enumerate(yollar):
+        cp = subprocess.run([sys.executable, "-c", _DERLE, str(yol),
+                             str(pathlib.Path(cikis_dizini) / ("%d.pyc" % i))],
+                            capture_output=True, text=True, encoding="utf-8",
+                            errors="replace")
+        if cp.returncode != 0:
+            kirik.append((yol, (cp.stderr or "").strip()))
+    return kirik
+
+
+def test_b1_derleme_denetimi_ortak_pycache_e_YAZMAZ(tmp_path):
+    """v0.5.18 (yerel tam süit, Python 3.14): derleme denetimi `.pyc`'yi deponun ORTAK
+    `__pycache__`'ine yazıyordu. Paralel işçilerdeki kanca alt süreçleri aynı `.pyc`'yi
+    okurken Windows atomik değiştirmeyi reddetti (WinError 5) ve sağlam bir betik
+    (`tazelik_denetim.py`) "DERLENMİYOR" diye raporlandı. Denetim kendi dizinine derler;
+    kırık sözdizimini yakalamayı SÜRDÜRÜR."""
+    kaynak = tmp_path / "kaynak"
+    kaynak.mkdir()
+    saglam, kirik = kaynak / "saglam.py", kaynak / "kirik.py"
+    saglam.write_text("x = 1\n", encoding="utf-8")
+    kirik.write_text("def f(:\n", encoding="utf-8")
+    sonuc = _derlenemeyenler([saglam, kirik], tmp_path / "cikis")
+    assert [yol for yol, _hata in sonuc] == [kirik], sonuc
+    assert "SyntaxError" in sonuc[0][1] or "invalid syntax" in sonuc[0][1], sonuc
+    assert not (kaynak / "__pycache__").exists(), \
+        "derleme denetimi kaynağın yanındaki ORTAK __pycache__'e yazmamalı"
 
 
 # ── B2 — "BAKMADIM" İLE "BULAMADIM" AYNI ŞEY DEĞİLDİR ─────────────────────

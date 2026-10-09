@@ -1,6 +1,9 @@
 # Ortak Avukat — çalışma zamanı + test bağımlılıkları
 # Ingest (PDF/TIFF okuma) için:
-pymupdf
+# PyMuPDF alt sınırı: belge güvenlik kapısının görünürlük kâhini apply_redactions(text=…)
+# ister (v1.24.2). Daha eskisinde kâhin çalışmaz ve raporda görünür not çıkar
+# (belge_guvenlik.PYMUPDF_ASGARI ile aynı sayı — testle kilitli).
+pymupdf>=1.24.2
 pillow
 # Test için:
 pytest

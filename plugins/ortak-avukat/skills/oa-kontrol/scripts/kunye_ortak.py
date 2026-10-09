@@ -26,6 +26,10 @@ Dışa açılan API:
                                    GEREKMEZ çünkü künye zaten tek bir atıftır)
   daire_key(metin)              → metindeki İLK numaralı daireyi (no, aile) olarak
   sayi_var(segment, sayi)       → sayıyı komşu rakamdan izole ederek arar (149≠49)
+  dava_gecmisi_kunyeleri(...)   → v0.5.18 (B-17): `_oa/dosya.md`de beyan edilen
+                                   davanın KENDİ geçmişi künyeleri (+ --kendi-kunye)
+  dava_gecmisi_eslesmesi(a, k)  → atıf bu beyanlardan biri mi (eşleşen kayıt|None)
+  dava_gecmisi_satiri_mi(s, k)  → satır yalnız kendi geçmişi mi anıyor (K4 süzgeci)
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -62,7 +66,11 @@ _YN = r"\d{4}\s*/\s*\d{1,6}(?:-\d{1,6}\b(?!\s*/))?"
 # BÜYÜK-KÜÇÜK HARF DUYARSIZ. Tek harflik `E`/`K` etiketi BİLİNÇLİ olarak
 # BÜYÜK HARF kalır: `(?i)` verilseydi düz metindeki bağımsız "e"/"k"
 # kelimeleri sayı komşuluğunda gürültü üretirdi (yanlış-BLOK yasağı).
-_KUYRUK = r"\s*\.?\s*(?:(?i:no)\s*\.?)?\s*[:.]?\s*"   # '.', ':', ' ', 'No:' …
+# v0.5.18 — ReDoS KORUMASI: aynı dil, tek serbest `\s*`. Eski yazımda art arda
+# isteğe bağlı `\s*` grupları («E» + uzun boşluk dizisi — maskelenmiş kaynakça
+# bloğu binlerce boşluk üretir) polinom geri izlemeye ve kapının kilitlenmesine
+# yol açabiliyordu; isteğe bağlı her ayraç artık kendi boşluğunu kendisi tüketir.
+_KUYRUK = r"\s*(?:\.\s*)?(?:(?i:no)\s*(?:\.\s*)?)?(?:[:.]\s*)?"   # '.', ':', ' ', 'No:' …
 _E_ONEK = r"(?:\bE" + _KUYRUK + r"|(?i:\besas\b)" + _KUYRUK + r")"
 _K_ONEK = r"(?:\bK" + _KUYRUK + r"|(?i:\bkarar\b)" + _KUYRUK + r")"
 _E_SONEK = r"(?:\bE\.|\bE\b|(?i:\besas\b))"           # '2020/1111 E.' | '… E,'
@@ -80,14 +88,41 @@ KARAR_TAG_RE = re.compile(_K_ONEK + r"(" + _YN + r")")
 # MCP `aym_ictihat_ara` ile teyit edildi). `MERCI_RE` "AYM"/"AİHM"i merci
 # olarak TANIYOR ama künyesini asla ayrıştıramıyordu; `oa-dilekce` ise
 # `aym_bireysel` tipini destekliyor — kapı o tipte tamamen kördü.
-AYM_BB_RE = re.compile(
-    r"(?:\bB\s*\.?\s*(?i:no)\s*\.?\s*[:.]?\s*"
-    r"|(?i:\bbaşvuru\s+(?:numarası|no))\s*\.?\s*[:.]?\s*)(" + _YN + r")")
+AYM_BB_RE = re.compile(   # v0.5.18: aynı dil, tek serbest `\s*` (ReDoS koruması)
+    r"(?:\bB\s*(?:\.\s*)?(?i:no)|(?i:\bbaşvuru\s+(?:numarası|no)))"
+    r"\s*(?:\.\s*)?(?:[:.]\s*)?(" + _YN + r")")
 # AİHM başvuru numarası ters biçimlidir (sıra/yıl — ör. 1234/05). Yalnız
 # İngilizce `Application no.` kalıbı kullanılır; Türkçe "Başvuru No" AYM'ye
 # aittir (yukarıda) — iki desen çakışmaz.
-AIHM_BASVURU_RE = re.compile(
-    r"(?i:\bapplication\s+no)\s*\.?\s*[:.]?\s*(\d{1,6}\s*/\s*\d{2,4})")
+AIHM_BASVURU_RE = re.compile(   # v0.5.18: aynı dil, tek serbest `\s*` (ReDoS koruması)
+    r"(?i:\bapplication\s+no)\s*(?:\.\s*)?(?:[:.]\s*)?(\d{1,6}\s*/\s*\d{2,4})")
+
+# ── v0.5.18 (Y-09 / AİHM yolu) — AİHM BAŞVURU NO'SUNUN TÜRKÇE YAZIMI ────────
+# AİHM'in kendi Türkçe çeviri kararları başvuru numarasını «Başvuru no.
+# NNNNN/YY», «no. NNNNN/YY» biçiminde yazar (sıra/İKİ HANELİ yıl — HUDOC,
+# Yargı PRO `aihm_ictihat_ara` + `ictihat_getir` ile görüldü 2026-10-05).
+# Eski tanıyıcı yalnız İngilizce «Application no.» kalıbını görüyordu; Türkçe
+# yazılmış DOĞRU bir AİHM künyesi («Örnek/Türkiye, no. 12345/18») künye
+# sayılmıyor, `_KARAR_IMASI_RE` ise «2345/18» kesitine takılıp satırı
+# EKSİK KÜNYE (E/K belirsiz) diye TESLİM ENGELİNE düşürüyordu — AİHM yolunu
+# kullanan her dilekçede yanlış-pozitif. Desen DAR tutulur (yanlış-teyit
+# yasağı): (1) yalnız AİHM BAĞLAMI taşıyan satırda uygulanır; (2) sayıdan önce
+# «no.» (NOKTALI) / «B. No» / «Başvuru no» öneki şarttır — «Karar no: 2021/18»
+# gibi Türk mahkemesi numaraları (noktasız «no:») yakalanmaz; (3) sayı iki
+# haneli yılla biter — AYM'nin «YYYY/N» numarası (`AYM_BB_RE`) önce işlenir,
+# örtüşen kesit AİHM sayılmaz. ReDoS koruması: önekten sonra tek serbest `\s*`
+# vardır; isteğe bağlı «.»/«:» her biri kendi boşluğunu tüketir.
+# Fable karşı-tez turu: «No.» büyük harfle de tanınır; dört haneli yıl
+# («12345/2018») kabul edilir ve iki haneye indirilir (HUDOC biçimi); İLK
+# parçası 19xx/20xx olan dört haneli sayı («Karar no. 2021/18») bir Türk
+# mahkemesi numarasıdır, AİHM başvuru numarası SAYILMAZ (çok nadir gerçek
+# böyle bir AİHM numarası «Application no.» biçimiyle yazılabilir).
+_AIHM_BAGLAM_RE = re.compile(
+    r"A[İI]HM|Avrupa\s+[İI]nsan\s+Hakları\s+Mahkemesi|ECtHR|ECHR|HUDOC"
+    r"|/\s*T[üu]rkiye\b|\bv\.\s*(?:Turkey|T[üu]rkiye)\b")
+AIHM_TR_BASVURU_RE = re.compile(
+    r"(?:(?i:\bno\.)|\bB\s*\.\s*No|(?i:\bbaşvuru\s+no))\s*(?:[.:]\s*){0,2}"
+    r"(?!(?:19|20)\d\d\s*/)(\d{1,6}\s*/\s*\d{2}(?:\d{2})?)(?![\d/])")
 
 # Dilekçenin KENDİ künye bloğu (Denizli 346 karnesinin tek parser
 # yanlış-pozitifi: scriptin kendi `DOSYA NO:` satırını karşı-atıf sanması).
@@ -252,6 +287,26 @@ def _ozel_kunye_atiflari(metin, dolu_spanlar):
                 "metin": _sikistir(m.group(0)),
                 "bas": m.start(), "son": m.end(),
             })
+    # v0.5.18 — Türkçe AİHM yazımı (bkz. `AIHM_TR_BASVURU_RE`): yalnız AİHM
+    # bağlamlı satırda ve AYM/İngilizce eşleşmeleriyle ÖRTÜŞMEYEN kesitte.
+    bulunan = [(e["bas"], e["son"]) for e in ekler]
+    for m in AIHM_TR_BASVURU_RE.finditer(metin):
+        span = (m.start(), m.end())
+        if _cakisir(span, dolu_spanlar) or _cakisir(span, bulunan):
+            continue
+        if not _AIHM_BAGLAM_RE.search(_satir_metni(metin, m.start())):
+            continue
+        bulunan.append(span)
+        sira, yil = norm_no(m.group(1)).split("/", 1)
+        ekler.append({
+            "esas": f"{sira}/{yil[-2:]}",
+            "karar": None,
+            "daire_key": None,
+            "kunye_turu": "aihm_basvuru",
+            "satir_no": _satir_no(metin, m.start()),
+            "metin": _sikistir(m.group(0)),
+            "bas": m.start(), "son": m.end(),
+        })
     return ekler
 
 
@@ -959,3 +1014,195 @@ def kutukte_damgali_dayanak_satiri_var_mi(kutuk_yolu, esas, karar, damga, kaynak
             continue
         return True
     return False
+
+
+# ── v0.5.18 (B-17) — DAVANIN KENDİ GEÇMİŞİ («kendi künyeler») ──────────────
+# SAHA BULGUSU (derlem testi, 2026-10-03; bir idari yargı temyiz dosyası —
+# ayrıntı derlem bulgular kaydındadır): istinaf/temyiz/ek beyan dilekçesinin
+# başlığındaki DAVANIN KENDİ GEÇMİŞİ (temyiz edilen BAM/BİM kararı, ilk derece
+# kararı — E.+K. çifti TAM, daire anılı) [F] kapısında «çıplak künye», künye
+# kapısında «TEYİTSİZ» sayılıp TESLİM ENGELİ üretiyordu. Oysa HMK m.342/2-c
+# istinaf dilekçesinde «kararı veren mahkemenin adı, kararın tarihi ve
+# sayısı»nı ZORUNLU kılar (Yargı PRO `mevzuat_getir` teyidi bulgular
+# kaydında) — kapı tam da kanunun istediği içeriği engelliyordu; her kanun
+# yolu dilekçesi `--zorla`ya itiliyor, kapıyı aşma alışkanlığı da gerçek
+# uyarıları körleştiriyordu. B1/B8 muafiyeti (`kendi_dosya_no_mu`) bu satırı
+# kapsayamaz: dört şartı (E.+K. tam DEĞİL, daire YOK) kanun yolu başlığı
+# doğası gereği sağlamaz — ve şartlar GEVŞETİLMEMELİDİR (uydurma künye o
+# satıra yazılıp kaçırılamasın).
+#
+# ÇÖZÜM — beyana dayalı, DAR ve GÖRÜNÜR muafiyet: davanın kendi geçmişi bir
+# kez `_oa/dosya.md`'de (dosya kimliği) beyan edilir; yalnız beyan edilen
+# künyeyle BİREBİR eşleşen atıf (esas+karar; ikisinin de dairesi biliniyorsa
+# daire de) içtihat taramasından muaf olur. Kaynak satırlar: etiketi «esas
+# no» (şablondaki «Aşama + merci + esas no»), «dava geçmişi» ya da «kendi
+# künye(ler)» içeren `etiket: değer` satırları. Ayrıca `--kendi-kunye`
+# bayrağı. Muafiyet SESSİZ DEĞİLDİR (çağıran [BİLGİ] basar; künye kapısı
+# istisna defterine yazar). Bu, hukuki bir karar değildir: script yalnız
+# «bu künye beyan edilen dava geçmişiyle aynı mı» sorusunu sorar.
+#
+# SERTLEŞTİRME (Fable karşı-tez turu, v0.5.18) — muafiyet bir delik olmasın:
+# (1) Etiket SATIR BAŞINA ÇAPALIDIR ve tam listedendir: «Emsal esas no:»,
+#     «Karşı taraf esas no:» satırları beyan SAYILMAZ (eski alt-dize eşleşmesi
+#     emsal künyesini dosya.md üzerinden muaf ettirebiliyordu).
+# (2) Beyan SAYISI sınırlıdır (`DAVA_GECMISI_AZAMI`); aşılırsa muafiyet HİÇ
+#     uygulanmaz (fail-closed) ve görünür uyarı basılır — dava geçmişi birkaç
+#     karardır, onlarca künye beyanı kapıyı aşma girişimidir.
+# (3) MERCİ izi: sıra numarası küçük künyeler mahkemeler arasında sık çakışır
+#     («2023/9»); esas-only atıfta ve EKSİK KÜNYE satırında, sayının hemen
+#     önünde anılan yüksek mahkeme/kurul (Yargıtay, Danıştay, HGK…) beyanda
+#     da anılmış olmalıdır — «Yargıtay HGK'nın 2023/9 sayılı kararı», ilk
+#     derece dosyası 2023/9 diye muaf olamaz.
+_DAVA_GECMISI_ETIKET_RE = re.compile(   # ReDoS: her isteğe bağlı parça kendi boşluğunu tüketir
+    r"^\s*(?:[-*+•]\s*)?(?:(?:\*\*|__)\s*)?"
+    r"(?:aşama\s*\+\s*merci\s*\+\s*esas\s+no|esas\s+no|dava\s+geçmişi"
+    r"|kendi\s+künye(?:ler|si)?)\s*(?:(?:\*\*|__)\s*)?:")
+DAVA_GECMISI_AZAMI = 8
+# Yüksek mahkeme / bölge mahkemesi / kurul İZLERİ (Türkçe-küçük harfte aranır).
+_MERCI_IZ_RE = re.compile(
+    r"yargıtay|danıştay|anayasa\s+mahkemesi|\baym\b|sayıştay|uyuşmazlık\s+mahkemesi"
+    r"|\bbam\b|bölge\s+adliye|\bb[iı]m\b|bölge\s+idare"
+    r"|\bhgk\b|hukuk\s+genel\s+kurulu|\bcgk\b|ceza\s+genel\s+kurulu"
+    r"|\b[iı]bk\b|içtihad[ıi]\s+birleştirme|\b[iı]ddk\b|\bvddk\b")
+_MERCI_IZ_KANON = (("bölge adliye", "bam"), ("bölge idare", "bim"), ("bım", "bim"),
+                   ("anayasa mahkemesi", "aym"), ("hukuk genel kurulu", "hgk"),
+                   ("ceza genel kurulu", "cgk"), ("ıbk", "ibk"), ("ıddk", "iddk"))
+
+
+def _tr_kucuk(s):
+    """Türkçe-güvenli küçük harf (İ→i, I→ı) — etiket karşılaştırması için."""
+    return (s or "").replace("İ", "i").replace("I", "ı").lower()
+
+
+def _merci_izleri(metin):
+    """Metindeki yüksek mahkeme/bölge mahkemesi/kurul izleri (kanonik küçük
+    harf kümesi: 'yargıtay', 'danıştay', 'aym', 'bam', 'bim', 'hgk', …).
+    Numaralı daire bu kümeye GİRMEZ — daire uyumu `daire_key` ile ayrıca
+    denetlenir (yazım farkı: «3. İDD» / «3. İdari Dava Dairesi»)."""
+    izler = set()
+    for m in _MERCI_IZ_RE.finditer(_tr_kucuk(metin)):
+        iz = re.sub(r"\s+", " ", m.group(0))
+        if iz.startswith("içtihad"):
+            iz = "ibk"
+        for ham, kanon in _MERCI_IZ_KANON:
+            if iz == ham:
+                iz = kanon
+        izler.add(iz)
+    return izler
+
+
+def dava_gecmisi_kunyeleri(kok=None, dosya_md=None, ek_metinler=()):
+    """Davanın KENDİ geçmişine ait künyeleri toplar.
+
+    Kaynak: `<kok>/_oa/dosya.md` (ya da açık `dosya_md`) içindeki, SATIR
+    BAŞINDA «Aşama + merci + esas no» / «Esas no» / «Dava geçmişi» /
+    «Kendi künye(ler)» etiketi taşıyan `etiket: değer` satırlarının DEĞER
+    kısmı + `ek_metinler` (CLI `--kendi-kunye`). Yalnız esas/karar künyeleri
+    alınır (AYM/AİHM başvuru numarası muaf edilmez — onlar dava geçmişi değil
+    emsal atfıdır). Beyan sayısı `DAVA_GECMISI_AZAMI`yı aşarsa boş liste
+    döner ve stderr'e görünür uyarı yazılır (fail-closed).
+
+    Döner: [{"esas", "karar", "daire_key", "kaynak", "metin", "merciler"}]
+    (tekil; `merciler` beyan parçasındaki yüksek mahkeme/kurul izleri)."""
+    adaylar = []
+    yol = dosya_md or (os.path.join(kok, "_oa", "dosya.md") if kok else None)
+    if yol and os.path.isfile(yol):
+        try:
+            with open(yol, encoding="utf-8", errors="replace") as f:
+                satirlar = f.read().splitlines()
+        except OSError:
+            satirlar = []
+        for no, satir in enumerate(satirlar, start=1):
+            m = _DAVA_GECMISI_ETIKET_RE.match(_tr_kucuk(satir))
+            if not m:
+                continue
+            adaylar.append((satir[m.end():], f"dosya.md satır {no}"))
+    for i, m in enumerate(ek_metinler or (), start=1):
+        adaylar.append((m or "", f"--kendi-kunye #{i}"))
+    sonuc, gorulen = [], set()
+    # Bir satırda birden çok künye «;» ile ayrılır ve HER parça ayrı
+    # ayrıştırılır: tek parça hâlinde en-yakın eşleştirme, esas-only bir kendi
+    # numarayı («Danıştay 10. D. E. 2024/1») bir SONRAKİ künyenin kararıyla
+    # birleştirip beyanı bozuyordu (bozuk beyan muafiyet vermez — fail-closed).
+    adaylar = [(parca, kaynak) for deger, kaynak in adaylar
+               for parca in re.split(r"[;|]", deger) if parca.strip()]
+    for deger, kaynak in adaylar:
+        merciler = _merci_izleri(deger)
+        for a in esas_karar_atiflari(deger):
+            if a.get("kunye_turu") != "esas_karar" or not a.get("esas"):
+                continue
+            anahtar = (a["esas"], a.get("karar"), a.get("daire_key"))
+            if anahtar in gorulen:
+                continue
+            gorulen.add(anahtar)
+            sonuc.append({"esas": a["esas"], "karar": a.get("karar"),
+                          "daire_key": a.get("daire_key"), "kaynak": kaynak,
+                          "metin": a.get("metin", ""), "merciler": merciler})
+    if len(sonuc) > DAVA_GECMISI_AZAMI:
+        _sys.stderr.write(
+            f"UYARI (kunye_ortak.dava_gecmisi): {len(sonuc)} kendi künye beyanı azami "
+            f"{DAVA_GECMISI_AZAMI}'i aşıyor — dava geçmişi muafiyeti UYGULANMADI "
+            "(fail-closed). Yalnız davanın kendi kararlarını beyan edin.\n")
+        return []
+    return sonuc
+
+
+def dava_gecmisi_eslesmesi(atif, kunyeler):
+    """Atıf (dict: esas/karar/daire_key/kunye_turu[/metin]) davanın beyan
+    edilmiş kendi geçmişinden biri mi? Eşleşen kayıt ya da None.
+
+    Kural (fail-closed): esas BİREBİR; atıfta karar varsa beyandaki karar da
+    BİREBİR aynı olmalı (karar no'su uydurulmuş künye muaf kalamaz); atıf
+    esas-only ise aynı esasın beyanı yeter (dosyanın kendi esas no'su) AMA
+    atıfta anılan yüksek mahkeme/kurul izleri beyanda da anılmış olmalı
+    (sıra numarası çakışması — «Yargıtay HGK E. 2023/9» ilk derece 2023/9
+    beyanıyla muaf olamaz). İki tarafta da daire biliniyorsa daire de aynı
+    olmalı."""
+    if not kunyeler or not isinstance(atif, dict):
+        return None
+    if atif.get("kunye_turu") not in (None, "esas_karar"):
+        return None
+    e, k, d = atif.get("esas"), atif.get("karar"), atif.get("daire_key")
+    if not e:
+        return None
+    atif_izleri = _merci_izleri(atif.get("metin") or "") if k is None else set()
+    for kn in kunyeler:
+        if kn.get("esas") != e:
+            continue
+        if k is not None and kn.get("karar") != k:
+            continue
+        kd = kn.get("daire_key")
+        if d is not None and kd is not None and d != kd:
+            continue
+        if not atif_izleri <= set(kn.get("merciler") or ()):
+            continue
+        return kn
+    return None
+
+
+def dava_gecmisi_satiri_mi(satir, kunyeler):
+    """EKSİK/AYRIŞTIRILAMAYAN taramasında (K4) satır yalnız davanın kendi
+    geçmişini mi anıyor? Satırdaki HER «YYYY/N» sayısı beyan edilen kendi
+    künyelerin esas/karar numaralarından biri olmalı, sayının hemen önünde
+    (en çok 60 karakter, önceki sayıdan sonra) anılan yüksek mahkeme/kurul
+    izleri o sayıyı taşıyan beyanda da anılmış olmalı ve satırda tarih-only
+    karar iması bulunmamalı — aksi hâlde satır taramada kalır (fail-closed)."""
+    if not kunyeler or not satir:
+        return False
+    eslesmeler = list(_YN_SADE_RE.finditer(satir))
+    if not eslesmeler or _TARIH_ONLY_RE.search(satir):
+        return False
+    onceki_son = 0
+    for m in eslesmeler:
+        no = norm_no(m.group(0))
+        sahipler = [kn for kn in kunyeler if no in (kn.get("esas"), kn.get("karar"))]
+        if not sahipler:
+            return False
+        pencere = satir[max(onceki_son, m.start() - 60):m.start()]
+        onceki_son = m.end()
+        beyan_izleri = set()
+        for kn in sahipler:
+            beyan_izleri |= set(kn.get("merciler") or ())
+        if not _merci_izleri(pencere) <= beyan_izleri:
+            return False
+    return True

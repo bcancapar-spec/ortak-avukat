@@ -12,6 +12,8 @@ import pathlib
 import subprocess
 import sys
 
+import oa_motor_damga as omd
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts" / "pipeline_kayit.py"
 
@@ -179,6 +181,8 @@ def test_adim8_yazim_adim5_gereksizken_gecer(tmp_path):
     adım-8 engellenmez."""
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
+    # v0.5.18 — dört motor koşmuş (HALÜSİNASYON KAPISI); bu test ÇAPRAZ-ADIM kapısını sınar.
+    omd.dort_damga(tmp_path)
     kod5, cikti5 = _cli(
         ["--isle", "--adim", "5", "--parca", "oa-kiyas", "--durum", "GEREKSIZ",
          "--gerekce", "bu dosyada kıyas adımı gereksiz (tek taraflı beyan davası).",
@@ -197,6 +201,8 @@ def test_adim8_yazim_adim5_gereksizken_gecer(tmp_path):
 def test_adim8_yazim_adim5_uygulandiyken_gecer(tmp_path):
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
+    # v0.5.18 — dört motor koşmuş (HALÜSİNASYON KAPISI); bu test ÇAPRAZ-ADIM kapısını sınar.
+    omd.dort_damga(tmp_path)
     cikti_dizin = tmp_path / "_oa" / "cikti"
     cikti_dizin.mkdir(parents=True, exist_ok=True)
     (cikti_dizin / "05-kiyas-test.md").write_text("Kıyas gövdesi " * 10, encoding="utf-8")

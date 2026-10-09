@@ -25,12 +25,15 @@ v1.5.1 EKLERİ (Fable backlog):
       onları kurtarır); zehirli evrak izole halde de çökerse nihai 'işçi çöktü' damgası alır.
 """
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
 import subprocess
 import sys
 import zipfile
+from concurrent.futures import Future
+from concurrent.futures.process import BrokenProcessPool
 
 import pytest
 
@@ -345,3 +348,59 @@ def test_zehirli_evrak_izole_yeniden_denenir_masumlar_kurtulur(tmp_path):
             "çökmesi masumu da kalıcı kaybettirdi"
         )
     assert kunye["toplam_evrak"] == len(kunye["kayitlar"]) == 5
+
+
+class _GonderimdeKirilanHavuz:
+    """Çok-işçili havuz İKİNCİ gönderimde BrokenProcessPool fırlatır (işçi, gönderim döngüsü
+    bitmeden ölmüş gibi); tek-işçili izole havuz işi süreç içinde koşar. Gerçek süreçlerle bu
+    yarış deterministik üretilemez — CI'da ubuntu-latest / py3.14 bacağında kendiliğinden oldu."""
+    cok_iscili_gonderim = 0
+
+    def __init__(self, max_workers=None, initializer=None):
+        self.max_workers = max_workers
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def submit(self, fn, *args, **kwargs):
+        if (self.max_workers or 1) > 1:
+            type(self).cok_iscili_gonderim += 1
+            if type(self).cok_iscili_gonderim >= 2:
+                raise BrokenProcessPool("sahte: işçi gönderim sürerken öldü")
+        fut = Future()
+        try:
+            fut.set_result(fn(*args, **kwargs))
+        except BaseException as e:   # gerçek havuzda da istisna Future'a düşer
+            fut.set_exception(e)
+        return fut
+
+
+def test_havuz_gonderimde_kirilirsa_ana_surec_cokmez_kalanlar_izole_kurtarilir(tmp_path, monkeypatch):
+    """NEDEN VAR (CI, PR #8, ubuntu-latest / py3.14): zehirli evrak işçiyi gönderim döngüsü
+    bitmeden öldürdü; `ex.submit` BrokenProcessPool fırlattı ve gönderim korumasız olduğu için
+    ana süreç TÜMDEN çöktü — tek bir evrak bütün klasörün okunmasını düşürdü, masumlar izole
+    yeniden denemeye hiç ulaşamadı. Beklenen: ana süreç çökmez; gönderilemeyen kalemler çökmüş
+    sayılır ve izole (tek-işçi) yeniden denemede kurtarılır; künye beş kaydı da taşır."""
+    for i in range(1, 6):
+        (tmp_path / f"00{i}-evrak.txt").write_text(f"govde {i}", encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("_oa_ingest_havuz_kirilma_test", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    _GonderimdeKirilanHavuz.cok_iscili_gonderim = 0
+    monkeypatch.setattr(mod, "ProcessPoolExecutor", _GonderimdeKirilanHavuz)
+    monkeypatch.setattr(sys, "argv", ["oa_ingest.py", str(tmp_path), "--ocr", "kapali", "--isci", "4"])
+
+    mod.main()
+
+    assert _GonderimdeKirilanHavuz.cok_iscili_gonderim >= 2, "kırılma senaryosu tetiklenmedi"
+    kunye = _kunye(tmp_path)
+    kayitlar = {k["kaynak"]: k for k in kunye["kayitlar"]}
+    assert kunye["toplam_evrak"] == len(kunye["kayitlar"]) == 5
+    for i in range(1, 6):
+        kayit = kayitlar[str(pathlib.Path(f"00{i}-evrak.txt"))]
+        assert kayit["yontem"] == "duz-metin", (
+            f"evrak {i} kurtarılmadı (yöntem={kayit['yontem']}) — havuz gönderimde kırılınca "
+            "kalan kalemler izole yeniden denemeye düşmeli")
