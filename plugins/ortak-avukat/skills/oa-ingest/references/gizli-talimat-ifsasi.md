@@ -228,6 +228,13 @@ ilgili, gerekce, onay, imza}`) yazılır: `tur = "ifsa-bilincli-atlama"`, `ilgil
 NEDEN: sistemin "hiçbir muafiyet sessiz kalmaz" ilkesi tek defterde yaşar; iz silinmez. Bulgu
 kümesi değişince kayıt BAYATLAR ve uyarı geri gelir; defter okunamıyorsa atlama geçerli SAYILMAZ.
 
+**Kararın sahibi (v0.5.18 G-5 — anayasa m.9, m.8):** kayıt `onay` alanında kararı kimin verdiğini
+yazar. Varsayılan `model-beyani`dir: uyarı açık kalır, taslak durumu `model-atladi`. `avukat` yalnız
+`--onay avukat` ile, avukat atlamayı açıkça istediğinde yazılır. Onay bayrağından önceki sürüm
+(imza `gizli_talimat_ifsa.py/1.1`) her kayda `avukat` yazıyordu; o etiket kanıt sayılmaz, böyle
+kayıt model beyanı gibi işlenir ve uyarı satırı nedenini söyler. Kayıt defterden silinmez; avukat
+kararını `--onay avukat` ile yeniden kaydeder.
+
 **Bayat bölüm alıntıyla ölçülür, bölüm metniyle değil:** avukat `[SUNAN TARAF — avukat teyidi]`
 yer tutucusunu doldurur, cümleyi düzeltebilir; birebir metin kıyası her düzeltmede yanlış alarm
 üretirdi. Güncel her tespitin alıntısı taslakta birebir yoksa bölüm eski bulgu kümesine aittir.

@@ -58,7 +58,7 @@ import re
 import unicodedata
 
 ARAC = "gizli_talimat_ifsa"
-SURUM = "1.1"
+SURUM = "1.2"
 KARAR_VAR, KARAR_YOK, KARAR_DENETLENEMEDI = "IFSA_VAR", "IFSA_YOK", "DENETLENEMEDI"
 CIKIS = {KARAR_YOK: 0, KARAR_VAR: 1, KARAR_DENETLENEMEDI: 3}
 KUNYE_GORECE = "metin/00-kunye.json"          # `_oa`'ya göre, POSIX
@@ -697,6 +697,12 @@ ISTISNA_DEFTERI = ("defter", "istisna-kayitlari.jsonl")   # `_oa` altında — o
 # kayıt avukat onayını uydurdu. Varsayılan "model-beyani"dir ve uyarı açık kalır; "avukat" yalnız
 # avukat bu atlamayı açıkça istediğinde (`--onay avukat`) yazılır.
 ATLAMA_ONAYLARI = ("model-beyani", "avukat")
+# NEDEN VAR (G-5 eki, 2026-10-09): onarım ileriye dönüktü, geçmiş kalmıştı. Bayraktan önceki
+# yazıcı her atlamaya "avukat" yazıyordu ve o kayıt (sahadaki dahil) uyarıyı susturmaya devam
+# ediyordu. 1.1 imzalı kayıtta etiketin kimden geldiği ayırt edilemez; şüphede avukat onayı
+# varsayılmaz (m.9). Böyle kayıt model beyanı sayılır, defterden SİLİNMEZ (append-only); avukat
+# kararını `--onay avukat` ile yeniden kaydeder.
+AVUKAT_ONAYI_ASGARI_SURUM = (1, 2)
 _BOLUM_KOMUTU = "gizli_talimat_ifsa.py --kok <kök> --md <bölüm.md>"
 _ATLAMA_KOMUTU = 'gizli_talimat_ifsa.py --kok <kök> --atla --gerekce "<gerekçe>"'
 
@@ -719,6 +725,14 @@ def bulgu_parmak_izi(sonuc):
 
 def _defter_yolu(kok):
     return os.path.join(kok, "_oa", *ISTISNA_DEFTERI)
+
+
+def _imza_surumu(kayit):
+    """Kaydı yazan aracın sürümü ("gizli_talimat_ifsa.py/1.2" → (1, 2)); okunamazsa None."""
+    try:
+        return tuple(int(p) for p in str(kayit.get("imza") or "").rsplit("/", 1)[1].split("."))
+    except (IndexError, ValueError):
+        return None
 
 
 def atlama_kaydi_yaz(kok, sonuc, gerekce, onay="model-beyani"):
@@ -747,12 +761,15 @@ def atlama_kaydi_yaz(kok, sonuc, gerekce, onay="model-beyani"):
 
 
 def atlama_durumu(kok, sonuc):
-    """{gecerli, bayat, gerekce, model_beyani}: defterde bu türden bir kayıt GÜNCEL parmak izini
-    taşıyor VE onayı "avukat" ise geçerli; güncel kayıt yalnız model beyanıysa (ya da onay alanı
-    yoksa — onay varsayılmaz) `model_beyani` (uyarı açık kalır, karar avukatın); kayıt var ama
-    hiçbiri güncel değilse bayat (bulgu kümesi değişti → uyarı geri gelir). Defter ya da satır
-    okunamıyorsa geçerli SAYILMAZ — uyarı görünür kalır (fail-closed)."""
-    d = {"gecerli": False, "bayat": False, "gerekce": None, "model_beyani": False}
+    """{gecerli, bayat, gerekce, model_beyani, eski_avukat_etiketi}: defterde bu türden bir kayıt
+    GÜNCEL parmak izini taşıyor VE onayı "avukat" VE onu bayrağı zorunlu kılan sürüm yazmışsa
+    geçerli; güncel kayıt yalnız model beyanıysa (ya da onay alanı yoksa, ya da "avukat" etiketini
+    bayraktan önceki sürüm yazmışsa — onay varsayılmaz) `model_beyani` (uyarı açık kalır, karar
+    avukatın; son durumda `eski_avukat_etiketi`); kayıt var ama hiçbiri güncel değilse bayat
+    (bulgu kümesi değişti → uyarı geri gelir). Defter ya da satır okunamıyorsa geçerli SAYILMAZ —
+    uyarı görünür kalır (fail-closed)."""
+    d = {"gecerli": False, "bayat": False, "gerekce": None, "model_beyani": False,
+         "eski_avukat_etiketi": False}
     pi = bulgu_parmak_izi(sonuc)
     yol = _defter_yolu(kok)
     if not pi or not os.path.isfile(yol):
@@ -773,12 +790,15 @@ def atlama_durumu(kok, sonuc):
         var = True
         gerekce = str(k.get("gerekce") or "").strip()
         if k.get("ilgili") == "ifsa:" + pi and gerekce:
-            if k.get("onay") == "avukat":
+            avukat = k.get("onay") == "avukat"
+            if avukat and (_imza_surumu(k) or (0,)) >= AVUKAT_ONAYI_ASGARI_SURUM:
                 d.update(gecerli=True, gerekce=gerekce)
             elif not d["gecerli"]:
-                d.update(model_beyani=True, gerekce=gerekce)
+                d.update(model_beyani=True, gerekce=gerekce,
+                         eski_avukat_etiketi=d["eski_avukat_etiketi"] or avukat)
     if d["gecerli"]:
         d["model_beyani"] = False
+        d["eski_avukat_etiketi"] = False
     d["bayat"] = var and not d["gecerli"] and not d["model_beyani"]
     return d
 
@@ -822,10 +842,12 @@ def taslak_ifsa_durumu(taslak, sonuc, atlama=None):
     if atlama.get("gecerli"):
         return _taslak_d("bilincli-atlandi", "BİLGİ", "bilinçli atlandı (avukat): %s" % atlama.get("gerekce"))
     if atlama.get("model_beyani"):
+        eski = (" Defterdeki \"avukat\" etiketi onay bayrağından önce yazıldı; kararın kimden "
+                "geldiğini göstermez." if atlama.get("eski_avukat_etiketi") else "")
         return _taslak_d("model-atladi", "UYARI",
-                         "[İFŞA] bölüm MODEL BEYANIYLA atlandı — avukat onayı yok (%s). Karar avukatındır "
+                         "[İFŞA] bölüm MODEL BEYANIYLA atlandı — avukat onayı yok (%s).%s Karar avukatındır "
                          "(anayasa m.9): bölümü ekleyin (%s) ya da avukat atlamaya karar verdiyse onu "
-                         "kaydedin (%s --onay avukat)." % (atlama.get("gerekce"), _BOLUM_KOMUTU,
+                         "kaydedin (%s --onay avukat)." % (atlama.get("gerekce"), eski, _BOLUM_KOMUTU,
                                                          _ATLAMA_KOMUTU))
     ek = (" Önceki bilinçli atlama ESKİ bulgu kümesine ait — yeniden karar verin."
           if atlama.get("bayat") else "")

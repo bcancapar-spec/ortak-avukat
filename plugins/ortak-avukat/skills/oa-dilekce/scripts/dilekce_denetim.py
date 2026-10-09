@@ -123,7 +123,8 @@ Dört sınıf AYRILIR — sınıflandırma önce gelir, kural körlemesine uygul
   (d) alıntı-dışı serbest '...' → yalnız uyarı.
 '>' satırları birebir blok-alıntı gövdesidir ([B4]'ün alanı) — [Y] taramaz.
 BLOK bulgular exit 1 üretir; avukat onaylı istisna için `--istisna-gerekce`
-(aşağıda) BLOK'u görünür uyarıya düşürür ve istisna defterine yazar.
++ `--istisna-onay avukat` (aşağıda) BLOK'u görünür uyarıya düşürür ve istisna
+defterine yazar.
 
 ── [M] MADDE NUMARASI SÜREKLİLİĞİ (346 saha dersi, uyarı sınıfı) ───────────
 Numaralı madde/paragraf dizisinde ATLAMA ve MÜKERRERLİK denetimi (saha:
@@ -241,11 +242,14 @@ okundu — insan-okur cetvel: `references/icra-dilekce-ailesi.md`,
     kalıp gövdesinde dışlanır; olumlu '-mek/-mekte' biçimleri yakalanır.
 
 ── İSTİSNA DEFTERİ (ortak şema, append-only) ───────────────────────────────
-`--istisna-gerekce METİN` verilirse [Y]/[T] BLOK bulguları avukat onayıyla
-görünür UYARIYA düşer (exit'e yansımaz) ve `_oa/defter/istisna-kayitlari.jsonl`
-dosyasına {"zaman","tur":"yanlis-pozitif-ilani","ilgili","gerekce","onay":
-"avukat","imza"} satırı APPEND-ONLY yazılır — kapı muhakemeyi ENGELLEMEZ,
-kaydını tutarak yol verir (sessiz opt-out yok).
+`--istisna-gerekce METİN --istisna-onay avukat` verilirse [Y]/[T] BLOK
+bulguları avukat onayıyla görünür UYARIYA düşer (exit'e yansımaz) ve
+`_oa/defter/istisna-kayitlari.jsonl` dosyasına {"zaman","tur":
+"yanlis-pozitif-ilani","ilgili","gerekce","onay":"avukat","imza"} satırı
+APPEND-ONLY yazılır — kapı muhakemeyi ENGELLEMEZ, kaydını tutarak yol verir
+(sessiz opt-out yok). `--istisna-onay` verilmezse (varsayılan `model-beyani`)
+ilan aynı deftere model beyanı olarak yazılır ama BLOK SÜRER (v0.5.18, G-5
+kardeşi — anayasa m.9: avukat onayı uydurulmaz, kapıyı model açamaz).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -2844,13 +2848,15 @@ def teslime_hazir_ihlalleri(metin, kok):
 
 # ── İSTİSNA DEFTERİ YAZICISI (ortak şema, append-only) ─────────────────────
 
-def istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="avukat"):
+def istisna_kaydi_yaz(kok, tur, ilgili, gerekce, onay="model-beyani"):
     """_oa/defter/istisna-kayitlari.jsonl'a ORTAK ŞEMA ile bir satır APPEND
     eder ve dosya yolunu döndürür. Şema (birden çok ajan yazar, append-only):
     {"zaman": ISO, "tur": "gizlilik-deny-override"|"kunye-istisna"|
     "yanlis-pozitif-ilani"|"dogrulama-toleransi", "ilgili": str, "gerekce":
-    str, "onay": "avukat"|"otomatik-kural", "imza": arac-imzasi}. Bu yardımcı
-    BİLEREK yereldir — ortak modül bağımlılığı yaratılmaz."""
+    str, "onay": "avukat"|"model-beyani"|"otomatik-kural", "imza":
+    arac-imzasi}. Bu yardımcı BİLEREK yereldir — ortak modül bağımlılığı
+    yaratılmaz. Onay VARSAYILMAZ (v0.5.18, G-5 kardeşi — anayasa m.9): çağıran
+    açıkça "avukat" demedikçe kayıt model beyanıdır."""
     taban = kok if kok else "."
     defter = os.path.join(taban, "_oa", "defter")
     os.makedirs(defter, exist_ok=True)
@@ -3271,7 +3277,14 @@ def main():
                          "[T] makbuzsuz hazır-beyanı BLOK bulgularını görünür UYARIYA "
                          "düşürür ve gerekçeyi _oa/defter/istisna-kayitlari.jsonl'a "
                          "(ortak şema, append-only, tur=yanlis-pozitif-ilani) yazar — "
-                         "sessiz opt-out yok, kapı kaydını tutarak yol verir.")
+                         "sessiz opt-out yok, kapı kaydını tutarak yol verir. BLOK'u "
+                         "yalnız --istisna-onay avukat ile düşürür.")
+    ap.add_argument("--istisna-onay", choices=("model-beyani", "avukat"),
+                    default="model-beyani",
+                    help="--istisna-gerekce'nin sahibi (v0.5.18, anayasa m.9): "
+                         "'model-beyani' (varsayılan) ilanı kayda geçirir ama BLOK "
+                         "sürer; 'avukat' YALNIZ avukat bu ilanı açıkça onayladıysa "
+                         "— BLOK görünür uyarıya düşer.")
     ap.add_argument("--ictihat-dokum-dizin", default=None,
                     help="(opsiyonel) --ictihat-muhakeme ile birlikte; verilmezse "
                          "--kok/_oa/teyit/dokum (--kok yoksa CWD-göreli _oa/teyit/dokum)")
@@ -3584,18 +3597,28 @@ def main():
             print("   [OK] kenar 42.52 · LineSpacing 0.50 · bağlantılar 11pt — "
                   "şekil standardı uyumlu görünüyor")
 
-    # AVUKAT ONAYLI İSTİSNA — [Y]/[T] BLOK bulguları --istisna-gerekce ile görünür
-    # uyarıya düşer; gerekçe istisna defterine (append-only, ortak şema) yazılır.
-    # Kayıt YALNIZ fiilen düşürülen bir bulgu varken atılır (defter kirletilmez).
+    # AVUKAT ONAYLI İSTİSNA — [Y]/[T] BLOK bulguları --istisna-gerekce +
+    # --istisna-onay avukat ile görünür uyarıya düşer; gerekçe istisna defterine
+    # (append-only, ortak şema) yazılır. Kayıt YALNIZ BLOK bulgu varken atılır
+    # (defter kirletilmez). NEDEN VAR (v0.5.18, G-5 kardeşi — anayasa m.9, m.8):
+    # ilan eskiden kimin yaptığına bakmadan "avukat" diye kaydediliyor ve
+    # uydurma alıntı / makbuzsuz hazır beyanı kapısını açıyordu; kapıyı model de
+    # açabiliyordu. Onaysız ilan model beyanıdır: kayda geçer, BLOK sürer.
     yeni_blok_istisnali = False
     if (y_blok or t_ihlaller) and a.istisna_gerekce:
         ilgili = a.taslak + " [" + "/".join(
             e for e, var in (("Y", y_blok), ("T", t_ihlaller)) if var) + "]"
         defter_yolu = istisna_kaydi_yaz(a.kok, "yanlis-pozitif-ilani",
-                                        ilgili, a.istisna_gerekce)
-        print(f"\n[Y/T] avukat onaylı istisna: BLOK bulguları UYARIYA düşürüldü; "
-              f"gerekçe istisna defterine yazıldı: {defter_yolu}")
-        yeni_blok_istisnali = True
+                                        ilgili, a.istisna_gerekce, onay=a.istisna_onay)
+        if a.istisna_onay == "avukat":
+            print(f"\n[Y/T] avukat onaylı istisna: BLOK bulguları UYARIYA düşürüldü; "
+                  f"gerekçe istisna defterine yazıldı: {defter_yolu}")
+            yeni_blok_istisnali = True
+        else:
+            print(f"\n[Y/T] yanlış pozitif ilanı MODEL BEYANI olarak kaydedildi "
+                  f"({defter_yolu}); avukat onayı yok, BLOK sürer (anayasa m.9). "
+                  f"Avukat bu ilanı onaylıyorsa: --istisna-gerekce \"…\" "
+                  f"--istisna-onay avukat")
 
     print("\n" + cizgi)
     engel = bool(eksik or ocr_uyari or aleyhe or udf_gecersiz or ictihat_muhakeme_engel

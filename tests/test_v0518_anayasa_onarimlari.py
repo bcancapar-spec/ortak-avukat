@@ -115,6 +115,30 @@ def test_g5_onaysiz_eski_bicim_kayit_avukat_sayilmaz(tmp_path):
     assert _durum(kok)["durum"] == "model-atladi"
 
 
+def test_g5_onay_bayragindan_once_yazilmis_avukat_etiketi_kanit_sayilmaz(tmp_path):
+    """Onarım ileriye dönüktü; geçmiş kalmıştı. `--onay` bayrağı gelmeden önceki yazıcı HER
+    atlamaya "onay": "avukat" yazıyordu — sahadaki kayıt tam olarak budur ve uyarıyı hâlâ
+    susturuyordu. O sürümün etiketi kimin karar verdiğini göstermez: kayıt model beyanı sayılır,
+    uyarı açık kalır ve satır nedenini söyler. Kayıt append-only defterden silinmez (veri kaybı yok)."""
+    kok = _bulgulu_kok(tmp_path)
+    pi = gti.bulgu_parmak_izi(gti.ifsa_uret(kok))
+    defter = kok / "_oa" / "defter"
+    defter.mkdir(parents=True)
+    eski = {"zaman": "2026-10-09T03:12:00", "tur": gti.ATLAMA_TUR, "ilgili": "ifsa:" + pi,
+            "gerekce": "Bulgu şablon satırına benziyor", "onay": "avukat",
+            "imza": "gizli_talimat_ifsa.py/1.1"}
+    (defter / "istisna-kayitlari.jsonl").write_text(json.dumps(eski, ensure_ascii=False) + "\n",
+                                                    encoding="utf-8")
+    d = _durum(kok)
+    assert d["durum"] == "model-atladi" and d["seviye"] == "UYARI", d
+    assert "onay bayrağından önce" in d["satir"], d
+    # Avukat kararı yeniden kaydedilince geçerli olur; eski satır yerinde durur.
+    cp = _kos(IFSA, "--kok", kok, "--atla", "--onay", "avukat", "--gerekce", "Avukat: stratejik tercih")
+    assert cp.returncode == 0, cp.stdout + cp.stderr
+    assert len(_defter(kok)) == 2
+    assert _durum(kok)["durum"] == "bilincli-atlandi"
+
+
 def test_g5_makbuz_semasi_ve_dilekce_skill_yeni_durumu_anlatir():
     assert "model-atladi" in CIKTI_SEMASI.read_text(encoding="utf-8")
     metin = DILEKCE_SKILL.read_text(encoding="utf-8")

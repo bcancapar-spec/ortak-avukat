@@ -266,13 +266,15 @@ imzalanır — imzalı dosyaya dokunulmaz.
 ### İSTİSNA DEFTERİ — `_oa/defter/istisna-kayitlari.jsonl` (ortak şema)
 
 Append-only JSONL; her satır: `{"zaman": ISO, "tur": ..., "ilgili": str,
-"gerekce": str, "onay": "avukat"|"otomatik-kural", "imza": araç-imzası}`.
-Yazan araçlar ve `tur` değerleri:
+"gerekce": str, "onay": "avukat"|"model-beyani"|"otomatik-kural", "imza":
+araç-imzası}`. Onay varsayılmaz (v0.5.18, anayasa m.9): kararı model verdiyse
+kayıt `model-beyani` der ve kapıyı açmaz. Yazan araçlar ve `tur` değerleri:
 
 | Araç | tur | onay |
 |---|---|---|
 | `kunye_teyit.py` (B1 kendi-dosya-no muafiyeti) | `kunye-istisna` | otomatik-kural |
-| `dilekce_denetim.py` (`--istisna-gerekce` ile [Y]/[T] düşürme) | `yanlis-pozitif-ilani` | avukat |
+| `dilekce_denetim.py` (`--istisna-gerekce` ile [Y]/[T] düşürme) | `yanlis-pozitif-ilani` | avukat (`--istisna-onay avukat` — yalnız bu düşürür) / model-beyani (BLOK sürer) |
+| `gizli_talimat_ifsa.py` (`--atla`) | `ifsa-bilincli-atlama` | avukat (`--onay avukat`) / model-beyani (uyarı açık kalır) |
 | `gizlilik_tara.py` (`--override-onay avukat`) | `gizlilik-deny-override` | avukat |
 | `teslim_paketi.py` / `udf_yaz.py` / `pipeline_kayit.py` (e-imza toleransları) | `dogrulama-toleransi` | otomatik-kural |
 

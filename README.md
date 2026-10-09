@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **58.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.732** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.734** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -93,8 +93,35 @@ terimlerin (belge güvenlik kapısı, gizli katman damgası, görünürlük kâh
 başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 [SOZLUK.md](SOZLUK.md) "v0.5.18 terimleri" bölümü.
 
-### v0.5.18 (2026-10-06) — ne değişti, avukatın göreceği
+### v0.5.18 (2026-10-06 → 10-09) — ne değişti, avukatın göreceği
 
+- **Dilekçeden önce dört denetim motoru fiilen koşar (halüsinasyon kapısı).** Saha
+  testinde vakıa, illiyet, kıyas ve antitez motorları kuruluydu ama hiç
+  çalıştırılmadı. Dilekçe olgu uydurmadı; fakat lehe gösterilen bir kararın üst
+  mahkemece kaldırıldığını yazmadı. Bu, antitez matrisinin "aleyhe akıbet"
+  cephesinin yakalayacağı türden bir eksikti. Artık bu dört parça ancak motorun
+  kendi damgasını taşıyan denetim çıktısı diskte varsa "uygulandı" sayılır; yoksa
+  dilekçe adımı ve teslim durur, ekranda çalıştırılacak tek komut görünür
+  (motor köprüsü). Modelin "yaptım" demesi, kendi yazdığı bir not ya da "bilgi
+  eksik" kaydı kapıyı açmaz. Motorun bulgusu (ispat boşluğu, açık cephe) teslimi
+  durdurmaz: ya dilekçede karşılanır ya size raporlanır. Bilinçli geçiş yalnız
+  sizin gerekçeli şerhinizle mümkündür; gerekçe kayda girer.
+- **Sistemin kendisinde görülen dört anayasa aykırılığı giderildi.** Aynı saha
+  testinde gözcüler, model davranışından bağımsız olarak şunları buldu. Gizli
+  talimatı dilekçeye almama kararı her durumda "avukat onayladı" diye
+  kaydediliyordu, oysa kararı model vermişti; artık kayıt kararın gerçek sahibini
+  yazar ve avukat onayı olmadan uyarı susmaz. OCR'ın okuyamadığı altı evrak "aynı
+  içerik" sayılmış, beşinin kaydı ve gözle okunacak sayfa görselleri hiç
+  oluşmamıştı; artık okunamayan evrak hiçbir zaman elenmez, her birinin kaydı ve
+  görselleri oluşur. Gizlilik
+  süzgeci yalnız teslim zincirinde soruluyordu; UDF zincir dışında üretilince
+  kimlik numaralı metin süzgeçsiz dış araca gitti. Artık süzgeç, metni dışarı
+  gönderen her yerde koşar; kişisel veri varsa UDF üretilmez, UYAP editörü yolu
+  gösterilir. Ürün mühürleri yanlış sürüm yazıyordu; artık doğrusu yazılır.
+  Aynı kusurun bir kardeşi de kapandı: dilekçe denetiminde "yanlış pozitif"
+  ilanı kimin yaptığına bakmadan avukat onayı sayılıyor ve havada kalan alıntı
+  kapısını açıyordu. Artık o kapıyı yalnız sizin açık onayınız açar
+  (`--istisna-onay avukat`); onaysız ilan kayda geçer, kapı kapalı kalır.
 - **Karşı tarafın evrakındaki gizli talimat yakalanır (belge güvenlik kapısı, B-22).**
   Evrakın insan gözünün görmediği ama modelin okuduğu katman — beyaz ya da mikro
   yazı, Word'ün gizli metni, silinmiş izli değişiklik, PDF'te görünmez kip,
@@ -175,6 +202,18 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   maktu); kısmi kabulde doğrulanamayan dağılım için rakam yerine görünür not çıkar,
   gider bandının üst ucu maktuyu çıpa olarak taşır (AAÜT m.3/1 takdiriyle üç katına
   kadar yüksek olabilir).
+- **Bağımsız denetimde kapanan kusurlar.** Kural belirtilmeden yapılan süre hesabı
+  adli tatil uzatmasını (HMK m.104, İYUK m.8/3) kendi kanunu dışındaki sürelere de
+  uyguluyordu; icra, iş ve borçlar hukuku sürelerinde geç tarih çıkabiliyordu
+  (ölçülen örnek: 01.08 tebliğ, 15 gün; doğrusu 17.08 olabilirken hesap 07.09
+  diyordu). Artık manşet erken tarihtir, uzamış okuma ayrıca görünür; son gün
+  bayram arifesine düşerse öğleden önce işlem uyarısı çıkar. Künye teyidinde iki
+  kararın parçasından kurulmuş, esas ile karar numarası yer değiştirmiş ya da başka
+  bir daireye ait künye artık teyitli sayılmaz ("merci çelişkisi"); bir Yargıtay
+  esas numarası AYM kararını teyit etmez. Karşı tarafın evrakıyla dava klasörüne
+  gelmiş bir program (ör. sahte `npx.cmd`) artık çalıştırılmaz. Resmî okuyucunun
+  doğrulayamadığı UDF "teslime hazır" satırında açık uyarıyla görünür; açılamayan,
+  parolalı ya da bozuk evrak "temiz" değil DENETLENEMEZ sayılır.
 - **Karşı tarafın gizli talimatı dilekçede ifşa edilir (avukat talimatı — siber
   hukuk güvenliği).** Belge güvenlik kapısı karşı tarafın evrakında insan gözüyle
   görünmeyen metin için kesin bulgu verdiyse, bu tespit olgusal bir bölümle
@@ -197,6 +236,10 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 - **Anayasa m.11 ek düzenleme (avukat talimatı).** Talimat yalnızca müvekkilin
   vekili ya da müdafii olan avukattan gelir: promptu ve talimatı veren avukat
   esastır; karşı taraf avukatı ve asil talimat kaynağı değildir.
+- **Dilekçede şapkalı harf kullanılmaz (avukatın lafzı).** â yerine a, î yerine i
+  yazılır (hâkim → hakim, resmî → resmi; büyük harfte Â → A, Î → İ). Birebir
+  alıntıya dokunulmaz; alıntıyı değiştirmek tahriftir. Dilekçe denetimi şapkalı
+  harf gördüğünde uyarır, teslimi durdurmaz.
 - **CI'nın yakaladığı hatalar giderildi.** Bozuk tek bir evrak paralel okumada
   bütün klasörün okunmasını düşürebiliyordu. `npx` başlatılamadığında ya da npm'in
   kendi önbelleği bozulduğunda (aynı anda iki çağrı) geçerli bir UDF "geçersiz"
@@ -234,7 +277,9 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
    Word çıkarımı (sürüm 3) değişti: önbellekteki UDF, DOCX ve metinli PDF kayıtları bir
    kez yeniden okunup taranır (ucuz); OCR'lı kayıtlar yeniden OCR'lanmaz — önce mevcut
    metin taranır, yalnız bulgu ya da şüpheli kritik alan çıkarsa evrak baştan okunur.
-   Büyük klasörde güncellemeden sonraki ilk okuma bu yüzden biraz uzun sürebilir.
+   OCR'ın okuyamadığı ve önceki sürümde "aynı içerik" diye elenmiş evrak da bir kez
+   yeniden okunur. Büyük klasörde güncellemeden sonraki ilk okuma bu yüzden biraz
+   uzun sürebilir.
 
 ### Dürüst sınırlar — bu sürümde ölçülmeyenler
 
@@ -251,6 +296,12 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 - Teyit bekleyen hukuki noktalar ayrı listededir:
   [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek `udf-cli` ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
+- **Halüsinasyon kapısı motorun koştuğunu denetler, girdisinin doğruluğunu
+  değil.** Vakıa ve antitez motorlarının girdisini model evraka dayanarak
+  doldurur; asgari doldurulmuş bir girdi de damga alabilir. Girdinin evraka
+  sadakati ve bulgunun hükmü sizindir.
+- Teslim makbuzu nihai UDF'in özetini henüz taşımıyor; içtihat dökümünün hangi
+  sorgudan geldiği (kaynak zinciri) henüz mekanik olarak bağlanmadı (v0.5.19).
 - Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
 
 ---

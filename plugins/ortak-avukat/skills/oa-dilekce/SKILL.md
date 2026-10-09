@@ -496,11 +496,14 @@ uyarısı basar (advisory) — kararı `oa-antitez` cephaneliğine işlet.
   (exit_kodu=0) yok/geçersizse "makbuzsuz hazır-beyanı" ihlali — R2: tek
   ölçüt `teslim_paketi.py` exit 0 + makbuzdur; sözle/ibareyle "hazır" İLAN
   EDİLEMEZ (üretildi ≠ teslime hazır).
-- **`--istisna-gerekce "<metin>"` (avukat onaylı düşürme):** [Y]/[T] BLOK
-  bulgularını görünür UYARIYA düşürür ve gerekçeyi
+- **`--istisna-gerekce "<metin>" --istisna-onay avukat` (avukat onaylı
+  düşürme):** [Y]/[T] BLOK bulgularını görünür UYARIYA düşürür ve gerekçeyi
   `_oa/defter/istisna-kayitlari.jsonl`'a (ortak şema, append-only,
   `tur=yanlis-pozitif-ilani`, `onay=avukat`) yazar — kapı muhakemeyi
-  ENGELLEMEZ, kaydını tutarak yol verir; sessiz opt-out yok.
+  ENGELLEMEZ, kaydını tutarak yol verir; sessiz opt-out yok. **`--istisna-onay
+  avukat` YALNIZ avukat ilanı açıkça onayladığında verilir** (anayasa m.9).
+  Onaysız ilan (varsayılan `model-beyani`) kayda geçer ama BLOK sürer: kapıyı
+  model kendi beyanıyla açamaz (v0.5.18, G-5 kardeşi).
 
 ### A4.3 — Bilirkişi raporuna itiraz playbook'u (varsayılan tarama)
 

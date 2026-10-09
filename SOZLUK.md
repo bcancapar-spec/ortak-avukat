@@ -436,6 +436,33 @@ ilgisiz bir sunucuya çözülüyordu) — sahipsiz bir gişeye güvenmek, sorgul
 okuyup sahte "içtihat" döndürebilecek bir kanal açardı. Eski kurulumdaki
 `yargi-mcp-yedek` bağlantısı connectors bölümünden kaldırılmalıdır.
 
+**Halüsinasyon kapısı ve motor damgası:** Vakıa, illiyet, kıyas ve antitez
+parçalarının "uygulandı" sayılması için diskte motorun KENDİ damgasını taşıyan,
+çökmemiş ve taze bir denetim çıktısının bulunması şartı. İmzasız bilirkişi raporu
+gibidir: metni kim yazmış olursa olsun, bilirkişinin imzası yoksa inceleme
+yapılmış sayılmaz. Damga yoksa dilekçe adımı ve teslimin (c2) kapısı durur.
+Motorun bulgusu (ispat boşluğu, açık cephe) kapıyı kapatmaz; hüküm avukatındır.
+Bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon`) ve
+gerekçe kayda girerek olur. Saha testinin dersi: motorlar kuruluydu ama hiç
+koşmamıştı; dilekçe uydurmadı ama lehe gösterilen kararın kaldırıldığını yazmadı.
+
+**Motor köprüsü:** Dört motoru ve çapraz denetimi tek komutla çalıştıran araç
+(`oa-pipeline/scripts/motor_koprusu.py`). Bilirkişiye dosyayı tevdi eden ara
+karar gibidir: incelemeyi köprü yapmaz, motorlara yaptırır; damgayı köprü değil
+motor koyar. Girdi yoksa motorun boş şablonunu yazar; doldurulmamış şablon
+doğrulanmaz, var olan dosyanın üzerine yazılmaz.
+
+**Model beyanı / avukat onayı:** Bir kaydın, kararı kimin verdiğini dürüstçe
+yazması (anayasa m.9). Zapta kimin beyanının geçtiği gibidir: kararı model
+verdiyse kayıt "model beyanı" der ve uyarı açık kalır; avukat verdiyse
+`--onay avukat` ile "avukat" yazılır. Onay bayrağından önceki sürümün her kayda
+yazdığı "avukat" etiketi kanıt sayılmaz.
+
+**Şapkalı harf kuralı (avukatın lafzı):** Dilekçede â yerine a, î yerine i
+yazılır (hâkim → hakim, resmî → resmi; Â → A, Î → İ). Birebir alıntıya
+dokunulmaz; alıntıyı değiştirmek tahriftir. Dilekçe denetimi [Ş] uyarısı verir,
+teslimi durdurmaz.
+
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her
 terim bir eksikliktir — bildirin, eklensin.*
