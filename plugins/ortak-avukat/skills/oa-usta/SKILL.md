@@ -81,7 +81,9 @@ kanıtıdır.
 KABUL|REVIZYONLA|RET --sebep <usul|olgu|hukuk|uslup|talep|ictihat|diger>` teslim sonrası
 `_oa/defter/avukat-hukmu.jsonl` dosyasına **append-only** tek satır yazar (kapı
 DEĞİLDİR — hükümsüz kapanış engellenmez, yalnız görünür sayaç düşer; bkz.
-`SICRAMA-NOTU.md` §5). Çırak bu defteri KAPANIŞ adımında okur.
+`SICRAMA-NOTU.md` §5). Çırak bu defteri KAPANIŞ adımında okur. **Yalnız avukatın
+hükmü aday doğurur** (`onay: avukat`, v0.5.18 — anayasa m.9): model beyanı ya da onay
+alanı olmayan eski kayıt damıtma adayı değildir; model hükmü uyduramaz.
 
 **Tetik (deterministik, yorumsuz):**
 1. Defterde `REVIZYONLA` veya `RET` hükmü olan her teslim bir **damıtma adayıdır**;

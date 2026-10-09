@@ -456,7 +456,10 @@ doğrulanmaz, var olan dosyanın üzerine yazılmaz.
 yazması (anayasa m.9). Zapta kimin beyanının geçtiği gibidir: kararı model
 verdiyse kayıt "model beyanı" der ve uyarı açık kalır; avukat verdiyse
 `--onay avukat` ile "avukat" yazılır. Onay bayrağından önceki sürümün her kayda
-yazdığı "avukat" etiketi kanıt sayılmaz.
+yazdığı "avukat" etiketi kanıt sayılmaz. Aynı kural dilekçe denetimindeki yanlış
+pozitif ilanında (`--istisna-onay avukat`) ve teslim sonrası avukat hükmünde
+(`--hukum-onay avukat`) geçerlidir: hükmü avukat verir; modelin yazdığı hüküm
+sayılmaz.
 
 **Şapkalı harf kuralı (avukatın lafzı):** Dilekçede â yerine a, î yerine i
 yazılır (hâkim → hakim, resmî → resmi; Â → A, Î → İ). Birebir alıntıya

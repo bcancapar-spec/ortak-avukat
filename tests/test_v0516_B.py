@@ -658,8 +658,12 @@ def test_p19_sablon_ve_skill_md():
 
 # ─────────────────────── A-28 — avukat hükmü sensörü ──────────────────────
 
-def _hukum(kok, hukum, urun="_oa/cikti/08-dilekce-taslak-v1.md", ek=()):
-    return _cli(["--avukat-hukmu", hukum, "--urun", urun, "--kok", str(kok)] + list(ek), cwd=kok)
+def _hukum(kok, hukum, urun="_oa/cikti/08-dilekce-taslak-v1.md", ek=(), onay="avukat"):
+    # v0.5.18: bu testler AVUKATIN kendi hükmünü kaydeder — açık onayla
+    # (`--hukum-onay avukat`); onaysız kayıt model beyanıdır, sayaca girmez.
+    onay_ek = ["--hukum-onay", onay] if onay else []
+    return _cli(["--avukat-hukmu", hukum, "--urun", urun, "--kok", str(kok)] + onay_ek + list(ek),
+                cwd=kok)
 
 
 def _hukum_defteri(kok):
@@ -735,6 +739,34 @@ def test_a28_defter_yoksa_hata_bozuk_hukum_defteri_cokertmez(tmp_path):
     assert _hukum(tmp_path, "KABUL")[0] == 0
     md = _durum_md(tmp_path)
     assert "KABUL 1 / REVİZYONLA 0 / RET 0" in md and "bozuk" in md.lower()
+
+
+def test_a28_model_beyani_hukum_avukat_hukmu_sayilmaz_ve_gorunur(tmp_path):
+    """v0.5.18 ceza saha testi (anayasa m.9, m.8): avukatın ulaşılamadığı başsız
+    oturumda model teslimden sonra `--avukat-hukmu KABUL` koşturdu; kayıt avukat
+    hükmü sayıldı. Sensörün tek meşru sinyali avukatın hükmüdür (SICRAMA-NOTU §5):
+    model kaydı onu zehirler. Artık onaysız kayıt MODEL BEYANIDIR — sayaca girmez,
+    DURUM.md'de ayrı satırda görünür; avukat hükmü yalnız `--hukum-onay avukat`
+    ile sayılır. Onay alanı olmayan eski kayıt da varsayılmaz: ayrı görünür.
+    Hiçbir satır silinmez (append-only)."""
+    _baslat(tmp_path)
+    kod, cikti = _hukum(tmp_path, "KABUL", onay=None)
+    assert kod == 0, cikti
+    assert "MODEL BEYANI" in cikti and "--hukum-onay avukat" in cikti, cikti
+    assert _hukum_defteri(tmp_path)[0]["onay"] == "model-beyani"
+    md = _durum_md(tmp_path)
+    assert "KABUL 0 / REVİZYONLA 0 / RET 0" in md, md
+    assert "model beyanı 1" in md
+    # Onay alanı olmayan eski biçim kayıt: kimin yazdığı belirsiz — sayılmaz, görünür.
+    yol = tmp_path / "_oa" / "defter" / "avukat-hukmu.jsonl"
+    with open(yol, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"zaman": "2026-09-20T10:00:00", "hukum": "RET", "sebep": "olgu",
+                            "urun": "_oa/cikti/eski.md", "not": None, "surum": "0.5.16"}) + "\n")
+    assert _hukum(tmp_path, "KABUL")[0] == 0          # avukatın açık hükmü
+    md = _durum_md(tmp_path)
+    assert "KABUL 1 / REVİZYONLA 0 / RET 0" in md, md
+    assert "onay alanı olmayan eski kayıt 1" in md
+    assert len(_hukum_defteri(tmp_path)) == 3
 
 
 def test_a28_skill_md_sensor_anlatimi():

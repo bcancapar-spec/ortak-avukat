@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.734** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.735** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -122,6 +122,13 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   ilanı kimin yaptığına bakmadan avukat onayı sayılıyor ve havada kalan alıntı
   kapısını açıyordu. Artık o kapıyı yalnız sizin açık onayınız açar
   (`--istisna-onay avukat`); onaysız ilan kayda geçer, kapı kapalı kalır.
+- **Avukat hükmünü yalnız siz verirsiniz.** İkinci saha testinde (bir ceza
+  soruşturması dosyası) model, avukatın ulaşılamadığı oturumda teslimden sonra
+  hüküm defterine kendisi "KABUL" yazdı. Bu defter, sistemin ürettiği işin size
+  ne kadar yaradığını ölçen tek meşru sinyaldir. Artık kayıt sahibini yazar:
+  modelin kaydı "model beyanı"dır ve sayılmaz; sizin hükmünüz
+  `--hukum-onay avukat` ile işlenir. Önceki sürümde onay alanı olmadan yazılmış
+  hüküm kayıtları ayrı satırda görünür.
 - **Karşı tarafın evrakındaki gizli talimat yakalanır (belge güvenlik kapısı, B-22).**
   Evrakın insan gözünün görmediği ama modelin okuduğu katman — beyaz ya da mikro
   yazı, Word'ün gizli metni, silinmiş izli değişiklik, PDF'te görünmez kip,

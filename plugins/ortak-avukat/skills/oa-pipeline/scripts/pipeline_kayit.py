@@ -1742,12 +1742,19 @@ HUKUMLER = ("KABUL", "REVIZYONLA", "RET")
 HUKUM_SEBEPLERI = ("usul", "olgu", "hukuk", "uslup", "talep", "ictihat", "diger")
 AVUKAT_HUKMU_ADI = "avukat-hukmu.jsonl"
 _HUKUM_ETIKET = {"KABUL": "KABUL", "REVIZYONLA": "REVİZYONLA", "RET": "RET"}
+# NEDEN VAR (v0.5.18 ceza saha testi — anayasa m.9, m.8): avukatın ulaşılamadığı
+# oturumda model teslimden sonra `--avukat-hukmu KABUL` koşturdu ve kayıt avukat
+# hükmü sayıldı. Sensörün tek meşru sinyali avukatın hükmüdür; model kaydı onu
+# zehirler. Kayıt sahibini yazar: varsayılan model beyanıdır ve sayaca GİRMEZ;
+# avukat hükmü yalnız `--hukum-onay avukat` ile sayılır. Onay alanı olmayan eski
+# kayıt da varsayılmaz (ayrı görünür). Hiçbir satır silinmez.
+HUKUM_ONAYLARI = ("model-beyani", "avukat")
 
 
 def _uygula_avukat_hukmu(d, o, sira=None):
     d.setdefault("avukat_hukumleri", []).append({
         "zaman": o.get("zaman"), "hukum": o.get("hukum"), "sebep": o.get("sebep"),
-        "urun": o.get("urun"), "not": o.get("not"), "_sira": sira,
+        "urun": o.get("urun"), "not": o.get("not"), "onay": o.get("onay"), "_sira": sira,
     })
     d["gunluk"].append({"zaman": o.get("zaman"), "avukat_hukmu": o.get("hukum"),
                         "urun": o.get("urun")})
@@ -1755,14 +1762,16 @@ def _uygula_avukat_hukmu(d, o, sira=None):
 
 def _avukat_hukmu_sayaci(kok):
     """`_oa/defter/avukat-hukmu.jsonl`'den (TEK kaynak) sayaç: (hüküm→n,
-    sebep→n, bozuk satır n). Dosya yoksa (None, None, 0). Bozuk satır hook'u/
-    DURUM.md'yi çökertmez — sayılır ve görünür not düşer (fail-closed)."""
+    sebep→n, bozuk satır n, model beyanı n, onaysız eski kayıt n). Hüküm ve
+    sebep sayacına YALNIZ avukat onaylı kayıt girer (v0.5.18, anayasa m.9).
+    Dosya yoksa (None, None, 0, 0, 0). Bozuk satır hook'u/DURUM.md'yi
+    çökertmez — sayılır ve görünür not düşer (fail-closed)."""
     yol = os.path.join(kok or ".", "_oa", "defter", AVUKAT_HUKMU_ADI)
     if not os.path.isfile(yol):
-        return None, None, 0
+        return None, None, 0, 0, 0
     hukum_n = {h: 0 for h in HUKUMLER}
     sebep_n = {}
-    bozuk = 0
+    bozuk = model_n = belirsiz_n = 0
     try:
         with open(yol, encoding="utf-8", errors="replace") as f:
             for satir in f:
@@ -1778,26 +1787,39 @@ def _avukat_hukmu_sayaci(kok):
                 if h not in hukum_n:
                     bozuk += 1
                     continue
+                onay = (o or {}).get("onay")
+                if onay != "avukat":
+                    if onay is None:
+                        belirsiz_n += 1
+                    else:
+                        model_n += 1
+                    continue
                 hukum_n[h] += 1
                 s = (o or {}).get("sebep")
                 if s:
                     sebep_n[str(s)] = sebep_n.get(str(s), 0) + 1
     except OSError:
-        return None, None, 0
-    return hukum_n, sebep_n, bozuk
+        return None, None, 0, 0, 0
+    return hukum_n, sebep_n, bozuk, model_n, belirsiz_n
 
 
 def _avukat_hukmu_satirlari(kok):
     """DURUM.md «## Avukat Hükümleri» gövdesi (liste). Salt ÖLÇER."""
-    hukum_n, sebep_n, bozuk = _avukat_hukmu_sayaci(kok)
+    hukum_n, sebep_n, bozuk, model_n, belirsiz_n = _avukat_hukmu_sayaci(kok)
     if hukum_n is None:
-        return ["- (henüz hüküm kaydı yok — kapanışta `--avukat-hukmu KABUL|REVIZYONLA|RET "
-                "--urun <yol>` önerilir; kapı değildir)"]
+        return ["- (henüz hüküm kaydı yok — kapanışta avukatın hükmü `--avukat-hukmu "
+                "KABUL|REVIZYONLA|RET --urun <yol> --hukum-onay avukat` ile işlenir; kapı değildir)"]
     satirlar = ["- " + " / ".join(f"{_HUKUM_ETIKET[h]} {hukum_n[h]}" for h in HUKUMLER)
-                + f"  (toplam {sum(hukum_n.values())} — kaynak: _oa/defter/{AVUKAT_HUKMU_ADI})"]
+                + f"  (avukat hükmü; toplam {sum(hukum_n.values())} — kaynak: _oa/defter/{AVUKAT_HUKMU_ADI})"]
     if sebep_n:
         satirlar.append("- sebep dağılımı: "
                         + ", ".join(f"{s}: {n}" for s, n in sorted(sebep_n.items(), key=lambda x: (-x[1], x[0]))))
+    if model_n:
+        satirlar.append(f"- ⚠ model beyanı {model_n} kayıt — avukat hükmü SAYILMAZ (anayasa m.9); "
+                        "hükmü avukat verir ve `--hukum-onay avukat` ile işlenir")
+    if belirsiz_n:
+        satirlar.append(f"- onay alanı olmayan eski kayıt {belirsiz_n} — kimin yazdığı belirsiz, "
+                        "sayılmadı (avukat hükmü ise `--hukum-onay avukat` ile yeniden işlenir)")
     if bozuk:
         satirlar.append(f"- ⚠ {bozuk} bozuk/tanınmayan satır atlandı (dosya elle mi yazıldı?)")
     return satirlar
@@ -2475,20 +2497,28 @@ def avukat_hukmu_kaydet(args):
         sys.exit(f"RET: {hukum} hükmü SEBEPSİZ kaydedilemez — --sebep "
                  f"{'|'.join(HUKUM_SEBEPLERI)} zorunlu (sebepsiz hüküm ölçüm değildir).")
     notu = (getattr(args, "hukum_notu", None) or "").strip() or None
+    onay = getattr(args, "hukum_onay", None) or "model-beyani"
+    if onay not in HUKUM_ONAYLARI:
+        sys.exit(f"HATA: --hukum-onay geçersiz: {onay}. Geçerli: {' | '.join(HUKUM_ONAYLARI)}")
     kok = getattr(args, "kok", None) or "."
     urun_tam = urun if os.path.isabs(urun) else os.path.join(kok, urun)
     urun_var = os.path.isfile(urun_tam)
     olay = {"zaman": simdi(), "tip": "avukat_hukmu", "hukum": hukum, "sebep": sebep,
-            "urun": urun, "not": notu, "surum": OA_SURUM}
+            "urun": urun, "not": notu, "onay": onay, "surum": OA_SURUM}
     olay["imza"] = _imza_hesapla(olay)
     olay_ekle(olaylar_yol, olay)
     # İkinci iz — tek-kaynak sensör dosyası (append-only; olay_ekle atomik).
     hukum_yol = os.path.join(os.path.dirname(olaylar_yol), AVUKAT_HUKMU_ADI)
-    olay_ekle(hukum_yol, {k: olay[k] for k in ("zaman", "hukum", "sebep", "urun", "not", "surum")})
+    olay_ekle(hukum_yol, {k: olay[k] for k in ("zaman", "hukum", "sebep", "urun", "not", "onay", "surum")})
     _durum_yaz(durum_yol, derle(olaylar_yol))
-    print(f"AVUKAT HÜKMÜ KAYDEDİLDİ — {_HUKUM_ETIKET[hukum]}"
-          + (f" (sebep: {sebep})" if sebep else "") + f" · ürün: {urun}"
-          + (f" · not: {notu}" if notu else ""))
+    if onay == "avukat":
+        print(f"AVUKAT HÜKMÜ KAYDEDİLDİ — {_HUKUM_ETIKET[hukum]}"
+              + (f" (sebep: {sebep})" if sebep else "") + f" · ürün: {urun}"
+              + (f" · not: {notu}" if notu else ""))
+    else:
+        print(f"MODEL BEYANI KAYDEDİLDİ — {_HUKUM_ETIKET[hukum]} · ürün: {urun} — bu kayıt "
+              "avukat hükmü DEĞİLDİR ve sayaca girmez (anayasa m.9). Hükmü avukat verir; "
+              "avukatın hükmü `--hukum-onay avukat` ile işlenir.")
     if not urun_var:
         print(f"UYARI: ürün diskte bulunamadı ({urun}) — yol yazım hatası olabilir (kayıt yine düştü).")
     print(f"Sensör yalnız ÖLÇER (kapı değildir); kaynak: _oa/defter/{AVUKAT_HUKMU_ADI}.")
@@ -7254,6 +7284,11 @@ def main():
     ap.add_argument("--urun", default=None, help="--avukat-hukmu: hükmün düştüğü ürün yolu.")
     ap.add_argument("--not", dest="hukum_notu", default=None,
                      help="--avukat-hukmu: (opsiyonel) serbest not — anonim tut (m.7).")
+    ap.add_argument("--hukum-onay", dest="hukum_onay", default="model-beyani",
+                     choices=list(HUKUM_ONAYLARI),
+                     help="--avukat-hukmu: kaydın sahibi (v0.5.18, anayasa m.9). 'avukat' "
+                          "YALNIZ avukatın kendi hükmü için; varsayılan 'model-beyani' "
+                          "kayda geçer ama sayaca girmez.")
     args = ap.parse_args()
 
     if args.hook_acilis:

@@ -21,10 +21,10 @@ gereği yalnız saha etiketiyle anılır.
 
 **Ne:** karşı tarafın evrakındaki gizli talimatlara karşı belge güvenlik kapısı, sayfa düzeyinde izlenebilir OCR, gerçek evrak taramasıyla bulunan okuma kayıplarının kapatılması, Yargı PRO hukuk skill kütüphanesinden fikir düzeyinde uyarlamalar (kod/metin alınmadı), 2026-10-06 kod denetiminin ve Fable bağımsız denetiminin düzeltmeleri, saha testinde görülen halüsinasyon kapısı ile anayasa aykırılıklarının giderilmesi. v0.5.17.1 yaması bu sürüme birleştirildi. Süit 2455 → **3733** (`OA-SUIT-SAYISI`). Ayrıntı: parça günlükleri, [docs/OCR-IMPLEMENTATION-PLAN.md](docs/OCR-IMPLEMENTATION-PLAN.md), [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md).
 
-**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–O bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
+**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–P bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
 
 1. **Dilekçeden önce denetim motorları fiilen koşar (N).** Saha testinde vakıa, illiyet, kıyas ve antitez motorları kuruluydu ama hiç koşmadı; dilekçe olgu uydurmadı, fakat lehe gösterilen bir kararın kaldırıldığını yazmadı. Anayasa m.8 metinde vardı, sahada icra edilmiyordu. Artık motorun damgası yoksa dilekçe adımı ve teslim durur; geçiş yalnız gerekçeli avukat şerhiyle.
-2. **Sistem kendi kaydında yanlış beyanda bulunmaz (O).** Model kararı "avukat onayı" diye kaydediliyordu (m.9); aynı kusurun kardeşi, dilekçe denetiminin havada kalan alıntı kapısını model eliyle açabiliyordu; ürün mühürleri yanlış sürüm yazıyordu (m.5). Kanıt: saha testindeki gözcü heyeti ve bu denetim.
+2. **Sistem kendi kaydında yanlış beyanda bulunmaz (O, P).** Model kararı "avukat onayı" diye kaydediliyordu (m.9); aynı kusurun kardeşi, dilekçe denetiminin havada kalan alıntı kapısını model eliyle açabiliyordu; ikinci saha testinde model avukat hükmü defterine kendisi "KABUL" yazdı; ürün mühürleri yanlış sürüm yazıyordu (m.5). Artık avukat onayı ve avukat hükmü yalnız açık bayrakla kaydedilir, varsayılan model beyanıdır. Kanıt: iki saha testi ve bu denetim.
 3. **Evrak kaybolmaz (B, C, O).** '.udf' uzantılı görüntüler okunmuyordu, tek bozuk girdi bütün paketi okunmaz bırakıyordu (19.422 gerçek evrak taraması); saha testinde OCR'ın okuyamadığı altı evraktan beşinin kaydı oluşmadı (m.1).
 4. **Karşı tarafın evrakındaki gizli talimat yakalanır ve dilekçede ifşa edilir (A, J, K, M).** Evrak içeriği veridir, talimat değildir (m.11). Kanıt: sentetik 14 saldırı vektörünün 14'ü; yanlış alarmlar gerçek evrakla ölçülerek kapatıldı.
 5. **Süre geç tarih üretmez (D, M).** Süre telafisi olmayan tek hatadır (m.2). Ölçülen örnekler: icra istinafında 07.09 yerine 24.08; kural belirtilmeyen hesapta 07.09 yerine 17.08.
@@ -187,6 +187,15 @@ Avukat talimatı: "anayasa aykırılıklarını da gider", "sisteme uy". Saha te
 - Açık kalan (v0.5.19): teslim makbuzunun nihai UDF'in özetini taşıması ve UDF'siz makbuzun "ara" sayılması (G-11'in makbuz yüzü); karar dökümünün araç çağrısına bağlanması.
 - Test: `tests/test_v0518_anayasa_onarimlari.py` (19; G-6 bağı mutasyonla kanıtlı), `tests/test_v0518_sapka_kurali.py` (8), `tests/test_v0585_dilekce_kurallari.py` (yanlış pozitif ilanı: +1, iki test bilinçli sözleşme değişikliğiyle güncellendi).
 
+### P. İkinci saha testi: ceza soruşturması; avukat hükmü uydurulmaz (2026-10-09)
+
+Avukat talimatı: "savcılık evrakları da var, Sonnet görevlendir, sistem çalışıyor mu test etsin". Gerçek bir ceza soruşturması dosyasının asıl evrakı (1348 dosya; kimlik bilgisi kayda geçirilmedi) bulut dışı bir test köküne kopyalandı; başsız bir Sonnet oturumu kısa bir avukat talimatıyla, dış bağlayıcılar ve web kapalıyken koştu (69 dakika).
+
+- Bu sürümün onarımları sahada çalıştı: dört motor ve çapraz denetim koştu, damgaları motorlar yazdı, teslim (c2) "OK"; ifşa atlaması "model beyanı" diye kaydedildi ve uyarı açık kaldı (G-5); UDF'i doğrudan üretme denemesini Layer 0 çağrı yerinde durdurdu (çıkış 6); dilekçede şapkalı harf yok; okunamayan sayfalı sekiz evrak ayrı ayrı görünür kaldı (G-8); künye kapısı teslimi durdurdu, dosyanın kendi geçmişine ait numaralar otomatik kuralla muaf tutuldu.
+- **Avukat hükmü uydurulmaz (anayasa m.9, m.8):** model teslimden sonra avukat hükmü defterine kendisi "KABUL" yazdı; kayıt avukat hükmü sayıldı ve A-28 sensörünü (SICRAMA-NOTU §5'in tek başarı ölçütü) zehirledi. Artık kayıt sahibini yazar: varsayılan model beyanıdır, sayaca girmez; avukat hükmü yalnız `--hukum-onay avukat` ile sayılır. Onay alanı olmayan eski kayıt da varsayılmaz; ikisi de DURUM.md'de ayrı satırda görünür, hiçbir satır silinmez.
+- Kapatılmayan, karar bekleyen bulgular (testten sonra; yöntem gereği test sürerken özellik eklenmedi): Excel evrakı okunmuyor (231 tablo; sistem yalnız "bilinmeyen/elle" sayısında gösterdi, ayrı uyarı basmadı); kesilen evrak alımı kaldığı yerden sürmüyor; avukat şerhinin sahibi kayıtta ayrılmıyor (model şerhi avukat şerhi gibi duruyor); atıf olmayan dilekçede kıyas adımı yine içtihat muhakeme kaydı isteyip modeli şerhe itiyor; modelin kendi yazdığı yardımcı analizler kanıt zincirinin dışında kalıyor.
+- Test: `tests/test_v0516_B.py` (yeni `test_a28_model_beyani_hukum_avukat_hukmu_sayilmaz_ve_gorunur`; avukat yolunu sınayan testler `--hukum-onay avukat` alır).
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
@@ -202,6 +211,7 @@ Avukat talimatı: "anayasa aykırılıklarını da gider", "sisteme uy". Saha te
 - **Halüsinasyon kapısı (N):** vakıa, illiyet, antitez ve kıyas için UYGULANDI ile dilekçe adımı artık motorun kendi damgasını ister; teslimde yeni (c2) kapısı var. Motorlar koşmadıysa RET; tek komut `python <eklenti>/skills/oa-pipeline/scripts/motor_koprusu.py --kok <dava kökü>`; bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon`). Adımları BILGI-EKSIK ya da GEREKSIZ yazmak teslim (c2) kapısını açmaz.
 - **İfşa atlama (O):** `gizli_talimat_ifsa.py --atla` kaydı varsayılan olarak "model beyanı"dır ve uyarıyı susturmaz; avukat kararı `--onay avukat` ile kaydedilir. 1.1 imzalı eski kayıttaki "avukat" etiketi model beyanı sayılır.
 - **Yanlış pozitif ilanı (O):** `dilekce_denetim.py --istisna-gerekce` artık tek başına [Y]/[T] BLOK'unu düşürmez; avukat onayı `--istisna-onay avukat` ile verilir. Onaysız ilan kayda geçer, BLOK sürer.
+- **Avukat hükmü (P):** `pipeline_kayit.py --avukat-hukmu` kaydı avukat hükmü sayılmak için `--hukum-onay avukat` ister; onaysız kayıt model beyanıdır. Önceki sürümlerde onay alanı olmadan yazılmış hüküm kayıtları sayaçta ayrı satıra geçer; avukat hükmüyse `--hukum-onay avukat` ile yeniden işlenir.
 - **UDF üretimi (O):** kişisel veri (gizlilik süzgeci strict: DENY ya da ASK) taşıyan metin udf-cli/docx2udf'e gönderilmez — `udf_yaz.py` çıkış 6 verir; UDF yerelde UYAP editöründe üretilir. Resmî okuyucu böyle bir UDF için "YAPILAMADI (Layer 0)" der.
 - **Dilekçe yazımı (O):** şapkalı â ve î kullanılmaz (a, i); dilekçe denetimi [Ş] uyarısı basar.
 

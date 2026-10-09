@@ -32,7 +32,9 @@ Güncelleme: [tarih]
       `muvekkil-bilgilendirme-sablonu.md`)
 
 ## Avukat hükümleri (A-28 sensörü — teslim sonrası, ölçer; kapı değildir)
-- KABUL n / REVİZYONLA n / RET n — kaynak `_oa/defter/avukat-hukmu.jsonl`
+- KABUL n / REVİZYONLA n / RET n — kaynak `_oa/defter/avukat-hukmu.jsonl`; yalnız avukat onaylı
+  kayıt (`--hukum-onay avukat`) sayılır. Model beyanı ve onay alanı olmayan eski kayıt ayrı
+  satırda görünür, sayılmaz (v0.5.18, anayasa m.9).
 
 ## Açık riskler / süre uyarıları
 - ⏰ İstinaf süresi: [son gün]

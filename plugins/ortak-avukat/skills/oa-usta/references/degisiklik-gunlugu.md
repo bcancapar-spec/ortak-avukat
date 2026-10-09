@@ -41,3 +41,4 @@
 ### Entegratör notu (2026-09-07)
 
 - **Entegrasyon (H5/G):** `aile_dogrula.py` KİLİT-A B grubunun DAMGA biçimini (`_denetim_jsonlari(kok, "<arac>")`) tanır: desen ortak süzgeçten (`*.json`) alınır + üretici script `"arac": "<arac>"` damgasını yazmıyorsa HATA (damga kopuşu); `_vakia_delilsiz_unsur_uyarisi` → oa-vakia dördüncü bekçi olarak kapsama alındı. Gerçek depoda kilit kör değil, denetim TEMİZ.
+- **2026-10-09 (v0.5.18 — ceza saha testi, anayasa m.9):** Hata tetikli damıtmanın kaynağı olan avukat hükmü defterine model, avukatın yokluğunda KABUL yazmıştı. Artık yalnız `onay: avukat` kaydı aday doğurur; model beyanı ve onay alanı olmayan eski kayıt aday değildir (SKILL.md «Kaynak» paragrafı).
