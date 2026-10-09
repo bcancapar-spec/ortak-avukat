@@ -156,6 +156,25 @@ ing = _modul(ING, "_v0518_anayasa_ing")
 YER_TUTUCU = "--- s.1 ---\n(okunamadı)\n"   # iki farklı evrakta AYNI çıktı
 
 
+def test_g8_eki_desteklenmeyen_tur_adiyla_ve_sayisiyla_uyari_basar(tmp_path):
+    """v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı; "bakamadım" ≠
+    "temiz"): sistemin metne çeviremediği türdeki evrak (sahada 231 Excel tablosu —
+    ceza dosyasında çoğu zaman iletişim, banka ve baz kayıtları) yalnız
+    'bilinmeyen/elle' sayısında görünüyordu; okunamayan OCR evrakı gibi ayrı bir
+    uyarı yoktu. Artık alım, OKUNMAYAN türleri adı ve sayısıyla uyarı satırına yazar."""
+    (tmp_path / "a.xlsx").write_bytes(b"PK\x03\x04sahte-tablo")
+    (tmp_path / "b.xlsx").write_bytes(b"PK\x03\x04sahte-tablo-2")
+    (tmp_path / "c.xls").write_bytes(b"\xd0\xcf\x11\xe0sahte")
+    (tmp_path / "d.txt").write_text("okunur bir metin satırı", encoding="utf-8")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    cp = subprocess.run([sys.executable, str(ING), "."], cwd=str(tmp_path), capture_output=True,
+                        text=True, encoding="utf-8", errors="replace", env=env)
+    cikti = cp.stdout + cp.stderr
+    assert cp.returncode == 0, cikti
+    assert "UYARI (DESTEKLENMEYEN TÜR): 3 evrak OKUNMADI" in cikti, cikti
+    assert ".xlsx 2" in cikti and ".xls 1" in cikti, cikti
+
+
 def _ocr_bos_kaydet(hedef, sha_ilk, kullanilan, kaynak, no, png):
     return ing.kaydet_evrak(YER_TUTUCU, "OCR-BOS", True, 1, "1/1 sayfa boş — GÖRSEL İNCELEME GEREK",
                             kaynak, no, kaynak.split(".")[0], "", str(hedef), kullanilan, 10 ** 9,

@@ -2734,6 +2734,20 @@ def main():
               f"dil paketi/araç hatası (ortam hatası, evrak özelliği DEĞİL). Bu evraklar "
               f"OKUNMADI; paketi kurup yeniden koş (bkz. 00-INDEX.md '🔴 OCR YAPILAMADI').",
               file=sys.stderr)
+    # v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı; "bakamadım" ≠ "temiz"):
+    # metne çevrilemeyen türdeki evrak (sahada 231 Excel tablosu — iletişim, banka, baz
+    # kayıtları) yalnız 'bilinmeyen/elle' sayısında görünüyordu. Türü ve sayısı adıyla söylenir.
+    desteksiz = {}
+    for k in kunye:
+        if k.get("yontem") == "bilinmeyen":
+            uz_ = os.path.splitext(str(k.get("kaynak") or ""))[1].lower() or "(uzantısız)"
+            desteksiz[uz_] = desteksiz.get(uz_, 0) + 1
+    if desteksiz:
+        print(f"UYARI (DESTEKLENMEYEN TÜR): {sum(desteksiz.values())} evrak OKUNMADI — sistem bu "
+              f"türleri metne çeviremiyor: "
+              + " · ".join(f"{u} {n}" for u, n in sorted(desteksiz.items(), key=lambda x: (-x[1], x[0])))
+              + ". İçerikleri analize GİRMEDİ; elle incelenmeli (bkz. 00-INDEX.md 'bilinmeyen/elle').",
+              file=sys.stderr)
     if guv_kayitlari:
         print(f"UYARI (B-22 BELGE GÜVENLİK KAPISI): {len(guv_kayitlari)} evrakta gizli katman/talimat "
               f"dili işareti (BULGU {guv_sayac['BULGU']} · UYARI {guv_sayac['UYARI']} · DENETLENEMEZ "

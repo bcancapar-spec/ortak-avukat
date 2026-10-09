@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.735** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.736** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -309,6 +309,9 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   sadakati ve bulgunun hükmü sizindir.
 - Teslim makbuzu nihai UDF'in özetini henüz taşımıyor; içtihat dökümünün hangi
   sorgudan geldiği (kaynak zinciri) henüz mekanik olarak bağlanmadı (v0.5.19).
+- **Excel evrakı (.xlsx, .xls) metne çevrilmez.** Alım bunu türü ve sayısıyla
+  uyarır; tabloların içeriği analize girmez, elle incelenmelidir. Ceza
+  dosyalarında iletişim, banka ve baz kayıtları çoğu zaman bu biçimde gelir.
 - Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
 
 ---
