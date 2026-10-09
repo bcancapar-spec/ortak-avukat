@@ -149,6 +149,19 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **Çöken teyit "şüphe yok" değildir:** teyit çökünce hata yutuluyor, künyede alanın olmaması "şüpheli alan yakalanmadı" diye okunuyordu. Artık künyede `dogrulama_denetlenemedi`, md'de 🔴 satırı, DURUM.md'de "teyidi YAPILAMADI" görünür.
 - Test: `tests/test_v0518_fable_ingest_belirsizlik.py` (10); iki kontrol testinin değeri mutasyonla kanıtlandı.
 
+### N. Halüsinasyon kapısı — dört motor artık koşmak zorunda (saha testi, 2026-10-09)
+
+Saha testi (gerçek bir icra hukuk dosyası, istinaf dilekçesi; kimlik bilgisi kayda geçirilmedi): eklenti GitHub'daki sürümle dosya dosya özdeş kuruldu, oturum yerel sensörlerle izlendi. Vakıa, illiyet, antitez ve kıyas motorları (ve çapraz denetim) kurulu ve sağlamdı — duman testinde beşi de exit 0 ve damgalı çıktı verdi — ama oturumda **hiç koşmadı**. Dilekçe uydurmadı ama seçici anlattı: lehe gösterilen bir kararın üst mahkemece kaldırıldığı yazılmadı; antitez matrisinin "aleyhe akıbet" cephesinin yakalayacağı türden bir eksik. Yazılım mühendisi + hukukçu kimliğiyle danışılan Fable 5.1'in teşhisi: zincirde motoru çağıran deterministik bir halka yok; kapılar "çıktı var mı" sorar, "motor koştu mu" sormaz. Modelin kendi yazdığı .md dosyası, kanıtta "script" kelimesi ya da BILGI-EKSIK statüsü kapıları açıyordu.
+
+- **Kanıt metin değil, disk:** `oa-vakia`, `oa-illiyet`, `oa-antitez` ve `oa-kiyas` için UYGULANDI artık yalnız motorun KENDİ yazdığı `arac` damgalı, çökmemiş ve taze (tazelik denetiminin BAYAT hükmü) denetim JSON'u varken kalır; yoksa ELDEN'e düşer ve mesaj çalıştırılacak tek komutu gösterir.
+- **Dilekçe adımı (adım-8):** dört motorun damgası yokken RET. Yalnız gerekçeli avukat şerhiyle geçilir: `--serh "…" --serh-kapi halusinasyon` (ya da `tumu`).
+- **Teslim (c2) kapısı:** (c)'den sonra, (d)'den önce. Statüye değil diske bakar; BILGI-EKSIK ya da GEREKSIZ yazmak onu açmaz (sahada bu desen beş kez görüldü). Şerhli geçiş istisna defterine gerekçesiyle yazılır; makbuzda yeni `halusinasyon_kapisi` alanı. Defter yoksa (d) gibi bilgi verir, sormaz.
+- **Motor köprüsü (yeni `oa-pipeline/scripts/motor_koprusu.py`):** dört motoru ve çapraz denetimi tek komutla koşturur. Damgayı motor yazar, köprü hiçbir dosyaya damga koymaz. Girdi yoksa motoru koşturmaz; vakıa ve antitez için motorun kendi şablonunu UTF-8 yazar (Windows PowerShell 5.1'de `>` yönlendirmesi UTF-16 yazıp dosyayı motora okunmaz kılıyor), var olan dosyanın üzerine asla yazmaz, doldurulmamış şablonu doğrulatmaz. Çapraz denetim en az iki girdiyle koşar (tek girdiyle "tutarlı" demek yanıltıcıdır). Model araç çantasını `_oa/araclar`'a düz kopyalasa da motorları bulur.
+- **Şerh gerekçesi kayda girer:** `--serh` metni eskiden deftere yazılmıyordu, yalnız kapının kendi mesajı yazılıyordu. Artık olayda `serh_gerekce` alanı var.
+- Motorun **bulgusu** (ispat boşluğu, açık cephe, kritik kıyas boşluğu) kapıyı kapatmaz; yalnız "motor koştu mu" sorulur, hüküm avukatındır (kıyas çıkış kodu kararı, 2026-08-12, korunur).
+- Hook sıcak yoluna yeni import ya da hesap girmedi.
+- Test: `tests/test_v0518_halusinasyon_kapisi.py` (24; sonradan eklenen dört davranış mutasyonla kanıtlandı). Zincirin başka halkasını sınayan eski testler motorların koştuğu dünyayı `tests/oa_motor_damga.py` fikstürüyle kurar; amaçları değişmedi.
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
@@ -161,6 +174,7 @@ Avukat talimatı: "Fable denetçi olarak incelesin." Yedi salt okunur Fable 5.1 
 - **Teslim sonuç satırı (M):** UDF resmî okuyucuyla doğrulanamadıysa "TESLİME HAZIR — ⚠ … DOĞRULANAMADI" diye nitelenir; teslim durmaz.
 - **Belge güvenlik kapısı 1.2 (M):** önbellekte 1.1 ile işaretli evrak bir kez yeniden taranır (OCR'lı kayıtta yalnız md metni; bulgu ya da şüpheli alan varsa tam yeniden çıkarım). Açılamayan, parolalı ya da yapısı bozuk evrak artık "temiz" değil DENETLENEMEZ görünür.
 - **Kritik alan listesi (M):** 30'dan fazla şüpheli alanda liste her türü korur; md ve DURUM.md gerçek toplamı ve "KESİLDİ" notunu gösterir.
+- **Halüsinasyon kapısı (N):** vakıa, illiyet, antitez ve kıyas için UYGULANDI ile dilekçe adımı artık motorun kendi damgasını ister; teslimde yeni (c2) kapısı var. Motorlar koşmadıysa RET; tek komut `python <eklenti>/skills/oa-pipeline/scripts/motor_koprusu.py --kok <dava kökü>`; bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon`). Adımları BILGI-EKSIK ya da GEREKSIZ yazmak teslim (c2) kapısını açmaz.
 
 ### Yapılamayanlar / sınırlar
 

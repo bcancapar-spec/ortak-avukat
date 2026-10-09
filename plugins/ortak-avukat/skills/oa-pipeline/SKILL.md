@@ -335,8 +335,30 @@ uyarı katmanı görünür kılar). Dosya ADI önemsizdir — `01-illiyet-deneti
 da, `graf.json` da aynı süzgeçten geçer (K1: bekçiler ve kapı ad sözleşmesinden
 kurtuldu, damga = aracın kendi `arac` alanı).
 
+**HALÜSİNASYON KAPISI — DÖRT MOTOR TEK KOMUTLA KOŞAR (v0.5.18 saha testi):**
+vakıa (`vakia_matris`), illiyet (`grafik_denetim`), kıyas (`kiyas_denetim`) ve
+antitez (`antitez_matris`) motorları halüsinasyonun kapısıdır: iddia↔delil,
+nedensellik, norm↔vakıa ve karşı tez. Saha testinde kurulu oldukları hâlde hiç
+koşmadılar. Artık: (1) bu dört parçada UYGULANDI yalnız motorun KENDİ yazdığı
+`arac` damgalı, çökmemiş ve taze denetim JSON'u diskteyken kalır — yoksa ELDEN'e
+düşer (betik adını kanıtta anmak ya da kendi yazdığın .md motorun koştuğunu
+kanıtlamaz); (2) adım-8/oa-dilekce UYGULANDI dört damga yokken RET; (3) teslim
+zincirinin (c2) kapısı statüye değil diske bakar — BILGI-EKSIK/GEREKSIZ onu açmaz.
+Tek komut (RET ve ELDEN mesajı da aynısını gösterir):
+`python <bu dizin>/scripts/motor_koprusu.py --kok <dava kökü>`. Köprü dört motoru
+ve çapraz denetimi koşturur; damgayı motor yazar, köprü damga koymaz. Girdi yoksa
+vakıa ve antitez için motorun kendi şablonunu `_oa/cikti/04-vakia.json` ve
+`_oa/cikti/06-antitez-matris.json` adıyla UTF-8 yazar — evraka dayanarak doldur,
+köprüyü yeniden koş (doldurulmamış şablon doğrulatılmaz). Graf
+(`_oa/cikti/01-illiyet-graf.json`) ve kıyas (`_oa/cikti/05-kiyas.json`) için
+şema parçaların referansındadır. Motorun BULGUSU (ispat boşluğu, açık cephe,
+kritik kıyas boşluğu) kapıyı kapatmaz — dilekçe o bulguları okuyarak yazılır,
+hüküm avukatındır. Bilinçli geçiş yalnız gerekçeli şerhle:
+`--serh "<gerekçe ≥30 kr>" --serh-kapi halusinasyon` (gerekçe deftere yazılır,
+teslimde istisna defterine düşer).
+
 **ŞERH-KAPI (P1, v0.5.16 — Hamle 9):** `--serh` artık HANGİ kapıyı geçtiğini
-adlandırır: **`--serh-kapi ingest-once|graf|kiyas|kontrol|tumu`**. Şerh yalnız
+adlandırır: **`--serh-kapi ingest-once|graf|kiyas|kontrol|halusinasyon|tumu`**. Şerh yalnız
 adlandırılan kapıyı geçer (`--serh-kapi graf` İNGEST-ÖNCE'yi geçmez — RET
 hangi adın gerektiğini söyler). Çıplak `--serh` geriye uyumludur (tüm kapılar)
 AMA görünür UYARI basar: «--serh-kapi verilmedi — şerh TÜM kapılara uygulandı».
@@ -367,7 +389,11 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 | adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE); **v0.5.18/B-2:** graf↔vakıa↔kıyas ortak kimlik uzayı kopuksa ek **UYARI** (bloklamaz) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
 | adım-6 | oa-antitez | `_oa/cikti/06-antitez*` (≤v0.5.15: `07-antitez*` de kabul) VEYA `arac=antitez_matris` damgalı `_oa/cikti/*.json` (v0.5.18/B-8) | UYARI |
 | adım-7 | oa-strateji | `_oa/cikti/07-strateji*` (≤v0.5.15: `06-strateji*` de kabul) | UYARI |
+| adım-8 | oa-dilekce | dört motorun kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u (`arac=grafik_denetim`, `vakia_matris`, `kiyas_denetim`, `antitez_matris`; ad-bağımsız) — statülerden BAĞIMSIZ (v0.5.18 saha testi); tek komut `scripts/motor_koprusu.py` | **BLOKLEYICI — HALÜSİNASYON KAPISI** (`--serh-kapi halusinasyon`) |
 | adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** (`--serh-kapi kontrol`) |
+
+Adım 1/4/5/6'nın motor parçalarında (oa-illiyet, oa-vakia, oa-kiyas, oa-antitez) yukarıdaki satırlar
+UYGULANDI'yı ENGELLEMEZ ama C5 statüyü belirler: motorun damgası yoksa ELDEN (v0.5.18).
 
 **HAT SIRASI GERİYE UYUMU (P0-3, v0.5.16):** ≤v0.5.15 defterlerindeki
 `(6, oa-strateji)` / `(7, oa-antitez)` olayları `derle`'de HATA değildir — yeni

@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **120.000+** satır · **3.682** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **47.000+** satır eklenti kodu (Python) · **57.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **121.000+** satır · **3.706** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen

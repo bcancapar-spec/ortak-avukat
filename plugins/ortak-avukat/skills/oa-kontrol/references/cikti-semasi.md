@@ -108,6 +108,17 @@ kilitler.**
   UDF'siz ve dış araçsız teslim) | `"dis-arac"` (`--dis-arac`) | `"udf-cli"` (teslim ürünü
   UDF ve yazıcı udf-cli — dış araç çağrısı; KATI ENGEL, avukat kararı 2026-10-05) |
   `"dis-arac+udf-cli"`
+- `halusinasyon_kapisi` — (c2) HALÜSİNASYON MOTORLARI kapısının cevabı (v0.5.18 saha testi):
+  `null` (zincir (a)-(c)'de durdu, kapıya ulaşılmadı) | `{durum, eksik, …}` — `durum` ∈
+  `tamam` (dört motorun — grafik_denetim, vakia_matris, kiyas_denetim, antitez_matris —
+  kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u diskte) | `eksik` (BLOK; `mesaj` eksik
+  motorları ve tek komutu — `motor_koprusu.py` — taşır) | `serh` (adım-8 gerekçeli avukat
+  şerhiyle geçildi — `--serh-kapi halusinasyon|tumu`; `serh_gerekce` + `serh_metni` taşır,
+  istisna defterine `tur: halusinasyon-kapisi`, `onay: avukat-serhi` satırı düşer) |
+  `defter-yok` (pipeline defteri yok — kapı SORULMADI, BİLGİ) | `denetlenemedi`
+  (pipeline_kayit yüklenemedi/çöktü — fail-closed, ATLA). `eksik` = damgası olmayan /
+  çökmüş / BAYAT motorların listesi. Kapı statüye değil DİSKE bakar: BILGI-EKSIK/GEREKSIZ
+  yazmak onu açmaz
 - `ictihat_muhakeme_kanali` — sabit `"b2-tekil"` (çift-[F] koşumu yasağı izi)
 - `surum` — `OA_SURUM` damgası
 - `kismi_ingest` — `{n, m}` kısmi ingest sayacı; okunamazsa `null`

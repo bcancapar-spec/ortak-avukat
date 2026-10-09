@@ -663,6 +663,40 @@ def _goreli_guvenli(kok, yol):
         return os.path.basename(yol)
 
 
+def _halusinasyon_kapisi(kok):
+    """(c2) kapısı (v0.5.18). Döner: (makbuz durumu OK|BLOK|ATLA|BILGI, makbuz
+    alanı). Hüküm pipeline_kayit.halusinasyon_kapisi_durumu'ndan gelir — adım-8
+    kapısıyla aynı fonksiyon; burada ikinci bir kural tutulmaz. Sıra (d) ile
+    AYNIDIR: önce defter sorulur — defter yoksa kapı SORULMAZ (BİLGİ; modül
+    bulunamasa da). Defter varken kardeş modül yüklenemez/çökerse ATLA (çağıran
+    fail-closed kapatır)."""
+    defter = _defter_var_mi(kok)
+    pk = _pipeline_kayit_modulu()
+    h, hata = None, None
+    if pk is not None and hasattr(pk, "halusinasyon_kapisi_durumu"):
+        try:
+            h = pk.halusinasyon_kapisi_durumu(kok)
+        except Exception as e:  # noqa: BLE001 — denetlenemeyen kapı açık sayılmaz
+            hata = repr(e)[:120]
+    if not defter:
+        # Bilgi amaçlı: modül varsa eksik motorlar yine görünür (kapı kapatmaz).
+        return "BILGI", {"durum": "defter-yok", "eksik": list(h["eksik"]) if h else None}
+    if h is None:
+        alan = {"durum": "denetlenemedi", "eksik": None}
+        if hata:
+            alan["hata"] = hata
+        return "ATLA", alan
+    alan = {"durum": h["durum"], "eksik": list(h["eksik"])}
+    if h["durum"] == "tamam":
+        return "OK", alan
+    if h["durum"] == "serh":
+        alan["serh_metni"] = h.get("serh_metni")
+        alan["serh_gerekce"] = h.get("serh_gerekce")
+        return "OK", alan
+    alan["mesaj"] = h.get("mesaj")
+    return "BLOK", alan
+
+
 def _istisna_kaydi_dus(kok, tur, ilgili, gerekce, onay="otomatik-kural"):
     """Ortak istisna defteri (append-only, birden çok araç yazar):
     _oa/defter/istisna-kayitlari.jsonl — şema: {zaman, tur, ilgili, gerekce,
@@ -1227,6 +1261,9 @@ def _makbuz_taban(a, taslak, kok, kapilar, exit_kodu, udf_yolu, durdu,
         # v0.5.18 — Layer 0 neden koştu (None = koşmadı; 'udf-cli' = UDF
         # teslimi dış araç çağrısı sayıldı; 'dis-arac' = --dis-arac)
         "layer0_tetik": getattr(a, "layer0_tetik", None),
+        # v0.5.18 — (c2) HALÜSİNASYON MOTORLARI kapısının cevabı (None = kapıya
+        # ulaşılmadı: zincir (a)-(c)'de durdu)
+        "halusinasyon_kapisi": getattr(a, "halusinasyon_kapisi", None),
         "ictihat_muhakeme_kanali": "b2-tekil", "surum": OA_SURUM,
         "kismi_ingest": _kismi_ingest_alani(kok),
         "durdu": durdu,
@@ -1493,6 +1530,50 @@ def _zincir():
                 kapanan = ("(c) GİZLİLİK / LAYER 0", rc)
             elif sonuc == "OK":
                 gecen.append("(c) gizlilik/Layer 0")
+
+    # ── (c2) halüsinasyon motorları — damga DİSKTE mi? (v0.5.18 saha testi) ──
+    # NEDEN VAR: saha testinde vakıa/illiyet/antitez/kıyas motorları hiç koşmadı;
+    # motor parçaları BILGI-EKSIK yazılıp geçildi (5 kez) ve (d) kapısı yalnız
+    # statünün VARLIĞINA baktığı için açık kaldı. (c2) statüye değil DİSKE bakar:
+    # motorun KENDİ yazdığı damgalı, çökmemiş ve taze denetim çıktısı. Karar
+    # pipeline_kayit.halusinasyon_kapisi_durumu'ndan gelir (adım-8 kapısıyla TEK
+    # kaynak). Tek çıkış adım-8'deki gerekçeli avukat şerhidir; şerhli her geçiş
+    # ortak istisna defterine yazılır. Defter yoksa (d) gibi BİLGİ (sorulmadı).
+    if kapanan is None:
+        _bolum("[c2] HALÜSİNASYON MOTORLARI — vakıa/illiyet/antitez/kıyas damgası  "
+               "(pipeline_kayit, in-process)")
+        sonuc, alan = _halusinasyon_kapisi(kok)
+        a.halusinasyon_kapisi = alan
+        eksik_metni = ", ".join(alan.get("eksik") or []) or "yok"
+        if sonuc == "BILGI":
+            print("    [BILGI] pipeline defteri yok — halüsinasyon kapısı bu teslimde "
+                  "SORULMADI (motor damgası eksik: %s)." % eksik_metni)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "BILGI", "exit": None})
+        elif sonuc == "ATLA":
+            print("    [ATLA→BLOK] pipeline_kayit.py yüklenemedi/çöktü — FAIL-CLOSED: kapı "
+                  "KAPALI sayılır (sessiz atlama yok).")
+            atlanan.append("(c2) pipeline_kayit.py")
+            kapanan = ("(c2) HALÜSİNASYON MOTORLARI", None)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "ATLA", "exit": None})
+        elif sonuc == "BLOK":
+            print("    [BLOK] KAPI KAPALI — %s" % alan.get("mesaj"))
+            print("    Bilinçli geçiş yalnız avukat şerhiyle: adım-8'i --serh \"gerekçe "
+                  "(>=30 kr)\" --serh-kapi halusinasyon ile işle.")
+            kapanan = ("(c2) HALÜSİNASYON MOTORLARI", 1)
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "BLOK", "exit": 1})
+        else:
+            if alan["durum"] == "serh":
+                gerekce = alan.get("serh_gerekce") or alan.get("serh_metni") or ""
+                print("    [ŞERH] kapı adım-8 avukat şerhiyle geçildi — motor damgası eksik: %s; "
+                      "gerekçe: %s (istisna defterine yazıldı)." % (eksik_metni, gerekce))
+                _istisna_kaydi_dus(kok, "halusinasyon-kapisi", _goreli_guvenli(kok, taslak),
+                                   "eksik motor damgası: %s — avukat şerhi: %s"
+                                   % (eksik_metni, gerekce), onay="avukat-serhi")
+                gecen.append("(c2) halüsinasyon motorları (ŞERHLİ)")
+            else:
+                print("    [OK] dört motorun damgalı ve taze denetim çıktısı diskte.")
+                gecen.append("(c2) halüsinasyon motorları")
+            kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "OK", "exit": 0})
 
     # ── (d) pipeline defter boşluğu — yalnız defter varsa ──────────────────
     # P0-5 dairesel-bağımlılık kırıcı: İN-PROCESS `denetle_calistir(kok,

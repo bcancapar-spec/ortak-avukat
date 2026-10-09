@@ -15,6 +15,8 @@ import pathlib
 import subprocess
 import sys
 
+import oa_motor_damga as omd
+
 import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -57,6 +59,9 @@ def _p06_onkosul_fixture_kur(tmp_path):
     (defter / "teslim-makbuz.json").write_text(
         json.dumps({"exit_kodu": 0, "taslak_yol": None, "taslak_sha256": None}),
         encoding="utf-8")
+    # v0.5.18 — HALÜSİNASYON KAPISI: dört motorun damgalı denetim çıktısı (motor
+    # parçasında UYGULANDI ve adım-8 bunu ister); testin AMACI DEĞİŞMEZ.
+    omd.dort_damga(tmp_path)
 
 
 def _cli(args, cwd):

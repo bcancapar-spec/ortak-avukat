@@ -346,9 +346,38 @@ ONKOSUL_GRAF_KAPISI = {
 # uygulanır ama görünür UYARI basar — tek şerhle beş kapıdan geçmek sessiz
 # olamaz. 'tumu' = bilinçli olarak tüm kapılar (uyarısız). CANLI-SENKRON ve
 # ÇAPRAZ-ADIM (adım-8) kapıları bu sürümde ayrı ad almaz: yalnız 'tumu' veya
-# çıplak --serh ile geçilir (RET mesajı bunu söyler).
-SERH_KAPILARI = ("ingest-once", "graf", "kiyas", "kontrol", "tumu")
+# çıplak --serh ile geçilir (RET mesajı bunu söyler). 'halusinasyon' (v0.5.18
+# saha testi) adım-8 HALÜSİNASYON KAPISI'nın adıdır; 'tumu' HER ZAMAN son öğe
+# kalır (ipucu satırı `SERH_KAPILARI[:-1]` ile tekil adları listeler).
+SERH_KAPILARI = ("ingest-once", "graf", "kiyas", "kontrol", "halusinasyon", "tumu")
 _SERH_KAPI_BLOKLEYICI = {(5, "oa-kiyas"): "kiyas", (9, "oa-kontrol"): "kontrol"}
+
+# ── HALÜSİNASYON KAPISI (v0.5.18 saha testi — Fable 5.1 teşhisi) ─────────────
+# NEDEN VAR: vakıa, illiyet, antitez ve kıyas doğrulayıcıları kurulu ve
+# sağlamdı (duman testi: hepsi exit 0, damgalı çıktı) ama saha oturumunda SIFIR
+# kez koştu. Zincirde motoru ÇAĞIRAN deterministik bir halka yoktu ve bütün
+# kapılar "çıktı VAR mı" diye soruyordu, "motor KOŞTU mu" diye değil: C5,
+# modelin kendi yazdığı .md'nin `_oa/` yolunu kanıt sayıyordu; adım-8 yalnız
+# adım-5'in BEKLIYOR olmasına bakıyordu; BILGI-EKSIK ile geçiş serbestti. Bu
+# dört motor halüsinasyonun kapısıdır (iddia↔delil, nedensellik, karşı tez,
+# norm↔vakıa); kanıtları DİSKTE motorun KENDİ yazdığı `arac` damgasıdır —
+# betik adını kanıt metninde anmak motorun koştuğunu kanıtlamaz. Damga
+# sözleşmesi `_denetim_jsonlari` (K1, ad-bağımsız) üzerinden okunur; tazelik
+# hükmü `tazelik_denetim` (S1 kaynak beyanı) TEK kaynağından gelir — burada
+# ikinci bir kural İCAT EDİLMEZ. tests/oa_motor_damga.DAMGALAR bu tabloyla
+# kilitlidir (test_v0518_halusinasyon_kapisi).
+_MOTOR_DAMGALARI = {"oa-illiyet": "grafik_denetim", "oa-vakia": "vakia_matris",
+                    "oa-kiyas": "kiyas_denetim", "oa-antitez": "antitez_matris"}
+# Köprü betiği bu dosyanın yanındadır — eklenti düzeninde oa-pipeline/scripts,
+# düz araç çantasında (`_oa/araclar/`) aynı dizin. Model kopyayı her hat başında
+# eklentiden tazeler (oa-pipeline SKILL.md), köprü de onunla birlikte gelir.
+_KOPRU_BETIGI = "motor_koprusu.py"
+
+
+def _kopru_komutu(kok):
+    """RET/ELDEN mesajlarındaki TEK komut: dört motoru ve çapraz denetimi koşturur."""
+    betik = os.path.join(os.path.dirname(os.path.abspath(__file__)), _KOPRU_BETIGI)
+    return f'python "{betik}" --kok "{os.path.abspath(kok or ".")}"'
 
 # Sözleşme dizinleri (P0-8 sözleşme-dışı-dizin bekçisi + genel referans) —
 # oa_hafiza.DIZINLER (defter/devir/cikti/teyit/oturum/arsiv-yerel) EKSİK
@@ -1001,6 +1030,91 @@ def _graf_kapisi_sorunu(kok):
     return None
 
 
+def _bayat_urun_adlari(kok):
+    """tazelik_denetim'in BAYAT hükmü verdiği `_oa/cikti` ürün adları. Modül
+    yüklenemez/çökerse boş küme: tazelik bilinmiyorsa damga yine motorun
+    koştuğunu kanıtlar (DURUM.md «ZİNCİR TAZELİĞİ DENETLENEMEDİ» satırı bu
+    belirsizliği ayrıca görünür kılar). ASLA fırlatmaz."""
+    mod = _tazelik_denetim_modulu()
+    if mod is None:
+        return frozenset()
+    try:
+        rapor = mod.kok_denetle(kok or ".") or {}
+    except Exception:
+        return frozenset()
+    return frozenset(str(b.get("urun")) for b in (rapor.get("bayat") or []) if isinstance(b, dict))
+
+
+def _motor_damga_sorunu(kok, damga, bayat_urunler=None):
+    """HALÜSİNASYON KAPISI — tek motorun sorusu: None (damga diskte, çökmemiş,
+    taze) | kısa sebep. `bayat_urunler` None ise gerektiğinde hesaplanır.
+    Yalnız "motor KOŞTU mu" sorulur; motorun BULGUSU (ispat boşluğu, açık cephe,
+    kritik kıyas boşluğu) kapıyı kapatmaz — o karar avukatındır (kiyas_denetim
+    exit sözleşmesi, 2026-08-12 kararı). Çevrim/şema K2 GRAF KAPISI'nın işidir."""
+    kayitlar = _denetim_jsonlari(kok, damga)
+    if not kayitlar:
+        return "YOK"
+    saglam = [yol for yol, m in kayitlar if not m.get("denetim_coktu")]
+    if not saglam:
+        return "ÇÖKTÜ"
+    if bayat_urunler is None:
+        bayat_urunler = _bayat_urun_adlari(kok)
+    if all(os.path.basename(yol) in bayat_urunler for yol in saglam):
+        return "BAYAT — girdisi denetimden sonra değişti"
+    return None
+
+
+def _halusinasyon_eksikleri(kok):
+    """Dört motorun eksikleri [(damga, sebep)] — damga adına göre sıralı.
+    Tazelik raporu en fazla BİR kez hesaplanır (hiç damga yoksa hiç)."""
+    damgalar = sorted(set(_MOTOR_DAMGALARI.values()))
+    bayat = (_bayat_urun_adlari(kok) if any(_denetim_jsonlari(kok, d) for d in damgalar)
+             else frozenset())
+    eksik = []
+    for damga in damgalar:
+        sorun = _motor_damga_sorunu(kok, damga, bayat)
+        if sorun:
+            eksik.append((damga, sorun))
+    return eksik
+
+
+def _halusinasyon_kapisi_sorunu(kok):
+    """Adım-8 ve teslim (c2) kapılarının ORTAK metni: None (dört damga tamam) |
+    RET metni (eksik motorlar + tek komut)."""
+    eksik = _halusinasyon_eksikleri(kok)
+    if not eksik:
+        return None
+    return ("HALÜSİNASYON KAPISI: motorun kendi yazdığı damgalı ve taze denetim çıktısı "
+            "eksik — " + ", ".join(f"{d} ({s})" for d, s in eksik)
+            + ". Vakıa↔delil, illiyet, antitez ve kıyas motorları koşmadan dilekçe "
+              "yazım/teslim adımı geçilemez; betik adını kanıtta anmak motorun koştuğunu "
+              "kanıtlamaz. Tek komut: " + _kopru_komutu(kok))
+
+
+def halusinasyon_kapisi_durumu(kok):
+    """Teslim (c2) kapısının TEK kaynağı (teslim_paketi in-process çağırır).
+    Döner: {"durum": "tamam"|"eksik"|"serh", "eksik": [damga], "serh_metni",
+    "serh_gerekce", "mesaj"}. Kapı statüye değil DİSKE bakar — BILGI-EKSIK/
+    GEREKSIZ yazmak onu açmaz. Tek çıkış yolu adım-8 (oa-dilekce) olayındaki
+    gerekçeli avukat şerhidir (`--serh-kapi halusinasyon` ya da `tumu`;
+    derlenmiş defterde EN SON olay geçerlidir)."""
+    eksik = _halusinasyon_eksikleri(kok)
+    sonuc = {"durum": "tamam", "eksik": [d for d, _s in eksik], "serh_metni": None,
+             "serh_gerekce": None, "mesaj": None}
+    if not eksik:
+        return sonuc
+    sonuc["durum"] = "eksik"
+    sonuc["mesaj"] = _halusinasyon_kapisi_sorunu(kok)
+    olaylar_yol = os.path.join(kok or ".", "_oa", "defter", OLAYLAR_ADI)
+    d = derle(olaylar_yol) if os.path.isfile(olaylar_yol) else None
+    p = (((d or {}).get("adimlar", {}).get("8") or {}).get("parcalar") or {}).get("oa-dilekce") or {}
+    if p.get("serh") and p.get("serh_kapi") in ("halusinasyon", "tumu"):
+        sonuc["durum"] = "serh"
+        sonuc["serh_metni"] = p.get("serh_metni")
+        sonuc["serh_gerekce"] = p.get("serh_gerekce")
+    return sonuc
+
+
 def _serh_kapiyi_gecer_mi(serh_gecerli, serh_kapi, kapi):
     """P1 — geçerli şerh BU kapıyı geçer mi? Kapı adsız (çıplak --serh) veya
     'tumu' → evet (geriye uyum); adlandırılmışsa yalnız eşleşen kapı."""
@@ -1253,6 +1367,17 @@ def _onkosul_kontrol(kok, adim, parca, serh, mevcut_d=None, kanit=None, serh_kap
             if ret:
                 return False, ret, None, False
 
+    # HALÜSİNASYON KAPISI (v0.5.18 saha testi): adım-8 (YAZIM/oa-dilekce)
+    # UYGULANDI, dört motorun damgalı ve taze denetim çıktısı diskte yokken
+    # yazılamaz — statülerden bağımsız (BILGI-EKSIK/GEREKSIZ motoru koşturmuş
+    # sayılmaz). Tek çıkış: `--serh-kapi halusinasyon` (ya da tumu) gerekçeli şerh.
+    if anahtar == (8, "oa-dilekce"):
+        hal_sorun = _halusinasyon_kapisi_sorunu(kok)
+        if hal_sorun:
+            ret = _kapi("halusinasyon", hal_sorun, "HALÜSİNASYON KAPISI ŞERH ile geçildi: " + hal_sorun)
+            if ret:
+                return False, ret, None, False
+
     # K2 (v0.5.16, karar #1 SERT) — GRAF KAPISI: yalnız adım-1/oa-illiyet.
     if anahtar in ONKOSUL_GRAF_KAPISI:
         graf_sorun = _graf_kapisi_sorunu(kok)
@@ -1415,7 +1540,7 @@ def _uygula_adim(d, o, sira=None):
     guncelleme = {"durum": o.get("durum"), "kanit": o.get("kanit"),
                   "zaman": o.get("zaman"), "serh": bool(o.get("serh")),
                   "serh_metni": o.get("serh_metni"), "_sira": sira,
-                  "serh_kapi": o.get("serh_kapi"),
+                  "serh_kapi": o.get("serh_kapi"), "serh_gerekce": o.get("serh_gerekce"),
                   "arac_imzali": _olay_arac_imzali_mi(o)}
     if o.get("pas_yolu"):
         guncelleme["pas_yolu"] = o.get("pas_yolu")  # M1 PAS PROTOKOLÜ — verilmemişse ESKİ değer KORUNUR
@@ -2025,7 +2150,23 @@ def isle(args):
     # ELDEN + ŞERHLİ birlikte yazılır, DURUM.md/--denetle/Avukat Kararı
     # Bekleyen ikisini de ayrı ayrı gösterir (oa_metrik zaten şerhli ELDEN'i
     # sayıyordu). Karakterizasyon değişikliği bilinçlidir (bkz. test_v0516_B).
-    if durum == "UYGULANDI" and args.parca in ELDEN_KAPSAM:
+    # v0.5.18 (saha testi — HALÜSİNASYON KAPISI): dört motor parçasında kanıt
+    # METİN değil DİSKTİR. Kanıttaki herhangi bir `_oa/` yolu (modelin kendi
+    # .md'si dahil) eskiden C5'i susturuyordu; artık motorun KENDİ yazdığı
+    # `arac` damgalı, çökmemiş ve taze denetim JSON'u aranır. Damga varsa kanıt
+    # metninde yol şartı yoktur; diğer ELDEN_KAPSAM parçaları eski yol kuralında.
+    motor_damga = _MOTOR_DAMGALARI.get(args.parca)
+    if durum == "UYGULANDI" and motor_damga:
+        kok_c5 = getattr(args, "kok", None)
+        motor_sorun = _motor_damga_sorunu(kok_c5, motor_damga)
+        if motor_sorun:
+            durum = "ELDEN"
+            elden_notu = (f"\nELDEN DÜŞÜRME (C5): HALÜSİNASYON MOTORU — _oa/cikti altında "
+                          f"arac={motor_damga} damgalı denetim JSON'u {motor_sorun} — statü "
+                          "UYGULANDI yerine ELDEN yazıldı. Betik adını kanıtta anmak ya da "
+                          "kendi yazdığın .md motorun koştuğunu kanıtlamaz; damgayı motor "
+                          "yazar. Tek komut: " + _kopru_komutu(kok_c5))
+    elif durum == "UYGULANDI" and args.parca in ELDEN_KAPSAM:
         yol_var, disk_var = _kanit_artefakt_yolu_var_mi(getattr(args, "kok", None), kanit)
         if not (yol_var and disk_var):
             durum = "ELDEN"
@@ -2046,12 +2187,18 @@ def isle(args):
         olay["serh"] = True
         olay["serh_metni"] = serh_metni
         olay["serh_kapi"] = serh_kapi or "tumu"   # P1 — adsız şerh = tümü (kayıtta görünür)
+        # v0.5.18 — avukatın GEREKÇESİ de kayda girer. Eskiden yalnız kapının
+        # kendi mesajı yazılıyor, `--serh` metni (neden geçildiği) kayboluyordu:
+        # "gerekçeli şerh"in gerekçesi defterde yoktu. İmza alanlarına girmez.
+        olay["serh_gerekce"] = (getattr(args, "serh", None) or "").strip()
     olay["imza"] = _imza_hesapla(olay)
     olay_ekle(olaylar_yol, olay)
     d_sonra = derle(olaylar_yol)
     _durum_yaz(durum_yol, d_sonra)  # türev görünümü tazele
     uyari = elden_notu
-    if (durum == "UYGULANDI" and args.parca in SCRIPTLI
+    # Motor parçasında UYGULANDI zaten diskteki damgayla kanıtlıdır — kanıt
+    # metnindeki kelimeye bakan uyarı orada hem gereksiz hem yanıltıcıdır.
+    if (durum == "UYGULANDI" and args.parca in SCRIPTLI and not motor_damga
             and "script" not in kanit.lower() and ".py" not in kanit.lower()):
         uyari = ("\nUYARI: bu parça SCRIPT'lidir; kanıtta script çıktısına iz yok — "
                  "gerçek script koştuysa kanıta yaz, koşmadıysa statü sahte olur.")
@@ -2718,10 +2865,15 @@ def _denetle_hesapla(kok, olaylar_yol, durum_yol, gate_g_atla=False, makbuz_kont
             elif p["durum"] == "YUKLENEMEDI":
                 uyarilar.append(f"adım {no} / {parca}: fiziken yüklenemedi — çıktıda açıkça belirtilmeli")
     if elden_kalemler:
+        # v0.5.18 — ELDEN'deki bir halüsinasyon motoru için çare yolu tarif
+        # etmek değil TEK KOMUTTUR (saha: motorlar hiç koşmadı, çare metni okunup geçildi).
+        motor_elden = any(k.split("/", 1)[-1] in _MOTOR_DAMGALARI for k in elden_kalemler)
         uyarilar.append(
             f"ELDEN (tek özet): {len(elden_kalemler)} parça script artefaktı diskte "
             "kanıtlanmadan elden işlendi — " + ", ".join(elden_kalemler)
-            + " (script fiilen koştuysa çıktısını _oa/ altına yaz ve statüyü yeniden işle).")
+            + " (script fiilen koştuysa çıktısını _oa/ altına yaz ve statüyü yeniden işle"
+            + ("; halüsinasyon motorları için tek komut: " + _kopru_komutu(kok)
+               if motor_elden else "") + ").")
     for k, p in d["katmanlar"].items():
         if p["durum"] == "BEKLIYOR":
             sorunlar.append(f"katman {k}: statü YOK (kalıcı katman 'gereksiz' olamaz; somut çıktısı kaydedilmeli)")

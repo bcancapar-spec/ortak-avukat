@@ -18,6 +18,7 @@ import tempfile
 
 import pytest
 
+import oa_motor_damga as omd
 from oa_udf_ortam import gercek_udf_yazici_gerekli
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -505,6 +506,9 @@ def test_dairesel_bagimlilik_yok_teslim_pattern_dosya_ile_zorlasiz_tamamlanir(iz
     cikti_dizin.mkdir(parents=True, exist_ok=True)
     taslak = cikti_dizin / "08-dilekce-TESLIM.md"
     taslak.write_text(TAM_TEMIZ_TASLAK, encoding="utf-8")
+    # v0.5.18 — (c2) HALÜSİNASYON KAPISI statüye değil DİSKE bakar: adımları GEREKSIZ
+    # yazmak motorları koşmuş saymaz. Bu test (d)'nin dairesel kilidini sınar; motorlar koşmuş.
+    omd.dort_damga(izole_kok)
 
     # teslim_paketi --serh'SİZ/--zorla'SIZ tamamlanabiliyor mu? (adım 9/10 hâlâ
     # BEKLIYOR — (d) kapısı bunu TESLİM-ÖNCESİ kipte artık sorun SAYMAMALI.)
