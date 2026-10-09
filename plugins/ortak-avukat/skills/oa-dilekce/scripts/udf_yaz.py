@@ -398,7 +398,14 @@ def udf_dogrula(yol, resmi_okuyucu=True, okuyucu_fn=None):
             % len(sonuc["imzali_tolerans"]))
 
     # 5) RESMİ OKUYUCU TANIĞI (dışarıdan kanıt) — bkz. `npx_ile_udf_oku` notu.
-    if resmi_okuyucu:
+    # v0.5.18 (G-6, anayasa m.10): okuyucu udf-cli'dir — UDF'in içeriği dış araca gider. Kişisel
+    # veri taşıyan içerik gönderilmez; bacak GÖRÜNÜR biçimde "YAPILAMADI" der (bloklamaz).
+    layer0 = layer0_sorunu(tam) if resmi_okuyucu else None
+    if layer0:
+        sonuc["resmi_okuyucu"] = "YAPILAMADI"
+        sonuc["resmi_okuyucu_not"] = ("Layer 0 — içerik dış okuyucuya (udf-cli udf2md) "
+                                      "GÖNDERİLMEDİ (anayasa m.10): %s" % layer0)
+    elif resmi_okuyucu:
         r = (okuyucu_fn or npx_ile_udf_oku)(yol)
         if not r.get("calisti"):
             sonuc["resmi_okuyucu"] = "YAPILAMADI"
@@ -827,6 +834,103 @@ def docx2udf_ile_uret(girdi_yolu, cikti_yolu=None, npx_yolu="npx", zaman_asimi=1
 # varsa GÖRÜNÜRLÜK garanti edilir (rapor dosyası + stdout uyarısı + DURUM.md
 # notu) — model bir sonraki adımı (`pipeline_kayit.py --isle`/`--denetle`)
 # hiç çağırmasa BİLE.
+# ═══════════ LAYER 0 ÇAĞRI NOKTASINDA (v0.5.18 saha testi G-6/G-11 — anayasa m.10) ══════════
+# NEDEN VAR: anayasa m.10 Layer 0'ın HER dış-araç çağrısını sardığını söyler. UDF teslimdeki
+# katı engel (avukat kararı 2026-10-05: udf-cli ağ + oturum kullanan bir dış araçtır; Layer 0
+# kapanırsa onay bayrağı YOK, UDF yerelde UYAP editöründe üretilir) yalnız teslim_paketi'nin
+# (c) kapısında uygulanıyordu. Sahada teslim `--udf-yok` ile alındıktan sonra UDF bu betik
+# doğrudan çağrılarak üretildi: kimlik numaralı metin süzgeçten geçmeden udf-cli'ye gitti,
+# onay kaydı yoktu. Süzgeç artık içeriğin dışarı çıktığı üç noktada koşar — html2udf, docx2udf
+# ve resmî okuyucu (udf2md); ölçüt teslim (c) ile AYNIDIR (gizlilik_tara strict: DENY ya da
+# ASK → gönderilmez). Süzgeç yüklenemez ya da çökerse içerik gönderilmez (fail-closed).
+_GIZLILIK_MOD = None
+LAYER0_CIKIS = 6   # docx2udf'in 0-5 çıkış kodlarıyla çakışmaz
+_LAYER0_YOL = ("UDF'i yerelde UYAP Doküman Editörü'nde üretin (avukat kararı 2026-10-05: UDF "
+               "teslimde katı engel, onay bayrağı yok); teslim zinciri için teslim_paketi --udf-yok. "
+               "Dilekçede kimlik numarası zorunlu olduğundan (HMK m.119/1-c) maskeleme çoğu zaman "
+               "uygun değildir.")
+
+
+def _gizlilik_modulu():
+    """oa-gizlilik/scripts/gizlilik_tara.py — eklenti düzeninde kardeş skill'den, düz araç
+    çantasında (`_oa/araclar`) aynı dizinden yüklenir. Bulunamaz/çökerse None (çağıran
+    fail-closed davranır: taranamayan içerik gönderilmez)."""
+    global _GIZLILIK_MOD
+    if _GIZLILIK_MOD is not None:
+        return _GIZLILIK_MOD
+    burasi = pathlib.Path(__file__).resolve().parent
+    for aday in (burasi.parent.parent / "oa-gizlilik" / "scripts" / "gizlilik_tara.py",
+                 burasi / "gizlilik_tara.py"):
+        if not aday.is_file():
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location("_oa_udf_yaz_gizlilik", str(aday))
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+        except Exception:
+            return None
+        if hasattr(mod, "tara"):
+            _GIZLILIK_MOD = mod
+            return mod
+    return None
+
+
+def layer0_sorunu(metin):
+    """None = içerik dış araca gidebilir (ALLOW); aksi hâlde kısa sebep — yalnız desen ADLARI,
+    içerik basılmaz. Ölçüt teslim (c) ile aynıdır: strict; DENY ya da ASK → gönderilmez."""
+    mod = _gizlilik_modulu()
+    if mod is None:
+        return ("gizlilik tarayıcısı (oa-gizlilik/scripts/gizlilik_tara.py) yüklenemedi — "
+                "taranamayan içerik gönderilmez")
+    try:
+        deny, ask = mod.tara(metin or "", "strict")
+    except Exception as e:
+        return "gizlilik taraması çöktü (%s) — taranamayan içerik gönderilmez" % type(e).__name__
+    if deny or ask:
+        adlar = sorted({str(ad) for _s, ad in list(deny) + list(ask)})
+        return "%s: %s" % ("DENY" if deny else "ASK", ", ".join(adlar))
+    return None
+
+
+def _giden_metin(udf_html):
+    """udf-cli'ye FİİLEN giden içerik: üretilen UDF-HTML'in metni. Ham taslak taranmaz — iç
+    kaynakça bloğu (B-20) HTML üretilirken ayıklanır ve dışarı hiç gitmez; süzgeç dışarı
+    çıkmayan satıra takılırsa yanlış engel olur."""
+    import html as _html  # noqa: PLC0415 — yalnız bu yardımcıda; ad çakışması (yerel `html`) olmasın
+    return _html.unescape(re.sub(r"<[^>]+>", " ", udf_html or ""))
+
+
+def _layer0_bildir(sebep, arac):
+    print("LAYER 0 KAPALI — içerik dış araca (%s) GÖNDERİLMEDİ (anayasa m.10): %s" % (arac, sebep),
+          file=sys.stderr)
+    print("  YOL: " + _LAYER0_YOL, file=sys.stderr)
+
+
+def _belge_metni(yol):
+    """docx2udf'e gidecek hazır belgenin metni (yalnız Layer 0 taraması için). .docx → word/
+    altındaki XML parçalarının paragraf metni (Word'ün parçaladığı koşular birleştirilir — kimlik
+    numarası bölünmesin); .pdf → PyMuPDF metni. Okunamazsa None (çağıran fail-closed)."""
+    uz = os.path.splitext(str(yol))[1].lower()
+    try:
+        if uz == ".docx":
+            satirlar = []
+            with zipfile.ZipFile(yol) as z:
+                for ad in sorted(z.namelist()):
+                    if not (ad.startswith("word/") and ad.endswith(".xml")):
+                        continue
+                    xml = z.read(ad).decode("utf-8", "replace")
+                    for p in re.findall(r"<w:p[\s>].*?</w:p>", xml, re.S):
+                        satirlar.append("".join(re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", p, re.S)))
+            return "\n".join(satirlar)
+        if uz == ".pdf":
+            import fitz  # noqa: PLC0415 — yalnız bu yolda gerekir
+            with fitz.open(yol) as d:
+                return "\n".join(s.get_text() for s in d)
+    except Exception:
+        return None
+    return None
+
+
 def _capraz_skill_yukle(dosya_adi, modul_adi):
     """Kardeş skill oa-kontrol'ün scriptini (…/oa-dilekce/scripts/ →
     …/oa-kontrol/scripts/) İN-PROCESS import eder — `dilekce_denetim.py`'nin
@@ -1428,6 +1532,13 @@ def main():
     if a.kaynak_docx:
         kaynak = _kok_coz(a.kaynak_docx, a.kok)
         cikti_docx = _kok_coz(a.cikti, a.kok) if a.cikti else None
+        # v0.5.18 (G-6, anayasa m.10): hazır belge de dış araca (docx2udf) gider — önce süzgeç.
+        belge = _belge_metni(kaynak)
+        layer0 = (layer0_sorunu(belge) if belge is not None else
+                  "belge metni okunamadı (yalnız .docx/.pdf taranabilir) — taranamayan içerik gönderilmez")
+        if layer0:
+            _layer0_bildir(layer0, DOCX2UDF_PAKET)
+            sys.exit(LAYER0_CIKIS)
         sonuc = docx2udf_ile_uret(kaynak, cikti_docx, npx_yolu=a.npx)
         print("docx2udf: %s (exit %s)" % (sonuc["aciklama"], sonuc["exit_kod"]))
         if sonuc["stderr"]:
@@ -1586,7 +1697,13 @@ def main():
               % (html_yolu, " (geçici)" if html_gecici else "", len(html)))
 
         # ── TEK GEÇERLİ MOTOR: npx udf-cli html2udf (rehbere birebir) ────────
-        sonuc = npx_ile_udf_uret(html_yolu, cikti, npx_yolu=a.npx)
+        # v0.5.18 (G-6/G-11, anayasa m.10): içerik dışarı çıkmadan ÖNCE Layer 0. Kapanırsa
+        # yazıcı HİÇ çağrılmaz; yerel PDF önizlemesi (dışarı gitmez) yine denenir.
+        layer0 = layer0_sorunu(_giden_metin(html))
+        if layer0:
+            sonuc = {"basarili": False, "layer0": layer0}
+        else:
+            sonuc = npx_ile_udf_uret(html_yolu, cikti, npx_yolu=a.npx)
 
         # PDF önizlemesi UDF motorundan BAĞIMSIZDIR (aynı UDF-HTML'den,
         # ağsız/PyMuPDF ile üretilir) — UDF üretimi başarısız olsa BİLE
@@ -1603,6 +1720,9 @@ def main():
                 print("PDF yazıldı: %s (%d sayfa, font gömüldü: %s)"
                       % (pdf_yolu, sayfa, "EVET" if font_gomuldu else "HAYIR"))
 
+        if sonuc.get("layer0"):
+            _layer0_bildir(sonuc["layer0"], UDF_CLI_PAKET)
+            sys.exit(LAYER0_CIKIS)
         if not sonuc["basarili"]:
             print("HATA: %s" % sonuc["hata"], file=sys.stderr)
             if sonuc["stderr"]:

@@ -151,8 +151,9 @@ kilitler.**
 - `ifsa_durumu` — gizli talimat ifşasının teslimdeki ADVISORY durumu (v0.5.18 Faz B; Ruling 11:
   kapı KAPATMAZ): `{durum, seviye, satir, kunye_sha8}` (`kunye_sha8`: bölümün dayandığı
   `_oa/metin/00-kunye.json`'un sha8'i — izlenebilirlik) — `durum` ∈ `bolum-dilekcede` | `bolum-bayat`
-  (güncel tespitin alıntısı taslakta yok) | `bilincli-atlandi` (gerekçeli kayıt ortak istisna
-  defterinde, güncel bulgu parmak iziyle) | `bolum-yok` | `bulgu-yok` | `yanlis-ifsa-riski`
+  (güncel tespitin alıntısı taslakta yok) | `bilincli-atlandi` (gerekçeli ve `onay: avukat` kayıt ortak
+  istisna defterinde, güncel bulgu parmak iziyle) | `model-atladi` (v0.5.18 G-5: güncel atlama kaydı
+  yalnız MODEL BEYANI — avukat onayı yok, uyarı açık kalır; anayasa m.9) | `bolum-yok` | `bulgu-yok` | `yanlis-ifsa-riski`
   (BULGU yokken bölüm var) | `denetlenemedi` (temiz SAYILMAZ). Zaman damgası taşımaz. Yeşil
   makbuzda doğrudan, RED makbuzunda `advisory_denetimler.ifsa_durumu` içinde yaşar
 - `udf_dogrulanmadi_isareti` — v0.5.18 (Fable denetimi T2): udf_yaz'ın bıraktığı

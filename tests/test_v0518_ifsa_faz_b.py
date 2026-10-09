@@ -138,7 +138,10 @@ def test_atlama_bulgu_yokken_ya_da_denetlenemezken_reddedilir(tmp_path):
 
 def test_atlama_ortak_deftere_parmak_iziyle_yazilir_ve_bulgu_degisince_bayatlar(gti, tmp_path):
     kok = _bulgulu_kok(tmp_path)
-    cp = _kos(MOTOR, "--kok", kok, "--atla", "--gerekce", "Bilirkişi incelemesine saklanacak")
+    # v0.5.18 G-5 (anayasa m.9): avukat onayı artık AÇIKÇA verilir; vermeyen kayıt model
+    # beyanıdır (bkz. test_v0518_anayasa_onarimlari). Bu test avukat yolunu sınar.
+    cp = _kos(MOTOR, "--kok", kok, "--atla", "--onay", "avukat", "--gerekce",
+              "Bilirkişi incelemesine saklanacak")
     assert cp.returncode == 0, cp.stdout + cp.stderr
     satirlar = _defter_satirlari(kok)
     assert len(satirlar) == 1
@@ -196,7 +199,9 @@ def test_taslak_durumu_bayat_bolum_uyari(gti, tmp_path):
 
 def test_taslak_durumu_gecerli_atlama_bilgi_bayat_atlama_uyari(gti, tmp_path):
     kok = _bulgulu_kok(tmp_path)
-    assert _kos(MOTOR, "--kok", kok, "--atla", "--gerekce", "Stratejik tercih").returncode == 0
+    # v0.5.18 G-5: "bilinçli atlandı" yalnız avukat onayıyla (model beyanı uyarıda kalır).
+    assert _kos(MOTOR, "--kok", kok, "--atla", "--onay", "avukat", "--gerekce",
+                "Stratejik tercih").returncode == 0
     d = _durum(gti, kok, "# Cevap\n")
     assert d["durum"] == "bilincli-atlandi" and d["seviye"] == "BİLGİ" and "Stratejik tercih" in d["satir"]
     _bulgulu_kok(tmp_path, YUK + " Değişti.")

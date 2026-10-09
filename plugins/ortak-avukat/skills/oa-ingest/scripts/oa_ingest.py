@@ -1860,6 +1860,15 @@ def _guven_ozeti(sayfa_guven):
     return sayfalar
 
 
+def _tekrar_eleme_disi(yontem, gorsel_sayfalar):
+    """G-8 (v0.5.18 saha testi — anayasa m.1 veri kayıpsızlık): metni OKUNAMAYAN kayıt
+    tekrar-elemeye girmez. OCR-BOŞ sayfalı evrakın çıktısı ortak yer tutucudur; farklı evraklar
+    aynı özeti alıp 'aynı içerik' sayılıyor, ikinciden sonrakilerin md'si ve inceleme görselleri
+    hiç yazılmıyordu (sahada 6 kayıttan 5'i). Görseller avukatın o sayfayı okuyabileceği TEK
+    yoldur; gerçek bir kopya iki kez görselleşse de kayıp yoktur (önce kayıpsızlık, m.1)."""
+    return yontem in ("OCR-BOS", OCR_ARAC_HATA_YONTEM) or bool(gorsel_sayfalar)
+
+
 def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef, kullanilan,
                  buyuk_esik, gorsel_sayfalar=None, sha_ilk=None, udf_kunye=None, guvenlik=None,
                  ocr_ek=None):
@@ -1933,15 +1942,19 @@ def kaydet_evrak(metin, yontem, teyit, sayfa, hata, kaynak, no, ad, tarih, hedef
     # kaynak yok sayılmaz, yalnız tekrar üretim engellenir). Yalnız METİNLİ
     # kayıtlar dedup'lanır (karakter>0) — boş/arızalı kayıtların ortak BOS_SHA
     # imzası birbirini 'aynı içerik' YAPMAZ. sha_ilk=None verilirse (ör.
-    # --onbakis kanalı) davranış ESKİSİYLE BİREBİR aynıdır.
-    if sha_ilk is not None and karakter > 0:
+    # --onbakis kanalı) davranış ESKİSİYLE BİREBİR aynıdır. G-8 (v0.5.18): `karakter>0`
+    # okunamayan evrakın yer tutucu metnini ayırt edemiyordu — okunamayan kayıt
+    # (`_tekrar_eleme_disi`) ne elenir ne de başka kaydın eleneceği ilk kayıt olur.
+    tekrar_elenebilir = (sha_ilk is not None and karakter > 0
+                         and not _tekrar_eleme_disi(yontem, gorsel_sayfalar))
+    if tekrar_elenebilir:
         ilk = sha_ilk.get(sha)
         if ilk:
             kayit["md"], kayit["harita"] = "", ""
             kayit["ayni_icerik"] = ilk
             return kayit
     kayit["md"], kayit["harita"] = md_yaz(hedef, no, ad, tarih, metin, kayit, kullanilan, buyuk_esik)
-    if sha_ilk is not None and karakter > 0 and kayit["md"]:
+    if tekrar_elenebilir and kayit["md"]:
         sha_ilk.setdefault(sha, kayit["md"])
     # ---- P0-9 OCR-NÖBETÇİSİ: hâlâ çökük kalan sayfalar İÇİN (hedefli) görsel-inceleme
     # dosyaları — yazım burada (TEK-YAZAR EBEVEYN); işçi yalnız PNG baytlarını taşıdı. ----
@@ -2054,6 +2067,17 @@ def _tara(klasor, hedef_abs, onbellek, yeniden, ocr_motor="tesseract"):
                     _ocr = any(str(k.get("yontem") or "").upper().startswith("OCR") or k.get("yontem") == "pdf-karma"
                                for k in _kk if k)
                     if _ocr and (onb.get("ocr_motor") or "tesseract") != ocr_motor:
+                        it["hit"] = False; it["cached"] = None
+                        it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
+                # v0.5.18 (saha testi G-8 — anayasa m.1): okunamayan evrakın tekrar-elemeyle
+                # işaretlenmiş eski kaydı (md'si ve inceleme görselleri hiç yazılmamış) önbellekten
+                # servis edilmez; bir kez yeniden okunur ki kaybolan görseller doğsun. Sağlam
+                # OCR-BOŞ kaydı (kendi md'si ve görselleri olan) HIT kalır — gereksiz OCR yok.
+                if it["hit"]:
+                    _kk = [onb["kayit"]] if onb.get("kayit") else (onb.get("kayitlar") or [])
+                    if any(k and k.get("ayni_icerik")
+                           and _tekrar_eleme_disi(k.get("yontem"), k.get("ocr_bos_sayfalar"))
+                           for k in _kk):
                         it["hit"] = False; it["cached"] = None
                         it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
                 # v0.5.18 (Görev 6): DOCX çıkarıcısının metin sözleşmesi değişti — DOCX kaydı
@@ -2440,7 +2464,8 @@ def main():
     sha_ilk = {}
 
     def _sha_kaydet(k):
-        if k.get("sha") and (k.get("karakter") or 0) > 0 and k.get("md") and not k.get("ayni_icerik"):
+        if (k.get("sha") and (k.get("karakter") or 0) > 0 and k.get("md") and not k.get("ayni_icerik")
+                and not _tekrar_eleme_disi(k.get("yontem"), k.get("ocr_bos_sayfalar"))):   # G-8
             sha_ilk.setdefault(k["sha"], k["md"])
 
     for it in items:      # items zaten SIRALI → md adlandırma seri koşuyla BİREBİR aynı

@@ -162,6 +162,18 @@ Saha testi (gerçek bir icra hukuk dosyası, istinaf dilekçesi; kimlik bilgisi 
 - Hook sıcak yoluna yeni import ya da hesap girmedi.
 - Test: `tests/test_v0518_halusinasyon_kapisi.py` (24; sonradan eklenen dört davranış mutasyonla kanıtlandı). Zincirin başka halkasını sınayan eski testler motorların koştuğu dünyayı `tests/oa_motor_damga.py` fikstürüyle kurar; amaçları değişmedi.
 
+### O. Sahada görülen anayasa aykırılıkları giderildi; avukatın lafız kuralı (2026-10-09)
+
+Avukat talimatı: "anayasa aykırılıklarını da gider", "sisteme uy". Saha testinde gözcü heyeti, model davranışından bağımsız olarak sistemin kendisinin anayasaya aykırı işlediği dört yer buldu. Teşhisler Fable 5.1'in koddan çıkardığı kanıtla örtüştü. Her onarım önce kırmızı testle yazıldı.
+
+- **Avukat onayı uydurulmaz (anayasa m.9, m.8):** karşı tarafın gizli talimatını dilekçeye almama kararı her durumda "avukat onayladı" diye kaydediliyordu; sahada bu kararı model vermişti. Artık kayıt kararın gerçek sahibini yazar: avukat açıkça karar verdiyse `--onay avukat`, aksi hâlde "model beyanı" — dilekçe denetimindeki uyarı açık kalır.
+- **Okunamayan evrak kaybolmaz (anayasa m.1 — veri kayıpsızlık):** OCR'ın okuyamadığı altı ayrı evrak ortak yer tutucu yüzünden "aynı içerik" sayıldı; beşinin kaydı ve avukatın sayfayı gözle okuyabileceği görselleri hiç oluşmadı. Artık okunamayan evrak tekrar-elemeye girmez; eski kusurla kaydedilmiş evrak bir kez yeniden okunur.
+- **Gizlilik süzgeci dış aracı çağıran yerde koşar (anayasa m.10):** UDF'e çeviren araç (udf-cli) dış araçtır. Süzgeç yalnız teslim zincirinin içinde soruluyordu; sahada teslim UDF'siz alındıktan sonra UDF doğrudan üretildi ve kimlik numaralı metin süzgeçsiz dışarı gitti. Artık süzgeç, içeriği dışarı gönderen betiğin içinde, dışarı fiilen giden metne uygulanır (iç kaynakça bloğu B-20 gereği dışarı gitmediği için taranmaz). Kişisel veri varsa UDF üretilmez ve avukatın 2026-10-05 kararındaki yol gösterilir: UDF yerelde UYAP editöründe üretilir. Resmî okuyucu da aynı kurala tabidir.
+- **Mühür doğru sürümü yazar (anayasa m.5):** ürün mühürleri her ürünü "v0.5.8 (fork-prova)" üretmiş gibi damgalıyordu. Sürüm artık tek kaynaktan okunur; okunamazsa yanlış sürüm değil "sürümü okunamadı" yazılır.
+- **Avukatın lafzı — şapkalı harf yok:** dilekçede â yerine a, î yerine i (hâkim → hakim, resmî → resmi). Birebir alıntıya dokunulmaz; alıntıyı değiştirmek tahriftir. Kural oa-dilekce'nin "Yazar sistemi ve lafzı" bölümüne işlendi; dilekçe denetiminde [Ş] uyarısı (bloklamaz).
+- Açık kalan (v0.5.19): teslim makbuzunun nihai UDF'in özetini taşıması ve UDF'siz makbuzun "ara" sayılması (G-11'in makbuz yüzü); karar dökümünün araç çağrısına bağlanması.
+- Test: `tests/test_v0518_anayasa_onarimlari.py` (18; G-6 bağı mutasyonla kanıtlı), `tests/test_v0518_sapka_kurali.py` (8).
+
 ### Davranış değişiklikleri (güncelleyenler için)
 
 - **B-23:** v0.5.7.4'teki yedek MCP kararı tersine çevrildi — tek içtihat bağlayıcısı Yargı PRO; yoksa otomatik geçiş yok, "teyit YAPILAMADI".
@@ -175,6 +187,9 @@ Saha testi (gerçek bir icra hukuk dosyası, istinaf dilekçesi; kimlik bilgisi 
 - **Belge güvenlik kapısı 1.2 (M):** önbellekte 1.1 ile işaretli evrak bir kez yeniden taranır (OCR'lı kayıtta yalnız md metni; bulgu ya da şüpheli alan varsa tam yeniden çıkarım). Açılamayan, parolalı ya da yapısı bozuk evrak artık "temiz" değil DENETLENEMEZ görünür.
 - **Kritik alan listesi (M):** 30'dan fazla şüpheli alanda liste her türü korur; md ve DURUM.md gerçek toplamı ve "KESİLDİ" notunu gösterir.
 - **Halüsinasyon kapısı (N):** vakıa, illiyet, antitez ve kıyas için UYGULANDI ile dilekçe adımı artık motorun kendi damgasını ister; teslimde yeni (c2) kapısı var. Motorlar koşmadıysa RET; tek komut `python <eklenti>/skills/oa-pipeline/scripts/motor_koprusu.py --kok <dava kökü>`; bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon`). Adımları BILGI-EKSIK ya da GEREKSIZ yazmak teslim (c2) kapısını açmaz.
+- **İfşa atlama (O):** `gizli_talimat_ifsa.py --atla` kaydı varsayılan olarak "model beyanı"dır ve uyarıyı susturmaz; avukat kararı `--onay avukat` ile kaydedilir.
+- **UDF üretimi (O):** kişisel veri (gizlilik süzgeci strict: DENY ya da ASK) taşıyan metin udf-cli/docx2udf'e gönderilmez — `udf_yaz.py` çıkış 6 verir; UDF yerelde UYAP editöründe üretilir. Resmî okuyucu böyle bir UDF için "YAPILAMADI (Layer 0)" der.
+- **Dilekçe yazımı (O):** şapkalı â ve î kullanılmaz (a, i); dilekçe denetimi [Ş] uyarısı basar.
 
 ### Yapılamayanlar / sınırlar
 

@@ -116,6 +116,21 @@ def e_imza_muhur_uret(kok, urun, imza_oncesi_sha=None, girdiler=(),
                       onceki=imza_oncesi_sha, arac=arac, llm=llm)
 
 
+def _uretici_varsayilani():
+    """`was_generated_by` varsayılanı: eklentinin GERÇEK sürümü, tek kaynaktan (plugin.json).
+    NEDEN VAR (v0.5.18 saha testi — anayasa m.5): sabit "ortak-avukat v0.5.8 (fork-prova)"
+    çalışan sürüm 0.5.18 iken her mührü yanlış sürümle damgalıyordu — doğru olmayan bilgi
+    kesinmiş gibi. Bulunamazsa (ör. `_oa/araclar` düz kopyası) yanlış sürüm yerine dürüstçe
+    "sürümü okunamadı" yazılır."""
+    try:
+        kok = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))))
+        with open(os.path.join(kok, ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
+            return "ortak-avukat v%s" % json.load(f)["version"]
+    except Exception:
+        return "ortak-avukat (sürümü okunamadı)"
+
+
 def muhur_uret(kok, urun, tip, kimlik, girdiler, onceki=None,
                arac=None, llm=None):
     kayit = {
@@ -126,7 +141,7 @@ def muhur_uret(kok, urun, tip, kimlik, girdiler, onceki=None,
         "artifact_sha256": sha256_dosya(urun),
         "generated_at_time": datetime.datetime.now(
             datetime.timezone.utc).isoformat(timespec="seconds"),
-        "was_generated_by": arac or "ortak-avukat v0.5.8 (fork-prova)",
+        "was_generated_by": arac or _uretici_varsayilani(),
         "used": [{"file": _goreli(kok, g), "sha256": sha256_dosya(g)}
                  for g in girdiler if os.path.isfile(g)],
         "was_derived_from": onceki,

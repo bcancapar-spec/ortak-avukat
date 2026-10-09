@@ -138,6 +138,13 @@ içindeki kısaltma MUAF (tırnak içi + '>' blok-alıntı tespiti). Yaygın huk
 kısaltmalar beyaz listesi (HMK, TTK, TBK, TMK, CMK, İYUK, AYM, BAM, E., K.,
 md. — örneklemdir, numerus clausus değil) uyarı üretmez.
 
+── [Ş] ŞAPKALI HARF (avukat lafzı, 2026-10-09 — uyarı sınıfı) ──────────────
+Avukat talimatı: dilekçede şapkalı harf kullanılmaz — â yerine a, î yerine i
+(büyük harfte Â → A, Î → İ). Avukatın kendi metninde kalan her şapkalı sözcük
+önerilen yazımla bir kez gösterilir; BİREBİR ALINTI MUAF ([N] ile aynı tespit —
+alıntıyı değiştirmek tahriftir). û kapsam dışı. ASLA bloklamaz; düzeltmeyi
+yazar yapar.
+
 ── [T] TESLİME-HAZIR MAKBUZ KAPISI (346 saha dersi — makbuz garantisi) ─────
 Denetlenen taslakta ya da kökün `_oa/` belgelerinde 'TESLİME HAZIR' ibaresi
 var ama `_oa/defter/teslim-makbuz.json` (exit_kodu=0) yok/geçersiz →
@@ -2627,15 +2634,12 @@ _N_KUCUK_HARF_RE = re.compile(r"[a-zçğıöşü]")
 _N_AZAMI_UYARI = 8
 
 
-def ciplak_kisaltma_uyarilari(metin):
-    """Tam açılımı hiçbir yerde verilmemiş 2+ büyük harfli kısaltmalar için
-    uyarı listesi (uyarı sınıfı — BLOK değil). MUAFİYETLER: tırnak/'>' birebir
-    alıntı içi (alıntı metnine müdahale edilemez), beyaz liste, romen rakamı,
-    tamamı-büyük başlık satırı ve tamamı-büyük ibarenin parçası olan sözcük."""
-    metin = metin or ""
-    # tırnak spanları (kapanmamış tırnak paragraf/metin sonuna kadar alıntıdır)
+def _tirnak_spanlari(metin):
+    """Birebir alıntı sayılan tırnak aralıkları [(baş, son)] — kapanmamış tırnak
+    metin sonuna kadar alıntıdır. [N] ve [Ş] aynı tespiti kullanır: alıntı
+    muafiyetinin iki kapıda iki ayrı kuralı olmaz."""
     spanlar, acik = [], None
-    for i, ch in enumerate(metin):
+    for i, ch in enumerate(metin or ""):
         if acik is None:
             if ch in _Y_TIRNAK_KAPANIS:
                 acik = (i, _Y_TIRNAK_KAPANIS[ch])
@@ -2644,6 +2648,17 @@ def ciplak_kisaltma_uyarilari(metin):
             acik = None
     if acik is not None:
         spanlar.append((acik[0], len(metin)))
+    return spanlar
+
+
+def ciplak_kisaltma_uyarilari(metin):
+    """Tam açılımı hiçbir yerde verilmemiş 2+ büyük harfli kısaltmalar için
+    uyarı listesi (uyarı sınıfı — BLOK değil). MUAFİYETLER: tırnak/'>' birebir
+    alıntı içi (alıntı metnine müdahale edilemez), beyaz liste, romen rakamı,
+    tamamı-büyük başlık satırı ve tamamı-büyük ibarenin parçası olan sözcük."""
+    metin = metin or ""
+    # tırnak spanları (kapanmamış tırnak paragraf/metin sonuna kadar alıntıdır)
+    spanlar = _tirnak_spanlari(metin)
 
     def _tirnak_icinde(k):
         return any(b <= k < s for b, s in spanlar)
@@ -2682,6 +2697,46 @@ def ciplak_kisaltma_uyarilari(metin):
         uyarilar = uyarilar[:_N_AZAMI_UYARI]
         uyarilar.append(f"(+{kirpilan} çıplak kısaltma adayı daha — rapor "
                         f"{_N_AZAMI_UYARI} kalemle sınırlı, taslağı elle tarayın)")
+    return uyarilar
+
+
+# ── [Ş] ŞAPKALI HARF (avukat lafzı, 2026-10-09 — uyarı sınıfı) ─────────────
+# NEDEN VAR: avukat talimatı (2026-10-09): dilekçede şapkalı harf kullanılmaz —
+# â yerine a, î yerine i (büyük harfte Â → A, Î → İ). oa-dilekce SKILL.md
+# "Yazar sistemi ve lafzı": Çapar'ın lafzına uymak ESAS kuraldır. Birebir alıntı
+# MUAFTIR ([N] ile aynı tespit): karar, mevzuat ya da evrak metnine dokunmak
+# alıntıyı tahrif etmektir. û talimatın kapsamında değildir. Kapı yalnız
+# gösterir; düzeltmeyi yazar yapar (alıntı sınırını kapı değil yazar bilir).
+_S_SAPKA_ESLEME = str.maketrans({"â": "a", "î": "i", "Â": "A", "Î": "İ"})
+_S_SAPKA_SOZCUK_RE = re.compile(r"\w*[âîÂÎ]\w*")
+_S_AZAMI_UYARI = 8
+
+
+def sapkali_harf_uyarilari(metin):
+    """Avukatın kendi metninde kalan şapkalı â/î içeren sözcükler — her sözcük
+    bir kez, önerilen yazım ve geçiş sayısıyla (uyarı sınıfı — BLOK değil).
+    MUAF: '>' blok-alıntı satırı ve tırnak içi birebir alıntı."""
+    metin = metin or ""
+    spanlar = _tirnak_spanlari(metin)
+    sayac = {}
+    for sm in re.finditer(r"[^\n]+", metin):
+        satir = sm.group(0)
+        if satir.lstrip().startswith(">"):
+            continue  # birebir blok-alıntı — MUAF
+        for m in _S_SAPKA_SOZCUK_RE.finditer(satir):
+            k = sm.start() + m.start()
+            if any(b <= k < s for b, s in spanlar):
+                continue  # tırnak içi birebir alıntı — MUAF
+            sayac[m.group(0)] = sayac.get(m.group(0), 0) + 1
+    uyarilar = [f"şapkalı harf '{s}' → '{s.translate(_S_SAPKA_ESLEME)}'"
+                + (f" ({n} kez)" if n > 1 else "")
+                + " — avukat lafzı: dilekçede â yerine a, î yerine i (birebir alıntı hariç)"
+                for s, n in sayac.items()]
+    if len(uyarilar) > _S_AZAMI_UYARI:
+        kirpilan = len(uyarilar) - _S_AZAMI_UYARI
+        uyarilar = uyarilar[:_S_AZAMI_UYARI]
+        uyarilar.append(f"(+{kirpilan} şapkalı sözcük daha — rapor {_S_AZAMI_UYARI} "
+                        "kalemle sınırlı, taslağı elle tarayın)")
     return uyarilar
 
 
@@ -3012,7 +3067,7 @@ def hizli_denetim(metin, kok=None):
     ÖNCE sıralanır: [F] hafif kip (ALEYHE/NÖTR/kütükte-izi-yok künye — K3,
     v0.5.16) EN BAŞTA, sonra BLOK sınıfı ([T] makbuz kapısı, [Y] b/c havada-
     kalan/kapanmayan alıntı), sonra uyarı sınıfı ([Y] d, [K], [M], [N], [P],
-    [L]). `kok` verilmemişse [T] ve [F] HİÇ koşulmaz (hızlı kip dosya sistemine
+    [Ş], [L]). `kok` verilmemişse [T] ve [F] HİÇ koşulmaz (hızlı kip dosya sistemine
     CWD üzerinden tırmanmaz). Hiçbir koşulda exception sızdırmaz: bozuk
     girdide boş bulgu yerine TEK görünür "[!]" uyarısı döner (boş liste
     'temiz' demektir, 'denetlenemedi' demek DEĞİLDİR — ikisi karışmaz)."""
@@ -3049,6 +3104,7 @@ def hizli_denetim(metin, kok=None):
         # gürültü üretmek advisory'yi kör eder) — o satır CLI'nın işidir.
         p_uyari = _kos("[P]", lambda: (
             [] if _p_talep_blogu(metin) is None else netice_talep_uyarilari(metin)))
+        s_uyari = _kos("[Ş]", lambda: sapkali_harf_uyarilari(metin))
         l_uyari = _kos("[L]", lambda: kaynak_blogu_uyarilari(metin))
 
         def _liste(x):
@@ -3065,6 +3121,7 @@ def hizli_denetim(metin, kok=None):
         bulgular += ["[M] " + b for b in _liste(m_uyari)]
         bulgular += ["[N] " + b for b in _liste(n_uyari)]
         bulgular += ["[P] " + b for b in _liste(p_uyari)]
+        bulgular += ["[Ş] " + b for b in _liste(s_uyari)]
         if l_uyari is None:
             # kaynak_blogu_uyarilari sözleşmesi: None = tazelik_denetim
             # yüklenemedi → 'denetlenemedi' GÖRÜNÜR kılınır (yeşil değildir).
@@ -3337,6 +3394,15 @@ def main():
             print(f"   [UYARI] {u}")
     else:
         print("   [OK] açılımsız kısaltma sinyali yok (beyaz liste + alıntı muafiyeti sonrası)")
+
+    print("\n[Ş] ŞAPKALI HARF (avukat lafzı — â yerine a, î yerine i; birebir alıntı içi MUAF, "
+          "ASLA bloklamaz)")
+    s_uyarilar = sapkali_harf_uyarilari(metin)
+    if s_uyarilar:
+        for u in s_uyarilar:
+            print(f"   [UYARI] {u}")
+    else:
+        print("   [OK] avukat metninde şapkalı harf (â/î) yok")
 
     udf_gecersiz = False
     if a.udf:

@@ -692,6 +692,11 @@ def ifsa_uret(kok):
 # TEKRARLANMAZ. Hiçbiri bloklamaz (Ruling 11: görünür uyarı, karar avukatın).
 ATLAMA_TUR = "ifsa-bilincli-atlama"
 ISTISNA_DEFTERI = ("defter", "istisna-kayitlari.jsonl")   # `_oa` altında — ortak, append-only
+# v0.5.18 (saha testi, G-5 — anayasa m.9 ve m.8): atlama kaydı kararın SAHİBİNİ dürüstçe yazar.
+# Eskiden her atlama "onay": "avukat" yazılıyordu; sahada atlamayı model kendi analiziyle yaptı,
+# kayıt avukat onayını uydurdu. Varsayılan "model-beyani"dir ve uyarı açık kalır; "avukat" yalnız
+# avukat bu atlamayı açıkça istediğinde (`--onay avukat`) yazılır.
+ATLAMA_ONAYLARI = ("model-beyani", "avukat")
 _BOLUM_KOMUTU = "gizli_talimat_ifsa.py --kok <kök> --md <bölüm.md>"
 _ATLAMA_KOMUTU = 'gizli_talimat_ifsa.py --kok <kök> --atla --gerekce "<gerekçe>"'
 
@@ -716,20 +721,25 @@ def _defter_yolu(kok):
     return os.path.join(kok, "_oa", *ISTISNA_DEFTERI)
 
 
-def atlama_kaydi_yaz(kok, sonuc, gerekce):
-    """Avukatın AÇIK komutuyla bilinçli atlama: ortak istisna defterine tek satır (append-only;
-    şema {zaman, tur, ilgili, gerekce, onay, imza} — "hiçbir muafiyet sessiz kalmaz"). Gerekçe
-    zorunlu; yalnız karar BULGU iken (atlanacak kesin bulgu yoksa ya da denetlenemiyorsa kayıt
-    yazılmaz — denetlenemeyen şey atlanamaz). İhlal → IfsaHatasi (CLI çıkış 2)."""
+def atlama_kaydi_yaz(kok, sonuc, gerekce, onay="model-beyani"):
+    """Bilinçli atlama: ortak istisna defterine tek satır (append-only; şema {zaman, tur, ilgili,
+    gerekce, onay, imza} — "hiçbir muafiyet sessiz kalmaz"). Gerekçe zorunlu; yalnız karar BULGU
+    iken (atlanacak kesin bulgu yoksa ya da denetlenemiyorsa kayıt yazılmaz — denetlenemeyen şey
+    atlanamaz). `onay` kararın sahibidir: "model-beyani" (varsayılan — uyarı açık kalır) ya da
+    "avukat" (YALNIZ avukat bu atlamayı açıkça istediyse). Kayıt avukat kararı olmadan "avukat"
+    diyemez (anayasa m.9; m.8 — yapılmamış onay yapılmış gösterilemez). İhlal → IfsaHatasi
+    (CLI çıkış 2)."""
     gerekce = (gerekce or "").strip()
     if not gerekce:
         raise IfsaHatasi("gerekçe zorunlu — boş ya da yalnız boşluk gerekçeyle atlama kaydedilmez")
+    if onay not in ATLAMA_ONAYLARI:
+        raise IfsaHatasi("onay geçersiz: %r — geçerli: %s" % (onay, ", ".join(ATLAMA_ONAYLARI)))
     if sonuc.get("karar") != KARAR_VAR:
         raise IfsaHatasi("atlanacak kesin bulgu yok (karar %s) — kayıt yazılmadı" % sonuc.get("karar"))
     yol = _defter_yolu(kok)
     os.makedirs(os.path.dirname(yol), exist_ok=True)
     kayit = {"zaman": datetime.datetime.now().isoformat(timespec="seconds"), "tur": ATLAMA_TUR,
-             "ilgili": "ifsa:" + bulgu_parmak_izi(sonuc), "gerekce": gerekce, "onay": "avukat",
+             "ilgili": "ifsa:" + bulgu_parmak_izi(sonuc), "gerekce": gerekce, "onay": onay,
              "imza": "gizli_talimat_ifsa.py/%s" % SURUM}
     with open(yol, "a", encoding="utf-8") as f:
         f.write(json.dumps(kayit, ensure_ascii=False) + "\n")
@@ -737,10 +747,12 @@ def atlama_kaydi_yaz(kok, sonuc, gerekce):
 
 
 def atlama_durumu(kok, sonuc):
-    """{gecerli, bayat, gerekce}: defterde bu türden bir kayıt GÜNCEL parmak izini taşıyorsa
-    geçerli; kayıt var ama hiçbiri güncel değilse bayat (bulgu kümesi değişti → uyarı geri gelir).
-    Defter ya da satır okunamıyorsa geçerli SAYILMAZ — uyarı görünür kalır (fail-closed)."""
-    d = {"gecerli": False, "bayat": False, "gerekce": None}
+    """{gecerli, bayat, gerekce, model_beyani}: defterde bu türden bir kayıt GÜNCEL parmak izini
+    taşıyor VE onayı "avukat" ise geçerli; güncel kayıt yalnız model beyanıysa (ya da onay alanı
+    yoksa — onay varsayılmaz) `model_beyani` (uyarı açık kalır, karar avukatın); kayıt var ama
+    hiçbiri güncel değilse bayat (bulgu kümesi değişti → uyarı geri gelir). Defter ya da satır
+    okunamıyorsa geçerli SAYILMAZ — uyarı görünür kalır (fail-closed)."""
+    d = {"gecerli": False, "bayat": False, "gerekce": None, "model_beyani": False}
     pi = bulgu_parmak_izi(sonuc)
     yol = _defter_yolu(kok)
     if not pi or not os.path.isfile(yol):
@@ -761,8 +773,13 @@ def atlama_durumu(kok, sonuc):
         var = True
         gerekce = str(k.get("gerekce") or "").strip()
         if k.get("ilgili") == "ifsa:" + pi and gerekce:
-            d.update(gecerli=True, gerekce=gerekce)
-    d["bayat"] = var and not d["gecerli"]
+            if k.get("onay") == "avukat":
+                d.update(gecerli=True, gerekce=gerekce)
+            elif not d["gecerli"]:
+                d.update(model_beyani=True, gerekce=gerekce)
+    if d["gecerli"]:
+        d["model_beyani"] = False
+    d["bayat"] = var and not d["gecerli"] and not d["model_beyani"]
     return d
 
 
@@ -804,12 +821,20 @@ def taslak_ifsa_durumu(taslak, sonuc, atlama=None):
         return _taslak_d("bolum-dilekcede", "OK", "ifşa bölümü dilekçede ve güncel bulgu kümesiyle örtüşüyor")
     if atlama.get("gecerli"):
         return _taslak_d("bilincli-atlandi", "BİLGİ", "bilinçli atlandı (avukat): %s" % atlama.get("gerekce"))
+    if atlama.get("model_beyani"):
+        return _taslak_d("model-atladi", "UYARI",
+                         "[İFŞA] bölüm MODEL BEYANIYLA atlandı — avukat onayı yok (%s). Karar avukatındır "
+                         "(anayasa m.9): bölümü ekleyin (%s) ya da avukat atlamaya karar verdiyse onu "
+                         "kaydedin (%s --onay avukat)." % (atlama.get("gerekce"), _BOLUM_KOMUTU,
+                                                         _ATLAMA_KOMUTU))
     ek = (" Önceki bilinçli atlama ESKİ bulgu kümesine ait — yeniden karar verin."
           if atlama.get("bayat") else "")
     return _taslak_d("bolum-yok", "UYARI",
                      "[İFŞA] karşı tarafın evrakında insan gözüyle görünmeyen metin için kesin bulgu var "
-                     "(%d tespit) ama dilekçede ifşa bölümü yok — bölümü ekleyin (%s) ya da bilinçli "
-                     "atlayın (%s).%s" % (len(girenler), _BOLUM_KOMUTU, _ATLAMA_KOMUTU, ek))
+                     "(%d tespit) ama dilekçede ifşa bölümü yok — bölümü ekleyin (%s) ya da avukat "
+                     "karar verirse bilinçli atlayın (%s --onay avukat; avukat kararı olmadan atlama "
+                     "model beyanı olarak kaydedilir ve bu uyarı açık kalır).%s"
+                     % (len(girenler), _BOLUM_KOMUTU, _ATLAMA_KOMUTU, ek))
 
 
 # ------------------------------------------------------------------ CLI
@@ -861,16 +886,22 @@ def main(argv=None):
     ap.add_argument("--atla", action="store_true",
                     help="avukatın bilinçli atlama kararı: ortak istisna defterine gerekçeli kayıt (Faz B)")
     ap.add_argument("--gerekce", help="--atla için ZORUNLU gerekçe")
+    ap.add_argument("--onay", choices=ATLAMA_ONAYLARI, default="model-beyani",
+                    help="--atla kaydında kararın sahibi: model-beyani (varsayılan — [İFŞA] uyarısı açık "
+                         "kalır) ya da avukat (YALNIZ avukat bu atlamayı açıkça istediyse — anayasa m.9)")
     a = ap.parse_args(argv)
     if a.atla:
         sonuc = ifsa_uret(a.kok)
         try:
-            yol = atlama_kaydi_yaz(a.kok, sonuc, a.gerekce)
+            yol = atlama_kaydi_yaz(a.kok, sonuc, a.gerekce, onay=a.onay)
         except IfsaHatasi as e:
             print("RET: %s." % e)
             return 2
-        print("Bilinçli atlama kaydedildi: %s (bulgu parmak izi %s) — bulgular değişirse kayıt "
-              "bayatlar ve dilekçe denetimindeki [İFŞA] uyarısı geri gelir." % (yol, bulgu_parmak_izi(sonuc)))
+        print("Atlama kaydedildi (onay: %s): %s (bulgu parmak izi %s) — bulgular değişirse kayıt "
+              "bayatlar ve dilekçe denetimindeki [İFŞA] uyarısı geri gelir.%s"
+              % (a.onay, yol, bulgu_parmak_izi(sonuc),
+                 "" if a.onay == "avukat" else " Kayıt model beyanıdır: avukat onayı olmadığı için "
+                 "uyarı açık kalır; karar avukatındır (anayasa m.9)."))
         return 0
     try:
         sonuc = ifsa_uret(a.kok)

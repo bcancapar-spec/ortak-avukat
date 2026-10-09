@@ -32,9 +32,12 @@ def uy():
     return mod
 
 
+# v0.5.18 (G-6, anayasa m.10): resmî okuyucu artık Layer 0'dan SONRA çağrılır; bu fikstür
+# okuyucu bacağını YALITTIĞI için taraf bağlamı ("Müvekkil" + E/K no — strict ASK) taşımaz.
+# Süzgecin okuyucuyu durdurduğu hâl tests/test_v0518_anayasa_onarimlari.py'dedir.
 GOVDE = ("T.C. DENİZLİ 8. ASLİYE HUKUK MAHKEMESİ'NE\n"
          "CEVAP DİLEKÇESİ\n"
-         "Müvekkil aleyhine açılan davanın reddi gerekmektedir.\n"
+         "Açılan davanın reddi gerekmektedir.\n"
          "Yargıtay 17. Hukuk Dairesi 2019/1234 E. 2021/5678 K. sayılı kararı uyarınca.\n"
          "NETİCE-İ TALEP: Davanın reddine karar verilmesini talep ederiz.\n")
 
