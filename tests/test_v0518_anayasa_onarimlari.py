@@ -158,8 +158,8 @@ YER_TUTUCU = "--- s.1 ---\n(okunamadı)\n"   # iki farklı evrakta AYNI çıktı
 
 def test_g8_eki_desteklenmeyen_tur_adiyla_ve_sayisiyla_uyari_basar(tmp_path):
     """v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı; "bakamadım" ≠
-    "temiz"): sistemin metne çeviremediği türdeki evrak (sahada 231 Excel tablosu —
-    ceza dosyasında çoğu zaman iletişim, banka ve baz kayıtları) yalnız
+    "temiz"): sistemin metne çeviremediği türdeki evrak (sahada yüzlerce Excel
+    tablosu) yalnız
     'bilinmeyen/elle' sayısında görünüyordu; okunamayan OCR evrakı gibi ayrı bir
     uyarı yoktu. Artık alım, OKUNMAYAN türleri adı ve sayısıyla uyarı satırına yazar.
 

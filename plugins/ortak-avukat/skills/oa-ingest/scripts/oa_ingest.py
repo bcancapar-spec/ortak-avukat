@@ -2887,8 +2887,8 @@ def main():
               f"OKUNMADI; paketi kurup yeniden koş (bkz. 00-INDEX.md '🔴 OCR YAPILAMADI').",
               file=sys.stderr)
     # v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı; "bakamadım" ≠ "temiz"):
-    # metne çevrilemeyen türdeki evrak (sahada 231 Excel tablosu — iletişim, banka, baz
-    # kayıtları) yalnız 'bilinmeyen/elle' sayısında görünüyordu. Türü ve sayısı adıyla söylenir.
+    # metne çevrilemeyen türdeki evrak (sahada yüzlerce Excel
+    # tablosu) yalnız 'bilinmeyen/elle' sayısında görünüyordu. Türü ve sayısı adıyla söylenir.
     def _uzanti_sayimi(yontem):
         sayim = {}
         for k in kunye:

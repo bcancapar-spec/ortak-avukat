@@ -1,7 +1,35 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-06 · **Sürüm:** 0.5.18 · **Commit:** dal `guncelleme/0.5.18` (main `4b2f029` üzerine; bkz. CHANGELOG)
-*(önceki kayıtlar: 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-12 · **Sürüm:** 0.5.18 · **Commit:** dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine; bkz. CHANGELOG)
+*(önceki kayıtlar: 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+
+> **v0.5.18 saha turu (2026-10-09 → 10-12, PR #8):** iki gerçek saha testi (icra ve ceza
+> soruşturması dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
+> yerleri gösterdi; hepsi kırmızı testle yakalanıp kapatıldı:
+> - halüsinasyon kapısı: dört motor dilekçeden önce fiilen koşar (m.8);
+> - avukat onayı, hükmü, şerhi ve kararı uydurulmaz (m.9);
+> - okunamayan evrak ve Excel tabloları kaybolmaz (m.1);
+> - Layer 0 süzgeci çağrı yerindedir (m.10);
+> - makbuz ile ürün ayrışmaz;
+> - kanca katmanı Windows'un Mağaza kısayolu ve UTF-8 kod sayfası altında da ayaktadır;
+> - ceza saha testinin sekiz dersi playbook'lara işlendi.
+>
+> Bağımsız antitez turu (Fable 5.1) altı bulgu verdi. Beşi kapatıldı; aralarında gerçek bir veri
+> kaybı vardı (bayat boyut beyanlı tabloda satırlar sessizce atılıyordu). Altıncısı dürüst sınırdır:
+> onay bayrakları beyandır.
+>
+> Ölçülen: tam süit Python 3.14 ve 3.12'de yeşil (OA-SUIT-SAYISI). Kanca gecikmesinde fark yok
+> (PERFORMANS-STATUS §13). 0.6.0'a sıçrama yok: bulguların tamamı yürürlükteki maddelerin sahada
+> icrasıdır.
+>
+> **Açık (v0.5.19):**
+> - kaldığı yerden süren alım;
+> - avukat onayının avukatın kendi mesajına bağlanması;
+> - Excel'de gizli satır/sütun ve yazı rengi;
+> - usul satırları kapısı;
+> - dosya-içi akıbet bayrağı.
+>
+> **Avukat kararı bekleyen:** anayasa m.6 şerh önerisi.
 
 > **v0.5.18 son tur (2026-10-07/08, PR #8):** zincirleme tepki (zincir tüketicileri + üreticiler),
 > v0.5.18 adayının iki hukuki kusuru (istifa süresi, vergi davasında maktu vekâlet), gizli talimat

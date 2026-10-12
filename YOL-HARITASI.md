@@ -3,7 +3,33 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (2026-10-08 · v0.5.18)
+## DURUM — son (2026-10-12 · v0.5.18)
+
+- **Saha turu (PR #8):** iki gerçek saha testinin (icra, ceza soruşturması) ve bağımsız denetimlerin
+  bulguları kapatıldı. Kapatılanlar:
+  - halüsinasyon kapısı (dört motor fiilen koşar);
+  - avukat onayı, hükmü, şerhi ve kararının sahibi;
+  - okunamayan evrak ve Excel (arşiv içi dahil);
+  - makbuz–ürün eşleşmesi;
+  - Layer 0 çağrı yerinde;
+  - kanca katmanı Windows'ta ayakta (Mağaza kısayolu, UTF-8 kod sayfası);
+  - Çırak'ın sekiz dersi playbook'larda.
+
+  Tam süit Python 3.14 ve 3.12'de yeşil. Kanca gecikmesinde fark yok (PERFORMANS-STATUS §13).
+  Sıçrama ölçütüyle 0.6.0 yok.
+- **Sıradaki (v0.5.19):**
+  - kaldığı yerden süren alım (kalem önbelleği; seri ve paralel çıktı bayt bayt eşit kalmalı);
+  - avukat onayının avukatın kendi mesajına kanıtla bağlanması;
+  - döküm kaynak sınıfı;
+  - usul satırları kapısı;
+  - dosya-içi akıbet bayrağı;
+  - Excel'de gizli satır/sütun ve yazı rengi (gerçek evrakta ölçümle);
+  - avukat kavşağı kapısı;
+  - makbuzun nihai UDF özetini taşıması;
+  - çapraz denetim önbelleği.
+- **Avukat kararı bekleyen:** anayasa m.6 şerh önerisi ("dayanak akıbetiyle ve kapsamıyla anılır").
+
+## DURUM — 2026-10-08 · v0.5.18 (önceki)
 
 - Son tur (PR #8): zincirleme tepki, iki hukuki kusurun kapatılması, gizli talimat ifşası (Faz A + B), DOCX metin
   sadakati ve tek çözücü kuralı, kurulum motoru, anayasa m.11 ek düzenlemesi — her biri tam süit
