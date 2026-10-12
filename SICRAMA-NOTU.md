@@ -21,6 +21,10 @@ sıçrama mı?**
 > kurulu ve sağlamdı, ama hiç koşmadı. Cümle ancak 0.5.18'deki motor köprüsü ve
 > damga şartıyla doğru oldu (CHANGELOG v0.5.18 N). Metne dokunulmadı; bu dipnot
 > düzeltme kaydıdır.
+>
+> **Sürüm 0.6.0 (2026-10-12, avukat kararı):** v0.5.18 çizgisi 0.6.0 olarak yayımlandı. Bu
+> numara bir yayın kararıdır. Bu notun yapısal sıçrama sorusu (dava-başına alet mi, hafızalı
+> büro mu) açık kalır; kayıt dürüstlük için düşülür.
 
 "Yapısal" ölçütü baştan sert tutuldu: yeni bir kapı, yeni bir bayrak veya bir
 hata düzeltmesi yapısal sayılmaz. Yapısal olan, **aletin ne olduğunu**

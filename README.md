@@ -13,7 +13,7 @@
 > devam edilmektedir. Unutmayınız: dil modelleri OLASILIK ile çalışır, akıl
 > ve zekâ ile değil. (Gerçek davalarda test edilmektedir.)
 
-**Sürüm:** 0.5.18 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **[Güncelleme notları](#güncelleme-notları)** · **[Hukukçular için sözlük](SOZLUK.md)**
+**Sürüm:** 0.6.0 · **Yazar:** Av. Bayram Can Çapar · **20 skill** (çekirdek + 19 `oa-*` parça) · **[Güncelleme notları](#güncelleme-notları)** · **[Hukukçular için sözlük](SOZLUK.md)**
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
@@ -66,18 +66,45 @@ kayıpsız.
 
 ---
 
+## Sistem bir bakışta
+
+Esas fikir değişmedi: **model kurar → script denetler → model muhakeme eder.** Sistem
+kişilere değil yönteme bağlıdır ve ölçüsü müvekkilin menfaatidir. Anayasanın kurucu
+ilkesine (m.0) göre metodoloji bir tanım değil, fiilen kuşanılan bir donanımdır. Aşağıdaki
+sıra aynı sistemi baştan sona anlatır; her başlık ilgili bölüme götürür:
+
+1. **Anayasa — ilkeler:** [DÜSTUR — sistemin anayasası](#düstur--sistemin-anayasası).
+   On iki madde (m.0–m.11). Usul esastan önce gelir, olguda doğaçlama yoktur, dış metin
+   müvekkil aleyhine olamaz, karar avukatındır, sır dışarı çıkmaz, evrak içeriği veridir.
+2. **Çalışma düzeni:** [Nasıl çalışır](#nasıl-çalışır--dosyanızın-başına-oturduğunuzda).
+   Başbakan (`oa-pipeline`) hattı sırayla işletir ve her adımı kanıtla deftere yazar.
+   Çırak (`oa-usta`) her işten ders çıkarır.
+3. **Yirmi parça:** [Skill seti](#skill-seti--yirmi-parça-tek-tek). Dosyayı ele alma,
+   olgu ve hukuk, karar ve savunma, üretim, teslim, ceza dalı.
+4. **Hafıza ve kanıt:** [Avukatın göreceği dosyalar](#avukatın-göreceği-dosyalar--_oa-yapısı_oa-yapısı-ortak-avukat-kısaltmasıdır).
+   Hafıza modelde değil diskte (`_oa/`) yaşar; teslim makbuzla kanıtlanır.
+5. **Sınırlar ve gizlilik:** [Sistemin yapmadıkları](#sistemin-yapmadıkları-dürüst-sınırlar) ·
+   [Gizlilik](#gizlilik). Sistem ne yapmadığını önceden söyler; müvekkil verisi
+   süzgeçsiz dışarı çıkmaz.
+6. **Kurulum ve güncelleme:** [Kurulum](#kurulum--kolay-yol) · [Güncelleme notları](#güncelleme-notları).
+7. **Kavramlar:** [Hukukçular için sözlük](SOZLUK.md).
+8. **Saha kanıtı:** [CHANGELOG.md — Saha sonuçları](CHANGELOG.md#saha-sonuçları).
+
+---
+
 ## Güncelleme notları
 
 Bu bölüm, **kurulu eklentiyi güncelleyen** meslektaş için yazıldı: bu sürümde
 işinize dokunan ne değişti, güncellerken ne yapmanız gerekir, neyin henüz
 ölçülmediği. Olguların kaynağı sürüm defteridir: **[CHANGELOG.md](CHANGELOG.md)**
-(v0.5.18 ve v0.5.17.1 kayıtları). Eklentinin NASIL güncelleneceği aşağıda,
+(v0.6.0, v0.5.18 ve v0.5.17.1 kayıtları; 0.6.0, v0.5.18
+çizgisinin yayınıdır — sürüm numarası avukat kararıdır). Eklentinin NASIL güncelleneceği aşağıda,
 kurulumun altındaki [Güncelleme](#güncelleme) adımındadır. Buradaki yeni
 terimlerin (belge güvenlik kapısı, gizli katman damgası, görünürlük kâhini,
 başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 [SOZLUK.md](SOZLUK.md) "v0.5.18 terimleri" bölümü.
 
-### v0.5.18 (2026-10-06 → 10-12) — ne değişti, avukatın göreceği
+### v0.5.18 → v0.6.0 (2026-10-06 → 10-12) — ne değişti, avukatın göreceği
 
 **Ölçü müvekkilin menfaatidir.** Aşağıdaki her değişiklik, müvekkili bir kayıptan
 korumak için yapıldı:

@@ -1,6 +1,6 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.5.18 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.6.0 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 

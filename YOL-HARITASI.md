@@ -3,8 +3,10 @@
 > Fable 5 mimari danışmanlığı + Av. Bayram Can Çapar'ın kararları ışığında (2026-07).
 > Bu belge canlıdır; tamamlanan maddeler ✅, kalanlar ⏳/⬜ ile işaretlidir.
 
-## DURUM — son (2026-10-12 · v0.5.18)
+## DURUM — son (2026-10-12 · v0.6.0)
 
+- **Sürüm 0.6.0 (avukat kararı):** v0.5.18 çizgisinin yayını; vitrin tüm sistemi anlatan
+  yeni düzende ("Sistem bir bakışta"). Kod davranışı v0.5.18 çizgisinin son hâliyle aynıdır.
 - **Saha turu (PR #8):** iki gerçek saha testinin (icra, ceza) ve bağımsız denetimlerin
   bulguları kapatıldı. Kapatılanlar:
   - halüsinasyon kapısı (dört motor fiilen koşar);

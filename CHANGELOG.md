@@ -309,6 +309,29 @@ belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
 
 ---
 
+## v0.6.0 — ANAYASANIN SAHADA İCRASI · TÜM SİSTEMİ ANLATAN VİTRİN (2026-10-12)
+
+**Sürüm numarası avukat kararıdır (Av. Bayram Can Çapar, 2026-10-12).** 0.6.0, aşağıdaki
+v0.5.18 çizgisinin (A–R) yayınıdır. Yürürlükteki anayasa maddeleri sahada icra edilir hâle
+geldi; vitrin de sistemin tamamını kurucu fikrinden kopmadan anlatan bir düzene kavuştu. Yeni
+ilke ya da yeni parça yoktur; kod davranışı v0.5.18 çizgisinin son hâliyle aynıdır.
+
+- **Vitrin:** kök README'nin başına "Sistem bir bakışta" haritası eklendi. Kurucu fikir
+  (model kurar → script denetler → model muhakeme eder; kişilere değil yönteme bağlılık;
+  anayasa m.0) ve mevcut bölümler yerinde kaldı. Harita bölümleri müvekkilin menfaati
+  ölçüsüyle birbirine bağlar; metin sökülüp yeniden yazılmadı.
+- **Sürüm damgaları birlikte arttı:** plugin.json, marketplace.json, `pipeline_kayit.py`
+  ve `teslim_paketi.py` `OA_SURUM`, iki README, STATUS ve YOL-HARITASI.
+- **SICRAMA-NOTU ile ilişki:** not, 0.6.0'ı "aletin ne olduğunu değiştiren" yapısal sıçramaya
+  ayırmıştı (dava-başına alet mi, hafızalı büro mu). O soru açık kalır. Bu numara avukatın
+  yayın kararıdır, yapısal sıçrama iddiası değildir.
+- **Güncelleyenin yapacakları:** v0.5.18'inkilerle aynıdır (README → Güncelleme notları).
+  Eklenti yeni sürüm klasörüne (`0.6.0`) açılır; `compileall` o klasörde koşar.
+- **Büyüklük:** main'e göre ölçüm PR #8 açıklamasındadır (sayı her commit'le değiştiği için
+  deftere yazılmaz).
+
+---
+
 ## v0.5.18 — BELGE GÜVENLİĞİ (B-22) + OCR v1.9 + YARGI PRO UYARLAMALARI + HALÜSİNASYON KAPISI (2026-10-06 → 10-12)
 
 **Ne:** karşı tarafın evrakındaki gizli talimatlara karşı belge güvenlik kapısı, sayfa düzeyinde izlenebilir OCR, gerçek evrak taramasıyla bulunan okuma kayıplarının kapatılması, Yargı PRO hukuk skill kütüphanesinden fikir düzeyinde uyarlamalar (kod/metin alınmadı), 2026-10-06 kod denetiminin ve Fable bağımsız denetiminin düzeltmeleri, saha testinde görülen halüsinasyon kapısı ile anayasa aykırılıklarının giderilmesi, iki saha testinden kalan eksiklerin tamamlanması. v0.5.17.1 yaması bu sürüme birleştirildi. Süit 2455 → **3769** (`OA-SUIT-SAYISI`). Ayrıntı: parça günlükleri, [docs/OCR-IMPLEMENTATION-PLAN.md](docs/OCR-IMPLEMENTATION-PLAN.md), [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md).
