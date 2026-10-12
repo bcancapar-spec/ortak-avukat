@@ -15,6 +15,17 @@ kesiyor, içtihat tam metin okunup damgalanıyor. Bunun üzerine soru şu oldu:
 **sıradaki adım bir onarım listesi mi, yoksa sistemin şeklini değiştiren bir
 sıçrama mı?**
 
+> **Dipnot (v0.5.18, 2026-10-12 — saha testi):** "Mekanik iskelet tamamlanmıştı"
+> cümlesi model tarafı için erken söylenmişti. İskelet vardı, onu çağıran halka
+> yoktu: v0.5.18'in ilk saha testinde vakıa, illiyet, kıyas ve antitez motorları
+> kurulu ve sağlamdı, ama hiç koşmadı. Cümle ancak 0.5.18'deki motor köprüsü ve
+> damga şartıyla doğru oldu (CHANGELOG v0.5.18 N). Metne dokunulmadı; bu dipnot
+> düzeltme kaydıdır.
+>
+> **Sürüm 0.6.0 (2026-10-12, avukat kararı):** v0.5.18 çizgisi 0.6.0 olarak yayımlandı. Bu
+> numara bir yayın kararıdır. Bu notun yapısal sıçrama sorusu (dava-başına alet mi, hafızalı
+> büro mu) açık kalır; kayıt dürüstlük için düşülür.
+
 "Yapısal" ölçütü baştan sert tutuldu: yeni bir kapı, yeni bir bayrak veya bir
 hata düzeltmesi yapısal sayılmaz. Yapısal olan, **aletin ne olduğunu**
 değiştirendir.

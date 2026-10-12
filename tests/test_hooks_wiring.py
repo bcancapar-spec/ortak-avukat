@@ -166,6 +166,33 @@ def test_hooks_json_sarmalayici_sozlesmesi_v0582():
         "çalıştırılabilir görünmüyor")
 
 
+def test_her_hook_modunun_pipeline_kayit_bayragi_var():
+    """B-12 (v0.5.18 — Fable tutarlılık raporu 2026-10-07): hooks.json'daki
+    HER olay → `run-hook.cmd hook-<mod>` → `hook_giris.py` → `pipeline_kayit.py
+    --hook-<mod>` zinciri uçtan uca bağlıydı ama kilidi yoktu — bir mod adı
+    yanlış yazılsa ya da argparse bayrağı silinse hiçbir test kırılmaz, kanca
+    sessizce ölürdü (üç saha ölümünün deseni). Kilit: her `hook-<mod>` için
+    `--hook-<mod>` bayrağı VE `def hook_<mod>(` gövdesi pipeline_kayit.py'de
+    tanımlı olmalı; mod kümesi boş olamaz."""
+    with open(HOOKS_JSON, encoding="utf-8") as f:
+        veri = json.load(f)
+    metin = PIPELINE_KAYIT.read_text(encoding="utf-8")
+    modlar = set()
+    for olay, girdiler in veri["hooks"].items():
+        for girdi in girdiler:
+            for h in girdi.get("hooks", []):
+                parcalar = (h.get("command") or "").split()
+                assert len(parcalar) == 2 and parcalar[1].startswith("hook-"), (
+                    f"'{olay}' komutu `<sarmalayıcı> hook-<mod>` biçiminde değil: {parcalar}")
+                modlar.add(parcalar[1])
+    assert modlar, "hooks.json hiç hook-<mod> tanımlamıyor — katman diskte var ama ÖLÜ"
+    for mod in sorted(modlar):
+        bayrak = "--" + mod                       # hook-denetle → --hook-denetle
+        govde = "def " + mod.replace("-", "_") + "("   # → def hook_denetle(
+        assert bayrak in metin, f"{mod}: pipeline_kayit.py'de `{bayrak}` bayrağı tanımlı değil"
+        assert govde in metin, f"{mod}: pipeline_kayit.py'de `{govde}` gövdesi yok"
+
+
 def test_plugin_json_surumu_pipeline_kayit_surumu_ile_ESZAMANLI():
     """Paket-B sinav-turu KUCUK-düzeltme: `plugin.json`'ın üst düzey `version`
     alanı ile `pipeline_kayit.OA_SURUM` (makbuz/defter geçiş supabının

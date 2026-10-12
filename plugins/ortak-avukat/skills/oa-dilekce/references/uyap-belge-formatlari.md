@@ -22,12 +22,26 @@
 
 | Elimizde | Tuzak | Yapılacak |
 |---|---|---|
-| `.udf` | Ham okuma ikili çöp verir; elle düzenlenmez | `npx -y udf-cli@latest udf2md dosya.udf` |
-| `.tiff` / `.tif` | Çok sayfalı TIFF ham okunursa **yalnız İLK sayfa** görünür | `npx -y uyap-tiff-cli@latest tiff2pdf dosya.tiff` → PDF'i oku |
-| `.pdf` | Taranmış PDF'te gömülü metin YOKTUR | `npx -y uyap-pdf-cli@latest pdf2md dosya.pdf` (metin + otomatik OCR) |
+| `.udf` | Ham okuma ikili çöp verir; elle düzenlenmez | `npx -y udf-cli@0.5.6 udf2md dosya.udf` |
+| `.tiff` / `.tif` | Çok sayfalı TIFF ham okunursa **yalnız İLK sayfa** görünür | Önce OA yerel hattı (`oa-ingest`); yedek: `npx -y uyap-tiff-cli@0.4.4 tiff2pdf dosya.tiff` → PDF'i oku |
+| `.pdf` | Taranmış PDF'te gömülü metin YOKTUR | Önce OA yerel hattı (`oa-ingest`); yedek: `npx -y uyap-pdf-cli@0.3.4 pdf2md dosya.pdf` (metin + otomatik OCR) |
 
 **Uzantı yalanı:** `.udf` uzantılı ama aslında PDF/DOCX olan dosya `udf2md`'de hata verir — gerçek türüne
 göre işlenir.
+
+**Sürüm sabiti (v0.5.18):** bu belgedeki dış araç komutları sabitlenmiş sürümle yazılır;
+sabitlenmemiş en son sürüm kullanılmaz. `udf-cli` sürümü `scripts/udf_yaz.py` → `UDF_CLI_SURUM` (bugün
+0.5.6), `docx2udf` sürümü `DOCX2UDF_SURUM` (bugün 1.0.6) sabitidir; `uyap-tiff-cli@0.4.4` ve
+`uyap-pdf-cli@0.3.4` yalnız bu belgede önerilir (OA bunları çağırmaz). Yükseltme yalnız avukat
+onayıyla, yayım notları okunarak ve testler geçerek yapılır (bkz. `udf-hatti-kesinti-plani.md` §4).
+**Denetlenebilirlik notu (npm kaydı, ana ajan okuması 2026-10-05):** `docx2udf` kaydında lisans ve
+kaynak depo alanı YOKTUR; `uyap-tiff-cli` ve `uyap-pdf-cli` UNLICENSED'dır ve geliştirme
+bağımlılıklarında kod karartıcı bulunur — yayımlanan kodun denetimi zordur.
+
+> **Layer 0 — dış araç sınırı:** TIFF/PDF okumada **OA yerel hattı (`oa-ingest`: PyMuPDF +
+> Tesseract, çevrimdışı) tercih edilir.** `uyap-tiff-cli` / `uyap-pdf-cli` ağ + oturum kullanan dış
+> araçlardır: müvekkil evrakı dış bir hizmete gider. Yalnız yerel hat bir evrağı çözemediğinde
+> (bkz. §6), avukatın bilgisiyle yedek olarak kullanılır.
 
 **Tebligat mazbatası uyarısı:** tebellüğ tarihi çok sayfalı TIFF'in İLK ya da SON sayfasında olabilir;
 sayfa kaybı = süre kaybı. (`oa-sure` ile doğrudan ilgili.)
@@ -39,7 +53,7 @@ sayfa kaybı = süre kaybı. (`oa-sure` ile doğrudan ilgili.)
 `udf-cli`, `uyap-tiff-cli`, `uyap-pdf-cli` **giriş kapılıdır**; token `~/.config/yargi/token.json`'da
 tutulur, kendini yeniler ve **üç CLI arasında paylaşılır** — bir kez giriş yeter.
 
-- **İnsan varsa (tarayıcılı):** `npx -y udf-cli@latest login` → doğrulama URL'si + kod basar, insan
+- **İnsan varsa (tarayıcılı):** `npx -y udf-cli@0.5.6 login` → doğrulama URL'si + kod basar, insan
   onaylayana kadar bekler. Ajan tarayıcı açamıyorsa URL ve kodu **avukata iletir**.
 - **Başsız/otomasyon:** tarayıcı akışı sonsuza kadar bekler. Yerine `issue_cli_login_code` MCP aracı
   çağrılır (tek kullanımlık, ~2 dk geçerli kod), sonra `udf-cli login --token <kod>`.
@@ -53,13 +67,13 @@ tutulur, kendini yeniler ve **üç CLI arasında paylaşılır** — bir kez gir
 ## 3. UDF YAZMA — TEK GEÇERLİ HAT
 
 ```
-İçerik (md/plan) → inline-CSS HTML → npx -y udf-cli@latest html2udf taslak.html cikti.udf
+İçerik (md/plan) → inline-CSS HTML → npx -y udf-cli@0.5.6 html2udf taslak.html cikti.udf
 ```
 
 - **`md2udf` KULLANILMAZ.** Markdown, UDF'in ihtiyaç duyduğu font/hizalama/girinti/tab/tablo/renk
   denetimlerini taşımaz ve sessizce düşürür. Taslakta bile kullanılmaz.
 - Girdi olarak dosya yolu, ham dize veya `-` (stdin) kabul edilir.
-- Elde hazır `.docx`/`.pdf` varsa (avukat Word'de yazdıysa): `npx -y docx2udf@latest -input dilekce.docx
+- Elde hazır `.docx`/`.pdf` varsa (avukat Word'de yazdıysa): `npx -y docx2udf@1.0.6 -input dilekce.docx
   -output dilekce.udf` (giriş kapılı; §5).
 
 ### 3.1 UDF-uyumlu HTML yazım şeması
@@ -118,8 +132,8 @@ Kalın başlıklı çerçeveli tablo, birleşik hücre (`colspan`/`rowspan`) ve 
 ## 4. UDF OKUMA
 
 ```bash
-npx -y udf-cli@latest udf2md dosya.udf     # ajan-dostu: doğrudan stdout'tan oku
-npx -y udf-cli@latest udf2html dosya.udf   # karmaşık biçim incelemesi için
+npx -y udf-cli@0.5.6 udf2md dosya.udf     # ajan-dostu: doğrudan stdout'tan oku
+npx -y udf-cli@0.5.6 udf2html dosya.udf   # karmaşık biçim incelemesi için
 ```
 
 Kurallar: ham `.udf`'i `.md`/`.html` olarak diske yazma — dönüştürülmüş içeriği oku. Çok belgede
@@ -130,8 +144,8 @@ Kurallar: ham `.udf`'i `.md`/`.html` olarak diske yazma — dönüştürülmüş
 ## 5. MEVCUT DOCX/PDF → UDF (`docx2udf`)
 
 ```bash
-npx -y docx2udf@latest -input dilekce.docx -output dilekce.udf
-npx -y docx2udf@latest -input karar.pdf          # -output verilmezse .udf uzantısıyla aynı yola yazar
+npx -y docx2udf@1.0.6 -input dilekce.docx -output dilekce.udf
+npx -y docx2udf@1.0.6 -input karar.pdf          # -output verilmezse .udf uzantısıyla aynı yola yazar
 ```
 
 - Daima `-y` (npx'in etkileşimli sorusu bloklamasın).
@@ -153,7 +167,7 @@ npx -y docx2udf@latest -input karar.pdf          # -output verilmezse .udf uzant
 ## 6. TIFF VE PDF OKUMA (aile notu)
 
 Rehberin önerdiği hat: `uyap-tiff-cli tiff2pdf` ve `uyap-pdf-cli pdf2md` (giriş kapılı, ağ gerektirir,
-yerel Türkçe OCR'a otomatik düşer).
+yerel Türkçe OCR'a otomatik düşer; sürümleri §1'de sabitlidir — dış araç, Layer 0 notu §1).
 
 **Ailenin varsayılanı `oa-ingest`'tir** (PyMuPDF + yerel Tesseract, çevrimdışı, paralel, önbellekli,
 kayıpsızlık damgalı) — 214 evraklık külliyatta 0 kayıpla doğrulanmıştır. Rehber hattı **yedek**tir:

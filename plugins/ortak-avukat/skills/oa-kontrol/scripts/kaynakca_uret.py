@@ -22,6 +22,10 @@ bölgeyi tazeler, ikinci koşuda ikinci blok üretmez.
 - Blok İÇ TASLAKTA yaşar: B-20 avukat kararı (2026-10-06) gereği mahkemeye
   giden UDF/PDF/40-UYAP nüshalarına GİRMEZ — md_udf_html.yorumlari_ayikla
   işaretli bloğu gövdesiyle birlikte ayıklar; kapılar bloğu taslaktan okur.
+- Künye kapısının muafiyetleri kaynakçada da geçerlidir (v0.5.18): taslağın
+  kendi DOSYA NO'su listelenmez; davanın beyan edilmiş kendi geçmişi
+  «teyitsiz içtihat» sayılmaz, teyit beyanının dışında ayrı alt başlıkla
+  görünür kalır. Kural `kunye_ortak`tadır, burada yeniden yazılmaz.
 - İşaretler bozuksa (açılış/kapanış sayısı eşleşmiyor ya da sırası ters)
   taslak DEĞİŞTİRİLMEZ, hata verilir (v0.5.17.1): eskiden kapanışı silinmiş
   bloğun ARDINA ikinci blok eklenir, ayıklama aradaki metni (EKLER, imza)
@@ -106,7 +110,46 @@ def muhakeme_haritasi(kok):
     return harita
 
 
-def _kaynakca_blogu(satirlar, teyitsiz=0):
+def _atiflari_siniflandir(govde, kok):
+    """Taslak gövdesindeki (esas, karar) çiftlerini KÜNYE KAPISININ gözüyle ayırır.
+
+    NEDEN VAR (v0.5.18, ceza saha testi 3.8): künye kapısı davanın beyan
+    edilmiş kendi geçmişini (`_oa/dosya.md`) ve taslağın kendi DOSYA NO
+    satırını içtihat saymıyordu; kaynakça bu muafiyetleri bilmediği için
+    ikisini de «⚠ TEYİT EDİLMEDİ» içtihat diye listeliyordu. B-3 tek kaynak:
+    kapı neyi görüyorsa kaynakça da onu görür — muafiyet kuralı burada
+    YENİDEN YAZILMAZ, `kunye_ortak`tan çağrılır.
+
+    Fail-closed: bir çiftin TEK bir geçişi bile muafiyet dışındaysa (ör. aynı
+    sıra numarasının «Yargıtay HGK» kararı olarak da anılması) çift içtihat
+    sayılır. Döner: [(cift, sinif, beyan)] — sinif 'ictihat' | 'dosya_gecmisi'.
+    Yalnız taslağın kendi dosya numarası olan çift listeye hiç girmez: künye
+    kapısı onu atıf saymaz, kaynakçada da yeri yoktur."""
+    kendi = ko.dava_gecmisi_kunyeleri(kok=kok) if kok else []
+    sira, durum = [], {}
+    for a in ko.esas_karar_atiflari(govde):
+        cift = (a["esas"], a["karar"])
+        if cift not in durum:
+            sira.append(cift)
+            durum[cift] = {"ictihat": False, "beyan": None}
+        if ko.kendi_dosya_no_mu(a, govde):
+            continue
+        kn = ko.dava_gecmisi_eslesmesi(a, kendi)
+        if kn:
+            durum[cift]["beyan"] = durum[cift]["beyan"] or kn
+        else:
+            durum[cift]["ictihat"] = True
+    sonuc = []
+    for cift in sira:
+        d = durum[cift]
+        if d["ictihat"]:
+            sonuc.append((cift, "ictihat", None))
+        elif d["beyan"]:
+            sonuc.append((cift, "dosya_gecmisi", d["beyan"]))
+    return sonuc
+
+
+def _kaynakca_blogu(satirlar, teyitsiz=0, gecmis=()):
     """B-3 (P0, v0.5.14) — BEYAN KOŞULLUDUR.
 
     Eski hâlde blok, listedeki künyelerin TEYİT DURUMUNA BAKMADAN
@@ -119,8 +162,13 @@ def _kaynakca_blogu(satirlar, teyitsiz=0):
 
     Yeni kural: kütükte teyitli olmayan tek bir künye varsa "tam metniyle
     okundu" cümlesi HİÇ yazılmaz; onun yerine her satırın teyit durumunu
-    gösteren dürüst bir önsöz kurulur."""
+    gösteren dürüst bir önsöz kurulur.
+
+    `gecmis` (v0.5.18): davanın kendi geçmişi satırları önsözün beyanına
+    GİRMEZ; listeden sonra kendi alt başlığıyla yazılır."""
     govde = "\n".join(satirlar) if satirlar else "- (taslakta karar atfı bulunamadı)"
+    if gecmis:
+        govde += "\n\n" + ko.KAYNAKCA_DOSYA_GECMISI_BASLIK + "\n" + "\n".join(gecmis)
     if teyitsiz:
         onsoz = ("Aşağıdaki listede her kararın TEYİT DURUMU ayrıca gösterilmiştir:\n"
                  "\"⚠ TEYİT EDİLMEDİ\" işaretli künyeler için tam metin teyidi\n"
@@ -149,10 +197,14 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
     if BLOK_BAS in govde and BLOK_SON in govde:
         govde = govde[:govde.index(BLOK_BAS)] + govde[govde.index(BLOK_SON) + len(BLOK_SON):]
     harita = muhakeme_haritasi(kok)
-    satirlar, linkli, linksiz, teyitsiz = [], 0, 0, 0
-    for cift in _ciftler(govde):
+    satirlar, gecmis, linkli, linksiz, teyitsiz = [], [], 0, 0, 0
+    for cift, sinif, beyan in _atiflari_siniflandir(govde, kok):
         kayit = harita.get(cift)
-        if kayit is None:
+        if kayit is None and sinif == "dosya_gecmisi":
+            kunye = f"E. {cift[0]}" + (f" K. {cift[1]}" if cift[1] else "")
+            gecmis.append(f"- {kunye} — {beyan['kaynak']} beyanı "
+                          "(künye kapısıyla aynı muafiyet)")
+        elif kayit is None:
             # B-3: künye muhakeme kaydında HİÇ YOK — teyit edilmemiştir.
             # "link yok" ile "teyit yok" AYRI şeylerdir; eski şerh yalnız
             # LİNK yokluğuna dairdi ve teyitsizliği görünmez bırakıyordu.
@@ -171,7 +223,7 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
                 f"- {kayit['kunye']} — ⚠ erişim linki kütüğe işlenmedi "
                 "(teyit kaydına --kaynak-url ile tamamlanmalı)")
             linksiz += 1
-    blok = _kaynakca_blogu(satirlar, teyitsiz)
+    blok = _kaynakca_blogu(satirlar, teyitsiz, gecmis)
     if BLOK_BAS in metin and BLOK_SON in metin:
         yeni = (metin[:metin.index(BLOK_BAS)].rstrip()
                 + "\n\n" + blok
@@ -185,7 +237,7 @@ def taslaga_isle(taslak_yolu, kok, kuru=False):
             f.write(yeni)
         os.replace(tmp, taslak_yolu)
     return {"linkli": linkli, "linksiz": linksiz, "teyitsiz": teyitsiz,
-            "degisti": degisti, "satirlar": satirlar}
+            "dosya_gecmisi": len(gecmis), "degisti": degisti, "satirlar": satirlar}
 
 
 def main():
@@ -204,6 +256,10 @@ def main():
           f"{'(kuru koşu)' if a.kuru else ('işlendi' if r['degisti'] else 'değişiklik yok')}")
     for satir in r["satirlar"]:
         print("  " + satir)
+    if r["dosya_gecmisi"]:
+        print(f"BİLGİ: {r['dosya_gecmisi']} künye davanın kendi geçmişi olarak "
+              "içtihat sayılmadı (_oa/dosya.md beyanı; künye kapısıyla aynı "
+              "muafiyet) — blokta ayrı alt başlıkla görünür.")
     if r["teyitsiz"]:
         print("UYARI (B-3): TEYİT EDİLMEMİŞ künye var — kaynakçaya 'tam metniyle "
               "okundu' beyanı YAZILMADI. Bu künyeler teyit kütüğünde yok; "

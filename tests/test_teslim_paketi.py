@@ -36,7 +36,7 @@ SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-kontrol"
 # açık" kuralıyla geçer.
 TAM_TEMIZ_TASLAK = """İSTANBUL 4. ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİ'NE
 
-DAVACI: Ayşe Yılmaz (T.C. Kimlik No: 12345678901)
+DAVACI: Ayşe Yılmaz (T.C. Kimlik No: kurgu-maskeli)
 Adres: Örnek Mahallesi No:1 İstanbul
 
 DAVALI: Mehmet Kaya
@@ -170,7 +170,7 @@ def test_tam_temiz_taslakta_dilekce_ve_kunye_kapilari_acik(izole_kok):
 KUNYE_ICTIHAT = "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023"
 TASLAK_ICTIHATLI = """İSTANBUL 4. ASLİYE HUKUK MAHKEMESİ HAKİMLİĞİ'NE
 
-DAVACI: Ayşe Yılmaz (T.C. Kimlik No: 12345678901)
+DAVACI: Ayşe Yılmaz (T.C. Kimlik No: kurgu-maskeli)
 Adres: Örnek Mahallesi No:1 İstanbul
 
 DAVALI: Mehmet Kaya

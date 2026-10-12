@@ -9,7 +9,7 @@
 
 ## 0. Neyi çözer, neyi çözmez
 
-`udf_yaz.py` tek gerçek yazıcı olarak `npx -y udf-cli@latest html2udf`
+`udf_yaz.py` tek gerçek yazıcı olarak `npx -y udf-cli@0.5.6 html2udf`
 çağırır; bu adım **ağ + oturum** (`udf-cli login`) ister. Servis düştüğünde
 (npm kaydı erişilemez, udf-cli sunucusu yanıt vermiyor, oturum açılamıyor,
 paket yeni sürümde kırık) script **FAIL-CLOSED** çıkar: hiçbir `.udf`
@@ -18,7 +18,7 @@ durmaması** için hangi yolların meşru olduğunu sıralar. Çözmediği şey:
 UYAP'a **UDF** olarak yükleme — bu yalnız servis dönünce ya da UYAP
 editörüyle olur; plan bunu **gizlemez**, makbuza yazdırır.
 
-Kesinti teşhisi (bir dakika): `npx -y udf-cli@latest whoami` → (a) komut
+Kesinti teşhisi (bir dakika): `npx -y udf-cli@0.5.6 whoami` → (a) komut
 bulunamadı / ağ hatası = SERVİS/AĞ kesintisi, (b) "giriş gerekli" = OTURUM
 kesintisi (login yenilenir, plan gerekmez), (c) html2udf hata veriyor ama
 whoami OK = PAKET kırığı (§4 pin kararı).
@@ -83,26 +83,45 @@ Bu yol servis kesintisinde **UDF üretiminin tek meşru yoludur**; elle
 - Bayrak `udf_yaz.py`'ye değil `teslim_paketi.py`'ye aittir; `udf_yaz.py`
   servis yokken her hâlde fail-closed'dur.
 
-## 4. Pin kararı — seçenekler (AVUKAT KARARI; bu belge karar VERMEZ)
+## 4. Pin kararı — VERİLDİ: (b) bilinen-iyi sürüme pin (kullanıcı kararı, 2026-10-05)
 
-Hat bugün **`udf-cli@latest`** sabitine bağlıdır (`udf_yaz.py` — `whoami`,
-`html2udf`, `udf2md` çağrılarında). "latest" her koşuda kayıttaki en yeni
-sürümü çeker: **artı** — UYAP biçim değişikliklerini üretici tarafında
-otomatik alır; **eksi** — kırık bir yayın hattı aynı gün durdurur, dün
-çalışan komut bugün çalışmaz (yeniden üretilebilirlik yok). Seçenekler:
+Hat v0.5.18'den itibaren **`udf-cli@0.5.6`** sürümüne sabitlidir. Sürüm
+`scripts/udf_yaz.py` içindeki TEK sabittedir (`UDF_CLI_SURUM`); `whoami`,
+`html2udf`, `udf2md` çağrıları ve kullanıcıya basılan giriş talimatı bu
+sabiti kullanır; üretim makbuzu (`_oa/defter/udf-uretim-makbuz.jsonl`)
+kullanılan paketi `uretici_paket` alanına yazar. Gerekçe: sabitlenmemiş en son
+sürüm her koşuda kayıttaki en yeni yayını çeker — kırık ya da değişmiş bir
+yayın denetimsiz biçimde teslim zincirine girer, dün çalışan komut bugün
+çalışmayabilir (yeniden üretilebilirlik yok); npm kaydına göre paketin
+geliştirme bağımlılıklarında kod karartıcı bulunduğundan yayımlanan kodun
+denetimi de zordur. Sürüm bilgisi (en son yayın 0.5.6 — 2026-09-28; bir
+önceki 0.5.5 — 2026-09-22; kaynak deposu github.com/saidsurucu/udf-cli; MIT)
+ana ajanın 2026-10-05 tarihli npm kaydı okumasına dayanır.
 
-| Seçenek | Ne yapar | Bedel | Gerektirdiği |
+Karar kaydı (seçenekler):
+
+| Seçenek | Ne yapar | Bedel | Durum |
 |---|---|---|---|
-| (a) `@latest` sürsün | mevcut davranış | kırık yayın = kesinti (bu plan) | hiçbir şey |
-| (b) bilinen-iyi sürüme pin | `udf-cli@<sürüm>` sabiti; her koşu aynı üretici | UYAP tarafı değişince eski sürüm sessizce uyumsuz kalabilir; sürüm yükseltme bilinçli iş olur | `udf_yaz.py`'de sürüm sabiti + günlükte kayıt (kod değişikliği — ayrı paket) |
-| (c) pin + `@latest` yedek | önce pinli sürüm, hata verirse latest denenir (ya da tersi) | iki sürüm evreni; hangi sürümle üretildiği makbuza yazılmalı | kod değişikliği + `udf-uretim-makbuz.jsonl`'a sürüm alanı |
-| (d) yerel önbellek | `npx` yerine önceden kurulu global `udf-cli` (`--npx` ile komut yolu verilir) — npm kaydı erişilemese de paket eldedir; **sunucu/oturum** kesintisini ÇÖZMEZ | önbellek bayatlar; sürüm yine bilinçli yönetilmeli | kurulum adımı, kod değişikliği yok |
+| (a) sabitsiz en son sürüm | v0.5.17'ye kadarki davranış | kırık/değişmiş yayın = denetimsiz değişiklik ya da kesinti | BIRAKILDI |
+| (b) bilinen-iyi sürüme pin | `udf-cli@<UDF_CLI_SURUM>`; her koşu aynı üretici | UYAP tarafı değişince eski sürüm uyumsuz kalabilir; yükseltme bilinçli iş olur | **SEÇİLDİ (v0.5.18)** |
+| (c) pin + en son sürüm yedeği | önce pinli sürüm, hata verirse en son sürüm denenir | iki sürüm evreni — denetimsiz yayın kapısı yeniden açılır | uygulanmadı |
+| (d) yerel önbellek | `npx` yerine önceden kurulu global `udf-cli` (`--npx` ile komut yolu) — npm kaydı erişilemese de paket eldedir; **sunucu/oturum** kesintisini ÇÖZMEZ | önbellek bayatlar; sürüm yine bilinçli yönetilmeli | ayrıca değerlendirilebilir |
 
-Karar ölçütleri (avukat): kesinti sıklığı ve süresi, UYAP biçim değişim
-hızı, her üretimin aynı sürümle tekrarlanabilir olmasının ne kadar
-istendiği. Hangi sürümün "bilinen-iyi" olduğu **bu belgede yazılmaz** —
-sayı, o günkü gerçek üretim makbuzundan (`_oa/defter/udf-uretim-makbuz.jsonl`)
-okunur; uydurma sürüm numarası yazılmaz (m.4).
+**Yükseltme yöntemi:** sürüm yalnız AVUKAT ONAYIYLA değişir; yeni sürümün
+yayım notları okunur, sahte-npx testleri ve (oturumlu ortamda) gerçek yazıcı
+altın vakası geçer; `UDF_CLI_SURUM` ile birlikte oa-dilekce belgelerindeki
+komut örnekleri aynı değişiklikte güncellenir (test, belgelerdeki sürümün
+sabitle aynı olmasını kilitler) ve değişiklik günlüğüne eski → yeni sürüm ile
+gerekçe yazılır. "html2udf hata veriyor ama whoami OK" (paket/UYAP uyumsuzluğu)
+hâlinde önce §1-§3 yolları, sonra yükseltme değerlendirmesi.
+
+**Aynı risk sınıfı — aynı karar kapsamında sabitlendi (2026-10-05):**
+`docx2udf` (`udf_yaz.py` → `DOCX2UDF_SURUM = "1.0.6"`; npm kaydında lisans ve
+kaynak depo alanı YOKTUR — denetlenebilirlik düşük, yükseltmede ayrıca temkin),
+belgede önerilen `uyap-tiff-cli@0.4.4` ve `uyap-pdf-cli@0.3.4` (ikisi de
+UNLICENSED; geliştirme bağımlılıklarında kod karartıcı var — OA bu ikisini
+ÇAĞIRMAZ; yerel `oa-ingest` hattı tercih edilir). Sürüm bilgileri ana ajanın
+npm kaydı okumasına dayanır (2026-10-05).
 
 ## 5. Kesinti anı kontrol listesi (sıra)
 
@@ -115,13 +134,15 @@ okunur; uydurma sürüm numarası yazılmaz (m.4).
 5. Teslim zincirini kapat: `teslim_paketi.py --udf-yok` (Yol C) → makbuz +
    `00-TESLIM.md`'ye "UDF: servis kesintisi — Yol B/C" notu.
 6. Servis dönünce: `udf_yaz.py` ile UDF, `teslim_paketi.py` bayraksız
-   yeniden; pin kararı (§4) için gözlemi `_oa/dersler`'e yaz.
+   yeniden; sürüm yükseltme değerlendirmesi (§4) için gözlemi
+   `_oa/dersler`'e yaz.
 
 ## 6. Yapılmayanlar (dürüst sınır)
 
 - Elle UDF üretimi HİÇBİR koşulda önerilmez (ALTIN KURAL).
-- Bu belge `udf_yaz.py`'ye pin/yedek sürüm eklemez — kod değişikliği yok
-  (B-6 kapsamı: plan); (b)/(c) seçilirse ayrı paket.
+- Bu belgenin kendisi kod değiştirmez (B-6 kapsamı: plan). (b) pin kararı
+  v0.5.18'de ayrı pakette `udf_yaz.py`'ye işlendi (§4); (c) yedek sürüm
+  uygulanmadı.
 - UYAP editör adımları avukatın deneyimine bırakılmıştır; menü adları UYAP
   sürümüne göre değişebilir — burada yazılanlar yol tarifi, ekran kaydı
   değildir.

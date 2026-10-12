@@ -16,6 +16,7 @@ Ortak Avukat sisteminin SÜRE parçası. Türk hukukunda her süreye bağlı iş
 
 - `references/degisiklik-gunlugu.md`
 - `references/sure-cizelgesi.md`
+- `references/baslangic-kapisi.md` (v0.5.18 — hangi olay, hangi kanıt: tebliğ/tefhim/öğrenme kapısı)
 
 ## Nasıl çalışır
 

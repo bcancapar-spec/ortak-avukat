@@ -18,3 +18,8 @@ Thumbs.db
 
 # Paket çıktısı
 *.plugin
+
+# Yerel OCR modelleri (PaddleOCR) — üçüncü taraf ağırlıkları depoya girmez;
+# OA_PADDLE_MODEL_DIZIN depo dışında tutulur (v0.5.18 güvenlik incelemesi F-2)
+PP-OCRv*/
+*.pdiparams

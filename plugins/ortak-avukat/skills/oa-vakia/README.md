@@ -7,7 +7,7 @@ Ortak Avukat sisteminin VAKIA/DELİL YÖNETİM parçası. Bir dosyanın olgu ve 
 ## Deterministik scriptler
 
 - `scripts/vakia_matris.py`
-- `scripts/ozne_eslestirici.py` (özne eşleştirme — Jaro-Winkler ≥0.92 / 0.80 bantları)
+- `scripts/ozne_eslestirici.py` (özne eşleştirme — v0.5.18: BAGLA yalnız yapısal eşdeğerlikte; Türkçe katlama, parça-bazlı skor ≥0.80 → AVUKATA-SOR, `tur` farklıysa BAGLA asla)
 
 > Scriptler modelin muhakemesini **denetler** (eksiksizlik/tutarlılık); model kurar, script sağlamasını yapar.
 

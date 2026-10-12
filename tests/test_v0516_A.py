@@ -516,6 +516,10 @@ JSON_ANAHTARLARI = {
     "guc_beyansiz_kenarlar", "zincir_uyarisi",
     # v0.5.16/A-2 (G9, G12): taraf/yön + kanun yolu zinciri
     "taraf", "yon", "kanun_yolu_zinciri",
+    # v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme): kaynak beyanı (girdi + künye
+    # sha8) — zincirleme tepki; tazelik_denetim okur. Ayrıntı:
+    # tests/test_v0518_uretici_kaynaklar.py.
+    "kaynaklar", "kaynaklar_notu",
 }
 
 

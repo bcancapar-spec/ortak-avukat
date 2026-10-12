@@ -41,12 +41,15 @@ dilekce.udf  (ZIP arşivi)
 
 ## 2. Kanonik yazım yolu (VARSAYILAN — değişmedi)
 
-`md → UDF-HTML (md_udf_html.py) → npx -y udf-cli@latest html2udf → GEÇERLİLİK KAPISI`
+`md → UDF-HTML (md_udf_html.py) → npx -y udf-cli@0.5.6 html2udf → GEÇERLİLİK KAPISI`
+
+(Sürüm v0.5.18'den beri sabittir: tek kaynak `scripts/udf_yaz.py` → `UDF_CLI_SURUM`; yükseltme
+yalnız avukat onayıyla — bkz. `udf-hatti-kesinti-plani.md` §4.)
 
 Rehber kuralları (birebir): uzunluklar **pt** (px asla); `<tab/>` ve
 `<page-break/>` kaçırılmaz (escape edilirse düz metin olur); paragraf ayrımı
 `<br>` değil YENİ `<p>`; sayfa sonu yalnız açık istekle. `html2udf` ağ +
-oturum ister (`npx -y udf-cli@latest login`, jeton `~/.config/yargi/token.json`,
+oturum ister (`npx -y udf-cli@0.5.6 login`, jeton `~/.config/yargi/token.json`,
 üç yargı CLI'ı paylaşır); yoksa hat FAIL-CLOSED durur — bozuk-ama-üretildi,
 dürüst engelden kötüdür (B5).
 
@@ -123,7 +126,7 @@ ASLA uygulanmaz).
 
 ## 5. Okuma yönü (hatırlatma)
 
-`.udf` ASLA ham okunmaz: `npx -y udf-cli@latest udf2md`. Ağsız iç hat için
+`.udf` ASLA ham okunmaz: `npx -y udf-cli@0.5.6 udf2md`. Ağsız iç hat için
 `udf_metin.py` yalnız CDATA metnini çeker (biçim bilgisi vermez). Çok
 sayfalı TIFF ve taranmış PDF tuzakları için rehberin B/C bölümleri geçerlidir.
 

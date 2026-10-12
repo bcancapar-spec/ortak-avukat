@@ -321,7 +321,14 @@ def test_json_cikti_sema_anahtarlari_ve_icerik(izole_dizin):
     m.60) makine-okur olmalı; ÜST-DÜZEY anahtar kümesi K1 ileri koruması
     (test_v0514_muhakeme) gereği DEĞİŞTİRİLMEDİ — kayıt büyük önermenin
     içinde taşınır. Tekil şemada liste BOŞ döner — eski dosyaların davranışı
-    değişmez. Exit-0 sözleşmesi KORUNDU."""
+    değişmez. Exit-0 sözleşmesi KORUNDU.
+
+    v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme, avukat kararı 2026-10-07):
+    üst düzeye `kaynaklar` (girdi + künye sha8 beyanı) ve `kaynaklar_notu`
+    eklendi — zincirleme tepki: künye değişince eski denetim "bayat halka"
+    olarak görünür kılınır (tazelik_denetim okur). K1 ileri koruması
+    kaldırılmadı, YENİ küme kilitlendi; tüketici `_denetim_jsonlari` yalnız
+    `arac` damgasına bakar. Ayrıntı: tests/test_v0518_uretici_kaynaklar.py."""
     yol = _kiyas_yaz(izole_dizin, _tam_kiyas())
     json_yol = izole_dizin / "sonuc.json"
     kod, out, _ = _cli(yol, "--json", json_yol)
@@ -335,6 +342,7 @@ def test_json_cikti_sema_anahtarlari_ve_icerik(izole_dizin):
         "arac", "buyuk_onerme", "kucuk_onerme", "sonuc",
         "teyitsiz_ictihat", "unsur_vakia_eslesme", "yetim_vakialar",
         "kritik_bosluk", "girdi",
+        "kaynaklar", "kaynaklar_notu",            # v0.5.18 S1 — kaynak beyanı
     }
     assert veri["arac"] == "kiyas_denetim"
     assert veri["girdi"] == str(yol)

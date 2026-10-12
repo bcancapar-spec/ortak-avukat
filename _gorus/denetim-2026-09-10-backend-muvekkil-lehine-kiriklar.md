@@ -219,7 +219,7 @@ plugin.json hooks: ✓ bildirim YOK — doğru; hooks/hooks.json standart konumd
 
 ### B6 — İŞ MAHKEMELERİ EKSENİ: müvekkili bitiren ikrarların HİÇBİRİ yakalanmıyordu · H2
 
-**Nasıl test edildi.** Avukatın kendi dosyalarına (İndirilenler klasörü) bu oturumdan
+**Nasıl test edildi.** Avukatın kendi dosyalarına (yerel evrak klasörü) bu oturumdan
 erişim yoktur — oturum bulutta izole bir konteynerde koşuyor. Bu yüzden test, *gerçek
 dosya* yerine **gerçek ve güncel kaynak** üzerinden kuruldu: Yargı Pro MCP'den çekilen
 Yargıtay 9. Hukuk Dairesi kararları, iş mahkemesi vakalarının somut tarihleri ve iş

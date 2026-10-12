@@ -113,3 +113,90 @@ def test_cli_zincir_varsayilan_zincirsiz_kapatir_zincir_noop():
     assert "ZİNCİR GÜVEN" in (p3.stdout or "")
     r3 = json.loads(out3.read_text(encoding="utf-8"))
     assert r3["zincirler"] == r1["zincirler"]
+
+
+# ── v0.5.18 B-10 — zincir TAVANI sessiz kalmaz ─────────────────────────────
+# Fable tutarlılık raporu (2026-10-07) B-10: `zincir_analizi` maksimal yol
+# sayımını `en_cok*5` tavanında keser, sonra "en kırılgan 10"u bu KISMİ
+# kümeden seçer. Tavan aşıldıysa en zayıf halka listesi tam DEĞİLDİR; eskiden
+# bunu söyleyen tek satır yoktu (belirsizlik gizleniyordu — anayasa: okunamayan/
+# denetlenemeyen "temiz" sayılmaz). Sözleşme: `zincir_uyarisi` =
+# "zincir tavanı aşıldı — en zayıf halka listesi tam değil"; başka uyarıyla
+# (çevrim) birleşirse " · " ile eklenir. Advisory: exit kodu DEĞİŞMEZ.
+
+TAVAN_UYARISI = "zincir tavanı aşıldı — en zayıf halka listesi tam değil"
+
+
+def _katmanli_dag(dallanma, derinlik):
+    """Kök → dallanma^1 → … → dallanma^derinlik yaprak: her kök→yaprak yolu
+    maksimal bir illiyet zinciridir (yol sayısı = dallanma**derinlik); çevrim yok."""
+    dugumler = [{"id": "KOK", "tip": "olay", "ad": "Kök olay (kurgu)"},
+                {"id": "D1", "tip": "delil", "ad": "Delil (kurgu)"}]
+    kenarlar, onceki = [], ["KOK"]
+    for _ in range(derinlik):
+        yeni = []
+        for p in onceki:
+            for i in range(dallanma):
+                c = f"{p}_{i}"
+                dugumler.append({"id": c, "tip": "olay", "ad": f"{c} (kurgu)"})
+                kenarlar.append({"kaynak": p, "hedef": c, "kategori": "illiyet",
+                                 "tur": "fiil_netice", "illiyet_tipi": "uygun", "guc": "guclu",
+                                 "dogrulama": "teyitli", "dayanak_delil": ["D1"],
+                                 "norm": "çıpa (kurgu)"})
+                yeni.append(c)
+        onceki = yeni
+    return {"dugumler": dugumler, "kenarlar": kenarlar}
+
+
+def _cli_json(tmp, graf):
+    yol = tmp / "graf.json"
+    yol.write_text(json.dumps(graf, ensure_ascii=False), encoding="utf-8")
+    out = tmp / "out.json"
+    p = subprocess.run([sys.executable, str(SCRIPT), str(yol), "--json", str(out)],
+                       capture_output=True, text=True, encoding="utf-8")
+    return p.returncode, p.stdout or "", json.loads(out.read_text(encoding="utf-8"))
+
+
+def test_tavan_asildiginda_uyari_basilir(tmp_path):
+    """4^3 = 64 maksimal yol > tavan (10×5 = 50): rapor §8 ve JSON
+    `zincir_uyarisi` tavan uyarısını taşır; liste yine ≤10 öğe; exit 0
+    (advisory — çevrim/şema yok). In-process API: `zincir_analizi` listeyi
+    döndürmeye devam eder (geriye uyum), `zincir_analizi_tam` bayrağı verir."""
+    graf = _katmanli_dag(4, 3)
+    kod, out, r = _cli_json(tmp_path, graf)
+    assert kod == 0
+    assert TAVAN_UYARISI in out
+    assert r["zincir_uyarisi"] == TAVAN_UYARISI
+    assert len(r["zincirler"]) == 10
+
+    d = {x["id"]: x for x in graf["dugumler"]}
+    zincirler, tavan_asildi = gd.zincir_analizi_tam(d, graf["kenarlar"])
+    assert tavan_asildi is True and len(zincirler) == 10
+    assert gd.zincir_analizi(d, graf["kenarlar"]) == zincirler
+
+
+def test_tavan_asilmayan_grafta_uyari_yok(tmp_path):
+    """4^2 = 16 yol < 50: uyarı yok (`zincir_uyarisi` null) — yanlış alarm yasağı."""
+    graf = _katmanli_dag(4, 2)
+    kod, out, r = _cli_json(tmp_path, graf)
+    assert kod == 0
+    assert TAVAN_UYARISI not in out and r["zincir_uyarisi"] is None
+    d = {x["id"]: x for x in graf["dugumler"]}
+    assert gd.zincir_analizi_tam(d, graf["kenarlar"])[1] is False
+
+
+def test_cevrim_ve_tavan_birlikte_iki_uyari_birlesir(tmp_path):
+    """Ayrı bileşende çevrim + tavanı aşan DAG: iki uyarı da görünür (" · " ile
+    birleşik); çevrim exit 3'ü korur, tavan uyarısı onu DEĞİŞTİRMEZ."""
+    graf = _katmanli_dag(4, 3)
+    graf["dugumler"] += [{"id": "X", "tip": "olay", "ad": "X (kurgu)"},
+                         {"id": "Y", "tip": "olay", "ad": "Y (kurgu)"}]
+    for a, b in (("X", "Y"), ("Y", "X")):
+        graf["kenarlar"].append({"kaynak": a, "hedef": b, "kategori": "illiyet",
+                                 "tur": "fiil_netice", "illiyet_tipi": "uygun", "guc": "guclu",
+                                 "dogrulama": "teyitli", "dayanak_delil": ["D1"], "norm": "çıpa (kurgu)"})
+    kod, out, r = _cli_json(tmp_path, graf)
+    assert kod == 3 and r["blok_sinifi"] == ["cevrim"]
+    assert "çevrim var" in r["zincir_uyarisi"] and TAVAN_UYARISI in r["zincir_uyarisi"]
+    assert " · " in r["zincir_uyarisi"]
+    assert TAVAN_UYARISI in out

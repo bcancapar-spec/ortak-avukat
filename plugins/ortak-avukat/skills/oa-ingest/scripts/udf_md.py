@@ -73,6 +73,13 @@ __all__ = ["udf_markdown_cikar", "SURUM"]
 
 SURUM = "1.0"
 
+# Zip bombası / bellek tüketimi sınırları (v0.5.18). Ölçüm 2026-10-05: 888 gerçek
+# UDF'te en büyük content.xml 7,0 MB, en büyük dosya 5,0 MB. Aşan dosya SESSİZCE
+# atlanmaz: künyeye `cok_buyuk` hatası yazılır (oa_ingest görünür hata basar).
+# belge_guvenlik.AZAMI_DOSYA_BAYT / AZAMI_ARSIV_GIRDI ile eşitliği testle kilitlidir.
+AZAMI_UDF_BAYT = 512 * 1024 * 1024    # ham dosya
+AZAMI_XML_BAYT = 64 * 1024 * 1024     # açılmış content.xml (ham deflate kurtarma dahil)
+
 # ---------------------------------------------------------------------------
 # Sabitler — hepsi 798 gerçek dosya üzerinde ÖLÇÜLEREK saptandı, varsayım yok.
 # ---------------------------------------------------------------------------
@@ -132,6 +139,16 @@ def _gercek_tur(ham):
         return "ole2", "OLE2 bileşik belge imzası"
     if ham[:5] == b"{\\rtf":
         return "rtf", "RTF imzası"
+    # v0.5.18 — görüntü imzaları (gerçek evrak 2026-10-05: 17 '.udf' dosyası PNG idi ve
+    # "gerçek tür bilinmeyen" hatasıyla OKUNMUYORDU). Çağıran görüntü/OCR yoluna yönlendirir.
+    if ham[:8] == PNG_SIHIR:
+        return "png", "PNG imzası"
+    if ham[:3] == b"\xff\xd8\xff":
+        return "jpeg", "JPEG imzası"
+    if ham[:4] in (b"II*\x00", b"MM\x00*"):
+        return "tiff", "TIFF imzası"
+    if ham[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif", "GIF imzası"
     if ham[:2] == b"PK":
         # ZIP ailesi: içerik listesine bakmadan karar verilemez.
         adlar = _zip_adlari(ham)
@@ -214,13 +231,19 @@ def _zip_ham_tara(ham, yalniz_ad=False, hedef_son=None):
                 icerik = blok
             elif yontem == 8:
                 d = zlib.decompressobj(-15)  # ham deflate (ZIP gövdesi)
-                icerik = d.decompress(blok) + d.flush()
+                # Sınırlı açma: birkaç MB'lık bomba GB'larca bellek istemesin.
+                icerik = d.decompress(blok, AZAMI_XML_BAYT + 1)
+                if len(icerik) <= AZAMI_XML_BAYT and not d.unconsumed_tail:
+                    icerik += d.flush()
             else:
                 i = veri_bas + (sikisik or 1)
                 continue
         except zlib.error:
             i = veri_bas + (sikisik or 1)
             continue
+        if len(icerik) > AZAMI_XML_BAYT:
+            raise _Cikamadi("cok_buyuk", "'%s' açılınca %d MB'ı aşıyor — zip bombası olabilir; elle kontrol"
+                            % (ad, AZAMI_XML_BAYT // (1024 * 1024)))
         out.append((ad, icerik))
         i = veri_bas + (sikisik or max(len(blok), 1))
     return out
@@ -241,6 +264,10 @@ def _kabuk_ac(ham):
                 if hedef is None:
                     raise _Cikamadi("content_xml_yok", ",".join(adlar[:5]))
                 imzali = any(a.lower().endswith((".sgn", ".p7s")) for a in adlar)
+                # zipfile beyan edilen boyuttan fazlasını vermez → beyan sınırı etkilidir.
+                if z.getinfo(hedef).file_size > AZAMI_XML_BAYT:
+                    raise _Cikamadi("cok_buyuk", "'%s' açılınca %d MB'ı aşıyor — zip bombası "
+                                    "olabilir; elle kontrol" % (hedef, AZAMI_XML_BAYT // (1024 * 1024)))
                 return z.read(hedef), imzali, "zip", uyarilar
         except _Cikamadi:
             raise
@@ -258,6 +285,8 @@ def _kabuk_ac(ham):
     bas = ham.lstrip()[:200]
     if bas[:5] == b"<?xml" or bas[:9] == b"<template":
         # Ölçüm: 8 dosya ZIP değil, ÇIPLAK XML. Bunlar geçerli UDF içeriğidir.
+        if len(ham) > AZAMI_XML_BAYT:   # çıplak XML de tam DOM'a açılır — zip'teki ile AYNI sınır
+            raise _Cikamadi("cok_buyuk", "çıplak XML %d MB'ı aşıyor — elle kontrol" % (AZAMI_XML_BAYT // (1024 * 1024)))
         return ham, False, "ciplak_xml", uyarilar
     raise _Cikamadi("zip_degil", repr(ham[:4]))
 
@@ -283,7 +312,11 @@ def _xml_ayristir(xml_baytlari):
     # İmzalı nüshalarda prolog öncesi BOM/boşluk görülür — ET bunu reddeder.
     b = xml_baytlari.lstrip(b"\xef\xbb\xbf").lstrip()
     metin = b.decode("utf-8", errors="replace")
-    m = CDATA_RE.search(metin)
+    # Arama son "]]>"te biter: kapanmayan "<![CDATA[" seliyle `re` her açılıştan sonuna kadar
+    # tarar (karesel; v0.5.18 ölçümü 40 KB'ta 5 sn). Son kapanıştan sonraki açılış zaten
+    # eşleşemez → sonuç AYNI, süre doğrusal.
+    son = metin.rfind("]]>")
+    m = CDATA_RE.search(metin, 0, son + 3) if son >= 0 else None
     mf = FORMAT_RE.search(metin[:4000])
     fmt_regex = mf.group(1) if mf else "?"
     try:
@@ -1050,7 +1083,9 @@ def _bos_kunye():
 
 # Uzantı yalanı hâlinde çağıranın gideceği ingest işleyicisi (K8).
 _YONLENDIRME = {"pdf": "pdf_isle", "docx": "docx_isle", "xlsx": "",
-                "pptx": "", "ole2": "", "rtf": "", "odf": "", "zip": ""}
+                "pptx": "", "ole2": "", "rtf": "", "odf": "", "zip": "",
+                "png": "goruntu_isle", "jpeg": "goruntu_isle", "tiff": "goruntu_isle",
+                "gif": "goruntu_isle"}
 
 
 def udf_markdown_cikar(yol, gorsel_dizin=None, alanlar=True, veri=True,
@@ -1094,6 +1129,10 @@ def udf_markdown_cikar(yol, gorsel_dizin=None, alanlar=True, veri=True,
 
     # --- 1) baytları oku (salt okunur) ---------------------------------
     try:
+        if os.path.getsize(yol) > AZAMI_UDF_BAYT:
+            kunye["hata"] = "cok_buyuk: dosya %d MB'ı aşıyor — elle kontrol" % (
+                AZAMI_UDF_BAYT // (1024 * 1024))
+            return bitir()
         with open(yol, "rb") as fh:
             ham = fh.read()
     except OSError as e:

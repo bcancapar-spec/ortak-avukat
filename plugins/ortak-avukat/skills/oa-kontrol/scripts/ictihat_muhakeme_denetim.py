@@ -90,6 +90,11 @@ v0.5.16 EKLERİ: G2 EKSİK KÜNYE (K4 — tarih-only/K-only/E-only atıf BLOK,
 `eksik_kunye_bloklari`), [G5-AKIBET] (K5 — bozulmuş/kaldırılmış karar LEHE
 dayanak olamaz, `akibet_denetimi`), G11 (örtüşme sayacı «(1)…;(2)…;(3)…»).
 
+v0.5.18 EKİ (B-17): [G2-İSTİSNA] — kanun yolu dilekçesinin başlığındaki
+DAVANIN KENDİ GEÇMİŞİ (istinaf/temyiz edilen karar, ilk derece kararı)
+`_oa/dosya.md` beyanıyla (ya da `--kendi-kunye`) birebir eşleşirse çıplak
+künye sayılmaz; muafiyet raporda görünür (`dava_gecmisi_muaflari`).
+
 Paylaşımlı `kunye_normalize()` — bkz. `kunye_ortak.py` (M2-3'te `kunye_teyit.py`
 ile PAYLAŞILMASI planlanan ortak yardımcı; esas/karar normalizasyon mantığı).
 
@@ -556,12 +561,16 @@ def ortusme_zenginligi_uyarisi(kayit):
     return None
 
 
-def taslaktaki_atiflari_bul(metin):
+def taslaktaki_atiflari_bul(metin, kendi_kunyeler=None):
     """Dilekçedeki esas/karar no'lu içtihat atıflarını (esas, karar, daire_key)
     üçlüsüyle tekilleştirip döndürür; sırayı korur. DAİRE de anahtara dahildir
     çünkü aynı esas/karar no'suyla FARKLI dairelere ait iki ayrı atıf aynı
     dilekçede geçebilir (ör. 4. HD'nin ve 11. HD'nin aynı numaralı kararları) —
-    bunlar tek bir atıfmış gibi birleştirilip biri sessizce kaybedilemez."""
+    bunlar tek bir atıfmış gibi birleştirilip biri sessizce kaybedilemez.
+
+    v0.5.18 (B-17): `kendi_kunyeler` (bkz. `ko.dava_gecmisi_kunyeleri`)
+    verilirse davanın beyan edilmiş KENDİ geçmişiyle birebir eşleşen atıf
+    listeye ALINMAZ (raporda `dava_gecmisi_muaflari` ile görünür kalır)."""
     ham = ko.esas_karar_atiflari(metin)
     gorulen, tekil = set(), []
     for a in ham:
@@ -576,21 +585,51 @@ def taslaktaki_atiflari_bul(metin):
         # tek kaynak `ko.kendi_dosya_no_mu` (bkz. oradaki gerekçe).
         if ko.kendi_dosya_no_mu(a, metin):
             continue
+        if kendi_kunyeler and ko.dava_gecmisi_eslesmesi(a, kendi_kunyeler):
+            continue
         gorulen.add(anahtar)
         tekil.append(a)
     return tekil
 
 
-def eksik_kunye_bloklari(metin):
+def dava_gecmisi_muaflari(metin, kendi_kunyeler):
+    """v0.5.18 (B-17) — davanın kendi geçmişi olarak muaf tutulan atıflar:
+    [(atif, beyan)] (tekil). Muafiyet SESSİZ DEĞİLDİR — bu liste rapora
+    [G2-İSTİSNA] bölümü olarak basılır."""
+    if not kendi_kunyeler:
+        return []
+    gorulen, cikan = set(), []
+    for a in ko.esas_karar_atiflari(metin):
+        kn = ko.dava_gecmisi_eslesmesi(a, kendi_kunyeler)
+        if not kn:
+            continue
+        anahtar = (a["esas"], a["karar"], a.get("daire_key"))
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        cikan.append((a, kn))
+    return cikan
+
+
+def eksik_kunye_bloklari(metin, kendi_kunyeler=None):
     """K4 (v0.5.16, Hamle 3 / Karar #3) — G2 EKSİK KÜNYE: merci anılan bir
     satırda tarih-only («12.03.2019 tarihli kararı») ya da K-only/E-only
     («K. 2021/2222 sayılı kararı») atıf varsa bu bir 'atıf yok' değil,
     ESAS+KARAR ÇİFTİ EKSİK bir atıftır — muhakeme kaydıyla eşleştirilemez,
     dolayısıyla G2 anlamında ÇIPLAKTIR → BLOK. Genel 'ayrıştırılamayan'
     sınıf da (karar iması var, hiçbir kalıp tanınmadı) aynı gerekçeyle BLOK
-    (kunye_teyit.py B-2 ile simetrik — fail-closed). Döner: [str]."""
+    (kunye_teyit.py B-2 ile simetrik — fail-closed). Döner: [str].
+
+    v0.5.18 (B-17): satır YALNIZ davanın beyan edilmiş kendi geçmişini
+    anıyorsa (her «YYYY/N» sayısı kendi künyelerden biri) taramadan düşer —
+    kanun yolu başlığındaki «Danıştay X. Daire E. …» gibi esas-only kendi
+    dosya numarası EKSİK KÜNYE sayılmaz (`ko.dava_gecmisi_satiri_mi`)."""
     bloklar = []
+    satirlar = metin.split("\n")
     for iz in ko.ayristirilamayan_atiflar(metin):
+        if kendi_kunyeler and 0 < iz["satir_no"] <= len(satirlar) and \
+                ko.dava_gecmisi_satiri_mi(satirlar[iz["satir_no"] - 1], kendi_kunyeler):
+            continue
         if iz.get("sinif") == ko.SINIF_EKSIK_KUNYE:
             bloklar.append(
                 f"(satır {iz['satir_no']}) EKSİK KÜNYE — tarih-only/K-only atıf; "
@@ -1209,6 +1248,13 @@ def main():
                           "basılacağını belirler (dava/cevap/istinaf/temyiz/"
                           "aym_bireysel=esaslı; yemin/idari-kanal=değil). G2/G3 "
                           "engellerini ETKİLEMEZ.")
+    ap.add_argument("--kendi-kunye", action="append", default=None, metavar="KUNYE",
+                     help="v0.5.18 (B-17) — davanın KENDİ geçmişine ait künye (istinaf/"
+                          "temyiz edilen karar, ilk derece kararı); birden çok kez "
+                          "verilebilir. <KOK>/_oa/dosya.md'deki «esas no / dava geçmişi / "
+                          "kendi künye» etiketli satırlar da okunur. Birebir eşleşen atıf "
+                          "[G2] muhakeme kaydı ARANMADAN geçer; [G2-İSTİSNA] bölümünde "
+                          "görünür.")
     args = ap.parse_args()
 
     if not os.path.isfile(args.taslak):
@@ -1229,11 +1275,16 @@ def main():
     # (kunye_teyit.py ile simetrik; K4 EKSİK KÜNYE taraması da bloğu görmez).
     metin = ko.makine_blogu_maskele(metin)
 
-    atiflar = taslaktaki_atiflari_bul(metin)
+    # v0.5.18 (B-17) — davanın KENDİ geçmişi (kanun yolu başlığındaki ilk
+    # derece / istinaf künyeleri): `_oa/dosya.md` beyanı + --kendi-kunye.
+    kendi_kunyeler = ko.dava_gecmisi_kunyeleri(kok=kok, ek_metinler=args.kendi_kunye or ())
+    atiflar = taslaktaki_atiflari_bul(metin, kendi_kunyeler)
+    gecmis_muaflar = dava_gecmisi_muaflari(metin, kendi_kunyeler)
     kayitlar, gecersiz_sayisi = muhakeme_kayitlarini_yukle(muhakeme_dizin)
 
     sonuclar = [_atif_denetle(a, kayitlar, kok, dokum_dizin, kutuk_yolu) for a in atiflar]
-    eksik_bloklar = eksik_kunye_bloklari(metin)   # K4 (v0.5.16) — G2 EKSİK KÜNYE
+    # K4 (v0.5.16) — G2 EKSİK KÜNYE (v0.5.18: kendi geçmişi satırları hariç)
+    eksik_bloklar = eksik_kunye_bloklari(metin, kendi_kunyeler)
 
     kutuk_kullanimda = ko.kutuk_gercek_veri_var_mi(kutuk_yolu)
     engel_var = rapor_yaz(args.taslak, atiflar, sonuclar, muhakeme_dizin, dokum_dizin,
@@ -1241,6 +1292,15 @@ def main():
                            gecersiz_sayisi=gecersiz_sayisi,
                            kutuk_kullanimda_mi=kutuk_kullanimda,
                            eksik_bloklar=eksik_bloklar)
+
+    if gecmis_muaflar:
+        print("\n" + "-" * 72)
+        print("[G2-İSTİSNA] DAVANIN KENDİ GEÇMİŞİ (v0.5.18 — B-17; HMK m.342/2-c "
+              "kararın mahkemesini/tarihini/sayısını zorunlu kılar)")
+        print("-" * 72)
+        for a, kn in gecmis_muaflar:
+            print(f"  [BİLGİ] (satır {a['satir_no']}) {a['metin']} — beyan: {kn['kaynak']}; "
+                  "emsal atfı değil, davanın kendi geçmişi: muhakeme kaydı aranmadı.")
 
     url_bloklar, url_uyarilar = kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar)
     if url_bloklar or url_uyarilar:

@@ -229,4 +229,7 @@ def test_uyarili_grafta_json_anahtar_seti_sabit_kalir(tmp_path):
         "guc_beyansiz_kenarlar", "zincir_uyarisi",
         # v0.5.16/A-2 (G9 taraf/yön, G12 kanun yolu zinciri) — uyarı değil, sözleşme
         "taraf", "yon", "kanun_yolu_zinciri",
+        # v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme): kaynak beyanı — uyarı
+        # değil, sözleşme (tazelik_denetim okur); bkz. test_v0518_uretici_kaynaklar.py
+        "kaynaklar", "kaynaklar_notu",
     }

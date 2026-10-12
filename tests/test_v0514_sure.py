@@ -566,7 +566,9 @@ def test_A6_haksiz_cikma_zammi_iptal_serhi():
     ("2026-07-15", "2026-09-07", "idari", 30, "gun"),    # İYUK m.8/3
 ])
 def test_altin_vakalar_korundu(teblig, beklenen, yargi, miktar, birim):
-    son, _r, _u = MOD.hesapla(date.fromisoformat(teblig), miktar, birim, yargi, "usul")
+    # Kuralıyla (HMK/İYUK istinaf): kuralsız serbest süre v0.5.18'de (Fable S3) TEMKİNLİ kalıba geçti.
+    kural = {"hukuk": "hmk_istinaf", "idari": "iyuk_istinaf"}[yargi]
+    son, _r, _u = MOD.hesapla(date.fromisoformat(teblig), miktar, birim, yargi, "usul", kural=kural)
     assert son.isoformat() == beklenen
 
 

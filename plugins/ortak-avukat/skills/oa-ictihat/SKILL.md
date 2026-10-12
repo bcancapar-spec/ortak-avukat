@@ -281,6 +281,9 @@ dış MCP'ye hiç gönderilmez; **UYAP'ta iniş (dosyayı UYAP'tan çekme, e-imz
 login) münhasıran avukata aittir (Layer 0, anayasa m.10)** — bu parça UYAP
 için kod yazmaz, yalnız "hangi kata inilebilir" haritasını verir.
 
+## SAHA DERSİ — farklı türde emsal (v0.5.18 ceza saha testi; Çırak dersi 6)
+Uyuşmazlığın türünden farklı bir alandan gelen karar çekildiğinde, künyeyle birlikte tür farkı da kayda geçer: muhakeme kaydının DAVAYA-BAĞ alanında hangi unsur ortak, hangisi ayrık. Kullanımı `oa-kiyas`taki "kıyasen" kuralına tabidir.
+
 ## Aktif çıkarım refleksi
 Edilgen "getir-koy" yapma. Bulduğun her teyitli kararı **müvekkil lehine bir argümana bağla**; aleyhe bir içtihat çıkarsa onu **ayırt etmenin (distinguishing)** yolunu ara; ve nötr aramanın yanı sıra müvekkilin konumunu **güçlendirecek** aramayı da kendiliğinden kur. İçtihat bir liste değil, lehe inşa edilecek malzemedir.
 

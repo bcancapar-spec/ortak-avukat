@@ -7,7 +7,7 @@ GÖREV D (v0.5.5 saha bulgusu B5, KRİTİK): eski hand-rolled zip/content.xml
 motoru (`udf_uret`/`udf_yaz`/`udf_metni_geri_oku`/`--yerel-motor`) UYAP'ta
 AÇILMAYAN bir `.udf` üretiyordu — bu sınıf TAMAMEN KALDIRILDI. Script artık
 TEK yazma hattına sahiptir: md → UDF-HTML (md_udf_html.py) → gerçek
-`npx -y udf-cli@latest html2udf`. Bu yüzden bu dosyadaki testler de:
+`npx -y udf-cli@<UDF_CLI_SURUM> html2udf` (v0.5.18: sabitlenmiş sürüm). Bu yüzden bu dosyadaki testler de:
   - `udf_dogrula()` (mekanik GEÇERLİLİK KAPISI) testleri artık kendi sentetik
     ZIP/content.xml'lerini DOĞRUDAN `zipfile` ile kurar (üretici script'e
     bağımlı DEĞİLDİR — bu bir test fixture'ıdır, "elle UDF üretimi" ÖZELLİĞİ
@@ -19,6 +19,7 @@ TEK yazma hattına sahiptir: md → UDF-HTML (md_udf_html.py) → gerçek
     hata mesajı) ağsız/deterministiktir, her zaman koşar.
 """
 import importlib.util
+import os
 import pathlib
 import shutil
 import subprocess
@@ -447,11 +448,21 @@ def test_cli_kaynak_docx_npx_yokken_exit_farkli_sifir(tmp_path):
 
 
 def _docx2udf_hazir_mi():
+    """v0.5.18: (1) udf-cli yoklamasıyla AYNI test anahtarına uyar
+    (`OA_TEST_UDF_YAZICI=0` → ağa hiç çıkılmaz; deterministik koşu); (2) paket
+    sürümü üretim kodundaki sabitten gelir — `@latest` ile toplama anında
+    denetlenmemiş paket indirilip çalıştırılmaz. Sabit yoksa yoklanmaz (atla)."""
+    zorla = os.environ.get(oa_udf_ortam.ZORLA_DEGISKENI, "").strip().lower()
+    if zorla in oa_udf_ortam._HAYIR:
+        return False
     try:
         yol = shutil.which("npx")
         if yol is None:
             return False
-        p = subprocess.run([yol, "-y", "docx2udf@latest", "whoami"],
+        paket = getattr(oa_udf_ortam._udf_yaz_modulu(), "DOCX2UDF_PAKET", None)
+        if not paket or "latest" in paket:
+            return False
+        p = subprocess.run([yol, "-y", paket, "whoami"],
                             capture_output=True, text=True, timeout=20)
         return p.returncode == 0
     except Exception:

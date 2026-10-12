@@ -34,6 +34,22 @@ v0.5.16 (P1-5 / A-20) — 9. cephe `bilirkisi_teknik` (bkz. STANDART_CEPHELER
 yorumu). Eski sekiz cepheli matrisler `--dogrula`da "AÇIK CEPHE: bilirkisi_teknik"
 alır — istenen etkidir (kör nokta görünür; sessiz uyum YOK). `duyulmus_curutmeler()`
 sözleşmesi ve [G] kapısının okuduğu `_oa/cikti/*antitez*.json` adı DEĞİŞMEDİ.
+
+v0.5.18 (B-8 — antitez K1 sözleşmesine girdi; Fable tutarlılık raporu
+2026-10-07): (1) `arac: "antitez_matris"` damgası YALNIZ `--dogrula … --json`
+denetim çıktısındadır (K1 damga sözleşmesi = motor çıktısı damgası; vakia/graf/
+kıyas ile aynı anlam). `--iskelet` şablonu ve girdi matrisi damga TAŞIMAZ (ana
+oturum kararı Ö-1, düzeltme turu 1): aynı damga iki nesnede olsa damgaya bakan
+her tüketici girdiyi denetim sanıp DURUM.md'ye sahte "sağlıksız" satırı
+yazabilirdi. Girdi matrisi [G] kapısı/bekçi tarafından dosya adıyla
+(`*antitez*.json`) ve `cepheler` LİSTESİYLE tanınır. (2) `--dogrula …
+--json <yol>` makine-okur denetim JSON'u yazar (S2: arac · girdi · kaynaklar ·
+acik_cepheler · curutulmemis · teyitsiz_dayanak · dayanaksiz_guclu ·
+artik_riskler · gecersiz · uyarilar · saglikli; sort_keys; atomik yazım) —
+DURUM.md hattı açık cepheyi/çürütülmemiş antitezi buradan okur. (3) Cephe
+kaydında opsiyonel `hedef: {"halka": "vakia|illiyet|kiyas", "id": str}` —
+cephenin zincirin HANGİ halkasına saldırdığı kimlikle bağlanır; biçimsiz
+hedef UYARIDIR (şema hatası değil, `saglikli`ye girmez).
 """
 # __OA_UTF8_GUARD__ — Windows/PowerShell cp1254 konsolunda çökmeyi önler
 import sys as _sys
@@ -45,8 +61,124 @@ for _s in (_sys.stdout, _sys.stderr):
 
 
 import argparse
+import hashlib
 import json
+import os
 import sys
+import time
+
+# v0.5.18 (B-8): DENETİM ÇIKTISI damgası — pipeline_kayit
+# `_denetim_jsonlari(kok, "antitez_matris")` bu literali arar; aile_dogrula
+# `_damga_yazar_mi` üretici scriptte `"arac": "<arac>"` ya da `ARAC_ADI = …`
+# literalini denetler (K1/H5 damga sözleşmesi). Ö-1 (ana oturum kararı,
+# düzeltme turu 1): `--iskelet` şablonu / girdi matrisi bu damgayı TAŞIMAZ —
+# aynı damga iki nesnede olsa damgaya bakan her tüketici girdiyi denetim
+# sanıp DURUM.md'ye sahte "sağlıksız" satırı yazabilirdi (vakia/graf/kıyas
+# ile aynı anlam: damga = motor çıktısı).
+ARAC_ADI = "antitez_matris"
+
+# v0.5.18 (B-8): cephe kaydının saldırdığı zincir halkası — opsiyonel `hedef`
+# alanının kapalı `halka` kümesi. Kimlik (`id`) o halkanın kendi kimliğidir
+# (vakia `olaylar[].id` / `iddialar[].id`, graf düğüm/kenar kimliği, kıyas
+# unsur kimliği); eşleme tüketicinin (capraz_denetim) işidir, bu script yalnız
+# BİÇİMİ denetler.
+HEDEF_HALKALARI = ("vakia", "illiyet", "kiyas")
+
+
+# ── v0.5.18 (B-1(a)/S1 · B-4/S3) — KAYNAK BEYANI ve ATOMİK JSON YAZIMI ───────
+# NEDEN VAR: denetim JSON'u hangi girdiden üretildiğini BEYAN ETMELİ ki künye/
+# matris değişince eski denetim "bayat halka" olarak görünür kılınabilsin
+# (Fable tutarlılık raporu 2026-10-07, B-1 "zincirleme tepki yok"); yazım
+# yarıda kesilirse hedefte yarım JSON kalmasın (B-4). Sözleşme ve gerekçenin
+# tamamı oa-vakia/scripts/vakia_matris.py'de aynı başlık altında; dört motor
+# aynı iki yardımcıyı (ad + imza) bilinçli olarak taşır — paket yok, ortak
+# modül yok (tests/README.md §1). `yol` `_oa`ya göre POSIX göreli, `sha8` =
+# sha256[:8] (tazelik_denetim.sha8 ile aynı); `_oa` dışı girdi → [] + not.
+OA_DISI_NOTU = "_oa dışı girdi — tazelik denetimi dışı"
+KUNYE_GORELI = ("metin", "00-kunye.json")
+
+
+def _oa_dizini_bul(yol):
+    """Dosyayı içeren EN YAKIN `_oa` dizini (mutlak); yoksa None."""
+    dizin = os.path.dirname(os.path.abspath(yol))
+    while True:
+        if os.path.basename(dizin) == "_oa":
+            return dizin
+        ust = os.path.dirname(dizin)
+        if ust == dizin:
+            return None
+        dizin = ust
+
+
+def kaynak_beyani(girdi_yolu):
+    """S1 → (kaynaklar, kaynaklar_notu). ASLA fırlatmaz: okunamayan kaynak
+    beyandan düşer ama NOTA yazılır (sessiz atlama yasağı)."""
+    try:
+        oa = _oa_dizini_bul(girdi_yolu)
+    except Exception:                          # noqa: BLE001 — beyan motoru düşürmez
+        oa = None
+    if oa is None:
+        return [], OA_DISI_NOTU
+    kayitlar, notlar = [], []
+
+    def _ekle(rol, dosya):
+        try:
+            with open(dosya, "rb") as f:
+                bayt = f.read()
+            goreli = os.path.relpath(os.path.abspath(dosya), oa).replace(os.sep, "/")
+        except Exception as e:                 # noqa: BLE001
+            notlar.append(f"{rol} kaynak beyanına alınamadı ({type(e).__name__})")
+            return
+        kayitlar.append({"rol": rol, "yol": goreli,
+                         "sha8": hashlib.sha256(bayt).hexdigest()[:8]})
+
+    _ekle("girdi", girdi_yolu)
+    kunye = os.path.join(oa, *KUNYE_GORELI)
+    if os.path.isfile(kunye):
+        _ekle("kunye", kunye)
+    kayitlar.sort(key=lambda k: (k["rol"], k["yol"]))
+    return kayitlar, (" · ".join(notlar) if notlar else None)
+
+
+def _atomik_json_yaz(yol, nesne):
+    """S3: aynı dizinde geçici dosyaya yaz, `os.replace` ile hedefe taşı.
+    Biçim dört motorda aynı (ensure_ascii=False, indent=2, sort_keys=True).
+    K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
+    `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
+    240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
+    durur, geçici silinmeye çalışılır — o da kilitliyse `.oa-tmp` kalabilir;
+    ad `.json` ile bitmediği için `*.json` tüketicileri onu görmez)."""
+    gecici = f"{yol}.{os.getpid()}.oa-tmp"
+    try:
+        with open(gecici, "w", encoding="utf-8") as f:
+            json.dump(nesne, f, ensure_ascii=False, indent=2, sort_keys=True)
+        for deneme in range(4):
+            try:
+                os.replace(gecici, yol)
+                break
+            except PermissionError:
+                if deneme == 3:
+                    raise
+                time.sleep(0.08)
+    except BaseException:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            pass
+        raise
+
+
+def _hedef_uyarisi(ad, hedef):
+    """Opsiyonel `hedef` BİÇİM denetimi → uyarı metni ya da None. Biçimli:
+    {"halka": vakia|illiyet|kiyas, "id": boş olmayan dize}. Bilinmeyen biçim
+    UYARIDIR, şema hatası değil (`saglikli`ye girmez — bağ bilgisi eksik
+    diye matris "eksik" sayılmaz; ama sessizce de yutulmaz)."""
+    if isinstance(hedef, dict) and hedef.get("halka") in HEDEF_HALKALARI \
+            and isinstance(hedef.get("id"), str) and hedef["id"].strip():
+        return None
+    return (f"{ad}: 'hedef' biçimsiz — {{\"halka\": \"vakia|illiyet|kiyas\", \"id\": str}} "
+            f"bekleniyor (verilen: {json.dumps(hedef, ensure_ascii=False)[:80]})")
+
 
 # --- Sabit saldırı cepheleri (deterministik omurga — eksiksiz değerlendirilir) ---
 STANDART_CEPHELER = {
@@ -94,6 +226,10 @@ def iskelet():
     for k, v in STANDART_CEPHELER.items():
         _not(f"  [{k}]\n      {v}")
     _not("\n--- Doldurulacak matris şablonu (JSON — STDOUT) ---")
+    _not("  Opsiyonel cephe alanı `hedef`: {\"halka\": \"vakia|illiyet|kiyas\", \"id\": \"…\"} —")
+    _not("  cephenin saldırdığı zincir halkasının kimliği (vakia olay/iddia id'si, graf düğümü,")
+    _not("  kıyas unsuru); bağ yoksa yazmayın. Biçimsiz hedef --dogrula'da UYARI alır.")
+    # Ö-1: şablon `arac` damgası TAŞIMAZ — damga yalnız `--dogrula --json` çıktısında.
     sablon = {
         "tez": "Müvekkilin ana tezi — bir cümle",
         "cepheler": [
@@ -111,10 +247,16 @@ def iskelet():
         ],
     }
     print(json.dumps(sablon, ensure_ascii=False, indent=2))
-    _not("\nDoldurduktan sonra: python antitez_matris.py --dogrula matris.json")
+    _not("\nDoldurduktan sonra: python antitez_matris.py --dogrula matris.json "
+         "--json _oa/cikti/06-antitez-denetim.json")
+    _not("  --json ZORUNLU (pipeline): DURUM.md hattı ve teslim makbuzu açık cepheyi / "
+         "çürütülmemiş antitezi bu dosyadan okur (opsiyonel kapı = ateşlemeyen kapı).")
 
 
-def dogrula(path):
+def dogrula(path, json_yol=None):
+    """Doldurulmuş matrisi denetler; `json_yol` verilirse S2 denetim JSON'unu
+    (v0.5.18/B-8) atomik yazar. Exit kodu sözleşmesi DEĞİŞMEZ (bulguda da 0 —
+    antitez boşluğu stratejik tercih olabilir; görünürlük DURUM.md hattıyla)."""
     try:
         with open(path, encoding="utf-8") as f:
             m = json.load(f)
@@ -145,6 +287,7 @@ def dogrula(path):
     dayanaksiz_guclu = []  # güçlü antiteze dayanaksız çürütme
     artik_riskler = []     # dürüst kalıntı riskler
     gecersiz = []          # şema hatası
+    uyarilar = []          # v0.5.18 (B-8): advisory kanal — biçimsiz `hedef`; saglikli'ye GİRMEZ
     if bicimsiz_cephe:
         # sessiz atlama yasağı: düşürülen kayıt GÖRÜNÜR olsun (B-23)
         gecersiz.append(f"cepheler: {bicimsiz_cephe} kayıt sözlük değil — "
@@ -165,6 +308,10 @@ def dogrula(path):
             gecersiz.append(f"{ad}: geçersiz 'guc' = {guc}")
         if durum and durum not in DAYANAK_DURUMLARI:
             gecersiz.append(f"{ad}: geçersiz 'dayanak_durum' = {durum}")
+        if c.get("hedef") is not None:                     # v0.5.18 (B-8): opsiyonel halka bağı
+            hedef_uyarisi = _hedef_uyarisi(ad, c["hedef"])
+            if hedef_uyarisi:
+                uyarilar.append(hedef_uyarisi)
 
         if guc in {"yuksek", "orta", "dusuk"}:
             saldiri_sayisi += 1
@@ -203,6 +350,8 @@ def dogrula(path):
     blok("TEYİTSİZ DAYANAK (atıf denetimi — oa-kontrol A)", teyitsiz_dayanak, "!")
     blok("GÜÇLÜ ANTİTEZE DAYANAKSIZ ÇÜRÜTME (zayıf)", dayanaksiz_guclu, "!")
     blok("ŞEMA HATASI", gecersiz, "!")
+    blok("HEDEF UYARISI (cephe → zincir halkası bağı biçimsiz — advisory, saglikli'ye girmez)",
+         uyarilar, "?")
     blok("ARTIK RİSKLER (çürütülemeyen — dürüst rapor; müvekkile sun)", artik_riskler, "→")
 
     saglikli = not (eksik_cepheler or curutulmemis or teyitsiz_dayanak or gecersiz)
@@ -213,6 +362,27 @@ def dogrula(path):
         print(">>> Matris bütünlüğü EKSİK: yukarıdaki kör noktalar/eksikler kapatılmadan")
         print("    dosya 'durum farkındalığı tam' sayılmaz. <<<")
     print("=" * 70)
+
+    if json_yol:
+        # v0.5.18 (B-8 / S2): makine-okur denetim — DURUM.md hattı ve teslim
+        # makbuzu açık cepheyi / çürütülmemiş antitezi buradan okur. Listeler
+        # yukarıdaki rapor bloklarının AYNISIDIR (ikisi ayrışamaz). `girdi`
+        # komut satırının yankısı (B-11), `kaynaklar` S1, yazım atomik (S3).
+        kaynaklar, kaynaklar_notu = kaynak_beyani(path)
+        sonuc = {
+            "arac": ARAC_ADI, "girdi": path,
+            "kaynaklar": kaynaklar, "kaynaklar_notu": kaynaklar_notu,
+            "acik_cepheler": eksik_cepheler,
+            "curutulmemis": curutulmemis,
+            "teyitsiz_dayanak": teyitsiz_dayanak,
+            "dayanaksiz_guclu": dayanaksiz_guclu,
+            "artik_riskler": artik_riskler,
+            "gecersiz": gecersiz,
+            "uyarilar": uyarilar,
+            "saglikli": saglikli,
+        }
+        _atomik_json_yaz(json_yol, sonuc)
+        print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
 
 
 def duyulmus_curutmeler(m):
@@ -240,11 +410,15 @@ def main():
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--iskelet", action="store_true", help="Cephe listesi + boş şablon üret")
     g.add_argument("--dogrula", metavar="JSON", help="Doldurulmuş matrisi denetle")
+    p.add_argument("--json", dest="json_yol", metavar="YOL",
+                   help="--dogrula ile: denetim sonucunu makine-okur JSON olarak bu yola yaz "
+                        "(v0.5.18/B-8 — DURUM.md hattı `arac == antitez_matris` damgasını okur; "
+                        "--iskelet ile verilirse yok sayılır)")
     a = p.parse_args()
     if a.iskelet:
         iskelet()
     else:
-        dogrula(a.dogrula)
+        dogrula(a.dogrula, json_yol=a.json_yol)
 
 
 if __name__ == "__main__":

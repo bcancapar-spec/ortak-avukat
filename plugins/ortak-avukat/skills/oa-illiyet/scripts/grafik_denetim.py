@@ -48,9 +48,11 @@ for _s in (_sys.stdout, _sys.stderr):
 
 
 import difflib
+import hashlib
 import json
 import os
 import sys
+import time
 import traceback
 from collections import defaultdict
 
@@ -141,6 +143,93 @@ DELIL_AD_ESIK = 0.6          # G7: serbest metin dayanak ↔ delil adı benzerli
 JOHNSON_DUGUM_TAVANI = 200   # G1: bu düğüm sayısına kadar TAM basit çevrim sayımı
 CEVRIM_TAVANI = 200          # G1: sayılan çevrim tavanı (yoğun grafta patlama freni)
 YAZIM_TAVANI = 40            # stdout satır tavanı (JSON tam listeyi taşır — sessiz kırpma yok)
+
+
+# ── v0.5.18 (B-1(a)/S1 · B-4/S3) — KAYNAK BEYANI ve ATOMİK JSON YAZIMI ───────
+# NEDEN VAR: denetim JSON'u hangi girdiden üretildiğini BEYAN ETMİYORDU —
+# künye/graf değişince eski denetim yerinde duruyor, K2 ve DURUM.md yeşil
+# kalıyordu (Fable tutarlılık raporu 2026-10-07, B-1 "zincirleme tepki yok");
+# ayrıca `open(yol, "w")` yarıda kesilirse hedefte yarım JSON kalıyor, K2
+# okunamayan dosyayı sessizce atlıyordu (B-4 fail-open — deneyle doğrulandı).
+# Çökme kaydı (`denetim_coktu`) da aynı yoldan atomik yazılır ve beyan taşır:
+# bozuk girdinin sha8'i kaydın hangi baytlara ait olduğunu söyler. Sözleşme
+# ve gerekçenin tamamı oa-vakia/scripts/vakia_matris.py'de aynı başlık
+# altında; dört motor aynı iki yardımcıyı (ad + imza) bilinçli olarak taşır —
+# paket yok, ortak modül yok (tests/README.md §1). `yol` `_oa`ya göre POSIX
+# göreli, `sha8` = sha256[:8] (tazelik_denetim.sha8 ile aynı); `_oa` dışı
+# girdi → [] + not ("denetim dışı", temiz DEĞİL).
+OA_DISI_NOTU = "_oa dışı girdi — tazelik denetimi dışı"
+KUNYE_GORELI = ("metin", "00-kunye.json")
+
+
+def _oa_dizini_bul(yol):
+    """Dosyayı içeren EN YAKIN `_oa` dizini (mutlak); yoksa None."""
+    dizin = os.path.dirname(os.path.abspath(yol))
+    while True:
+        if os.path.basename(dizin) == "_oa":
+            return dizin
+        ust = os.path.dirname(dizin)
+        if ust == dizin:
+            return None
+        dizin = ust
+
+
+def kaynak_beyani(girdi_yolu):
+    """S1 → (kaynaklar, kaynaklar_notu). ASLA fırlatmaz: okunamayan kaynak
+    beyandan düşer ama NOTA yazılır (sessiz atlama yasağı)."""
+    try:
+        oa = _oa_dizini_bul(girdi_yolu)
+    except Exception:                          # noqa: BLE001 — beyan motoru düşürmez
+        oa = None
+    if oa is None:
+        return [], OA_DISI_NOTU
+    kayitlar, notlar = [], []
+
+    def _ekle(rol, dosya):
+        try:
+            with open(dosya, "rb") as f:
+                bayt = f.read()
+            goreli = os.path.relpath(os.path.abspath(dosya), oa).replace(os.sep, "/")
+        except Exception as e:                 # noqa: BLE001
+            notlar.append(f"{rol} kaynak beyanına alınamadı ({type(e).__name__})")
+            return
+        kayitlar.append({"rol": rol, "yol": goreli,
+                         "sha8": hashlib.sha256(bayt).hexdigest()[:8]})
+
+    _ekle("girdi", girdi_yolu)
+    kunye = os.path.join(oa, *KUNYE_GORELI)
+    if os.path.isfile(kunye):
+        _ekle("kunye", kunye)
+    kayitlar.sort(key=lambda k: (k["rol"], k["yol"]))
+    return kayitlar, (" · ".join(notlar) if notlar else None)
+
+
+def _atomik_json_yaz(yol, nesne):
+    """S3: aynı dizinde geçici dosyaya yaz, `os.replace` ile hedefe taşı.
+    Biçim dört motorda aynı (ensure_ascii=False, indent=2, sort_keys=True).
+    K-4 (Windows): hedef başka süreçte açıkken (okuyucu, Defender taraması)
+    `os.replace` PermissionError verir — 3 kısa yeniden deneme (3 × 80 ms =
+    240 ms < 300 ms), sonra istisna AYNEN fırlar (fail-closed: eski dosya
+    durur, geçici silinmeye çalışılır — o da kilitliyse `.oa-tmp` kalabilir;
+    ad `.json` ile bitmediği için `*.json` tüketicileri onu görmez)."""
+    gecici = f"{yol}.{os.getpid()}.oa-tmp"
+    try:
+        with open(gecici, "w", encoding="utf-8") as f:
+            json.dump(nesne, f, ensure_ascii=False, indent=2, sort_keys=True)
+        for deneme in range(4):
+            try:
+                os.replace(gecici, yol)
+                break
+            except PermissionError:
+                if deneme == 3:
+                    raise
+                time.sleep(0.08)
+    except BaseException:
+        try:
+            os.unlink(gecici)
+        except OSError:
+            pass
+        raise
 
 
 def _oneri(deger, bilinenler):
@@ -968,7 +1057,16 @@ GUC_AGIRLIK = {"dispozitif": 1.0, "guclu": 0.9, "zayif": 0.6, "tartismali": 0.4}
 GUC_VARSAYILAN = 0.4
 
 
-def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
+# v0.5.18 (B-10): maksimal yol sayımı `en_cok*5` tavanında kesilir; kesildiyse
+# "en kırılgan en_cok" KISMİ kümeden seçilmiştir ve en zayıf halka listesi tam
+# DEĞİLDİR. Eskiden bunu söyleyen tek satır yoktu (Fable tutarlılık raporu
+# 2026-10-07: belirsizlik gizleniyordu — okunamayan/denetlenemeyen "temiz"
+# sayılmaz). Metin sözleşmedir: tests/test_zincir_analizi.py ve tüketici
+# (DURUM.md hattı) bu dizeyi `zincir_uyarisi` içinde arar.
+ZINCIR_TAVAN_UYARISI = "zincir tavanı aşıldı — en zayıf halka listesi tam değil"
+
+
+def zincir_analizi_tam(dugumler, kenarlar, en_cok=10, derinlik=12):
     """v0.5.8 P3 — İLLİYET ZİNCİRİ GÜVEN ANALİZİ (semantica confidence_decay +
     weakest_link deseninin devşirmesi; anayasa m.0 devşirme protokolü, Can
     kararı 2026-08-12). Her maksimal illiyet yolunda kenar ağırlıklarının
@@ -976,7 +1074,10 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
     ağırlıklı sıçrama = EN ZAYIF HALKA (karşı tarafın saldıracağı yer —
     oa-antitez beslemesi). Ağırlık `guc` alanından türetilir; hukuki niteleme
     değildir, YAPISAL kırılganlık sinyalidir. ADVISORY — hiçbir şeyi bloklamaz.
-    G6: DFS özyinelemesiz + açık derinlik sınırı (derinlik)."""
+    G6: DFS özyinelemesiz + açık derinlik sınırı (derinlik).
+    v0.5.18 (B-10): `(zincirler, tavan_asildi)` döner — ikinci öğe, yol
+    sayımının `en_cok*5` tavanında yarıda kesildiğini (kalan iş varken
+    durulduğunu) söyler; §8 ve JSON `zincir_uyarisi` bunu görünür kılar."""
     ill = [k for k in kenarlar if _illiyet_kenar_mi(k)]
     giden = {}
     for k in ill:
@@ -984,6 +1085,7 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
     kokler = _illiyet_kokler(kenarlar)
     zincirler = []
     tavan = en_cok * 5
+    tavan_asildi = False
 
     for kok in kokler:
         yigin = [(kok, [], {kok})]
@@ -999,6 +1101,8 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
                     yigin.append((h, yol + [k], gorulen | {h}))
             if not devam and yol:
                 zincirler.append(yol)
+        if yigin:                 # tavan doldu, yığında işlenmemiş yol kaldı → KISMİ sayım
+            tavan_asildi = True
 
     sonuc = []
     for yol in zincirler:
@@ -1019,7 +1123,13 @@ def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
                          "agirlik": zayif_w} if zayif else None,
         })
     sonuc.sort(key=lambda z: (z["guven"], -z["halka"]))  # en kırılgan önce
-    return sonuc[:en_cok]
+    return sonuc[:en_cok], tavan_asildi
+
+
+def zincir_analizi(dugumler, kenarlar, en_cok=10, derinlik=12):
+    """Geriye uyumlu sarmal — yalnız zincir listesi (tests/test_zincir_analizi.py,
+    test_v0516_A.py karakterizasyonu). Tavan bayrağı için `zincir_analizi_tam`."""
+    return zincir_analizi_tam(dugumler, kenarlar, en_cok=en_cok, derinlik=derinlik)[0]
 
 
 def _kesme_ref(dugumler, i, k):
@@ -1258,15 +1368,22 @@ def _rapor_govde(yol, json_yol=None, zincir=True, taraf=None, kok=None):
         print("### 8. ZİNCİR GÜVEN ANALİZİ (v0.5.8 P3 — → oa-antitez/oa-strateji)")
         illiyet_var = any(k.get("kategori") == ILLIYET_KATEGORI for k in kenarlar)
         kokler = _illiyet_kokler(kenarlar)
-        zincirler = zincir_analizi(dugumler, kenarlar)
+        zincirler, tavan_asildi = zincir_analizi_tam(dugumler, kenarlar)
+        uyarilar8 = []
         if illiyet_var and not kokler:           # G2: köksüz graf
-            zincir_uyarisi = ("çevrim nedeniyle kök yok — zincir güven analizi "
-                              "GÜVENİLMEZ (önce §5 çevrimi çöz)")
-            print(f"  ✗ {zincir_uyarisi}")
+            uyarilar8.append("çevrim nedeniyle kök yok — zincir güven analizi "
+                             "GÜVENİLMEZ (önce §5 çevrimi çöz)")
+            print(f"  ✗ {uyarilar8[-1]}")
         elif cevrimler:
-            zincir_uyarisi = ("çevrim var — çevrime giren zincirler eksik/GÜVENİLMEZ "
-                              "olabilir (önce §5 çevrimi çöz)")
-            print(f"  ⚠ {zincir_uyarisi}")
+            uyarilar8.append("çevrim var — çevrime giren zincirler eksik/GÜVENİLMEZ "
+                             "olabilir (önce §5 çevrimi çöz)")
+            print(f"  ⚠ {uyarilar8[-1]}")
+        if tavan_asildi:                         # v0.5.18 B-10: kısmi sayım sessiz kalmaz
+            uyarilar8.append(ZINCIR_TAVAN_UYARISI)
+            print(f"  ⚠ {ZINCIR_TAVAN_UYARISI} (yol sayımı tavanda kesildi; aşağıdaki "
+                  f"{len(zincirler)} zincir KISMİ kümenin en kırılganlarıdır)")
+        # Birden çok uyarı tek alanda " · " ile birleşir (JSON `zincir_uyarisi` str|null kalır).
+        zincir_uyarisi = " · ".join(uyarilar8) if uyarilar8 else None
         if zincirler:
             for z in zincirler:
                 adlar = " → ".join(_ad(dugumler, x) for x in z["yol"])
@@ -1318,12 +1435,12 @@ def _rapor_govde(yol, json_yol=None, zincir=True, taraf=None, kok=None):
                            guc_beyansiz=guc_beyansiz, cikis_kodu=cikis_kodu,
                            blok_sinifi=blok_sinifi, taraf=taraf, yon=yon,
                            kanun_yolu=kanun_yolu)
-        sonuc["girdi"] = yol
+        sonuc["girdi"] = yol                                   # B-11: komut satırının yankısı (geriye uyum)
+        sonuc["kaynaklar"], sonuc["kaynaklar_notu"] = kaynak_beyani(yol)   # v0.5.18 S1
         sonuc["zincir_uyarisi"] = zincir_uyarisi
         if zincirler is not None:
             sonuc["zincirler"] = zincirler
-        with open(json_yol, "w", encoding="utf-8") as f:
-            json.dump(sonuc, f, ensure_ascii=False, indent=2, sort_keys=True)
+        _atomik_json_yaz(json_yol, sonuc)                      # v0.5.18 S3
         print(f"[JSON] Makine-okur sonuc yazildi: {json_yol}")
     return cikis_kodu
 
@@ -1348,10 +1465,13 @@ def rapor(yol, json_yol=None, zincir=True, taraf=None, kok=None):
               "pipeline ilerlemez")
         if json_yol:
             try:
-                with open(json_yol, "w", encoding="utf-8") as f:
-                    json.dump({"arac": ARAC_ADI, "denetim_coktu": True, "hata": hata,
-                               "girdi": str(yol), "cikis_kodu": 2},
-                              f, ensure_ascii=False, indent=2, sort_keys=True)
+                # v0.5.18: çökme kaydı da ATOMİK yazılır (S3) ve kaynak beyanı
+                # taşır (S1) — bozuk girdinin sha8'i kaydın hangi baytlara ait
+                # olduğunu söyler; `kaynak_beyani` asla fırlatmaz.
+                kaynaklar, kaynaklar_notu = kaynak_beyani(str(yol))
+                _atomik_json_yaz(json_yol, {"arac": ARAC_ADI, "denetim_coktu": True, "hata": hata,
+                                            "girdi": str(yol), "cikis_kodu": 2,
+                                            "kaynaklar": kaynaklar, "kaynaklar_notu": kaynaklar_notu})
                 print(f"[JSON] Çökme kaydı yazıldı: {json_yol}")
             except Exception as e2:              # noqa: BLE001
                 print(f"[JSON] Çökme kaydı YAZILAMADI ({type(e2).__name__}: {e2})")

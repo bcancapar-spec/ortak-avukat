@@ -15,10 +15,11 @@
    bayrak 0 kez verildi → analiz hiç üretilmedi.)
 
 3) ÖZNE TETİĞİ: vakia_matris.py matris kurarken taraf/özne yazım
-   varyantlarını toplar ve ozne_eslestirici'nin jaro_winkler + eşikleriyle
-   (BAGLA >= 0.92 / AVUKATA-SOR 0.80-0.92) çıktı json'a 'ozne_eslestirme'
-   bölümü yazar; varyant yoksa boş liste (sessiz). (372: ozne_eslestirici'yi
-   hiçbir akış çağırmıyordu — kullanıcı kararı: tetik oa-vakia'ya bağlandı.)
+   varyantlarını toplar ve ozne_eslestirici'nin kural setiyle (v0.5.18:
+   BAGLA yalnız yazım eşdeğerliğinde, yakın yazım AVUKATA-SOR) çıktı json'a
+   'ozne_eslestirme' bölümü yazar; varyant yoksa boş liste (sessiz). (372:
+   ozne_eslestirici'yi hiçbir akış çağırmıyordu — kullanıcı kararı: tetik
+   oa-vakia'ya bağlandı.)
 
 Tüm girdiler tmp_path + SENTETİK veridir (repo kuralı m.7 + sabit-yol-sızıntısı
 dersi — gerçek dava klasörü yolu / kişi adı / TC yazılmaz).
@@ -238,12 +239,19 @@ def _vakia_dogrula(tmp_path, yol):
 
 def test_ozne_iki_yazimli_sentetik_ozne_avukata_sor(tmp_path):
     """0.80-0.92 bandındaki iki yazım (akraba adı olabilir) otomatik
-    BAĞLAnamaz — AVUKATA-SOR damgasıyla yüzeye çıkar (karar avukatta)."""
-    yol = _vakia_kur(tmp_path, taraflar=["Osman Balcı", "Orhan Balcı"])
+    BAĞLAnamaz — AVUKATA-SOR damgasıyla yüzeye çıkar (karar avukatta).
+
+    v0.5.18 (kullanıcı kararı 2026-10-05, özne kural seti): eski örnek çift
+    "Osman Balcı ~ Orhan Balcı" tüm-dize skoruyla (0,89) bu bandaydı; yeni
+    parça-bazlı kuralda farklı ad parçası 0,76 olduğundan AYRI özne sayılır
+    (sessiz — yazım varyantı değil). Bandın sözleşmesi aynı kalsın diye örnek
+    çift önek-uzantılı soyadla değiştirildi (Balcı/Balcıoğlu: ayrı soyad da
+    olabilir → SOR, parça skoru 0,911)."""
+    yol = _vakia_kur(tmp_path, taraflar=["Osman Balcı", "Osman Balcıoğlu"])
     cikti, sonuc = _vakia_dogrula(tmp_path, yol)
     assert len(sonuc["ozne_eslestirme"]) == 1, sonuc["ozne_eslestirme"]
     b = sonuc["ozne_eslestirme"][0]
-    assert set(b["varyantlar"]) == {"Osman Balcı", "Orhan Balcı"}
+    assert set(b["varyantlar"]) == {"Osman Balcı", "Osman Balcıoğlu"}
     assert b["karar"] == "AVUKATA-SOR"
     assert 0.80 <= b["skor"] < 0.92
     assert "ÖZNE EŞLEŞTİRME" in cikti  # görünürlük — sessiz gömülmez

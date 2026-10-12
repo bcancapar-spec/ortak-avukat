@@ -59,10 +59,13 @@ def _kos(betik, mod, kok, girdi=b"{}"):
 
 # ── varlık ve bütünlük ─────────────────────────────────────────────────────
 
-def test_giris_betigi_var_ve_derlenebilir():
+def test_giris_betigi_var_ve_derlenebilir(tmp_path):
     assert GIRIS.is_file(), "hook_giris.py yok — hook yolu eski hıza düşer"
     import py_compile
-    py_compile.compile(str(GIRIS), doraise=True)     # sözdizimi kapısı
+    # Sözdizimi kapısı. Bytecode testin dizinine yazılır, deponun ORTAK `__pycache__`'ine değil
+    # (v0.5.18: kancalar oradaki .pyc'leri paralel okur; Windows açık dosyanın üzerine yazmayı
+    # reddeder — bkz. test_v0517_muvekkil_lehine_kiriklar._derlenemeyenler).
+    py_compile.compile(str(GIRIS), cfile=str(tmp_path / "hook_giris.pyc"), doraise=True)
 
 
 def test_giris_betigi_sys_path_kirletmez():
@@ -111,17 +114,29 @@ def test_tum_hook_modlari_cokmeden_gecer():
 
 # ── asıl kazanç: bytecode önbelleği gerçekten kullanılıyor mu ──────────────
 
-def test_bytecode_onbellegi_gercekten_yaziliyor():
+def test_bytecode_onbellegi_gercekten_yaziliyor(tmp_path):
     """Onarımın TA KENDİSİ: giriş betiği üzerinden çağrıda pipeline_kayit'in
     `.pyc`'si üretilmeli. Üretilmiyorsa kazanç yoktur (birisi `__main__`
-    yoluna geri döndürmüş demektir)."""
+    yoluna geri döndürmüş demektir).
+
+    v0.5.18 — test iki dosyanın ÖZEL kopyasında koşar (giriş betiği kardeşini kendi
+    dizininden yükler). Eskiden deponun ORTAK `.pyc`'sini SİLİYORDU:
+    - PYTHONDONTWRITEBYTECODE=1 ortamında (Claude masaüstü uygulaması) kanca onu yeniden
+      yazamıyordu. Test hiçbir şey denetlemeden dönüyor, süitin geri kalanı kaynaktan
+      derlemeye düşüyordu (ölçüldü: test sonrası ortak .pyc YOK).
+    - Paralel işçiler aynı dosyayı okurken Windows silmeyi reddedebilir.
+    Alt süreçten değişken çıkarılır; kilit artık HER ortamda gerçekten sınar. Üretim ortamının
+    bytecode ayarını `tools/hook_doktor.py` denetler."""
     import importlib.util
-    pyc = pathlib.Path(importlib.util.cache_from_source(str(KAYIT)))
-    if pyc.exists():
-        pyc.unlink()
-    _kos(GIRIS, "hook-prompt", _dava_klasoru())
-    if os.environ.get("PYTHONDONTWRITEBYTECODE"):
-        return                     # ortam önbelleği kapatmış — betiğin suçu değil
+    import shutil
+    kopya = tmp_path / "scripts"
+    kopya.mkdir()
+    for kaynak in (GIRIS, KAYIT):
+        shutil.copy2(kaynak, kopya / kaynak.name)
+    pyc = pathlib.Path(importlib.util.cache_from_source(str(kopya / KAYIT.name)))
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONDONTWRITEBYTECODE"}
+    subprocess.run([sys.executable, str(kopya / GIRIS.name), "--hook-prompt"],
+                   cwd=str(_dava_klasoru()), input=b"{}", capture_output=True, env=env)
     assert pyc.is_file(), (
         "pipeline_kayit .pyc üretilmedi — bytecode önbelleği devre dışı, "
         "hook başına ~41 ms kazanç kaybediliyor")

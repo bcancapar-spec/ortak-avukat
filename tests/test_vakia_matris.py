@@ -318,10 +318,14 @@ def test_eksik_dosyada_da_exit_kodu_sifir(izole_dizin):
 # v0.5.8.4: "ozne_eslestirme" anahtarı eklendi (ÖZNE TETİĞİ — taraf/özne
 # yazım varyantları ozne_eslestirici eşikleriyle damgalanır; varyant yoksa
 # boş liste, sessiz — bkz. test_v0584_desenler.py).
+# v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme): "kaynaklar" + "kaynaklar_notu"
+# (girdi + künye sha8 beyanı — zincirleme tepki; tazelik_denetim okur).
+# Ayrıntı: tests/test_v0518_uretici_kaynaklar.py.
 BEKLENEN_ANAHTARLAR = {
     "arac", "girdi", "kronoloji", "tarihsiz", "iddia_delil_matrisi",
     "ispat_bosluklari", "yetim_deliller", "gecersiz_referans",
     "gecersiz_ispat_durumu", "ozne_eslestirme", "ozet", "saglikli",
+    "kaynaklar", "kaynaklar_notu",
 }
 
 

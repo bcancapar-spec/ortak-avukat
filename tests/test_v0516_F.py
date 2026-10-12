@@ -51,6 +51,10 @@ UST_DUZEY_ANAHTARLAR = {
     "arac", "girdi", "kronoloji", "tarihsiz", "iddia_delil_matrisi",
     "ispat_bosluklari", "yetim_deliller", "gecersiz_referans",
     "gecersiz_ispat_durumu", "ozne_eslestirme", "ozet", "saglikli",
+    # v0.5.18 (S1 / B-1(a) — BİLİNÇLİ genişletme): kaynak beyanı (girdi + künye
+    # sha8) — zincirleme tepki; tazelik_denetim okur. Ayrıntı:
+    # tests/test_v0518_uretici_kaynaklar.py.
+    "kaynaklar", "kaynaklar_notu",
 }
 SATIR_ANAHTARLAR = {
     "iddia_id", "metin", "tur", "destekler", "belgeli", "kismi_destek",

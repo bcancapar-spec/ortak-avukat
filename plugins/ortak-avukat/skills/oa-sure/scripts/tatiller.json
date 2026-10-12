@@ -3,6 +3,7 @@
   "_format_kurali": "DİKKAT: 'dini' altındaki girişler SALT ISO tarih ('YYYY-AA-GG') olmalıdır — etiketli dize ('2026-03-20 (Ramazan)') script eşleşmesini SESSİZCE bozar (tam dize karşılaştırması yapılır). Açıklama bu _yorum anahtarlarına yazılır.",
   "_arife_notu": "Arife günleri (2429 s.K.: saat 13:00'ten itibaren yarım gün) tabloya TAM TATİL olarak GİRİLMEZ — yarım gün, sürenin son gününü kendiliğinden kaydırmaz. Son gün arifeye denk gelirse işlemi öğleden ÖNCE tamamla; UYAP elektronik işlemde 23:59'a kadar süre korunur ama fiziki işlem/harç gerektiren işte riske girme. 2026 arifeleri: 19 Mart (Ramazan), 26 Mayıs (Kurban).",
   "_2026_kaynak": "2026 dini bayram tarihleri 11.06.2026'da birden çok bağımsız kaynaktan çapraz teyit edildi (Diyanet takvimi türevi yayınlar; tarihler geçmişte kaldığı için fiilen de kesinleşmiş durumda). 2027 girilmeden önce Diyanet/RG'den teyit edilecek — tahmin YAZMA.",
+  "_2027_durum": "2027 dini bayram tarihleri 2026-10-05 tarihinde Mevzuat MCP üzerinden (Resmî Gazete / CB tasarrufları) arandı; resmî kayıt BULUNAMADI → dini.2027 BOŞ bırakıldı (tahmin YAZILMAZ). hesapla_sure.py tabloda kaydı olmayan yıla düşen her hesapta TATİL TAKVİMİ EKSİK — TEYİT ET uyarısı basar, deftere takvim_eksik işler, nöbetçi işaretler ve karşı tarafa kesin dil 10 günlük farkta kapanır (v0.5.18 / Y-08). Diyanet/RG teyidiyle doldur, sonra ilgili süreleri yeniden hesapla.",
   "sabit": [
     {
       "ay": 1,

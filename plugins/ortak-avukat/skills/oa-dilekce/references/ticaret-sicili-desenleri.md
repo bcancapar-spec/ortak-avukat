@@ -89,7 +89,7 @@ basım). Bu döngüde **tek gerçek kaynak taslak md dosyasıdır** — UDF onda
 türetilir, tersi değil. Her düzeltmeden sonra zincir baştan koşar:
 
 ```
-md → md_udf_html.py → npx -y udf-cli@latest html2udf → udf2md ile geri okuma + anahtar token grep
+md → md_udf_html.py → npx -y udf-cli@0.5.6 html2udf → udf2md ile geri okuma + anahtar token grep
 ```
 
 UDF üzerinde doğrudan düzenleme yapıldıysa (UYAP editöründe), **md artık bayat

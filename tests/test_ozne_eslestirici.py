@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-"""ozne_eslestirici.py (v0.5.8 P4 — M9 motoru; vendor: semantica JW/Lev
-algoritma uyarlaması) testleri. Advisory sözleşmesi: her zaman exit 0,
-BAGLA >= 0.92, AVUKATA-SOR 0.80-0.92, altı sessiz."""
+"""ozne_eslestirici.py (v0.5.8 P4 — M9 motoru; semantica JW/Lev algoritma
+fikrinin kavramsal devşirmesi) testleri. Advisory sözleşmesi: geçerli girdide
+her zaman exit 0. v0.5.18 (kullanıcı kararı 2026-10-05): BAGLA yalnız yazım
+eşdeğerliğinde; yakın ama birebir olmayan yazım AVUKATA-SOR; eşik altı sessiz.
+Ayrıntılı kural testleri: tests/test_v0518_ozne.py. Örnek adlar kurgudur (m.7)."""
 import importlib.util
 import json
 import pathlib
@@ -18,18 +20,18 @@ spec.loader.exec_module(m)
 
 
 def test_tr_normalize_turkce_ve_ocr():
-    assert m.tr_normalize("BALÇAL") == "balçal"          # İ/I kuralı + küçültme
-    assert m.tr_normalize("Bal.al") == "balal"           # OCR nokta gürültüsü
+    assert m.tr_normalize("TEKÇİN") == "tekçin"          # İ/I kuralı + küçültme
+    assert m.tr_normalize("Tek.in") == "tekin"           # OCR nokta gürültüsü
     assert m.tr_normalize("İsmail  GÜMÜŞ") == "ismail gümüş"
 
 
 def test_ayni_ozne_varyantlari_yakalanir():
-    sonuc = m.eslestir(["Ahmet Balçal", "AHMET BALÇAL", "Ahmet Bal.al"])
+    sonuc = m.eslestir(["Ahmet Tekçin", "AHMET TEKÇİN", "Ahmet Tek.in"])  # kurgu ad (m.7)
     kararlar = {(e["a"]["ad"], e["b"]["ad"]): e["karar"] for e in sonuc}
     # birebir (büyük/küçük) → BAGLA
-    assert kararlar[("Ahmet Balçal", "AHMET BALÇAL")] == "BAGLA"
+    assert kararlar[("Ahmet Tekçin", "AHMET TEKÇİN")] == "BAGLA"
     # OCR varyantı en az AVUKATA-SOR bandında YÜZEYE ÇIKMALI (sessiz kalamaz)
-    assert ("Ahmet Balçal", "Ahmet Bal.al") in kararlar
+    assert ("Ahmet Tekçin", "Ahmet Tek.in") in kararlar
 
 
 def test_kardes_adi_bagla_DEGIL():
