@@ -113,7 +113,8 @@ kilitler.**
   `tamam` (dört motorun — grafik_denetim, vakia_matris, kiyas_denetim, antitez_matris —
   kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u diskte) | `eksik` (BLOK; `mesaj` eksik
   motorları ve tek komutu — `motor_koprusu.py` — taşır) | `serh` (adım-8 gerekçeli avukat
-  şerhiyle geçildi — `--serh-kapi halusinasyon|tumu`; `serh_gerekce` + `serh_metni` taşır,
+  şerhiyle geçildi — `--serh-kapi halusinasyon|tumu` + `--serh-onay avukat`; model şerhi ve
+  sahibi kayıtsız eski şerh bu değeri üretmez; `serh_gerekce` + `serh_metni` taşır,
   istisna defterine `tur: halusinasyon-kapisi`, `onay: avukat-serhi` satırı düşer) |
   `defter-yok` (pipeline defteri yok — kapı SORULMADI, BİLGİ) | `denetlenemedi`
   (pipeline_kayit yüklenemedi/çöktü — fail-closed, ATLA). `eksik` = damgası olmayan /
@@ -161,8 +162,17 @@ kilitler.**
   `<udf>.DOGRULANMADI` işaretinin yolu (resmî okuyucu udf2md dosyayı doğrulayamadı); yoksa
   `null`. ADVISORY — teslimi durdurmaz; yeşil makbuzda doğrudan yaşar ve sonuç satırı
   «TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI» diye nitelenir
+- `avukat_karari_bekleyen` — v0.5.18 (saha testleri, anayasa m.9): avukatın kararını bekleyen
+  kalemler (model şerhleri, BİLGİ-EKSİK çatallar, özne soruları) — `{sayi, kalemler, durum}`;
+  kaynak tek: `pipeline_kayit.avukat_karari_bekleyen_kalemleri` (DURUM.md «Avukat Kararı
+  Bekleyen» ile aynı liste). `kalemler` yalnız ETİKET taşır (serbest metin girmez: makbuzun
+  40-UYAP kopyası dışa giden dizindedir). `durum` ∈ `ok | denetlenemedi` (denetlenemeyen liste
+  `sayi: null` — "yok" SAYILMAZ). ADVISORY — teslimi durdurmaz; sayı > 0 ise sonuç satırı
+  «TESLİME HAZIR — ⚠ N kalem avukat kararı bekliyor» diye nitelenir
 - `teslim_sinifi_urunler` — filo kapsamı `[{dosya, sha12, muhur}]`;
-  `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13)
+  `muhur` ∈ `taze | turev | bayat | shasiz | yok | okunamadi` (v0.5.14/B-13). v0.5.18: adım-9
+  (KONTROL) kapısı bu özetleri diskteki dosyayla karşılaştırır; makbuzdan SONRA değişen ürün
+  (e-imzalı UDF hariç — türev) makbuzu geçersiz kılar, teslim yeniden koşulur
 - `filo_uyarilari` — filo taramasının advisory satırları
 - `uyap_kopya` — `40-UYAP/teslim-makbuz-KOPYA.json` (kurulamadıysa `null`)
 - `uyap_urun_kopyalari` — 40-UYAP'a düşen ürün kopyalarının göreli yolları

@@ -161,10 +161,13 @@ def test_g8_eki_desteklenmeyen_tur_adiyla_ve_sayisiyla_uyari_basar(tmp_path):
     "temiz"): sistemin metne çeviremediği türdeki evrak (sahada 231 Excel tablosu —
     ceza dosyasında çoğu zaman iletişim, banka ve baz kayıtları) yalnız
     'bilinmeyen/elle' sayısında görünüyordu; okunamayan OCR evrakı gibi ayrı bir
-    uyarı yoktu. Artık alım, OKUNMAYAN türleri adı ve sayısıyla uyarı satırına yazar."""
-    (tmp_path / "a.xlsx").write_bytes(b"PK\x03\x04sahte-tablo")
-    (tmp_path / "b.xlsx").write_bytes(b"PK\x03\x04sahte-tablo-2")
-    (tmp_path / "c.xls").write_bytes(b"\xd0\xcf\x11\xe0sahte")
+    uyarı yoktu. Artık alım, OKUNMAYAN türleri adı ve sayısıyla uyarı satırına yazar.
+
+    Excel artık okunduğu için (tablo_isle) test gerçekten desteklenmeyen türlerle
+    koşar; bozuk Excel «AÇILAMAYAN EVRAK» uyarısına düşer (test_v0518_eksikler)."""
+    (tmp_path / "a.pages").write_bytes(b"sahte-sayfa")
+    (tmp_path / "b.pages").write_bytes(b"sahte-sayfa-2")
+    (tmp_path / "c.numbers").write_bytes(b"sahte-tablo")
     (tmp_path / "d.txt").write_text("okunur bir metin satırı", encoding="utf-8")
     env = dict(os.environ, PYTHONIOENCODING="utf-8")
     cp = subprocess.run([sys.executable, str(ING), "."], cwd=str(tmp_path), capture_output=True,
@@ -172,7 +175,7 @@ def test_g8_eki_desteklenmeyen_tur_adiyla_ve_sayisiyla_uyari_basar(tmp_path):
     cikti = cp.stdout + cp.stderr
     assert cp.returncode == 0, cikti
     assert "UYARI (DESTEKLENMEYEN TÜR): 3 evrak OKUNMADI" in cikti, cikti
-    assert ".xlsx 2" in cikti and ".xls 1" in cikti, cikti
+    assert ".pages 2" in cikti and ".numbers 1" in cikti, cikti
 
 
 def _ocr_bos_kaydet(hedef, sha_ilk, kullanilan, kaynak, no, png):

@@ -298,7 +298,8 @@ def test_adim8_tek_eksik_motor_yalniz_o_anilir(tmp_path):
 def test_adim8_serh_halusinasyon_ile_gecer_ve_olayda_gorunur(tmp_path):
     kok = _kok(tmp_path)
     assert _isle(kok, 5, "oa-kiyas", durum="GEREKSIZ")[0] == 0
-    kod, out = _isle(kok, 8, "oa-dilekce", ek=("--serh", SERH, "--serh-kapi", "halusinasyon"))
+    kod, out = _isle(kok, 8, "oa-dilekce", ek=("--serh", SERH, "--serh-kapi", "halusinasyon",
+                                                "--serh-onay", "avukat"))
     assert kod == 0, out
     olay = _son_adim(kok, 8, "oa-dilekce")
     assert olay["serh"] is True and olay["serh_kapi"] == "halusinasyon"
@@ -338,6 +339,7 @@ def test_teslim_BILGI_EKSIK_statusu_halusinasyon_kapisini_gecemez(tmp_path):
     assert m["halusinasyon_kapisi"]["durum"] == "eksik"
     assert sorted(m["halusinasyon_kapisi"]["eksik"]) == sorted(omd.DAMGALAR)
     assert "motor_koprusu.py" in out, out
+    assert "--serh-onay avukat" in out, out   # v0.5.18: tek çıkış avukat şerhi
 
 
 def test_teslim_dort_damga_varken_c2_acik(tmp_path):
@@ -353,7 +355,8 @@ def test_teslim_dort_damga_varken_c2_acik(tmp_path):
 def test_teslim_serhli_adim8_c2_gecer_ve_istisna_defterine_yazar(tmp_path):
     kok = _kok(tmp_path)
     assert _isle(kok, 5, "oa-kiyas", durum="GEREKSIZ")[0] == 0
-    assert _isle(kok, 8, "oa-dilekce", ek=("--serh", SERH, "--serh-kapi", "halusinasyon"))[0] == 0
+    assert _isle(kok, 8, "oa-dilekce", ek=("--serh", SERH, "--serh-kapi", "halusinasyon",
+                                                "--serh-onay", "avukat"))[0] == 0
     kod, out = _teslim(kok)
     m = _makbuz(kok)
     assert _c2_kaydi(m)["durum"] == "OK", (m["kapilar"], out)

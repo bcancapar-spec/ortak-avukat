@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **122.000+** satır · **3.736** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **124.000+** satır · **3.769** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edildi.Geliştirilmeye devam ediliyor.** Bu sistem sentetik örneklerle değil,
 > derdest gerçek dosyalarla sahada sınanıyor: v0.0.1'den v0.5.16'ya gelen
@@ -93,7 +93,7 @@ terimlerin (belge güvenlik kapısı, gizli katman damgası, görünürlük kâh
 başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 [SOZLUK.md](SOZLUK.md) "v0.5.18 terimleri" bölümü.
 
-### v0.5.18 (2026-10-06 → 10-09) — ne değişti, avukatın göreceği
+### v0.5.18 (2026-10-06 → 10-12) — ne değişti, avukatın göreceği
 
 - **Dilekçeden önce dört denetim motoru fiilen koşar (halüsinasyon kapısı).** Saha
   testinde vakıa, illiyet, kıyas ve antitez motorları kuruluydu ama hiç
@@ -129,6 +129,23 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
   modelin kaydı "model beyanı"dır ve sayılmaz; sizin hükmünüz
   `--hukum-onay avukat` ile işlenir. Önceki sürümde onay alanı olmadan yazılmış
   hüküm kayıtları ayrı satırda görünür.
+- **Şerh ve karar da sizindir; saha testlerinden kalan eksikler kapandı
+  (2026-10-11 → 10-12).**
+  - **Şerh ve karar:** şerhin ve avukat kararının sahibi artık kayıtlıdır.
+    Halüsinasyon kapısını yalnız sizin şerhiniz açar (`--serh-onay avukat`).
+    Modelin yazdığı karar "model önerisi"dir ve «Avukat Kararı Bekleyen»
+    kalemini kapatmaz (`--karar-onay avukat`).
+  - **Teslim:** makbuzdan sonra değişen dilekçe nüshası teslim adımını kapatır.
+    Teslim çıktısı bekleyen avukat kararlarını sayısıyla söyler.
+  - **Excel:** ceza saha testinde okunamayan Excel tabloları artık metne
+    çevrilir; gizli sayfa okunur ve damgalanır.
+  - **Okunamayan evrak:** bozuk ya da parolalı evrak türü ve sayısıyla uyarılır.
+  - **Uzun alım:** 200'den fazla evrakın alımı süre tahminiyle önceden haber
+    verilir.
+  - **Kaynakça:** iç kaynakça, dosyanın kendi geçmişini ve dosya numarasını
+    artık "teyitsiz içtihat" sanmaz.
+  - **Windows:** Microsoft Store'un python kısayolu yeni bilgisayarda bütün
+    kancaları sessizce öldürüyordu; sarmalayıcı artık onu atlar.
 - **Karşı tarafın evrakındaki gizli talimat yakalanır (belge güvenlik kapısı, B-22).**
   Evrakın insan gözünün görmediği ama modelin okuduğu katman — beyaz ya da mikro
   yazı, Word'ün gizli metni, silinmiş izli değişiklik, PDF'te görünmez kip,
@@ -270,7 +287,9 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
    reddedildiği için veri gitmemiştir.
 3. PyMuPDF'i yükseltin — depo kökünde `pip install -U -r requirements.txt` (ya da
    `pip install -U pymupdf`). Eski sürümde görünürlük kâhini çalışmaz; sistem bunu
-   gizlemez, raporda "kahin-devre-disi" notu çıkar.
+   gizlemez, raporda "kahin-devre-disi" notu çıkar. Aynı komut Excel okuyucularını
+   da kurar (`openpyxl`, `xlrd`); kurulu değillerse Excel evrakı "OKUNMADI" olarak
+   işaretlenir.
 4. **Eski sürümle üretilmiş `.udf` dosyalarını yeniden üretin.** Eski nüsha iç iz
    taşıyabilir ve teslim hattı aynı adlı mevcut `.udf`'yi devralabilir: açık
    dosyalardaki eski `.udf`'leri kaldırıp teslimi yeniden koşun; UYAP'a vermeden
@@ -303,15 +322,24 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
 - Teyit bekleyen hukuki noktalar ayrı listededir:
   [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek `udf-cli` ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
+- **Avukat onay bayrakları beyandır.** `--onay`, `--istisna-onay`, `--hukum-onay`,
+  `--serh-onay` ve `--karar-onay` kararın sahibini görünür kılar; sistem bayrağı
+  sizin verdiğinizi doğrulayamaz. Avukatın kendi mesajına bağlanması v0.5.19 adayıdır.
 - **Halüsinasyon kapısı motorun koştuğunu denetler, girdisinin doğruluğunu
   değil.** Vakıa ve antitez motorlarının girdisini model evraka dayanarak
   doldurur; asgari doldurulmuş bir girdi de damga alabilir. Girdinin evraka
   sadakati ve bulgunun hükmü sizindir.
 - Teslim makbuzu nihai UDF'in özetini henüz taşımıyor; içtihat dökümünün hangi
   sorgudan geldiği (kaynak zinciri) henüz mekanik olarak bağlanmadı (v0.5.19).
-- **Excel evrakı (.xlsx, .xls) metne çevrilmez.** Alım bunu türü ve sayısıyla
-  uyarır; tabloların içeriği analize girmez, elle incelenmelidir. Ceza
-  dosyalarında iletişim, banka ve baz kayıtları çoğu zaman bu biçimde gelir.
+- **Excel evrakı (.xlsx, .xlsm, .xls) metne çevrilir, ama gizli katmanı tam
+  denetlenmez.**
+  - Gizli sayfa okunur ve damgalanır.
+  - Gizli satır/sütun ve yazı rengi bu sürümde ölçülmez. Bu yüzden belge
+    güvenlik kapısı tabloyu DENETLENEMEZ diye işaretler.
+  - Tablodaki değer düzeltilmez; tarih ISO biçimine çevrilir.
+- **Kesilen evrak alımı baştan başlar.** Biten evrakın ara kaydı yoktur
+  (v0.5.19). Büyük klasörde alım arka planda koşturulmalıdır; sistem 200'den
+  fazla evrakta bunu süre tahminiyle söyler.
 - Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
 
 ---

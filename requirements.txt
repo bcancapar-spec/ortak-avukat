@@ -5,5 +5,9 @@
 # (belge_guvenlik.PYMUPDF_ASGARI ile aynı sayı — testle kilitli).
 pymupdf>=1.24.2
 pillow
+# Excel evrakı (v0.5.18 ceza saha testi: tablolar okunmuyordu):
+# .xlsx → openpyxl, .xls → xlrd. Yoksa evrak "OKUNMADI" diye işaretlenir (sessiz atlama yok).
+openpyxl>=3.1
+xlrd>=2.0
 # Test için:
 pytest

@@ -326,7 +326,8 @@ def main(argv=None):
         print(CIZGI)
         return 0
     print("Eksik motorlar koşmadan dilekçe adımı (adım-8) ve teslim (c2) kapısı RET verir; "
-          "bilinçli geçiş yalnız gerekçeli avukat şerhiyle: --serh \"...\" --serh-kapi halusinasyon")
+          "bilinçli geçiş yalnız gerekçeli avukat şerhiyle: --serh \"...\" --serh-kapi halusinasyon "
+          "--serh-onay avukat (model şerhi bu kapıyı açmaz)")
     print(CIZGI)
     return 2
 

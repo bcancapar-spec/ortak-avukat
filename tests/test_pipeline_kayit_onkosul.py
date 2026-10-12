@@ -226,9 +226,11 @@ def test_adim8_serh_ile_gecer(tmp_path):
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
     gerekce = "Adım-5 bu dosyada bilinçli olarak atlanıyor, avukat elle inceledi."
+    # v0.5.18: adım-8'in halüsinasyon kapısını yalnız AVUKAT şerhi açar (m.9).
     kod, cikti = _cli(
         ["--isle", "--adim", "8", "--parca", "oa-dilekce", "--durum", "UYGULANDI",
-         "--kanit", UZUN_KANIT, "--serh", gerekce, "--kok", str(tmp_path)],
+         "--kanit", UZUN_KANIT, "--serh", gerekce, "--serh-onay", "avukat",
+         "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
     assert kod == 0, cikti

@@ -288,7 +288,10 @@ GORUNTU = {".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp", ".gif"}
 PDF, UDF, DOCX = {".pdf"}, {".udf"}, {".docx"}
 ARSIV = {".zip", ".eyp"}                     # EYP = UYAP paketi (zip tabanlı)
 DUZ = {".txt", ".md", ".rtf", ".html", ".htm", ".csv", ".xml"}
-IC_BILINEN = PDF | UDF | DOCX | GORUNTU | DUZ  # arşiv içinde işlenecek tipler
+# v0.5.18 ceza saha testi (anayasa m.1): Excel evrakı hiç
+# okunmuyordu. Okuyucu kütüphaneleri (openpyxl, xlrd) yalnız ihtiyaç anında yüklenir.
+TABLO = {".xlsx", ".xlsm", ".xls"}
+IC_BILINEN = PDF | UDF | DOCX | GORUNTU | DUZ | TABLO  # arşiv içinde işlenecek tipler
 # "40-uyap" (v0.5.9 ÇIKTI ŞEMASI): dava kökündeki 40-UYAP/ dışa giden ürün
 # KOPYALARINI taşır (teslim_paketi A2) — gelen evrak DEĞİLDİR; taranırsa
 # kurucu kendi bir sonraki koşusunda KUNYE BAYAT üretir (öz-bulaşma).
@@ -1571,6 +1574,105 @@ def docx_isle(yol):
     return re.sub(r" {2,}", " ", ham).strip(), "docx", False, None, None, []
 
 
+def _tablo_hucre(v):
+    """Excel hücresini metne çevirir. Tarih ISO biçiminde (saat varsa saniyesiyle), tam
+    sayı değerli ondalık tam sayı olarak yazılır. Hücre içi satır sonu görünür ' ⏎ ' olur
+    (satır yapısı bozulmaz, içerik kaybolmaz). Değer DÜZELTİLMEZ."""
+    import datetime
+    if v is None:
+        return ""
+    if isinstance(v, datetime.datetime):
+        if v.hour or v.minute or v.second:
+            return v.isoformat(sep=" ", timespec="seconds")
+        return v.date().isoformat()
+    if isinstance(v, datetime.date):
+        return v.isoformat()
+    if isinstance(v, datetime.time):
+        return v.isoformat(timespec="seconds")
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v).replace("\r\n", " ⏎ ").replace("\n", " ⏎ ").replace("\r", " ⏎ ")
+
+
+def _tablo_satiri(hucreler):
+    """Boş kuyruk hücreleri atılmış ' | ' ayraçlı satır; tümü boşsa None."""
+    degerler = [_tablo_hucre(h) for h in hucreler]
+    while degerler and degerler[-1] == "":
+        degerler.pop()
+    return " | ".join(degerler) if degerler else None
+
+
+def tablo_isle(yol):
+    """v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı): Excel evrakını sayfa
+    sayfa metne çevirir. Her sayfa '## Sayfa: <ad>' başlığıyla başlar; gizli sayfa
+    '[GİZLİ SAYFA: <durum>]' ile işaretlenir (içeriği okunur, belge güvenlik kapısı onu
+    ayrıca tartar). Bütün satırlar yazılır, kırpılmaz. Okuyucu kütüphanesi yoksa evrak
+    OKUNMADI diye açıkça işaretlenir (sessiz atlama yok). 6'lı çıkarıcı sözleşmesi."""
+    uz = os.path.splitext(yol)[1].lower()
+    parcalar, gizli = [], []
+    try:
+        if uz == ".xls":
+            import xlrd
+            wb = xlrd.open_workbook(yol, on_demand=True)
+            try:
+                for i in range(wb.nsheets):
+                    sh = wb.sheet_by_index(i)
+                    durum = {0: None, 1: "hidden", 2: "veryHidden"}.get(getattr(sh, "visibility", 0), "hidden")
+                    satirlar = []
+                    for r in range(sh.nrows):
+                        hucreler = []
+                        for c in range(sh.ncols):
+                            h = sh.cell(r, c)
+                            if h.ctype == xlrd.XL_CELL_DATE:
+                                hucreler.append(xlrd.xldate_as_datetime(h.value, wb.datemode))
+                            elif h.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+                                hucreler.append(None)
+                            else:
+                                hucreler.append(h.value)
+                        s = _tablo_satiri(hucreler)
+                        if s is not None:
+                            satirlar.append(s)
+                    parcalar.append((sh.name, durum, satirlar))
+            finally:
+                wb.release_resources()
+            yontem = "tablo(xlrd)"
+        else:
+            import openpyxl
+            wb = openpyxl.load_workbook(yol, read_only=True, data_only=True)
+            try:
+                for ws in wb.worksheets:
+                    durum = getattr(ws, "sheet_state", "visible")
+                    # Salt-okur kip, dosyanın kendi <dimension> beyanına güvenir; beyanı
+                    # küçük gösteren tabloda (üreten araçlarda yaygın) sonraki satırlar
+                    # SESSİZCE atılıyordu (bağımsız inceleme, 2026-10-12). Beyan sıfırlanır,
+                    # satırlar XML'de ne varsa okunur (m.1).
+                    if hasattr(ws, "reset_dimensions"):
+                        ws.reset_dimensions()
+                    satirlar = []
+                    for satir in ws.iter_rows(values_only=True):
+                        s = _tablo_satiri(satir)
+                        if s is not None:
+                            satirlar.append(s)
+                    parcalar.append((ws.title, None if durum == "visible" else durum, satirlar))
+            finally:
+                wb.close()
+            yontem = "tablo(openpyxl)"
+    except ImportError:
+        return ("", "bilinmeyen", True, None,
+                "Excel okuyucu kurulu değil: openpyxl (.xlsx) / xlrd (.xls) — evrak OKUNMADI "
+                "(pip install -r requirements.txt)", [])
+    bloklar = []
+    for ad, durum, satirlar in parcalar:
+        baslik = "## Sayfa: %s" % ad
+        if durum:
+            baslik += " [GİZLİ SAYFA: %s]" % durum
+            gizli.append(ad)
+        bloklar.append("\n".join([baslik] + satirlar))
+    not_ = ("GİZLİ SAYFA: %d (%s) — içeriği okundu, damgalı" % (len(gizli), ", ".join(gizli))
+            if gizli else None)
+    return ("\n\n".join(bloklar) + "\n", yontem, False, None, not_, [])
+
+
 def _yedi(d):
     """Çıkarıcı dönüşünü 7 elemana normalize eder (A paketi, v0.5.15).
 
@@ -1616,6 +1718,7 @@ def evrak_isle(yol, uz, opts, tmp_kok, ek=None):
             if uz in DUZ:
                 return _yedi((open(yol, encoding="utf-8", errors="replace").read(),
                               "duz-metin", False, None, None, []))
+            if uz in TABLO:    return _yedi(tablo_isle(yol))
         except subprocess.TimeoutExpired:
             return _yedi(("", "zaman-asimi", True, None, "OCR 600 sn aştı", []))
         except Exception as e:
@@ -2027,7 +2130,7 @@ def _tara(klasor, hedef_abs, onbellek, yeniden, ocr_motor="tesseract"):
         no, temiz, tarih = evrak_no_ad(ad)
         it = {"index": i, "yol": yol, "gorece": gorece, "uz": uz, "no": no,
               "temiz": temiz, "tarih": tarih, "hit": False, "cached": None, "imza": None}
-        if uz not in (PDF | UDF | ARSIV | DOCX | GORUNTU | DUZ):
+        if uz not in (PDF | UDF | ARSIV | DOCX | GORUNTU | DUZ | TABLO):
             it["sinif"] = "bilinmeyen"
         else:
             it["sinif"] = "arsiv" if uz in ARSIV else "tekil"
@@ -2089,8 +2192,29 @@ def _tara(klasor, hedef_abs, onbellek, yeniden, ocr_motor="tesseract"):
                     if _docx_kaydi_var(_kk) and onb.get("docx_cikarim") != DOCX_CIKARIM_SURUMU:
                         it["hit"] = False; it["cached"] = None
                         it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
+                # v0.5.18 (bağımsız inceleme): Excel desteğinden önce yazılmış arşiv kaydı
+                # içteki tabloyu hiç okumamıştır (eski sürüm onu sessizce atlıyordu, m.1).
+                if it["hit"] and it["sinif"] == "arsiv" and _arsivde_okunmamis_tablo(yol, onb):
+                    _kk = onb.get("kayitlar") or []
+                    it["hit"] = False; it["cached"] = None
+                    it["eski_md"] = [k.get("md") for k in _kk if k and k.get("md")]
         items.append(it)
     return items
+
+
+def _arsivde_okunmamis_tablo(yol, onb):
+    """Arşivde tablo (Excel) var ama önbellek kaydında hiç tablo kaydı yoksa True: imza
+    aynı diye isabet sayılırsa tablo sonsuza dek okunmadan kalırdı. Önbellekte tablo kaydı
+    varsa arşiv hiç açılmaz (ucuz yol). Arşiv okunamazsa False: önceki başarılı çıkarım
+    korunur, karar değişmez."""
+    if any(os.path.splitext(str((k or {}).get("kaynak") or ""))[1].lower() in TABLO
+           for k in (onb.get("kayitlar") or [])):
+        return False
+    try:
+        with zipfile.ZipFile(yol) as zf:
+            return any(os.path.splitext(n)[1].lower() in TABLO for n in zf.namelist())
+    except Exception:
+        return False
 
 
 def _guvenlik_hafif_gecer(it, onb, hedef_abs):
@@ -2258,6 +2382,31 @@ def _onbakis_calistir(a, opts):
     return 4
 
 
+# NEDEN VAR (v0.5.18, ceza saha testi): ~1.100 evraklık alım ~27 dk sürdü. Ön planda
+# koşan uzun alım aracın zaman aşımıyla kesilir ve önbellek yalnız koşunun SONUNDA
+# yazıldığı için kesilen alım BAŞTAN başlar (biten evrakın ara kaydı v0.5.19 işidir).
+# Uyarı çıkarım başlamadan ve hemen (flush) basılır: kesilmiş bir koşunun kısmi
+# çıktısında da görünür. Yalnız önbellekte OLMAYAN evrak sayılır; tamamlanmış bir
+# alımın tekrarında susar.
+UZUN_ALIM_ESIK = 200
+_UZUN_ALIM_OLCUM = (1111, 27, 8)   # evrak, dakika, işçi — OCR ağırlıklı saha ölçümü
+
+
+def uzun_alim_uyarisi(kalem, isci, esik=None):
+    """Çıkarılacak `kalem` sayısı eşiği aşıyorsa uyarı metni, aşmıyorsa None.
+    Süre ölçümden işçi sayısıyla ölçeklenen bir TAHMİNDİR ve öyle yazılır."""
+    esik = UZUN_ALIM_ESIK if esik is None else esik
+    if kalem < esik:
+        return None
+    n0, dk0, isci0 = _UZUN_ALIM_OLCUM
+    dk = max(1, round(kalem * dk0 * isci0 / (n0 * max(1, isci))))
+    n0_yazi = f"{n0:,}".replace(",", ".")
+    return (f"UYARI (UZUN ALIM): {kalem} evrak çıkarılacak — tahmin: ~{dk} dk ({isci} işçi; "
+            f"ölçüm: {n0_yazi} evrak {dk0} dk, {isci0} işçi, OCR ağırlıklı — metin PDF'te daha "
+            f"kısa sürer). Alımı arka planda koşturun, zaman aşımını en az {2 * dk} dk verin. "
+            "Kesilirse alım BAŞTAN başlar: önbellek yalnız koşu tamamlanınca yazılır.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="oa-ingest — deterministik metin çıkarım motoru v1.7 (PyMuPDF, paralel, Gate A+C, OCR-Nöbetçisi)")
     ap.add_argument("klasor",
@@ -2372,6 +2521,9 @@ def main():
     # ---- FAZ B: SAF ÇIKARIM (seri veya havuz) — yalnız cache-MISS tekil/arşiv ----
     is_kalemleri = [it for it in items if it["sinif"] in ("tekil", "arsiv") and not it["hit"]]
     isci = a.isci if a.isci > 0 else max(1, min((os.cpu_count() or 1), 8))
+    _uzun = uzun_alim_uyarisi(len(is_kalemleri), isci)
+    if _uzun:
+        print(_uzun, file=sys.stderr, flush=True)
     sonuclar = {}   # index -> payload (None = işçi çöktü)
     profil = {}     # yontem -> toplam_ms
 
@@ -2737,17 +2889,32 @@ def main():
     # v0.5.18 ceza saha testi (anayasa m.1 — evrak atlama yasağı; "bakamadım" ≠ "temiz"):
     # metne çevrilemeyen türdeki evrak (sahada 231 Excel tablosu — iletişim, banka, baz
     # kayıtları) yalnız 'bilinmeyen/elle' sayısında görünüyordu. Türü ve sayısı adıyla söylenir.
-    desteksiz = {}
-    for k in kunye:
-        if k.get("yontem") == "bilinmeyen":
-            uz_ = os.path.splitext(str(k.get("kaynak") or ""))[1].lower() or "(uzantısız)"
-            desteksiz[uz_] = desteksiz.get(uz_, 0) + 1
+    def _uzanti_sayimi(yontem):
+        sayim = {}
+        for k in kunye:
+            if k.get("yontem") == yontem:
+                uz_ = os.path.splitext(str(k.get("kaynak") or ""))[1].lower() or "(uzantısız)"
+                sayim[uz_] = sayim.get(uz_, 0) + 1
+        return sayim
+
+    def _sayim_yazisi(sayim):
+        return " · ".join(f"{u} {n}" for u, n in sorted(sayim.items(), key=lambda x: (-x[1], x[0])))
+
+    desteksiz = _uzanti_sayimi("bilinmeyen")
     if desteksiz:
         print(f"UYARI (DESTEKLENMEYEN TÜR): {sum(desteksiz.values())} evrak OKUNMADI — sistem bu "
-              f"türleri metne çeviremiyor: "
-              + " · ".join(f"{u} {n}" for u, n in sorted(desteksiz.items(), key=lambda x: (-x[1], x[0])))
+              f"türleri metne çeviremiyor: " + _sayim_yazisi(desteksiz)
               + ". İçerikleri analize GİRMEDİ; elle incelenmeli (bkz. 00-INDEX.md 'bilinmeyen/elle').",
               file=sys.stderr)
+    # Açılamayan evrak (bozuk, parolalı, uzantısı türüyle uyuşmayan) yalnız 00-INDEX'te ⚠
+    # satırı olarak kalıyordu; konsolu okuyan model onu görmüyordu. Excel desteklenince
+    # bozuk tablolar «desteklenmeyen tür» uyarısından çıkıp bu sessizliğe düşmüştü (m.1).
+    acilamayan = _uzanti_sayimi("hata")
+    if acilamayan:
+        print(f"UYARI (AÇILAMAYAN EVRAK): {sum(acilamayan.values())} evrak OKUNMADI — dosya bozuk, "
+              "parolalı ya da türü uzantısıyla uyuşmuyor: " + _sayim_yazisi(acilamayan)
+              + ". İçerikleri analize GİRMEDİ; asıl nüshadan elle incelenmeli (gerekçe: "
+              "00-kunye.json 'hata' alanı; 00-INDEX.md 'hata' satırları).", file=sys.stderr)
     if guv_kayitlari:
         print(f"UYARI (B-22 BELGE GÜVENLİK KAPISI): {len(guv_kayitlari)} evrakta gizli katman/talimat "
               f"dili işareti (BULGU {guv_sayac['BULGU']} · UYARI {guv_sayac['UYARI']} · DENETLENEMEZ "

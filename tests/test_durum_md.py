@@ -114,7 +114,7 @@ def test_defter_yoksa_durum_md_uretilmez(tmp_path):
 def test_avukat_karari_gerekcesiz_reddedilir(tmp_path):
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
     kod, cikti = _cli(
-        ["--avukat-karari", "Seçenek A seçildi", "--adim", "0", "--parca", "manifest",
+        ["--karar-onay", "avukat", "--avukat-karari", "Seçenek A seçildi", "--adim", "0", "--parca", "manifest",
          "--kok", str(tmp_path)],
         cwd=tmp_path,
     )
@@ -134,7 +134,7 @@ def test_avukat_karari_bilgi_eksigi_cozer_ve_bekleyenden_cikarir(tmp_path):
     assert "adım 0 (MANİFEST) / manifest: BİLGİ EKSİK" in icerik_once
 
     kod, cikti = _cli(
-        ["--avukat-karari", "Seçenek A: mevcut evrakla devam edilsin",
+        ["--karar-onay", "avukat", "--avukat-karari", "Seçenek A: mevcut evrakla devam edilsin",
          "--adim", "0", "--parca", "manifest",
          "--gerekce", "Ek tarama süre kaybına yol açar, mevcut evrak yeterli görülmüştür.",
          "--kok", str(tmp_path)],
@@ -163,7 +163,7 @@ def test_avukat_karari_sonrasi_yeni_ve_farkli_bilgi_eksigi_bekleyende_kalir(tmp_
         cwd=tmp_path,
     )
     kod, cikti = _cli(
-        ["--avukat-karari", "Rapor celbi talep edilmeyecek",
+        ["--karar-onay", "avukat", "--avukat-karari", "Rapor celbi talep edilmeyecek",
          "--adim", "4", "--parca", "oa-vakia",
          "--gerekce", "Mevcut delillerle karar verilebilecek yeterlilikte görülmüştür.",
          "--kok", str(tmp_path)],
@@ -248,7 +248,7 @@ def test_avukat_karari_katman_hedefler(tmp_path):
     _cli(["--katman", "oa-gizlilik", "--durum", "BILGI-EKSIK",
           "--eksik", "gizlilik taraması netleşmedi", "--kok", str(tmp_path)], cwd=tmp_path)
     kod, cikti = _cli(
-        ["--avukat-karari", "Katman gözden geçirildi, risk yok",
+        ["--karar-onay", "avukat", "--avukat-karari", "Katman gözden geçirildi, risk yok",
          "--katman", "oa-gizlilik",
          "--gerekce", "Evrakta kişisel veri unsuru bulunmadığı avukatça teyit edilmiştir.",
          "--kok", str(tmp_path)],
@@ -271,7 +271,7 @@ def test_avukat_karari_var_olmayan_hedefe_uyari_ile_kaydedilir(tmp_path):
     karar' senaryosu kapanmaz) ama çıktı 'bulunamadı' uyarısıyla nitelenir."""
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
     kod, cikti = _cli(
-        ["--avukat-karari", "Talep edilmeyecek", "--adim", "9", "--parca", "oa-OLMAYAN-PARCA",
+        ["--karar-onay", "avukat", "--avukat-karari", "Talep edilmeyecek", "--adim", "9", "--parca", "oa-OLMAYAN-PARCA",
          "--gerekce", "yeterince uzun bir gerekçe metni buraya yazılmıştır.",
          "--kok", str(tmp_path)],
         cwd=tmp_path,
@@ -292,7 +292,7 @@ def test_avukat_karari_gercek_bekleyen_cataliyla_uyari_uretmez(tmp_path):
         cwd=tmp_path,
     )
     kod, cikti = _cli(
-        ["--avukat-karari", "Rapor celbi talep edilmeyecek",
+        ["--karar-onay", "avukat", "--avukat-karari", "Rapor celbi talep edilmeyecek",
          "--adim", "4", "--parca", "oa-vakia",
          "--gerekce", "Mevcut delillerle karar verilebilecek yeterlilikte görülmüştür.",
          "--kok", str(tmp_path)],
@@ -306,7 +306,7 @@ def test_avukat_karari_gercek_bekleyen_cataliyla_uyari_uretmez(tmp_path):
 def test_avukat_karari_hedef_eksikse_hata(tmp_path):
     _cli(["--baslat", "Test Dosyası", "--kok", str(tmp_path)], cwd=tmp_path)
     kod, cikti = _cli(
-        ["--avukat-karari", "karar metni", "--gerekce", "yeterince uzun bir gerekçe metni",
+        ["--karar-onay", "avukat", "--avukat-karari", "karar metni", "--gerekce", "yeterince uzun bir gerekçe metni",
          "--kok", str(tmp_path)],
         cwd=tmp_path,
     )

@@ -93,6 +93,11 @@ TALIMAT_AC = "⟦TALİMAT DİLİ" + _VT
 # v0.5.18 (güvenlik incelemesi): bütçe/sınır aşılınca konumlanamayan gizli parça DAMGASIZ
 # kalmasın — ilgili aralık (sayfa ya da evrakın kalanı) bütünüyle VERİ diye sarılır.
 DENETLENEMEDI_AC = "⟦DENETLENEMEDİ (sınır aşıldı)" + _VT
+# v0.5.18 ceza saha testi: Excel evrakının gizli katmanı (gizli satır/sütun, yazı rengi) bu
+# sürümde denetlenmiyor — tablo metni bu etiketle VERİ diye sarılır ("bakamadım" ≠ "temiz").
+# Aynı DENETLENEMEDİ ailesidir: kesin damgaları yutmaz, yalnız onların dışına yerleşir.
+TABLO_AC = "⟦DENETLENEMEDİ (tablo: gizli satır/sütun ve yazı rengi denetlenmedi)" + _VT
+_DENETLENEMEDI_ON = "⟦DENETLENEMEDİ"
 DAMGA_KAPA = "⟧"
 _ONCELIK = {DENETLENEMEDI_AC: 5, DAMGA_AC: 4, SILINMIS_AC: 3, FARK_AC: 2, TALIMAT_AC: 1, NUSHA_AC: 0}
 DAMGALI_RE = re.compile("⟦[^⟦⟧]*⟧")
@@ -147,6 +152,7 @@ AGIR = frozenset({"gizli-metin", "gizli-talimat", "silinmis-metin", "unicode-tag
 UDF_UZ = frozenset({".udf"})
 DOCX_UZ = frozenset({".docx", ".docm", ".dotx"})
 PDF_UZ = frozenset({".pdf"})
+TABLO_UZ = frozenset({".xlsx", ".xlsm", ".xls"})
 GORSEL_UZ = frozenset({".tif", ".tiff", ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp"})
 ISARETLEME_UZ = frozenset({".html", ".htm", ".md"})
 
@@ -588,11 +594,11 @@ def _uygula(metin, hedefler):
     for i, j, ac in sorted(hedefler):
         if i >= j:
             continue
-        if ac == DENETLENEMEDI_AC:
+        if ac.startswith(_DENETLENEMEDI_ON):   # DENETLENEMEDİ ailesi (sınır aşıldı, tablo)
             if sinirli and i <= sinirli[-1][1]:
                 sinirli[-1][1] = max(sinirli[-1][1], j)
             else:
-                sinirli.append([i, j])
+                sinirli.append([i, j, ac])
             continue
         if birlesik and (i < birlesik[-1][1] or (birlesik[-1][2] == ac and not metin[birlesik[-1][1]:i].strip())):
             b = birlesik[-1]
@@ -602,16 +608,16 @@ def _uygula(metin, hedefler):
         else:
             birlesik.append([i, j, ac])
     kesin = list(birlesik)
-    for i, j in sinirli:
+    for i, j, ac_s in sinirli:
         imlec = i
         for a, b, _ in kesin:
             if b <= imlec or a >= j:
                 continue
             if metin[imlec:a].strip():
-                birlesik.append([imlec, a, DENETLENEMEDI_AC])
+                birlesik.append([imlec, a, ac_s])
             imlec = max(imlec, b)
         if imlec < j and metin[imlec:j].strip():
-            birlesik.append([imlec, j, DENETLENEMEDI_AC])
+            birlesik.append([imlec, j, ac_s])
     birlesik.sort()
     if not birlesik:
         return metin, 0
@@ -2174,6 +2180,46 @@ def _gorsel_tara(yol, R):
         _gorunmez_bulgusu(R, {"tag": say["tag"], "tag_metin": say.get("tag_metin", "")}, "EXIF/XMP")
 
 
+_SAYFA_RE = re.compile(r"^## Sayfa: (.*)$", re.M)
+
+
+def _tablo_tara(R, calisma, hedefler):
+    """v0.5.18 ceza saha testi (anayasa m.1, m.11) — Excel evrakı. Okuyucu (oa_ingest.
+    tablo_isle) her sayfayı '## Sayfa: <ad>' ile başlatır, gizli sayfayı '[GİZLİ SAYFA: …]'
+    ile işaretler. Gizli sayfanın içeriği GİZLİ KATMAN diye damgalanır (VERİ); tek başına
+    BULGU değildir — resmî Excel dökümlerinde gizli yardımcı sayfa olağandır, gerçek evrakla
+    ölçülmeden BULGU demek yersiz ifşa doğurur. Gizli sayfada yapay zekâya hitap eden talimat
+    dili BULGU'dur. Gizli satır/sütun ve yazı rengi bu sürümde DENETLENMEZ: tablonun kalanı
+    "DENETLENEMEDİ (tablo …)" diye VERİ olarak sarılır — temiz SAYILMAZ."""
+    basliklar = list(_SAYFA_RE.finditer(calisma))
+    bolumler = []
+    for k, m in enumerate(basliklar):
+        son = basliklar[k + 1].start() if k + 1 < len(basliklar) else len(calisma)
+        bolumler.append((m.start(), son, "[GİZLİ SAYFA" in m.group(1), m.group(1)))
+    gizli = [b for b in bolumler if b[2]]
+    for bas, son, _g, ad in gizli[:20]:
+        hedefler.append((bas, son, DAMGA_AC))
+        R.ekle("gizli-sayfa", "Excel'de gizli sayfa — içeriği okundu, GİZLİ KATMAN diye damgalandı",
+               "sayfa: " + ad.split(" [GİZLİ SAYFA")[0], "")
+    gorulen = 0
+    for tur_ad, i, j in talimat_eslesmeleri(calisma):
+        gizlide = any(b <= i < s for b, s, _g, _a in gizli)
+        ci, cj = _cumle_genislet(calisma, i, j)
+        if gizlide:
+            if gorulen < 5:
+                R.ekle("gizli-talimat", "Excel'de GİZLİ SAYFADA yapay zekâya hitap eden talimat dili (%s)"
+                       % tur_ad, "gizli sayfa", calisma[ci:cj])
+        else:
+            hedefler.append((ci, cj, TALIMAT_AC))
+            if gorulen < 5:
+                R.ekle("talimat-dili", "yapay zekâya hitap eden talimat dili (%s)" % tur_ad,
+                       "tablo hücresi", calisma[ci:cj])
+        gorulen += 1
+    R.denetlenemedi = ("tablo evrakı (Excel): gizli satır/sütun ve yazı rengi bu sürümde denetlenmiyor"
+                       + ("; %d gizli sayfa damgalandı" % len(gizli) if gizli else ""))
+    hedefler.append((0, len(calisma), TABLO_AC))
+
+
 # ------------------------------------------------------------------ ana giriş
 def tara(yol, uz, metin, ek_bulgular=None, yontem=None):
     """Evrakı ölç, modele gidecek metni damgala.
@@ -2210,6 +2256,8 @@ def tara(yol, uz, metin, ek_bulgular=None, yontem=None):
             _gorsel_tara(yol, R)
         elif uz in ISARETLEME_UZ:
             _isaretleme_tara(R, calisma, hedefler)
+        elif uz in TABLO_UZ:
+            _tablo_tara(R, calisma, hedefler)
         # her biçimde: görünür metinde yapay zekâya hitap eden talimat dili
         gorulen = 0
         for ad, i, j in talimat_eslesmeleri(calisma):

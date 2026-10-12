@@ -642,7 +642,13 @@ def ayristirilamayan_atiflar(metin, dolu_satirlar=None):
 KAYNAKCA_BLOK_BAS = "<!-- kaynakca:v1 -->"
 KAYNAKCA_BLOK_SON = "<!-- /kaynakca -->"
 KAYNAKCA_BASLIK = "## İÇTİHAT KAYNAKÇASI"
+# v0.5.18 (ceza saha testi 3.8): künye kapısının muaf tuttuğu dava geçmişi
+# kaynakçada «teyitsiz içtihat» sayılmaz; ayrı ve teyit beyanının KAPSAMI
+# DIŞINDA bu alt başlığın altında gösterilir (muafiyet sessiz değildir).
+KAYNAKCA_DOSYA_GECMISI_BASLIK = (
+    "Dosya geçmişi — içtihat DEĞİLDİR; yukarıdaki teyit beyanının kapsamı dışındadır:")
 KAYNAKCA_ONSOZ_SATIRLARI = (
+    KAYNAKCA_DOSYA_GECMISI_BASLIK,
     "Aşağıdaki kararların tamamı tam metinleriyle okunup kütüğe",
     "damgalanmıştır; erişim linkleri teyit kaydından gelir (bu blok",
     "Aşağıdaki listede her kararın TEYİT DURUMU ayrıca gösterilmiştir:",

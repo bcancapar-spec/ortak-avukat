@@ -601,13 +601,39 @@ def _udf_dogrulanmadi_isareti(udf_yolu):
     return isaret if os.path.isfile(isaret) else None
 
 
-def _teslime_hazir_satiri(udf_isaret):
-    """Başarı sonuç satırı: doğrulanamayan UDF varsa NİTELENİR (teslimi durdurmaz)."""
-    if not udf_isaret:
-        return "SONUÇ: TESLİME HAZIR"
-    return ("SONUÇ: TESLİME HAZIR — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI: UYAP Doküman "
-            "Editörü'nde açıp görsel teyit etmeden yüklemeyin (işaret: %s)"
-            % os.path.basename(udf_isaret))
+def _teslime_hazir_satiri(udf_isaret, bekleyen=0):
+    """Başarı sonuç satırı: doğrulanamayan UDF ve avukat kararı bekleyen kalemler varsa
+    NİTELENİR (teslimi durdurmaz; karar avukatın). `bekleyen` None: liste OKUNAMADI —
+    satır bunu söyler ([ak] bölümü "'yok' SAYILMAZ" derken sonuç satırı düz kalmasın)."""
+    satir = "SONUÇ: TESLİME HAZIR"
+    if udf_isaret:
+        satir += (" — ⚠ UDF resmî okuyucuyla DOĞRULANAMADI: UYAP Doküman "
+                  "Editörü'nde açıp görsel teyit etmeden yüklemeyin (işaret: %s)"
+                  % os.path.basename(udf_isaret))
+    if bekleyen is None:
+        satir += (" — ⚠ avukat kararı bekleyen kalemler DENETLENEMEDİ ('yok' sayılmaz; "
+                  "DURUM.md «Avukat Kararı Bekleyen»e bakın)")
+    elif bekleyen:
+        satir += (" — ⚠ %d kalem avukat kararı bekliyor (DURUM.md «Avukat Kararı Bekleyen»; "
+                  "karar avukatın)" % bekleyen)
+    return satir
+
+
+def _avukat_karari_bekleyen_alani(kok):
+    """v0.5.18 (saha testleri — anayasa m.9): avukatın kararını bekleyen kalemler (model
+    şerhleri, BİLGİ-EKSİK çatallar, özne soruları) teslim makbuzunda ve sonuç satırında
+    görünür. Kaynak tek: pipeline_kayit.avukat_karari_bekleyen_kalemleri (DURUM.md ile
+    aynı liste). Makbuza yalnız ETİKET girer (' — ' sonrası serbest metin girmez: makbuzun
+    40-UYAP kopyası dışa giden dizindedir). Teslimi DURDURMAZ. Asla fırlatmaz."""
+    pk = _pipeline_kayit_modulu()
+    if pk is None or not hasattr(pk, "avukat_karari_bekleyen_kalemleri"):
+        return {"sayi": None, "kalemler": [], "durum": "denetlenemedi"}
+    try:
+        kalemler = pk.avukat_karari_bekleyen_kalemleri(kok) or []
+    except Exception as e:  # noqa: BLE001 — denetlenemeyen liste "boş" sayılmaz
+        return {"sayi": None, "kalemler": [], "durum": "denetlenemedi", "hata": repr(e)[:120]}
+    etiketler = [str(k).split(" — ", 1)[0] for k in kalemler]
+    return {"sayi": len(etiketler), "kalemler": etiketler, "durum": "ok"}
 
 
 def _tazelik_bolumu_yazdir(tazelik_uyarilari):
@@ -1558,7 +1584,8 @@ def _zincir():
         elif sonuc == "BLOK":
             print("    [BLOK] KAPI KAPALI — %s" % alan.get("mesaj"))
             print("    Bilinçli geçiş yalnız avukat şerhiyle: adım-8'i --serh \"gerekçe "
-                  "(>=30 kr)\" --serh-kapi halusinasyon ile işle.")
+                  "(>=30 kr)\" --serh-kapi halusinasyon --serh-onay avukat ile işle "
+                  "(yalnız avukatın kendi gerekçesi; model şerhi bu kapıyı açmaz).")
             kapanan = ("(c2) HALÜSİNASYON MOTORLARI", 1)
             kapilar_makbuz.append({"ad": "(c2) HALÜSİNASYON MOTORLARI", "durum": "BLOK", "exit": 1})
         else:
@@ -2004,12 +2031,24 @@ def _zincir():
     for u in uyap_uyarilar:
         print("    [UYARI] %s" % u)
 
+    # v0.5.18 (saha testleri) — AVUKAT KARARI BEKLEYEN (advisory; teslimi DURDURMAZ).
+    akb_alani = _avukat_karari_bekleyen_alani(kok)
+    _bolum("[ak] AVUKAT KARARI BEKLEYEN — advisory (karar avukatın; kapı KAPATMAZ)")
+    if akb_alani["sayi"] is None:
+        print("    [ADVISORY] DENETLENEMEDİ — bekleyen kalem listesi okunamadı; 'yok' SAYILMAZ.")
+    elif akb_alani["sayi"]:
+        for k in akb_alani["kalemler"]:
+            print("    [BEKLİYOR] %s" % k)
+    else:
+        print("    [OK] avukat kararı bekleyen kalem yok.")
+    print("    [BILGI] makbuza `avukat_karari_bekleyen` olarak geçti.")
+
     # v0.5.18 (Fable denetimi T2) — udf_yaz'ın bıraktığı `.DOGRULANMADI` işareti (üretim de
     # devralma da) sonuç satırını niteler ve makbuza girer; teslimi DURDURMAZ.
     udf_isaret = _udf_dogrulanmadi_isareti(udf_cikti) if udf_uretildi else None
     print()
     print(CIZGI)
-    print(_teslime_hazir_satiri(udf_isaret))
+    print(_teslime_hazir_satiri(udf_isaret, bekleyen=akb_alani["sayi"]))
     print(CIZGI)
     print("Açılan engelleyici kapı(lar): " + (", ".join(gecen) if gecen else "—") + ".")
     print("Üretilen / ilgili dosyalar:")
@@ -2037,6 +2076,7 @@ def _zincir():
                 "tazelik_uyarilari": tazelik_uyarilari,   # GÖREV 6
                 "graf_kapisi": graf_kapisi,               # B-5 (v0.5.18) — advisory
                 "ifsa_durumu": ifsa_durumu,               # v0.5.18 Faz B — advisory
+                "avukat_karari_bekleyen": akb_alani,      # v0.5.18 saha testleri — advisory
                 # v0.5.18 Fable T2 — resmî okuyucu doğrulayamadıysa işaret yolu (yoksa None)
                 "udf_dogrulanmadi_isareti": udf_isaret,
                 # A2 (v0.5.9) — dış-çıktı şeması izi: makbuz-kopyasının köke-

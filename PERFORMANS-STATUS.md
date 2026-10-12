@@ -494,3 +494,26 @@ Görev 1'in raporu, `hook-denetle` için +27,5 ms ölçmüştü (Python 3.12.15,
   - 6 olay kayıtlı; altısı da exit 0.
   - [5] "servis edilen nesil" bu makinede BAYAT görünür, çünkü kurulu eklenti 0.5.17.1'dir. Bu, sürüm main'e birleşip `/plugin` ile güncellenene kadar beklenen ortam hâlidir; kod arızası değildir.
 - `aile_dogrula`: AİLE YAPI DENETİMİ TEMİZ (20 parça).
+
+## 13. v0.5.18 EKSİKLER TURU — 38a3859 ↔ çalışma ağacı (2026-10-12)
+
+Komut: `python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu`.
+
+- **Neden:** bu tur kanca yoluna dokundu: DURUM.md üretimi («Avukat Kararı Bekleyen» tek kaynağı, şerh sahibi etiketi), `run-hook.cmd` (yorumlayıcı seçimi).
+- **Taban:** HEAD 38a3859 (`git archive` ile depo dışına çıkarıldı). Ölçüm aracı iki ağaçta aynı dosya.
+- **Koşul:** iki ağaç `compileall` ile eşit `.pyc` sıcaklığında; A/B/A/B dönüşümlü.
+- **Ortam:** Windows 11 · 16 çekirdek · gerçekçi dava kökü · Python 3.14.8 (kancaların yorumlayıcısı; çıplak başlık 22,5–22,9 ms).
+
+| olay | 38a3859 | çalışma ağacı | fark (ortalama) |
+|---|---|---|---|
+| hook-prompt | 84,1 / 85,2 | 86,1 / 84,2 | +0,5 |
+| hook-pretool | 81,7 / 80,8 | 79,7 / 79,1 | −1,9 |
+| hook-postwrite | 109,4 / 107,2 | 108,8 / 107,9 | +0,1 |
+| hook-denetle | 109,3 / 113,3 | 109,5 / 112,3 | −0,4 |
+| hook-acilis | 82,0 / 81,9 | 81,7 / 82,7 | +0,3 |
+
+- Bileşik (bir Write, Pre+Post): 191,0 / 188,0 → 188,6 / 187,0 ms.
+- Giriş betiği kazancı (hook-prompt, doğrudan − giriş): 35,2 / 35,9 → 35,8 / 35,3 ms. §10 kuralının 30 ms eşiğinin üstünde; gerekçe gerekmez.
+- Import dökümü: dört koşuda da `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (103 import izlendi).
+
+**Sonuç:** bu tur kanca yoluna ölçülebilir maliyet eklemedi; farklar turlar arası oynamanın içinde. Sarmalayıcının kendi maliyeti bu araçla ölçülmez (araç `hook_giris.py`'yi doğrudan çağırır). Sarmalayıcı değişikliği yalnız `where` çıktısının süzülmesidir; ek süreç açmaz.

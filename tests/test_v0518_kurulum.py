@@ -54,7 +54,8 @@ def mod(monkeypatch):
     """Her şeyin TAMAM olduğu sahte bir Windows makinesi; testler tek sondayı bozar."""
     m = _yukle()
     surumler = {"pymupdf": _pymupdf_asgari(), "pillow": "11.0.0", "markitdown": "0.1.2",
-                "mammoth": "1.11.0", "openpyxl": "3.1.5", "python-pptx": "1.0.2"}
+                "mammoth": "1.11.0", "openpyxl": "3.1.5", "python-pptx": "1.0.2",
+                "xlrd": "2.0.2"}  # v0.5.18: Excel okuyucu (.xls)
     komutlar = {"tesseract": r"C:\Tesseract\tesseract.exe", "node": r"C:\node\node.exe",
                 "npx": r"C:\node\npx.cmd", "npm": r"C:\node\npm.cmd"}
 
@@ -114,6 +115,15 @@ def test_eksik_paketler_tek_pip_komutunda(mod):
     assert a["durum"] == "EKSİK" and "pillow" in a["komut"] and '"markitdown[all]"' in a["komut"]
     assert "pymupdf" not in a["komut"], "kurulu ve yeterli paket yeniden kurulmaz"
     assert "--break-system-packages" not in a["komut"]
+
+
+def test_excel_okuyuculari_yoksa_eksik_der(mod):
+    """v0.5.18 ceza saha testi: Excel tabloları okunmadı. Okuyucu openpyxl (.xlsx) ve
+    xlrd (.xls) ister; kurulum motoru eksikliklerini söylemek zorunda."""
+    mod._sahte["surumler"].pop("xlrd")
+    a = _adim(mod.denetle(), "pip_paketleri")
+    assert a["durum"] == "EKSİK" and "xlrd" in a["komut"], a
+    assert "xlrd yok" in a["ayrinti"], a
 
 
 def test_markitdown_ofis_ekleri_yoksa_eksik_ve_all_komutu(mod):

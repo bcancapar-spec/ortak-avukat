@@ -353,9 +353,10 @@ köprüyü yeniden koş (doldurulmamış şablon doğrulatılmaz). Graf
 (`_oa/cikti/01-illiyet-graf.json`) ve kıyas (`_oa/cikti/05-kiyas.json`) için
 şema parçaların referansındadır. Motorun BULGUSU (ispat boşluğu, açık cephe,
 kritik kıyas boşluğu) kapıyı kapatmaz — dilekçe o bulguları okuyarak yazılır,
-hüküm avukatındır. Bilinçli geçiş yalnız gerekçeli şerhle:
-`--serh "<gerekçe ≥30 kr>" --serh-kapi halusinasyon` (gerekçe deftere yazılır,
-teslimde istisna defterine düşer).
+hüküm avukatındır. Bilinçli geçiş yalnız gerekçeli AVUKAT şerhiyle:
+`--serh "<gerekçe ≥30 kr>" --serh-kapi halusinasyon --serh-onay avukat` (gerekçe
+deftere yazılır, teslimde istisna defterine düşer; model şerhi bu kapıyı açmaz —
+bkz. aşağıda «Şerhin ve kararın sahibi»).
 
 **ŞERH-KAPI (P1, v0.5.16 — Hamle 9):** `--serh` artık HANGİ kapıyı geçtiğini
 adlandırır: **`--serh-kapi ingest-once|graf|kiyas|kontrol|halusinasyon|tumu`**. Şerh yalnız
@@ -377,6 +378,20 @@ geçiriyordu (erken dönüş) — kapandı. UYARI kademesi şerhli geçişte de 
 artefaktının diskte olmadığını; ikisi birlikte yazılır (`ELDEN ⚠ŞERHLİ`),
 Avukat Kararı Bekleyen'de `ŞERHLİ ELDEN` olarak görünür.
 
+**ŞERHİN VE KARARIN SAHİBİ (v0.5.18 — ceza saha testi; anayasa m.9, m.8):** her şerh
+kimden geldiğini taşır: `--serh-onay model-beyani|avukat` (varsayılan
+**model-beyani**). Model şerhi adlandırdığı kapıyı geçer (halüsinasyon kapısı
+hariç), ama DURUM.md «Avukat Kararı Bekleyen»de «(model şerhi; avukat onayı
+yok)» diye kalır; sahibi yazılmamış eski şerh «(şerhin sahibi kayıtlı değil;
+eski kayıt)» diye görünür. **Halüsinasyon kapısını ve teslim (c2) kapısını
+yalnız avukat şerhi açar.** Aynı ayrım avukat kararında: `--avukat-karari …`
+`--karar-onay avukat` olmadan yazılırsa **model önerisi**dir — kaydedilir ama
+bekleyen kalemi KAPATMAZ («MODEL ÖNERİSİ KAYDEDİLDİ — avukat kararı DEĞİLDİR»);
+onay alanı olmayan eski karar kayıtları kalemi kapatmaya devam eder. **Kural:**
+`avukat` değeri yalnız avukatın kendi beyanıyla yazılır; model kendi gerekçesini
+avukat şerhi ya da kararı diye kaydetmez (G-5 sınıfı: `--onay`, `--istisna-onay`,
+`--hukum-onay` ile aynı kural).
+
 **Önkoşul-artefakt tablosu (P1-11 doktrin senkronu — kod ile senkron tutulur,
 bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 
@@ -389,7 +404,7 @@ bkz. `pipeline_kayit.py` `ONKOSUL_BLOKLEYICI`/`ONKOSUL_UYARI`):**
 | adım-5 | oa-kiyas | `_oa/cikti/05-kiyas*` **VE** `*ictihat-muhakeme*` (ikisi BİRLİKTE); **v0.5.18/B-2:** graf↔vakıa↔kıyas ortak kimlik uzayı kopuksa ek **UYARI** (bloklamaz) | **BLOKLEYICI** (`--serh-kapi kiyas`) |
 | adım-6 | oa-antitez | `_oa/cikti/06-antitez*` (≤v0.5.15: `07-antitez*` de kabul) VEYA `arac=antitez_matris` damgalı `_oa/cikti/*.json` (v0.5.18/B-8) | UYARI |
 | adım-7 | oa-strateji | `_oa/cikti/07-strateji*` (≤v0.5.15: `06-strateji*` de kabul) | UYARI |
-| adım-8 | oa-dilekce | dört motorun kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u (`arac=grafik_denetim`, `vakia_matris`, `kiyas_denetim`, `antitez_matris`; ad-bağımsız) — statülerden BAĞIMSIZ (v0.5.18 saha testi); tek komut `scripts/motor_koprusu.py` | **BLOKLEYICI — HALÜSİNASYON KAPISI** (`--serh-kapi halusinasyon`) |
+| adım-8 | oa-dilekce | dört motorun kendi yazdığı damgalı, çökmemiş, taze denetim JSON'u (`arac=grafik_denetim`, `vakia_matris`, `kiyas_denetim`, `antitez_matris`; ad-bağımsız) — statülerden BAĞIMSIZ (v0.5.18 saha testi); tek komut `scripts/motor_koprusu.py` | **BLOKLEYICI — HALÜSİNASYON KAPISI** (`--serh-kapi halusinasyon --serh-onay avukat`; model şerhi açmaz) |
 | adım-9 | oa-kontrol | `_oa/defter/teslim-makbuz.json` (exit_kodu=0) | **BLOKLEYICI** (`--serh-kapi kontrol`) |
 
 Adım 1/4/5/6'nın motor parçalarında (oa-illiyet, oa-vakia, oa-kiyas, oa-antitez) yukarıdaki satırlar

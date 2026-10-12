@@ -17,11 +17,11 @@ gereği yalnız saha etiketiyle anılır.
 
 ---
 
-## v0.5.18 — BELGE GÜVENLİĞİ (B-22) + OCR v1.9 + YARGI PRO UYARLAMALARI + HALÜSİNASYON KAPISI (2026-10-06 → 10-09)
+## v0.5.18 — BELGE GÜVENLİĞİ (B-22) + OCR v1.9 + YARGI PRO UYARLAMALARI + HALÜSİNASYON KAPISI (2026-10-06 → 10-12)
 
-**Ne:** karşı tarafın evrakındaki gizli talimatlara karşı belge güvenlik kapısı, sayfa düzeyinde izlenebilir OCR, gerçek evrak taramasıyla bulunan okuma kayıplarının kapatılması, Yargı PRO hukuk skill kütüphanesinden fikir düzeyinde uyarlamalar (kod/metin alınmadı), 2026-10-06 kod denetiminin ve Fable bağımsız denetiminin düzeltmeleri, saha testinde görülen halüsinasyon kapısı ile anayasa aykırılıklarının giderilmesi. v0.5.17.1 yaması bu sürüme birleştirildi. Süit 2455 → **3733** (`OA-SUIT-SAYISI`). Ayrıntı: parça günlükleri, [docs/OCR-IMPLEMENTATION-PLAN.md](docs/OCR-IMPLEMENTATION-PLAN.md), [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md).
+**Ne:** karşı tarafın evrakındaki gizli talimatlara karşı belge güvenlik kapısı, sayfa düzeyinde izlenebilir OCR, gerçek evrak taramasıyla bulunan okuma kayıplarının kapatılması, Yargı PRO hukuk skill kütüphanesinden fikir düzeyinde uyarlamalar (kod/metin alınmadı), 2026-10-06 kod denetiminin ve Fable bağımsız denetiminin düzeltmeleri, saha testinde görülen halüsinasyon kapısı ile anayasa aykırılıklarının giderilmesi, iki saha testinden kalan eksiklerin tamamlanması. v0.5.17.1 yaması bu sürüme birleştirildi. Süit 2455 → **3769** (`OA-SUIT-SAYISI`). Ayrıntı: parça günlükleri, [docs/OCR-IMPLEMENTATION-PLAN.md](docs/OCR-IMPLEMENTATION-PLAN.md), [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md).
 
-**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–P bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
+**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–Q bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
 
 1. **Dilekçeden önce denetim motorları fiilen koşar (N).** Saha testinde vakıa, illiyet, kıyas ve antitez motorları kuruluydu ama hiç koşmadı; dilekçe olgu uydurmadı, fakat lehe gösterilen bir kararın kaldırıldığını yazmadı. Anayasa m.8 metinde vardı, sahada icra edilmiyordu. Artık motorun damgası yoksa dilekçe adımı ve teslim durur; geçiş yalnız gerekçeli avukat şerhiyle.
 2. **Sistem kendi kaydında yanlış beyanda bulunmaz (O, P).** Model kararı "avukat onayı" diye kaydediliyordu (m.9); aynı kusurun kardeşi, dilekçe denetiminin havada kalan alıntı kapısını model eliyle açabiliyordu; ikinci saha testinde model avukat hükmü defterine kendisi "KABUL" yazdı; ürün mühürleri yanlış sürüm yazıyordu (m.5). Artık avukat onayı ve avukat hükmü yalnız açık bayrakla kaydedilir, varsayılan model beyanıdır. Kanıt: iki saha testi ve bu denetim.
@@ -32,6 +32,10 @@ gereği yalnız saha etiketiyle anılır.
 7. **Müvekkil verisi süzgeçsiz dışarı çıkmaz (E, G, O).** Layer 0 (m.10). Kanıt: 911 gerçek UDF metninin 908'i süzgeçten geçmiyor; saha testinde UDF zincir dışında üretilince kimlik numaralı metin dış araca gitti, süzgeç artık çağrı yerinde.
 8. **Meslek kuralları ve talimat kaynağı (D).** Meslek kurallarında otorite yoktur, müvekkilin menfaati esastır (Av.K. m.1/2, m.38/1-b, m.135); talimat yalnız müvekkilin vekili ya da müdafii olan avukattan gelir (m.11 ek).
 9. **Avukatın lafzı (O).** Dilekçede şapkalı harf yok; birebir alıntı korunur.
+10. **Şerh ve karar avukatındır (Q).** İkinci saha testinde model, avukat yokken kapıyı kendi şerhiyle geçti. Şerhin ve kararın sahibi artık kayıtlıdır. Halüsinasyon kapısını yalnız avukat şerhi açar; model önerisi bekleyen kalemi kapatmaz (m.9).
+11. **Okunmayan evrak kalmaz, okunamayan sessiz kalmaz (Q).** Ceza saha testinde okunamayan Excel tabloları artık okunur; gizli sayfa damgalanır. Bozuk ya da parolalı evrak adıyla bildirilir. Uzun alım önceden söylenir (m.1).
+12. **Makbuz ürünü anlatır (Q).** Makbuzdan sonra değişen dilekçe nüshası teslim adımını kapatır ("kanıtla yazılır"). Kanıt: ceza saha testinde makbuzdan sonra değişen PDF.
+13. **Nöbetçi Windows'ta da ayakta (Q).** Yeni bilgisayarda hook katmanı Mağaza python kısayolu yüzünden ölüydü. Sarmalayıcı artık kısayolu atlar.
 
 ### A. Belge güvenlik kapısı (B-22 — gizli talimat / prompt injection)
 
@@ -194,8 +198,39 @@ Avukat talimatı: "savcılık evrakları da var, Sonnet görevlendir, sistem ça
 - Bu sürümün onarımları sahada çalıştı: dört motor ve çapraz denetim koştu, damgaları motorlar yazdı, teslim (c2) "OK"; ifşa atlaması "model beyanı" diye kaydedildi ve uyarı açık kaldı (G-5); UDF'i doğrudan üretme denemesini Layer 0 çağrı yerinde durdurdu (çıkış 6); dilekçede şapkalı harf yok; okunamayan sayfalı sekiz evrak ayrı ayrı görünür kaldı (G-8); künye kapısı teslimi durdurdu, dosyanın kendi geçmişine ait numaralar otomatik kuralla muaf tutuldu.
 - **Avukat hükmü uydurulmaz (anayasa m.9, m.8):** model teslimden sonra avukat hükmü defterine kendisi "KABUL" yazdı; kayıt avukat hükmü sayıldı ve A-28 sensörünü (SICRAMA-NOTU §5'in tek başarı ölçütü) zehirledi. Artık kayıt sahibini yazar: varsayılan model beyanıdır, sayaca girmez; avukat hükmü yalnız `--hukum-onay avukat` ile sayılır. Onay alanı olmayan eski kayıt da varsayılmaz; ikisi de DURUM.md'de ayrı satırda görünür, hiçbir satır silinmez.
 - **Okunmayan evrak sessiz kalmaz (anayasa m.1):** sistem 231 Excel tablosunu (228 .xlsx, 3 .xls) metne çeviremedi ve bunu yalnız "bilinmeyen/elle" sayısında gösterdi. Alım özeti artık okunmayan türleri adı ve sayısıyla uyarı satırına yazar ("içerikleri analize GİRMEDİ; elle incelenmeli").
-- Kapatılmayan, karar bekleyen bulgular (testten sonra; yöntem gereği test sürerken özellik eklenmedi): Excel'i metne çeviren okuyucu (belge güvenlik kapısıyla birlikte tasarlanmalı: gizli sayfa ve satır, beyaz yazı); teslim makbuzunun kapsadığı PDF ile diskteki PDF'in farkı hiçbir kapıda yakalanmıyor (dosya makbuzdan sonra değişti); kesilen evrak alımı kaldığı yerden sürmüyor; avukat şerhinin sahibi kayıtta ayrılmıyor (model şerhi avukat şerhi gibi duruyor); atıf olmayan dilekçede kıyas adımı yine içtihat muhakeme kaydı isteyip modeli şerhe itiyor; modelin kendi yazdığı yardımcı analizler kanıt zincirinin dışında kalıyor.
+- Kapatılmayan, karar bekleyen bulgular (testten sonra; yöntem gereği test sürerken özellik eklenmedi): Excel'i metne çeviren okuyucu (belge güvenlik kapısıyla birlikte tasarlanmalı: gizli sayfa ve satır, beyaz yazı); teslim makbuzunun kapsadığı PDF ile diskteki PDF'in farkı hiçbir kapıda yakalanmıyor (dosya makbuzdan sonra değişti); kesilen evrak alımı kaldığı yerden sürmüyor; avukat şerhinin sahibi kayıtta ayrılmıyor (model şerhi avukat şerhi gibi duruyor); atıf olmayan dilekçede kıyas adımı yine içtihat muhakeme kaydı isteyip modeli şerhe itiyor; modelin kendi yazdığı yardımcı analizler kanıt zincirinin dışında kalıyor. Q'da kapatılanlar: Excel okuyucu (kapıyla birlikte), makbuz–ürün farkı, şerhin sahibi, atıfsız kıyas. v0.5.19'a kalanlar: kesilen alımın kaldığı yerden sürmesi, yardımcı analizlerin kanıt zincirine bağlanması.
 - Test: `tests/test_v0516_B.py` (yeni `test_a28_model_beyani_hukum_avukat_hukmu_sayilmaz_ve_gorunur`; avukat yolunu sınayan testler `--hukum-onay avukat` alır), `tests/test_v0518_anayasa_onarimlari.py` (okunmayan tür uyarısı).
+
+### Q. Saha testlerinden kalan eksikler tamamlandı (2026-10-11 → 10-12)
+
+Avukat talimatı: "bir avukat olarak eksikleri tamamla". P'de karar bekleyen bulgular ve Fable 5.1 denetiminin açık bıraktıkları. Her onarım önce kırmızı testle yazıldı; test verisinin tamamı kurgudur.
+
+- **Şerhin sahibi kaydedilir (anayasa m.9, m.8):** avukat yokken model kıyas kapısını kendi şerhiyle geçti; defter şerhin kimden geldiğini yazmıyordu. `--serh-onay` artık şerhin sahibini kaydeder. Varsayılan model beyanıdır ve kalem DURUM.md «Avukat Kararı Bekleyen» bölümünde "model şerhi; avukat onayı yok" diye kalır. Halüsinasyon kapısını (vakıa, illiyet, kıyas ve antitez motorları) yalnız avukat şerhi açar. Teslim (c2) kapısı model şerhini de sahibi kayıtsız eski şerhi de kabul etmez.
+- **Avukat kararını model veremez (anayasa m.9):** «Avukat Kararı Bekleyen» kalemi modelin yazdığı kararla da kapanabiliyordu. `--karar-onay avukat` olmadan yazılan karar artık "model önerisi" olarak kaydedilir ve kalemi kapatmaz. Onay alanı olmayan eski kayıtlar kalemi kapatmaya devam eder; geriye dönük kayıp yoktur.
+- **Kıyas yalnız norma dayanıyorsa muhakeme kaydı aranmaz:** atıfsız dilekçede kıyas adımı içtihat muhakeme kaydı isteyip modeli şerhe itiyordu. Büyük önermede içtihat yoksa kayıt aranmaz; içtihat varsa aranmaya devam eder.
+- **Makbuz ile ürün ayrışmaz ("kanıtla yazılır"):** sahada teslim makbuzundan sonra değişen PDF'i hiçbir kapı yakalamadı. Teslim adımı artık makbuzdaki her teslim ürününün özetini diskteki dosyayla karşılaştırır. Makbuzdan sonra değişen ürün varsa adım kapanır ve `teslim_paketi.py` yeniden istenir. E-imzalı UDF türevdir; imza eklemek kapıyı kapatmaz.
+- **Graf kapısı açık kalmaz (Fable P4):** graf sorgusu çöktüğünde kapı açık dönüyordu. Artık "graf DENETLENEMEDİ" diyerek kapalı kalır.
+- **Teslim, bekleyen avukat kararını söyler:** teslim çıktısında yeni bir [ak] bölümü var. "TESLİME HAZIR" satırı bekleyen kalem sayısıyla nitelenir; makbuz `avukat_karari_bekleyen` alanını taşır. Liste okunamazsa sonuç satırı "DENETLENEMEDİ" der. Teslim durmaz; karar avukatındır.
+- **Excel evrakı okunur (anayasa m.1, m.11):** ceza saha testinde Excel tabloları hiç okunmamıştı.
+  - Tablo sayfa sayfa, satır satır metne çevrilir. Tarih ISO biçimine çevrilir; değer düzeltilmez, kırpılmaz.
+  - Gizli sayfa okunur ve damgalanır.
+  - Belge güvenlik kapısı tabloyu DENETLENEMEZ diye sarar, çünkü gizli satır/sütun ve yazı rengi bu sürümde ölçülmüyor. Gizli sayfadaki talimat dili BULGU'dur.
+  - Okuyucu kurulu değilse evrak "OKUNMADI" diye işaretlenir. Kurulum betiği openpyxl ve xlrd'yi kurar.
+  - Boyut beyanı (`<dimension>`) bayat tabloda satır kaybolmaz (bu makinede 6 satırın 2'si okunuyordu); arşiv (EYP/ZIP) içindeki Excel de okunur; Excel desteğinden önce önbelleğe alınmış arşiv bir kez yeniden açılır. Üçünü bağımsız antitez turu (Fable 5.1) buldu; kırmızı testle kapatıldı.
+  - Bağımlılık anayasa m.0'ın devşirme süzgecinden geçti: openpyxl (MIT, tek bağımlılığı et_xmlfile) ve xlrd (BSD, bağımlılıksız) saf Python, ikili dosya yok, eksikse fail-closed. Dört yol tartıldı: kendi ayrıştırıcı (.xls ikili biçiminde sessiz yanlış okuma riski), vendor (ağır), almama (tablolar okunmaz, m.1), kütüphane. Kütüphane seçildi.
+- **Açılamayan evrak adıyla söylenir (m.1):** bozuk, parolalı ya da uzantısı türüyle uyuşmayan evrak yalnız 00-INDEX'te ⚠ satırı olarak kalıyordu; konsolu okuyan model onu görmüyordu. Alım artık "UYARI (AÇILAMAYAN EVRAK)" satırını türü ve sayısıyla basar. Excel desteklenince bozuk tablolar «desteklenmeyen tür» uyarısından çıkıp bu sessizliğe düşmüştü; onarım o gerilemeyi de kapatır.
+- **Uzun alım önceden söylenir (m.1):** yaklaşık 1.100 evraklık alım yaklaşık 27 dakika sürdü. Ön planda koşan alım kesilirse baştan başlar, çünkü önbellek koşu sonunda yazılır. 200'den fazla evrak çıkarılacaksa alım, çıkarımdan önce süre tahminini ("tahmin:") basar. Uyarı, alımın arka planda ve en az iki kat zaman aşımıyla koşturulmasını söyler. Kaldığı yerden süren alım v0.5.19 işidir.
+- **Kaynakça, künye kapısıyla aynı gözle bakar (B-3 tek kaynak):** iç kaynakça bloğu, dosyayla ilgili bir hukuk davasının esas numarasını "teyit edilmemiş içtihat" sandı. Aynı körlük taslağın kendi "DOSYA NO" satırında da vardı. Kaynakça artık künye kapısının iki muafiyetini aynı kaynaktan uygular:
+  - davanın beyan edilmiş geçmişi ayrı alt başlıkla, teyit beyanının dışında görünür;
+  - taslağın kendi dosya numarası listelenmez;
+  - aynı numara bir yüksek mahkeme kararı olarak da anılıyorsa muafiyet uygulanmaz.
+- **Hook katmanı Windows Mağaza kısayolunda ölmez:** yeni bilgisayarda PATH'teki ilk `python`, Microsoft Store'un yer tutucusuydu (çıkış 49). Kurulu eklentinin altı hook olayının altısı da sessizce ölüydü. Sarmalayıcı (`run-hook.cmd`, cmd ve bash kolu) artık WindowsApps kısayolunu atlar; başka yorumlayıcı yoksa kısayolu son çare olarak dener; bash kolunda PATH genelinde önce python3 aranır (eski dağıtımda önceki dizindeki Python 2 seçilmesin). `||` yasağına uyuldu. Sarmalayıcı artık saf ASCII'dir: konsol kod sayfası UTF-8 (65001) iken cmd, LF satır sonlu dosyadaki çok baytlı karakterin (REM satırındaki uzun tire) ofsetini yanlış sayıyor ve REM yorumunun parçalarını komut diye çalıştırıyordu. Bu makinede ölçüldü; sistem genelinde UTF-8 kullanan Windows'ta kanca ölürdü.
+- Testler:
+  - yeni: `tests/test_v0518_eksikler.py` (27), `tests/test_hook_sarmalayici.py` (+5), `tests/test_v0518_kurulum.py` (+1);
+  - bilinçli sözleşme değişikliğiyle güncellenenler:
+    - `test_durum_md.py`: `--karar-onay avukat`;
+    - `test_pipeline_kayit_onkosul.py` ve `test_v0518_halusinasyon_kapisi.py`: `--serh-onay avukat`;
+    - `test_v0518_anayasa_onarimlari.py`: G-8 eki artık gerçekten desteklenmeyen türlerle koşar.
 
 ### Davranış değişiklikleri (güncelleyenler için)
 
@@ -215,12 +250,20 @@ Avukat talimatı: "savcılık evrakları da var, Sonnet görevlendir, sistem ça
 - **Avukat hükmü (P):** `pipeline_kayit.py --avukat-hukmu` kaydı avukat hükmü sayılmak için `--hukum-onay avukat` ister; onaysız kayıt model beyanıdır. Önceki sürümlerde onay alanı olmadan yazılmış hüküm kayıtları sayaçta ayrı satıra geçer; avukat hükmüyse `--hukum-onay avukat` ile yeniden işlenir.
 - **UDF üretimi (O):** kişisel veri (gizlilik süzgeci strict: DENY ya da ASK) taşıyan metin udf-cli/docx2udf'e gönderilmez — `udf_yaz.py` çıkış 6 verir; UDF yerelde UYAP editöründe üretilir. Resmî okuyucu böyle bir UDF için "YAPILAMADI (Layer 0)" der.
 - **Dilekçe yazımı (O):** şapkalı â ve î kullanılmaz (a, i); dilekçe denetimi [Ş] uyarısı basar.
+- **Şerh (Q):** `pipeline_kayit.py --serh` kaydı varsayılan olarak model şerhidir. Halüsinasyon kapısını ve teslim (c2) kapısını açmak için `--serh-onay avukat` gerekir. Diğer kapılarda model şerhi geçer, kalem «Avukat Kararı Bekleyen»de kalır.
+- **Avukat kararı (Q):** `--avukat-karari` kaydı `--karar-onay avukat` olmadan model önerisidir ve bekleyen kalemi kapatmaz.
+- **Teslim adımı (Q):** makbuzdan sonra değişen teslim ürünü varsa adım-9 kapanır; `teslim_paketi.py` yeniden koşulur.
+- **Excel (Q):** `.xlsx`, `.xlsm` ve `.xls` artık metne çevrilir. Yeni bağımlılıklar `openpyxl>=3.1` ve `xlrd>=2.0` (`requirements.txt`). Bunlar kurulu değilse evrak "OKUNMADI" olur.
+- **Alım uyarıları (Q):** 200'den fazla evrak çıkarılacaksa "UYARI (UZUN ALIM)" basılır. Açılamayan evrak "UYARI (AÇILAMAYAN EVRAK)" ile türü ve sayısıyla bildirilir.
+- **Kaynakça (Q):** davanın beyan edilmiş geçmişi teyitsiz içtihat sayılmaz, ayrı alt başlıkta görünür. Taslağın kendi DOSYA NO'su listelenmez.
+- **Hook sarmalayıcı (Q):** Windows'ta WindowsApps (Mağaza) python kısayolu atlanır; dosya saf ASCII'dir (UTF-8 kod sayfasında da ayrıştırılır). Kurulu sürümü güncelleyene kadar geçici çare: Ayarlar > Uygulamalar > Gelişmiş uygulama ayarları > Uygulama yürütme diğer adları > "python.exe" ve "python3.exe" kapalı.
 
 ### Yapılamayanlar / sınırlar
 
 - Gerçek evrak ölçümleri (yukarıda C).
 - TEYİT BEKLİYOR hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek udf-cli ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
+- Avukat onay bayrakları (`--onay`, `--istisna-onay`, `--hukum-onay`, `--serh-onay`, `--karar-onay`) bir beyandır: sistem bayrağı kimin verdiğini doğrulayamaz; defter imzası sahiplik alanını kapsamaz. Avukatın kendi mesajına bağlanması v0.5.19 adayıdır.
 - Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
   - Standart kökte ölçülebilir fark yok: Python 3.14'te en çok +2,4 ms, 3.12'de +1,6 ms. Giriş betiği kazancı 31–40 ms; ağır modül yok.
   - Zincir ürünleri olan büyük dosyada (3000 evrak temsili) Stop kancası +79 ms (~%20). Kaynağı çapraz denetim; v0.5.19'da girdi özetine bağlı önbellek önerilir.

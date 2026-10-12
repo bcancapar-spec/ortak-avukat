@@ -183,8 +183,12 @@ def _pip_adimi(kok):
     if asgari is None:
         return _adim("pip_paketleri", "Python paketleri", EKSIK,
                      "PyMuPDF alt sınırı tek kaynaktan (belge_guvenlik.py) okunamadı — eklenti eksik/bozuk")
+    # v0.5.18 ceza saha testi: Excel evrakı okunmuyordu;
+    # okuyucu openpyxl (.xlsx) ve xlrd (.xls) ister — yoksa evrak "OKUNMADI" diye işaretlenir.
     istenen = (("pymupdf", '"pymupdf>=%s"' % asgari, _surum_demeti(asgari)),
                ("pillow", "pillow", None),
+               ("openpyxl", "openpyxl", None),
+               ("xlrd", "xlrd", None),
                ("markitdown", '"markitdown[all]"', None))
     eksik, durumlar = [], []
     for ad, belirtec, alt in istenen:

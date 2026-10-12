@@ -442,7 +442,8 @@ parçalarının "uygulandı" sayılması için diskte motorun KENDİ damgasını
 gibidir: metni kim yazmış olursa olsun, bilirkişinin imzası yoksa inceleme
 yapılmış sayılmaz. Damga yoksa dilekçe adımı ve teslimin (c2) kapısı durur.
 Motorun bulgusu (ispat boşluğu, açık cephe) kapıyı kapatmaz; hüküm avukatındır.
-Bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon`) ve
+Bilinçli geçiş yalnız gerekçeli avukat şerhiyle (`--serh-kapi halusinasyon
+--serh-onay avukat`; model şerhi bu kapıyı açmaz) ve
 gerekçe kayda girerek olur. Saha testinin dersi: motorlar kuruluydu ama hiç
 koşmamıştı; dilekçe uydurmadı ama lehe gösterilen kararın kaldırıldığını yazmadı.
 
@@ -465,6 +466,37 @@ sayılmaz.
 yazılır (hâkim → hakim, resmî → resmi; Â → A, Î → İ). Birebir alıntıya
 dokunulmaz; alıntıyı değiştirmek tahriftir. Dilekçe denetimi [Ş] uyarısı verir,
 teslimi durdurmaz.
+
+**Şerhin sahibi (model şerhi / avukat şerhi):** bir kapıyı gerekçeyle aşan
+şerhin kimden geldiği kayda yazılır (`--serh-onay`). Zabıtta beyanın kime ait
+olduğunun yazılması gibidir. Model şerhi "model şerhi; avukat onayı yok" diye
+görünür ve kalem «Avukat Kararı Bekleyen»de kalır. Halüsinasyon kapısını ve
+teslimi yalnız avukat şerhi açar.
+
+**Model önerisi:** «Avukat Kararı Bekleyen» bir kalem için modelin yazdığı
+karar. Hâkimin imzalamadığı karar taslağı gibidir: hüküm değildir ve kalem
+kapanmaz. Avukatın kararı `--karar-onay avukat` ile işlenir.
+
+**Makbuz–ürün eşleşmesi:** teslim makbuzu her teslim ürününün özetini taşır.
+Teslim adımı, makbuzdan sonra diskte değişen ürünü yakalar. Suretin asılla
+karşılaştırılması gibidir: makbuzdan sonra değişen nüsha için makbuz yeniden
+alınır. E-imzalı UDF türevdir, değişmiş sayılmaz.
+
+**Desteklenmeyen tür / açılamayan evrak:** alımın okuyamadığı evrak için iki
+ayrı uyarı vardır. Desteklenmeyen türde sistem o biçimi metne çeviremez.
+Açılamayan evrakta dosya bozuktur, parolalıdır ya da uzantısı türüyle
+uyuşmaz. İkisinde de evrak okunmamıştır: bu "bakamadım" demektir, "temiz"
+değildir. Analizde evrak eksik sayılır.
+
+**Uzun alım uyarısı:** 200'den fazla evrak çıkarılacaksa alımın başında
+basılan süre tahminidir. Tahmin bir ölçüme dayanır ve "tahmin:" diye yazılır.
+Kesilen alım baştan başladığı için büyük klasörde alım arka planda ve en az iki
+kat zaman aşımıyla koşturulur.
+
+**Dosya geçmişi (kaynakçada):** davanın `_oa/dosya.md`'de beyan edilmiş kendi
+geçmişidir ("Dava geçmişi:", "Esas no:" satırları); içtihat değildir. Künye
+kapısı onu teyitsiz saymaz. İç kaynakça da onu ayrı alt başlıkta, teyit
+beyanının dışında gösterir.
 
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her
