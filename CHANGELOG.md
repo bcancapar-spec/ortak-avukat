@@ -327,6 +327,8 @@ ilke ya da yeni parça yoktur; kod davranışı v0.5.18 çizgisinin son hâliyle
   yayın kararıdır, yapısal sıçrama iddiası değildir.
 - **Güncelleyenin yapacakları:** v0.5.18'inkilerle aynıdır (README → Güncelleme notları).
   Eklenti yeni sürüm klasörüne (`0.6.0`) açılır; `compileall` o klasörde koşar.
+- **Her yetenekte ne yapıldı:** [docs/SURUM-0.6.0-YETENEKLER.md](docs/SURUM-0.6.0-YETENEKLER.md) — yirmi
+  parçanın her biri için avukat dilinde özet, değişiklik ölçüsü ve parça günlüğünden kayıtlar.
 - **Büyüklük:** main'e göre ölçüm PR #8 açıklamasındadır (sayı her commit'le değiştiği için
   deftere yazılmaz).
 

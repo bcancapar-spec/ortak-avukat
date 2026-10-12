@@ -80,7 +80,8 @@ sıra aynı sistemi baştan sona anlatır; her başlık ilgili bölüme götür�
    Başbakan (`oa-pipeline`) hattı sırayla işletir ve her adımı kanıtla deftere yazar.
    Çırak (`oa-usta`) her işten ders çıkarır.
 3. **Yirmi parça:** [Skill seti](#skill-seti--yirmi-parça-tek-tek). Dosyayı ele alma,
-   olgu ve hukuk, karar ve savunma, üretim, teslim, ceza dalı.
+   olgu ve hukuk, karar ve savunma, üretim, teslim, ceza dalı. Bu sürümde her parçada ne
+   yapıldığı: [docs/SURUM-0.6.0-YETENEKLER.md](docs/SURUM-0.6.0-YETENEKLER.md).
 4. **Hafıza ve kanıt:** [Avukatın göreceği dosyalar](#avukatın-göreceği-dosyalar--_oa-yapısı_oa-yapısı-ortak-avukat-kısaltmasıdır).
    Hafıza modelde değil diskte (`_oa/`) yaşar; teslim makbuzla kanıtlanır.
 5. **Sınırlar ve gizlilik:** [Sistemin yapmadıkları](#sistemin-yapmadıkları-dürüst-sınırlar) ·
@@ -98,7 +99,8 @@ Bu bölüm, **kurulu eklentiyi güncelleyen** meslektaş için yazıldı: bu sü
 işinize dokunan ne değişti, güncellerken ne yapmanız gerekir, neyin henüz
 ölçülmediği. Olguların kaynağı sürüm defteridir: **[CHANGELOG.md](CHANGELOG.md)**
 (v0.6.0, v0.5.18 ve v0.5.17.1 kayıtları; 0.6.0, v0.5.18
-çizgisinin yayınıdır — sürüm numarası avukat kararıdır). Eklentinin NASIL güncelleneceği aşağıda,
+çizgisinin yayınıdır — sürüm numarası avukat kararıdır). Her parçada ne yapıldığı, parça
+günlüklerinden kelimesi kelimesine: [docs/SURUM-0.6.0-YETENEKLER.md](docs/SURUM-0.6.0-YETENEKLER.md). Eklentinin NASIL güncelleneceği aşağıda,
 kurulumun altındaki [Güncelleme](#güncelleme) adımındadır. Buradaki yeni
 terimlerin (belge güvenlik kapısı, gizli katman damgası, görünürlük kâhini,
 başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
