@@ -209,6 +209,9 @@ tarafından TESLİM aşamasında (`teslim_paketi.py` → `_oa/defter/teslim-makb
 yeniden denetlenir; kayıt eksik/çıplak kalırsa makbuz kapısı kapanmaz —
 muhakeme burada kurulur, geçerliliği orada mühürlenir.
 
+## SAHA DERSİ — farklı türde emsal "kıyasen" kullanılır (v0.5.18 ceza saha testi; Çırak dersi 6)
+Uyuşmazlığın türünden farklı bir alandan gelen emsal (ör. ceza dosyasında hukuk dairesi kararı, idari yargıda adli yargı kararı) "kıyasen" kaydıyla kullanılır ve fark açıkça söylenir: hangi unsur ortak, hangi unsur ayrık. Kayıtsız aktarım hâkimde "emsal birebir uyar" izlenimi bırakır; karşı taraf farkı gösterince dayanak çöker. Muhakeme kaydının DAVAYA-BAĞ alanı tür farkını yazar (`oa-ictihat`).
+
 ## Diğer parçalara entegrasyon
 - **oa-ictihat** → büyük önermenin teyitli norm+künyesini sağlar.
 - **oa-illiyet** → küçük önerme = illiyet grafı (illiyet bağı unsuru oradan gelir).

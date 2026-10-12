@@ -21,7 +21,7 @@ gereği yalnız saha etiketiyle anılır.
 
 **Ne:** karşı tarafın evrakındaki gizli talimatlara karşı belge güvenlik kapısı, sayfa düzeyinde izlenebilir OCR, gerçek evrak taramasıyla bulunan okuma kayıplarının kapatılması, Yargı PRO hukuk skill kütüphanesinden fikir düzeyinde uyarlamalar (kod/metin alınmadı), 2026-10-06 kod denetiminin ve Fable bağımsız denetiminin düzeltmeleri, saha testinde görülen halüsinasyon kapısı ile anayasa aykırılıklarının giderilmesi, iki saha testinden kalan eksiklerin tamamlanması. v0.5.17.1 yaması bu sürüme birleştirildi. Süit 2455 → **3769** (`OA-SUIT-SAYISI`). Ayrıntı: parça günlükleri, [docs/OCR-IMPLEMENTATION-PLAN.md](docs/OCR-IMPLEMENTATION-PLAN.md), [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md).
 
-**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–Q bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
+**Avukat için: ne getirdi, neden, hangi saha kanıtıyla.** Aşağıdaki A–R bölümleri teknik kayıttır (dosya ve test düzeyi); bu özet onların avukat diliyle karşılığıdır.
 
 1. **Dilekçeden önce denetim motorları fiilen koşar (N).** Saha testinde vakıa, illiyet, kıyas ve antitez motorları kuruluydu ama hiç koşmadı; dilekçe olgu uydurmadı, fakat lehe gösterilen bir kararın kaldırıldığını yazmadı. Anayasa m.8 metinde vardı, sahada icra edilmiyordu. Artık motorun damgası yoksa dilekçe adımı ve teslim durur; geçiş yalnız gerekçeli avukat şerhiyle.
 2. **Sistem kendi kaydında yanlış beyanda bulunmaz (O, P).** Model kararı "avukat onayı" diye kaydediliyordu (m.9); aynı kusurun kardeşi, dilekçe denetiminin havada kalan alıntı kapısını model eliyle açabiliyordu; ikinci saha testinde model avukat hükmü defterine kendisi "KABUL" yazdı; ürün mühürleri yanlış sürüm yazıyordu (m.5). Artık avukat onayı ve avukat hükmü yalnız açık bayrakla kaydedilir, varsayılan model beyanıdır. Kanıt: iki saha testi ve bu denetim.
@@ -36,6 +36,7 @@ gereği yalnız saha etiketiyle anılır.
 11. **Okunmayan evrak kalmaz, okunamayan sessiz kalmaz (Q).** Ceza saha testinde okunamayan Excel tabloları artık okunur; gizli sayfa damgalanır. Bozuk ya da parolalı evrak adıyla bildirilir. Uzun alım önceden söylenir (m.1).
 12. **Makbuz ürünü anlatır (Q).** Makbuzdan sonra değişen dilekçe nüshası teslim adımını kapatır ("kanıtla yazılır"). Kanıt: ceza saha testinde makbuzdan sonra değişen PDF.
 13. **Nöbetçi Windows'ta da ayakta (Q).** Yeni bilgisayarda hook katmanı Mağaza python kısayolu yüzünden ölüydü. Sarmalayıcı artık kısayolu atlar.
+14. **Sahadan öğrenen playbook (R).** Ceza saha testinin sekiz dersi ilgili parçalara işlendi: akıbet, tanığın sükûtu, karşı örnek, e-tebligatta iki tarih, istinafta harç ve gider avansı, kıyasen emsal, kesin süre taarruzu, iç çelişki. Kanun dayanakları resmî metinden okundu.
 
 ### A. Belge güvenlik kapısı (B-22 — gizli talimat / prompt injection)
 
@@ -231,6 +232,22 @@ Avukat talimatı: "bir avukat olarak eksikleri tamamla". P'de karar bekleyen bul
     - `test_durum_md.py`: `--karar-onay avukat`;
     - `test_pipeline_kayit_onkosul.py` ve `test_v0518_halusinasyon_kapisi.py`: `--serh-onay avukat`;
     - `test_v0518_anayasa_onarimlari.py`: G-8 eki artık gerçekten desteklenmeyen türlerle koşar.
+
+### R. Çırak dersleri: ceza saha testinden sekiz ders playbook'lara (2026-10-12; avukat onayıyla)
+
+oa-usta'nın hata tetikli damıtma kuralı gereği aday kurallar saha raporunda ilk görünüşte yazılmıştı; kurala dönüşmeleri avukat onayına bağlıydı. Dayanak gösterilen hükümler resmî metinden okundu (Yargı PRO `mevzuat_getir`, 2026-10-12): Teb.K. m.7/a 4. fıkra, HMK m.344/1, HMK m.94/2-3.
+
+1. **Akıbet olgunun parçasıdır** (oa-vakia, oa-antitez, oa-kontrol): lehe gösterilen her karar ve evrakın akıbeti aranır. Mekanik bayrak v0.5.19 adayıdır.
+2. **Tanık iki sütunla çıkarılır** (oa-vakia, oa-dilekce): ne dedi, ne demedi. Tanıkla sabit kısım müvekkil beyanından ayrı yazılır.
+3. **Mutlak ifadeye karşı örnek aranır** (oa-vakia, oa-kontrol): "hiç / tek / hiçbiri" için evrakta karşı örnek aranır, görsel evrak dahil.
+4. **Elektronik tebligatta iki tarih yazılır** (oa-sure, oa-usul, oa-dilekce): ulaşma tarihi ve tebliğ sayılma tarihi, ardından "süresindedir" cümlesi.
+5. **İstinafta harç ve gider avansı satırı yazılır** (oa-dilekce, oa-usul): eksiklikte bir haftalık kesin süre verilir, tamamlanmazsa başvuru yapılmamış sayılır.
+6. **Farklı türde emsal "kıyasen" kullanılır** (oa-kiyas, oa-ictihat): fark açıkça söylenir.
+7. **Karşı vekilin kesin süreden sonraki beyanı usul taarruzudur** (oa-usul). Taarruz önce hâkimin ihtarını denetler; ihtar yoksa süre kesin değildir.
+8. **Aynı kaynağın iç çelişkisi iki yönlü not edilir** (oa-vakia, oa-antitez).
+
+- Dokuzuncu aday (dilekçede bağlantı olmasın) avukatın v0.5.7.5 bağlantı kuralıyla çeliştiği için işlenmedi; kural yürürlükte. Onuncu aday (motor koşmadan dilekçe yok) N'de uygulanmıştı.
+- SICRAMA-NOTU §1'e düzeltme dipnotu eklendi: "mekanik iskelet tamamlanmıştı" cümlesi model tarafı için erken söylenmişti; iskelet vardı, çağıran halka yoktu.
 
 ### Davranış değişiklikleri (güncelleyenler için)
 

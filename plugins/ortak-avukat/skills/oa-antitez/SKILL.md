@@ -83,6 +83,10 @@ Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
    süre maddesi bulunamadı (m.154-158 okundu) → **TEYİT BEKLİYOR**; fark celseyi
    izleyen ilk iş günü avukata raporlanır (kanuni süre değil, ihtiyat).
 
+## SAHA DERSLERİ — aleyhe akıbet ve iç çelişki (v0.5.18 ceza saha testi)
+1. **Aleyhe akıbet her lehe dayanak için sorulur (ders 1).** Karşı tarafın ilk bakacağı yer, lehe dayanağın akıbetidir: kaldırma, bozma, ek karar. Cephe her lehe dayanak için ayrı satırdır. Akıbeti aleyhe olan dayanak iç analizde dürüstlük riskiyle birlikte avukata sunulur. Dış metne nasıl gireceği avukatındır (m.6, m.9).
+2. **İç çelişki iki yönlüdür (ders 8).** Aynı kaynağın kendi içindeki çelişkisi hem bizim hem karşı tarafın silahıdır. Matriste iki satır yazılır: biz nasıl kullanırız, karşı taraf nasıl kullanır.
+
 ## Kompozisyon (iki konum — v0.5.16 P0-3 hizalaması: `oa-pipeline` sabit hattıyla aynı sıra)
 - **Erken (durum farkındalığı) = SABİT HAT ADIM 6:** KIYAS (adım 5) bitince ve **STRATEJİ (adım 7) başlamadan ÖNCE** çalışır — `oa-interview`'ın ön dava teorisi ve `oa-kiyas`'ın tatbik zinciri hazırken antitezi o teoriye karşı koştur; matris `_oa/cikti/06-antitez-matris.json`'a yazılır (evrak adı `[G]` kapısı ve pipeline önkoşul tablosuyla sözleşmelidir — v0.5.16'da önek adım numarasını izler: `06-antitez*`; ≤v0.5.15 adı `07-antitez*` pipeline bekçisi (yalnız dosya adı) ve [G] kapısı (`*antitez*.json` + `cepheler` listesi — v0.5.18/K-1; `arac` damgalı ama `cepheler`siz denetim çıktısı matris sayılmaz) tarafından geriye uyumla kabul edilir). **`oa-strateji` antitez çıktısını girdi alır:** yol seçimi, başarı olasılığı ve artık-risk kararı, karşı tarafın kozları görülmeden verilmez — antitez stratejiden sonra koşarsa strateji kör kurulmuş olur (P0-3'ün kapattığı hata).
 - **Geç (sağlamlık) = YAZIM (adım 8) sonrası / KONTROL (adım 9) öncesi:** dilekçe taslağı çıkınca matris yeniden dolaşılır — taslaktaki her argüman çökertilmeye karşı test edilmiş, DUYULMUŞ cephelerin çürütmesi metne çapalanmış olsun; `oa-kontrol` C2/[G] bu geç pasın mekanik aynasıdır.

@@ -69,3 +69,4 @@
 - **Testler:** `tests/test_v0518_uretici_kaynaklar.py`, `tests/test_v0518_uretici_atomik.py`, `tests/test_v0518_uretici_kimlik.py`; determinizm süiti değişmeden yeşil.
 - **Düzeltme turu 1 (Fable incelemesi K-3/K-4/K-5/K-6/K-8):** S1 ikinci not biçimi belgelendi (kısmi başarısızlıkta `kaynaklar_notu` dolu, `kaynaklar` boş olmayabilir; tüketici notu AYNEN basar). `_atomik_json_yaz` Windows kilidinde 3 kısa yeniden deneme, sonra istisna (K-4). Dört motorun yardımcıları kaynak-metin kilidiyle eşit (K-5). İki `_oa` kökünde bayt-özdeşlik testi (K-6). `tests/test_v0514_muhakeme.py` kilit adı `test_kiyas_ust_duzey_anahtar_YALNIZ_S1_ILE_GENISLEDI` (K-8).
 
+- **2026-10-12 (v0.5.18 — ceza saha testi, Çırak dersleri; avukat onayıyla, oa-usta hata tetikli damıtma):** SAHA DERSİ — farklı türde emsal "kıyasen" kaydıyla ve fark söylenerek kullanılır (ders 6); DAVAYA-BAĞ alanı tür farkını yazar.

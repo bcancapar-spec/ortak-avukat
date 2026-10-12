@@ -164,6 +164,15 @@ EKLEDİ** — yani çıkarılanlar hacim, eklenenler isabetti. Damıtılan kural
    sonucunu okurun çıkarmasına bırakma. (Bu, M8 SONUÇ ANATOMİSİ modülünün
    saha kanıtıdır.)
 
+## SAHA DERSLERİ — ceza saha testi (v0.5.18; Çırak dersleri 2, 4, 5)
+1. **Tanıkla sabit olan, müvekkilin beyanından ayrı yazılır (ders 2).** "… tanık beyanıyla sabittir" ile "müvekkilin beyanıdır" cümleleri karışmaz. Tanığın söylemediği şey tanığa söyletilmez. Kaynak: `oa-vakia`nın iki sütunlu tanık çıkarımı.
+2. **Elektronik tebligatta iki tarih yazılır (ders 4).** Süre satırı şu iki tarihi birlikte yazar:
+   - kararın elektronik adrese ulaştığı tarih;
+   - tebliğin yapılmış sayıldığı tarih, yani ulaşmayı izleyen beşinci günün sonu (Teb.K. m.7/a, 4. fıkra; Yargı PRO `mevzuat_getir` teyidi 2026-10-12).
+
+   Ardından "başvurumuz süresindedir" cümlesi gelir. Sahada künye satırı ulaşma gününü "tebliğ tarihi" diye yazmıştı. Hesap `oa-sure`nin e-tebligat protokolüyle yapılır; güvenli taraf erken son gündür.
+3. **İstinafta harç ve gider avansı satırı yazılır (ders 5).** İstinaf dilekçesi verilirken başvuru harçları ve tebliğ giderleri dahil tüm giderler ödenir. Eksiklik sonradan anlaşılırsa mahkeme bir haftalık kesin süre verir. Süresinde tamamlanmazsa başvurunun yapılmamış sayılmasına karar verir (HMK m.344/1; Yargı PRO teyidi 2026-10-12). Strateji notundaki harç ve gider satırı dilekçeye ve ek listesine taşınır. Ödeme durumu teslim notunda avukata ayrı satırla bildirilir.
+
 ## NETİCE-İ TALEP PLAYBOOK'U (v0.5.16 — P0-4/A-22; mekanik göz: `dilekce_denetim.py` [P])
 Talep bloğu, dilekçenin HÜKME dönüşen tek parçasıdır: hâkim istenmeyeni
 veremez (taleple bağlılık). Gerekçe ne kadar güçlü olursa olsun eksik kalem

@@ -133,6 +133,13 @@ hukuki karar vermez; madde metinleri Yargı PRO MCP `mevzuat_getir` ile okundu
   `⚠ DAHİLİ — DOSYAYA EKLENMEZ / UYAP'A YÜKLENMEZ` filigranıyla başlar; soru planı
   tanığa verilmez, tanıkla cevap provası yapılmaz.
 
+## SAHA DERSLERİ — akıbet, tanığın sükûtu, karşı örnek, iç çelişki (v0.5.18 ceza saha testi)
+Ceza saha testinde dilekçe olgu uydurmadı ama seçici anlattı. Çırak'ın bu parçaya düşen dört dersi:
+1. **Akıbet olgunun parçasıdır (ders 1; m.4).** Lehe gösterilen her karar ve evrakın akıbeti aranır. Aynı dosya numarasıyla daha geç tarihli bir evrak varsa (kaldırma, bozma, düzeltme, ek karar, itiraz kararı), olgu kronolojiye akıbetiyle girer: kesinleşti, kaldırıldı ya da derdest. Sahada lehe gösterilen bir kararın üst mahkemece kaldırıldığı yazılmamıştı. Mekanik bayrak v0.5.19 adayıdır; o gelene kadar tarama elle yapılır ve kronolojide görünür kalır.
+2. **Tanık iki sütunla çıkarılır (ders 2).** Her tanık beyanı "ne dedi / ne demedi" diye iki sütunla yazılır. İddia matrisinde tanıkla sabit kısım ile yalnız müvekkil beyanına dayanan kısım ayrı satırdır. Tanığın söylemediği şey tanığa söyletilmez (`oa-dilekce`).
+3. **Mutlak ifadeye karşı örnek aranır (ders 3).** "Hiç / tek / hiçbiri / asla" diye kurulan her iddia için evrakta karşı örnek aranır. Fotoğraf, ekran görüntüsü ve taranmış tutanak gibi görsel evrak da buna dahildir. Karşı örnek varsa iddia daraltılır; yoksa "karşı örnek bulunmadı (taranan: …)" diye kayda geçer.
+4. **Aynı kaynağın iç çelişkisi iki yönlü not edilir (ders 8).** Örneğin gerekçeli kararda "örnekler alındı", aynı dosyadaki bir dilekçede "hiç alınmadı" yazıyorsa çelişki kronolojide iki satırla görünür: hangi taraf hangi cümleyi kullanabilir. Dilekçe çelişkiyi karşılar (`oa-antitez`).
+
 ## Aktif çıkarım refleksi
 Kronolojiyi edilgen dizme. Sıralama sırasında **müvekkil lehine örüntü** ara: bir illiyet zinciri, bir karşı tarafın temerrüt anı, bir hak düşürücü sürenin başlangıcı, lehe bir karine doğuran olgu. Boşluğu yalnız işaretleme — **nasıl kapatılacağını** da öner.
 

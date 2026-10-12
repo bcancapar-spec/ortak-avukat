@@ -146,6 +146,11 @@ başlangıç kapısı, Layer 0 katı engel…) avukat diliyle karşılıkları:
     artık "teyitsiz içtihat" sanmaz.
   - **Windows:** Microsoft Store'un python kısayolu yeni bilgisayarda bütün
     kancaları sessizce öldürüyordu; sarmalayıcı artık onu atlar.
+- **Sahadan öğrenen playbook (avukat onayıyla).** Ceza saha testinin sekiz dersi
+  ilgili parçalara işlendi: akıbet, tanığın sükûtu, karşı örnek, e-tebligatta iki
+  tarih, istinafta harç ve gider avansı, kıyasen emsal, kesin süre taarruzu ve iç
+  çelişki. Kanun dayanakları resmî metinden okundu (Teb.K. m.7/a, HMK m.344/1,
+  m.94).
 - **Karşı tarafın evrakındaki gizli talimat yakalanır (belge güvenlik kapısı, B-22).**
   Evrakın insan gözünün görmediği ama modelin okuduğu katman — beyaz ya da mikro
   yazı, Word'ün gizli metni, silinmiş izli değişiklik, PDF'te görünmez kip,
