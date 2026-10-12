@@ -29,7 +29,7 @@
 ---
 
 ## Bu nedir 
-hukuk ve hak arama hürriyeti su ve nefes gibi erişilebilir olmalıdır.Eşit ve adelet gözetilmelidir.
+hukuk ve hak arama hürriyeti su ve nefes gibi erişilebilir olmalıdır.Eşit ve adalet gözetilmelidir.
 **Büyük dil modellerini Türk Hukuku alanlarında deterministik çalıştırmak üzere hazırlanmış bir METODOLOJİ SİSTEMİDİR.**
 Kıdemli bir avukatın çalışma metodunu — dosyayı ele alış sırasını, usulü esastan
 önce denetleme refleksini, künyeyi resmî kaynaktan doğrulama disiplinini, zaafı
@@ -48,14 +48,16 @@ olarak ayırır. Kuram üç kelimeyle özetlenir:
 > Pahalı olan katman (hukuki muhakeme) yapay zekâya, ucuzlatılabilen her şey
 > (evrak okuma, künye doğrulama, biçim, sayım, makbuz) deterministik Python
 > scriptlerine verilir. Model "yaptım" der; script **kanıtlar**. Bu iki-katman
-> mimari hem maliyeti ~26 kata kadar düşürür hem de halüsinasyonu yapısal
-> olarak dışlar: script yalan söyleyemez.
+> mimari hem maliyeti ~26 kata kadar düşürür hem de halüsinasyonu denetlenen
+> katmanlarda yapısal olarak daraltır: script yalan söyleyemez; girdisinin doğruluğunu
+> avukat denetler (bkz. [Dürüst sınırlar](#dürüst-sınırlar--bu-sürümde-ölçülmeyenler)).
 
 Kullanım alanı Türk hukukunun **herhangi bir dalıdır**: dilekçe (dava, cevap,
 istinaf, temyiz), dava-dosya-uyuşmazlık analizi, hukuki mütalaa, içtihat ve mevzuat
 araştırması, AYM bireysel başvuru, sözleşme inceleme ve tahriri, ceza müdafiliği
 ve müşteki vekilliği. Sistem kişilere değil **yönteme** bağlıdır; her olgusal
-unsuru (künye, madde, tarih, içtihat) resmî kaynaktan doğrular.
+unsuru (künye, madde, tarih, içtihat) resmî kaynaktan doğrular ya da doğrulanamadığını
+damgalar.
 
 Yirmi parça, 20 ayrı araç gibi değil **yetenek sahibi tek bir ortak-avukat** gibi
 çalışır: dosyanın analizini kalıcı bir çalışma hafızasına yazar; sonraki her

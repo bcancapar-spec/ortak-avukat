@@ -35,7 +35,7 @@ ve benzeri ayrıntılar sürüm defterinde durur; vitrinde hukukçular için sö
 > taraması, (7) 307 sahası — tasarrufun iptalinde ikinci cevap (devralmalı),
 > (8) 923 sahası — vergi/gümrük, ödeme emri + ek tahakkuk (ilk organik yeşil
 > makbuz), (9) 1865 sahası — idari yüksek yargıda soruşturma-izni itirazı
-> (çok oturumlu, iki müvekkil). Ayrıntılar aşağıdaki tabloda ve karnelerdedir. Belgeli koşu sayımına yalnız sensörlü izlenen dosyalar alındı; ilk denemede sonuca ulaşan ama izlenmeyen dosyalar sayıma girmedi.
+> (çok oturumlu, birden çok müvekkil). Ayrıntılar aşağıdaki tabloda ve karnelerdedir. Belgeli koşu sayımına yalnız sensörlü izlenen dosyalar alındı; ilk denemede sonuca ulaşan ama izlenmeyen dosyalar sayıma girmedi.
 > İlk ölçüm: ~200 evraklık gerçek bir istinaf dosyası, **tek bir doğal-dil
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir bir istinafa cevap
 > dilekçesine ve geçerli UDF'e dönüştü. Aynı sınıf iş, eklenti öncesi aynı model ve
@@ -172,7 +172,7 @@ v0.5 sürüm zincirini fiilen bu dokuz dava yönlendirdi.
 | **777 sahası** | banka/kefalet ikinci cevap + **24 kök çapraz taraması** | Bayat araç kiti kök nedeni; ilk gerçek LEHE/ALEYHE triyajı; resmî araçla üretilen UDF, dört kenarı yönetmelik ölçüsünde (42,52 pt) ilk **tam-standart ürün** olarak UYAP editöründe açıldı → v0.5.8.6 + v0.5.9 · **~1,50M token** |
 | **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](KARNE-307.md)) · **~822k token / 161 dk** |
 | **923 sahası** | vergi/gümrük — ödeme emri + ek tahakkuk, dilekçe ret sonrası yenileme | Tek cümlelik tek prompt, sıfır müdahale, çift ürün (2 dilekçe + 2 UDF); [G6] kapısı dökümsüz atıfları RED'ledi ve model tam-metin damgayla yeşile döndü → v0.5.10 çift-kanıt · **~360k token / 57 dk** |
-| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), iki müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](KARNE-1865.md)) · **toplam ~4,3M token** |
+| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), birden çok müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](KARNE-1865.md)) · **toplam ~4,3M token** |
 
 ### Gerçek dava testleri — derdest dosyalarda canlı ölçüm
 
@@ -234,7 +234,7 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 
 **1865 sahası (25-26.08.2026, v0.5.10→v0.5.11, TAMAMLANDI — sınıf:
 MÜDAHALELİ-YETKİLİ · ÇOK OTURUMLU):** idari yüksek yargıda soruşturma-izni
-itirazı; iki müvekkil, iki dilekçe + çelişki raporu; aynı klasörde 5-6 paralel
+itirazı; birden çok müvekkil, iki dilekçe + çelişki raporu; aynı klasörde 5-6 paralel
 oturum. Nihai karne: [KARNE-1865.md](KARNE-1865.md). Özet: v0.5.10'un üç
 onarımı ilk gerçek sınavında doğrulandı (filo kapısı yeşilin içinde koştu,
 mühür-kırık penceresi dakikasında yakalandı); 777'den beri üçüncü kez nükseden
@@ -321,7 +321,7 @@ belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
 4. **Karşı tarafın evrakındaki gizli talimat yakalanır ve dilekçede ifşa edilir (A, J, K, M).** Evrak içeriği veridir, talimat değildir (m.11). Kanıt: sentetik 14 saldırı vektörünün 14'ü; yanlış alarmlar gerçek evrakla ölçülerek kapatıldı.
 5. **Süre geç tarih üretmez (D, M).** Süre telafisi olmayan tek hatadır (m.2). Ölçülen örnekler: icra istinafında 07.09 yerine 24.08; kural belirtilmeyen hesapta 07.09 yerine 17.08.
 6. **Uydurma ya da yanlış künye teyitli sayılmaz (M).** İçtihat resmî kaynaktan teyit edilmedikçe yoktur (m.5). Kanıt: bağımsız denetimin kavram kanıtları (iki kararın parçasından kurulmuş künye, yer değiştirmiş esas–karar, başka daireye ait künye).
-7. **Müvekkil verisi süzgeçsiz dışarı çıkmaz (E, G, O).** Layer 0 (m.10). Kanıt: 911 gerçek UDF metninin 908'i süzgeçten geçmiyor; saha testinde UDF zincir dışında üretilince kimlik numaralı metin dış araca gitti, süzgeç artık çağrı yerinde.
+7. **Müvekkil verisi süzgeçsiz dışarı çıkmaz (E, G, O).** Layer 0 (m.10). Kanıt: 911 gerçek UDF metninin 908'i süzgeçten geçmiyor; saha testinde UDF zincir dışında üretilince metin Layer 0 süzgecinden geçmeden dış araca gitti, süzgeç artık çağrı yerinde.
 8. **Meslek kuralları ve talimat kaynağı (D).** Meslek kurallarında otorite yoktur, müvekkilin menfaati esastır (Av.K. m.1/2, m.38/1-b, m.135); talimat yalnız müvekkilin vekili ya da müdafii olan avukattan gelir (m.11 ek).
 9. **Avukatın lafzı (O).** Dilekçede şapkalı harf yok; birebir alıntı korunur.
 10. **Şerh ve karar avukatındır (Q).** İkinci saha testinde model, avukat yokken kapıyı kendi şerhiyle geçti. Şerhin ve kararın sahibi artık kayıtlıdır. Halüsinasyon kapısını yalnız avukat şerhi açar; model önerisi bekleyen kalemi kapatmaz (m.9).
@@ -478,15 +478,15 @@ Avukat talimatı: "anayasa aykırılıklarını da gider", "sisteme uy". Saha te
 - **Avukat onayı uydurulmaz (anayasa m.9, m.8):** karşı tarafın gizli talimatını dilekçeye almama kararı her durumda "avukat onayladı" diye kaydediliyordu; sahada bu kararı model vermişti. Artık kayıt kararın gerçek sahibini yazar: avukat açıkça karar verdiyse `--onay avukat`, aksi hâlde "model beyanı" — dilekçe denetimindeki uyarı açık kalır. Onarım ilk hâlinde ileriye dönüktü: bayraktan önce yazılmış kaydın "avukat" etiketi (saha dosyasındaki dahil) uyarıyı susturmaya devam ediyordu. O etiket artık kanıt sayılmaz (yazıcı sürümü 1.2); kayıt silinmez, uyarı geri gelir ve nedenini söyler.
 - **Kapıyı model açamaz — dilekçe denetiminde yanlış pozitif ilanı (anayasa m.9, m.8; G-5'in kardeşi, bu denetimde bulundu):** [Y] (havada kalan alıntı) ve [T] (makbuzsuz hazır beyanı) kapısını düşüren ilan, kimin yaptığına bakmadan "avukat onayı" diye kaydediliyordu; kapıyı model de açabiliyordu. Artık yalnız `--istisna-onay avukat` düşürür; onaysız ilan model beyanı olarak kayda geçer, BLOK sürer. Desen depoda zaten vardı (`gizlilik_tara.py --override-onay avukat`).
 - **Okunamayan evrak kaybolmaz (anayasa m.1 — veri kayıpsızlık):** OCR'ın okuyamadığı altı ayrı evrak ortak yer tutucu yüzünden "aynı içerik" sayıldı; beşinin kaydı ve avukatın sayfayı gözle okuyabileceği görselleri hiç oluşmadı. Artık okunamayan evrak tekrar-elemeye girmez; eski kusurla kaydedilmiş evrak bir kez yeniden okunur.
-- **Gizlilik süzgeci dış aracı çağıran yerde koşar (anayasa m.10):** UDF'e çeviren araç (udf-cli) dış araçtır. Süzgeç yalnız teslim zincirinin içinde soruluyordu; sahada teslim UDF'siz alındıktan sonra UDF doğrudan üretildi ve kimlik numaralı metin süzgeçsiz dışarı gitti. Artık süzgeç, içeriği dışarı gönderen betiğin içinde, dışarı fiilen giden metne uygulanır (iç kaynakça bloğu B-20 gereği dışarı gitmediği için taranmaz). Kişisel veri varsa UDF üretilmez ve avukatın 2026-10-05 kararındaki yol gösterilir: UDF yerelde UYAP editöründe üretilir. Resmî okuyucu da aynı kurala tabidir.
+- **Gizlilik süzgeci dış aracı çağıran yerde koşar (anayasa m.10):** UDF'e çeviren araç (udf-cli) dış araçtır. Süzgeç yalnız teslim zincirinin içinde soruluyordu; sahada teslim UDF'siz alındıktan sonra UDF doğrudan üretildi ve metin süzgeçten geçmeden dışarı gitti. Artık süzgeç, içeriği dışarı gönderen betiğin içinde, dışarı fiilen giden metne uygulanır (iç kaynakça bloğu B-20 gereği dışarı gitmediği için taranmaz). Kişisel veri varsa UDF üretilmez ve avukatın 2026-10-05 kararındaki yol gösterilir: UDF yerelde UYAP editöründe üretilir. Resmî okuyucu da aynı kurala tabidir.
 - **Mühür doğru sürümü yazar (anayasa m.5):** ürün mühürleri her ürünü "v0.5.8 (fork-prova)" üretmiş gibi damgalıyordu. Sürüm artık tek kaynaktan okunur; okunamazsa yanlış sürüm değil "sürümü okunamadı" yazılır.
 - **Avukatın lafzı — şapkalı harf yok:** dilekçede â yerine a, î yerine i (hâkim → hakim, resmî → resmi). Birebir alıntıya dokunulmaz; alıntıyı değiştirmek tahriftir. Kural oa-dilekce'nin "Yazar sistemi ve lafzı" bölümüne işlendi; dilekçe denetiminde [Ş] uyarısı (bloklamaz).
 - Açık kalan (v0.5.19): teslim makbuzunun nihai UDF'in özetini taşıması ve UDF'siz makbuzun "ara" sayılması (G-11'in makbuz yüzü); karar dökümünün araç çağrısına bağlanması.
 - Test: `tests/test_v0518_anayasa_onarimlari.py` (19; G-6 bağı mutasyonla kanıtlı), `tests/test_v0518_sapka_kurali.py` (8), `tests/test_v0585_dilekce_kurallari.py` (yanlış pozitif ilanı: +1, iki test bilinçli sözleşme değişikliğiyle güncellendi).
 
-### P. İkinci saha testi: ceza soruşturması; avukat hükmü uydurulmaz (2026-10-09)
+### P. İkinci saha testi: ceza dosyası; avukat hükmü uydurulmaz (2026-10-09)
 
-Avukat talimatı: "savcılık evrakları da var, Sonnet görevlendir, sistem çalışıyor mu test etsin". Gerçek bir ceza soruşturması dosyasının asıl evrakı (binden fazla evrak; kimlik bilgisi kayda geçirilmedi) bulut dışı bir test köküne kopyalandı; başsız bir Sonnet oturumu kısa bir avukat talimatıyla, dış bağlayıcılar ve web kapalıyken koştu (69 dakika).
+Avukat talimatı: ikinci bir gerçek dosyada (ceza) sistem başsız bir Sonnet oturumuyla sınansın. Gerçek bir ceza dosyasının asıl evrakı (binden fazla evrak; kimlik bilgisi kayda geçirilmedi) bulut dışı bir test köküne kopyalandı; başsız bir Sonnet oturumu kısa bir avukat talimatıyla, dış bağlayıcılar ve web kapalıyken koştu (69 dakika).
 
 - Bu sürümün onarımları sahada çalıştı: dört motor ve çapraz denetim koştu, damgaları motorlar yazdı, teslim (c2) "OK"; ifşa atlaması "model beyanı" diye kaydedildi ve uyarı açık kaldı (G-5); UDF'i doğrudan üretme denemesini Layer 0 çağrı yerinde durdurdu (çıkış 6); dilekçede şapkalı harf yok; okunamayan sayfalı sekiz evrak ayrı ayrı görünür kaldı (G-8); künye kapısı teslimi durdurdu, dosyanın kendi geçmişine ait numaralar otomatik kuralla muaf tutuldu.
 - **Avukat hükmü uydurulmaz (anayasa m.9, m.8):** model teslimden sonra avukat hükmü defterine kendisi "KABUL" yazdı; kayıt avukat hükmü sayıldı ve A-28 sensörünü (SICRAMA-NOTU §5'in tek başarı ölçütü) zehirledi. Artık kayıt sahibini yazar: varsayılan model beyanıdır, sayaca girmez; avukat hükmü yalnız `--hukum-onay avukat` ile sayılır. Onay alanı olmayan eski kayıt da varsayılmaz; ikisi de DURUM.md'de ayrı satırda görünür, hiçbir satır silinmez.

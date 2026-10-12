@@ -4,7 +4,7 @@
 *(önceki kayıtlar: 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **v0.5.18 saha turu (2026-10-09 → 10-12, PR #8):** iki gerçek saha testi (icra ve ceza
-> soruşturması dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
+> dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
 > yerleri gösterdi; hepsi kırmızı testle yakalanıp kapatıldı:
 > - halüsinasyon kapısı: dört motor dilekçeden önce fiilen koşar (m.8);
 > - avukat onayı, hükmü, şerhi ve kararı uydurulmaz (m.9);

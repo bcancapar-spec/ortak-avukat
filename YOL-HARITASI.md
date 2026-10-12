@@ -5,7 +5,7 @@
 
 ## DURUM — son (2026-10-12 · v0.5.18)
 
-- **Saha turu (PR #8):** iki gerçek saha testinin (icra, ceza soruşturması) ve bağımsız denetimlerin
+- **Saha turu (PR #8):** iki gerçek saha testinin (icra, ceza) ve bağımsız denetimlerin
   bulguları kapatıldı. Kapatılanlar:
   - halüsinasyon kapısı (dört motor fiilen koşar);
   - avukat onayı, hükmü, şerhi ve kararının sahibi;
