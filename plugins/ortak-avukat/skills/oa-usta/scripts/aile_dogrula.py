@@ -21,8 +21,9 @@ Ailenin yapısal sağlığını deterministik denetler; her yeniden paketlemeden
   `--json _oa/cikti/<ad>.json` çıktı adıyla fnmatch ile EŞLEŞMELİ (HATA)
 - KİLİT-B (v0.5.16 / Hamle 10): KANONİK↔DOKTRİN — oa-illiyet grafik_denetim.KANONIK
   enum değerlerinin her biri references/illiyet-doktrini.md'de LİTERAL geçmeli (HATA)
-- SÜRÜM İŞARETÇİSİ (v0.5.16 / P2-10, B-3): STATUS.md «**Sürüm:** X» ve YOL-HARITASI.md
-  «## DURUM — son (… · vX)» plugin.json «version» ile eşit değilse UYARI (hata değil)
+- SÜRÜM İŞARETÇİSİ (v0.5.16 / P2-10, B-3; 2026-10-15 B-6): STATUS.md «**Sürüm:** X»,
+  YOL-HARITASI.md «## DURUM — son (… · vX)» ve pyproject.toml «version = "X"» plugin.json
+  «version» ile eşit değilse UYARI (hata değil)
 
 Kullanım: python aile_dogrula.py <aile-kök-dizini>
 """
@@ -218,11 +219,15 @@ def kanonik_doktrin_uyum(kok):
 
 _STATUS_SURUM_RE = re.compile(r"\*\*Sürüm:\*\*\s*v?([\d.]+\d)")
 _YOL_DURUM_SURUM_RE = re.compile(r"^## DURUM — son \([^)\n]*·\s*v([\d.]+\d)\)", re.M)
+# 2026-10-15 denetimi B-6: pyproject.toml «version = "X"» da bir damgadır —
+# 0.1.0'da kalmışken eklenti 0.6.0'daydı ve hiçbir denetim görmüyordu.
+_PYPROJECT_SURUM_RE = re.compile(r'^version\s*=\s*"v?([\d.]+\d)"', re.M)
 
 
 def surum_isaretcileri(kok):
-    """P2-10 / B-3: STATUS.md başlığındaki «**Sürüm:** X» ve YOL-HARITASI.md
-    «## DURUM — son (… · vX)» satırı plugin.json «version» ile eşit olmalı.
+    """P2-10 / B-3: STATUS.md başlığındaki «**Sürüm:** X», YOL-HARITASI.md
+    «## DURUM — son (… · vX)» ve pyproject.toml «version = "X"» (2026-10-15, B-6)
+    satırları plugin.json «version» ile eşit olmalı.
     UYARI sınıfı (hata değil): vitrin bayatlığı paketlemeyi durdurmaz ama
     görünür kalır. Depo kökü = kok/../../.. ; dosya yoksa sessiz atlanır
     (depo-dışı kopya). Döner: uyarilar listesi."""
@@ -239,7 +244,9 @@ def surum_isaretcileri(kok):
         for dosya, rx, etiket in (
                 ("STATUS.md", _STATUS_SURUM_RE, "STATUS.md «**Sürüm:**»"),
                 ("YOL-HARITASI.md", _YOL_DURUM_SURUM_RE,
-                 "YOL-HARITASI.md «## DURUM — son (… · vX)»")):
+                 "YOL-HARITASI.md «## DURUM — son (… · vX)»"),
+                ("pyproject.toml", _PYPROJECT_SURUM_RE,
+                 'pyproject.toml «version = "X"»')):
             yol = os.path.join(depo, dosya)
             if not os.path.isfile(yol):
                 continue

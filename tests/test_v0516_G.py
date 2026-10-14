@@ -296,10 +296,14 @@ def test_surum_isaretcileri():
     assert my.group(1) == pv, f"YOL-HARITASI.md DURUM v{my.group(1)} ↔ plugin.json={pv}"
 
 
-def _depo_iskeleti(tmp, plugin_surum, status_surum, yol_surum):
+def _depo_iskeleti(tmp, plugin_surum, status_surum, yol_surum, pyproject_surum=None):
     depo = tmp / "depo"
     kok = depo / "plugins" / "ortak-avukat" / "skills"
     kok.mkdir(parents=True)
+    if pyproject_surum is not None:
+        (depo / "pyproject.toml").write_text(
+            '[project]\nname = "ortak-avukat"\nversion = "%s"\n' % pyproject_surum,
+            encoding="utf-8")
     (depo / "plugins" / "ortak-avukat" / ".claude-plugin").mkdir()
     (depo / "plugins" / "ortak-avukat" / ".claude-plugin" / "plugin.json").write_text(
         json.dumps({"name": "ortak-avukat", "version": plugin_surum}), encoding="utf-8")
@@ -331,6 +335,30 @@ def test_surum_isaretcileri_depo_disi_sessiz(tmp):
     kok = tmp / "skills"
     kok.mkdir()
     assert ad.surum_isaretcileri(str(kok)) == []
+
+
+# ── 2026-10-15 denetimi B-6: pyproject.toml da bir sürüm damgasıdır ─────────
+
+def test_surum_isaretcileri_pyproject_bayat_uyarir(tmp):
+    """`pyproject.toml` `version = "0.1.0"` iken eklenti 0.6.0'daydı ve hiçbir
+    damga denetimi bunu görmüyordu — "damgalar birlikte artar" kuralının
+    dışında kalan tek damga. Aynı UYARI sınıfı: paketlemeyi durdurmaz, görünür."""
+    kok = _depo_iskeleti(tmp, "0.5.16", "0.5.16", "0.5.16", pyproject_surum="0.1.0")
+    u = ad.surum_isaretcileri(str(kok))
+    assert len(u) == 1, u
+    assert "pyproject.toml" in u[0] and "0.1.0" in u[0] and "0.5.16" in u[0], u
+
+
+def test_surum_isaretcileri_pyproject_hizali_temiz(tmp):
+    kok = _depo_iskeleti(tmp, "0.5.16", "0.5.16", "0.5.16", pyproject_surum="0.5.16")
+    assert ad.surum_isaretcileri(str(kok)) == []
+
+
+def test_surum_isaretcisi_pyproject_gercek_depoda_plugin_json_ile_esit():
+    pv = json.loads(PLUGIN_JSON.read_text(encoding="utf-8"))["version"]
+    m = ad._PYPROJECT_SURUM_RE.search((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+    assert m, "pyproject.toml'de `version = \"X\"` satırı yok"
+    assert m.group(1) == pv, f"pyproject.toml version={m.group(1)} ↔ plugin.json={pv}"
 
 
 # ═══════════════ CLI — gerçek ağacın kopyası: K1 tek kırmızı mı? ═══════════
