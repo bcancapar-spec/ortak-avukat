@@ -5,9 +5,10 @@ NEDEN VAR: süit 3.756 yeşilken kaynak kodda iki tanımsız ad (hiç koşmayan 
 dalda), ham çift-yönlü/görünmez Unicode karakterleri ve 35 kullanılmayan import
 duruyordu; hiçbir kapı bunları görmüyordu. Ham çift-yönlü karakter, kaynağı
 gözle okunandan farklı gösterebilir (Trojan Source sınıfı) — belge güvenlik
-kapısının evrakta yakaladığı şeyin, eklentinin kendi kaynağında kapısı yoktu.
-README "eklenti metinlerinde ham görünmez karakter yasağı" der; o kural .md
-içindi, .py için bu dosya kapıdır.
+kapısının evrakta yakaladığı şeyin, eklentinin kendi kaynağında kapısı
+eksikti: `test_v0518_metin_hijyeni.py` plugins/**, docs/** ve kök *.md'yi
+tarar ama tests/ ve tools/ kapsam dışıydı ve `_CF_RE` için istisna taşıyordu;
+bu dosya tests/ ile tools/'u da kapsar ve ruff kapısını kilitler.
 
 Üç kilit:
   (a) `ruff.toml` var ve YALNIZ hata sınıfı kuralları seçer — biçim/stil
