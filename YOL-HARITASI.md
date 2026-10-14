@@ -193,4 +193,4 @@
 ## İleriye dönük yapısal not
 
 Sistemin şeklini değiştirebilecek (ve bugün bilinçli olarak ertelenmiş) mimari
-tartışma ayrı bir belgede durur: [SICRAMA-NOTU.md](SICRAMA-NOTU.md).
+tartışma ayrı bir belgede durur: [SICRAMA-NOTU.md](docs/SICRAMA-NOTU.md).

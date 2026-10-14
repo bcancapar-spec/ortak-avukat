@@ -43,7 +43,7 @@ python -m pytest tests/ -q -m perf -p no:xdist     # zamanlama (seri)
 `perf` markalı test KAPI DEĞİL kanaryadır (assert yok, uyarı basar).
 Mekanizmayı kilitleyen kapı zamanlamasızdır:
 `test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`. Gerekçe ve kalibrasyon
-tablosu: PERFORMANS-STATUS.md §10.
+tablosu: docs/PERFORMANS-STATUS.md §10.
 
 ### ÇÖZÜLDÜ — `main`'den miras alınan 4 kırmızı (B5)
 
@@ -112,7 +112,7 @@ geçtiğini deneysel olarak doğrulamıştı.
 v0.5.16.3'te bir `Write`'ın hook bloklaması **1164 ms → 118 ms** (%89.9
 azalma, 9.86×) düşürüldü; sıcak yoldaki ağır modül sayısı **11 → 0**.
 Ölçüm: `main` vs bu dal, aynı araç, **gerçekçi dava kökü**, dedup yenilmiş.
-Ayrıntı ve kök neden zincirleri: `PERFORMANS-STATUS.md`.
+Ayrıntı ve kök neden zincirleri: `docs/PERFORMANS-STATUS.md`.
 
 Altı yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
 o yüzden burada yazılıdır.
@@ -237,7 +237,7 @@ python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu
 ```
 
 **SÜRÜM DEFTERİ KURALI (v0.5.17).** Büyüklüğün insan-okur kapısı budur:
-her sürümden ÖNCE yukarıdaki komutu koşun ve tabloyu PERFORMANS-STATUS.md'ye
+her sürümden ÖNCE yukarıdaki komutu koşun ve tabloyu docs/PERFORMANS-STATUS.md'ye
 ekleyin. `hook-prompt` farkı **30 ms altındaysa** sürüm notunda
 GEREKÇELENDİRİN. Zamanlama tabanlı assert YOKTUR — bu yüzden bu adım atlanamaz.
 

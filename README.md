@@ -17,7 +17,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **124.000+** satır · **3.769** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **124.000+** satır · **3.781** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
 > sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
@@ -311,7 +311,7 @@ resmi). Birebir alıntıya dokunulmaz.
 - **Kesilen evrak alımı baştan başlar.** Biten evrakın ara kaydı yoktur
   (v0.5.19). Büyük klasörde alım arka planda koşturulmalıdır; sistem 200'den
   fazla evrakta bunu süre tahminiyle söyler.
-- Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
+- Kanca gecikmesi ölçüldü ve defterdedir: [PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12 (v0.5.17.1 ile karşılaştırmalı).
 
 ---
 

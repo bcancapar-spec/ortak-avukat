@@ -8,8 +8,8 @@ sürüm zincirinin kök özetidir. Üç kademe birbirini tamamlar:
 - **Parça günlükleri** — her skill'in kendi `references/degisiklik-gunlugu.md`
   dosyası (dosya/fonksiyon düzeyinde ayrıntı).
 - **Karneler ve Release'ler** — saha koşularının adli analizi
-  ([KARNE-307.md](KARNE-307.md), [KARNE-1865.md](KARNE-1865.md),
-  [SAHA-SONUCU.md](SAHA-SONUCU.md)) ve GitHub Release notları.
+  ([KARNE-307.md](docs/arsiv/KARNE-307.md), [KARNE-1865.md](docs/arsiv/KARNE-1865.md),
+  [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)) ve GitHub Release notları.
 
 Kural: **CI yeşermeden sürüm etiketi atılamaz**; sürüm damgaları (plugin,
 marketplace, iki script) daima birlikte artar. Dosya kimlikleri anayasa m.7
@@ -40,9 +40,9 @@ ve benzeri ayrıntılar sürüm defterinde durur; vitrinde hukukçular için sö
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir bir istinafa cevap
 > dilekçesine ve geçerli UDF'e dönüştü. Aynı sınıf iş, eklenti öncesi aynı model ve
 > eforla (Fable 5, max) yaklaşık 1,2M token tüketiyordu; fark ölçülmüştür, iddia
-> değildir (ölçüm ve kayıp listesi: [SAHA-SONUCU.md](SAHA-SONUCU.md)). Evraklar
+> değildir (ölçüm ve kayıp listesi: [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)). Evraklar
 > [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile PDF olarak indirilmiş, bu eklentiyle `.md`/`.json` biçimine otonom çevrilmiştir.
-> Sayılar ve dürüst kayıp listesi: **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
+> Sayılar ve dürüst kayıp listesi: **[SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)** · **[BASARI.md](docs/arsiv/BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
 > anonimdir. Hukuk erişilebilir olmalıdır — su ve nefes gibi.
 
 ## Saha deneyleri — testler nasıl yapıldı
@@ -160,19 +160,19 @@ bağlanmadı. Aşağıdaki dokuzu, **v0.5.x geliştirme döngüsünde** koşulan
 sensörlü izleme + adli analizle uçtan uca BELGELENEN dava testleridir —
 v0.5 sürüm zincirini fiilen bu dokuz dava yönlendirdi.
 **Dokuz koşunun tam kaydı — yöntem, ölçümler, dersler:**
-[SAHA-DENEYLERI.md](SAHA-DENEYLERI.md).
+[SAHA-DENEYLERI.md](docs/arsiv/SAHA-DENEYLERI.md).
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
-| **İlk tam koşu** | ~200 evraklık derdest istinaf dosyası | 49 dk · 45,6k token · teslim edilebilir ek beyan + geçerli UDF ([SAHA-SONUCU.md](SAHA-SONUCU.md)); bayat araç kopyası ve link zinciri dersleri → v0.5.7 · **45,6k token** |
+| **İlk tam koşu** | ~200 evraklık derdest istinaf dosyası | 49 dk · 45,6k token · teslim edilebilir ek beyan + geçerli UDF ([SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)); bayat araç kopyası ve link zinciri dersleri → v0.5.7 · **45,6k token** |
 | **Müdahalesiz test** | 214 evraklık bakir klasör | "Kapının gücü kodunda değil **tetiğindedir**" — mekanizmalar sağlamdı, çağrılmıyorlardı → v0.5.5.1–v0.5.5.3 · *(token ölçümü yok — izleme 307'yle başladı)* |
 | **447 sahası** | vergi davası | Tetik boşlukları + hook katmanının sessiz ölümü (masaüstü uygulaması hook'u kabuksuz koşturuyordu) → v0.5.8.1 / v0.5.8.2 · **~604k token** |
 | **372 sahası** | aile / mal rejimi | Hook katmanı ilk kez uçtan uca canlı ateşledi; koşunun **5 kollu adli analizi** (transkript + artefakt + kod yolu + şekil zinciri + desen karnesi) → v0.5.8.4: elle-UDF engeli, makbuz garantisi, mühür otomasyonu · **~1,24M token** |
 | **346 sahası** | bilirkişi raporuna itiraz | Künye kapısı **gerçek bir açığı** yakaladı ve model dürüst davrandı; tek bir ayrıştırıcı yanlış-pozitifi yeşil makbuzu imkânsız kıldı → v0.5.8.5: mutlak triyaj [G6], hook dirilişi, e-imza halkası · **~1,17M token** |
 | **777 sahası** | banka/kefalet ikinci cevap + **24 kök çapraz taraması** | Bayat araç kiti kök nedeni; ilk gerçek LEHE/ALEYHE triyajı; resmî araçla üretilen UDF, dört kenarı yönetmelik ölçüsünde (42,52 pt) ilk **tam-standart ürün** olarak UYAP editöründe açıldı → v0.5.8.6 + v0.5.9 · **~1,50M token** |
-| **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](KARNE-307.md)) · **~822k token / 161 dk** |
+| **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](docs/arsiv/KARNE-307.md)) · **~822k token / 161 dk** |
 | **923 sahası** | vergi/gümrük — ödeme emri + ek tahakkuk, dilekçe ret sonrası yenileme | Tek cümlelik tek prompt, sıfır müdahale, çift ürün (2 dilekçe + 2 UDF); [G6] kapısı dökümsüz atıfları RED'ledi ve model tam-metin damgayla yeşile döndü → v0.5.10 çift-kanıt · **~360k token / 57 dk** |
-| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), birden çok müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](KARNE-1865.md)) · **toplam ~4,3M token** |
+| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), birden çok müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](docs/arsiv/KARNE-1865.md)) · **toplam ~4,3M token** |
 
 ### Gerçek dava testleri — derdest dosyalarda canlı ölçüm
 
@@ -207,7 +207,7 @@ indirimi + bir önceki sürümden devralınan eski çalışma alanı. Ara karne:
 | Ürün | Resmî hatla üretilmiş, geçerlilik kapısından geçmiş UDF + PDF |
 | Dürüstlük | Yeşil makbuz kesilmeden "hazır" denmedi; sistem **karar-kavşağında durup** 5 kalemi avukatın önüne koydu (fail-closed). Ama makbuz sonrası ürün mühür dışında değişti — bkz. karne K1/K2 |
 
-**Koşu kapandı; nihai karne ayrı belgededir: [KARNE-307.md](KARNE-307.md).**
+**Koşu kapandı; nihai karne ayrı belgededir: [KARNE-307.md](docs/arsiv/KARNE-307.md).**
 161 dakika sürdü. Karnenin ilk düzelttiği şey koşu sırasında yapılan kendi
 raporumuzdur: bu koşu "tek doğal prompt / sıfır mekanik-hijyen promptu" ile
 geçmedi — ölçüm 11 kullanıcı turu ve 7 mekanik-hijyen promptu gösterdi. Deney
@@ -235,7 +235,7 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 **1865 sahası (25-26.08.2026, v0.5.10→v0.5.11, TAMAMLANDI — sınıf:
 MÜDAHALELİ-YETKİLİ · ÇOK OTURUMLU):** idari yüksek yargıda soruşturma-izni
 itirazı; birden çok müvekkil, iki dilekçe + çelişki raporu; aynı klasörde 5-6 paralel
-oturum. Nihai karne: [KARNE-1865.md](KARNE-1865.md). Özet: v0.5.10'un üç
+oturum. Nihai karne: [KARNE-1865.md](docs/arsiv/KARNE-1865.md). Özet: v0.5.10'un üç
 onarımı ilk gerçek sınavında doğrulandı (filo kapısı yeşilin içinde koştu,
 mühür-kırık penceresi dakikasında yakalandı); 777'den beri üçüncü kez nükseden
 kök düşman adlandırıldı — uygulamanın rpm anlık-görüntüsünden bulaşan bayat
@@ -268,12 +268,12 @@ karantinası, kilitli çekirdek, yönlü tazelik, oturum damgası.
 ### Ölçülen örnekler — beyan değil sayı
 
 Tüm koşuların token/süre/verim kayıtları ve ölçüm yöntemi ayrı
-belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
+belgededir: **[OLCUMLER.md](docs/arsiv/OLCUMLER.md)**.
 
 - **49 dakika / 45,6k token:** ~200 evraklık istinaf dosyasından teslim
   edilebilir ek beyan + geçerli UDF. Aynı sınıf iş, evrakı modele görüntü olarak
   yükleyen eski usulde **1M+ token** yiyordu — fark **~26×**, muhakemeden tek
-  satır kısılmadan (dakika dakika çizelge: [SAHA-SONUCU.md](SAHA-SONUCU.md)).
+  satır kısılmadan (dakika dakika çizelge: [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)).
 - **Elle-UDF krizinin çözümü:** sahada model UDF dosyasını elle kurmaya
   yeltendi; elle kurulan dosya UYAP Doküman Editöründe **açılmıyordu**. Çözüm
   A/B testiyle bulundu: açılan ve açılmayan dosyaların iç imzaları
@@ -598,7 +598,7 @@ oa-usta'nın hata tetikli damıtma kuralı gereği aday kurallar saha raporunda 
 - TEYİT BEKLİYOR hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek udf-cli ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
 - Avukat onay bayrakları (`--onay`, `--istisna-onay`, `--hukum-onay`, `--serh-onay`, `--karar-onay`) bir beyandır: sistem bayrağı kimin verdiğini doğrulayamaz; defter imzası sahiplik alanını kapsamaz. Avukatın kendi mesajına bağlanması v0.5.19 adayıdır.
-- Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
+- Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
   - Standart kökte ölçülebilir fark yok: Python 3.14'te en çok +2,4 ms, 3.12'de +1,6 ms. Giriş betiği kazancı 31–40 ms; ağır modül yok.
   - Zincir ürünleri olan büyük dosyada (3000 evrak temsili) Stop kancası +79 ms (~%20). Kaynağı çapraz denetim; v0.5.19'da girdi özetine bağlı önbellek önerilir.
   - Önceki ölçüm §11'de (2026-10-06).
@@ -1046,7 +1046,7 @@ tamamı MCP teyit tarihli — teyitsiz kural **sıfır**.
 olmayan bir yol için denetlenecek şey yoktur* (susmak gürültü disiplinidir);
 uyarı yalnız **var olan** teslim ürününün kökü bulunamadığında çıkar.
 
-Süit **1688** (v0.5.13'te 1406). Ayrıntı: [DENETIM-v0514.md](DENETIM-v0514.md).
+Süit **1688** (v0.5.13'te 1406). Ayrıntı: [DENETIM-v0514.md](docs/arsiv/DENETIM-v0514.md).
 
 ## v0.5.13 — Heyet Kararlarının İnfazı (2026-08-27)
 **Kanıt türü farklı:** bu sürüm bir saha karnesinden değil, **denetimden**
@@ -1067,7 +1067,7 @@ tutuklu dosya kipi · celse kartı + **dahili sızıntı kapısı** (iç analiz
 belgesi dış çıktıya kopyalanamaz) · zorunlu arabuluculuk dava şartı dört
 adreste · İİK m.67/68/72 + İYUK m.10/11 + VUK m.107/A çıpaları · mal kaçırma
 kavşağı (iki tarih ekseni). Gerekçeli daraltmalar
-[HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md)'de. Süit o gün **1406** toplandı (v0.5.14/B-35 düzeltmesi: kayıt 1405 yazıyordu, yeniden ölçüldü).
+[HEYET-KARARLARI-v0513.md](docs/arsiv/HEYET-KARARLARI-v0513.md)'de. Süit o gün **1406** toplandı (v0.5.14/B-35 düzeltmesi: kayıt 1405 yazıyordu, yeniden ölçüldü).
 
 ## v0.5.12 — İçtihat Kaynakçası (2026-08-27)
 **Avukat kuralı:** dilekçeye giren her Yargıtay/Danıştay kararının **kaynak
@@ -1078,7 +1078,7 @@ uydurma yasak, linki olmayan künye görünür notla işaretlenir. UDF üretimin
 (bant başı = giden evrak) ve tüm token ölçümleri repoya girdi. Süit 1394.
 
 ## v0.5.11 — Kit Güvenlik Katmanı (2026-08-26)
-**Saha kanıtı:** 1865 (çok-oturumlu, müdahaleli-yetkili · [KARNE-1865.md](KARNE-1865.md)).
+**Saha kanıtı:** 1865 (çok-oturumlu, müdahaleli-yetkili · [KARNE-1865.md](docs/arsiv/KARNE-1865.md)).
 Kök düşman adlandırıldı: uygulamanın rpm anlık-görüntüsünden bulaşan bayat
 araç nesli (777'den beri 3. nüks); tek seferlik onarımın yetmediği ölçüldü.
 **Onarım:** rpm karantinası ('ask') · kilitli çekirdek (salt-okunur + 'ask') ·
@@ -1088,7 +1088,7 @@ bekçileri. Süit 1385. Saha koşusu maliyeti: ~4,3M token (çok oturumlu).
 
 ## v0.5.10 — Kusursuz UDF Dönüşümü (2026-08-25)
 **Saha kanıtı:** 307 (K1: ürün makbuzdan 68 dk sonra mühür dışında değişti;
-K2: makbuz resmî ürünü kapsamıyordu · [KARNE-307.md](KARNE-307.md)) + 923
+K2: makbuz resmî ürünü kapsamıyordu · [KARNE-307.md](docs/arsiv/KARNE-307.md)) + 923
 (çift-uzantı ve mühürsüz-kopya bağımsız tekrarı).
 **Onarım:** atomik mühür (üretim=mühür, üç yolda) · filo-tazelik kapısı
 (kök + 40-UYAP tüm teslim-sınıfı UDF'ler makbuza) · çift-uzantı kaynağında

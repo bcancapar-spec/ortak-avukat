@@ -49,7 +49,7 @@
 > Açık hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
-> [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
+> [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
 > teslim edilebilir ek beyan + geçerli UDF. v0.5.7 o koşunun bulgularından
 > doğdu (bayat-tohum aşısı · [G4] bağlantı kapısı · yerel motor v2 ·
 > anayasa m.0 · hook doktoru).
@@ -182,7 +182,7 @@ bir satır ölçülmeden buraya girmez.
   `teslim_paketi.py` OA_SURUM = 0.5.16 (birlikte).
 - **Açık işler (bu sürümde YAPILMADI — sessiz atlama yasağı):**
   - Saha **"SONRA" ölçümü** (11 anonim dosya kopyası, v0.5.16 araçları) ve önce/sonra
-    tablosu; DENETIM-v0516.md kök tablosu buna bağlı.
+    tablosu; docs/arsiv/DENETIM-v0516.md kök tablosu buna bağlı.
   - `git push origin main` (kimlik engeli — `gh auth login -h github.com`).
   - Avukat kararı bekleyen: **B-4** `git filter-repo` (geçmiş commit'lerde dosya kimliği —
     geçmiş yeniden yazımı yalnız avukat kararıyla) · ~~**udf-cli pin**~~ (A5/B-6 — 2026-10-05
@@ -206,9 +206,9 @@ bir satır ölçülmeden buraya girmez.
 - **Tam süit: 1385 yeşil / 1 tasarımsal atlama** · aile denetimi temiz ·
   CI 4'lü matris yeşil · kurulu kanal 0.5.11.
 - **Saha:** 149 gerçek dava toplam; v0.5.x döngüsünde 9 belgeli koşu
-  ([SAHA-DENEYLERI.md](SAHA-DENEYLERI.md)); ilk ORGANİK yeşil makbuz 923
+  ([SAHA-DENEYLERI.md](docs/arsiv/SAHA-DENEYLERI.md)); ilk ORGANİK yeşil makbuz 923
   sahasında; 1865 çok-oturumlu + müdahaleli-yetkili sınıf
-  ([KARNE-1865.md](KARNE-1865.md)).
+  ([KARNE-1865.md](docs/arsiv/KARNE-1865.md)).
 - **Açık işler:** v0.5.12 adayı P1-4b (çok-oturum kilit sahipliği) ·
   1865 içerik hükümleri avukatta · yeni saha koşusu v0.5.11 korumalarının
   canlı sınavı olacak.

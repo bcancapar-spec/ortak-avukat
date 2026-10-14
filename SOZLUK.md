@@ -232,7 +232,7 @@ karar tebliğe çıkmaz.
 
 **Karne:** Bir saha koşusunun dürüst sonuç belgesi — neyin çalıştığı,
 neyin kırıldığı, hangi onarımın doğduğu. Başarısızlıklar da yazılır;
-sürümler karneden doğar ([SAHA-DENEYLERI.md](SAHA-DENEYLERI.md)).
+sürümler karneden doğar ([SAHA-DENEYLERI.md](docs/arsiv/SAHA-DENEYLERI.md)).
 
 ## v0.5.16 terimleri (İki Denetimin İnfazı — 2026-09-07)
 
