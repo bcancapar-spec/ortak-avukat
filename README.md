@@ -410,7 +410,11 @@ onaylarım, sen bekle.
    `python --version` (3.12 veya üstü gerekir; Windows'ta `py -0p` kurulu
    sürümleri listeler), `git --version` (eklenti rafı GitHub'dan git ile
    klonlanır), `node --version`, `npm --version`; Windows'ta `winget --version`.
-   Eksikleri yaz; kurulumları ilgili adımda ve benim onayımla yap.
+   Eksikleri yaz; kurulumları ilgili adımda ve benim onayımla yap. Windows'ta
+   `python --version` "Python was not found" ya da Microsoft Store mesajı verirse
+   bu gerçek Python değil, Mağaza kısayoludur: `py -0p` ile kurulu sürümleri gör.
+   Kancalar bu kısayolu kendiliğinden atlar; "Uygulama yürütme diğer adları"
+   ayarına DOKUNMA, kapatmak istersem ben yaparım.
 1) EKLENTİ: önce `claude plugin list` ve `claude plugin marketplace list` ile
    mevcut durumu oku — var olan kurulumu BOZMA. ortak-avukat kurulu değilse:
    `claude plugin marketplace add bcancapar-spec/ortak-avukat` sonra
@@ -431,9 +435,11 @@ onaylarım, sen bekle.
    Python.Python.3.14 -e --source winget --accept-source-agreements`, diğer
    sistemlerde https://www.python.org/downloads/ ya da dağıtımın paket
    yöneticisiyle kurulumu bana bırak. Python bu adımda yeni kurulduysa bu oturum
-   yeni PATH'i görmez: Windows'ta `py -3.14 -m pip` ile devam et. Sonra `python -m pip show pymupdf pillow markitdown` ile
+   yeni PATH'i görmez: Windows'ta `py -3.14 -m pip` ile devam et. Sonra `python -m pip show pymupdf pillow markitdown openpyxl xlrd` ile
    kurulu olanı ve sürümünü gör. Eksik ya da alt sınırın altındaysa onayımla:
-   `python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]"`.
+   `python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]" openpyxl xlrd`.
+   openpyxl ve xlrd Excel evrakını (.xlsx/.xls) metne çevirir; yoksa Excel
+   evrakı "OKUNMADI" diye işaretlenir, sessizce geçilmez.
    PyMuPDF alt sınırı 1.24.2'dir (belge güvenlik kapısının görünürlük kâhini
    bunu ister); eskisi varsa yükselt. pip "externally-managed-environment"
    derse (Debian/Ubuntu, Homebrew Python) `--break-system-packages` KULLANMA:
@@ -441,7 +447,7 @@ onaylarım, sen bekle.
    yöneticisiyle kurmak ya da kancaların bulacağı bir sanal ortam (venv) —
    kararı ben vereyim. Doğrula: `python -m pip show pymupdf` çıktısındaki
    Version satırı 1.24.2 veya üstü;
-   `python -c "import fitz, PIL; print(fitz.version[0], PIL.__version__)"`
+   `python -c "import fitz, PIL, openpyxl, xlrd; print(fitz.version[0], PIL.__version__)"`
    (modül adı `pymupdf` 1.24.3'te geldi, `fitz` her sürümde var) ve
    `markitdown --help`.
 3) TESSERACT + TÜRKÇE (yerel OCR; bulut OCR YOK): `tesseract --version` ve
@@ -540,7 +546,8 @@ kurma. Her yazılım kurulumundan, PATH değişikliğinden ve dosya indirmeden �
 benden onay al. `setx PATH` ve `--break-system-packages` yasak. Bulut OCR yok;
 yalnız yerel Tesseract. Müvekkil evrakına dokunma: bu oturum boş bir klasörde
 açıldı, hiçbir evrakı okuma ya da işleme. Yargı Pro'yu kurma, yetkilendirme,
-üyelik bilgisi isteme — yalnız durumunu bildir.
+üyelik bilgisi isteme — yalnız durumunu bildir. Sistem ayarlarını (Windows'ta
+"Uygulama yürütme diğer adları" dahil) değiştirme; gerekiyorsa bana söyle.
 ```
 
 Kurulum bittikten sonra Claude Code'u **tamamen kapatıp açın** (9. adım bunu
@@ -575,7 +582,7 @@ Terminalden kuranlar için resmî komutlar: Windows PowerShell'de
 sürüm numarası basmalı. Windows'ta [Git for Windows](https://git-scm.com/downloads/win)
 da gerekir: eklenti rafı GitHub'dan git ile klonlanır.
 
-### 2. Python 3.12+ ve üç paket
+### 2. Python 3.12+ ve Python paketleri
 
 Komut adı Windows'ta `python`, macOS/Linux'ta `python3`'tür — kancalar da aynı
 yorumlayıcıyı kullanır; aşağıdaki komutları ona göre okuyun. Yeni kuruyorsanız
@@ -583,11 +590,12 @@ yorumlayıcıyı kullanır; aşağıdaki komutları ona göre okuyun. Yeni kuruy
 
 ```bash
 python --version
-python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]"
+python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]" openpyxl xlrd
 ```
 
 `pymupdf` PDF metin çıkarımı, `pillow` TIFF/JPG işleme içindir — bunlar olmadan
-evrak işlenemez. PyMuPDF'in alt sınırı **1.24.2**'dir (v0.5.18 belge güvenlik
+evrak işlenemez. `openpyxl` ve `xlrd` Excel evrakını (.xlsx/.xls) metne çevirir;
+yoksa Excel evrakı "OKUNMADI" diye işaretlenir, sessizce geçilmez. PyMuPDF'in alt sınırı **1.24.2**'dir (v0.5.18 belge güvenlik
 kapısının görünürlük kâhini bunu ister; depo kökündeki `requirements.txt` aynı
 sınırı taşır — güncellerken `pip install -U -r requirements.txt`). Tırnaklar
 gereklidir: `>=` ve `[all]` kabukta başka anlam taşır. pip
@@ -602,7 +610,7 @@ kapsam dışı kalır.
 
 ```bash
 python -m pip show pymupdf
-python -c "import fitz, PIL; print(fitz.version[0], PIL.__version__)"
+python -c "import fitz, PIL, openpyxl, xlrd; print(fitz.version[0], PIL.__version__)"
 markitdown --help
 ```
 
@@ -819,16 +827,48 @@ akışının ilk adımı olan belge güvenlik kapısının ilkesel dayanağıdı
 ## Claude Code'a vereceğiniz prompt — kopyala-yapıştır
 
 Dava klasörünüzde açtığınız oturuma yazacağınız **tek doğal prompt** yeterlidir.
-Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir.İster  https://github.com/bcancapar-spec/avukat-dosya-indirici Chrome eklentisi ile dava dosyanızı indirin isterseniz de size verilen evrakları tarayıp lokal olarak bilgisayarınıza kaydedin
-Köşeli parantezleri kendi dosyanıza göre doldurun:
+Metodoloji talimatı vermenize gerek yoktur — sistem kendi disiplinini işletir. İster
+[avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) Chrome
+eklentisi ile dava dosyanızı indirin, isterseniz de size verilen evrakları tarayıp lokal
+olarak bilgisayarınıza kaydedin. Köşeli parantezleri kendi dosyanıza göre doldurun;
+bilmediğiniz satırı silebilirsiniz, eksik bilgiyi sistem ilk incelemede size sorar:
 
 ```text
-Bu klasör [Mahkeme] [Esas No] sayılı dosyamız. [Davacı/Davalı/Sanık müdafii/
-Müşteki vekili] tarafız. Yapılacak iş: [cevap dilekçesi / bilirkişi raporuna
-itiraz / istinaf başvurusu/ Dava Analizi / Bilirkişi raporu hazırlanması hazırlanması]. Dosyanın tamamını işle, sürelere
-dikkat et, kullandığın her kararı tam metniyle doğrula, stratejik kavşaklarda
-bana sor. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu hazırla. Verdiğin sistem promptu gerçekleştirilince kontrol için benden "kontrol et" şeklindesistem promptu iste.  
+Bu klasör [Mahkeme] [Esas No] sayılı dosyamız. [Davacı / Davalı / Sanık müdafii /
+Müşteki vekili] tarafız. Müvekkilin hedefi: [ör. davanın reddi / alacağın tahsili /
+beraat]. Yapılacak iş: [cevap dilekçesi / bilirkişi raporuna itiraz / istinaf
+başvurusu / Dava Analizi / Bilirkişi raporu hazırlanması]. Tebliğ tarihi:
+[gg.aa.yyyy; e-tebligatsa evrakın elektronik adrese ulaştığı gün].
+Önce ortak-avukat becerisini Skill aracıyla fiilen yükle ve işi oa-pipeline'a devret;
+açıklamadan taklit etme. Dosyanın tamamını işle, sürelere dikkat et, kullandığın her
+kararı tam metniyle doğrula, stratejik kavşaklarda bana sor. Disiplin: model kurar,
+script denetler, model muhakeme eder, kararı ben veririm. Avukat kararı gereken her
+yerde (şerh, karar, hüküm) dur ve bana sor; benim yerime karar verme, kaydı "avukat"
+diye yazma. Nihai teslim: UYAP'a yüklenmeye hazır UDF + kısa strateji notu hazırla.
+Verdiğin sistem promptu gerçekleştirilince kontrol için benden "kontrol et" şeklinde
+sistem promptu iste.
 ```
+
+Prompt'un her satırı sistemde bir karşılık bulur:
+
+- **Taraf ve müvekkilin hedefi:** dış metin daima müvekkil lehine kurulur; zaaflar dış
+  metne yazılmaz, size ayrıca ve dürüstçe raporlanır (anayasa m.6: iç dürüstlük / dış
+  koruma).
+- **Tebliğ tarihi:** süre hesabının başlangıcıdır. E-tebligatta sistem iki senaryoyu
+  birlikte hesaplar: ulaşma günü esas alınarak ve ulaşmayı izleyen beşinci günün sonu
+  esas alınarak (7201 s. Tebligat Kanunu m.7/a). Kendi süremizde güvenli taraf erken son
+  gündür; sistem bunu ayrıca yazar.
+- **"Skill aracıyla fiilen yükle":** her parça gerçekten çağrılır; açıklamasından taklit
+  edilen parça çalışmamış sayılır (anayasa m.8).
+- **"Model kurar, script denetler, model muhakeme eder, kararı ben veririm":** sistemin
+  değişmez disiplinidir. Künye, madde ve tarih resmî kaynaktan teyit edilmeden yazılmaz
+  (m.4–m.5); nihai karar avukatındır (m.9).
+- **"Benim yerime karar verme":** şerh, karar ve hüküm avukatındır. Sistem kaydın
+  sahibini yazar: varsayılan "model beyanı"dır; avukat şerhi yalnız sizin kendi
+  gerekçenizle yazılır.
+
+Büyük klasörde (200 ya da daha fazla evrak) sistem, alım başlamadan süre tahminini
+söyler ve alımın arka planda koşturulmasını ister.
 
 İş tipine göre hazır varyantlar (aynı gövdeye şu cümleyi ekleyin/değiştirin):
 
