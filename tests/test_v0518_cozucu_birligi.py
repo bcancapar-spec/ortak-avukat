@@ -17,7 +17,6 @@ Fikstürler sentetiktir (anayasa m.7); ağ yok.
 """
 import importlib.util
 import inspect
-import os
 import pathlib
 import warnings
 import zipfile

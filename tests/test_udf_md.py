@@ -12,7 +12,6 @@ import hashlib
 import io
 import json
 import os
-import struct
 import sys
 import zipfile
 
@@ -31,7 +30,7 @@ sys.modules["udf_md"] = udf_md
 from udf_md import (BIRLESIK_IM, Metin, main, udf_markdown_cikar,
                            _CF_RE, _gercek_tur, _gorunur_temizle, _olcum_metni)
 
-ZWS = "​"
+ZWS = "\u200b"
 
 
 # ===========================================================================
@@ -270,7 +269,7 @@ def test_cf_regexi_unicodedata_ile_birebir():
 def test_gorunur_temizle_ascii_yolu_dogru():
     assert _gorunur_temizle("duz ascii") == "duz ascii"
     assert _gorunur_temizle("a" + ZWS + "b") == "ab"
-    assert _gorunur_temizle("a﻿b­c") == "abc"
+    assert _gorunur_temizle("a\ufeffb\u00adc") == "abc"
     assert _gorunur_temizle("İĞÜÇÖŞ") == "İĞÜÇÖŞ"     # Cf değil, korunur
 
 

@@ -26,7 +26,7 @@ import pathlib
 import re
 import subprocess
 import sys
-from datetime import date, timedelta
+from datetime import date
 
 import pytest
 

@@ -13,7 +13,6 @@ import pathlib
 import subprocess
 import sys
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SKILLS = REPO / "plugins" / "ortak-avukat" / "skills"
@@ -208,7 +207,7 @@ def test_kaynak_izi_kunye_icermiyor_engel(tmp_path):
 # ── NEGATİF: KAYNAK-IZI dökum dizini DIŞINDA bir yola işaret ediyor ────────
 
 def test_kaynak_izi_dokum_disinda_engel(tmp_path):
-    taslak = _kur(tmp_path, kaynak_izi_deger_override="_oa/cikti/sahte-kaynak.md")
+    _kur(tmp_path, kaynak_izi_deger_override="_oa/cikti/sahte-kaynak.md")
     # dökum dışında (ör. _oa/cikti içinde) bir "sahte" kaynak dosyası
     disarida = tmp_path / "_oa" / "cikti" / "sahte-kaynak.md"
     disarida.write_text("Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 ...\n", encoding="utf-8")

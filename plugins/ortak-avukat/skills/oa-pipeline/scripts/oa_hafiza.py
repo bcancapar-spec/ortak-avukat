@@ -769,7 +769,7 @@ _KURUMSAL_KELIMELER = {
     "cumhuriyeti", "bakanlığı", "bakanlık", "kurumu", "kurum", "başkanlığı",
     "başkanlık", "müdürlüğü", "müdürlük", "sözleşmesi", "yasası", "tebliği",
     "yönetmeliği", "tüzüğü", "dava", "davası", "kararı", "içtihat", "içtihadı",
-    "sayılı", "tarihli", "medeni", "borçlar", "iş", "idari", "bölge",
+    "sayılı", "tarihli", "medeni", "borçlar", "iş", "idari",
     # DÜZELTME (v0.5.5 düzeltme turu): ölçülen 7 yanlış-pozitifte (Avrupa
     # İnsan Hakları Mahkemesi / Sosyal Güvenlik Kurumu / Kamu İhale Kurumu /
     # Yüksek Seçim Kurulu / Bilirkişi Raporu / Maddi Manevi Tazminat / Fikri

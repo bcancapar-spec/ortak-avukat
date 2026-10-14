@@ -171,7 +171,6 @@ def test_red_makbuzda_advisory_denetimler_dolu(ortam):
     ortam["dilekce_denetim"].write_text(SAHTE_BLOK, encoding="utf-8")
     aday = ortam["kok"] / "taslak.udf"
     _sentetik_udf(aday, kenar="70.87")  # yönetmelik-dışı kenar (372 kanıtı)
-    eski_sha = _sha256(aday)
     (ortam["kok"] / "taslak.udf.prov.json").write_text(json.dumps({
         "prov_schema": "oa-muhur/1.0",
         "artifact_sha256": "0" * 64,  # bayat

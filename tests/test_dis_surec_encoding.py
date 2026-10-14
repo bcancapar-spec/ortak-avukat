@@ -21,7 +21,6 @@ Bu test o maskeyi kaldırır: kaynağı statik tarar, ortamdan bağımsız çal�
 yönünü korur, buradaki sorun OKUMA yönüdür.
 """
 import ast
-import os
 import pathlib
 
 import pytest

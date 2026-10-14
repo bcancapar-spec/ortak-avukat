@@ -409,8 +409,8 @@ def _gorunmez_mi(ch):
 # `test_cf_regexi_unicodedata_ile_birebir` bu iki tanımın tüm kod noktası
 # uzayında AYNI kümeyi verdiğini doğrular — uyuşmazsa test kırılır.
 _CF_RE = re.compile(
-    "[­؀-؅؜۝܏࢐-࢑࣢᠎"
-    "​-‏‪-‮⁠-⁤⁦-⁯﻿￹-￻"
+    "[\u00ad\u0600-\u0605\u061c\u06dd\u070f\u0890-\u0891\u08e2\u180e"
+    "\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\ufff9-\ufffb"
     "\U000110bd\U000110cd\U00013430-\U0001343f\U0001bca0-\U0001bca3"
     "\U0001d173-\U0001d17a\U000e0001\U000e0020-\U000e007f]")
 

@@ -6,7 +6,6 @@ BLOKLEYİCİ küme: adım-5 (oa-kiyas: 05-kiyas* AND *ictihat-muhakeme*) + adım
 İNGEST-ÖNCE: adım 1+ UYGULANDI, 00-kunye.json diskte yoksa yazılamaz.
 --serh: gerekçeli (>=30 kr) geçiş — olay 'serh:true' ile işlenir.
 """
-import importlib.util
 import json
 import pathlib
 import subprocess

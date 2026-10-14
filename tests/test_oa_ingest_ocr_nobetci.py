@@ -273,7 +273,7 @@ def test_bos_taranan_pdf_ocr_bos_damgalanir_ve_gorsel_uretilir(tmp_path):
 def test_saglikli_taranan_pdf_gorsel_uretilmez(tmp_path):
     fitz = pytest.importorskip("fitz")
     PIL = pytest.importorskip("PIL")
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw
 
     with tempfile.TemporaryDirectory() as kaynak_dizin:   # tmp_path DIŞINDA — yanlışlıkla ingest edilmesin
         img = Image.new("L", (1600, 300), color=255)
@@ -318,7 +318,7 @@ def test_karisik_evrakta_yalniz_bos_sayfa_gorsele_girer_saglikli_sayfa_girmez(tm
     görsele girer (hedefli — 'tüm evrak' değil, 'çöken sayfa')."""
     fitz = pytest.importorskip("fitz")
     PIL = pytest.importorskip("PIL")
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image, ImageDraw
 
     with tempfile.TemporaryDirectory() as kaynak_dizin:
         img = Image.new("L", (1600, 300), color=255)

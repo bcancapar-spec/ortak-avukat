@@ -11,7 +11,6 @@ Bu testler üç şeyi kilitler: (1) URL teyit anında muhakeme kaydına GEÇER,
 yazılmaz (yokluk sessiz boş-değere dönüşmez — dilekçe yazarı "kayıt yok" ile
 "kayıt boş" arasında ayrım yapabilmelidir).
 """
-import os
 import pathlib
 import subprocess
 import sys

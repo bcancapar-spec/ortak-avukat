@@ -177,7 +177,7 @@ def test_bayat_arac_uyarisi_araclar_yoksa_sessiz(dava_klasoru):
 def test_hook_prompt_hat_acikken_bayat_araci_enjekte_eder(dava_klasoru):
     """Hat açık (defter var) → devir hatırlatması YOK ama bayat araç VARSA
     o enjekte EDİLİR — kapı kaybı her turda görünür kalır."""
-    pk = _pk()
+    _pk()
     (dava_klasoru / "_oa" / "defter").mkdir(parents=True)
     araclar = dava_klasoru / "_oa" / "araclar"
     araclar.mkdir(parents=True)

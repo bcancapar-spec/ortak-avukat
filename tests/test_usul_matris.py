@@ -31,7 +31,6 @@ import subprocess
 import sys
 import tempfile
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-usul"

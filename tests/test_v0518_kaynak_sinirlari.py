@@ -28,7 +28,6 @@ sürüm aynı girdide saatler sürer).
 Fikstürlerin tamamı tmp_path'te üretilen sentetik veridir (anayasa m.7).
 """
 import importlib.util
-import json
 import pathlib
 import re
 import struct

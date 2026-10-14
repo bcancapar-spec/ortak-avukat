@@ -27,7 +27,6 @@ yüklenir. Yani metin bağlama taşınır. Garanti değildir; bu yüzden ikinci 
 """
 import importlib.util
 import json
-import os
 import pathlib
 import subprocess
 import sys

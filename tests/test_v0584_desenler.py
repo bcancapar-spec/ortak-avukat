@@ -27,7 +27,6 @@ dersi — gerçek dava klasörü yolu / kişi adı / TC yazılmaz).
 import importlib.util
 import json
 import pathlib
-import re
 import subprocess
 import sys
 

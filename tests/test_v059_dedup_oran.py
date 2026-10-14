@@ -19,7 +19,6 @@ Testlerde gerçek dava adı/yolu YOKTUR — her şey sentetik tmp ağaçlarında
 import importlib.util
 import json
 import pathlib
-import sys
 
 import pytest
 
