@@ -305,6 +305,13 @@ def donustur(md, ham=False):
         # Numaralı liste
         m = re.match(r"^(\d+)\.\s+(.*)$", s)
         if m:
+            # 2026-10-15 denetimi B-1 (PR #6'nın saha bulgusu): SONUÇ VE İSTEM
+            # bentleri "A. USUL" / "B. ESAS" alt başlığıyla bölünür; araya giren
+            # başlık listeyi kapattığı için ikinci liste 1'den yeniden sayıyor,
+            # 9. bent belgede "1." basılıyordu. Mahkeme hükmü bent numarasına
+            # atıf yapar — kaynak numarası korunur: ilk madde 1 değilse
+            # `<ol start="N">`; 1 ise çıktı eskisiyle bayt-özdeş kalır.
+            bas_no = int(m.group(1))
             items = []
             while i < n:
                 cur = lines[i].strip()
@@ -319,7 +326,7 @@ def donustur(md, ham=False):
                     break
                 else:
                     break
-            out.append("<ol>")
+            out.append("<ol>" if bas_no == 1 else '<ol start="%d">' % bas_no)
             for it in items:
                 # v0.5.8.4 CANLI ÖLÇÜM (372): `<li><p style=...>` deseni
                 # html2udf'te her maddeden sonra HAYALET boş Numbered paragraf
