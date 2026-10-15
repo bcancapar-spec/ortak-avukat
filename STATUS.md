@@ -8,7 +8,8 @@
 > 11 bulgunun sekizi bu dalda önce kırmızı testle kapatıldı: `<ol start>` (PR #6 bulgusu),
 > kaynak hijyeni kapısı (ruff hata sınıfı + CI `lint`), ham görünmez karakterler kaçışa,
 > pyproject sürüm damgası, kök dizin → `docs/arsiv/` + bağlantı kapısı, katmanlı README,
-> `.github` güvenlik bildirimi ve PR şablonu. Ölçüm: tam süit 3768 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (83,4 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3781, OA-SUIT-SAYISI ile birebir. Avukat kararı bekleyen:
+> `.github` güvenlik bildirimi ve PR şablonu; ardından v0.5.19 kalemi Excel gizli katmanı (gizli
+> satır/sütun, yazı rengi, `;;;` biçimi, punto; `tests/test_v0519_excel_gizli_katman.py`). Ölçüm: tam süit 3768 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (83,4 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3781, OA-SUIT-SAYISI ile birebir. Avukat kararı bekleyen:
 > GitHub açıklaması ve konu etiketleri (B-8), PR #6'nın kapatılması, dalın birleştirilmesi.
 > Belge: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md).
 
@@ -34,7 +35,7 @@
 > **Açık (v0.5.19):**
 > - kaldığı yerden süren alım;
 > - avukat onayının avukatın kendi mesajına bağlanması;
-> - Excel'de gizli satır/sütun ve yazı rengi;
+> - ~~Excel'de gizli satır/sütun ve yazı rengi~~ (2026-10-15 denetim dalında kapatıldı; saha kalibrasyonu açık);
 > - usul satırları kapısı;
 > - dosya-içi akıbet bayrağı.
 >

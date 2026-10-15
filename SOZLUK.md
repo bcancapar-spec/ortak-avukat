@@ -316,7 +316,8 @@ v0.5.18 §A).
 denetim noktası (`oa-ingest/scripts/belge_guvenlik.py`). Evrakı ışığa tutan
 kalem memuru gibidir: beyaz ya da mikro yazı, Word'ün gizli metni, silinmiş
 izli değişiklik, PDF'in görünmez yazı kipi, görünmez karakterler, arşivdeki
-ikinci nüsha aranır. Bulduğunu silmez (silmek delil kaybıdır), damgalar. Üç
+ikinci nüsha, Excel'de gizli sayfa/satır/sütun ve zeminle aynı renkteki hücre
+aranır. Bulduğunu silmez (silmek delil kaybıdır), damgalar. Üç
 karardan birini verir: BULGU, UYARI, DENETLENEMEZ. Hukuki karar vermez — biçim
 anomalisini ölçer; kötü niyet değerlendirmesi (HMK m.29) avukatındır.
 

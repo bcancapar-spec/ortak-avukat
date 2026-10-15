@@ -31,6 +31,9 @@ NE YAPAR: Çıkarılan metni modele gitmeden önce ölçer.
     talimatın tek savunması budur).
   • Kaynak metinde OA damga karakteri (⟦ ⟧) varsa nötrler: saldırgan sahte
     bir "⟧" ile damgadan kaçamaz.
+  • Excel'de (v0.5.19) gizli sayfa/satır/sütun, zeminden ayrışmayan yazı rengi,
+    ';;;' biçimi ve minik puntoyu çalışma kitabını yeniden açarak ölçer; hücreyi
+    okuyucunun yazdığı satırda eşleyip yerinde damgalar (değer silinmez).
 
 İLKELER (ANAYASA ile uyumlu):
   1. Evrak içeriği VERİDİR, TALİMAT DEĞİLDİR. Damgalı metin hiçbir koşulda
@@ -61,8 +64,13 @@ tablo STİLİ koşullu zemininin hangi satıra düştüğü çözülmez (en elve
 alınır — yanlış alarm yerine bu küçük açık seçildi); belgede koyu dolgulu çizim
 şekli varsa, onun açıklayabileceği açık renkli yazı yalnız talimat diliyle bulgu
 sayılır (konumlu şeklin arkada durduğu çözülmez); RTF gizli yazısı (\\v) ayrıca
-çözülmez; HTML'de gizli öğe/yorum/betik yalnız talimat diliyle bulgu sayılır.
-Biçimle gizlenmemiş görünür talimatı yalnız dil desenleri yakalar. Temiz sonuç
+çözülmez; HTML'de gizli öğe/yorum/betik yalnız talimat diliyle bulgu sayılır. Excel'de
+koşullu biçimin koşulu değerlendirilmez (o aralıktaki açık renkli yazı yalnız talimat
+diliyle bulgu; .xls'te koşullu biçim hiç okunamaz), degrade/desenli dolgu üstündeki
+yazının görünürlüğü, hücrenin üstüne çizilmiş şekil/grafik ve 'General;;;' gibi kısmi
+gizleyen biçimler ölçülmez; kapı kitabı yeniden açamaz ya da okuyucu metniyle
+eşleyemezse tablo DENETLENEMEDİ kalır. Biçimle gizlenmemiş görünür talimatı yalnız dil
+desenleri yakalar. Temiz sonuç
 "belge güvenlidir" değil, "denetlenen katmanlarda gizleme bulunmadı" demektir.
 
 Kullanım (elle tarama, salt okur):
@@ -93,10 +101,12 @@ TALIMAT_AC = "⟦TALİMAT DİLİ" + _VT
 # v0.5.18 (güvenlik incelemesi): bütçe/sınır aşılınca konumlanamayan gizli parça DAMGASIZ
 # kalmasın — ilgili aralık (sayfa ya da evrakın kalanı) bütünüyle VERİ diye sarılır.
 DENETLENEMEDI_AC = "⟦DENETLENEMEDİ (sınır aşıldı)" + _VT
-# v0.5.18 ceza saha testi: Excel evrakının gizli katmanı (gizli satır/sütun, yazı rengi) bu
-# sürümde denetlenmiyor — tablo metni bu etiketle VERİ diye sarılır ("bakamadım" ≠ "temiz").
-# Aynı DENETLENEMEDİ ailesidir: kesin damgaları yutmaz, yalnız onların dışına yerleşir.
-TABLO_AC = "⟦DENETLENEMEDİ (tablo: gizli satır/sütun ve yazı rengi denetlenmedi)" + _VT
+# v0.5.18 ceza saha testi: Excel evrakının gizli katmanı denetlenmiyordu, tablo metni bütünüyle bu etiketle
+# VERİ diye sarılıyordu ("bakamadım" ≠ "temiz"). v0.5.19: gizli satır/sütun, yazı rengi, ';;;' biçimi ve
+# punto ÖLÇÜLÜR (_tablo_tara); bu sarma yalnız kapı çalışma kitabını yeniden açamadığında, boyut sınırı
+# aşıldığında ya da okuyucu metniyle eşleyemediğinde kalır. Aynı DENETLENEMEDİ ailesidir: kesin damgaları
+# yutmaz, yalnız onların dışına yerleşir.
+TABLO_AC = "⟦DENETLENEMEDİ (tablo: gizli satır/sütun ve yazı rengi ölçülemedi)" + _VT
 _DENETLENEMEDI_ON = "⟦DENETLENEMEDİ"
 DAMGA_KAPA = "⟧"
 _ONCELIK = {DENETLENEMEDI_AC: 5, DAMGA_AC: 4, SILINMIS_AC: 3, FARK_AC: 2, TALIMAT_AC: 1, NUSHA_AC: 0}
@@ -144,6 +154,12 @@ AZAMI_ARSIV_GIRDI = 64 * 1024 * 1024   # tek content.xml/document.xml nüshası 
 AZAMI_NUSHA_SAYISI = 8     # bundan fazla aynı adlı nüsha: zip bombası/kasıt — yalnız ilk 8'i okunur + not
 AZAMI_IC_ICE = 64          # DOCX iç içe tablo/hücre derinliği (aşan belge DENETLENEMEZ — karesel yol kapalı)
 AZAMI_DOSYA_BAYT = 512 * 1024 * 1024   # UDF ham okuma sınırı
+AZAMI_TABLO_XML_BAYT = 128 * 1024 * 1024   # .xlsx sayfa XML'lerinin AÇILMIŞ toplamı: openpyxl tam kip (satır/sütun
+                                           # boyutu, stil ve koşullu biçim ancak tam kipte) kitabı belleğe alır.
+                                           # Ölçüm 2026-10-15 (bu makine): 30,7 MB XML / 600.000 hücre → 4,1 sn
+                                           # yükleme + 0,4 sn hücre geçişi; sınır ~2,5 M hücre (tahmin: ≤ 0,5 GB).
+AZAMI_XLS_BAYT = 64 * 1024 * 1024          # .xls (BIFF, sıkıştırmasız): xlrd formatting_info bütün XF/font kayıtlarını yükler
+AZAMI_HUCRE_BULGU = 8      # sayfa başına ayrı kaydedilen gizli hücre (kalanı özet kayıtta; hepsi damgalanır)
 
 AGIR = frozenset({"gizli-metin", "gizli-talimat", "silinmis-metin", "unicode-tag", "bidi",
                   "arsiv-nushasi", "ust-veri-talimat", "ocr-katmani-talimat", "damga-taklidi",
@@ -2181,43 +2197,520 @@ def _gorsel_tara(yol, R):
 
 
 _SAYFA_RE = re.compile(r"^## Sayfa: (.*)$", re.M)
+# Excel tema dizini → clrScheme adı. ECMA-376 sırası dk1, lt1, dk2, lt2 olsa da Excel 0→lt1 ("Arka plan 1",
+# beyaz), 1→dk1 ("Metin 1", siyah), 2→lt2, 3→dk2 eşler; openpyxl'in varsayılan yazı rengi theme=1 (siyah) bunu
+# doğrular. Tema parçası yoksa ya da çözülemezse Office varsayılanı alınır (standart dosyada ölçüm sürer).
+_TEMA_SIRA = ("lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
+              "hlink", "folHlink")
+_TEMA_VARSAYILAN = ("FFFFFF", "000000", "EEECE1", "1F497D", "4F81BD", "C0504D", "9BBB59", "8064A2", "4BACC6",
+                    "F79646", "0000FF", "800080")
+_SISTEM_RENK = {"window": "FFFFFF", "windowText": "000000"}
+_TEMA_RE = re.compile(r"<a:(lt1|dk1|lt2|dk2|accent[1-6]|hlink|folHlink)>\s*<a:(sysClr|srgbClr)\b([^>]*)>")
+_OZNITELIK_RE = re.compile(r'(\w+)="([^"]*)"')
+# ';;;' — dört bölüm de boş: Excel hiçbir değeri çizmez (metin dahil). ';;' — üç boş bölüm: sayı/tarih çizilmez,
+# metin görünür. 'General;;;' gibi KISMİ gizleme (pozitif görünür) bu sürümde ölçülmez.
+_BICIM_HEPSI_GIZLI_RE = re.compile(r"^\s*;\s*;\s*;(?:\s*;)?\s*$")
+_BICIM_SAYI_GIZLI_RE = re.compile(r"^\s*;\s*;\s*$")
 
 
-def _tablo_tara(R, calisma, hedefler):
-    """v0.5.18 ceza saha testi (anayasa m.1, m.11) — Excel evrakı. Okuyucu (oa_ingest.
-    tablo_isle) her sayfayı '## Sayfa: <ad>' ile başlatır, gizli sayfayı '[GİZLİ SAYFA: …]'
-    ile işaretler. Gizli sayfanın içeriği GİZLİ KATMAN diye damgalanır (VERİ); tek başına
-    BULGU değildir — resmî Excel dökümlerinde gizli yardımcı sayfa olağandır, gerçek evrakla
-    ölçülmeden BULGU demek yersiz ifşa doğurur. Gizli sayfada yapay zekâya hitap eden talimat
-    dili BULGU'dur. Gizli satır/sütun ve yazı rengi bu sürümde DENETLENMEZ: tablonun kalanı
-    "DENETLENEMEDİ (tablo …)" diye VERİ olarak sarılır — temiz SAYILMAZ."""
+class _TabloOlculemedi(Exception):
+    """Çalışma kitabı kapı tarafından yeniden açılamadı/ölçülemedi — mesaj sebeptir; çağıran tabloyu eski
+    biçimde DENETLENEMEDİ diye sarar ("bakamadım" ≠ "temiz")."""
+
+
+def _tablo_hucre_metni(v):
+    """oa_ingest._tablo_hucre ile BİREBİR (testle kilitli: test_hucre_metni_okuyucuyla_birebir). NEDEN VAR:
+    kapı gizli satırı okuyucunun yazdığı satırla eşleyerek konumlar; iki kopya ayrışırsa eşleşme bozulur ve
+    tablo fail-closed DENETLENEMEDİ'ye düşer — sessiz kaçak yok, ama ölçüm de yok. oa_ingest buradan import
+    edilmez: kapı bağımsız ve hafif kalır (CLI ile tek dosya taranabilir)."""
+    import datetime
+    if v is None:
+        return ""
+    if isinstance(v, datetime.datetime):
+        if v.hour or v.minute or v.second:
+            return v.isoformat(sep=" ", timespec="seconds")
+        return v.date().isoformat()
+    if isinstance(v, datetime.date):
+        return v.isoformat()
+    if isinstance(v, datetime.time):
+        return v.isoformat(timespec="seconds")
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v).replace("\r\n", " ⏎ ").replace("\n", " ⏎ ").replace("\r", " ⏎ ")
+
+
+def _tablo_norm(s):
+    """Okuyucu metni `tara` girişinde nötrlenip görünmez karakterden ayıklanır; kapının kurduğu satır da aynı
+    yoldan geçer ki karşılaştırma bayt bayt olsun (ayıklama karaktere bağımsızdır — hücre hücre uygulamak
+    satır bütününe uygulamakla aynı sonucu verir)."""
+    return gorunmez_ayikla(_notrle(s))[0]
+
+
+def _sutun_harfi(n):
+    s = ""
+    while n > 0:
+        n, k = divmod(n - 1, 26)
+        s = chr(65 + k) + s
+    return s
+
+
+def _tint(rgb, tint):
+    """Tema rengine tint (−1…1): negatif siyaha, pozitif beyaza doğru karışım (HLS parlaklık formülünün
+    kontrast eşiği için yeterli yaklaşımı)."""
+    if rgb is None or not tint:
+        return rgb
+    t = max(-1.0, min(1.0, float(tint)))
+    if t < 0:
+        return tuple(int(round(c * (1.0 + t))) for c in rgb)
+    return tuple(int(round(c + (255 - c) * t)) for c in rgb)
+
+
+def _bicim_gizli_mi(bicim, deger):
+    b = str(bicim or "")
+    if _BICIM_HEPSI_GIZLI_RE.match(b):
+        return True
+    return bool(_BICIM_SAYI_GIZLI_RE.match(b)) and not isinstance(deger, str)
+
+
+def _kontrast_bulgusu(on, zemin):
+    """(tur, yöntem) | None — yazı rengi zeminden ayrışmıyorsa (WCAG < ESIK_KONTRAST: aynı renk, beyaza beyaz,
+    %5 koyu beyaz). İki renkten biri çözülemediyse ÖLÇÜLMEZ (alarm yok — temkinli taraf, 'kontrast' bulgusu
+    BULGU'dur ve yanlış alarm ifşa dilekçesine girerdi)."""
+    if on is None or zemin is None:
+        return None
+    k = kontrast(on, zemin)
+    if k < ESIK_KONTRAST:
+        return ("gizli-metin", "kontrast=%.2f (yazı #%02X%02X%02X, zemin #%02X%02X%02X)" % ((k,) + tuple(on) + tuple(zemin)))
+    return None
+
+
+# ---- .xlsx (openpyxl) ----
+def _xlsx_tema(wb):
+    renkler = dict(zip(_TEMA_SIRA, _TEMA_VARSAYILAN))
+    ham = getattr(wb, "loaded_theme", None)
+    if ham:
+        try:
+            x = ham.decode("utf-8", "replace") if isinstance(ham, bytes) else str(ham)
+            for ad, tur, oz in _TEMA_RE.findall(x):
+                ozn = dict(_OZNITELIK_RE.findall(oz))
+                deger = ozn.get("val") if tur == "srgbClr" else (ozn.get("lastClr") or _SISTEM_RENK.get(ozn.get("val", "")))
+                if deger and re.fullmatch(r"[0-9A-Fa-f]{6}", deger):
+                    renkler[ad] = deger.upper()
+        except Exception:   # tema çözülemedi → Office varsayılanı (standart dosyada doğru, değilse renk ölçümü yaklaşık)
+            pass
+    return [renkler[a] for a in _TEMA_SIRA]
+
+
+def _xlsx_renk(renk, tema, varsayilan):
+    """openpyxl Color → RGB üçlüsü. auto / sistem dizini → rolün varsayılanı (yazı siyah, zemin beyaz);
+    bilinmeyen tür → None (ölçülemez)."""
+    if renk is None:
+        return varsayilan
+    tur = getattr(renk, "type", None)
+    try:
+        if tur == "rgb":
+            h = renk.rgb
+            return _hex(h[-6:]) if isinstance(h, str) and len(h) >= 6 else None
+        if tur == "theme":
+            ix = int(renk.theme)
+            if not 0 <= ix < len(tema):
+                return None
+            return _tint(_hex(tema[ix]), getattr(renk, "tint", 0.0) or 0.0)
+        if tur == "indexed":
+            ix = int(renk.indexed)
+            if ix in (64, 65):          # sistem yazı / pencere zemini
+                return varsayilan
+            from openpyxl.styles.colors import COLOR_INDEX
+            return _hex(COLOR_INDEX[ix][-6:]) if 0 <= ix < len(COLOR_INDEX) else None
+        if tur == "auto":
+            return varsayilan
+    except (TypeError, ValueError, IndexError):
+        return None
+    return None
+
+
+def _xlsx_zemin(dolgu, tema):
+    """Hücre zemini: dolgusuz → pencere arka planı (beyaz); düz dolgu → ön renk; degrade ya da desenli dolgu
+    → None (yazının görünürlüğü ölçülmez — dürüst sınır)."""
+    if dolgu is None:
+        return BEYAZ
+    if getattr(dolgu, "tagname", "") == "gradientFill":
+        return None
+    tip = getattr(dolgu, "patternType", None)
+    if not tip or tip == "none":
+        return BEYAZ
+    if tip == "solid":
+        return _xlsx_renk(getattr(dolgu, "fgColor", None), tema, BEYAZ)
+    return None
+
+
+def _xlsx_hucre_gizliligi(h, tema, deger, onbellek):
+    """Hücre BİÇİMLE gizlenmiş mi: (tur, yöntem) | None. Aynı stil dizisi için bir kez hesaplanır (600.000
+    hücrelik tabloda stil nesnesi kurmak yerine; ölçüm 2026-10-15: hücre geçişi 0,4 sn)."""
+    anahtar = getattr(h, "_style", None)
+    k = (tuple(anahtar), isinstance(deger, str)) if anahtar is not None else None
+    if k is not None and k in onbellek:
+        return onbellek[k]
+    yazi = h.font
+    boy = getattr(yazi, "sz", None)
+    sonuc = None
+    if boy is not None and float(boy) <= ESIK_PUNTO_GIZLI:
+        sonuc = ("gizli-metin", "punto=%g" % float(boy))
+    elif _bicim_gizli_mi(h.number_format, deger):
+        sonuc = ("gizli-bicim", "sayı biçimi '%s' — hücre içeriği hiç çizilmez" % str(h.number_format).strip()[:12])
+    else:
+        sonuc = _kontrast_bulgusu(_xlsx_renk(getattr(yazi, "color", None), tema, SIYAH), _xlsx_zemin(h.fill, tema))
+    if k is not None:
+        onbellek[k] = sonuc
+    return sonuc
+
+
+def _xlsx_satirlar(ws, tema):
+    """Sayfanın DOLU satırları okuyucu sırasıyla: (satır_no, satır_gizli, [(sütun_no, metin, sütun_gizli,
+    gizlilik)]). Boş satır okuyucuda atlandığı için burada da atlanır; kuyruk boş hücreler düşer."""
+    gizli_satir = set()
+    for r, d in ws.row_dimensions.items():
+        if d.hidden or (d.height is not None and float(d.height) == 0):
+            gizli_satir.add(int(r))
+    gizli_sutun = set()
+    for anahtar, d in ws.column_dimensions.items():
+        if d.hidden or (d.width is not None and float(d.width) == 0):
+            if d.min and d.max:
+                gizli_sutun.update(range(int(d.min), int(d.max) + 1))
+            else:
+                from openpyxl.utils import column_index_from_string
+                gizli_sutun.add(column_index_from_string(str(anahtar)))
+    # Koşullu biçim koyu zemin çizebilir; kapı koşulu değerlendirmez → o aralıktaki açık renkli yazı ZAYIF
+    # (yalnız talimat diliyle bulgu), DOCX'teki koyu şekil kuralıyla aynı.
+    kosullu = [cf.sqref for cf in ws.conditional_formatting]
+    onbellek = {}
+    for satir in ws.iter_rows():
+        hucreler = []
+        for h in satir:
+            v = h.value
+            metin = _tablo_norm(_tablo_hucre_metni(v)) if v is not None else ""
+            gizlilik = None
+            if metin:
+                gizlilik = _xlsx_hucre_gizliligi(h, tema, v, onbellek)
+                if (gizlilik and gizlilik[0] == "gizli-metin" and "kontrast" in gizlilik[1] and kosullu
+                        and any(h.coordinate in a for a in kosullu)):
+                    gizlilik = (gizlilik[0], gizlilik[1] + "; koşullu biçim altında", True)
+            hucreler.append((h.column, metin, h.column in gizli_sutun, gizlilik))
+        while hucreler and hucreler[-1][1] == "":
+            hucreler.pop()
+        if hucreler:
+            yield satir[0].row, satir[0].row in gizli_satir, hucreler
+
+
+def _xlsx_sayfalar(yol):
+    import openpyxl
+    with zipfile.ZipFile(yol) as z:
+        toplam = sum(i.file_size for i in z.infolist()
+                     if i.filename.startswith("xl/worksheets/") and i.filename.endswith(".xml"))
+    if toplam > AZAMI_TABLO_XML_BAYT:
+        raise _TabloOlculemedi("tablo boyut sınırını aşıyor (sayfa XML'i %d MB > %d MB) — gizli satır/sütun ve yazı "
+                               "rengi ölçülemedi" % (toplam >> 20, AZAMI_TABLO_XML_BAYT >> 20))
+    # Tam kip (read_only=False): satır/sütun boyutları, stil ve koşullu biçim ancak tam kipte okunur.
+    wb = openpyxl.load_workbook(yol, data_only=True, keep_links=False)
+    tema = _xlsx_tema(wb)
+    sayfalar = []
+    for ws in wb.worksheets:
+        durum = getattr(ws, "sheet_state", "visible")
+        sayfalar.append((ws.title, None if durum == "visible" else durum, _xlsx_satirlar(ws, tema)))
+    return sayfalar
+
+
+# ---- .xls (xlrd, formatting_info) ----
+def _xls_hucre_gizliligi(wb, h, deger, onbellek):
+    xi = getattr(h, "xf_index", None)
+    if xi is None:
+        return None
+    k = (xi, isinstance(deger, str))
+    if k in onbellek:
+        return onbellek[k]
+    xf = wb.xf_list[xi]
+    yazi = wb.font_list[xf.font_index]
+    punto = (yazi.height or 0) / 20.0
+    sonuc = None
+    if punto and punto <= ESIK_PUNTO_GIZLI:
+        sonuc = ("gizli-metin", "punto=%g" % punto)
+    else:
+        bicim = wb.format_map.get(xf.format_key)
+        bicim_s = getattr(bicim, "format_str", "") if bicim else ""
+        if _bicim_gizli_mi(bicim_s, deger):
+            sonuc = ("gizli-bicim", "sayı biçimi '%s' — hücre içeriği hiç çizilmez" % bicim_s.strip()[:12])
+        else:
+            # colour_map: palet dizini → RGB; sistem renkleri (otomatik yazı 0x7FFF, pencere zemini) None →
+            # rolün varsayılanı. xlrd koşullu biçimi okumaz → .xls'te ZAYIF ayrımı yoktur (dürüst sınır).
+            on = wb.colour_map.get(yazi.colour_index) or SIYAH
+            arka = xf.background
+            if arka.fill_pattern == 0:
+                zemin = BEYAZ
+            elif arka.fill_pattern == 1:
+                zemin = wb.colour_map.get(arka.pattern_colour_index) or BEYAZ
+            else:
+                zemin = None
+            sonuc = _kontrast_bulgusu(on, zemin)
+    onbellek[k] = sonuc
+    return sonuc
+
+
+def _xls_satirlar(wb, sh):
+    import xlrd
+    gizli_satir = {r for r, ri in sh.rowinfo_map.items()
+                   if ri.hidden or (ri.height == 0 and not getattr(ri, "has_default_height", 1))}
+    gizli_sutun = {c for c, ci in sh.colinfo_map.items() if ci.hidden or ci.width == 0}
+    onbellek = {}
+    for r in range(sh.nrows):
+        hucreler = []
+        for c in range(sh.ncols):
+            h = sh.cell(r, c)
+            if h.ctype == xlrd.XL_CELL_DATE:
+                v = xlrd.xldate_as_datetime(h.value, wb.datemode)
+            elif h.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+                v = None
+            else:
+                v = h.value
+            metin = _tablo_norm(_tablo_hucre_metni(v)) if v is not None else ""
+            gizlilik = _xls_hucre_gizliligi(wb, h, v, onbellek) if metin else None
+            hucreler.append((c + 1, metin, c in gizli_sutun, gizlilik))
+        while hucreler and hucreler[-1][1] == "":
+            hucreler.pop()
+        if hucreler:
+            yield r + 1, r in gizli_satir, hucreler
+
+
+def _xls_sayfalar(yol):
+    import xlrd
+    boyut = os.path.getsize(yol)
+    if boyut > AZAMI_XLS_BAYT:
+        raise _TabloOlculemedi("tablo boyut sınırını aşıyor (%d MB > %d MB) — gizli satır/sütun ve yazı rengi "
+                               "ölçülemedi" % (boyut >> 20, AZAMI_XLS_BAYT >> 20))
+    try:
+        wb = xlrd.open_workbook(yol, formatting_info=True)
+    except Exception as e:   # okuyucu açabildiği kitabın biçim bilgisini xlrd veremedi → ölçülemez
+        raise _TabloOlculemedi("xlrd biçim bilgisi okunamadı (%s: %s) — gizli satır/sütun ve yazı rengi ölçülemedi"
+                               % (type(e).__name__, str(e)[:80]))
+    sayfalar = []
+    for i in range(wb.nsheets):
+        sh = wb.sheet_by_index(i)
+        durum = {0: None, 1: "hidden", 2: "veryHidden"}.get(getattr(sh, "visibility", 0), "hidden")
+        sayfalar.append((sh.name, durum, _xls_satirlar(wb, sh)))
+    return sayfalar
+
+
+# ---- eşleme ve damgalama ----
+def _tablo_bolumleri(calisma):
     basliklar = list(_SAYFA_RE.finditer(calisma))
-    bolumler = []
+    out = []
     for k, m in enumerate(basliklar):
         son = basliklar[k + 1].start() if k + 1 < len(basliklar) else len(calisma)
-        bolumler.append((m.start(), son, "[GİZLİ SAYFA" in m.group(1), m.group(1)))
-    gizli = [b for b in bolumler if b[2]]
-    for bas, son, _g, ad in gizli[:20]:
-        hedefler.append((bas, son, DAMGA_AC))
-        R.ekle("gizli-sayfa", "Excel'de gizli sayfa — içeriği okundu, GİZLİ KATMAN diye damgalandı",
-               "sayfa: " + ad.split(" [GİZLİ SAYFA")[0], "")
+        out.append((m.start(), son, m.group(1)))
+    return out
+
+
+def _tablo_bolum_sar(R, hedefler, bas, son, sebep):
+    """Eşleşmeyen/ölçülemeyen kalan metin VERİ diye sarılır; ilk gerekçe korunur (fail-closed)."""
+    if not R.denetlenemedi:
+        R.denetlenemedi = sebep
+    hedefler.append((bas, son, TABLO_AC))
+
+
+def _tablo_talimat(R, calisma, hedefler, gizli):
+    """Talimat dili: gizli aralıkta (sayfa/satır/sütun/hücre) → gizli-talimat (BULGU; damga zaten var);
+    görünür hücrede → ⟦TALİMAT DİLİ⟧ (UYARI)."""
     gorulen = 0
     for tur_ad, i, j in talimat_eslesmeleri(calisma):
-        gizlide = any(b <= i < s for b, s, _g, _a in gizli)
+        aralik = next(((b, s) for b, s in gizli if b <= i < s), None)
         ci, cj = _cumle_genislet(calisma, i, j)
-        if gizlide:
+        if aralik:
             if gorulen < 5:
-                R.ekle("gizli-talimat", "Excel'de GİZLİ SAYFADA yapay zekâya hitap eden talimat dili (%s)"
-                       % tur_ad, "gizli sayfa", calisma[ci:cj])
+                R.ekle("gizli-talimat", "Excel'de GİZLİ KATMANDA (gizli sayfa/satır/sütun ya da gizlenmiş hücre) "
+                       "yapay zekâya hitap eden talimat dili (%s)" % tur_ad, "gizli katman",
+                       calisma[max(ci, aralik[0]):min(cj, aralik[1])])
         else:
             hedefler.append((ci, cj, TALIMAT_AC))
             if gorulen < 5:
-                R.ekle("talimat-dili", "yapay zekâya hitap eden talimat dili (%s)" % tur_ad,
-                       "tablo hücresi", calisma[ci:cj])
+                R.ekle("talimat-dili", "yapay zekâya hitap eden talimat dili (%s)" % tur_ad, "tablo hücresi",
+                       calisma[ci:cj])
         gorulen += 1
-    R.denetlenemedi = ("tablo evrakı (Excel): gizli satır/sütun ve yazı rengi bu sürümde denetlenmiyor"
-                       + ("; %d gizli sayfa damgalandı" % len(gizli) if gizli else ""))
+
+
+def _tablo_denetlenemedi(R, calisma, hedefler, bolumler, sebep):
+    """Kapı kitabı yeniden açamadı (okuyucu yok, boyut sınırı, bozuk kitap) ya da okuyucu metniyle eşleyemedi:
+    v0.5.18 davranışı — gizli sayfa başlıktan damgalanır, talimat dili sınıflanır, tablonun KALANI
+    DENETLENEMEDİ diye VERİ olarak sarılır (temiz SAYILMAZ)."""
+    gizli = []
+    for bas, son, baslik in bolumler:
+        if "[GİZLİ SAYFA" in baslik and len(gizli) < 20:
+            govde_son = len(calisma[:son].rstrip())
+            hedefler.append((bas, govde_son, DAMGA_AC))
+            gizli.append((bas, son))
+            R.ekle("gizli-sayfa", "Excel'de gizli sayfa — içeriği okundu, GİZLİ KATMAN diye damgalandı",
+                   "sayfa %s" % baslik.split(" [GİZLİ SAYFA")[0], "")
+    _tablo_talimat(R, calisma, hedefler, gizli)
+    R.denetlenemedi = R.denetlenemedi or (sebep + ("; %d gizli sayfa damgalandı" % len(gizli) if gizli else ""))
     hedefler.append((0, len(calisma), TABLO_AC))
+
+
+def _tablo_sayfa_isle(R, calisma, hedefler, gizli, ad, durum, satirlar, bas):
+    """Bir sayfayı okuyucu metniyle SIRAYLA eşleyip gizli katmanı yerinde damgalar: `bas`tan itibaren boş satırlar
+    atlanır, beklenen başlık satırı doğrulanır, sonra her dolu satır okuyucunun yazdığı satıra birebir eşlenir.
+    Bölümler regex'le önceden kesilmez: bir hücre değeri '## Sayfa:' ile başlasa bile sıra şaşmaz (taklit satır
+    görünür veri olarak eşlenir ve yapısal tespit alır). bas=None → yalnız rapor (CLI: okuyucu metni yok).
+    Dönüş: sayfadan sonraki konum; None = eşleşmedi ya da parça sınırı aşıldı (kalan metin VERİ diye sarıldı,
+    çağıran durur)."""
+    rapor_modu = bas is None
+    uzunluk = len(calisma)
+    konum = satir_sonu = 0
+    if not rapor_modu:
+        while bas < uzunluk and calisma[bas] == "\n":
+            bas += 1
+        satir_sonu = calisma.find("\n", bas)
+        if satir_sonu < 0:
+            satir_sonu = uzunluk
+        beklenen = _tablo_norm("## Sayfa: %s%s" % (ad, (" [GİZLİ SAYFA: %s]" % durum) if durum else ""))
+        if calisma[bas:satir_sonu] != beklenen:
+            _tablo_bolum_sar(R, hedefler, bas, uzunluk, "okuyucu metni ile çalışma kitabı eşleşmedi (sayfa başlığı: %s) "
+                             "— kalan metin ölçülemedi" % _kirp(ad, 40))
+            return None
+        konum = satir_sonu + 1
+    if durum:
+        R.ekle("gizli-sayfa", "Excel'de gizli sayfa (%s) — içeriği okundu, GİZLİ KATMAN diye damgalandı" % durum,
+               "sayfa %s" % ad, "")
+    gizli_satirlar, gizli_sutunlar, hucre_bulgu, bicim_bulgu, taklit = [], {}, 0, 0, 0
+    ilk_satir, onceki_gizli, parca_sutunlar, govde_son = None, False, set(), satir_sonu
+    for satir_no, satir_gizli, hucreler in satirlar:
+        satir_metni = " | ".join(m for _, m, _, _ in hucreler)
+        if not rapor_modu:
+            satir_sonu = calisma.find("\n", konum) if konum < uzunluk else -1
+            if satir_sonu < 0:
+                satir_sonu = uzunluk
+            if konum >= uzunluk or calisma[konum:satir_sonu] != satir_metni:
+                _tablo_bolum_sar(R, hedefler, min(konum, uzunluk), uzunluk, "okuyucu metni ile çalışma kitabı eşleşmedi "
+                                 "(sayfa %s, %d. satır) — kalan metin ölçülemedi" % (_kirp(ad, 40), satir_no))
+                return None
+            govde_son = satir_sonu
+        if satir_metni.startswith("## Sayfa:"):
+            taklit += 1
+            if taklit <= 3:
+                R.ekle("isaret-taklidi", "hücre değeri sayfa başlığı satırını taklit ediyor (yapısal tespit; satır "
+                       "görünürdür, gizli metin değildir)", "satır %d (sayfa %s)" % (satir_no, ad), satir_metni)
+        if satir_gizli:
+            gizli_satirlar.append(satir_no)
+            if ilk_satir is None:
+                ilk_satir = satir_metni
+            if rapor_modu:
+                if talimat_eslesmeleri(satir_metni, azami=1):
+                    R.ekle("gizli-talimat", "Excel'de GİZLİ SATIRDA yapay zekâya hitap eden talimat dili",
+                           "satır %d (sayfa %s)" % (satir_no, ad), satir_metni)
+            else:
+                # bitişik gizli satırlar tek damgada birleşir (_uygula) → tek parça sayılır
+                if not onceki_gizli and not R.parca_al():
+                    hedefler.append((konum, uzunluk, DENETLENEMEDI_AC))
+                    return None
+                hedefler.append((konum, satir_sonu, DAMGA_AC))
+                gizli.append((konum, satir_sonu))
+        else:
+            ofs = konum
+            for sutun, m, sutun_gizli, gizlilik in hucreler:
+                if m:
+                    konum_s = "hücre %s%d (sayfa %s)" % (_sutun_harfi(sutun), satir_no, ad)
+                    damgala = False
+                    if sutun_gizli:
+                        kayit = gizli_sutunlar.setdefault(sutun, [0, m])
+                        kayit[0] += 1
+                        damgala = True
+                    elif gizlilik:
+                        tur, yontem = gizlilik[0], gizlilik[1]
+                        if len(gizlilik) > 2:          # zayıf: yalnız talimat diliyle
+                            damgala = bool(talimat_eslesmeleri(m, azami=1))
+                        else:
+                            damgala = True
+                            if tur == "gizli-metin":
+                                hucre_bulgu += 1
+                                if hucre_bulgu <= AZAMI_HUCRE_BULGU:
+                                    R.ekle("gizli-metin", yontem, konum_s, m)
+                            else:
+                                bicim_bulgu += 1
+                                if bicim_bulgu <= AZAMI_HUCRE_BULGU:
+                                    R.ekle("gizli-bicim", yontem, konum_s, m)
+                    if damgala:
+                        if rapor_modu:
+                            if talimat_eslesmeleri(m, azami=1):
+                                R.ekle("gizli-talimat", "Excel'de GİZLİ HÜCREDE yapay zekâya hitap eden talimat dili",
+                                       konum_s, m)
+                        else:
+                            # konum kesindir (arama yok): parça bütçesi sütun başına bir kez tüketilir
+                            if sutun not in parca_sutunlar:
+                                if not R.parca_al():
+                                    hedefler.append((ofs, uzunluk, DENETLENEMEDI_AC))
+                                    return None
+                                parca_sutunlar.add(sutun)
+                            hedefler.append((ofs, ofs + len(m), DAMGA_AC))
+                            gizli.append((ofs, ofs + len(m)))
+                ofs += len(m) + 3
+        onceki_gizli = satir_gizli
+        if not rapor_modu:
+            konum = satir_sonu + 1
+    if durum and not rapor_modu:
+        hedefler.append((bas, govde_son, DAMGA_AC))
+        gizli.append((bas, govde_son))
+    if gizli_satirlar:
+        n = len(gizli_satirlar)
+        liste = ", ".join(str(r) for r in gizli_satirlar[:10]) + (" …" if n > 10 else "")
+        R.ekle("gizli-satir", "Excel'de gizli satır: %d satır (%s) — içeriği okundu, GİZLİ KATMAN diye damgalandı"
+               % (n, liste), "sayfa %s" % ad, ilk_satir or "")
+    for sutun, (adet, ornek) in sorted(gizli_sutunlar.items()):
+        R.ekle("gizli-sutun", "Excel'de gizli sütun %s: %d dolu hücre — içeriği okundu, GİZLİ KATMAN diye damgalandı"
+               % (_sutun_harfi(sutun), adet), "sayfa %s" % ad, ornek)
+    for sayi, ne in ((hucre_bulgu, "yazı rengi/punto"), (bicim_bulgu, "sayı biçimi")):
+        if sayi > AZAMI_HUCRE_BULGU:
+            R.ekle("gizli-hucre-ozeti", "%s ile gizlenmiş %d hücre daha (hepsi damgalandı; ilk %d ayrı kayıtta)"
+                   % (ne, sayi - AZAMI_HUCRE_BULGU, AZAMI_HUCRE_BULGU), "sayfa %s" % ad, "")
+    return None if rapor_modu else min(konum, uzunluk)
+
+
+def _tablo_tara(yol, uz, R, calisma, hedefler):
+    """v0.5.19 (anayasa m.1, m.11) — Excel evrakının gizli katmanı. v0.5.18'de kapı yalnız gizli sayfayı
+    başlıktan tanıyor, gizli satır/sütun ve yazı rengini ölçemediği için bütün tabloyu DENETLENEMEDİ diye
+    sarıyordu. Şimdi çalışma kitabı yeniden açılır (openpyxl tam kip / xlrd formatting_info): gizli satır,
+    gizli sütun, sıfır yükseklik/genişlik, zeminden ayrışmayan yazı rengi (tema, dizin, tint çözülür), ';;;'
+    biçimi ve punto ≤ 2 ölçülür; gizli parça okuyucunun yazdığı satırla eşlenerek GERÇEK yerinde
+    ⟦GİZLİ KATMAN⟧ ile damgalanır — hücre değeri SİLİNMEZ, satır kırpılmaz, değer düzeltilmez.
+    Karar seviyesi: gizli sayfa/satır/sütun/biçim tek başına UYARI (resmî dökümde gizli yardımcı satır
+    olağandır — gerçek evrakla ölçülmeden BULGU demek yersiz ifşa doğurur); zeminle aynı renk ve minik
+    yazı öbür biçimlerdeki eşikle BULGU; gizli katmandaki talimat dili BULGU. Kitap yeniden açılamazsa,
+    boyut/parça sınırı aşılırsa ya da okuyucu metniyle eşleşmezse kalan metin DENETLENEMEDİ diye VERİ
+    olarak sarılır (fail-closed; eski davranış)."""
+    try:
+        sayfalar = _xls_sayfalar(yol) if uz == ".xls" else _xlsx_sayfalar(yol)
+    except ImportError:
+        _tablo_denetlenemedi(R, calisma, hedefler, _tablo_bolumleri(calisma), "Excel okuyucu kurulu değil (%s) — gizli "
+                             "satır/sütun ve yazı rengi ölçülemedi" % ("xlrd" if uz == ".xls" else "openpyxl"))
+        return
+    except _TabloOlculemedi as e:
+        _tablo_denetlenemedi(R, calisma, hedefler, _tablo_bolumleri(calisma), str(e))
+        return
+    except Exception as e:   # bozuk/parolalı kitap — okuyucu metni başka yoldan gelmiş olabilir
+        _tablo_denetlenemedi(R, calisma, hedefler, _tablo_bolumleri(calisma), "tablo yeniden açılamadı (%s: %s) — gizli "
+                             "satır/sütun ve yazı rengi ölçülemedi" % (type(e).__name__, str(e)[:100]))
+        return
+    gizli = []
+    if not calisma.strip():     # CLI: okuyucu metni yok → yalnız rapor
+        for ad, durum, satirlar in sayfalar:
+            _tablo_sayfa_isle(R, calisma, hedefler, gizli, ad, durum, satirlar, None)
+        return
+    konum = 0
+    for ad, durum, satirlar in sayfalar:
+        konum = _tablo_sayfa_isle(R, calisma, hedefler, gizli, ad, durum, satirlar, konum)
+        if konum is None:       # eşleşmedi ya da sınır: kalan metin sarıldı
+            break
+    else:
+        if calisma[konum:].strip():
+            _tablo_bolum_sar(R, hedefler, konum, len(calisma), "okuyucu metninde çalışma kitabında olmayan satırlar var "
+                             "— kalan metin ölçülemedi")
+    _tablo_talimat(R, calisma, hedefler, gizli)
 
 
 # ------------------------------------------------------------------ ana giriş
@@ -2257,7 +2750,7 @@ def tara(yol, uz, metin, ek_bulgular=None, yontem=None):
         elif uz in ISARETLEME_UZ:
             _isaretleme_tara(R, calisma, hedefler)
         elif uz in TABLO_UZ:
-            _tablo_tara(R, calisma, hedefler)
+            _tablo_tara(yol, uz, R, calisma, hedefler)
         # her biçimde: görünür metinde yapay zekâya hitap eden talimat dili
         gorulen = 0
         for ad, i, j in talimat_eslesmeleri(calisma):

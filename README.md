@@ -19,7 +19,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **124.000+** satır · **3.785** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **60.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **125.000+** satır · **3.813** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
 > sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
@@ -1207,8 +1207,9 @@ anayasanın sırasıdır. Saha kanıtı ile dosya ve test düzeyindeki kayıt
   - Tablo sayfa sayfa metne çevrilir; arşiv (EYP/ZIP) içindekiler de okunur.
   - Değer düzeltilmez, satır kırpılmaz. Dosyanın kendi boyut beyanına
     güvenilmez; bayat beyan satır kaybettiriyordu.
-  - Gizli sayfa damgalanır. Gizli satır/sütun ve yazı rengi henüz ölçülmediği
-    için tablo "DENETLENEMEZ" diye işaretlenir.
+  - Gizli sayfa, gizli satır/sütun, zeminle aynı renkteki (beyaza beyaz) yazı,
+    `;;;` biçimi ve minik punto yerinde damgalanır; hücre değeri silinmez
+    (2026-10-15 denetim dalı). Kapı tabloyu yeniden açamazsa "DENETLENEMEZ" kalır.
 - **Okunmayan evrak türü ve sayısıyla söylenir.** Desteklenmeyen tür, bozuk ya
   da parolalı evrak için ayrı uyarı vardır. 200'den fazla evrakın alımı, süre
   tahminiyle önceden haber verilir.
@@ -1375,12 +1376,17 @@ resmi). Birebir alıntıya dokunulmaz.
   sadakati ve bulgunun hükmü sizindir.
 - Teslim makbuzu nihai UDF'in özetini henüz taşımıyor; içtihat dökümünün hangi
   sorgudan geldiği (kaynak zinciri) henüz mekanik olarak bağlanmadı (v0.5.19).
-- **Excel evrakı (.xlsx, .xlsm, .xls) metne çevrilir, ama gizli katmanı tam
-  denetlenmez.**
-  - Gizli sayfa okunur ve damgalanır.
-  - Gizli satır/sütun ve yazı rengi bu sürümde ölçülmez. Bu yüzden belge
-    güvenlik kapısı tabloyu DENETLENEMEZ diye işaretler.
-  - Tablodaki değer düzeltilmez; tarih ISO biçimine çevrilir.
+- **Excel evrakının (.xlsx, .xlsm, .xls) gizli katmanı ölçülür, ama her gizleme
+  görülmez.**
+  - Gizli sayfa, gizli satır/sütun, zeminle aynı renkteki yazı, `;;;` biçimi ve
+    minik punto yerinde damgalanır; değer silinmez, düzeltilmez; tarih ISO
+    biçimine çevrilir.
+  - Koşullu biçimin koşulu değerlendirilmez: o aralıktaki açık renkli yazı yalnız
+    talimat diliyle bulgudur (.xls'te koşullu biçim hiç okunamaz). Degrade ya da
+    desenli dolgu üstündeki yazı ve hücrenin üstüne çizilmiş şekil ölçülmez.
+  - Kapı tabloyu yeniden açamaz ya da okuyucunun metniyle eşleyemezse tablo
+    DENETLENEMEZ kalır. Gerçek evrak ölçümü henüz küçüktür: eldeki tek gerçek
+    .xls temiz çıktı; kalibrasyon sahadan gelecek.
 - **Kesilen evrak alımı baştan başlar.** Biten evrakın ara kaydı yoktur
   (v0.5.19). Büyük klasörde alım arka planda koşturulmalıdır; sistem 200'den
   fazla evrakta bunu süre tahminiyle söyler.

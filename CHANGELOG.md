@@ -333,6 +333,16 @@ kırmızı testle; dal GitHub'a push edilmedi.
   `SICRAMA-NOTU`) `docs/`'a taşındı; 69 bağlantı yeniden yazıldı;
   `tests/test_belge_baglantilari.py` her belge bağlantısının hedefini denetler (taşımayla 29
   kırık gösterdi, yeniden yazımla yeşil).
+- **Excel'de gizli katman (YOL-HARITASI v0.5.19 kalemi; anayasa m.11):** belge güvenlik kapısı
+  tabloyu artık "DENETLENEMEZ" diye sarmıyor; çalışma kitabını yeniden açıp gizli satır/sütun,
+  sıfır yükseklik/genişlik, zeminle aynı renkteki yazı (tema/dizin/tint çözülür), `;;;` biçimi ve
+  minik puntoyu ölçüyor (.xlsx openpyxl tam kip; .xls xlrd `formatting_info`). Gizli parça
+  okuyucunun yazdığı satırla eşlenip yerinde `⟦GİZLİ KATMAN⟧` alıyor; değer silinmiyor. Gizli
+  sayfa/satır/sütun/biçim UYARI, zeminle aynı renk ve minik yazı BULGU, gizli katmandaki talimat
+  BULGU. Kitap açılamaz, boyut sınırı aşılır ya da okuyucu metniyle eşleşmezse tablo yine
+  DENETLENEMEZ kalır. Önce kırmızı: `tests/test_v0519_excel_gizli_katman.py` (.xls fikstürü ham
+  BIFF8, yeni bağımlılık yok). Gerçek evrak ölçümü küçük (eldeki tek .xls temiz); kalibrasyon
+  sahadan.
 - **Vitrin:** README katmanlı düzene geçti: rozetler, "Kim için, ne okumalı", "Bir bakışta:
   yapar / yapmaz", "Hâkim ve savcı gözüyle", özet parça tablosu; master prompt, tam katalog ve
   sürüm notları katlanır bloklarda aynen korundu; DÜSTUR m.6 satırı ve dizgi hataları
