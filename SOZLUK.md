@@ -498,6 +498,26 @@ geçmişidir ("Dava geçmişi:", "Esas no:" satırları); içtihat değildir. K�
 kapısı onu teyitsiz saymaz. İç kaynakça da onu ayrı alt başlıkta, teyit
 beyanının dışında gösterir.
 
+## 2026-10-15 denetim terimleri
+
+**Kaynak hijyeni kapısı:** Eklentinin kendi kaynak kodunun, evraka uygulanan
+titizlikle denetlenmesi: tanımsız ad, kullanılmayan import, kaynakta ham görünmez
+ya da çift-yönlü karakter (insanın görmediği ama makinenin okuduğu işaret). Belge
+güvenlik kapısının aynasıdır; CI'da `lint` işi olarak koşar, yalnız hata sınıfını
+arar, biçim beğenisi yapmaz.
+
+**Bağlantı kapısı:** Depodaki belgelerde (README, docs, eklenti README) verilen her
+dosya bağlantısının gerçekten bir dosyaya çıktığının mekanik denetimi. Kırık
+bağlantı, "her iddia kanıtlı" sözünün küçük ama görünür bir ihlalidir.
+
+**Arşiv (`docs/arsiv/`):** Tarihî saha karneleri, denetim ve ölçüm kayıtlarının
+durduğu dizin. Oradaki belgeler kendi tarihini taşır ve geriye dönük yazılmaz;
+güncel durum STATUS.md ve CHANGELOG.md'dedir.
+
+**Sürüm damgası:** Deponun aynı sürümü söylemesi gereken yerler: `plugin.json`,
+`marketplace.json`, STATUS.md, YOL-HARITASI.md ve pyproject.toml. Biri geride
+kalırsa aile yapı denetimi uyarır; sürüm numarasının kendisi avukat kararıdır.
+
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her
 terim bir eksikliktir — bildirin, eklensin.*

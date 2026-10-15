@@ -30,6 +30,10 @@
   - makbuzun nihai UDF özetini taşıması;
   - çapraz denetim önbelleği.
 - **Avukat kararı bekleyen:** anayasa m.6 şerh önerisi ("dayanak akıbetiyle ve kapsamıyla anılır").
+- **2026-10-15 — bağımsız denetim dalı (`denetim/fable-2026-10-15`, birleştirme kararı avukatın):**
+  `<ol start>`, kaynak hijyeni kapısı (ruff + CI `lint`), pyproject sürüm damgası, kök dizin →
+  `docs/arsiv/` + bağlantı kapısı, katmanlı README, `.github` güvenlik bildirimi ve PR şablonu.
+  Bulgular ve plan: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md). Açık: GitHub açıklaması/etiketleri (B-8), PR #6.
 
 ## DURUM — 2026-10-08 · v0.5.18 (önceki)
 

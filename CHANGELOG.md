@@ -309,6 +309,44 @@ belgededir: **[OLCUMLER.md](docs/arsiv/OLCUMLER.md)**.
 
 ---
 
+## Sürümsüz — BAĞIMSIZ KOD VE VİTRİN DENETİMİ (2026-10-15, dal `denetim/fable-2026-10-15`)
+
+**Sürüm numarası değişmedi (0.6.0); sürüm, birleştirme ve yayın kararı avukatındır.** Depo
+v0.6.0 hâliyle ölçümle denetlendi (tam süit, aile yapısı, statik analiz, kurulu eklentinin
+kanca sağlığı, kurulum motoru); bulgular, karar ve plan [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md)'de. Her onarım önce
+kırmızı testle; dal GitHub'a push edilmedi.
+
+- **Numaralı liste kaynak numarasını korur (B-1):** `md_udf_html.py` ilk madde 1 değilse
+  `<ol start="N">` yazar; "A. USUL / B. ESAS" alt başlığıyla bölünen talep bentlerinde 9. bent
+  artık "1." basılmıyor. Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu
+  dalda yeniden yazıldı. 1'den başlayan listede çıktı eskisiyle bayt-özdeş.
+- **Kaynak hijyeni kapısı (B-2…B-5):** `ruff.toml` yalnız hata sınıfı kurallarla (sözdizimi,
+  tanımsız ad, yeniden tanım, kullanılmayan import, yinelenen küme öğesi, ham görünmez /
+  çift-yönlü karakter); CI'da bağımsız `lint` işi, ruff sürümü sabit. Cf-sınıfı regex ve üç
+  testteki ham karakterler kaçış yazımına çevrildi (desen özdeş; `test_v0518_metin_hijyeni`
+  istisnasız kaldı); 35 kullanılmayan import, bir ölü dal, bir yinelenen küme öğesi temizlendi.
+  Kapı kendini de sınar: `tests/test_kaynak_hijyeni.py`.
+- **Sürüm damgası (B-6):** `pyproject.toml` `version` 0.1.0'da kalmıştı → 0.6.0;
+  `aile_dogrula.surum_isaretcileri` artık pyproject'i de denetler (UYARI sınıfı).
+- **Kök dizin ve bağlantı kapısı (B-7, B-11):** 11 tarihî kayıt `docs/arsiv/`'e
+  ([dizin notu](docs/arsiv/README.md)), yaşayan iki defter (`PERFORMANS-STATUS`,
+  `SICRAMA-NOTU`) `docs/`'a taşındı; 69 bağlantı yeniden yazıldı;
+  `tests/test_belge_baglantilari.py` her belge bağlantısının hedefini denetler (taşımayla 29
+  kırık gösterdi, yeniden yazımla yeşil).
+- **Vitrin:** README katmanlı düzene geçti: rozetler, "Kim için, ne okumalı", "Bir bakışta:
+  yapar / yapmaz", "Hâkim ve savcı gözüyle", özet parça tablosu; master prompt, tam katalog ve
+  sürüm notları katlanır bloklarda aynen korundu; DÜSTUR m.6 satırı ve dizgi hataları
+  düzeltildi. Avukatın commit'lenmemiş README düzeltmeleri (Excel okuyucuları, Mağaza
+  kısayolu, prompt satırları) dala alındı.
+- **Depo hijyeni:** `.github/SECURITY.md` (güvenlik bildirimi: müvekkil verisi içeren bulgu
+  herkese açık issue'ya yazılmaz) ve `.github/PULL_REQUEST_TEMPLATE.md` (depo sözleşmesi).
+- **Ölçüm (avukatın makinesi, Python 3.14.8, Windows):** tam süit 3768 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (83,4 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3781, OA-SUIT-SAYISI ile birebir.
+- **Dokunulmayan (avukat kararı):** sürüm numarası; GitHub depo açıklaması ve konu etiketleri
+  (B-8, öneri belgede); hukuki içerik ve playbook'lar (m.4, m.9); `_gorus/`; `revizyon_farki.py`
+  iç fonksiyonunun geç bağlanması (B-10, bugün hata değil).
+
+---
+
 ## v0.6.0 — ANAYASANIN SAHADA İCRASI · TÜM SİSTEMİ ANLATAN VİTRİN (2026-10-12)
 
 **Sürüm numarası avukat kararıdır (Av. Bayram Can Çapar, 2026-10-12).** 0.6.0, aşağıdaki

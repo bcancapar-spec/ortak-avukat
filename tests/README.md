@@ -16,9 +16,10 @@
 
 - Saf `pytest`, harici test bağımlılığı yok; parametrize varyantlarıyla
   toplanan sınama sayısı yukarıdaki işaretçidedir.
-- Tam süit ~7 dk (Windows, tek makine). CI: GitHub Actions matrisi —
-  **Windows + Ubuntu × Python 3.12/3.13** + ayrı `aile_dogrula` yapısal
-  denetimi. Kural: **CI yeşermeden sürüm etiketi atılamaz.**
+- Tam süit ~80 s (`-n auto`, 4 çekirdek; seri ~4-7 dk). CI: GitHub Actions
+  matrisi — **Windows + Ubuntu × Python 3.12/3.13/3.14** + ayrı `aile_dogrula`
+  yapısal denetimi + OCR bacağı + `lint` (ruff, yalnız hata sınıfı; bkz.
+  `test_kaynak_hijyeni.py`). Kural: **CI yeşermeden sürüm etiketi atılamaz.**
 - Adlandırma sözleşmesi: `test_vXYZ_*.py` = bir saha karnesinden doğan
   **sürüm-reçetesi paketi** (süitin en kalabalık sınıfı). Dosya docstring'i,
   paketi doğuran saha kanıtını atıflar — test, gerekçesiz yaşayamaz.
