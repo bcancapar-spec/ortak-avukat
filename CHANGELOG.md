@@ -396,6 +396,22 @@ birleştirme kararı avukatın).
   sayfa yine damgalı); K-15 satır sonu duyarlı test `write_bytes`. Önce kırmızı: Excel testi +12 (OA-SUIT-SAYISI
   3816 → 3828); iki mevcut testin sözleşmesi güncellendi (ZAYIF temiz → UYARI kaydı). Üçüncü heyet koşumu
   birleştirmeden önce.
+  **Üçüncü heyet koşumu (2026-10-17, HEAD `c94e982` — main'e birleştirme öncesi bütün):** üç üye ŞARTLI PUSH,
+  BLOKLAYICI 0 · UYARI 9 · NOT 25; tam süit 3887 geçti · 12 atlandı · 0 kırmızı (temiz kopya); PR #9 CI 18/18.
+  Birleştirme öncesi şartlar tur 4'te (`d6e5550`) önce kırmızı testle kapatıldı: Excel nesne sayacı etiket
+  dilbilgisine bağlandı (öznitelliksiz `<c>`, satır sonlu, ad alanı önekli yazımlar da sayılır — tavan
+  atlatılamaz), `oa_hafiza.py teyit --kaynak-url` yolu/sorgusu/parçası Layer 0'dan geçer (11 hane yalnız TCKN
+  sağlaması geçiyorsa TCKN; karar kimlikleri engellenmez), hibrit kanalın ve nesne tavanının dürüst sınır
+  cümleleri (oa-ictihat SKILL, `resmi-kaynaklar.md`, kök README), bayat "push edilmedi" ifadeleri ve alt rapor
+  sayıları düzeltildi (test +7, OA-SUIT-SAYISI 3900 → 3907). `d6e5550` ucunda bağlantı kapısı tek kırmızıydı
+  (KARAR-3'e ileri bağlantı; dosya henüz yoktu) — KARAR-3 kaydıyla yeşil; ders: kapı çıkış kodu boru hattında
+  kaybolmaz. Kalan kalemler K-17 … K-26 (`WebFetch` dökümü için ek şart, web araçlarını saran kanca, araç sınıfı ↔
+  kaynak türü eşlemesi ve `https`, oa-kontrol/oa-ictihat metin artıkları, ifşa niteleyicisi, SECURITY cümlesi) aynı
+  dalda ayrı commit; avukat kararı bekleyenler (anayasa MCP ifadeleri, beyaz listeye AİHM infaz / ABAD, Excel
+  `SURUM`, emek etiketi, envanter temizliği, hukuki yöntem adayları) KARAR-3 §7.1:
+  [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Aynı klasörde hukuki yöntem geliştirme
+  adayları raporu (salt okunur inceleme; madde atıfları teyitsiz; karar avukatın). Birleştirme avukatın 2026-10-16
+  talimatıyla, üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası (KARAR-3 §7-§8).
 - **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
   `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
   kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,

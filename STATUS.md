@@ -1,6 +1,6 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` 2026-10-16'da avukat kararıyla push edildi — PR #9, main'e birleştirme kararı avukatın (bkz. CHANGELOG)
+**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` 2026-10-16'da avukat kararıyla push edildi — PR #9; main'e birleştirme avukatın 2026-10-16 talimatıyla, üçüncü heyet koşumu + şart kapanışı doğrulaması + CI sonrası (bkz. CHANGELOG; [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md))
 *(önceki kayıtlar: 2026-10-12 · 0.6.0 · PR #8 — 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; push
@@ -29,6 +29,13 @@
 > [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Avukat kararı: push ve PR #9;
 > ardından "0.6'yı geliştir": K-3, K-10…K-15 aynı dalda önce kırmızı testle kapatıldı (Excel testi +12,
 > OA-SUIT-SAYISI 3828); üçüncü heyet koşumu birleştirmeden önce.
+> Üçüncü koşum (2026-10-17, HEAD `c94e982`, main'e birleştirme öncesi bütün): üçü de ŞARTLI PUSH — BLOKLAYICI 0 ·
+> UYARI 9 · NOT 25; tam süit 3887 geçti · 12 atlandı · 0 kırmızı; birleştirme öncesi şartlar tur 4'te (`d6e5550`)
+> önce kırmızı testle kapatıldı (nesne sayacı etiket dilbilgisi, `--kaynak-url` Layer 0, dürüst sınır cümleleri, bayat
+> kayıtlar; test +7, OA-SUIT-SAYISI 3907); kalanlar K-17 … K-26 aynı dalda ayrı commit, avukat kararı bekleyenler §7.1:
+> [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Birleştirme: avukatın 2026-10-16 talimatıyla,
+> üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası orkestra eliyle (PR #9 birleştirme commit'i
+> kaydın kendisidir; dal silinmez).
 
 > **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
 > denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
