@@ -25,7 +25,9 @@
 > İkinci koşum (HEAD `ca37539`): usul ve esas ŞARTLI PUSH, güvenlik PUSH — BLOKLAYICI 0 · UYARI 4 · NOT 22;
 > K-1/K-2 kapandı; usulün kayıt şartları bu kayıtla kapatıldı; push öncesi açık şart kalmadı, kalanlar aynı
 > dalda ayrı commit ya da açık kalem (K-3, K-4, K-10 … K-16):
-> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Push kararı avukatın.
+> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Avukat kararı: push ve PR #9;
+> ardından "0.6'yı geliştir": K-3, K-10…K-15 aynı dalda önce kırmızı testle kapatıldı (Excel testi +12,
+> OA-SUIT-SAYISI 3828); üçüncü heyet koşumu birleştirmeden önce.
 
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği

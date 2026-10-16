@@ -318,8 +318,10 @@ kırmızı testle; dal GitHub'a push edilmedi.
 
 - **Numaralı liste kaynak numarasını korur (B-1):** `md_udf_html.py` ilk madde 1 değilse
   `<ol start="N">` yazar; "A. USUL / B. ESAS" alt başlığıyla bölünen talep bentlerinde 9. bent
-  artık "1." basılmıyor. Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu
-  dalda yeniden yazıldı. 1'den başlayan listede çıktı eskisiyle bayt-özdeş.
+  artık "1." basılmıyor (UDF-HTML dizgesinde testli; udf-cli/PDF yolunda `start` özniteliğinin
+  numaralandırmaya işlenmesi udf-cli oturumu açık makinede ölçülecek — heyet 2026-10-16 E-4 / K-4).
+  Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu dalda yeniden yazıldı. 1'den
+  başlayan listede çıktı eskisiyle bayt-özdeş.
 - **Kaynak hijyeni kapısı (B-2…B-5):** `ruff.toml` yalnız hata sınıfı kurallarla (sözdizimi,
   tanımsız ad, yeniden tanım, kullanılmayan import, yinelenen küme öğesi, ham görünmez /
   çift-yönlü karakter); CI'da bağımsız `lint` işi, ruff sürümü sabit. Cf-sınıfı regex ve üç
@@ -382,6 +384,17 @@ kırmızı testle; dal GitHub'a push edilmedi.
   dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
   toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
   [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
+  **Üçüncü onarım turu (avukat kararı: "0.6'yı geliştir"):** K-3 Excel UYARI etiketi ve md başlığı türe
+  göre (`🛡GİZLİ-KATMAN (UYARI)` / `🛡ZEMİN-ÖLÇÜLEMEDİ` / `🛡TALİMAT-DİLİ`; `okuma_kapisi.guvenlik_etiketi`
+  testle tek kaynak); K-10 tablo stili / koşullu biçim aralığında talimat dilsiz açık renkli yazı sayfa
+  başına `zemin-olculemedi` kaydı (UYARI, damga yok), hücrenin kendi düz dolgusu tablo stilini ezer ve
+  ölçülür, ZAYIF kaynaklı talimat kaydı gizliliği kesin saymaz; K-11 bayt tavanına ek nesne tavanları
+  (`AZAMI_TABLO_HUCRE` 1 M, `AZAMI_TABLO_SATIR` 500 k — sayfa XML'i akışla sayılır, kitap yüklenmez);
+  K-12 boyut toplamı arşivin bütünü (docProps dahil); K-13 satır döngüsünde süre bütçesi, gizli sütun
+  aralığı son sütunla kıskaçlı, aralık üyeliği nesnesiz; K-14 üreteç içi hata sebepli sarmalanır (gizli
+  sayfa yine damgalı); K-15 satır sonu duyarlı test `write_bytes`. Önce kırmızı: Excel testi +12 (OA-SUIT-SAYISI
+  3816 → 3828); iki mevcut testin sözleşmesi güncellendi (ZAYIF temiz → UYARI kaydı). Üçüncü heyet koşumu
+  birleştirmeden önce.
 
 ---
 

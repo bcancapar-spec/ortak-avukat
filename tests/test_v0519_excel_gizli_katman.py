@@ -389,16 +389,19 @@ def test_xlsx_temiz_tablo_ciktisi_DEGISMEZ(bg, ing, tmp_path):
 
 def test_xlsx_kosullu_bicimlendirme_altindaki_beyaz_yazi_yalniz_talimat_diliyle_bulgu(bg, ing, tmp_path):
     # Koşullu biçim koyu zemin çizebilir (kapı koşulu değerlendirmez) → beyaz yazı burada ZAYIF.
+    # Sözleşme güncellemesi (heyet 2026-10-16 ESAS E-5 / K-10): talimat dilsiz ZAYIF hücre artık sessiz değil —
+    # sayfa başına AGIR olmayan `zemin-olculemedi` kaydı (UYARI), damga yok; BULGU yine yalnız talimat diliyle.
     from openpyxl.formatting.rule import CellIsRule
-    for ad, deger, beklenen in (("temiz", "ZXCF cf altinda beyaz baslik", None), ("yuk", "ZXCF " + YUK, "BULGU")):
+    for ad, deger, beklenen in (("temiz", "ZXCF cf altinda beyaz baslik", "UYARI"), ("yuk", "ZXCF " + YUK, "BULGU")):
         wb, ws = _kitap()
         ws.conditional_formatting.add("A4:A9", CellIsRule(operator="equal", formula=["1"], fill=_dolgu("FF000000")))
         ws["A4"] = deger
         ws["A4"].font = _font(color="FFFFFFFF")
         wb.save(tmp_path / (ad + ".xlsx"))
-        _, (yeni, rapor) = _tara(bg, ing, tmp_path / (ad + ".xlsx"))
-        if beklenen is None:
-            assert rapor is None, (ad, rapor)
+        metin, (yeni, rapor) = _tara(bg, ing, tmp_path / (ad + ".xlsx"))
+        if beklenen == "UYARI":
+            assert rapor and rapor["karar"] == "UYARI" and _turler(rapor) == ["zemin-olculemedi"], (ad, rapor)
+            assert yeni == metin, yeni        # kayıt var, damga yok
         else:
             assert rapor and rapor["karar"] == beklenen and "gizli-talimat" in _turler(rapor), (ad, rapor)
             assert _damgada(yeni, "ZXCF " + YUK), yeni
@@ -662,8 +665,10 @@ def test_xlsx_tablo_stili_altindaki_beyaz_baslik_yalniz_talimat_diliyle_bulgu(bg
     BULGU yapıyordu (ifşa bölümüne aday — m.6; DOCX'te 2026-10-05'in 3.343 yanlış alarmıyla aynı sınıf). Stilin
     hangi satıra hangi zemini çizdiği ölçülmez → o aralıktaki açık renkli yazı koşullu biçimle AYNI ZAYIF kural:
     yalnız talimat diliyle bulgu."""
+    # Sözleşme güncellemesi (heyet 2026-10-16 ESAS E-5 / K-10): açıkça beyaz yazılmış başlık tablo stili aralığında
+    # artık sessiz değil — `zemin-olculemedi` kaydı (UYARI, AGIR değil: ifşaya girmez), damga yok.
     from openpyxl.worksheet.table import Table, TableStyleInfo
-    for ad, baslik, beklenen in (("temiz", "Aciklama", None), ("yuk", "ZXTS " + YUK, "BULGU")):
+    for ad, baslik, beklenen in (("temiz", "Aciklama", "UYARI"), ("yuk", "ZXTS " + YUK, "BULGU")):
         wb, ws = _kitap()
         ws["B1"] = baslik
         for h in ("A1", "B1", "C1"):
@@ -673,10 +678,251 @@ def test_xlsx_tablo_stili_altindaki_beyaz_baslik_yalniz_talimat_diliyle_bulgu(bg
         ws.add_table(tablo)
         wb.save(tmp_path / (ad + ".xlsx"))
         metin, (yeni, rapor) = _tara(bg, ing, tmp_path / (ad + ".xlsx"))
-        if beklenen is None:
-            assert rapor is None, (ad, rapor)
+        if beklenen == "UYARI":
+            assert rapor and rapor["karar"] == "UYARI" and _turler(rapor) == ["zemin-olculemedi"], (ad, rapor)
             assert yeni == metin
         else:
             assert rapor and rapor["karar"] == beklenen and "gizli-talimat" in _turler(rapor), (ad, rapor)
             assert _damgada(yeni, "ZXTS " + YUK), yeni
             assert _damgasiz(yeni) == metin
+
+
+# ═══════════ (7) heyet 2026-10-16 ikinci koşum — K-10 … K-14 ve K-3 (hepsi önce kırmızı) ═══════════
+
+def _zip_yama(yol, girdi, degisimler):
+    """Arşivdeki herhangi bir girdiye metin düzeyinde yama (openpyxl'in yazmayacağı bozuk değerler için)."""
+    with zipfile.ZipFile(yol) as z:
+        parcalar = {n: z.read(n) for n in z.namelist()}
+    x = parcalar[girdi].decode("utf-8")
+    for eski, yeni in degisimler:
+        assert eski in x, "kurgu düzeneği %r bulamadı" % eski
+        x = x.replace(eski, yeni, 1)
+    parcalar[girdi] = x.encode("utf-8")
+    with zipfile.ZipFile(yol, "w", zipfile.ZIP_DEFLATED) as z:
+        for n, veri in parcalar.items():
+            z.writestr(n, veri)
+
+
+def _stilli_tablo(ws, ad="Dokum", ref="A1:C3", stil="TableStyleMedium2"):
+    from openpyxl.worksheet.table import Table, TableStyleInfo
+    t = Table(displayName=ad, ref=ref)
+    t.tableStyleInfo = TableStyleInfo(name=stil, showRowStripes=True)
+    ws.add_table(t)
+    return t
+
+
+# ── K-12 (GÜVENLİK 2. koşum N-3): boyut ön denetimi arşivin bütününü sayar ─────────────────────────
+
+def test_xlsx_boyut_on_denetimi_xl_disi_parcalari_da_sayar(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2. koşum GÜVENLİK N-3 / K-12): ön denetim yalnız `xl/` altını topluyordu; openpyxl
+    `docProps/core.xml`, `docProps/custom.xml` ve `[Content_Types].xml`'i de bütünüyle açar — 46 KB kitapta
+    40 MB docProps dolgusu kapıyı 86 MB'a çıkardı. Sınır artık arşivdeki HER girdinin açılmış toplamıdır."""
+    wb, ws = _kitap()
+    wb.save(tmp_path / "a.xlsx")
+    with zipfile.ZipFile(tmp_path / "a.xlsx") as z:
+        xl = sum(i.file_size for i in z.infolist() if i.filename.startswith("xl/"))
+        hepsi = sum(i.file_size for i in z.infolist())
+    assert hepsi > xl > 0
+    monkeypatch.setattr(bg, "AZAMI_TABLO_XML_BAYT", xl)        # xl/ tam sınırda, arşiv bütünü aşıyor
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "sınır" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+
+
+# ── K-14 (GÜVENLİK 2. koşum N-4): üreteç içi hata sebepli, gizli sayfa yine damgalı ─────────────────
+
+def test_xlsx_bozuk_tablo_tanimi_sebepli_DENETLENEMEZ_gizli_sayfa_yine_damgali(bg, ing, tmp_path):
+    """NEDEN VAR (heyet 2. koşum GÜVENLİK N-4 / K-14): satır üreteci içindeki hatalar (bozuk tablo `ref`,
+    `ws._cells` yok) `tara()` dış except'ine düşüyordu — metin VERİ sarmalında (fail-closed) ama sebep "tarama
+    hatası: ValueError …" idi; gizli sayfa damgası ve talimat sınıflaması o yolda yapılmıyordu."""
+    wb, ws = _kitap()
+    gizli = wb.create_sheet("Notlar")
+    gizli.append(["ZXSAYFA kurgu gizli not"])
+    gizli.sheet_state = "hidden"
+    _stilli_tablo(ws)
+    wb.save(tmp_path / "a.xlsx")
+    _zip_yama(tmp_path / "a.xlsx", "xl/tables/table1.xml", [('ref="A1:C3"', 'ref="A1:C"')])   # tablo tanımı bozuk
+    metin, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ", rapor
+    assert "tablo" in rapor["denetlenemedi"] and "tarama hatası" not in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "ZXSAYFA kurgu gizli not") and _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+    assert _damgasiz(yeni) == metin
+
+
+# ── K-13 (GÜVENLİK N-1/N-2, ESAS N-2): süre bütçesi, <col> kıskacı, nesnesiz aralık üyeliği ────────
+
+def test_xlsx_satir_dongusunde_sure_butcesi_asilinca_kalan_satirlar_VERI_sarili(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2. koşum GÜVENLİK N-1 / K-13): süre bütçesi yalnız damga anında (`parca_al`)
+    denetleniyordu; satır × sütun açıklığı maliyeti (1000 satır × 16.384 sütun → kapı 25,8 s) döngüde hiç
+    ölçülmüyordu. Artık her satırda `AZAMI_SURE_SN` denetlenir; aşılınca kalan satırlar sebepli VERİ."""
+    wb, ws = _kitap()
+    for i in range(4, 10):
+        ws.append(["2025-03-%02d" % i, "ZXS%d" % i, i])
+    wb.save(tmp_path / "a.xlsx")
+    monkeypatch.setattr(bg, "AZAMI_SURE_SN", -1)                 # bütçe anında aşılmış sayılır
+    metin, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "süre" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "ZXS9", bg.DENETLENEMEDI_AC), yeni
+    assert _damgasiz(yeni) == metin
+
+
+def test_xlsx_gizli_sutun_araligi_sayfanin_son_sutunuyla_kiskaclanir(bg, tmp_path):
+    """NEDEN VAR (heyet 2. koşum ESAS N-2 / K-13): `<col min=2 max=16384 hidden>` tanımı 16.384 elemanlı küme
+    kuruyordu (ölçüm: 1,7 s/sayfa `set.update`); hücresiz sütunun gizliliği veri taşımaz — küme sayfanın son
+    sütunuyla kıskaçlanır."""
+    from openpyxl import load_workbook
+    from openpyxl.worksheet.dimensions import ColumnDimension
+    wb, ws = _kitap()
+    ws.column_dimensions["B"] = ColumnDimension(ws, index="B", min=2, max=16384, hidden=True)
+    wb.save(tmp_path / "a.xlsx")
+    ws2 = load_workbook(tmp_path / "a.xlsx").active
+    assert ws2.max_column == 3
+    assert bg._xlsx_gizli_sutunlar(ws2) == {2, 3}
+
+
+def test_xlsx_zayif_aralik_uyeligi_her_hucrede_CellRange_kurmaz(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2. koşum GÜVENLİK N-2 / K-13): `CellRange.__contains__` her çağrıda yeni CellRange kurar
+    (3,2 µs; 300 tablo × 500 hücre 0,60 s; aralık sayısına tavan yok). Üyelik artık sayfa başına bir kez çözülen
+    (satır, sütun) sınırlarıyla nesne kurmadan karşılaştırılır — mekanizma kilidi: `__contains__` patlatılır, kapı
+    ona dokunursa karar DENETLENEMEZ olur ve test kırmızıdır."""
+    from openpyxl.worksheet.cell_range import CellRange, MultiCellRange
+    from openpyxl.formatting.rule import CellIsRule
+    wb, ws = _kitap()
+    ws.conditional_formatting.add("A4:A9", CellIsRule(operator="equal", formula=["1"], fill=_dolgu("FF000000")))
+    ws["A4"] = "ZXCF cf altinda beyaz"
+    ws["A4"].font = _font(color="FFFFFFFF")
+    ws["B1"].font = _font(bold=True, color="FFFFFFFF")
+    _stilli_tablo(ws)
+    wb.save(tmp_path / "a.xlsx")
+    metin = ing.tablo_isle(str(tmp_path / "a.xlsx"))[0]
+
+    def _patlat(self, coord):
+        raise AssertionError("CellRange.__contains__ — heyet 2. koşum K-13")
+
+    monkeypatch.setattr(CellRange, "__contains__", _patlat)
+    monkeypatch.setattr(MultiCellRange, "__contains__", _patlat)
+    yeni, rapor = bg.tara(str(tmp_path / "a.xlsx"), ".xlsx", metin)
+    assert not (rapor and rapor["karar"] == "DENETLENEMEZ"), rapor
+    assert _damgasiz(yeni) == metin
+
+
+# ── K-10 (ESAS 2. koşum E-5): ZAYIF aralık kaydı, hücrenin kendi düz dolgusu, talimat kaydının dili ─
+
+def test_xlsx_tablo_stili_altindaki_acik_yazi_kayda_girer_damgalanmaz(bg, ing, tmp_path):
+    """NEDEN VAR (heyet 2. koşum ESAS E-5 / K-10): ZAYIF aralıkta (tablo stili / koşullu biçim) düşük kontrastlı
+    hücre talimat dili taşımıyorsa hiç kayıt düşmüyordu (rapor None = "gizleme bulunmadı"): Medium2 gövde
+    şeridinde beyaz tarih görünür ve damgasız, Light1 başlığındaki beyaz yazı Excel'de de görünmezken kapı
+    sessizdi. Artık sayfa başına AGIR olmayan tek kayıt (`zemin-olculemedi`) → UYARI; damga yok (yanlış damga
+    ifşa adayı değildir ama metni kirletir); avukat "o aralıkta açık renkli yazı var, zemini ölçemedim" görür."""
+    wb, ws = _kitap()
+    ws["B2"] = "ZXGOVDE beyaz govde"
+    ws["B2"].font = _font(color="FFFFFFFF")
+    ws["C3"].font = _font(color="FFFFFFFF")                      # 7 (sayı) beyaz
+    _stilli_tablo(ws)
+    wb.save(tmp_path / "a.xlsx")
+    metin, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "UYARI", rapor
+    z = [b for b in rapor["bulgular"] if b["tur"] == "zemin-olculemedi"]
+    assert len(z) == 1 and "2 hücre" in z[0]["yontem"] and "tablo stili" in z[0]["yontem"], rapor
+    assert "ZXGOVDE" in z[0]["ornek"] and "sayfa Gorusme" in z[0]["konum"], rapor
+    assert yeni == metin                                          # damga yok
+
+
+def test_xlsx_tablo_stili_araliginda_hucrenin_kendi_duz_dolgusu_olculur(bg, ing, tmp_path):
+    """NEDEN VAR (heyet 2. koşum ESAS E-5 t6 / K-10): Excel'de doğrudan hücre biçimi tablo stilinden üstündür —
+    hücrenin kendi düz dolgusu varsa zemin kesindir: ZAYIF değil, ölçülür (beyaza beyaz → BULGU; koyuya beyaz →
+    temiz). Koşullu biçimde geçerli değildir (koşullu biçim hücre dolgusunu ezer)."""
+    for ad, zemin, beklenen in (("beyaz", "FFFFFFFF", "BULGU"), ("koyu", "FF1F3864", None)):
+        wb, ws = _kitap()
+        ws["B2"] = "ZXDOLGU " + ad
+        ws["B2"].font = _font(color="FFFFFFFF")
+        ws["B2"].fill = _dolgu(zemin)
+        _stilli_tablo(ws)
+        wb.save(tmp_path / (ad + ".xlsx"))
+        metin, (yeni, rapor) = _tara(bg, ing, tmp_path / (ad + ".xlsx"))
+        if beklenen is None:
+            assert rapor is None, (ad, rapor)
+            assert yeni == metin
+        else:
+            assert rapor and rapor["karar"] == beklenen and "gizli-metin" in _turler(rapor), (ad, rapor)
+            assert _damgada(yeni, "ZXDOLGU beyaz"), yeni
+            assert _damgasiz(yeni) == metin
+
+
+def test_xlsx_zayif_aralikta_talimat_kaydi_gizliligi_kesin_saymaz(bg, ing, tmp_path):
+    """NEDEN VAR (heyet 2. koşum ESAS N-3 / K-10): ZAYIF aralıkta talimat dili taşıyan hücrenin kaydı
+    "GİZLİ KATMANDA (… gizlenmiş hücre)" diyordu; koyu tablo başlığındaki GÖRÜNÜR beyaz yazı da aynı kaydı
+    alırdı ve ifşa bölümü mahkemeye "gizlenmiş" derdi (m.4/m.6). Kayıt artık zeminin ölçülemediğini ve
+    gizliliğin kesin olmadığını söyler; tür ve karar (gizli-talimat → BULGU) değişmez."""
+    wb, ws = _kitap()
+    ws["B2"] = "ZXTS " + YUK
+    ws["B2"].font = _font(color="FFFFFFFF")
+    _stilli_tablo(ws)
+    wb.save(tmp_path / "a.xlsx")
+    metin, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "BULGU", rapor
+    kayitlar = [b for b in rapor["bulgular"] if b["tur"] == "gizli-talimat"]
+    assert kayitlar and all("KESİN DEĞİL" in b["yontem"] and "gizlenmiş hücre" not in b["yontem"] for b in kayitlar), rapor
+    assert _damgada(yeni, "ZXTS " + YUK), yeni
+    assert _damgasiz(yeni) == metin
+
+
+# ── K-11 (ESAS 2. koşum E-7): bayt tavanı yerine nesne tavanı ──────────────────────────────────────
+
+def test_xlsx_hucre_sayisi_tavani_asilinca_DENETLENEMEZ(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2. koşum ESAS E-7 / K-11): 128 MB bayt tavanının bellek karşılığı ölçüldü — 300.000
+    hücre / 14,6 MB sayfa XML'i → 116 MB; tavanda tahmin ~1 GB. Sayfa XML'indeki `<c ` sayısı ucuz bir ön
+    geçişle sayılır; tavanı aşan kitap belleğe alınmadan sebepli DENETLENEMEDİ olur (fail-closed)."""
+    wb, ws = _kitap()
+    wb.save(tmp_path / "a.xlsx")                                   # 9 hücre
+    monkeypatch.setattr(bg, "AZAMI_TABLO_HUCRE", 8)
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "hücre" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+
+
+def test_xlsx_satir_tanimi_tavani_asilinca_DENETLENEMEZ(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2. koşum ESAS E-7 / K-11): 200.000 hücresiz gizli `<row>` tanımı (6,2 MB XML, 508 KB
+    dosya) → 121 MB; openpyxl her satır tanımı için `RowDimension` kurar. `<row ` sayısı da tavanlıdır."""
+    wb, ws = _kitap()
+    for r in range(4, 14):
+        ws.row_dimensions[r].hidden = True                         # hücresiz gizli satır tanımları
+    wb.save(tmp_path / "a.xlsx")                                   # 3 dolu + 10 boş satır tanımı
+    monkeypatch.setattr(bg, "AZAMI_TABLO_SATIR", 5)
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "satır" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+
+
+# ── K-3 (ESAS 1. koşum E-3): UYARI etiketi ve md başlığı türe göre; okuma_kapisi tek kaynak ───────
+
+def _rapor(karar, *turler):
+    return {"surum": "1.2", "karar": karar,
+            "bulgular": [{"tur": t, "yontem": "y", "konum": "sayfa Gorusme", "ornek": ""} for t in turler]}
+
+
+def test_excel_gizli_katman_UYARISI_etiketi_ve_basligi_turu_soyler(bg):
+    """NEDEN VAR (heyet ESAS E-3 / K-3): Excel gizli satır/sütun/sayfa/biçim UYARI'sı okuma listesinde
+    `🛡TALİMAT-DİLİ` etiketi ve md başlığında "yapay zekâya hitap eden dil ya da görünmez karakter" cümlesiyle
+    gösteriliyordu — bildirim vardı, adı yanlıştı (m.11); avukat gizli satırı biçimsel uyarı sanabilirdi."""
+    gizli = _rapor("UYARI", "gizli-satir")
+    assert bg.ozet_etiketi(gizli) == "🛡GİZLİ-KATMAN (UYARI)"
+    bas = bg.md_basligi(gizli)[0]
+    assert "gizli" in bas.lower() and "talimat dili ya da görünmez karakter" not in bas, bas
+    zemin = _rapor("UYARI", "zemin-olculemedi")
+    assert bg.ozet_etiketi(zemin) == "🛡ZEMİN-ÖLÇÜLEMEDİ"
+    assert "kesin değil" in bg.md_basligi(zemin)[0].lower()
+    talimat = _rapor("UYARI", "talimat-dili")
+    assert bg.ozet_etiketi(talimat) == "🛡TALİMAT-DİLİ"            # eski davranış korunur
+    assert bg.ozet_etiketi(_rapor("BULGU", "gizli-metin")) == "🛡GİZLİ-KATMAN"
+    assert bg.ozet_etiketi(_rapor("DENETLENEMEZ")) == "🛡DENETLENEMEZ"
+
+
+def test_okuma_kapisi_guvenlik_etiketi_belge_guvenlik_ile_tek_kaynak(bg):
+    """okuma_kapisi listedeki 🛡 etiketini kendi eşlemesinden üretiyordu (karar → etiket); UYARI artık türe
+    bağlı olduğu için eşleme raporun bütününe bakmalı ve belge_guvenlik.ozet_etiketi ile birebir olmalı."""
+    ok = _yukle("_okuma_kapisi_etiket", SKILLS / "oa-pipeline" / "scripts" / "okuma_kapisi.py")
+    for r in (_rapor("UYARI", "gizli-satir"), _rapor("UYARI", "zemin-olculemedi"), _rapor("UYARI", "talimat-dili"),
+              _rapor("UYARI", "gizli-sutun", "talimat-dili"), _rapor("BULGU", "gizli-metin"), _rapor("DENETLENEMEZ"),
+              None):
+        assert ok.guvenlik_etiketi(r) == bg.ozet_etiketi(r), r

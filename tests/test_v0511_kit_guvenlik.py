@@ -184,6 +184,13 @@ def _kanal_udf_yaz_icerigi():
         encoding="utf-8")
 
 
+def _kanal_udf_yaz_baytlari():
+    """Aynı dosyanın BAYTLARI — bayt-özdeşlik senaryosu satır sonu dönüşümüne takılmasın (heyet 2026-10-16
+    USUL N-1 / K-15: `write_text` Windows'ta LF'yi CRLF'ye çevirir; LF checkout'ta kopya bayt farklı
+    oluyor ve kapı doğru olarak 'nesli doğrulanamadı' diyordu — kusur üründe değil düzenekteydi)."""
+    return (SK / "oa-dilekce" / "scripts" / "udf_yaz.py").read_bytes()
+
+
 def test_yonlu_tazelik_kanaldan_yeni(pk, tmp_path):
     """DEĞİŞTİRİLDİ (v0.5.14 / B-5) — 'kanaldan YENİ' hükmü artık POZİTİF
     KANIT ister.
@@ -231,7 +238,7 @@ def test_yonlu_tazelik_ozdes_sessiz(pk, tmp_path):
     kok = _defterli_kok(tmp_path)
     a = kok / "_oa" / "araclar"
     a.mkdir(parents=True)
-    (a / "udf_yaz.py").write_text(_kanal_udf_yaz_icerigi(), encoding="utf-8")
+    (a / "udf_yaz.py").write_bytes(_kanal_udf_yaz_baytlari())   # bayt-özdeş kopya (K-15)
     assert pk._bayat_arac_uyarisi(str(kok)) is None
 
 
