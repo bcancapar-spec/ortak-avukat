@@ -314,7 +314,8 @@ belgededir: **[OLCUMLER.md](docs/arsiv/OLCUMLER.md)**.
 **Sürüm numarası değişmedi (0.6.0); sürüm, birleştirme ve yayın kararı avukatındır.** Depo
 v0.6.0 hâliyle ölçümle denetlendi (tam süit, aile yapısı, statik analiz, kurulu eklentinin
 kanca sağlığı, kurulum motoru); bulgular, karar ve plan [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md)'de. Her onarım önce
-kırmızı testle; dal GitHub'a push edilmedi.
+kırmızı testle; dal 2026-10-15'te push edilmemişti, 2026-10-16'da avukat kararıyla push edildi (PR #9, main'e;
+birleştirme kararı avukatın).
 
 - **Numaralı liste kaynak numarasını korur (B-1):** `md_udf_html.py` ilk madde 1 değilse
   `<ol start="N">` yazar; "A. USUL / B. ESAS" alt başlığıyla bölünen talep bentlerinde 9. bent

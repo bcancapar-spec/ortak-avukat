@@ -926,3 +926,52 @@ def test_okuma_kapisi_guvenlik_etiketi_belge_guvenlik_ile_tek_kaynak(bg):
               _rapor("UYARI", "gizli-sutun", "talimat-dili"), _rapor("BULGU", "gizli-metin"), _rapor("DENETLENEMEZ"),
               None):
         assert ok.guvenlik_etiketi(r) == bg.ozet_etiketi(r), r
+
+
+# ═══════════ (8) heyet 2026-10-17 üçüncü koşum GÜVENLİK U-1 — nesne sayacı XML yazım varyantları ═══════════
+
+def _sheet1_donustur(yol, donusum):
+    """İlk sayfanın XML'ini bir fonksiyonla dönüştürür (geçerli ama farklı yazımlı XML üretmek için)."""
+    with zipfile.ZipFile(yol) as z:
+        parcalar = {n: z.read(n) for n in z.namelist()}
+    ad = "xl/worksheets/sheet1.xml"
+    parcalar[ad] = donusum(parcalar[ad].decode("utf-8")).encode("utf-8")
+    with zipfile.ZipFile(yol, "w", zipfile.ZIP_DEFLATED) as z:
+        for n, veri in parcalar.items():
+            z.writestr(n, veri)
+
+
+def _onekli(x):
+    """Varsayılan ad alanı yerine `x:` öneki: `<worksheet xmlns=…>` → `<x:worksheet xmlns:x=…>`, her etiket `<x:…>`."""
+    x = x.replace('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
+                  '<x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"', 1)
+    return re.sub(r"<(/?)([A-Za-z][A-Za-z0-9]*)(?=[\s/>])", lambda m: "<%sx:%s" % (m.group(1), m.group(2)), x)
+
+
+@pytest.mark.parametrize("ad, donusum", [
+    ("oznitelliksiz", lambda x: re.sub(r'<c r="[A-Z]+[0-9]+"( t="n")?(?=[ />])', "<c", x)),   # sayı hücreleri `<c><v>…`
+    ("satir-sonlu", lambda x: x.replace("<c r=", "<c\nr=")),
+    ("onekli", _onekli),
+])
+def test_xlsx_hucre_tavani_xml_yazim_varyantlarini_da_sayar(bg, ing, tmp_path, monkeypatch, ad, donusum):
+    """NEDEN VAR (heyet 2026-10-17 GÜVENLİK U-1): nesne sayacı yalnız `<c ` / `<row ` bayt dizisini sayıyordu;
+    öznitelliksiz `<c>`, satır sonlu `<c\\nr=…>` ve önekli `<x:c …>` (üçü geçerli XML, openpyxl tam hücre okur) sayaçta
+    0 kalıyor, tavan atlatılıyordu (300.000 öznitelliksiz hücre = 23,6 KB → 8,2 s / 123 MB). Sayaç artık etiket
+    dilbilgisine bağlıdır: `<` + isteğe bağlı önek + `c` + boşluk/`/`/`>`."""
+    wb, ws = _kitap()
+    wb.save(tmp_path / "a.xlsx")                                   # 9 hücre
+    _sheet1_donustur(tmp_path / "a.xlsx", donusum)
+    monkeypatch.setattr(bg, "AZAMI_TABLO_HUCRE", 8)
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "hücre" in rapor["denetlenemedi"], (ad, rapor)
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+
+
+def test_xlsx_satir_tavani_satir_sonlu_ve_onekli_row_etiketini_de_sayar(bg, ing, tmp_path, monkeypatch):
+    wb, ws = _kitap()
+    wb.save(tmp_path / "a.xlsx")                                   # 3 satır
+    _sheet1_donustur(tmp_path / "a.xlsx", lambda x: _onekli(x.replace("<row r=", "<row\nr=")))
+    monkeypatch.setattr(bg, "AZAMI_TABLO_SATIR", 2)
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "satır" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni

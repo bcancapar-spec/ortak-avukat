@@ -2374,9 +2374,17 @@ def _xlsx_hucre_gizliligi(h, tema, deger, onbellek):
     return sonuc
 
 
+# Etiket dilbilgisi: `<` + isteğe bağlı ad alanı öneki + ad + (boşluk | `/` | `>`). Öznitelliksiz `<c>`, satır sonlu
+# `<c\nr=…>` ve önekli `<x:c …>` de sayılır (heyet 2026-10-17 GÜVENLİK U-1: yalnız `<c ` baytları sayılıyor, tavan
+# atlatılabiliyordu — 300.000 öznitelliksiz hücre 23,6 KB dosyada 8,2 s / 123 MB).
+_XML_HUCRE_RE = re.compile(rb"<(?:[A-Za-z_][\w.-]*:)?c(?=[\s/>])")
+_XML_SATIR_RE = re.compile(rb"<(?:[A-Za-z_][\w.-]*:)?row(?=[\s/>])")
+
+
 def _xml_nesne_say(z, girdi, parca=1 << 20):
-    """Sayfa XML'indeki `<c ` ve `<row ` sayısı — akışla, belleğe almadan. Parça sınırında bölünen etiket için önceki
-    parçanın son 4 baytı başa eklenir; o kuyrukta tam görünen eşleşmeler ikinci kez sayılmaz."""
+    """Sayfa XML'indeki hücre (`c`) ve satır (`row`) ELEMAN sayısı — akışla, belleğe almadan. Parça sınırında bölünen
+    etiket için önceki parçanın son 128 baytı başa eklenir; o kuyrukta zaten tam görünen eşleşmeler ikinci kez
+    sayılmaz (kuyruğun sonunda biten ve ileriye bakış karakteri sonraki parçada olan etiket ancak şimdi sayılır)."""
     hucre = satir = 0
     kuyruk = b""
     with z.open(girdi) as f:
@@ -2385,9 +2393,9 @@ def _xml_nesne_say(z, girdi, parca=1 << 20):
             if not veri:
                 break
             blok = kuyruk + veri
-            hucre += blok.count(b"<c ") - kuyruk.count(b"<c ")
-            satir += blok.count(b"<row ") - kuyruk.count(b"<row ")
-            kuyruk = blok[-4:]
+            hucre += len(_XML_HUCRE_RE.findall(blok)) - len(_XML_HUCRE_RE.findall(kuyruk))
+            satir += len(_XML_SATIR_RE.findall(blok)) - len(_XML_SATIR_RE.findall(kuyruk))
+            kuyruk = blok[-128:]
     return hucre, satir
 
 

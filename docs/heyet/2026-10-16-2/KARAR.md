@@ -139,14 +139,14 @@ NOT'lar (bloklamaz; kayıt ve izleme):
 | K-6 | USUL U-2 (ilk) | kapandı (`47372fc`) | üç üye doğruladı |
 | K-7 | USUL U-3 + GÜV N-5 (ilk) | **kapandı (bu commit)** | `.gitignore` `.claude/`; protokol cümlesi |
 | K-8 | USUL 4 | kapandı (`47372fc`); bu commit için yinelendi | §4.1 |
-| K-9 | USUL 5 + GÜV 3 | değişmedi — kapsam dışı | commit'siz iş (§6); commit'lenince OA-SUIT-SAYISI (ölçülen 3853), ilan testleri, SECURITY.md cümlesi, tam süit, heyet |
+| K-9 | USUL 5 + GÜV 3 | **kapandı** — commit'siz iş `teyit/resmi-kaynak-beyaz-listesi` dalında tamamlanıp `c94e982` ile birleşti; üçüncü koşum ([../2026-10-17/KARAR.md](../2026-10-17/KARAR.md)) | commit'siz iş (§6); commit'lenince OA-SUIT-SAYISI (ölçülen 3853), ilan testleri, SECURITY.md cümlesi, tam süit, heyet |
 | K-10 | ESAS E-5 (H2-3) | yeni — aynı dalda ayrı commit | ZAYIF aralık kaydı; düz dolgulu hücrede ölçüm; "bildirilir" — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-11 | ESAS E-7 (H2-4) | yeni — aynı dalda ayrı commit | tavan/nesne sayımı ölçümle; yorum düzeltmesi — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-12 | GÜV N-3 | yeni — ayrı commit (tek satır + test) | boyut toplamı bütün girdiler — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-13 | GÜV N-1, N-2; ESAS N-2 | yeni — ayrı commit | satır döngüsünde `AZAMI_SURE_SN`; `<col>` kıskacı; aralık üyeliği nesnesiz — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-14 | GÜV N-4 | yeni — ayrı commit | üreteç hatalarını `_tablo_denetlenemedi`'ye düşürmek — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-15 | USUL N-1 | yeni — ayrı kalem | testte `write_bytes(read_bytes())` — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
-| K-16 | ESAS N-3, N-4, N-5, N-7; ilk ESAS N-4; USUL N-6 | açık kalemler | kayıt metni, pivot stili, `_cells` sözleşmesi, günlük kaynak notu, eklenti README Excel, `SURUM` kararı |
+| K-16 | ESAS N-3, N-4, N-5, N-7; ilk ESAS N-4; USUL N-6 | kısmen kapandı (`2aaf6ea`: kayıt metni, günlük kaynak notu, eklenti README Excel); açık: pivot stili, `_cells` sözleşmesi, `SURUM` kararı | kayıt metni, pivot stili, `_cells` sözleşmesi, günlük kaynak notu, eklenti README Excel, `SURUM` kararı |
 
 ### 4.1 K-8 ölçümü (bu commit'in dosyaları)
 

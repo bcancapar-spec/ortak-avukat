@@ -829,6 +829,30 @@ def _tr_kucuk(s):
     return s.replace("İ", "i").replace("I", "ı").lower()
 
 
+def _tckn_saglama_gecer_mi(s):
+    """11 haneli dizi TCKN sağlamasını geçiyor mu (ilk hane 0 değil; 10. hane = (tek haneler×7 − çift haneler) mod 10;
+    11. hane = ilk on hanenin toplamı mod 10). Adres taramasında kullanılır: resmî portal karar kimlikleri de 11
+    hane olabilir, sağlama geçmeyen dizi TCKN sayılmaz (yanlış engel olmasın)."""
+    if len(s) != 11 or not s.isdigit() or s[0] == "0":
+        return False
+    d = [int(ch) for ch in s]
+    tek, cift = sum(d[0:9:2]), sum(d[1:8:2])
+    return (tek * 7 - cift) % 10 == d[9] and sum(d[:10]) % 10 == d[10]
+
+
+def _kaynak_url_layer0_tara(url):
+    """--kaynak-url'in yolu, sorgu dizesi ve parçası Layer 0'dan geçer (heyet 2026-10-17 GÜVENLİK U-2; anayasa m.10):
+    adres resmî portala giden sorguyu taşır ve dış araca gider. Alan adı beyaz liste denetiminde ayrıca sınanır."""
+    import urllib.parse as _up
+    try:
+        p = _up.urlsplit(url)
+    except ValueError:
+        return "çözümlenemeyen adres"
+    acik = _up.unquote_plus(" ".join(x for x in (p.path, p.query, p.fragment) if x))
+    acik = _TCKN_RE.sub(lambda m: m.group(0) if _tckn_saglama_gecer_mi(m.group(0)) else "#" * 11, acik)
+    return _layer0_sorgu_tara(acik)
+
+
 def _layer0_sorgu_tara(sorgu):
     if _TCKN_RE.search(sorgu):
         return "TCKN deseni (11 haneli sayı)"
@@ -1257,6 +1281,15 @@ def cmd_teyit(args):
             sys.exit("RET: --kaynak-url yalnız tek parça bir http(s) adresi olabilir "
                      f"(boşluk/satır sonu içeremez). Verilen: {args.kaynak_url!r}")
         args.kaynak_url = u
+        # 2026-10-17 — heyet GÜVENLİK U-2 (anayasa m.10): adres de dış araca gider — yolu/sorgusu/parçası müvekkil-
+        # tanımlayıcı veri taşıyamaz. 11 haneli sayılar yalnız TCKN sağlaması geçiyorsa TCKN sayılır (karar kimlikleri de
+        # 11 hane olabilir); IBAN, e-posta, telefon, plaka, ad-soyad desenleri aynen taranır. Bilinçli geçiş --sorgu-onayli.
+        if not args.sorgu_onayli:
+            bulunan_url = _kaynak_url_layer0_tara(u)
+            if bulunan_url:
+                sys.exit(f"RET (Layer 0): --kaynak-url içinde {bulunan_url} bulundu — adres resmî portala giden sorgu "
+                         "dizesini taşır ve dış araca gider; müvekkil-tanımlayıcı veri adrese giremez (anayasa m.10). "
+                         "Bilinçli geçiş için --sorgu-onayli kullanın.")
 
     # 2026-10-15 — HİBRİT TEYİT KANALI (avukat kararı): tam metin çeken araçlarda
     # teyidin kanıtı kaynağın adresidir — --kaynak-url ZORUNLU; verilen her adres

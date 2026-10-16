@@ -19,7 +19,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.900** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.907** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
 > sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
@@ -1400,8 +1400,16 @@ resmi). Birebir alıntıya dokunulmaz.
     okunamaz). Degrade ya da desenli dolgu üstündeki yazı ve hücrenin üstüne çizilmiş
     şekil ölçülmez.
   - Kapı tabloyu yeniden açamaz ya da okuyucunun metniyle eşleyemezse tablo
-    DENETLENEMEZ kalır. Gerçek evrak ölçümü henüz küçüktür: eldeki tek gerçek
-    .xls temiz çıktı; kalibrasyon sahadan gelecek.
+    DENETLENEMEZ kalır. Çok büyük kitaplar belleğe alınmadan DENETLENEMEZ olur:
+    açılmış arşiv 128 MB, sayfa XML'inde 1 milyon hücre ya da 500 bin satır tanımı
+    (tahmin: ~0,4 GB / ~0,3 GB bellek); meşru dev dökümler de bu tavana takılabilir.
+    Gerçek evrak ölçümü henüz küçüktür: eldeki tek gerçek .xls temiz çıktı;
+    kalibrasyon sahadan gelecek.
+- **Hibrit teyit kanalı resmî portalın adresini ve diske inen metni kanıt sayar,
+  metnin kelimesi kelimesine tamlığını ölçmez.** `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
+  Web araçlarının çağrıları için Layer 0 kural olarak geçerlidir; mekanik kapı
+  `oa_hafiza.py teyit`'in `--sorgu` ve `--kaynak-url` taramasıdır (açık kalem:
+  araç çağrısını saran kanca).
 - **Kesilen evrak alımı baştan başlar.** Biten evrakın ara kaydı yoktur
   (v0.5.19). Büyük klasörde alım arka planda koşturulmalıdır; sistem 200'den
   fazla evrakta bunu süre tahminiyle söyler.

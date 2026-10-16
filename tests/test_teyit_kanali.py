@@ -289,3 +289,43 @@ def test_eklenti_hicbir_mcp_sunucusu_ilan_etmez():
     assert not (EKLENTI / ".mcp.json").exists() and not (REPO / ".mcp.json").exists()
     for yol in (EKLENTI / ".claude-plugin" / "plugin.json", REPO / ".claude-plugin" / "marketplace.json"):
         assert "betaspacestudio" not in yol.read_text(encoding="utf-8")
+
+
+# ── (f) heyet 2026-10-17 üçüncü koşum GÜVENLİK U-2 — adres de Layer 0'dan geçer ─────────────────────
+
+TCKN_SENTETIK = "10000000146"        # sağlama geçen sentetik numara (tests/test_gizlilik.py ile aynı)
+KIMLIK_SENTETIK = "12345678901"      # 11 hane ama sağlama GEÇMEZ: karar kimliği gibi meşru bir dizi
+
+
+def _oa_metinlerinde_gecer_mi(kok, parca):
+    for p in (kok / "_oa").rglob("*"):
+        if p.is_file() and p.suffix in (".md", ".json", ".jsonl", ".txt"):
+            if parca in p.read_text(encoding="utf-8", errors="replace"):
+                return True
+    return False
+
+
+def test_kaynak_url_sorgu_dizesinde_tckn_layer0_ret(kok):
+    """NEDEN VAR (heyet 2026-10-17 GÜVENLİK U-2): Layer 0 yalnız `--sorgu`'yu tarıyordu; yeni kanalda zorunlu olan
+    `--kaynak-url` resmî portala giden sorgu dizesi taşır ve dış araca gider — adresin yolu/sorgusu/parçası da
+    müvekkil-tanımlayıcı veri taşıyamaz (anayasa m.10). Sağlama geçen TCKN adreste → RET; kütüğe/muhakemeye yazılmaz."""
+    url = "https://mevzuat.adalet.gov.tr/ictihat/ara?q=" + TCKN_SENTETIK
+    kod, cikti = _kos(_getir_args(kok, ek=["--kaynak-url", url]), kok)
+    assert kod != 0, cikti
+    assert "Layer 0" in cikti and "--kaynak-url" in cikti, cikti
+    assert _muhakeme(kok) == "", "RET'te muhakeme kaydı yazılmamalı"
+    assert not _oa_metinlerinde_gecer_mi(kok, TCKN_SENTETIK), "adresteki numara hiçbir kayda sızmamalı"
+
+
+def test_kaynak_url_sorgu_onayli_ile_gecer(kok):
+    url = "https://mevzuat.adalet.gov.tr/ictihat/ara?q=" + TCKN_SENTETIK
+    kod, cikti = _kos(_getir_args(kok, ek=["--kaynak-url", url, "--sorgu-onayli"]), kok)
+    assert kod == 0, cikti
+
+
+def test_kaynak_url_saglama_gecmeyen_11_hane_karar_kimligi_engellenmez(kok):
+    """Resmî portal karar kimlikleri de 11 haneli olabilir: sağlama geçmeyen dizi TCKN sayılmaz (yanlış engel yok)."""
+    url = "https://mevzuat.adalet.gov.tr/ictihat/" + KIMLIK_SENTETIK
+    kod, cikti = _kos(_getir_args(kok, ek=["--kaynak-url", url]), kok)
+    assert kod == 0, cikti
+    assert "**KAYNAK-URL:** %s" % url in _muhakeme(kok)

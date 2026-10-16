@@ -1,6 +1,6 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` push edilmedi (bkz. CHANGELOG)
+**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` 2026-10-16'da avukat kararıyla push edildi — PR #9, main'e birleştirme kararı avukatın (bkz. CHANGELOG)
 *(önceki kayıtlar: 2026-10-12 · 0.6.0 · PR #8 — 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; push
@@ -13,7 +13,8 @@
 > GitHub açıklaması ve konu etiketleri (B-8), PR #6'nın kapatılması, dalın birleştirilmesi.
 > Belge: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md).
 
-> **2026-10-16 — heyet koşumu** (dal `denetim/fable-2026-10-15`; push edilmedi). Üç kıdemli avukat
+> **2026-10-16 — heyet koşumu** (dal `denetim/fable-2026-10-15`; o sırada push edilmemişti, aynı gün avukat
+> kararıyla push edildi — PR #9). Üç kıdemli avukat
 > denetçi ajan (usul, esas, güvenlik) dalın bütününü (`origin/main..HEAD`, 14 commit) temiz kopyada
 > ölçtü: üçü de ŞARTLI PUSH, BLOKLAYICI 0 · UYARI 8 · NOT 18; tam süit 3800 geçti · 12 atlandı ·
 > 0 kırmızı (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (seyrek dev
