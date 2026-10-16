@@ -7,6 +7,7 @@ cevap kalıbı "... kabul anlamına gelmemek kaydıyla" gibi ifadeler SAHTE ALAR
 üretmemeli; gerçek bir kabul/ikrar ifadesi ise engel olarak yakalanmalı.
 """
 import importlib.util
+from oa_teyit_kanali import KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import sys
 import zipfile
@@ -487,7 +488,7 @@ def _f_kur(tmp_path, damga="LEHE", ayirt_etme=""):
     satirlar = [
         "# 01 — İçtihat Muhakeme Kaydı", "",
         f"**KUNYE:** {KUNYE_F}",
-        "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+        "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
         f"**DAMGA:** {damga}", "",
         "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
         "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",

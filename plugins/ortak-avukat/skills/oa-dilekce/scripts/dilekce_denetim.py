@@ -190,8 +190,8 @@ kaldırılması, menfi tespit, istihkak, icra ceza, usul işlemleri `--tip genel
 ile denetleniyor, İİK'nın kendine özgü zorunlu içeriği hiç aranmıyordu) ve
 3 Ekim 2026 yetenek denetiminin Y-06 bulgusu dört açık saydı: dava değeri
 ayrı unsur değil; bileşik unsurda tek desen yetiyor; idari dava ve ceza
-istinafı tipi yok. Fikir kaynağı Yargı PRO 3-1…3-9, 2-6, 4-4 (yalnız fikir;
-metin/kod alınmadı); her madde Yargı PRO MCP ile resmî metinden 2026-10-05'te
+istinafı tipi yok. Fikir kaynağı dış skill kütüphanesi 3-1…3-9, 2-6, 4-4 (yalnız fikir;
+metin/kod alınmadı); her madde `mevzuat_getir` ile resmî metinden 2026-10-05'te
 okundu — insan-okur cetvel: `references/icra-dilekce-ailesi.md`,
 `references/idari-ceza-tipleri.md`.
   * UNSUR MODELİ: tekil unsur (desenlerden biri yeter — eski davranış) ·
@@ -358,7 +358,7 @@ _TL_TUTAR = r"\d[\d.]{0,24}(?:,\d{1,4})?[ \t]{0,3}-?[ \t]{0,2}(?:TL\b|₺|T[üu]
 _TEBLIG_D = [r"tebli[gğ](?!at)", r"tebell[üu][gğ]"]
 # Usulsüz tebliğde muhatabın tebliğe muttali olduğunu beyan ettiği tarih
 # tebliğ tarihi sayılır (Tebligat K. m.32); icra şikâyetinde süre öğrenmeden
-# işler (İİK m.16/1) — Yargı PRO MCP, 2026-10-05.
+# işler (İİK m.16/1) — resmî metin (mevzuat.gov.tr), 2026-10-05.
 _OGRENME_D = [r"[öo][gğ]ren", r"[ıi]tt[ıi]la", r"muttali"]
 # Tebliğ HENÜZ YAPILMAMIŞSA tarih yazılamaz; tebliğden önce başvurmak
 # müvekkilin hakkıdır (ör. gerekçeli karar tebliğ edilmeden istinaf). Açık
@@ -390,7 +390,7 @@ _SENET = r"\bsenet|\bsened(?:i|e\b)"
 # 'A.Ş.' unvanı ya da 'fatura' kelimesi davayı ticari yapmaz (nispi ticari dava
 # iki tarafın ticari işletmesini ister — TTK m.4/1 ilk cümle); kambiyo senedi
 # ise TTK'da düzenlendiği için tarafların tacir olup olmadığına bakılmaksızın
-# ticari davadır (TTK m.4/1-a; bono TTK m.776 — Yargı PRO MCP, 2026-10-05).
+# ticari davadır (TTK m.4/1-a; bono TTK m.776 — resmî metin (mevzuat.gov.tr), 2026-10-05).
 _TICARI_D = [r"ticari\s*(?:dava|i[sş]|alaca|ili[sş]ki|defter|i[sş]letme)", r"\btacir",
              r"cari\s*hesap", r"kambiyo", _BONO, _CEK, r"poli[çc]e"]
 _TICARI_ISTISNA_D = [r"ticari\s*dava\s*(?:niteli[gğ]inde\s*)?(?:de[gğ]il|say[ıi]lmaz)",
@@ -424,7 +424,7 @@ GENEL = [
 TIPLER = {
     "dava": GENEL,
     "cevap": GENEL + [("Cevap/ilk itiraz (varsa)", [r"cevap", r"ilk\s*itiraz", r"karşı\s*dava", r"itiraz"])],
-    # v0.5.18 (Y-06 / Yargı PRO 2-6 fikri): HMK m.342/2 — kararın mahkemesi
+    # v0.5.18 (Y-06 / dış skill kütüphanesi 2-6 fikri): HMK m.342/2 — kararın mahkemesi
     # ile SAYISI birlikte (c), kararın tebliğ tarihi AYRI (ç), imza (g).
     # Eskiden 'süre' ya da 'iki hafta' kelimesi tebliğ tarihi unsurunu tek
     # başına karşılıyordu; tebliğ tarihi yasal zorunlu içeriktir, süre ifadesi
@@ -479,7 +479,7 @@ TIPLER = {
     "genel": GENEL,
 }
 
-# ── v0.5.18 — İCRA AİLESİ TİPLERİ (İİK; fikir: Yargı PRO 3-1…3-9) ────────────
+# ── v0.5.18 — İCRA AİLESİ TİPLERİ (İİK; fikir: dış skill kütüphanesi 3-1…3-9) ────────────
 # İnsan-okur cetvel + resmî metin künyeleri: references/icra-dilekce-ailesi.md.
 # Her unsur adı dayanak maddeyi taşır ki [A] EKSİK satırı avukata neyin NEDEN
 # zorunlu olduğunu da söylesin. Desenler yalnız VAR/YOK sinyalidir — hangi
@@ -855,7 +855,7 @@ _ICRA_TIPLERI = {
          [r"tazyik\s*hapsi", r"cezaland[ıi]r[ıi]l", r"hapis"] + _TALEP_D),
         ("Tarih + imza", _TARIH_IMZA),
     ],
-    # İİK m.33, 36, 71, 78, 96/2, 111 … — icra usul işlemleri (Yargı PRO 3-9 fikri).
+    # İİK m.33, 36, 71, 78, 96/2, 111 … — icra usul işlemleri (dış skill kütüphanesi 3-9 fikri).
     "icra-usul": [
         ("Merci — icra dairesi ya da icra mahkemesi", _ICRA_DAIRESI_D + _ICRA_MAHKEMESI_D),
         ("Takip dosyası (esas no)", _DOSYA_NO_D),
@@ -891,7 +891,7 @@ _ICRA_TIPLERI = {
     ],
 }
 
-# ── v0.5.18 — İDARİ DAVA, YD TALEBİ, CEZA İSTİNAFI (Y-06; fikir: Yargı PRO 4-4) ──
+# ── v0.5.18 — İDARİ DAVA, YD TALEBİ, CEZA İSTİNAFI (Y-06; fikir: dış skill kütüphanesi 4-4) ──
 # İnsan-okur not + künyeler: references/idari-ceza-tipleri.md.
 _YD_IKI_KOSUL = Bilesik((
     ("telafisi güç veya imkânsız zarar", [r"telafisi\s*(?:g[üu][çc]|imk[âa]ns[ıi]z)"]),
@@ -938,7 +938,7 @@ _IDARI_CEZA_TIPLERI = {
          Kosullu([r"y[üu]r[üu]tmenin\s*durdurul"], _YD_IKI_KOSUL)),
         ("İmzalı dilekçe + tarih (İYUK m.3/1)", _TARIH_IMZA),
     ],
-    # İYUK m.27 — yürütmenin durdurulması talebi (Yargı PRO 4-4 fikri).
+    # İYUK m.27 — yürütmenin durdurulması talebi (dış skill kütüphanesi 4-4 fikri).
     "yd-talebi": [
         ("Merci — Danıştay / idare / vergi mahkemesi ya da bölge idare mahkemesi",
          [r"idare\s*mahkemesi", r"vergi\s*mahkemesi", r"dan[ıi][sş]tay", r"b[öo]lge\s*idare"]),
@@ -1263,7 +1263,7 @@ _ALEYHE_ICRA_BORCLU = [
 ]
 # Kambiyo takibine ÖZGÜ: borcun kısmen ya da tamamen kabulü (ve imza inkârı
 # itirazının geri alınması) mahkemenin senedin kambiyo vasfını re'sen
-# gözetmesini kapatır (İİK m.170/a-3 — Yargı PRO MCP, 2026-10-05). İlamsız
+# gözetmesini kapatır (İİK m.170/a-3 — resmî metin (mevzuat.gov.tr), 2026-10-05). İlamsız
 # takipte ise kısmi kabul + kısmi itiraz meşru ve sık bir stratejidir (m.62
 # kısmi itiraz fıkrası) — bu yüzden kalıp YALNIZ kambiyo-itiraz tipinde taranır
 # (Fable 5.1 incelemesi benimsendi).
@@ -1479,7 +1479,7 @@ def zorunlu_unsur_eksikleri(metin, tip):
 #   yoksa : desenlerin HİÇBİRİ yoksa uyarı (None → yokluk aranmaz)
 #   varsa : desenlerden biri VARSA uyarı; `bas` verilirse yalnız metnin ilk
 #           `bas` karakterinde (başlık bloğu) aranır
-# Mesajlar yalnız Yargı PRO MCP ile 2026-10-05'te okunan maddelere dayanır.
+# Mesajlar yalnız resmî metinden (mevzuat.gov.tr) 2026-10-05'te okunan maddelere dayanır.
 _MALVARLIGI_D = [_TL_TUTAR, r"alaca[gğk]", r"tazminat", r"tahsil", r"\bbedel"]
 TIP_UYARILARI = {
     "dava": [
@@ -1746,7 +1746,7 @@ TIP_SURE = {
         (_md("HMK", "361"), "HMK m.361 — tebliğden 2 hafta (hukuk)"),
         (_md("CMK", "291"), "CMK m.291/1 — gerekçeli hükmün tebliğinden 2 hafta (ceza)"),
     ],
-    # HMK m.127 ve m.317/2 — Yargı PRO MCP, 2026-10-05 (yazılı yargılamada ek süre
+    # HMK m.127 ve m.317/2 — resmî metin (mevzuat.gov.tr), 2026-10-05 (yazılı yargılamada ek süre
     # en çok bir ay, basit yargılamada en çok iki hafta; ikisi de bir defaya mahsus).
     "cevap": [
         (_md("HMK", "127"), "HMK m.127 — yazılı yargılamada cevap: tebliğden 2 hafta (+ bir "

@@ -3,13 +3,13 @@
 oa-vakia/scripts/delil_plani.py, oa-vakia/scripts/tanik_plani.py,
 oa-antitez/scripts/zapt_denetim.py
 
-Fikir kaynağı Yargı PRO 16-4 (delil toplama planı), 16-3 (tanık soruları),
+Fikir kaynağı dış skill kütüphanesi 16-4 (delil toplama planı), 16-3 (tanık soruları),
 16-2 (duruşma zaptı denetimi) — kod/metin ALINMADI. Saha gerekçesi: ispat
 boşluğu analizde "eksik" yazılıp dilekçede "sair deliller"e dönüşüyor; tanık
 cevabı yazdırmak TCK m.272/m.277 riskidir; zapta geçmeyen talep ispat
 edilemez (HMK m.156).
 
-Resmî metin teyidi (Yargı PRO MCP mevzuat_getir, 2026-10-05): HMK m.145, 152,
+Resmî metin teyidi (mevzuat.gov.tr mevzuat_getir, 2026-10-05): HMK m.145, 152,
 154, 156, 190, 240, 243, 255, 259, 261, 324, 400; CMK m.201; TCK m.272, 277.
 Tutanak düzeltme süresi HMK m.154-158'de yok → TEYİT BEKLİYOR (test kilitler).
 

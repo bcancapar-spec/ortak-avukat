@@ -17,7 +17,6 @@ import pathlib
 import subprocess
 import sys
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 MANIFEST = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts" / "manifest_olustur.py"

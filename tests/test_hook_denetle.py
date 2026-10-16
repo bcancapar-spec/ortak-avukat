@@ -9,7 +9,6 @@ tam telemetri tablosu ([1]-[7]) artık hook STDOUT'una BASILMAZ (metrik.json'a
 yan etki olarak yazılmaya devam eder) — bkz. alttaki YENİ-2 testleri.
 """
 import importlib.util
-import json
 import pathlib
 import subprocess
 import sys

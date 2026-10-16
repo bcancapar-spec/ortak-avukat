@@ -1,6 +1,6 @@
 # Test Mimarisi — mühendisler için
 
-<!-- OA-SUIT-SAYISI: 3769 -->
+<!-- OA-SUIT-SAYISI: 3907 -->
 
 > **Süit büyüklüğünün TEK kaynağı yukarıdaki `OA-SUIT-SAYISI` işaretçisidir.**
 > `tests/test_v0514_vitrin.py` bu sayıyı her koşuda `pytest --collect-only`
@@ -16,9 +16,10 @@
 
 - Saf `pytest`, harici test bağımlılığı yok; parametrize varyantlarıyla
   toplanan sınama sayısı yukarıdaki işaretçidedir.
-- Tam süit ~7 dk (Windows, tek makine). CI: GitHub Actions matrisi —
-  **Windows + Ubuntu × Python 3.12/3.13** + ayrı `aile_dogrula` yapısal
-  denetimi. Kural: **CI yeşermeden sürüm etiketi atılamaz.**
+- Tam süit ~80 s (`-n auto`, 4 çekirdek; seri ~4-7 dk). CI: GitHub Actions
+  matrisi — **Windows + Ubuntu × Python 3.12/3.13/3.14** + ayrı `aile_dogrula`
+  yapısal denetimi + OCR bacağı + `lint` (ruff, yalnız hata sınıfı; bkz.
+  `test_kaynak_hijyeni.py`). Kural: **CI yeşermeden sürüm etiketi atılamaz.**
 - Adlandırma sözleşmesi: `test_vXYZ_*.py` = bir saha karnesinden doğan
   **sürüm-reçetesi paketi** (süitin en kalabalık sınıfı). Dosya docstring'i,
   paketi doğuran saha kanıtını atıflar — test, gerekçesiz yaşayamaz.
@@ -102,6 +103,17 @@ tolerans; imzasız dosyada sıfır tolerans, iki yön de testli).
   ama gerekçesi test docstring'ine ve değişiklik günlüğüne yazılır
   (ör. çift-uzantı ad şeması değişiminde eski adı kilitleyen testler,
   yeni sözleşmeye taşındı).
+
+### 7. Teyit kanalı: sentetik resmî adres (2026-10-15 avukat kararı)
+
+`oa_hafiza.py teyit` tam metin çeken araçlarda `--kaynak-url` ister ve adresi resmî kaynak
+beyaz listesiyle karşılaştırır; `ictihat_muhakeme_denetim.py` [G7] dayanak kaydının adresi
+yoksa teslim engeli sayar (kapıların kendisi `test_teyit_kanali.py`). Bu kapıyı değil damga /
+döküm / akıbet / enjeksiyon disiplinini sınayan testler `tests/oa_teyit_kanali.py`
+yardımcısını kullanır: `kaynak_url_ekle(args)` GETİR sınıfı çağrıya beyaz listeli sentetik
+adresi ekler, `KAYNAK_URL_SATIRI` elle yazılmış muhakeme kaydına girer. Adres sentetiktir,
+hiçbir adrese gidilmez; üçüncü taraf ad/adres canlı metinde geçmez
+(`test_kanal_bagimsiz_metin.py` — tarihli kayıtlar muaf).
 
 ## Koşum tarifleri
 

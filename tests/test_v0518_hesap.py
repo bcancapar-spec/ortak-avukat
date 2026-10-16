@@ -2,10 +2,10 @@
 """v0.5.18 (aday) — HESAP + GÜNCEL ORAN: oa-strateji/scripts/maliyet_cetveli.py + tarife.json
 
 Saha kanıtı: yetenek denetimi bulgusu Y-07 — "2026 harçları doğru (9/9); AAÜT ücret
-tabloları boş; sulh/icra ve vergi yargısı harçları yok". Fikir kaynağı Yargı PRO
+tabloları boş; sulh/icra ve vergi yargısı harçları yok". Fikir kaynağı dış skill kütüphanesi
 14-1 (hukuki hesaplama) ve 14-2 (güncel oran teyidi) — kod/metin alınmadı.
 
-Resmî metin teyidi (Yargı PRO MCP, 2026-10-05):
+Resmî metin teyidi (mevzuat.gov.tr, 2026-10-05):
   * RG 31.12.2025/33124 (5. mük.) Harçlar Kanunu Genel Tebliği (Seri No: 98) +
     mevzuat.gov.tr 492 s.K. tarifeleri 'Uygulanan Miktar' sütunu — iki kaynakta
     aynı tutar (sulh/icra tetkik başvurma, BAM/BİM/Yargıtay/Danıştay başvurma,

@@ -145,7 +145,7 @@ tablo, alıntı) tetiklenemez. Test, gerçek dönüştürücüde alıntı paragr
   ya da özdeş-nüsha hilesi dilekçeye kendiliğinden girmez; iç notta avukata tam gerekçesiyle gösterilir,
   avukat gerekli görürse kendisi yazar.
 
-## 6. Resmî metinler (Yargı PRO `mevzuat_getir`, 2026-10-07; mevzuat.gov.tr)
+## 6. Resmî metinler (resmî metin — mevzuat.gov.tr, 2026-10-07)
 
 - **6100 sayılı HMK m.29** (`mevzuatgov:kanun:5:6100:m29`) — Dürüst davranma ve doğruyu söyleme
   yükümlülüğü: "(1) Taraflar, dürüstlük kuralına uygun davranmak zorundadırlar. (2) Taraflar,

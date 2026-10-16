@@ -2,7 +2,7 @@
 
 Bu dosya iki şey içerir: (1) Türk hukukunda illiyet/bağ doktrininin özeti — kitin
 hukuki çekirdeği; (2) graf JSON şeması. Norm ve künyeler buradan "ezbere" alınmaz;
-somut dosyada **Mevzuat/Yargı Pro ile teyit** edilir. Bu özet yön gösterir, kaynak değildir.
+somut dosyada **resmî kaynaktan (mevzuat.gov.tr / içtihat portalı) teyit** edilir. Bu özet yön gösterir, kaynak değildir.
 
 ## İçindekiler
 1. Medeni hukukta illiyet (haksız fiil / sözleşme)

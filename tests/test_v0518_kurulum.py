@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """v0.5.18 (aday) — KURULUM MOTORU `oa_kurulum.py` (avukat talimatı, 2026-10-07: "projenin
-içerisinde mutlaka zincirleme şekilde, Yargı Pro hariç kalan tüm gereksinimleri tek prompt'ta
+içerisinde mutlaka zincirleme şekilde, [üçüncü taraf içtihat sunucusu] hariç kalan tüm gereksinimleri tek prompt'ta
 indirecek kısmı oluştur — vitrinde bu zaten konseptimiz").
 
 NEDEN VAR: README'deki tek yapıştırmalık prompt kurulumu Claude'a yürütür; zincirin KANIT
@@ -11,7 +11,8 @@ halkası bu motordur — beyan değil, script çıktısı. Bu dosya kilitler:
   - Tesseract PATH'te yokken Windows standart yolunda bulunması,
   - `.pyc` tazeliğinin Python'un kendi başlık doğrulamasıyla ölçülmesi,
   - `--uygula`nın pip "externally-managed-environment" ortamında DURMASI,
-  - Yargı Pro'nun KAPSAM DIŞI kalması ve yasak komutların kaynakta bulunmaması,
+  - teyit kanalının KAPSAM DIŞI (BİLGİ) kalması ve yasak komutların kaynakta bulunmaması
+    (2026-10-15 avukat kararı: eski 'yargi_pro' adımı kalktı, eklenti MCP sunucusu ilan etmez),
   - JSON raporunun deterministik olması.
 Gerçek kurulum ve ağ YOK: sistem sondaları sahtelenir (monkeypatch).
 """
@@ -245,12 +246,19 @@ def test_aile_denetimi_temiz_degilse_eksik(mod, monkeypatch):
     assert _adim(mod.denetle(), "aile")["durum"] == "EKSİK"
 
 
-# ── Yargı Pro kapsam dışı, yasaklar ─────────────────────────────────────────────────
+# ── Teyit kanalı kapsam dışı (BİLGİ), yasaklar ──────────────────────────────────────
 
-def test_yargi_pro_kapsam_disi_bilgi_ve_cikisi_etkilemez(mod, capsys):
-    a = _adim(mod.denetle(), "yargi_pro")
-    assert a["durum"] == "BİLGİ" and "KAPSAM DIŞI" in a["ayrinti"] and "ücretli" in a["ayrinti"]
-    assert "/mcp" in a["komut"]
+def test_teyit_kanali_kapsam_disi_bilgi_ve_cikisi_etkilemez(mod, capsys):
+    """2026-10-15 avukat kararı (hibrit teyit kanalı; tests/test_teyit_kanali.py): eski
+    'yargi_pro' adımı (ücretli üyelik, /mcp yetkilendirme) kalktı — eklenti MCP sunucusu ilan
+    etmez, teyit resmî portallardan web aracıyla yapılır. Motor bunu kurmaz, yetkilendirmez,
+    ağdan yoklamaz; BİLGİ satırı çıkışı etkilemez (eski test aynı sözleşmeyi 'yargi_pro' adımı
+    için kilitliyordu)."""
+    a = _adim(mod.denetle(), "teyit_kanali")
+    assert a["durum"] == "BİLGİ" and "KAPSAM DIŞI" in a["ayrinti"]
+    assert "resmî portal" in a["ayrinti"] and "ilan etmez" in a["ayrinti"]
+    assert "teyit YAPILAMADI" in a["ayrinti"]
+    assert "/mcp" in a["komut"] and "Authenticate" not in a["komut"]
     assert mod.main([]) == 0
 
 

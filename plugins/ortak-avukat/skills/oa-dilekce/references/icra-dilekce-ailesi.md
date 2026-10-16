@@ -18,10 +18,10 @@
 >
 > **Kaynak ve otorite.** Ailenin ayrıştırma fikri (takip açma / takibe itiraz /
 > haciz-satış / icra mahkemesi / bağlı davalar / icra ceza / usul işlemleri)
-> Yargı PRO'nun 3-1…3-9 skill'lerinden **fikir olarak** alındı; metin, kod ve
+> Dış skill kütüphanesinin 3-1…3-9 skill'lerinden **fikir olarak** alındı; metin, kod ve
 > script alınmadı. Otorite OA yöntemidir: model metni kurar, script yalnız
 > mekanik VAR/YOK der; hukuki ölçüt resmî metindir. Aşağıdaki her madde ve süre
-> **Yargı PRO MCP `mevzuat_getir` ile mevzuat.gov.tr metninden 2026-10-05'te
+> **`mevzuat_getir` ile mevzuat.gov.tr resmî metninden 2026-10-05'te
 > okundu** (künye tablosu en sonda). Okunmayan iddia yazılmadı; teyit
 > edilemeyen yerde `TEYİT BEKLİYOR` yazar.
 
@@ -355,7 +355,7 @@ liste onun insan-okur özetidir.
   unsurunu kaldırır (tebliğden önce başvurmak müvekkilin hakkıdır). İstisna
   yalnız olumsuz çekimdir: "tebliğ edilmesi" ad-fiili istisna değildir.
 - İcra mahkemesine arz edilen işler ivedidir (İİK m.18/1); adli tatilde
-  süreler uzamaz (HMK m.103/1-h — 5 Ekim 2026 Yargı PRO analizi doğrulama
+  süreler uzamaz (HMK m.103/1-h — 5 Ekim 2026 uyarlama analizi doğrulama
   kaydı; Yargıtay 12. HD içtihadıyla teyitli, yetenek denetimi bulgusu Y-01).
   Süre motorundaki bu düzeltme `oa-sure` tarafındadır.
 
@@ -396,7 +396,7 @@ liste onun insan-okur özetidir.
   borçluyu `--taraf davali` diye geçirmeyin: icraya özgü müvekkil-aleyhi
   kalıplar yalnız doğru sıfatla taranır.
 
-## 5. Okunan resmî metinler (Yargı PRO MCP, 2026-10-05)
+## 5. Okunan resmî metinler (mevzuat.gov.tr, 2026-10-05)
 
 `mevzuat_getir` (mevzuatgov:kanun:3:2004 — İİK): m.16, m.18, m.32, m.33,
 m.33/a, m.36, m.58, m.62, m.65, m.66, m.67, m.68, m.68/a, m.71, m.72, m.76,
@@ -406,7 +406,7 @@ m.338, m.340, m.344, m.347, m.349, m.350, m.351. (mevzuatgov:kanun:5:6102 —
 TTK) m.4, m.5/A, m.776, m.777. (mevzuatgov:kanun:3:7201 — Tebligat K.) m.32.
 (mevzuatgov:kanun:5:6100 — HMK) m.119, m.127, m.317, m.342. m.69
 (borçtan kurtulma, yedi gün ve yüzde on beş depo) ve HMK m.103/1-h için
-kaynak: 5 Ekim 2026 Yargı PRO analizinin resmî metin doğrulama kaydı (aynı
+kaynak: 5 Ekim 2026 uyarlama analizinin resmî metin doğrulama kaydı (aynı
 MCP araçlarıyla).
 
 ## 6. Bilinçli olarak bu turda yapılmayanlar

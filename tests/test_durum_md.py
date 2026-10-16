@@ -6,7 +6,6 @@ kanıttan ATOMİK türetilir: "elle düzenlenmez" damgası taşır, adım tablos
 kapı durumu + kütük-vs-dilekçe sayacı + sözleşme-dışı dizin uyarısı + bayat-md
 uyarısı + AVUKAT KARARI BEKLEYEN + SIRADAKİ bölümlerini içerir.
 """
-import importlib.util
 import json
 import pathlib
 import subprocess

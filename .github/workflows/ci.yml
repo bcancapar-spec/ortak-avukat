@@ -21,6 +21,12 @@ name: CI
 # + tesseract-ocr-tur kurularak GERÇEKTEN koşar. Yani `test` işinin yeşili
 # "OCR çalışıyor" DEMEZ; onu söyleyen `ocr` işidir.
 #
+# LINT İŞİ (2026-10-15 denetimi, B-2/B-3/B-5): `lint` işi kaynak hijyeni
+# kapısıdır — `ruff.toml`'daki YALNIZ hata sınıfı kurallar (sözdizimi,
+# tanımsız ad, yeniden tanım, kullanılmayan import, yinelenen küme öğesi, ham
+# görünmez/çift-yönlü karakter). Biçim kuralı YOKTUR. `test` işinin yeşili
+# "kaynak hijyeni temiz" DEMEZ; onu söyleyen `lint` işidir.
+#
 # İki iş AYRI tutulur: `yapi` işi `test` işine bağlı DEĞİLDİR. (2026-08-06
 # bulgusu: yapı denetimi pytest'in ARKASINDA bir ADIM olduğu için, testler
 # kırmızıya döndüğü 11 koşu boyunca HİÇ çalışamadı — bir kapı, başka bir
@@ -155,3 +161,25 @@ jobs:
       # hiçbir işte koşmuyordu — matris koşucularında Tesseract yok.
       - name: OCR testleri (gerçek tesseract ile)
         run: pytest -rsfE tests/test_oa_ingest_ocr_nobetci.py tests/test_v0518_ocr.py
+
+  lint:
+    # 2026-10-15 denetimi (B-2/B-3/B-5): KAYNAK HİJYENİ KAPISI. Kural seti
+    # `ruff.toml`'dadır ve `tests/test_kaynak_hijyeni.py` ile kilitlidir: yalnız
+    # hata sınıfı, biçim kuralı yok. Sürüm SABİT (udf-cli ile aynı gerekçe:
+    # kural seti sürümle kaymasın). `test` işine bağlı DEĞİLDİR — bir kapı,
+    # başka bir kapının arkasına saklanmaz.
+    name: kaynak hijyeni (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install ruff (sabit sürüm)
+        run: pip install ruff==0.17.0
+
+      - name: ruff check (ruff.toml kural seti)
+        run: ruff check .

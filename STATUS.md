@@ -1,7 +1,61 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-12 · **Sürüm:** 0.6.0 · **Commit:** dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine; bkz. CHANGELOG)
-*(önceki kayıtlar: 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` 2026-10-16'da avukat kararıyla push edildi — PR #9; main'e birleştirme avukatın 2026-10-16 talimatıyla, üçüncü heyet koşumu + şart kapanışı doğrulaması + CI sonrası (bkz. CHANGELOG; [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md))
+*(önceki kayıtlar: 2026-10-12 · 0.6.0 · PR #8 — 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+
+> **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; o sırada push
+> edilmemişti — 2026-10-16'da avukat kararıyla push edildi, PR #9; sürüm numarası değişmedi, birleştirme kararı avukatın). v0.6.0 ölçümle denetlendi;
+> 11 bulgunun sekizi bu dalda önce kırmızı testle kapatıldı: `<ol start>` (PR #6 bulgusu),
+> kaynak hijyeni kapısı (ruff hata sınıfı + CI `lint`), ham görünmez karakterler kaçışa,
+> pyproject sürüm damgası, kök dizin → `docs/arsiv/` + bağlantı kapısı, katmanlı README,
+> `.github` güvenlik bildirimi ve PR şablonu; ardından v0.5.19 kalemi Excel gizli katmanı (gizli
+> satır/sütun, yazı rengi, `;;;` biçimi, punto; `tests/test_v0519_excel_gizli_katman.py`). Ölçüm: tam süit 3800 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (87,0 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3813, OA-SUIT-SAYISI ile birebir. Avukat kararı bekleyen:
+> GitHub açıklaması ve konu etiketleri (B-8), PR #6'nın kapatılması, dalın birleştirilmesi.
+> Belge: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md).
+
+> **2026-10-16 — heyet koşumu** (dal `denetim/fable-2026-10-15`; o sırada push edilmemişti, aynı gün avukat
+> kararıyla push edildi — PR #9). Üç kıdemli avukat
+> denetçi ajan (usul, esas, güvenlik) dalın bütününü (`origin/main..HEAD`, 14 commit) temiz kopyada
+> ölçtü: üçü de ŞARTLI PUSH, BLOKLAYICI 0 · UYARI 8 · NOT 18; tam süit 3800 geçti · 12 atlandı ·
+> 0 kırmızı (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (seyrek dev
+> sayfada ızgara tavanı, tablo stili zemini; önce kırmızı test). Karar materyali:
+> [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push kararı avukatın.
+> Avukat kararı (aynı gün): push yok, önce K-1 ve K-2 — kapatıldı (Excel kapısı var olan hücreleri gezer;
+> boyut sınırı `xl/` bütününe; tablo stili aralığı ZAYIF; önce kırmızı test, +3); ikinci heyet koşumu bu
+> onarımdan sonra.
+> İkinci koşum (HEAD `ca37539`): usul ve esas ŞARTLI PUSH, güvenlik PUSH — BLOKLAYICI 0 · UYARI 4 · NOT 22;
+> K-1/K-2 kapandı; usulün kayıt şartları bu kayıtla kapatıldı; push öncesi açık şart kalmadı, kalanlar aynı
+> dalda ayrı commit ya da açık kalem (K-3, K-4, K-10 … K-16):
+> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Avukat kararı: push ve PR #9;
+> ardından "0.6'yı geliştir": K-3, K-10…K-15 aynı dalda önce kırmızı testle kapatıldı (Excel testi +12,
+> OA-SUIT-SAYISI 3828); üçüncü heyet koşumu birleştirmeden önce.
+> Üçüncü koşum (2026-10-17, HEAD `c94e982`, main'e birleştirme öncesi bütün): üçü de ŞARTLI PUSH — BLOKLAYICI 0 ·
+> UYARI 9 · NOT 25; tam süit 3887 geçti · 12 atlandı · 0 kırmızı; birleştirme öncesi şartlar tur 4'te (`d6e5550`)
+> önce kırmızı testle kapatıldı (nesne sayacı etiket dilbilgisi, `--kaynak-url` Layer 0, dürüst sınır cümleleri, bayat
+> kayıtlar; test +7, OA-SUIT-SAYISI 3907); kalanlar K-17 … K-26 aynı dalda ayrı commit, avukat kararı bekleyenler §7.1:
+> [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Birleştirme: avukatın 2026-10-16 talimatıyla,
+> üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası orkestra eliyle (PR #9 birleştirme commit'i
+> kaydın kendisidir; dal silinmez).
+> Doğrulama (2026-10-17, fark `c94e982..ef03fd8`): üçü de ŞART KAPANDI, BLOKLAYICI 0 (usul PUSH 0·0·2, güvenlik PUSH
+> 0·2·2, esas ŞARTLI 0·1·5 — şartı birleştirme sonrası ilk commit); yeni açık kalemler K-27 (adres taramasında 0 ile
+> başlayan telefon ve kullanıcı bilgisi), K-28 (ASCII dışı ad alanı öneki), K-29 (`--sorgu-onayli` izi): KARAR-3 §8.
+
+> **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
+> denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
+> v0.5.18'deki +79 ms'si, çapraz denetim sonucunun içerik özetine bağlı türetilmiş önbellekle isabet
+> turlarında geri alındı (eşleştirilmiş ABBA, v0.5.18'e göre −96,5 ms; PERFORMANS-STATUS §14), tam süit
+> 3840 geçti · 12 ortam gerekçesiyle atlandı · 0 kırmızı; birleştirme kararı avukatın.
+
+> **2026-10-16 — hibrit teyit kanalı** (dal `teyit/resmi-kaynak-beyaz-listesi`, denetim dalına yığılı PR;
+> 2026-10-15 avukat kararı): eklenti üçüncü taraf MCP sunucusu ilan etmez, içtihat/mevzuat teyidinin
+> kanıtı resmî portalın adresi (beyaz liste `kunye_ortak.RESMI_KAYNAKLAR`) + diske inmiş tam metindir,
+> kanal hibrittir (`WebFetch` tam metin / `WebSearch` keşif), `oa_hafiza.py teyit` tam metin çeken
+> araçlarda `--kaynak-url` ister, `ictihat_muhakeme_denetim.py` [G7] beyaz liste dışı dayanağı teslim
+> engeli sayar ve canlı metinler kanal-bağımsız yazıldı (87 dosya / 290 satır → 0). Kilitler:
+> `tests/test_teyit_kanali.py`, `tests/test_kanal_bagimsiz_metin.py`. Ölçüm (denetim dalının ucuyla birleşik
+> ağaç): tam süit 3887 geçti · 12 atlandı · 0 kırmızı; OA-SUIT-SAYISI 3900. Yerel `oa-kaynak` MCP yol
+> haritasında. Birleştirme kararı
+> avukatın; ayrıntı CHANGELOG "Sürümsüz" kaydında.
 
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
@@ -25,7 +79,7 @@
 > **Açık (v0.5.19):**
 > - kaldığı yerden süren alım;
 > - avukat onayının avukatın kendi mesajına bağlanması;
-> - Excel'de gizli satır/sütun ve yazı rengi;
+> - ~~Excel'de gizli satır/sütun ve yazı rengi~~ (2026-10-15 denetim dalında kapatıldı; saha kalibrasyonu açık);
 > - usul satırları kapısı;
 > - dosya-içi akıbet bayrağı.
 >
@@ -49,7 +103,7 @@
 > Açık hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.
 
 > **Saha sonucu (tek prompt, gerçek istinaf dosyası, Fable 5 max):**
-> [SAHA-SONUCU.md](SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
+> [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md) — ~200 evrak · 49 dk · 45,6k token ·
 > teslim edilebilir ek beyan + geçerli UDF. v0.5.7 o koşunun bulgularından
 > doğdu (bayat-tohum aşısı · [G4] bağlantı kapısı · yerel motor v2 ·
 > anayasa m.0 · hook doktoru).
@@ -182,7 +236,7 @@ bir satır ölçülmeden buraya girmez.
   `teslim_paketi.py` OA_SURUM = 0.5.16 (birlikte).
 - **Açık işler (bu sürümde YAPILMADI — sessiz atlama yasağı):**
   - Saha **"SONRA" ölçümü** (11 anonim dosya kopyası, v0.5.16 araçları) ve önce/sonra
-    tablosu; DENETIM-v0516.md kök tablosu buna bağlı.
+    tablosu; docs/arsiv/DENETIM-v0516.md kök tablosu buna bağlı.
   - `git push origin main` (kimlik engeli — `gh auth login -h github.com`).
   - Avukat kararı bekleyen: **B-4** `git filter-repo` (geçmiş commit'lerde dosya kimliği —
     geçmiş yeniden yazımı yalnız avukat kararıyla) · ~~**udf-cli pin**~~ (A5/B-6 — 2026-10-05
@@ -206,9 +260,9 @@ bir satır ölçülmeden buraya girmez.
 - **Tam süit: 1385 yeşil / 1 tasarımsal atlama** · aile denetimi temiz ·
   CI 4'lü matris yeşil · kurulu kanal 0.5.11.
 - **Saha:** 149 gerçek dava toplam; v0.5.x döngüsünde 9 belgeli koşu
-  ([SAHA-DENEYLERI.md](SAHA-DENEYLERI.md)); ilk ORGANİK yeşil makbuz 923
+  ([SAHA-DENEYLERI.md](docs/arsiv/SAHA-DENEYLERI.md)); ilk ORGANİK yeşil makbuz 923
   sahasında; 1865 çok-oturumlu + müdahaleli-yetkili sınıf
-  ([KARNE-1865.md](KARNE-1865.md)).
+  ([KARNE-1865.md](docs/arsiv/KARNE-1865.md)).
 - **Açık işler:** v0.5.12 adayı P1-4b (çok-oturum kilit sahipliği) ·
   1865 içerik hükümleri avukatta · yeni saha koşusu v0.5.11 korumalarının
   canlı sınavı olacak.

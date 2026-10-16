@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """v0.5.8.5 HOOK DİRİLİŞİ — UserPromptSubmit üç sahada üç farklı nedenle öldü.
 
-Son ölüm nedeni (saha): `_dosya_klasoru_mu` Yargı PRO klon kökünü tanımıyor
+Son ölüm nedeni (saha): `_dosya_klasoru_mu` dış araçla indirilmiş UYAP klon kökünü tanımıyor
 (klon kökünde NNN_ evrak deseni yok; uyap-project.json + evraklar/ + INDEX.md
 var) VE hook_prompt/hook_pretool kök keşfi hook_denetle ile ASİMETRİKTİ
 (stdin payload'ındaki cwd hiç okunmuyordu → süreç CWD'si dava klasörünün
@@ -74,7 +74,7 @@ def _dava_klasoru_kur(kok, defterli=False):
 
 
 def _klon_koku_kur(kok):
-    """Sentetik Yargı PRO klon kökü: NNN_ deseni YOK — eski imza kör kalırdı.
+    """Sentetik UYAP klon kökü (dış araç): NNN_ deseni YOK — eski imza kör kalırdı.
     Kökte uyap-project.json + evraklar/ + INDEX.md durur."""
     (kok / "uyap-project.json").write_text(
         json.dumps({"dosya": "2024/123 Esas", "kaynak": "sentetik"}),

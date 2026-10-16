@@ -105,7 +105,7 @@ daima MCP/resmî kaynaktan teyitlidir.
 
 ## 5. Doğrulama mimarisi — tavizsiz (anayasal)
 
-- İçtihat, resmî kaynaktan (Yargı Pro/Mevzuat MCP) doğrulanmadıkça **yoktur**; hafızadan
+- İçtihat, resmî kaynaktan (resmî kaynak beyaz listesi: içtihat portalları / mevzuat.gov.tr) doğrulanmadıkça **yoktur**; hafızadan
   üretilen atıf "iddia"dır, "içtihat" değildir.
 - Doğrulanmamış hiçbir bilgi kesinmiş gibi sunulmaz; şüpheli her bilgi açıkça etiketlenir
   ("teyit edilmedi", "MCP'de bulunamadı", "tek kaynak").

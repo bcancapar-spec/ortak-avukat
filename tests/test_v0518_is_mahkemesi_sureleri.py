@@ -159,7 +159,7 @@ def test_ay_hesabi_YARGITAY_olcutuyle_ayni():
     (date(2018, 3, 7),   date(2018, 3, 21)),
 ])
 def test_ise_iade_iki_hafta_mahkeme_kararlariyla_ayni(tutanak, beklenen):
-    """Yargı Pro'dan çekilen üç gerçek BAM/Yargıtay vakasında mahkemenin
+    """Resmî içtihat portalından çekilen üç gerçek BAM/Yargıtay vakasında mahkemenin
     kabul ettiği son gün ile motorun sonucu birebir."""
     son, _r, _u = H.hesapla(tutanak, 2, "hafta", "hukuk", tur="usul",
                             kural="is_ise_iade_dava")

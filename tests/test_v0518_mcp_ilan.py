@@ -4,8 +4,26 @@
 2026-10-06 ölçümü: v0.5.7.4'te ilan edilen yedek sunucunun (`yargi-mcp-yedek`) alan adı
 ilgisiz bir sunucuya çözülüp başka bir alan adına verilmiş sertifika sunuyordu; kaynak depo
 herkese açık değildi. Eklentinin ilan ettiği her uç nokta avukatın sorgularını okur ve
-"içtihat" diye metin döndürür — bu liste ancak bilinçli bir kararla (bu test güncellenerek)
-genişleyebilir. Ağ erişimi YOK: yalnız depo içeriği denetlenir.
+"içtihat" diye metin döndürür — bu yüzden ilan listesi ancak bilinçli bir kararla genişler.
+
+2026-10-15 AVUKAT KARARI (hibrit teyit kanalı; `tests/test_teyit_kanali.py`): izinli ilan
+listesi BOŞALDI — eklenti HİÇBİR MCP sunucusu ilan etmez; içtihat/mevzuat teyidinin kanıtı
+resmî portalın adresi (beyaz liste) + diske inmiş tam metindir. İki eski test o kararla
+çevrildi, gerekçesi burada:
+  - `test_ilan_edilen_sunucular_yalniz_izinli_liste` (tek izinli sunucu + https şartı) →
+    `test_izinli_ilan_listesi_bos_ve_plugin_json_anahtari_hic_yok`: `IZINLI = {}`; `plugin.json`
+    `mcpServers` anahtarını HİÇ taşımaz (boş sözlük bile ikinci bir ilan kapısı olurdu).
+    İlanın TAM kapısı (marketplace.json, `.mcp.json`, manifestlerde alan adı) test_teyit_kanali
+    (e) `test_eklenti_hicbir_mcp_sunucusu_ilan_etmez`tedir — burada YİNELENMEZ (çift kilit
+    yok; bu dosya yalnız B-23'ün "izinli liste" sorusunu taşır). Eski `test_ikinci_ilan_kapisi_yok`
+    aynı gerekçeyle o teste devredildi.
+  - `test_kutuk_sozlugu_yedek_adlari_damga_disiplininde_tutar` SİLİNDİ: üçüncü taraf araç adları
+    `oa_hafiza` sözlüğünden çıkarıldı (test_teyit_kanali (c)); damga disiplini artık araç adına
+    değil [G7] resmî adres kapısına dayanır (dayanak kaydının adresi yoksa teslim engeli).
+Kalan üç test B-23 dersinin kendisidir: sahipsiz adres tarihçe dışında geçmez; `oa-ictihat`
+otomatik yedeğe geçmeyi öğretmez; eski yedek proje "alternatif" diye önerilmez (STATUS.md dahil —
+`test_kanal_bagimsiz_metin` STATUS'u tarihli bölümleri yüzünden taramaz, bu yüzden burada durur).
+Ağ erişimi YOK: yalnız depo içeriği denetlenir.
 """
 import json
 import pathlib
@@ -13,7 +31,7 @@ import re
 
 KOK = pathlib.Path(__file__).resolve().parents[1]
 EKLENTI = KOK / "plugins" / "ortak-avukat"
-IZINLI = {"yargi-pro": "https://yargi.betaspacestudio.com/mcp"}
+IZINLI = {}   # 2026-10-15: eklenti hiçbir MCP sunucusu ilan etmez
 SAHIPSIZ = "yargimcp.surucu.dev"
 # Adres yalnız TARİHÇE kayıtlarında geçebilir (ne olduğunu ve neden kaldırıldığını anlatır)
 TARIHCE = {"CHANGELOG.md", "degisiklik-gunlugu.md"}
@@ -23,18 +41,12 @@ def _json(yol):
     return json.loads(yol.read_text(encoding="utf-8"))
 
 
-def test_ilan_edilen_sunucular_yalniz_izinli_liste():
-    sunucular = _json(EKLENTI / ".claude-plugin" / "plugin.json").get("mcpServers") or {}
-    assert {ad: s.get("url") for ad, s in sunucular.items()} == IZINLI
-    for s in sunucular.values():
-        assert s.get("type") == "http" and s["url"].startswith("https://")
-
-
-def test_ikinci_ilan_kapisi_yok():
-    assert not (EKLENTI / ".mcp.json").exists()
-    assert not (KOK / ".mcp.json").exists()
-    for p in _json(KOK / ".claude-plugin" / "marketplace.json").get("plugins", []):
-        assert "mcpServers" not in p
+def test_izinli_ilan_listesi_bos_ve_plugin_json_anahtari_hic_yok():
+    """B-23'ün izinli listesi 2026-10-15'ten beri boştur; `plugin.json` `mcpServers` anahtarını
+    hiç taşımaz. Tam ilan kapısı: tests/test_teyit_kanali.py (e)."""
+    pj = _json(EKLENTI / ".claude-plugin" / "plugin.json")
+    assert "mcpServers" not in pj, "plugin.json mcpServers anahtarı taşıyor: %r" % pj.get("mcpServers")
+    assert {ad: s.get("url") for ad, s in (pj.get("mcpServers") or {}).items()} == IZINLI
 
 
 def test_sahipsiz_adres_tarihce_disinda_gecmiyor():
@@ -55,20 +67,11 @@ def test_sahipsiz_adres_tarihce_disinda_gecmiyor():
 
 
 def test_ictihat_parcasi_otomatik_yedege_gecmeyi_ogretmiyor():
+    """Resmî portala ulaşılamayınca başka sunucuya/özel siteye OTOMATİK GEÇİLMEZ, çıktıya
+    'teyit YAPILAMADI' yazılır (2026-10-15'te 'Pro düşerse' → 'resmî portala ulaşılamazsa')."""
     sk = (EKLENTI / "skills" / "oa-ictihat" / "SKILL.md").read_text(encoding="utf-8")
-    assert not re.search(r"yargi-mcp-yedek`?\s+sunucusuna\s+geç", sk)
+    assert not re.search(r"yedek\s+sunucu\w*\s+geç(?!ilmez|İLMEZ)", sk, re.I), "yedeğe geçmeyi öğretiyor"
     assert "OTOMATİK GEÇİLMEZ" in sk and "teyit YAPILAMADI" in sk
-
-
-def test_kutuk_sozlugu_yedek_adlari_damga_disiplininde_tutar(tmp_path):
-    """Sözlükten çıkarmak bu adları 'serbest araç' yapıp damga kapısını gevşetirdi."""
-    import importlib.util
-    yol = EKLENTI / "skills" / "oa-pipeline" / "scripts" / "oa_hafiza.py"
-    sp = importlib.util.spec_from_file_location("oa_hafiza_b23", yol)
-    m = importlib.util.module_from_spec(sp)
-    sp.loader.exec_module(m)
-    assert {"search_bedesten_unified", "search_anayasa_unified"} <= m.ARAMA_ARACLARI
-    assert {"get_bedesten_document_markdown", "get_anayasa_document_unified"} <= m.GETIR_ARACLARI
 
 
 def test_sahipsiz_yedek_proje_alternatif_diye_onerilmiyor():

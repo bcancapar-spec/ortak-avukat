@@ -67,7 +67,7 @@ Dokuz sabit **cephe** (kör nokta bırakmamak için eksiksiz değerlendirilir): 
    checklist*tir, mekanik denetim değildir ve yalnız **öneri** üretir
    ("şu beyan tutanağa geçmemiş görünüyor"). Düzeltme talebi verilip
    verilmeyeceği **avukatın takdiridir**; sistem otomatik gündem oluşturmaz.
-   **Zabıt karşılaştırma yardımcısı (v0.5.18 adayı; Yargı PRO 16-2 fikri, OA
+   **Zabıt karşılaştırma yardımcısı (v0.5.18 adayı; dış skill kütüphanesi 16-2 fikri, OA
    yöntemiyle):** `python scripts/zapt_denetim.py --kart _oa/cikti/NN-celse-karti.md
    --zapt _oa/metin/NNN-durusma-zapti.md [--json]`. Kartın (c) bölümü madde
    işaretli liste olarak yazılır ve başlığında "TUTANAĞA" geçer; script bu

@@ -196,5 +196,5 @@ kuralım" değil "şu koşuda şu kırıldı" konuşulur.
 ---
 *Token ölçümlerinin yöntemi ve tam tablosu: [OLCUMLER.md](OLCUMLER.md).
 Bu defter, koşular eklendikçe büyür. Sürüm eşlemesi:
-[CHANGELOG.md](CHANGELOG.md) · özet tablo ve ölçülen örnekler:
-[README → Saha deneyleri](CHANGELOG.md#saha-deneyleri--testler-nasıl-yapıldı).*
+[CHANGELOG.md](../../CHANGELOG.md) · özet tablo ve ölçülen örnekler:
+[README → Saha deneyleri](../../CHANGELOG.md#saha-deneyleri--testler-nasıl-yapıldı).*

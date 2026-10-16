@@ -27,7 +27,6 @@ Bu dosya dört kilidi doğrular:
 Tüm testler tmp_path + sentetik desenler kullanır (repo kuralı — gerçek dava
 numarası/kişi adı/klasör yolu ASLA yazılmaz).
 """
-import argparse
 import importlib.util
 import json
 import os

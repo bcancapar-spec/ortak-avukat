@@ -3,7 +3,7 @@
 **Durum: FİKİR KAYDI. Uygulanmadı, v0.5.10'a girmedi.** Bu belge ileride
 yapılabilecek bir mimari değişikliği ve — daha önemlisi — bugün neden
 *yapılmadığını* kayda geçirir. Depoda uygulanan işler için
-[YOL-HARITASI.md](YOL-HARITASI.md) ve [STATUS.md](STATUS.md) geçerlidir.
+[YOL-HARITASI.md](../YOL-HARITASI.md) ve [STATUS.md](../STATUS.md) geçerlidir.
 
 ---
 

@@ -18,7 +18,7 @@ kaydındadır — burada gerçek dosya/kişi YOK):
 - AİHM yolu: Türkçe yazılmış doğru AİHM künyesi («no. 12345/18») EKSİK KÜNYE
   engeline düşüyordu.
 
-Kanun numaraları ve resmî adlar Yargı PRO `mevzuat_ara` ile mevzuat.gov.tr'den
+Kanun numaraları ve resmî adlar `mevzuat_ara` ile mevzuat.gov.tr'den
 teyit edildi (2026-10-05). Tüm veriler KURGUDUR (anayasa m.7).
 """
 import importlib.util

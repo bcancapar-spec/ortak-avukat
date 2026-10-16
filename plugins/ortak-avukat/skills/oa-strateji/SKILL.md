@@ -235,7 +235,7 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   `--merci vergi` karşı vekâlet kolunda AAÜT üçüncü kısım nispi dilimini
   UYGULAMAZ; esas `aaut.maktu_vergi`dir (`AVK168_MAKTU_MERCILER` — aynı rejimdeki
   merciler için tek genişleme noktası). Av.K. m.168/2 (Ek cümle: 5904 s.K. m.35;
-  Yargı PRO `mevzuat_getir`): "vergi, resim, harç ve benzeri mali yükümlülükler …
+  resmî metin `mevzuat_getir`): "vergi, resim, harç ve benzeri mali yükümlülükler …
   ile … 6183 … uygulanmasından doğan her türlü davalar için avukatlık ücreti
   tutarı maktu olarak belirlenir". Tam kabul → davacı lehine maktu, tam ret →
   davalı lehine maktu (AAÜT m.15/1 "diğer durumlarda tamamına"; birinci savunma
@@ -260,7 +260,7 @@ aritmetik yapar, tarife rakamlarını **`scripts/tarife.json`**'dan okur:
   bölümünde görünür uyarı basar — davanın kaynağını avukat nitelendirir (kapsam
   genişletilmedi, idare için maktu kol eklenmedi).
 
-## GÜNCEL ORAN TEYİDİ — faiz/oran protokolü (v0.5.18 adayı; Yargı PRO 14-1/14-2 fikri, OA yöntemiyle)
+## GÜNCEL ORAN TEYİDİ — faiz/oran protokolü (v0.5.18 adayı; dış skill kütüphanesi 14-1/14-2 fikri, OA yöntemiyle)
 Faiz, avans, reeskont gibi ORANLAR dönemseldir ve resmî kaynakta değişir; "bildiğim
 oran" ile yapılan hesap sayı uydurmanın en sinsi biçimidir. Kural: **script oran
 ÜRETMEZ, model oranı hafızadan YAZMAZ.**

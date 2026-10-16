@@ -102,7 +102,7 @@ MERCILER = {
 MERCI_ADI = {"asliye": "asliye mahkemesi", "idare": "idare mahkemesi (vergi dışı)",
              "sulh": "sulh mahkemesi", "icra_tetkik": "icra tetkik mercii (icra mahkemesi)",
              "vergi": "vergi mahkemesi ((3) sayılı tarife)"}
-# v0.5.18 K2 (T5-4 GİZLİ KUSUR) — Av.K. m.168/2 (Ek cümle: 16/6/2009-5904/35 md., Yargı PRO
+# v0.5.18 K2 (T5-4 GİZLİ KUSUR) — Av.K. m.168/2 (Ek cümle: 16/6/2009-5904/35 md., resmî metin
 # mevzuat_getir 2026-10-07): "… genel bütçeye, il özel idareleri, belediye ve köylere ait
 # vergi, resim, harç ve benzeri mali yükümlülükler ve bunların zam ve cezaları ile
 # tarifelere ilişkin davalar ve 6183 sayılı Amme Alacaklarının Tahsil Usulü Hakkında

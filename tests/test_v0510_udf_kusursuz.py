@@ -25,7 +25,6 @@ Tamamen ağsız/deterministik; tüm veriler sentetiktir (tmp_path).
 import importlib.util
 import json
 import pathlib
-import sys
 import zipfile
 
 import pytest
@@ -146,8 +145,8 @@ def test_cikti_adi_normalize(udf_yaz, verilen, beklenen):
 def test_filo_listesi_kapsami(teslim, tmp_path):
     """Dava kökü + 40-UYAP taranır; _oa/cikti çalışma nüshaları filo DIŞI."""
     kok = tmp_path
-    a = _udf_kur(kok / "resmi-ad.udf")
-    b = _udf_kur(kok / "40-UYAP" / "kopya.udf")
+    _udf_kur(kok / "resmi-ad.udf")
+    _udf_kur(kok / "40-UYAP" / "kopya.udf")
     _udf_kur(kok / "_oa" / "cikti" / "calisma.udf")
     filo = teslim._teslim_sinifi_udf_listesi(str(kok))
     adlar = sorted(pathlib.Path(x).name for x in filo)

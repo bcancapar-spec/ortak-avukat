@@ -9,7 +9,7 @@
     {
       "name": "ortak-avukat",
       "source": "./plugins/ortak-avukat",
-      "description": "Türk hukukunda kıdemli Ortak Avukat metodoloji sistemi: 20 skill (çekirdek + 19 oa-* parça), İlk İlkeler ve illiyet odaklı derin muhakeme, Yargı Pro ile doğrulanmış içtihat (tek bağlayıcı, yedek sunucu yok), deterministik denetim scriptleri. Token-verimli (kayıpsız) evrak çıkarım katmanı oa-ingest, belge güvenlik kapısı (gizli talimat damgalanır) ve yalnız yerel OCR dahil.",
+      "description": "Türk hukukunda kıdemli Ortak Avukat metodoloji sistemi: 20 skill (çekirdek + 19 oa-* parça), İlk İlkeler ve illiyet odaklı derin muhakeme, resmî kaynaklardan doğrulanmış içtihat (beyaz liste; üçüncü taraf sunucu yok), deterministik denetim scriptleri. Token-verimli (kayıpsız) evrak çıkarım katmanı oa-ingest, belge güvenlik kapısı (gizli talimat damgalanır) ve yalnız yerel OCR dahil.",
       "version": "0.6.0",
       "author": {
         "name": "Av. Bayram Can Çapar"

@@ -29,6 +29,7 @@ Tüm girdiler tmp_path + SENTETİK veridir (repo kuralı m.7 — gerçek dava
 numarası / kişi adı / gerçek klasör yolu yazılmaz).
 """
 import json
+from oa_teyit_kanali import KAYNAK_URL_SATIRI, kaynak_url_ekle  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
@@ -48,7 +49,8 @@ AYIRT_TASLAK = (f"Davalı tarafın dayandığı {KUNYE} sayılı karar somut ola
 
 def _cli(script, args, cwd):
     cp = subprocess.run(
-        [sys.executable, str(script)] + [str(a) for a in args],
+        [sys.executable, str(script)]
+        + (kaynak_url_ekle(args) if script == HAFIZA else [str(a) for a in args]),
         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd),
     )
     return cp.returncode, (cp.stdout or "") + (cp.stderr or "")
@@ -79,7 +81,7 @@ def _iskele(tmp_path, damga="LEHE", ayirt_etme="", kutuk_var=True,
     satirlar = [
         "# 01 — İçtihat Muhakeme Kaydı", "",
         f"**KUNYE:** {KUNYE}",
-        "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+        "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
         f"**DAMGA:** {damga}", "",
         "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
         "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",
@@ -323,12 +325,12 @@ def test_sonuc_icine_gomulen_sahte_sinif_tokeni_etkisiz(tmp_path):
 # ═══════════════════════════════════════════════════════════════════════════
 
 def test_e3_arac_parantezli_ek_getir_sinifina_normalize_edilir(tmp_path):
-    """'ictihat_getir (Yargı Pro)' gibi parantezli-ekli bir yazım KANONİK ada
+    """'ictihat_getir (resmî portal)' gibi parantezli-ekli bir yazım KANONİK ada
     normalize edilir — GETİR sınıf kuralları (damgasız RET) aynen uygulanır;
     parantez içi içerik kütüğe SIZMAZ (atılır)."""
     _init(tmp_path)
     kod, cikti = _cli(HAFIZA, [
-        "teyit", "--arac", "ictihat_getir (Yargı Pro)", "--sorgu", "kidem",
+        "teyit", "--arac", "ictihat_getir (resmî portal)", "--sorgu", "kidem",
         "--sonuc", KUNYE, "--kok", str(tmp_path)], cwd=tmp_path)
     assert kod != 0, cikti
     assert "ZORUNLU" in cikti  # GETİR sınıfı — damgasız RET

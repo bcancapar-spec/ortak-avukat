@@ -8,8 +8,8 @@ sürüm zincirinin kök özetidir. Üç kademe birbirini tamamlar:
 - **Parça günlükleri** — her skill'in kendi `references/degisiklik-gunlugu.md`
   dosyası (dosya/fonksiyon düzeyinde ayrıntı).
 - **Karneler ve Release'ler** — saha koşularının adli analizi
-  ([KARNE-307.md](KARNE-307.md), [KARNE-1865.md](KARNE-1865.md),
-  [SAHA-SONUCU.md](SAHA-SONUCU.md)) ve GitHub Release notları.
+  ([KARNE-307.md](docs/arsiv/KARNE-307.md), [KARNE-1865.md](docs/arsiv/KARNE-1865.md),
+  [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)) ve GitHub Release notları.
 
 Kural: **CI yeşermeden sürüm etiketi atılamaz**; sürüm damgaları (plugin,
 marketplace, iki script) daima birlikte artar. Dosya kimlikleri anayasa m.7
@@ -40,9 +40,9 @@ ve benzeri ayrıntılar sürüm defterinde durur; vitrinde hukukçular için sö
 > prompt'la**, 49 dakikada ve 45,6k token'la teslim edilebilir bir istinafa cevap
 > dilekçesine ve geçerli UDF'e dönüştü. Aynı sınıf iş, eklenti öncesi aynı model ve
 > eforla (Fable 5, max) yaklaşık 1,2M token tüketiyordu; fark ölçülmüştür, iddia
-> değildir (ölçüm ve kayıp listesi: [SAHA-SONUCU.md](SAHA-SONUCU.md)). Evraklar
+> değildir (ölçüm ve kayıp listesi: [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)). Evraklar
 > [avukat-dosya-indirici](https://github.com/bcancapar-spec/avukat-dosya-indirici) ile PDF olarak indirilmiş, bu eklentiyle `.md`/`.json` biçimine otonom çevrilmiştir.
-> Sayılar ve dürüst kayıp listesi: **[SAHA-SONUCU.md](SAHA-SONUCU.md)** · **[BASARI.md](BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
+> Sayılar ve dürüst kayıp listesi: **[SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)** · **[BASARI.md](docs/arsiv/BASARI.md)**. Dosya kimlikleri projenin anayasası m.7 gereği daima
 > anonimdir. Hukuk erişilebilir olmalıdır — su ve nefes gibi.
 
 ## Saha deneyleri — testler nasıl yapıldı
@@ -160,19 +160,19 @@ bağlanmadı. Aşağıdaki dokuzu, **v0.5.x geliştirme döngüsünde** koşulan
 sensörlü izleme + adli analizle uçtan uca BELGELENEN dava testleridir —
 v0.5 sürüm zincirini fiilen bu dokuz dava yönlendirdi.
 **Dokuz koşunun tam kaydı — yöntem, ölçümler, dersler:**
-[SAHA-DENEYLERI.md](SAHA-DENEYLERI.md).
+[SAHA-DENEYLERI.md](docs/arsiv/SAHA-DENEYLERI.md).
 
 | Saha | Dosya tipi | Ne öğretti → hangi sürüm |
 |---|---|---|
-| **İlk tam koşu** | ~200 evraklık derdest istinaf dosyası | 49 dk · 45,6k token · teslim edilebilir ek beyan + geçerli UDF ([SAHA-SONUCU.md](SAHA-SONUCU.md)); bayat araç kopyası ve link zinciri dersleri → v0.5.7 · **45,6k token** |
+| **İlk tam koşu** | ~200 evraklık derdest istinaf dosyası | 49 dk · 45,6k token · teslim edilebilir ek beyan + geçerli UDF ([SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)); bayat araç kopyası ve link zinciri dersleri → v0.5.7 · **45,6k token** |
 | **Müdahalesiz test** | 214 evraklık bakir klasör | "Kapının gücü kodunda değil **tetiğindedir**" — mekanizmalar sağlamdı, çağrılmıyorlardı → v0.5.5.1–v0.5.5.3 · *(token ölçümü yok — izleme 307'yle başladı)* |
 | **447 sahası** | vergi davası | Tetik boşlukları + hook katmanının sessiz ölümü (masaüstü uygulaması hook'u kabuksuz koşturuyordu) → v0.5.8.1 / v0.5.8.2 · **~604k token** |
 | **372 sahası** | aile / mal rejimi | Hook katmanı ilk kez uçtan uca canlı ateşledi; koşunun **5 kollu adli analizi** (transkript + artefakt + kod yolu + şekil zinciri + desen karnesi) → v0.5.8.4: elle-UDF engeli, makbuz garantisi, mühür otomasyonu · **~1,24M token** |
 | **346 sahası** | bilirkişi raporuna itiraz | Künye kapısı **gerçek bir açığı** yakaladı ve model dürüst davrandı; tek bir ayrıştırıcı yanlış-pozitifi yeşil makbuzu imkânsız kıldı → v0.5.8.5: mutlak triyaj [G6], hook dirilişi, e-imza halkası · **~1,17M token** |
 | **777 sahası** | banka/kefalet ikinci cevap + **24 kök çapraz taraması** | Bayat araç kiti kök nedeni; ilk gerçek LEHE/ALEYHE triyajı; resmî araçla üretilen UDF, dört kenarı yönetmelik ölçüsünde (42,52 pt) ilk **tam-standart ürün** olarak UYAP editöründe açıldı → v0.5.8.6 + v0.5.9 · **~1,50M token** |
-| **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](KARNE-307.md)) · **~822k token / 161 dk** |
+| **307 sahası** | tasarrufun iptali, ikinci cevap (devralmalı + taze tam indirme) | Uçtan uca zincir + LEHE/ALEYHE triyajı stratejiyi fiilen şekillendirdi; makbuz-sonrası mühür-dışı değişiklik (K1/K2) ölçüldü → v0.5.10: atomik mühür + filo-tazelik ([KARNE-307.md](docs/arsiv/KARNE-307.md)) · **~822k token / 161 dk** |
 | **923 sahası** | vergi/gümrük — ödeme emri + ek tahakkuk, dilekçe ret sonrası yenileme | Tek cümlelik tek prompt, sıfır müdahale, çift ürün (2 dilekçe + 2 UDF); [G6] kapısı dökümsüz atıfları RED'ledi ve model tam-metin damgayla yeşile döndü → v0.5.10 çift-kanıt · **~360k token / 57 dk** |
-| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), birden çok müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](KARNE-1865.md)) · **toplam ~4,3M token** |
+| **1865 sahası** | idari yüksek yargı, soruşturma-izni itirazı — **çok oturumlu** (5-6 paralel), birden çok müvekkil | rpm bayat-kit nüksü adlandırıldı; söz-müdahalesi ezildi, dosya-düzeyi koruma tuttu → v0.5.11: rpm karantinası + kilitli çekirdek + yönlü tazelik + oturum damgası ([KARNE-1865.md](docs/arsiv/KARNE-1865.md)) · **toplam ~4,3M token** |
 
 ### Gerçek dava testleri — derdest dosyalarda canlı ölçüm
 
@@ -207,7 +207,7 @@ indirimi + bir önceki sürümden devralınan eski çalışma alanı. Ara karne:
 | Ürün | Resmî hatla üretilmiş, geçerlilik kapısından geçmiş UDF + PDF |
 | Dürüstlük | Yeşil makbuz kesilmeden "hazır" denmedi; sistem **karar-kavşağında durup** 5 kalemi avukatın önüne koydu (fail-closed). Ama makbuz sonrası ürün mühür dışında değişti — bkz. karne K1/K2 |
 
-**Koşu kapandı; nihai karne ayrı belgededir: [KARNE-307.md](KARNE-307.md).**
+**Koşu kapandı; nihai karne ayrı belgededir: [KARNE-307.md](docs/arsiv/KARNE-307.md).**
 161 dakika sürdü. Karnenin ilk düzelttiği şey koşu sırasında yapılan kendi
 raporumuzdur: bu koşu "tek doğal prompt / sıfır mekanik-hijyen promptu" ile
 geçmedi — ölçüm 11 kullanıcı turu ve 7 mekanik-hijyen promptu gösterdi. Deney
@@ -235,7 +235,7 @@ evraklık ham UYAP klasörü; **tek cümlelik tek prompt**. İlk 56 dakikanın
 **1865 sahası (25-26.08.2026, v0.5.10→v0.5.11, TAMAMLANDI — sınıf:
 MÜDAHALELİ-YETKİLİ · ÇOK OTURUMLU):** idari yüksek yargıda soruşturma-izni
 itirazı; birden çok müvekkil, iki dilekçe + çelişki raporu; aynı klasörde 5-6 paralel
-oturum. Nihai karne: [KARNE-1865.md](KARNE-1865.md). Özet: v0.5.10'un üç
+oturum. Nihai karne: [KARNE-1865.md](docs/arsiv/KARNE-1865.md). Özet: v0.5.10'un üç
 onarımı ilk gerçek sınavında doğrulandı (filo kapısı yeşilin içinde koştu,
 mühür-kırık penceresi dakikasında yakalandı); 777'den beri üçüncü kez nükseden
 kök düşman adlandırıldı — uygulamanın rpm anlık-görüntüsünden bulaşan bayat
@@ -268,12 +268,12 @@ karantinası, kilitli çekirdek, yönlü tazelik, oturum damgası.
 ### Ölçülen örnekler — beyan değil sayı
 
 Tüm koşuların token/süre/verim kayıtları ve ölçüm yöntemi ayrı
-belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
+belgededir: **[OLCUMLER.md](docs/arsiv/OLCUMLER.md)**.
 
 - **49 dakika / 45,6k token:** ~200 evraklık istinaf dosyasından teslim
   edilebilir ek beyan + geçerli UDF. Aynı sınıf iş, evrakı modele görüntü olarak
   yükleyen eski usulde **1M+ token** yiyordu — fark **~26×**, muhakemeden tek
-  satır kısılmadan (dakika dakika çizelge: [SAHA-SONUCU.md](SAHA-SONUCU.md)).
+  satır kısılmadan (dakika dakika çizelge: [SAHA-SONUCU.md](docs/arsiv/SAHA-SONUCU.md)).
 - **Elle-UDF krizinin çözümü:** sahada model UDF dosyasını elle kurmaya
   yeltendi; elle kurulan dosya UYAP Doküman Editöründe **açılmıyordu**. Çözüm
   A/B testiyle bulundu: açılan ve açılmayan dosyaların iç imzaları
@@ -306,6 +306,183 @@ belgededir: **[OLCUMLER.md](OLCUMLER.md)**.
   dilekçeyi kesen kapı — hepsi tarihiyle [STATUS.md](STATUS.md)'de durur.
 
 ---
+
+---
+
+## Sürümsüz — BAĞIMSIZ KOD VE VİTRİN DENETİMİ (2026-10-15, dal `denetim/fable-2026-10-15`)
+
+**Sürüm numarası değişmedi (0.6.0); sürüm, birleştirme ve yayın kararı avukatındır.** Depo
+v0.6.0 hâliyle ölçümle denetlendi (tam süit, aile yapısı, statik analiz, kurulu eklentinin
+kanca sağlığı, kurulum motoru); bulgular, karar ve plan [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md)'de. Her onarım önce
+kırmızı testle; dal 2026-10-15'te push edilmemişti, 2026-10-16'da avukat kararıyla push edildi (PR #9, main'e;
+birleştirme kararı avukatın).
+
+- **Numaralı liste kaynak numarasını korur (B-1):** `md_udf_html.py` ilk madde 1 değilse
+  `<ol start="N">` yazar; "A. USUL / B. ESAS" alt başlığıyla bölünen talep bentlerinde 9. bent
+  artık "1." basılmıyor (UDF-HTML dizgesinde testli; udf-cli/PDF yolunda `start` özniteliğinin
+  numaralandırmaya işlenmesi udf-cli oturumu açık makinede ölçülecek — heyet 2026-10-16 E-4 / K-4).
+  Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu dalda yeniden yazıldı. 1'den
+  başlayan listede çıktı eskisiyle bayt-özdeş.
+- **Kaynak hijyeni kapısı (B-2…B-5):** `ruff.toml` yalnız hata sınıfı kurallarla (sözdizimi,
+  tanımsız ad, yeniden tanım, kullanılmayan import, yinelenen küme öğesi, ham görünmez /
+  çift-yönlü karakter); CI'da bağımsız `lint` işi, ruff sürümü sabit. Cf-sınıfı regex ve üç
+  testteki ham karakterler kaçış yazımına çevrildi (desen özdeş; `test_v0518_metin_hijyeni`
+  istisnasız kaldı); 35 kullanılmayan import, bir ölü dal, bir yinelenen küme öğesi temizlendi.
+  Kapı kendini de sınar: `tests/test_kaynak_hijyeni.py`.
+- **Sürüm damgası (B-6):** `pyproject.toml` `version` 0.1.0'da kalmıştı → 0.6.0;
+  `aile_dogrula.surum_isaretcileri` artık pyproject'i de denetler (UYARI sınıfı).
+- **Kök dizin ve bağlantı kapısı (B-7, B-11):** 11 tarihî kayıt `docs/arsiv/`'e
+  ([dizin notu](docs/arsiv/README.md)), yaşayan iki defter (`PERFORMANS-STATUS`,
+  `SICRAMA-NOTU`) `docs/`'a taşındı; 69 bağlantı yeniden yazıldı;
+  `tests/test_belge_baglantilari.py` her belge bağlantısının hedefini denetler (taşımayla 29
+  kırık gösterdi, yeniden yazımla yeşil). Kayıt notu (heyet 2026-10-16 USUL U-1): 13 dosyalık
+  taşıma fiilen `47bba4d` ile girdi; `45a6d2e` bağlantıları yeniden yazdı ve kapıyı ekledi.
+- **Excel'de gizli katman (YOL-HARITASI v0.5.19 kalemi; anayasa m.11):** belge güvenlik kapısı
+  tabloyu artık "DENETLENEMEZ" diye sarmıyor; çalışma kitabını yeniden açıp gizli satır/sütun,
+  sıfır yükseklik/genişlik, zeminle aynı renkteki yazı (tema/dizin/tint çözülür), `;;;` biçimi ve
+  minik puntoyu ölçüyor (.xlsx openpyxl tam kip; .xls xlrd `formatting_info`). Gizli parça
+  okuyucunun yazdığı satırla eşlenip yerinde `⟦GİZLİ KATMAN⟧` alıyor; değer silinmiyor. Gizli
+  sayfa/satır/sütun/biçim UYARI, zeminle aynı renk ve minik yazı BULGU, gizli katmandaki talimat
+  BULGU. Kitap açılamaz, boyut sınırı aşılır ya da okuyucu metniyle eşleşmezse tablo yine
+  DENETLENEMEZ kalır. Önce kırmızı: `tests/test_v0519_excel_gizli_katman.py` (.xls fikstürü ham
+  BIFF8, yeni bağımlılık yok). Gerçek evrak ölçümü küçük (eldeki tek .xls temiz); kalibrasyon
+  sahadan.
+- **Vitrin:** README katmanlı düzene geçti: rozetler, "Kim için, ne okumalı", "Bir bakışta:
+  yapar / yapmaz", "Hâkim ve savcı gözüyle", özet parça tablosu; master prompt, tam katalog ve
+  sürüm notları katlanır bloklarda aynen korundu; DÜSTUR m.6 satırı ve dizgi hataları
+  düzeltildi. Avukatın commit'lenmemiş README düzeltmeleri (Excel okuyucuları, Mağaza
+  kısayolu, prompt satırları) dala alındı.
+  Eklenti README'si (ikinci vitrin) de aynı düzene geçti (`8a1c882`): kısa giriş ve okuyucu
+  yönlendirmesi, "Bir bakışta: yapar / yapmaz", hatta yeri ve script sayısı taşıyan özet parça
+  tablosu, katlanır tam katalog, v0.6.0 ve bu denetime bağlantı; kilitli bloklar aynen.
+  Tablodaki üç script sayısı elle yazılmıştı ve bayattı (oa-pipeline 10 → 11, oa-ingest 5 → 6,
+  çekirdek "—" → 1, kurulum motoru); kök kataloğun başlıkları da aynı sayıları taşıyordu,
+  düzeltildi. `tests/test_eklenti_vitrini.py` iki vitrindeki sayıları
+  `skills/<parça>/scripts/*.py` sayımına, katmanlı düzeni ve belge bağlantılarını kilitler
+  (OA-SUIT-SAYISI 3781 → 3785).
+- **Depo hijyeni:** `.github/SECURITY.md` (güvenlik bildirimi: müvekkil verisi içeren bulgu
+  herkese açık issue'ya yazılmaz) ve `.github/PULL_REQUEST_TEMPLATE.md` (depo sözleşmesi).
+- **Ölçüm (avukatın makinesi, Python 3.14.8, Windows):** tam süit 3800 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (87,0 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3813, OA-SUIT-SAYISI ile birebir.
+- **Dokunulmayan (avukat kararı):** sürüm numarası; GitHub depo açıklaması ve konu etiketleri
+  (B-8, öneri belgede); hukuki içerik ve playbook'lar (m.4, m.9); `_gorus/`; `revizyon_farki.py`
+  iç fonksiyonunun geç bağlanması (B-10, bugün hata değil).
+- **Heyet (2026-10-16):** push öncesi kıdemli avukat denetim kurulu kuruldu (`c5f739f`, `8be918f`:
+  üç Fable ajanı — usul, esas, güvenlik; protokol [docs/heyet/README.md](docs/heyet/README.md)) ve
+  dalın bütünü (`origin/main..HEAD`, 14 commit) için ilk kez koşuldu: üç üye de ŞARTLI PUSH,
+  BLOKLAYICI 0 · UYARI 8 · NOT 18; tam süit temiz kopyada 3800 geçti · 12 atlandı · 0 kırmızı
+  (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (ızgara tavanı, tablo
+  stili zemini). Üç rapor, birleşik bulgu listesi ve onarım kalemleri:
+  [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push yapılmadı; karar avukatın.
+  **Onarım (aynı gün; avukat kararı: push yok, önce K-1 ve K-2):** Excel kapısı var olan hücreleri gezer,
+  ızgarayı değil (`_xlsx_var_olan_hucreler`; tek uzak stilli hücreli 5 KB kitapta 6,29 s / 400 MB →
+  0,01 s / 0,3 MB); boyut sınırı `xl/` bütününe uygulanır; tablo stili aralığı koşullu biçimle aynı ZAYIF
+  kural (koyu başlıkta beyaz yazı yanlış BULGU üretmez). Önce kırmızı: `tests/test_v0519_excel_gizli_katman.py`
+  +3 (OA-SUIT-SAYISI 3813 → 3816). İkinci heyet koşumu bu onarımdan sonra.
+  **İkinci koşum (aynı gün, HEAD `ca37539`):** usul ŞARTLI PUSH (BLOKLAYICI 0 · UYARI 2 · NOT 6), esas
+  ŞARTLI PUSH (0 · 2 · 11), güvenlik PUSH (0 · 0 · 5); tam süit temiz kopyada 3803 geçti · 12 atlandı ·
+  0 kırmızı; K-1 ve K-2 üç üyenin ölçümüyle kapandı; usulün push öncesi kayıt şartları (taşıma atfı notu,
+  `.gitignore` `.claude/`, STATUS tarihi, DENETIM ölçüm satırı) bu kayıtla kapatıldı; kalan kalemler aynı
+  dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
+  toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
+  [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
+  **Üçüncü onarım turu (avukat kararı: "0.6'yı geliştir"):** K-3 Excel UYARI etiketi ve md başlığı türe
+  göre (`🛡GİZLİ-KATMAN (UYARI)` / `🛡ZEMİN-ÖLÇÜLEMEDİ` / `🛡TALİMAT-DİLİ`; `okuma_kapisi.guvenlik_etiketi`
+  testle tek kaynak); K-10 tablo stili / koşullu biçim aralığında talimat dilsiz açık renkli yazı sayfa
+  başına `zemin-olculemedi` kaydı (UYARI, damga yok), hücrenin kendi düz dolgusu tablo stilini ezer ve
+  ölçülür, ZAYIF kaynaklı talimat kaydı gizliliği kesin saymaz; K-11 bayt tavanına ek nesne tavanları
+  (`AZAMI_TABLO_HUCRE` 1 M, `AZAMI_TABLO_SATIR` 500 k — sayfa XML'i akışla sayılır, kitap yüklenmez);
+  K-12 boyut toplamı arşivin bütünü (docProps dahil); K-13 satır döngüsünde süre bütçesi, gizli sütun
+  aralığı son sütunla kıskaçlı, aralık üyeliği nesnesiz; K-14 üreteç içi hata sebepli sarmalanır (gizli
+  sayfa yine damgalı); K-15 satır sonu duyarlı test `write_bytes`. Önce kırmızı: Excel testi +12 (OA-SUIT-SAYISI
+  3816 → 3828); iki mevcut testin sözleşmesi güncellendi (ZAYIF temiz → UYARI kaydı). Üçüncü heyet koşumu
+  birleştirmeden önce.
+  **Üçüncü heyet koşumu (2026-10-17, HEAD `c94e982` — main'e birleştirme öncesi bütün):** üç üye ŞARTLI PUSH,
+  BLOKLAYICI 0 · UYARI 9 · NOT 25; tam süit 3887 geçti · 12 atlandı · 0 kırmızı (temiz kopya); PR #9 CI 18/18.
+  Birleştirme öncesi şartlar tur 4'te (`d6e5550`) önce kırmızı testle kapatıldı: Excel nesne sayacı etiket
+  dilbilgisine bağlandı (öznitelliksiz `<c>`, satır sonlu, ad alanı önekli yazımlar da sayılır — tavan
+  atlatılamaz), `oa_hafiza.py teyit --kaynak-url` yolu/sorgusu/parçası Layer 0'dan geçer (11 hane yalnız TCKN
+  sağlaması geçiyorsa TCKN; karar kimlikleri engellenmez), hibrit kanalın ve nesne tavanının dürüst sınır
+  cümleleri (oa-ictihat SKILL, `resmi-kaynaklar.md`, kök README), bayat "push edilmedi" ifadeleri ve alt rapor
+  sayıları düzeltildi (test +7, OA-SUIT-SAYISI 3900 → 3907). `d6e5550` ucunda bağlantı kapısı tek kırmızıydı
+  (KARAR-3'e ileri bağlantı; dosya henüz yoktu) — KARAR-3 kaydıyla yeşil; ders: kapı çıkış kodu boru hattında
+  kaybolmaz. Kalan kalemler K-17 … K-26 (`WebFetch` dökümü için ek şart, web araçlarını saran kanca, araç sınıfı ↔
+  kaynak türü eşlemesi ve `https`, oa-kontrol/oa-ictihat metin artıkları, ifşa niteleyicisi, SECURITY cümlesi) aynı
+  dalda ayrı commit; avukat kararı bekleyenler (anayasa MCP ifadeleri, beyaz listeye AİHM infaz / ABAD, Excel
+  `SURUM`, emek etiketi, envanter temizliği, hukuki yöntem adayları) KARAR-3 §7.1:
+  [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Aynı klasörde hukuki yöntem geliştirme
+  adayları raporu (salt okunur inceleme; madde atıfları teyitsiz; karar avukatın). Birleştirme avukatın 2026-10-16
+  talimatıyla, üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası (KARAR-3 §7-§8).
+  **Şart kapanışı doğrulaması (2026-10-17, fark `c94e982..ef03fd8`):** üçü de ŞART KAPANDI, BLOKLAYICI 0 (usul PUSH
+  0·0·2, güvenlik PUSH 0·2·2, esas ŞARTLI 0·1·5 — şartı birleştirme sonrası ilk commit); temiz kopyada tam süit 3894 ·
+  12 · 0, "önce kırmızı" yeniden üretildi, farkta sır 0, kilitler mutasyonla doğrulandı. Yeni açık kalemler (KARAR-3
+  §8): K-27 adres taramasında 0 ile başlayan telefon TCKN maskesinin ardında kalıyor ve kullanıcı bilgisi taranmıyor
+  (dört satırlık onarım ölçüldü; K-17 ile aynı commit), K-28 nesne sayacı ASCII dışı ad alanı önekini saymıyor, K-29
+  `--sorgu-onayli` geçişi kütükte izsiz. Doğrulamanın küçük kayıt kalemleri (zamanlama cümlesi, STATUS tarihli blok
+  parantezi, öneri raporu başlığı, "4 + 3" → 4 + 1) aynı kayıt commit'inde kapatıldı. Birleştirme: bu kayıttan sonra CI
+  yeşilse PR #9 orkestra eliyle `main`'e birleştirilir (birleştirme commit'i kaydın kendisidir; dal silinmez).
+- **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
+  `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
+  kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,
+  `_oa/defter/.capraz-onbellek.json`'da tutulur; anahtar sonucu belirleyen her şeyin içerik
+  özetidir (sha256: üç girdi, damgalı denetim JSON'ları, `capraz_denetim.py` ve `pipeline_kayit.py`,
+  yorumlayıcı küçük sürümü, şema). Önbellek fail-closed'dır (bozuk ya da yabancı anahtarlı önbellek dosyasında ve okunamayan
+  girdide sonuç yeniden hesaplanır; önbellek hatası boş, "temiz" görünen sonuç üretemez); dedup
+  parmak izine girmez, `_oa/defter`'i yaratmaz, append-only deftere dokunmaz (CLAUDE.md performans
+  değişmezi #7). **Neden:** v0.5.18'de 3000 evraklık ölçek kökünde Stop kancası +79 ms
+  yavaşlamıştı ([PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12.3); kaynak çapraz
+  denetimdi, girdileri ise çoğu turda değişmez. **Ölçüm** (2026-10-09; eşleştirilmiş ABBA, ölçek
+  kökü, Python 3.14.8): v0.5.18'e göre isabette −96,5 ms, ıskada +22,2 ms, standart kökte −0,3 ms;
+  v0.5.17.1'e göre isabette −3,6 ms; DURUM.md, `--denetle` çıktısı ve çıkış kodu v0.5.18 ile
+  birebir (§14). Bu dalda 2026-10-16 sürüm defteri komutu: §14.9. **Test:**
+  `tests/test_v0519_capraz_onbellek.py` (37; önce kırmızı; 21 mutasyonun 21'i yakalandı);
+  OA-SUIT-SAYISI 3816 → 3853. **Taşıma:** ilk commit `ad66357` v0.6.0 öncesi tabandaydı;
+  `61b8e14` üzerine yeniden temellendirildi (`d996f62`; yazar, tarih ve mesaj aynen; kod
+  değişmedi). İki README künyesi ve OA-SUIT-SAYISI `61b8e14`'ten alınıp yeniden türetildi;
+  PERFORMANS-STATUS bölümü §14 oldu, çünkü bu dalda §13 v0.5.18 eksikler turuna aittir — taşınan
+  commit'in mesajındaki «§13» bu §14'tür. **Kapılar** (2026-10-16, Python 3.14.8): tam süit 3840
+  geçti · 12 ortam gerekçesiyle atlandı (UDF yazıcısı `OA_TEST_UDF_YAZICI=0` ile kapalı, saha
+  referansı tanımsız) · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi TEMİZ.
+  Sürüm numarası değişmedi (0.6.0); birleştirme kararı avukatın.
+  **Denetim dalına birleştirme (2026-10-16, birleştirme commit'i):** OA-SUIT-SAYISI 3865; tam süit 3852 geçti ·
+  12 atlandı · 0 kırmızı; zamanlama 1; ruff temiz; aile TEMİZ (birleşik ağaçta ölçüldü).
+- **Hibrit teyit kanalı — 2026-10-15 avukat kararı (dal `teyit/resmi-kaynak-beyaz-listesi`,
+  bu denetim dalına yığılı PR):** eklenti üçüncü taraf MCP sunucusu ilan etmez — `plugin.json`
+  `mcpServers` (Yargı Pro, `yargi.betaspacestudio.com/mcp`) kaldırıldı; mağaza açıklaması ve
+  anahtar sözcükler güncellendi. **Neden:** anayasa m.5 teyidi RESMÎ KAYNAĞA bağlar; tek bir
+  ticari sunucuya bağlı kanal (ücretli üyelik; ad canlı metinlerde ölçümle 87 dosya / 290
+  satırda) hem sahipsiz uç nokta dersini (B-23) hem "teyidin kanıtı sunucunun beyanıdır"
+  zaafını taşıyordu. **Ne:** teyidin kanıtı artık resmî portalın ADRESİ + diske inmiş tam
+  metin — beyaz liste `oa-kontrol/scripts/kunye_ortak.py` `RESMI_KAYNAKLAR` (21 kaynak + her
+  `.gov.tr`; `resmi_kaynak_mi` fail-closed: şema, boş değer, sondan ekleme reddedilir) ve avukat
+  nüshası `skills/ortak-avukat/references/resmi-kaynaklar.md` (kod↔belge testle özdeş). Kanal
+  hibrittir: model portallara `WebFetch` (GETİR — damga + döküm zorunlu) / `WebSearch` (ARAMA)
+  ile ulaşır; `oa_hafiza.py teyit` tam metin çeken araçlarda `--kaynak-url` ister ve beyaz
+  listeyle karşılaştırır (liste yüklenemezse FAIL-CLOSED); üçüncü taraf araç adları sözlükten
+  çıktı. `ictihat_muhakeme_denetim.py` yeni **[G7]**: dayanak kaydının adresi yok ya da liste
+  dışı → TESLİM ENGELİ, dayanak olmayanda UYARI. Kurulum motorunun `yargi_pro` adımı →
+  `teyit_kanali` (BİLGİ; kurulum gerektirmez). Master prompt 7-8. adımlar (TEYİT KANALI / ESKİ
+  BAĞLANTILAR — eski bağlantı adı verilmez, kişi kendi listesinde görür), kök README 5. adım ve
+  gereksinim tablosu, emek etiketi (kişi adı ve bağlantı korunur, ürün adı anılmaz) yeniden
+  yazıldı. Canlı metinler kanal-bağımsız: 87 dosya / 290 satır → 0 ("resmî kaynaktan teyit",
+  "resmî portal (beyaz liste)", "web aracıyla", "dış skill kütüphanesi N-N fikri"); araç
+  adları aynen (ne yaptığını söyler, kimin yaptığını değil); hukuki içerik (madde, süre, künye)
+  değişmedi; tarihli kayıtlar (bu defter, parça günlükleri, docs/arsiv, docs/heyet, iki tarihli
+  belge, STATUS/YOL-HARITASI'nın tarihli bölümleri) dokunulmadı. **Kanıt (önce kırmızı):**
+  `tests/test_teyit_kanali.py` (35 sınama: beyaz liste kabul/ret, teyit kapıları, [G7], ilan
+  yok) ve `tests/test_kanal_bagimsiz_metin.py` (2: desen + canlı metin taraması; ilk ölçüm 87
+  dosya → 0). Eski sözleşmeyi şart koşan testler yeni sözleşmeye çevrildi, gerekçesi
+  docstring'de: `test_kaynak_url` (URL'siz GETİR kaydı artık RET), `test_v0518_mcp_ilan` (6 → 4;
+  izinli liste boş, çift kilit yok), `test_v0518_kurulum`, `test_v0518_master_prompt`. Kanal
+  değişiminin kırdığı 86 eski test (damga / döküm / akıbet / enjeksiyon disiplini) kapıyı değil
+  disiplini sınadığından `tests/oa_teyit_kanali.py` yardımcısıyla beyaz listeli sentetik adres
+  alır. OA-SUIT-SAYISI +35 (bu dalda 3816 → 3851). Ölçüm (Python 3.14, Windows): tam süit 3838 geçti · 12 ortam
+  gerekçesiyle atlandı · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi
+  TEMİZ; kurulu eklentide kanca doktoru yeşil. **Yol haritası:** yerel `oa-kaynak` MCP (resmî
+  portalları saran, açık kodlu keşif katmanı) — kurulmadı, kararı avukatın. Dokunulmayan: sürüm
+  (0.6.0), hukuki playbook'lar. Birleştirme kararı avukatın.
+  **Denetim dalının ilerlemiş ucuyla (`66b5d09`) birleştirme (2026-10-16):** OA-SUIT-SAYISI 3900 (3865 + 35,
+  collect-only ile doğrulandı); birleşik ağaçta tam süit 3887 geçti · 12 atlandı · 0 kırmızı; zamanlama 1;
+  ruff temiz; aile TEMİZ; kurulu eklentide kanca doktoru yeşil; canlı metin taraması 0.
 
 ---
 
@@ -598,7 +775,7 @@ oa-usta'nın hata tetikli damıtma kuralı gereği aday kurallar saha raporunda 
 - TEYİT BEKLİYOR hukuki noktalar: [docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md) §6.3.
 - Gerçek udf-cli ile UDF üretimi ağsız koşuda uçtan uca denenmedi.
 - Avukat onay bayrakları (`--onay`, `--istisna-onay`, `--hukum-onay`, `--serh-onay`, `--karar-onay`) bir beyandır: sistem bayrağı kimin verdiğini doğrulayamaz; defter imzası sahiplik alanını kapsamaz. Avukatın kendi mesajına bağlanması v0.5.19 adayıdır.
-- Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
+- Kanca ölçümü (sürüm defteri): [PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12. Karşılaştırma v0.5.17.1 ile, aynı makinede, A/B/A/B.
   - Standart kökte ölçülebilir fark yok: Python 3.14'te en çok +2,4 ms, 3.12'de +1,6 ms. Giriş betiği kazancı 31–40 ms; ağır modül yok.
   - Zincir ürünleri olan büyük dosyada (3000 evrak temsili) Stop kancası +79 ms (~%20). Kaynağı çapraz denetim; v0.5.19'da girdi özetine bağlı önbellek önerilir.
   - Önceki ölçüm §11'de (2026-10-06).
@@ -1046,7 +1223,7 @@ tamamı MCP teyit tarihli — teyitsiz kural **sıfır**.
 olmayan bir yol için denetlenecek şey yoktur* (susmak gürültü disiplinidir);
 uyarı yalnız **var olan** teslim ürününün kökü bulunamadığında çıkar.
 
-Süit **1688** (v0.5.13'te 1406). Ayrıntı: [DENETIM-v0514.md](DENETIM-v0514.md).
+Süit **1688** (v0.5.13'te 1406). Ayrıntı: [DENETIM-v0514.md](docs/arsiv/DENETIM-v0514.md).
 
 ## v0.5.13 — Heyet Kararlarının İnfazı (2026-08-27)
 **Kanıt türü farklı:** bu sürüm bir saha karnesinden değil, **denetimden**
@@ -1067,7 +1244,7 @@ tutuklu dosya kipi · celse kartı + **dahili sızıntı kapısı** (iç analiz
 belgesi dış çıktıya kopyalanamaz) · zorunlu arabuluculuk dava şartı dört
 adreste · İİK m.67/68/72 + İYUK m.10/11 + VUK m.107/A çıpaları · mal kaçırma
 kavşağı (iki tarih ekseni). Gerekçeli daraltmalar
-[HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md)'de. Süit o gün **1406** toplandı (v0.5.14/B-35 düzeltmesi: kayıt 1405 yazıyordu, yeniden ölçüldü).
+[HEYET-KARARLARI-v0513.md](docs/arsiv/HEYET-KARARLARI-v0513.md)'de. Süit o gün **1406** toplandı (v0.5.14/B-35 düzeltmesi: kayıt 1405 yazıyordu, yeniden ölçüldü).
 
 ## v0.5.12 — İçtihat Kaynakçası (2026-08-27)
 **Avukat kuralı:** dilekçeye giren her Yargıtay/Danıştay kararının **kaynak
@@ -1078,7 +1255,7 @@ uydurma yasak, linki olmayan künye görünür notla işaretlenir. UDF üretimin
 (bant başı = giden evrak) ve tüm token ölçümleri repoya girdi. Süit 1394.
 
 ## v0.5.11 — Kit Güvenlik Katmanı (2026-08-26)
-**Saha kanıtı:** 1865 (çok-oturumlu, müdahaleli-yetkili · [KARNE-1865.md](KARNE-1865.md)).
+**Saha kanıtı:** 1865 (çok-oturumlu, müdahaleli-yetkili · [KARNE-1865.md](docs/arsiv/KARNE-1865.md)).
 Kök düşman adlandırıldı: uygulamanın rpm anlık-görüntüsünden bulaşan bayat
 araç nesli (777'den beri 3. nüks); tek seferlik onarımın yetmediği ölçüldü.
 **Onarım:** rpm karantinası ('ask') · kilitli çekirdek (salt-okunur + 'ask') ·
@@ -1088,7 +1265,7 @@ bekçileri. Süit 1385. Saha koşusu maliyeti: ~4,3M token (çok oturumlu).
 
 ## v0.5.10 — Kusursuz UDF Dönüşümü (2026-08-25)
 **Saha kanıtı:** 307 (K1: ürün makbuzdan 68 dk sonra mühür dışında değişti;
-K2: makbuz resmî ürünü kapsamıyordu · [KARNE-307.md](KARNE-307.md)) + 923
+K2: makbuz resmî ürünü kapsamıyordu · [KARNE-307.md](docs/arsiv/KARNE-307.md)) + 923
 (çift-uzantı ve mühürsüz-kopya bağımsız tekrarı).
 **Onarım:** atomik mühür (üretim=mühür, üç yolda) · filo-tazelik kapısı
 (kök + 40-UYAP tüm teslim-sınıfı UDF'ler makbuza) · çift-uzantı kaynağında

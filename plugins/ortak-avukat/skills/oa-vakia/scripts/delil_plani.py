@@ -13,7 +13,7 @@ tarihte artık yoktur; süresinde gösterilmeyen delil ise ancak izinle
 gösterilebilir (HMK m.145). Bu script her ispat boşluğunun somut bir TEDARİK
 satırına (kaynak · yöntem · kim · aciliyet · son gün · dayanak · durum)
 bağlandığını MEKANİK olarak denetler.
-Fikir kaynağı: Yargı PRO 16-4 (delil toplama planı) — kod/metin ALINMADI.
+Fikir kaynağı: dış skill kütüphanesi 16-4 (delil toplama planı) — kod/metin ALINMADI.
 
 Girdi:
   --matris : vakia_matris.py --dogrula … --json <yol> çıktısı (ispat_bosluklari,
@@ -31,7 +31,7 @@ Ne yapmaz: ispat kuralını koymaz (yük kimde, delil caiz mi — model + HMK
 m.190, 200-203), dilekçe/müzekkere metni yazmaz, gelen delili değerlendirmez,
 SÜRE HESAPLAMAZ (son gün oa-sure'dedir), dosya YAZMAZ (JSON stdout'a).
 
-Dayanaklar (Yargı PRO MCP mevzuat_getir, teyit 2026-10-05): HMK m.145 (sonradan
+Dayanaklar (resmî metin — mevzuat.gov.tr, mevzuat_getir; teyit 2026-10-05): HMK m.145 (sonradan
 delil — izne bağlı), m.190 (ispat yükü), m.240/2 (tanık listesi; ikinci liste
 verilemez), m.324 (delil avansı — kesin süre; yatırılmazsa delilden vazgeçilmiş
 sayılır), m.400 (delil tespiti — kaybolma/zorlaşma ihtimalinde hukuki yarar).

@@ -1,0 +1,24 @@
+# Ortak Avukat — KAYNAK HİJYENİ KAPISI (2026-10-15 denetimi; docs/DENETIM-2026-10-15.md B-2/B-3/B-5)
+#
+# NEDEN VAR: süit yeşilken kaynak kodda tanımsız adlar (hiç koşmayan dalda), ham
+# çift-yönlü/görünmez Unicode karakterleri ve kullanılmayan import'lar duruyordu;
+# hiçbir kapı görmüyordu. Belge güvenlik kapısı evrakta gizli katmanı yakalar —
+# eklentinin KENDİ kaynağı da aynı disipline tabidir.
+#
+# KURAL: yalnız HATA sınıfı kurallar seçilir; biçim/stil kuralı (satır uzunluğu,
+# import sırası, docstring, adlandırma) SEÇİLMEZ — gürültü kapıyı öldürür (447
+# dersi: sürekli kırmızı kapı, olmayan kapıdır). Kural seti `tests/test_kaynak_hijyeni.py`
+# ile kilitlidir; CI `lint` işi bu dosyayla koşar, sürüm sabittir (ruff==0.17.0).
+#
+# Yerelde: `python -m ruff check .` (ruff kurulu değilse `pip install ruff==0.17.0`;
+# requirements.txt'e GİRMEZ — son kullanıcıya geliştirme aracı yüklenmez).
+
+target-version = "py312"
+extend-exclude = [".claude", "_oa", ".pytest_cache", "__pycache__"]
+
+[lint]
+# E9   sözdizimi / io hatası        F63  karşılaştırma kusurları (is literal, tuple koşulu)
+# F7   bozuk kontrol akışı (döngü dışı break, yıldızlı atama)   F82  tanımsız ad
+# F811 yeniden tanım                F401 kullanılmayan import
+# B033 yinelenen küme öğesi         PLE  pylint hataları (ham görünmez/çift-yönlü karakter dahil)
+select = ["E9", "F63", "F7", "F82", "F811", "F401", "B033", "PLE"]

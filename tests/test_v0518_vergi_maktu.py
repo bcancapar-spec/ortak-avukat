@@ -8,7 +8,7 @@ dolduğu anda üçüncü kısım nispi dilimi uygulanırdı. Bugün tarife.json'
 tabloları null olduğundan rakam ÜRETMİYORDU — avukat tabloyu elle doldurduğu anda
 yanlış karşı vekâlet üretirdi (gizli kusur).
 
-Resmî metin teyidi (Yargı PRO MCP `mevzuat_getir`, 2026-10-07):
+Resmî metin teyidi (mevzuat.gov.tr `mevzuat_getir`, 2026-10-07):
   * Av.K. (1136) m.168/2 (Ek cümle: 16/6/2009-5904/35): "hazırlanan tarifede; genel
     bütçeye, il özel idareleri, belediye ve köylere ait vergi, resim, harç ve benzeri
     mali yükümlülükler ve bunların zam ve cezaları ile tarifelere ilişkin davalar ve
@@ -34,7 +34,6 @@ import re
 import subprocess
 import sys
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 STRATEJI = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-strateji"

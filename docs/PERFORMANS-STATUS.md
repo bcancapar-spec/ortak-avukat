@@ -475,7 +475,7 @@ Standart kökte `_oa/cikti`'da denetim JSON'u yoktur. v0.5.18'in zincir işi (ç
 
 **Gerekçe:** bu maliyet zincirleme tepkinin kendisidir. Üç halkanın aynı kişiyi ve olayı aynı kimlikle anıp anmadığı her Stop'ta yeniden denetlenir. Maliyet yalnız zincir motorlarının çıktısı olan büyük dosyada görünür; standart kökte sıfırdır.
 
-**v0.5.19 adayı (ölçüldü, uygulanmadı):** çapraz denetimin sonucu girdilerin içerik özetine (sha) bağlanıp kanca çağrıları arasında önbelleklenebilir; girdiler çoğu turda değişmez. Bu türetilmiş bir önbellektir; gerçeğin kaynağı (defter) değişmez.
+**v0.5.19 adayı (ölçüldü, uygulanmadı):** çapraz denetimin sonucu girdilerin içerik özetine (sha) bağlanıp kanca çağrıları arasında önbelleklenebilir; girdiler çoğu turda değişmez. Bu türetilmiş bir önbellektir; gerçeğin kaynağı (defter) değişmez. → **Uygulandı ve ölçüldü: §14.**
 
 ### 12.4 Görev 1'in "+27,5 ms" ölçümüyle uzlaşma
 
@@ -517,3 +517,151 @@ Komut: `python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-do
 - Import dökümü: dört koşuda da `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (103 import izlendi).
 
 **Sonuç:** bu tur kanca yoluna ölçülebilir maliyet eklemedi; farklar turlar arası oynamanın içinde. Sarmalayıcının kendi maliyeti bu araçla ölçülmez (araç `hook_giris.py`'yi doğrudan çağırır). Sarmalayıcı değişikliği yalnız `where` çıktısının süzülmesidir; ek süreç açmaz.
+
+## 14. v0.5.19 ADAYI — ÇAPRAZ DENETİM SONUÇ ÖNBELLEĞİ (2026-10-09)
+
+§12.3'ün açık kalemi uygulandı. Ölçek kökünde Stop kancasının v0.5.18'deki +79 ms'si B-2 çapraz denetimiydi (`_capraz_bosluk_uyarisi` → `_capraz_bosluk_hesapla` → `capraz_denetim.caprazla_ayrintili`). Kanca gövdesi her Stop'ta tam koşar; çapraz denetimin girdileri ise çoğu turda değişmez.
+
+### 14.1 Ne değişti
+
+- Sonuç `_oa/defter/.capraz-onbellek.json`'da tutulur. Dosya türetilmiştir: gerçeğin kaynağı değildir, silinmesi bir şey kaybettirmez (sonraki koşu yeniden hesaplar).
+- Anahtar (sha256) sonucu belirleyen her şeyi kapsar:
+  - üç model girdisinin (graf / vakıa / kıyas) rol başına içerik özeti;
+  - S1 seçimini besleyen damgalı denetim JSON'ları (`grafik_denetim`, `vakia_matris`, `kiyas_denetim`);
+  - `capraz_denetim.py` ve `pipeline_kayit.py` dosyalarının özeti (kod değişince önbellek geçersiz);
+  - yorumlayıcının küçük sürümü (`cpython-3.14`; eşleştirmenin dayandığı Unicode veritabanı buna bağlıdır);
+  - önbellek şeması (`_CAPRAZ_ONBELLEK_SEMA`).
+- Girdi seçimi her koşuda yeniden yapılır. Her girdi BİR kez okunur; özet ve ayrıştırma aynı baytlardan yapılır. Böylece iki okuma arasındaki bir yarış eski özete yeni sonucu bağlayamaz. Ayrıştırma `capraz_denetim._yukle` ile eşdeğerdir (testli).
+- Fail-closed:
+  - okunamayan girdi, anahtar / okuma / yazma adımında istisna, gövde özeti tutmayan dosya (yarım yazım, elle düzenleme), yabancı anahtar ya da beklenmeyen yapı → önbellek kullanılmaz, sonuç hesaplanır;
+  - hiçbir önbellek hatası `_capraz_bosluk_hesapla`'nın dış `except`ine (→ boş, "temiz" görünen sonuç) ulaşmaz;
+  - JSON gidiş-dönüşü sonucu birebir geri vermiyorsa önbelleğe yazılmaz.
+- Yan etki sınırları:
+  - `denetle` dedup parmak izinden hariçtir (`.hook-son-iz.json` ile aynı gerekçe: ilk koşunun kendi yazımı dedup'u ölü koda çevirmesin);
+  - `_oa/defter` yoksa yazılmaz, dizini yaratmaz;
+  - append-only olay defterine dokunmaz;
+  - yazım tmp + `os.replace` ile atomiktir.
+- Standart kökte (JSON girdisi yok) önbellek yoluna hiç girilmez; ek iş yapı gereği sıfırdır.
+- Kilitler: `tests/test_v0519_capraz_onbellek.py` (37 test). Her kilit için ürün kodu geçici bozuldu, testin kırmızıya döndüğü görüldü, dosya bayt-özdeş geri yüklendi (sha256 doğrulandı): **21 mutasyonun 21'i yakalandı.**
+
+### 14.2 Ölçüm koşulları
+
+- Tabanlar `git archive` ile ayrı dizine çıkarıldı:
+  - v0.5.18: `guncelleme/0.5.18` ucu edb2b46 (PR #8);
+  - v0.5.17.1: `origin/main` 4b2f029.
+- Aday: bu dalın çalışma ağacının kopyası.
+- Ağaçlar aynı üst dizinde ve aynı `.py` kümesinde. `compileall -f` (Python 3.14.8, kancaların yorumlayıcısı) ile eşit `.pyc` sıcaklığına getirildiler. `tools/hook_olc.py` üç ağaçta bayt-özdeş.
+- Ortam: Windows 11 · 16 çekirdek · Python 3.14.8.
+- **Makine bu ölçümde paylaşımlıydı.** Başka bir Claude oturumu aralıklarla tam ve parça süitler koşturuyordu (37'ye varan python süreci, anlık CPU %72'ye kadar). Bu yüzden:
+  - her koşu "sakin pencere" kapısıyla başlatıldı (yabancı python süreci 0, ardışık 3 örnekte CPU ≤ %12) ve koşu sonrası durum kaydedildi;
+  - karar ölçütü §10'un önerdiği **eşleştirilmiş ABBA fark ortancasıdır**: A ve B çağrıları yan yana dönüşümlü koşar, ortak yük kayması çift içinde söner;
+  - mutlak sayılar oturuma göre oynar; karşılaştırma yalnız aynı oturumdaki ağaçlar arasında yapılır.
+- Kapı kurulmadan, yük altında alınan iki koşu GEÇERSİZ sayıldı. Kodu iki ağaçta özdeş olan `hook-acilis` o koşularda 143 ↔ 102 ms oynamıştı.
+- Ham çıktılar yerel ölçüm klasöründe (depo dışı).
+
+### 14.3 Ölçek kökü — eşleştirilmiş ABBA (karar ölçütü)
+
+Gerçek kanca yolu (`hook_giris.py --hook-denetle`). Senaryo §12.3'ün aynısıdır: 1,4 MB graf, 3000 olaylı vakıa, 300 kıyas vakıası, dört damgalı denetim JSON'u. Her senaryoda 12 çift koşuldu. Her çağrıdan önce ilgili kökte şu yapıldı:
+- **TAM:** bir çalışma evrakı güncellenir. Gövde tam koşar, çapraz girdileri değişmez; v0.5.19'da önbellek isabet eder.
+- **ISKA:** `04-vakia.json` sonuna boşluk eklenir. Sonuç aynı kalır ama özet değişir; v0.5.19'da önbellek ıskalar. Önbelleğin en kötü durum bedeli budur.
+- **STANDART-TAM:** standart kök, TAM ile aynı tetik.
+
+v0.5.18 ↔ v0.5.19 (ortanca ms):
+
+| senaryo | v0.5.18 | v0.5.19 | eşleştirilmiş fark ortancası [Ç1 / Ç3] |
+|---|---|---|---|
+| TAM (isabet) | 527,9 | 437,5 | **−96,5** [−129,6 / −80,1] |
+| ISKA | 511,6 | 531,3 | +22,2 [+4,4 / +42,0] |
+| STANDART-TAM | 137,4 | 129,0 | −0,3 [−10,4 / +2,5] |
+
+v0.5.17.1 ↔ v0.5.19 (ortanca ms; bu koşu sakin pencerede alındı, v0.5.17.1 §12.3'teki ~390 ms'yi yeniden verdi):
+
+| senaryo | v0.5.17.1 | v0.5.19 | eşleştirilmiş fark ortancası [Ç1 / Ç3] |
+|---|---|---|---|
+| TAM (isabet) | 390,8 | 394,6 | **−3,6** [−19,7 / +11,5] |
+| ISKA | 385,3 | 461,2 | +78,0 [+53,3 / +82,7] |
+| STANDART-TAM | 106,7 | 112,1 | +4,7 [+1,4 / +7,1] |
+
+- **İsabette** Stop kancası v0.5.17.1 düzeyine döner: v0.5.18'in +79 ms'lik gerilemesi geri alındı (fark gürültü bandında).
+- **Iskada** (yalnız çapraz girdisi değiştiğinde, yani bir zincir motoru yeniden koştuğunda) bedel v0.5.18'inkiyle aynı mertebededir. Önbelleğin kendi ek bedeli süreç içinde +7,7 ms ölçüldü (14.5). Kanca düzeyindeki +22,2 ms, süreç düzeyindeki dosya maliyetlerini ve bu oturumun gürültüsünü de taşır.
+- Standart kökteki +4,7 ms v0.5.18'in kendi zincir ekleridir (§12.1: +2,4 ms). v0.5.18 ↔ v0.5.19 arasında aynı senaryo −0,3 ms verdi.
+
+### 14.4 Ölçek kökü — §12.3 protokolünün tekrarı (v0.5.18 ↔ v0.5.19, iki tur, ortanca ms)
+
+| olay | v0.5.18 | v0.5.19 | fark (ortalama) |
+|---|---|---|---|
+| hook-denetle | 540,6 / 534,3 | 425,1 / 440,9 | **−104,5** |
+| hook-denetle TAM | 502,0 / 529,7 | 449,7 / 442,9 | −69,6 |
+| hook-denetle ISKA | 543,2 / 516,1 | 542,7 / 541,8 | +12,6 |
+| hook-prompt | 122,7 / 124,7 | 105,8 / 129,1 | −6,3 |
+| hook-pretool | 126,9 / 122,5 | 108,2 / 120,7 | −10,3 |
+| hook-acilis | 123,6 / 127,4 | 100,8 / 130,8 | −9,7 |
+
+- Çapraz yola yalnız `--hook-denetle` ve `--hook-postwrite` ulaşır. `hook-prompt`, `hook-pretool` ve `hook-acilis` değiştirilen koda hiç girmez; bu üçündeki −6…−10 ms bu oturumun gürültü bandıdır.
+- `hook-postwrite` bu protokolde güvenilir değildir (§12.3); burada 5/5 erken çıkışı ölçtü: 117,8 / 106,6 → 122,2 / 118,3.
+- Standart kök TAM yol: 154,1 / 139,8 → 158,2 / 152,5 (+8,4). Eşleştirilmiş ABBA aynı senaryoda −0,3 ms verdi (14.3); fark gürültüdür.
+- **Çıktı eşitliği.** Aynı ölçek senaryosu, kök yolu ve türetim zamanı satırı normalleştirilerek karşılaştırıldı. v0.5.18 ile v0.5.19'un hem ıska hem isabet koşusunda `--denetle` çıkış kodu, stdout ve DURUM.md BİREBİR aynıdır; DURUM.md «Çapraz Denetim» bölümünü taşır. İsabet koşusu önbellek dosyasını yeniden yazmadı.
+
+### 14.5 Süreç içi bileşenler (ölçek kökü, 9 tekrar, ortanca ms)
+
+- `_capraz_bosluk_hesapla`: v0.5.18 81,1 · v0.5.19 ıska 88,8 (+7,7) · v0.5.19 isabet 5,6 (−75,5).
+- İsabetin bileşenleri: girdi seçimi 0,9 · üç girdinin bayt okuması 1,5 · anahtar 1,4 · önbellek okuma 2,0.
+- Iskanın ek bileşenleri: yabancı anahtarlı okuma 0,4 · yazma 5,7 (JSON 2,4 · gidiş-dönüş denetimi 1,6 · sha256 0,1 · disk 0,5).
+- Sonuç 0 kopuk ve 3000 belirsiz öğedir; önbellek gövdesi 665 KB.
+- İsabetin kazancı `caprazla_ayrintili`'den büyüktür, çünkü 1,4 MB grafın `_yukle` ile ikinci kez ayrıştırılmasını da atlar. `_denetim_jsonlari` onu zaten bir kez ayrıştırıyor.
+
+### 14.6 Gerçek kanca yolunda doğrulama (cProfile, ölçek kökü, ikinci Stop)
+
+- `caprazla_ayrintili`, `_norm`, `_capraz_girdi_coz` ve `_capraz_onbellek_yaz` çağrılmadı.
+- `_capraz_bosluk_hesapla`, `_capraz_onbellek_anahtari` ve `_capraz_onbellek_oku` birer kez çağrıldı.
+- Değişmez 5 korunuyor: eklenti modül gövdelerinin her biri BİR kez yürütüldü (`pipeline_kayit`, `capraz_denetim`, `oa_hafiza`, `oa_metrik`, `tazelik_denetim`, `hook_giris`).
+
+### 14.7 Standart kök — sürüm defteri komutu (A/B × 3)
+
+Komut: `hook_olc --gercekci --tekrar 5 --karsilastir --import-dokumu` (ortanca ms).
+
+| olay | v0.5.18 (3 koşu) | v0.5.19 (3 koşu) | fark (ortancaların ortancası) |
+|---|---|---|---|
+| hook-prompt | 124,2 / 124,5 / 94,4 | 105,6 / 121,2 / 119,2 | −5,0 |
+| hook-pretool | 106,1 / 98,3 / 100,0 | 96,9 / 100,8 / 119,9 | +0,8 |
+| hook-postwrite | 131,4 / 126,0 / 130,5 | 142,2 / 143,8 / 152,7 | +13,3 |
+| hook-denetle | 154,0 / 151,6 / 130,9 | 138,6 / 140,0 / 147,3 | −11,6 |
+| hook-acilis | 122,0 / 102,2 / 125,5 | 102,3 / 102,4 / 118,6 | −19,6 |
+
+- Bu koşular simetrik dizin düzeni kurulmadan alındı: v0.5.18 ağacı Temp altında, aday çalışma ağacındaydı. Koşu sonrası kayıtlara göre altı koşunun dördünde yabancı yük vardı; en kötüsü A1 (20 python süreci, CPU %72).
+- Değiştirilen koda girmeyen `hook-acilis`'in −19,6 ms'si bu koşuların gürültü ölçüsüdür.
+- `hook-postwrite` (+13,3) ile `hook-denetle` (−11,6) standart kökte aynı gövdeyi koşar ve zıt yönde oynadı. Standart kökte çapraz yol önbelleğe uğramaz; aynı gövdenin eşleştirilmiş ABBA ölçümü −0,3 ms verdi (14.3).
+- Giriş betiği kazancı (hook-prompt, doğrudan − giriş): v0.5.18'de 21,1 / 39,1 / 50,9 (ortanca 39,1), v0.5.19'da 48,2 / 39,8 / 37,5 (ortanca 39,8). §10 kuralının 30 ms eşiğinin üstünde; gerekçe gerekmez.
+- Import dökümü: altı koşunun altısında `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (102 import izlendi).
+
+### 14.8 Sürüm kapıları (aynı gün)
+
+- Tam süit (`-n auto -m "not perf"`), 0 kırmızı:
+  - Python 3.14: 3640 geçti, 2 atlandı;
+  - Python 3.12: 3640 geçti, 2 atlandı;
+  - atlananlar ortam kaynaklıdır (saha referansı tanımsız; `python-docx` kurulu değil).
+- Zamanlama kanaryası (`-m perf -p no:xdist`): iki yorumlayıcıda geçti, uyarı yok.
+- `hook_doktor --servis-atla`: TÜM MEKANİK KONTROLLER GEÇTİ (6 olay, altısı da exit 0; sürüm damgası henüz 0.5.18).
+- `aile_dogrula`: AİLE YAPI DENETİMİ TEMİZ (20 parça).
+
+**Sonuç:** büyük dosyada (3000 evrak) Stop kancası, çapraz girdiler değişmediği her turda v0.5.17.1 düzeyine döner (eşleştirilmiş fark v0.5.17.1'e göre −3,6 ms, v0.5.18'e göre −96,5 ms). Girdi değiştiği turda ödenen bedel v0.5.18'inkiyle aynı mertebededir. Standart kökte değişiklik yoktur.
+
+### 14.9 Yeniden ölçüm 2026-10-16 — 61b8e14 üzerine taşıma
+
+- **Taşıma notu:** bu bölüm ilk commit'inde (`ad66357`) §13 numarasını taşıyordu. Denetim dalında §13 v0.5.18 eksikler turuna ait olduğundan `61b8e14` üzerine yeniden temellendirmede §14 oldu; taşınan commit'in (`d996f62`) mesajındaki «§13» bu bölümdür. 14.1–14.8'in sayıları 2026-10-09 ölçümüdür, değiştirilmedi.
+- **Komut:** `py -3.14 tools/hook_olc.py --gercekci --tekrar 3 --karsilastir --import-dokumu` (sürüm defteri kuralı). Tek ağaç ölçüldü, A/B tabanı yoktur; bu satırlardan sürümler arası fark çıkarılmaz.
+- **Koşul:** gerçekçi dava kökü (standart kök; ölçek kökü değil) · ölçümden önce `compileall` ile `.pyc` sıcak (ortamda `PYTHONDONTWRITEBYTECODE=1`) · tek koşu.
+- **Ortam:** Windows 11 · 16 çekirdek · Python 3.14.8 (çıplak başlık 21,34 ms, ortanca).
+
+| olay | ortanca | en hızlı | en yavaş | NET | boş çıktı | doğrudan `pipeline_kayit.py` |
+|---|---|---|---|---|---|---|
+| hook-prompt | 71,2 | 69,4 | 86,0 | 49,8 | 0/3 | 111,0 |
+| hook-pretool | 64,0 | 63,0 | 64,5 | 42,6 | 3/3 | 106,5 |
+| hook-postwrite | 94,6 | 92,6 | 97,4 | 73,3 | 2/3 | 136,2 |
+| hook-denetle | 96,0 | 95,1 | 118,9 | 74,6 | 2/3 | 138,2 |
+| hook-acilis | 67,4 | 64,9 | 68,8 | 46,1 | 0/3 | 106,2 |
+
+- Bileşik (bir Write, Pre+Post): 158,6 ms.
+- Giriş betiği kazancı (hook-prompt, doğrudan − giriş): 39,8 ms. §10 kuralının 30 ms eşiğinin üstünde; gerekçe gerekmez.
+- Import dökümü: `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (102 import izlendi).
+- Aynı gün kapılar (`d996f62`): tam süit (`-n auto -m "not perf"`) 3840 geçti · 12 atlandı · 0 kırmızı (atlananlar ortam kaynaklıdır: UDF yazıcısı `OA_TEST_UDF_YAZICI=0` ile kapalı, saha referansı tanımsız); zamanlama kanaryası (`-m perf -p no:xdist`) 1 geçti; `ruff` temiz; `aile_dogrula` AİLE YAPI DENETİMİ TEMİZ (20 parça). Toplanan test 3853, OA-SUIT-SAYISI ile birebir.

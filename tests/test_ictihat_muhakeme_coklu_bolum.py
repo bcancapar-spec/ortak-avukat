@@ -9,6 +9,7 @@ DEĞİŞTİRMEDEN doğru ayrıştırdığını doğrular. Ayrıca P0-2 DÜZELTME
 kapsar.
 """
 import importlib.util
+from oa_teyit_kanali import KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
@@ -50,7 +51,7 @@ def _bos_iskelet(tmp_path):
 def _bolum_yaz(kunye, damga, ayirt_etme="", ilgili_kisim="...ilgili kısım...",
                davaya_bag="...davaya bağ...", damga_satiri=True):
     satirlar = [f"# İçtihat Muhakeme Kaydı — {kunye}", "", f"**KUNYE:** {kunye}",
-                f"**KAYNAK-IZI:** {{KAYNAK}}"]
+                f"**KAYNAK-IZI:** {{KAYNAK}}", KAYNAK_URL_SATIRI]
     if damga_satiri:
         satirlar.append(f"**DAMGA:** {damga}")
     satirlar.append("")

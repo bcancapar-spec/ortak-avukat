@@ -560,16 +560,16 @@ Zaman: {ts()}
 # GETİR tam metin döndürür → --damga (+--bag+--dokum) ZORUNLU (damgasız içtihat
 # kütüğe, kütüksüz künye çıktıya GİREMEZ). Diğer araçlar (mevzuat_*, vb.)
 # serbest kalır — geriye uyum (v0.5.1 davranışı birebir).
-# v0.5.7.4 — BAĞLANTI KATMANI: birincil Yargı Pro adları + o sürümde ilan edilen
-# açık kaynak `yargi-mcp-yedek` adları. v0.5.17.1 / B-23: yedek İLANI KALDIRILDI
-# (sahipsiz uç nokta — bkz. oa-ictihat SKILL "BAĞLANTI KATMANI"); adlar sözlükte
-# BİLİNÇLİ olarak KALIR: eski kütük kayıtları okunur ve bu adlarla gelen her
-# kayıt aynı ARAMA/GETİR disiplinine (damga zorunluluğu) tabi kalır — çıkarmak
-# onları "sözlük dışı serbest araç" yapıp damga kapısını gevşetirdi.
+# 2026-10-15 — HİBRİT TEYİT KANALI (avukat kararı): üçüncü taraf MCP araç adları
+# sözlükten çıkarıldı; araç adları kanal-bağımsızdır (ARAMA/GETİR sınıfı ne yaptığını
+# söyler, kimin yaptığını değil). Genel web araçları da sınıflıdır: `WebFetch` tam
+# metin çeker (GETİR — damga zorunlu), `WebSearch` keşif yapar (ARAMA — damga
+# yasak). Teyidin kanıtı araç adı değil, RESMÎ KAYNAK ADRESİDİR: tam metin çeken
+# her araçta `--kaynak-url` ZORUNLU ve beyaz listeli (kunye_ortak.RESMI_KAYNAKLAR;
+# avukat nüshası ortak-avukat/references/resmi-kaynaklar.md) — bkz. teyit komutu.
 ARAMA_ARACLARI = {"ictihat_ara", "semantik_ictihat_ara", "aym_ictihat_ara", "aihm_ictihat_ara",
-                  "search_bedesten_unified", "search_bedesten_semantic", "search_anayasa_unified"}
-GETIR_ARACLARI = {"ictihat_getir", "kurum_karari_getir",
-                  "get_bedesten_document_markdown", "get_anayasa_document_unified"}
+                  "WebSearch"}
+GETIR_ARACLARI = {"ictihat_getir", "kurum_karari_getir", "WebFetch"}
 
 # DÜZELTME (v0.5.5 şerh turu — Ş1/Ş3/Ş4 KÖK ÇÖZÜM): `--arac` ESKİDEN
 # doğrulanmayan serbest metindi ve DÖRT yerde (kütük satırı, muhakeme dosyası
@@ -590,11 +590,11 @@ GETIR_ARACLARI = {"ictihat_getir", "kurum_karari_getir",
 # GİRMEZ (mevcut "diğer araçlar serbest kalır" davranışı korunur).
 MEVZUAT_KURUM_ARACLARI = {
     "mevzuat_ara", "mevzuat_getir", "mevzuat_icinde_ara", "kurum_karari_ara",
-    "resmi_gazete_fihrist", "resmi_gazete_getir", "reklam_bulten_icinde_ara",
-    "sigorta_dergi_icinde_ara", "spk_icinde_ara", "agentic_legal_deep_research",
-    "legal_research_guide",
+    "resmi_gazete_fihrist", "resmi_gazete_getir",
 }
 BILINEN_ARACLAR = ARAMA_ARACLARI | GETIR_ARACLARI | MEVZUAT_KURUM_ARACLARI
+# Tam metin çeken araçlar: teyidin kanıtı kaynağın adresidir — --kaynak-url zorunlu.
+URL_ZORUNLU_ARACLAR = GETIR_ARACLARI | {"mevzuat_getir", "resmi_gazete_getir"}
 _BILINEN_ARACLAR_CASEFOLD = {a.casefold(): a for a in BILINEN_ARACLAR}
 
 
@@ -606,7 +606,7 @@ def _arac_anahtar(s):
 
 
 _BILINEN_ARACLAR_ANAHTAR = {_arac_anahtar(a): a for a in BILINEN_ARACLAR}
-# E3 — sondaki parantezli ek ('ictihat_getir (Yargı Pro)' / 'mevzuat_getir (yedek)')
+# E3 — sondaki parantezli ek ('ictihat_getir (resmî portal)' / 'mevzuat_getir (not)')
 # normalize sırasında ATILIR; parantez içi içerik kütüğe/muhakemeye asla sızmaz.
 _ARAC_PARANTEZ_EK_RE = re.compile(r"\s*\([^)]*\)\s*$")
 _GUVENLI_ARAC_TOKEN_RE = re.compile(r"[A-Za-z0-9_.-]{1,64}")
@@ -672,8 +672,8 @@ def _arac_normalize_ve_dogrula(arac_ham):
     if kanonik is not None:
         return kanonik, None
     # E3 (v0.5.8.5) — TAM-EŞLEŞME REDDİ KALKTI: parantezli ek + boşluk/alt-çizgi
-    # toleransıyla ikinci bir normalize denemesi yapılır ('ictihat_getir (Yargı
-    # Pro)', 'Ictihat Getir' → 'ictihat_getir'). Parantez içi içerik TAMAMEN
+    # toleransıyla ikinci bir normalize denemesi yapılır ('ictihat_getir (resmî
+    # portal)', 'Ictihat Getir' → 'ictihat_getir'). Parantez içi içerik TAMAMEN
     # atılır (yalnız KANONİK ad diske yazılır — enjeksiyon yüzeyi büyümez);
     # eşleşme yine yalnız BİLİNEN sözlüğe çıkabilir, sınıf kuralları (--damga
     # zorunluluğu/yasağı) kanonik ad üzerinden AYNEN uygulanır (t8 kapalı kalır).
@@ -694,7 +694,7 @@ def _arac_normalize_ve_dogrula(arac_ham):
     return arac, None
 
 # Layer-0 ucuz sorgu taraması (P0-2 DÜZELTME e, v0.5.5): --sorgu ANONİM olmalı
-# (müvekkil-tanımlayıcı veri dış MCP'ye gönderilemez) — anayasa §10 dört deseni
+# (müvekkil-tanımlayıcı veri dış araca gönderilemez) — anayasa §10 dört deseni
 # AÇIKÇA sayar: TCKN/ad-soyad/dosya-esas no/IBAN. Tarama artık ARAÇ SINIFINDAN
 # BAĞIMSIZDIR (eskiden yalnız ARAMA/GETİR — 6 araç adı — taranıyordu; mevzuat_*
 # dahil HER --sorgu dış MCP'ye giden metindir, aynı taramadan geçer). Bilinen
@@ -769,7 +769,7 @@ _KURUMSAL_KELIMELER = {
     "cumhuriyeti", "bakanlığı", "bakanlık", "kurumu", "kurum", "başkanlığı",
     "başkanlık", "müdürlüğü", "müdürlük", "sözleşmesi", "yasası", "tebliği",
     "yönetmeliği", "tüzüğü", "dava", "davası", "kararı", "içtihat", "içtihadı",
-    "sayılı", "tarihli", "medeni", "borçlar", "iş", "idari", "bölge",
+    "sayılı", "tarihli", "medeni", "borçlar", "iş", "idari",
     # DÜZELTME (v0.5.5 düzeltme turu): ölçülen 7 yanlış-pozitifte (Avrupa
     # İnsan Hakları Mahkemesi / Sosyal Güvenlik Kurumu / Kamu İhale Kurumu /
     # Yüksek Seçim Kurulu / Bilirkişi Raporu / Maddi Manevi Tazminat / Fikri
@@ -827,6 +827,30 @@ def _tr_kucuk(s):
     noktalı 'i̇' harfine çevirdiğinden basit ASCII eşlemeyle önce İ→i, I→ı
     çevrilir (kurumsal kelime kümesiyle KARŞILAŞTIRMA doğru çalışsın diye)."""
     return s.replace("İ", "i").replace("I", "ı").lower()
+
+
+def _tckn_saglama_gecer_mi(s):
+    """11 haneli dizi TCKN sağlamasını geçiyor mu (ilk hane 0 değil; 10. hane = (tek haneler×7 − çift haneler) mod 10;
+    11. hane = ilk on hanenin toplamı mod 10). Adres taramasında kullanılır: resmî portal karar kimlikleri de 11
+    hane olabilir, sağlama geçmeyen dizi TCKN sayılmaz (yanlış engel olmasın)."""
+    if len(s) != 11 or not s.isdigit() or s[0] == "0":
+        return False
+    d = [int(ch) for ch in s]
+    tek, cift = sum(d[0:9:2]), sum(d[1:8:2])
+    return (tek * 7 - cift) % 10 == d[9] and sum(d[:10]) % 10 == d[10]
+
+
+def _kaynak_url_layer0_tara(url):
+    """--kaynak-url'in yolu, sorgu dizesi ve parçası Layer 0'dan geçer (heyet 2026-10-17 GÜVENLİK U-2; anayasa m.10):
+    adres resmî portala giden sorguyu taşır ve dış araca gider. Alan adı beyaz liste denetiminde ayrıca sınanır."""
+    import urllib.parse as _up
+    try:
+        p = _up.urlsplit(url)
+    except ValueError:
+        return "çözümlenemeyen adres"
+    acik = _up.unquote_plus(" ".join(x for x in (p.path, p.query, p.fragment) if x))
+    acik = _TCKN_RE.sub(lambda m: m.group(0) if _tckn_saglama_gecer_mi(m.group(0)) else "#" * 11, acik)
+    return _layer0_sorgu_tara(acik)
 
 
 def _layer0_sorgu_tara(sorgu):
@@ -1051,6 +1075,9 @@ def _kunye_ortak_modulu():
     adaylar = [
         os.path.join(burada, "..", "..", "oa-kontrol", "scripts", "kunye_ortak.py"),
         os.path.join(burada, "..", "..", "..", "oa-kontrol", "scripts", "kunye_ortak.py"),
+        # 2026-10-15: araç çantası (`_oa/araclar/`) kopyalarında kardeş script aynı
+        # dizindedir — beyaz liste orada da yüklenebilsin (teyit fail-closed kalır).
+        os.path.join(burada, "kunye_ortak.py"),
     ]
     betik = next((os.path.normpath(a) for a in adaylar if os.path.isfile(a)), None)
     if betik is None:
@@ -1220,22 +1247,22 @@ def cmd_teyit(args):
 
     # P0-2 DÜZELTME (e): Layer-0 taraması artık HER --sorgu için çalışır —
     # arac sınıfından (ARAMA/GETİR) BAĞIMSIZ; mevzuat_*/kurum_karari_ara dahil
-    # HER araç dış MCP'ye giden bir sorgu taşır.
+    # HER araç dış araca giden bir sorgu taşır.
     if not args.sorgu_onayli:
         bulunan = _layer0_sorgu_tara(args.sorgu)
         if bulunan:
             sys.exit(f"RET (Layer 0): --sorgu içinde {bulunan} bulundu — sorgu "
-                     "ANONİM olmalıdır (müvekkil-tanımlayıcı veri dış MCP'ye gönderilemez). "
+                     "ANONİM olmalıdır (müvekkil-tanımlayıcı veri dış araca gönderilemez). "
                      "Bilinçli geçiş için --sorgu-onayli kullanın.")
 
     if is_arama and args.damga:
         sys.exit("RET: ARAMA araçları (ictihat_ara/semantik_ictihat_ara/aym_ictihat_ara/"
-                 "aihm_ictihat_ara) TAM METİN döndürmez — --damga vurulamaz (m.4: olguda "
-                 "asla serbest değil). Önce --arac ictihat_getir/kurum_karari_getir ile "
-                 "tam metni çekip damgalayın.")
+                 "aihm_ictihat_ara/WebSearch) TAM METİN döndürmez — --damga vurulamaz (m.4: "
+                 "olguda asla serbest değil). Önce --arac ictihat_getir/kurum_karari_getir/"
+                 "WebFetch ile tam metni resmî kaynaktan çekip damgalayın.")
 
     if is_getir and not args.damga:
-        sys.exit("RET: GETİR araçları (ictihat_getir/kurum_karari_getir) tam metin "
+        sys.exit("RET: GETİR araçları (ictihat_getir/kurum_karari_getir/WebFetch) tam metin "
                  "döndürür — --damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR ZORUNLUDUR: damgasız "
                  "içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ. Ne yapmalı: komuta "
                  "--damga <sınıf> --bag \"<≥40 karakter>\" --ilgili-kisim \"<verbatim "
@@ -1254,6 +1281,41 @@ def cmd_teyit(args):
             sys.exit("RET: --kaynak-url yalnız tek parça bir http(s) adresi olabilir "
                      f"(boşluk/satır sonu içeremez). Verilen: {args.kaynak_url!r}")
         args.kaynak_url = u
+        # 2026-10-17 — heyet GÜVENLİK U-2 (anayasa m.10): adres de dış araca gider — yolu/sorgusu/parçası müvekkil-
+        # tanımlayıcı veri taşıyamaz. 11 haneli sayılar yalnız TCKN sağlaması geçiyorsa TCKN sayılır (karar kimlikleri de
+        # 11 hane olabilir); IBAN, e-posta, telefon, plaka, ad-soyad desenleri aynen taranır. Bilinçli geçiş --sorgu-onayli.
+        if not args.sorgu_onayli:
+            bulunan_url = _kaynak_url_layer0_tara(u)
+            if bulunan_url:
+                sys.exit(f"RET (Layer 0): --kaynak-url içinde {bulunan_url} bulundu — adres resmî portala giden sorgu "
+                         "dizesini taşır ve dış araca gider; müvekkil-tanımlayıcı veri adrese giremez (anayasa m.10). "
+                         "Bilinçli geçiş için --sorgu-onayli kullanın.")
+
+    # 2026-10-15 — HİBRİT TEYİT KANALI (avukat kararı): tam metin çeken araçlarda
+    # teyidin kanıtı kaynağın adresidir — --kaynak-url ZORUNLU; verilen her adres
+    # (ARAMA sınıfı dahil) resmî kaynak beyaz listesinden olmalı. Liste yüklenemezse
+    # teyit fail-closed durur (sessiz kabul yok).
+    _kurl = getattr(args, "kaynak_url", None)
+    if args.arac in URL_ZORUNLU_ARACLAR and not _kurl:
+        sys.exit(f"RET (teyit kanalı): --arac {args.arac} resmî kaynaktan TAM METİN çeker; "
+                 "teyidin kanıtı kaynağın adresidir — --kaynak-url ZORUNLU ve resmî kaynak "
+                 "beyaz listesinden olmalı (mevzuat.gov.tr, mevzuat.adalet.gov.tr, "
+                 "karararama.yargitay.gov.tr, emsal.uyap.gov.tr, karararama.danistay.gov.tr, "
+                 "kararlarbilgibankasi.anayasa.gov.tr, resmigazete.gov.tr, hudoc.echr.coe.int …; "
+                 "tam liste: ortak-avukat/references/resmi-kaynaklar.md). Adres yoksa teyit "
+                 "yoktur (fail-closed).")
+    if _kurl:
+        _ko = _kunye_ortak_modulu()
+        if _ko is None or not hasattr(_ko, "resmi_kaynak_mi"):
+            sys.exit("RET (teyit kanalı): resmî kaynak beyaz listesi yüklenemedi "
+                     "(oa-kontrol/scripts/kunye_ortak.py bulunamadı) — teyit FAIL-CLOSED "
+                     "(kırık kardeş modül kapıyı KAPATIR, açmaz).")
+        if not _ko.resmi_kaynak_mi(_kurl):
+            sys.exit(f"RET (teyit kanalı): --kaynak-url resmî kaynak beyaz liste DIŞINDA: "
+                     f"{_kurl[:120]} — teyit yalnız resmî portaldan yapılır (.gov.tr alan "
+                     "adları, hudoc.echr.coe.int, barobirlik.org.tr, bddk.org.tr; tam liste: "
+                     "ortak-avukat/references/resmi-kaynaklar.md). Üçüncü taraf sunucu ve özel "
+                     "içtihat sitesi teyit kaynağı DEĞİLDİR.")
 
     # v0.5.8.4 [G5] AŞILMIŞLIK alanları — aşılmış-içtihat kapısının ÜRETİCİ ucu
     # (372 karnesi: `ictihat_muhakeme_denetim.py` [G5] kapısı kuruluydu ama
@@ -2113,7 +2175,7 @@ _ANAYASA_GOMULU = [
      "dizilimi, strateji, üslup) serbestçe doğaçlanır; sınır tek ve keskin: YÖNTEMde "
      "serbest, OLGUda asla — künye/madde/tarih/parasal-teknik veri daima MCP-teyitli."),
     ("Doğrulama mimarisi — tavizsiz",
-     "İçtihat resmî kaynaktan (Yargı Pro/Mevzuat MCP) doğrulanmadıkça YOKTUR, hafızadan "
+     "İçtihat resmî kaynaktan (resmî kaynak beyaz listesi) doğrulanmadıkça YOKTUR, hafızadan "
      "atıf 'iddia'dır; üç katman norm→içtihat→doktrin ayrılır; iki modelin hemfikirliği "
      "doğrulama DEĞİLDİR; şüpheli her bilgi açıkça etiketlenir (teyit edilmedi/tek kaynak)."),
     ("Müvekkil-aleyhi dış çıktı yasağı",

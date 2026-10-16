@@ -150,7 +150,7 @@ def test_serh_ile_gecilir_ve_olayda_gorunur(tmp_path):
 def test_ictihat_muhakeme_ve_teyit_dosyalari_bayatlik_haricinde(tmp_path):
     _baslat(tmp_path)
     _kunye_kur(tmp_path)
-    md = _analiz_kur(tmp_path, eski_mtime_offset=0)
+    _analiz_kur(tmp_path, eski_mtime_offset=0)
     # yalnız *ictihat-muhakeme* ve *teyit* desenli dosyalar YENİ — bunlar
     # hariç tutulduğundan md hâlâ 'taze' sayılmalı.
     ileri = time.time() + 500

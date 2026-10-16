@@ -15,7 +15,7 @@ teyitli=False, geç okuma (31 Ağu + 1 hafta) YALNIZ uyarı/alternatif satırın
   * `hmk_istifa_vekalet_devam` — HMK m.82/1: iki hafta, müvekkile TEBLİĞDEN.
   * `avk_istifa_vekalet_devam` — Av.K. m.41/1: on beş gün, müvekkile TEBLİĞDEN.
 
-Resmî metin teyidi (Yargı PRO MCP `mevzuat_getir`, 2026-10-07):
+Resmî metin teyidi (mevzuat.gov.tr `mevzuat_getir`, 2026-10-07):
   HMK (6100) m.82 ("istifa eden vekilin vekâlet görevi, istifanın müvekkiline
   tebliğinden itibaren iki hafta süreyle devam eder"), m.103/3 ("Adli tatilde …
   her türlü tebligat … işlemleri de yapılır" → süre tatilde İŞLER), m.104 ("bu

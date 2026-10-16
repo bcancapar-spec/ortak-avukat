@@ -2,12 +2,12 @@
 """v0.5.18 (aday) — oa-usul [G10] AYM / [G11] AİHM bireysel başvuru yolu kontrol listesi.
 
 NEDEN (yetenek denetimi, 2026-10-03/05): OA'da AYM yolu kısmen (yalnız süre
-kuralı ve dilekçe tipi), AİHM yolu HİÇ yoktu; Yargı PRO 5-1/5-3/5-4/5-5 ve
+kuralı ve dilekçe tipi), AİHM yolu HİÇ yoktu; dış skill kütüphanesi 5-1/5-3/5-4/5-5 ve
 6-1…6-5 skill'lerinin fikri (eşik → ölçüt → giderim) OA yöntemiyle kuruldu:
 model değerlendirir, `usul_matris.py` değerlendirmenin EKSİKSİZ ve KANITLI
 olduğunu denetler; hukuki sonuç avukatındır.
 
-Dayanaklar resmî metinden teyit edildi (Yargı PRO, 2026-10-05): 6216 m.45-50,
+Dayanaklar resmî metinden teyit edildi (mevzuat.gov.tr, 2026-10-05): 6216 m.45-50,
 geçici m.1/8; AYM İçtüzüğü m.59/63/66; HMK m.375/377; CMK m.311; İYUK m.53;
 AİHS m.35/1 (Orhan/Türkiye (k.k.), no. 38358/22, § 44 — 01.02.2022 geçişi).
 Bu dosyadaki bütün dosya/kişi verileri KURGUDUR (anayasa m.7).

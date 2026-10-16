@@ -47,7 +47,7 @@ Güncelleme: [tarih]
 - ✗ DENETİM JSON'U OKUNAMADI: [dosya] — temiz sayılmaz; K2 adım-1'i fail-closed kapatır
 
 ## Toplanan teyitli künyeler (araştırma çıktısı — sonraki adımlar bununla sınırlı)
-- [künye 1 — kaynak: Yargı Pro]
+- [künye 1 — kaynak: resmî portal adresi]
 - [künye 2 — kaynak: Mevzuat MCP]
 ```
 

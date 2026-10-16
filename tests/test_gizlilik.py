@@ -7,7 +7,6 @@ farklı klasörlerde durur. Yol bağımsızlığı için pathlib + repo köküne
 import importlib.util
 import pathlib
 
-import pytest
 
 # Bu dosya: <repo>/tests/test_gizlilik.py  →  repo kökü iki üst dizin.
 REPO = pathlib.Path(__file__).resolve().parents[1]

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """oa-dilekce / md_udf_html.py için testler (P0-10 — UDF-REHBER uyumu).
 
-Tamamen ÇEVRİMDIŞI/deterministik: yalnız `donustur()`'ün Yargı Pro UDF
+Tamamen ÇEVRİMDIŞI/deterministik: yalnız `donustur()`'ün `udf-cli` UDF
 rehberinin (A.3/A.4) öngördüğü kurallara uyduğunu doğrular — `<br>` ile
 paragraf ayırmaz, `<p>` bazlı paragraflar üretir, başlıklarda pt birimi
 kullanır, tablo/liste/alıntı bloklarını inline-CSS HTML'e çevirir.
@@ -11,7 +11,6 @@ import pathlib
 import subprocess
 import sys
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = (REPO / "plugins" / "ortak-avukat" / "skills" / "oa-dilekce"
@@ -84,6 +83,30 @@ def test_numarali_liste_ol_madde_listesi_ul():
     assert "<ol>" in html_ol and html_ol.count("<li>") == 2
     html_ul = mh.donustur("- bir\n- iki\n- üç\n")
     assert "<ul>" in html_ul and html_ul.count("<li>") == 3
+
+
+def test_numarali_liste_BIRDEN_BASLIYORSA_start_YAZILMAZ():
+    """Olağan hâl bozulmaz: 1'den başlayan listeye gereksiz `start` girmez;
+    çıktı eskisiyle bayt-özdeş kalır."""
+    html = mh.donustur("1. birinci\n2. ikinci\n")
+    assert "<ol>" in html
+    assert "start=" not in html
+
+
+def test_numarali_liste_BIRDEN_BASLAMIYORSA_start_BILDIRILMEK_ZORUNDA():
+    """2026-10-15 denetimi B-1 (açık PR #6'nın sahada gördüğü kusur): SONUÇ VE
+    İSTEM bentleri `A. USUL` / `B. ESAS` alt başlığıyla bölünür; araya giren
+    başlık Markdown listesini kapattığı için ikinci liste yeni `<ol>` açar ve
+    9. bent belgede "1." basılırdı. Mahkeme hükmü bent numarasına atıf yapar
+    ("9 numaralı talebin reddine") — yanlış numara belgeyi SESSİZCE bozar.
+    Kaynak numarası 1 değilse `<ol start="N">` bildirilir."""
+    html = mh.donustur("9. dokuzuncu\n10. onuncu\n")
+    assert '<ol start="9">' in html and html.count("<li>") == 2
+
+    md = "1. birinci\n2. ikinci\n\n**B. ESAS YÖNÜNDEN:**\n\n3. üçüncü\n4. dördüncü\n"
+    html2 = mh.donustur(md)
+    assert html2.count("<ol") == 2, html2
+    assert "<ol>" in html2 and '<ol start="3">' in html2, html2
 
 
 def test_alinti_blogu_girintili_paragraf_uretir():

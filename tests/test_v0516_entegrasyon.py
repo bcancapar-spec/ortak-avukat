@@ -15,6 +15,7 @@ DEVAM-PLANI «Hizalama bulguları» (2026-09-07):
 Tüm fikstürler tmp_path altında sentetiktir (anayasa m.7: kişi/dosya adı yok).
 """
 import importlib.util
+from oa_teyit_kanali import RESMI_URL  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import json
 import pathlib
 import shutil
@@ -148,7 +149,8 @@ ATIFLI = ("İstinaf sebeplerimiz Yargıtay 4. HD E. 2099/1234 K. 2099/5678 "
 def _teyit(kok, damga, akibet=None, kaynak="arac:ictihat_getir"):
     args = ["teyit", "--arac", "ictihat_getir", "--sorgu", "TBK m.49 illiyet",
             "--sonuc", KUNYE, "--damga", damga, "--bag", BAG, "--ilgili-kisim", ILGILI,
-            "--dokum-icerik", DOKUM, "--dokum-sinifi", "tam-metin", "--kok", kok]
+            "--dokum-icerik", DOKUM, "--dokum-sinifi", "tam-metin",
+            "--kaynak-url", RESMI_URL, "--kok", kok]
     if akibet:
         args += ["--akibet", akibet, "--akibet-kaynak", kaynak]
     kod, out = _run(HAFIZA, args, kok)

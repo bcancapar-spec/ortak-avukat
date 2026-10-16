@@ -33,6 +33,7 @@
 Fikstürler sentetiktir (E. 2099/1 sınıfı); müvekkil verisi yoktur.
 """
 import importlib.util
+from oa_teyit_kanali import RESMI_URL  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import json
 import pathlib
 import subprocess
@@ -160,7 +161,8 @@ def test_a_gercek_teyit_satiri_damga_ve_akibet_okunur(tmp_path, ko):
              "--bag", "sentetik fikstür — fazla mesai ispat yükü davacı işçide, tanık "
                       "beyanı soyut kaldı (≥40 karakter)",
              "--ilgili-kisim", "tanık beyanları soyut kalmıştır",
-             "--dokum-icerik", "@" + str(dokum), "--sorgu-onayli", "--kok", str(tmp_path)]
+             "--dokum-icerik", "@" + str(dokum), "--sorgu-onayli",
+             "--kaynak-url", RESMI_URL, "--kok", str(tmp_path)]
     kod, cikti = _cli(HAFIZA, ["teyit", "--damga", "ALEYHE", "--akibet", "bozuldu",
                                "--akibet-kaynak", "arac:ictihat_getir"] + ortak, cwd=tmp_path)
     assert kod == 0, cikti

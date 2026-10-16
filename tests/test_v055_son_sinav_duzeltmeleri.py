@@ -11,9 +11,10 @@ normal kullanımda oluşan FAIL-OPEN hâlleridir (bkz. memory/amac-cizgisi.md):
       olanı (LEHE) seçip [OK] veriyordu → salt-ALEYHE karar lehe kılığında
       dilekçeye girebiliyordu (anayasa m.6 ihlali).
   D3  Layer 0 sorgu taraması telefon / e-posta / plaka desenlerini kaçırıyordu →
-      müvekkil kimlik verisi dış MCP'ye (Yargı Pro) çıkabiliyordu.
+      müvekkil kimlik verisi dış araca (içtihat sunucusu) çıkabiliyordu.
 """
 import importlib.util
+from oa_teyit_kanali import RESMI_URL, KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
@@ -55,6 +56,7 @@ def test_d1_kunye_ortak_import_edilemezse_damga_reddedilir(tmp_path, monkeypatch
         "--ilgili-kisim", "ilke şudur",
         "--bag", "Somut olayda tasarruf ivazsızdır; borç önce doğmuştur; süre içindedir.",
         "--dokum", str(dokum),
+        "--kaynak-url", RESMI_URL,   # 2026-10-15: adres kapısı geçilsin ki sınanan kapıya ulaşılsın
     ])
     try:
         hafiza.main()
@@ -77,7 +79,7 @@ def _kayit(yol, damga, ad):
         "\n".join([
             "# İçtihat Muhakeme Kaydı", "",
             f"**KUNYE:** {KUNYE}",
-            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
             f"**DAMGA:** {damga}", "",
             "## İLGİLİ-KISIM", "kararın taşıyıcı ilkesi burada…", "",
             "## DAVAYA-BAĞ", "somut olayla üç noktada örtüşür…", "",
@@ -119,7 +121,7 @@ def test_d2_ayni_sinif_celiskisi_blok_degil_uyari(tmp_path):
         "\n".join([
             "# İçtihat Muhakeme Kaydı", "",
             f"**KUNYE:** {KUNYE}",
-            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
             "**DAMGA:** ALEYHE-AYIRT", "",
             "## İLGİLİ-KISIM", "kararın taşıyıcı ilkesi…", "",
             "## DAVAYA-BAĞ", "somut olayla örtüşür…", "",

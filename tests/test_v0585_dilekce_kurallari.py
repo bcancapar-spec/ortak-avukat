@@ -449,13 +449,9 @@ def test_t_tarihce_dizinleri_taranmaz_yasayan_belgeler_taranir(tmp_path):
     """oturum/devir/dersler/arsiv-yerel GEÇMİŞ kayıttır — [T] taramaz (eski
     koşunun hatası kökü kalıcı bloğa çeviremez); yaşayan belge (00-TESLIM.md)
     taranmaya devam eder."""
-    import importlib.util, sys
-    yol = os.path.join(SCRIPTS, "dilekce_denetim.py") if "SCRIPTS" in dir() else None
-    if yol is None:
-        import pathlib
-        yol = str(pathlib.Path(__file__).resolve().parents[1] / "plugins" /
-                  "ortak-avukat" / "skills" / "oa-dilekce" / "scripts" /
-                  "dilekce_denetim.py")
+    # 2026-10-15 denetimi B-2: eski koşul (`"SCRIPTS" in dir()`) daima yanlıştı
+    # ve `os`/`SCRIPTS` tanımsızdı — ölü dal; modül yolu dosya başındaki SCRIPT'tir.
+    yol = str(SCRIPT)
     spec = importlib.util.spec_from_file_location("_dd_t_tarihce", yol)
     dd = importlib.util.module_from_spec(spec)
     sys.modules["_dd_t_tarihce"] = dd

@@ -2,16 +2,17 @@
 """Ortak Avukat — kurulum denetimi ve tamamlayıcısı (tek prompt'luk zincirin proje içindeki motoru).
 
 NEDEN VAR: avukat talimatı (Av. Bayram Can ÇAPAR, 2026-10-07) — "projenin içerisinde mutlaka
-zincirleme şekilde, Yargı Pro hariç kalan tüm gereksinimleri tek prompt'ta indirecek kısmı
+zincirleme şekilde, [üçüncü taraf içtihat sunucusu] hariç kalan tüm gereksinimleri tek prompt'ta indirecek kısmı
 oluştur". README'deki tek yapıştırmalık prompt kurulumu Claude'a yürütür; bu motor zincirin
 KANIT halkasıdır: gereksinimleri deterministik olarak denetler, eksik olanın resmî kurulum
 komutunu basar, yalnız güvenli iki işi kendisi yapar (koşan yorumlayıcıya pip paketleri ve
 compileall). Sistem yazılımını (Python, Tesseract, Node) KURMAZ — komutunu basar; kurulumu
-avukatın onayıyla Claude yürütür. Yargı Pro KAPSAM DIŞIDIR (ücretli üyelik; /mcp ile avukat
-yetkilendirir) — motor onu ne yapılandırır ne ağdan yoklar.
+avukatın onayıyla Claude yürütür. Teyit kanalı KAPSAM DIŞIDIR (2026-10-15 avukat kararı: resmî
+portallar, kurulum gerektirmez; eklenti MCP sunucusu ilan etmez) — motor onu ne yapılandırır
+ne ağdan yoklar.
 
 Zincir: prompt → eklenti kurulur → bu motor (denetim) → EKSİK satırının komutu (onayla) →
-motor yeniden → Yargı Pro hariç hepsi TAMAM.
+motor yeniden → teyit kanalı BİLGİ satırı dışında hepsi TAMAM.
 
 Kullanım (kancaların kullandığı yorumlayıcıyla: Windows `python`, macOS/Linux `python3`):
   python oa_kurulum.py                 # denetle — salt okur, ağsız
@@ -312,18 +313,24 @@ def _aile_adimi(kok):
                  '%s "%s" "%s"' % (_py(), betik, kok / "skills"))
 
 
-def _yargi_pro_adimi():
-    return _adim("yargi_pro", "Yargı Pro (içtihat/mevzuat teyidi)", BILGI,
-                 "KAPSAM DIŞI — ücretli üyelik gerektirir; motor kurmaz, yetkilendirmez, ağdan yoklamaz. "
-                 "Üyelik yoksa sistem çalışır, içtihat 'teyit YAPILAMADI' damgasıyla işlenir",
-                 "/mcp → plugin:ortak-avukat:yargi-pro → Authenticate (tarayıcıda siz onaylarsınız)")
+def _teyit_kanali_adimi():
+    # 2026-10-15 avukat kararı (hibrit teyit kanalı): eski 'yargi_pro' adımı (ücretli üyelik,
+    # /mcp yetkilendirme) kalktı — eklenti MCP sunucusu ilan etmez; teyit resmî portallardan
+    # web aracıyla yapılır. Motor kurmaz, yetkilendirmez, ağdan yoklamaz; BİLGİ çıkışı etkilemez.
+    return _adim("teyit_kanali", "Teyit kanalı (içtihat/mevzuat — resmî portallar)", BILGI,
+                 "KAPSAM DIŞI — kurulum gerektirmez: teyit resmî portallardan web aracıyla yapılır "
+                 "(WebFetch tam metin / WebSearch keşif; beyaz liste "
+                 "skills/ortak-avukat/references/resmi-kaynaklar.md); eklenti MCP sunucusu ilan "
+                 "etmez; motor kurmaz, yetkilendirmez, ağdan yoklamaz. Resmî portala ulaşılamazsa "
+                 "sistem çalışır, içtihat 'teyit YAPILAMADI' damgasıyla işlenir",
+                 "kurulacak bir şey yok — /mcp listesinde eklentiye ait girdi beklenmez")
 
 
 def denetle(kok=None):
     kok = pathlib.Path(kok) if kok is not None else EKLENTI_KOKU
     adimlar = [_python_adimi(), _pip_adimi(kok), _tesseract_adimi(), _node_adimi(),
                _udf_cli_adimi(kok), _eklenti_adimi(kok), _derleme_adimi(kok),
-               _aile_adimi(kok), _yargi_pro_adimi()]
+               _aile_adimi(kok), _teyit_kanali_adimi()]
     for i, a in enumerate(adimlar, 1):
         a["no"] = i
     return adimlar
@@ -373,7 +380,7 @@ def uygula(kok=None):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Ortak Avukat kurulum denetimi (Yargı Pro hariç gereksinimler)")
+    ap = argparse.ArgumentParser(description="Ortak Avukat kurulum denetimi (teyit kanalı hariç gereksinimler — kanal kurulum gerektirmez)")
     ap.add_argument("--uygula", action="store_true",
                     help="eksik pip paketlerini koşan yorumlayıcıya kur ve eklentiyi derle, sonra yeniden denetle")
     ap.add_argument("--json", metavar="YOL", help="deterministik raporu bu dosyaya da yaz")

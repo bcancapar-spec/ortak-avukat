@@ -23,3 +23,7 @@ Thumbs.db
 # OA_PADDLE_MODEL_DIZIN depo dışında tutulur (v0.5.18 güvenlik incelemesi F-2)
 PP-OCRv*/
 *.pdiparams
+
+# Claude Code yerel katmanı — ajan kopyaları, oturum ayar ve izin dosyaları (yerel yol içerebilir;
+# B-38 sınıfı). Heyet tanımlarının kayıt kopyası docs/heyet/ajanlar/ altındadır (heyet 2026-10-16 K-7).
+.claude/

@@ -9,7 +9,7 @@ Saha kanıtı (derlem denetimi bulguları B-08/B-18/B-20):
         `_oa/` yolu) sızdı.
   B-20  makbuz taslağı onaylıyor, verilen metni değil; kaynakça bloğunun teslim
         nüshasında olup olmayacağı avukat kararı.
-Fikir kaynağı Yargı PRO 10-9 (kod/metin alınmadı).
+Fikir kaynağı dış skill kütüphanesi 10-9 (kod/metin alınmadı).
 
 Sözleşme: salt okur (dosya yazmaz), ikili girdide FAIL-CLOSED (çıkış 2), biçim
 gürültüsü kritik alarm üretmez (alarm yorgunluğu da zarardır), dava açısından
@@ -175,7 +175,7 @@ def test_hukum_bolumu_karar_nushasinda_TALEP_kritik(tmp_path):
 
 
 def test_yeni_kunye_eklenirse_KUNYE_ve_atif_kapisi_onerisi(tmp_path):
-    """Yargı PRO 10-9 fikrinin OA karşılığı: elle eklenen künye doğrulanmamış
+    """Dış skill kütüphanesi 10-9 fikrinin OA karşılığı: elle eklenen künye doğrulanmamış
     sayılır → atıf kapısı yeniden koşar önerisi."""
     yeni = _degistir(TASLAK, "Davalı bedeli ödememiştir.",
                      "Davalı bedeli ödememiştir. Yargıtay 11. HD 2022/1 E. kararı ve HMK m.119 bu yöndedir.")

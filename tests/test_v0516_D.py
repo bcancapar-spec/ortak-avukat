@@ -15,6 +15,7 @@ Saha kanıtı (2026-09-06 denetim raporları):
 Testler tmp_path altında izole koşar; kimlikler sentetiktir (anayasa m.7).
 """
 import importlib.util
+from oa_teyit_kanali import kaynak_url_ekle  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import json
 import pathlib
 import subprocess
@@ -43,7 +44,7 @@ oh = _load()
 
 def _cli(args, cwd):
     cp = subprocess.run(
-        [sys.executable, str(SCRIPT)] + args,
+        [sys.executable, str(SCRIPT)] + kaynak_url_ekle(args),
         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd),
     )
     return cp.returncode, (cp.stdout or "") + (cp.stderr or "")

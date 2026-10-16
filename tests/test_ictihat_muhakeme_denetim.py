@@ -9,11 +9,11 @@ doğrulanır (M2-3'te `kunye_teyit.py` bu modülü kullanacağı için sözleşm
 burada sabitlenir).
 """
 import importlib.util
+from oa_teyit_kanali import KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SKILLS = REPO / "plugins" / "ortak-avukat" / "skills"
@@ -78,6 +78,7 @@ def _kur(tmp_path, damga="LEHE", ayirt_etme="", kaynak_izi_var=True,
     satirlar = ["# 01 — İçtihat Muhakeme Kaydı", "", f"**KUNYE:** {KUNYE}"]
     if kaynak_izi_deger:
         satirlar.append(f"**KAYNAK-IZI:** {kaynak_izi_deger}")
+    satirlar.append(KAYNAK_URL_SATIRI)   # 2026-10-15 [G7]: dayanak kaydının resmî adresi
     if damga_satiri:
         satirlar.append(f"**DAMGA:** {damga}")
     satirlar.append("")
@@ -208,7 +209,7 @@ def test_kaynak_izi_kunye_icermiyor_engel(tmp_path):
 # ── NEGATİF: KAYNAK-IZI dökum dizini DIŞINDA bir yola işaret ediyor ────────
 
 def test_kaynak_izi_dokum_disinda_engel(tmp_path):
-    taslak = _kur(tmp_path, kaynak_izi_deger_override="_oa/cikti/sahte-kaynak.md")
+    _kur(tmp_path, kaynak_izi_deger_override="_oa/cikti/sahte-kaynak.md")
     # dökum dışında (ör. _oa/cikti içinde) bir "sahte" kaynak dosyası
     disarida = tmp_path / "_oa" / "cikti" / "sahte-kaynak.md"
     disarida.write_text("Yargıtay 4. HD, E. 2023/1234, K. 2023/5678 ...\n", encoding="utf-8")
@@ -265,7 +266,7 @@ def _coklu_kunye_kur(tmp_path, kayitlar, taslak_metin=TASLAK_METIN):
         satirlar = [
             f"# {i:02d} — İçtihat Muhakeme Kaydı", "",
             f"**KUNYE:** {k['kunye']}",
-            f"**KAYNAK-IZI:** _oa/teyit/dokum/{kaynak_dosya_ad}",
+            f"**KAYNAK-IZI:** _oa/teyit/dokum/{kaynak_dosya_ad}", KAYNAK_URL_SATIRI,
             f"**DAMGA:** {k['damga']}", "",
             "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
             "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",

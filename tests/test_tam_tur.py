@@ -15,7 +15,6 @@ import importlib.util
 import json
 import pathlib
 
-import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "plugins" / "ortak-avukat" / "skills" / "oa-pipeline" / "scripts" / "tam_tur.py"
@@ -382,7 +381,6 @@ def test_baslat_iskeleti_atomik_dogurur_ve_idempotenttir(tmp_path):
         assert f"<!-- oa:bolum:{n:02d}-{slug} -->" in icerik, f"bölüm {n} ayracı eksik"
     assert not tt._tamam_isaretci_var_mi(icerik), "--baslat TAMAM işaretçisi ÜRETMEMELİ"
 
-    ilk_mtime = analiz_md.stat().st_mtime
     ilk_icerik = icerik
     # aynı dosya adıyla ikinci --baslat: gövde AYNI kalmalı (idempotent, dokunma).
     assert tt.cmd_baslat(str(tmp_path), "Test Dosyası") == 0

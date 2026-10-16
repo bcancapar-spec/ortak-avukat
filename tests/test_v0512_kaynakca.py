@@ -22,7 +22,6 @@ v0.5.12 sözleşmesi:
 Tamamen ağsız/deterministik; tüm veriler sentetiktir.
 """
 import importlib.util
-import json
 import pathlib
 
 import pytest

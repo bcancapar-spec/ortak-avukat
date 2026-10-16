@@ -6,9 +6,9 @@ kapsamı ve özel yetki · MK-2 istifa/azil/devir · MK-3 müvekkil teyit-onam
 notu · MK-4 ücret sözleşmesi), SKILL.md adım 0 "(c)" bağlantısı ve soru
 bankası 9-10.
 
-Fikir kaynağı Yargı PRO 15-3, 17-4, 13-9, 13-8 — metin/kod ALINMADI (telif ve
+Fikir kaynağı dış skill kütüphanesi 15-3, 17-4, 13-9, 13-8 — metin/kod ALINMADI (telif ve
 "fikri koruyarak" talimatı: bu test ayrıca kalıp ifadelerin kopyalanmadığını
-kilitler). Resmî metin teyidi (Yargı PRO MCP mevzuat_getir, 2026-10-05): HMK
+kilitler). Resmî metin teyidi (mevzuat.gov.tr mevzuat_getir, 2026-10-05): HMK
 m.29, 55, 73, 74, 77, 81, 82, 83; Av.K. m.27, 36, 38, 39, 41, 56, 163, 164, 165,
 166, 174; TBK m.504, 512, 513; KVKK m.5, 6, 9, 10; AAÜT m.1/3. Fable 5.1 karşı-tez
 turu (salt okunur) eklemeleri: MK-0 çapraz atıf, ahzu kabz satırı, onaylı örnek,
@@ -55,7 +55,7 @@ def test_ust_ilke_meslek_kurallarinda_otorite_yok_muvekkil_menfaati_esas():
     """Avukat talimatı (Av. Bayram Can Çapar, 2026-10-07): "meslek kurallarında
     otorite yoktur. Öncelikle müvekkilimizin menfaati esastır avukatlık kanunu
     gereği." Üst ilke dosyanın EN BAŞINDA durur (fikir kaynağından ve listelerden
-    önce). Dayanaklar resmî metinden okundu (Yargı PRO mevzuat_getir, 2026-10-07):
+    önce). Dayanaklar resmî metinden okundu (mevzuat.gov.tr mevzuat_getir, 2026-10-07):
     Av.K. m.1/2, m.38/1-b, m.135/2-l, m.135/2-m, m.135/3-a (7571 s.K.); TBK m.506/2."""
     txt = _oku(REF)
     assert "**Fikir kaynağı:**" in txt
@@ -158,12 +158,12 @@ def test_mk0_is_kabulu_capraz_atfi():
 
 
 def test_yargi_pro_kalip_ifadeleri_kopyalanmadi():
-    """Fikir alındı, metin alınmadı: Yargı PRO'nun kalıp başlık/işaretleri yok."""
+    """Fikir alındı, metin alınmadı: dış kütüphanenin kalıp başlık/işaretleri yok."""
     for p in (REF, SKILL_MD, SORU):
         txt = _oku(p)
         for kalip in ("IRON LAW", "RED FLAGS", "DÜĞÜM SÖZLEŞMESİ", "GRAFTAN-URETILDI", "yargi-skill",
                       "Kalkan", "taslak_izni", "islem_izni"):
-            assert kalip not in txt, f"{p.name}: Yargı PRO kalıbı '{kalip}'"
+            assert kalip not in txt, f"{p.name}: dış kütüphane kalıbı '{kalip}'"
 
 
 def test_skill_md_adim0_c_baglantisi_ve_description_siniri():

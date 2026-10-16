@@ -23,14 +23,12 @@ Tamamen SENTETİK girdi — gerçek müvekkil dosyası CI'a asla girmez.
 """
 import hashlib
 import importlib.util as _iu
-import io
 import os
 import re
 import subprocess
 import sys
 import zipfile
 
-import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODUL_YOLU = os.path.join(REPO, "plugins", "ortak-avukat", "skills",

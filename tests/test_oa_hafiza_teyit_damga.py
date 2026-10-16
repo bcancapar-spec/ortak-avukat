@@ -15,6 +15,7 @@ Kapsam:
 - Layer-0: TCKN/IBAN içeren --sorgu ile içtihat araçları RET eder.
 """
 import importlib.util
+from oa_teyit_kanali import RESMI_URL, kaynak_url_ekle  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import os
 import pathlib
 import subprocess
@@ -44,7 +45,7 @@ ko = _load(KUNYE_ORTAK, "kunye_ortak_teyit_damga_duzeltme_test")
 
 def _cli(args, cwd, env=None):
     cp = subprocess.run(
-        [sys.executable, str(SCRIPT)] + args,
+        [sys.executable, str(SCRIPT)] + kaynak_url_ekle(args),
         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd),
         env=env,
     )
@@ -307,7 +308,7 @@ def test_dokum_icerik_stdin_utf8_okur(tmp_path):
         [sys.executable, str(SCRIPT), "teyit", "--arac", "ictihat_getir",
          "--sorgu", "TBK m.49 illiyet", "--sonuc", KUNYE, "--damga", "LEHE",
          "--bag", BAG_METNI, "--ilgili-kisim", ILGILI_KISIM, "--dokum-icerik", "-",
-         "--kok", str(tmp_path)],
+         "--kaynak-url", RESMI_URL, "--kok", str(tmp_path)],
         cwd=str(tmp_path), input=DOKUM_METIN, capture_output=True, text=True,
         encoding="utf-8", errors="replace", env=env,
     )
@@ -683,7 +684,8 @@ def _teyit_args(**over):
     taban = dict(arac="ictihat_getir", sorgu="TBK m.49 illiyet", sonuc=KUNYE,
                  damga="LEHE", bag=BAG_METNI, ayirt=None, ilgili_kisim=ILGILI_KISIM,
                  dokum=None, dokum_icerik=DOKUM_METIN, sorgu_onayli=False,
-                 damga_degistir=None, kok=None)
+                 damga_degistir=None, kok=None,
+                 kaynak_url=RESMI_URL)   # 2026-10-15 teyit kanalı: GETİR sınıfında adres zorunlu
     taban.update(over)
     return argparse.Namespace(**taban)
 

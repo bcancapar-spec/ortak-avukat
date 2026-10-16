@@ -105,7 +105,7 @@ Süre yalnızca bizim riskimiz değildir. **Bir dava/dosya/ihtilaf incelenirken 
 4d. **İdari/vergi kanadında iki kör nokta — çizelgeden oku (v0.5.14):**
    - **Yürütmenin durdurulması (İYUK m.27):** dava açmak yürütmeyi **durdurmaz** (f.1); **ödeme emri bir TAHSİLAT işlemidir** ve açılan dava tahsili durdurmaz (f.4) → ayrıca YD istenir, yoksa dava sürerken haciz/satış yürür. YD reddine **itiraz 7 gün, bir defaya mahsus** (f.7 — `iyuk_yd_itiraz`); aynı sebeple ikinci istem yok (f.10). **İvedi yargılama (m.20/A-2/e) ve merkezî sınav (m.20/B-1/d) davalarında YD kararına itiraz EDİLEMEZ.**
    - **Özel yargılama usulleri:** dava m.20/A (ihale, **acele kamulaştırma**, ÖYK, turizm, ÇED, 6306) veya m.20/B (MEB-ÖSYM merkezî/ortak sınav) kapsamındaysa süre 60 gün DEĞİL, **30** (`iyuk_dava_ivedi`) veya **10** (`iyuk_dava_sinav`) gündür; ivedide **istinaf yolu kapalıdır (m.45/8)** ve her ikisinde **m.11 uygulanmaz**.
-4f. **BAŞLANGIÇ KAPISI — hangi olay, hangi kanıt (v0.5.18; Yargı PRO 12-2/12-3 fikrinin OA uyarlaması):**
+4f. **BAŞLANGIÇ KAPISI — hangi olay, hangi kanıt (v0.5.18; dış skill kütüphanesi 12-2/12-3 fikrinin OA uyarlaması):**
    Yanlış olaya bağlanan doğru hesap yanlış hesaptır. Hesaba girmeden önce dört soru sorulur — **hangi olay** (kuralın `izinli_baslangic_turleri`), **hangi kanıt**, **tebliğ geçerli mi**, **belirsizlik varsa iki senaryo** — ayrıntı ve normlar `references/baslangic-kapisi.md`'dedir (7201 s. TK m.7/a, 11, 21, 31, 32, 35, 36 — MCP teyitli 2026-10-05). Kapı aritmetiği DEĞİŞTİRMEZ; çelişkiyi görünür kılar ve karşı tarafa kesin dili keser.
    ```bash
    python scripts/hesapla_sure.py --teblig 2026-05-20 --kural hmk_istinaf --baslangic-kaniti uets-kaydi   # iki senaryo kendiliğinden

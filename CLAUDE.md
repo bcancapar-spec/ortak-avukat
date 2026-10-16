@@ -8,8 +8,13 @@ Bu dosya Claude Code'un bu depoda çalışırken uyması gereken kuralları ve
 ## Proje nedir
 
 Türk hukuku için **Claude Code eklentisi** (`plugins/ortak-avukat`): çekirdek +
-19 `oa-*` beceri (skill) tek pakette. Python ≥ 3.12. Yargı Pro MCP ile
-içtihat/mevzuat doğrulaması.
+19 `oa-*` beceri (skill) tek pakette. Python ≥ 3.12. İçtihat/mevzuat teyidi
+resmî portallardan: beyaz liste `oa-kontrol/scripts/kunye_ortak.py`
+(`RESMI_KAYNAKLAR`, `resmi_kaynak_mi`), avukat nüshası
+`skills/ortak-avukat/references/resmi-kaynaklar.md`; kanal hibrittir (model
+portallara `WebFetch` tam metin / `WebSearch` keşif ile ulaşır); eklenti hiçbir
+MCP sunucusu ilan etmez (2026-10-15 avukat kararı; kilit `tests/test_teyit_kanali.py`,
+`tests/test_kanal_bagimsiz_metin.py`).
 
 - Kod: `plugins/ortak-avukat/skills/*/scripts/*.py` (sayı ve satır: `python tools/satir_sayaci.py`)
 - Beceri metinleri: `plugins/ortak-avukat/skills/*/SKILL.md`
@@ -43,7 +48,7 @@ python -m pytest tests/ -q -m perf -p no:xdist     # zamanlama (seri)
 `perf` markalı test KAPI DEĞİL kanaryadır (assert yok, uyarı basar).
 Mekanizmayı kilitleyen kapı zamanlamasızdır:
 `test_pipeline_kayit_KOD_NESNESI_PYC_DEN_YUKLENIR`. Gerekçe ve kalibrasyon
-tablosu: PERFORMANS-STATUS.md §10.
+tablosu: docs/PERFORMANS-STATUS.md §10.
 
 ### ÇÖZÜLDÜ — `main`'den miras alınan 4 kırmızı (B5)
 
@@ -112,10 +117,10 @@ geçtiğini deneysel olarak doğrulamıştı.
 v0.5.16.3'te bir `Write`'ın hook bloklaması **1164 ms → 118 ms** (%89.9
 azalma, 9.86×) düşürüldü; sıcak yoldaki ağır modül sayısı **11 → 0**.
 Ölçüm: `main` vs bu dal, aynı araç, **gerçekçi dava kökü**, dedup yenilmiş.
-Ayrıntı ve kök neden zincirleri: `PERFORMANS-STATUS.md`.
+Ayrıntı ve kök neden zincirleri: `docs/PERFORMANS-STATUS.md`.
 
-Altı yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
-o yüzden burada yazılıdır.
+Altı yapısal karar bunu sağlıyor (7. madde v0.5.19'un ayrı, ölçek kökündeki
+kazancıdır); hepsi kolayca ve sessizce geri alınabilir, o yüzden burada yazılıdır.
 
 ### 1. `ONBAKIS_DIZIN` sabiti oa_ingest'i YÜRÜTMEDEN okunmalı
 
@@ -230,6 +235,29 @@ yeniden derleniyordu (~38-46 ms).
 - Modül gövdesi **YARIDA** çökerse betik `runpy` yedeğine DÜŞMEZ (çift yan
   etki riski); hatayı olduğu gibi bırakır. Bu bilinçlidir, "iyileştirmeyin".
 
+### 7. (v0.5.19) Çapraz denetim sonucu İÇERİK özetine bağlı önbellekten gelir
+
+Ölçek kökünde (3000 evrak) Stop kancasının v0.5.18'deki +79 ms'si B-2 çapraz
+denetimiydi; sonuç artık `_oa/defter/.capraz-onbellek.json`da tutulur
+(`_capraz_bosluk_hesapla`, ölçüm PERFORMANS-STATUS §14). Sessizce bozulabilecek
+kararlar:
+
+- **Anahtar İÇERİKTİR (sha256), stat değil.** Girdiler, ilgili damgalı denetim
+  JSON'ları, `capraz_denetim.py` + `pipeline_kayit.py` ve yorumlayıcı küçük
+  sürümü anahtardadır. Boyut/mtime'a çevirmeyin: aynı boyutlu tek bayt
+  değişikliği bayat isabet üretir.
+- **Girdi BİR KEZ okunur; özet ve ayrıştırma AYNI baytlardan.** `mod._yukle(yol)`
+  ile ikinci okumaya dönmeyin (okumalar arası yarış eski özete yeni sonucu
+  bağlar). Ayrıştırma `_yukle` ile eşdeğerliği testle kilitli.
+- **Fail-closed.** Önbellek adımlarının (anahtar/okuma/yazma) istisnası dış
+  `except`e (→ `([], [])`, sessiz "temiz") SIZMAMALI; her biri kendi
+  `try`ında. Gövde özeti tutmayan, yabancı anahtarlı ya da biçimsiz dosya ıskadır.
+- **Dedup parmak izinden HARİÇ** (`_hook_denetle_ayirt`); `.hook-son-iz.json`
+  ile aynı gerekçe. **`_oa/defter` yoksa yazılmaz** (dizini yaratmak "hat açık"
+  anlamı taşır). Append-only olay defterine dokunmaz; yazım tmp + `os.replace`.
+- Önbelleğe giren sonucun anlamı ya da biçimi değişirse `_CAPRAZ_ONBELLEK_SEMA`
+  artırılır. 21 mutasyonla kanıtlı kilitler: `tests/test_v0519_capraz_onbellek.py`.
+
 ### Ölçüm aracı — ve ÜÇ ÖLÇÜM TUZAĞI
 
 ```bash
@@ -237,7 +265,7 @@ python tools/hook_olc.py --gercekci --tekrar 5 --karsilastir --import-dokumu
 ```
 
 **SÜRÜM DEFTERİ KURALI (v0.5.17).** Büyüklüğün insan-okur kapısı budur:
-her sürümden ÖNCE yukarıdaki komutu koşun ve tabloyu PERFORMANS-STATUS.md'ye
+her sürümden ÖNCE yukarıdaki komutu koşun ve tabloyu docs/PERFORMANS-STATUS.md'ye
 ekleyin. `hook-prompt` farkı **30 ms altındaysa** sürüm notunda
 GEREKÇELENDİRİN. Zamanlama tabanlı assert YOKTUR — bu yüzden bu adım atlanamaz.
 

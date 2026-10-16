@@ -1,41 +1,84 @@
 # Ortak Avukat — Türk Hukuku Co-Counsel Sistemi
 
-**Sürüm:** 0.6.0 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`)
+**Sürüm:** 0.6.0 · **Yazar:** Av. Bayram Can Çapar · **Kapsam:** Türk hukukunun tamamı · **20 parça** (çekirdek + 19 `oa-*`) · **[Güncelleme notları](#güncelleme-notları)** · **[Hukukçular için sözlük](../../SOZLUK.md)**
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **59.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **124.000+** satır · **3.769** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.907** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
+Bu dosya eklentinin kendi vitrinidir: yirmi parçanın ne yaptığı, hangi denetim
+motorunu taşıdığı ve hatta nerede durduğu burada anlatılır. Kurulumun tek kaynağı,
+kopyala-yapıştır prompt şablonu, "Hâkim ve savcı gözüyle" bölümü ve `_oa/` yapısı
+depo kökündeki [README](../../README.md)'dedir. Kural tek cümledir: **model kurar,
+script denetler, model muhakeme eder; kararı avukat verir.** Bir işin yapıldığı
+modelin beyanına bırakılmaz — içtihadın tam metni diske inmiş ve damgalanmış,
+teslim kapıları fiilen koşmuş ve makbuz kesilmiş olmalıdır.
+
+| Okuyucu | Bu dosyada | Depo kökünde |
+|---|---|---|
+| Avukat (sistemi kullanacak) | [Bir bakışta](#bir-bakışta--ne-yapar-ne-yapmaz) · [Parça dizini](#parça-dizini) | [Kurulum](../../README.md#kurulum--kolay-yol) · [Prompt](../../README.md#claude-codea-vereceğiniz-prompt--kopyala-yapıştır) · [Hukukçular için sözlük](../../SOZLUK.md) |
+| Hâkim, savcı, meslektaş | [DÜSTUR](#düstur--ailenin-anayasası) · [Sistemin yapmadıkları](#sistemin-yapmadıkları-dürüst-sınırlar) | [Hâkim ve savcı gözüyle](../../README.md#hâkim-ve-savcı-gözüyle) · [Gizlilik](../../README.md#gizlilik) |
+| Geliştirici | [Parça dizini](#parça-dizini) (script sayıları ölçümdür) · [Güncelleme notları](#güncelleme-notları) | [Geliştirici doğrulaması](../../README.md#geliştirici-doğrulaması) · [tests/README.md](../../tests/README.md) · [CLAUDE.md](../../CLAUDE.md) |
+
+Bu sürümün (0.6.0) bağımsız denetimi [docs/DENETIM-2026-10-15.md](../../docs/DENETIM-2026-10-15.md)'de;
+her parçada bu sürümde ne yapıldığı [docs/SURUM-0.6.0-YETENEKLER.md](../../docs/SURUM-0.6.0-YETENEKLER.md)'de.
+
 ---
 
-## Bu nedir
+## Bir bakışta — ne yapar, ne yapmaz
 
-Bu bir "dilekçe yazan yapay zekâ" değildir. Bir **avukatın çalışma metodunu** —
-dosyayı ele alış sırasını, usulü esastan önce denetleme refleksini, künyeyi resmî
-kaynaktan doğrulama disiplinini, zaafı müvekkile karşı değil müvekkil için
-kullanma ayrımını — yazıya döken ve **her adımını makineyle denetleyen** bir
-metodoloji sistemidir.
+Yapar (işi yapan parça ayraç içinde; her satır aşağıdaki Parça dizininde bir karşılık bulur):
 
-Sistemin ayırt edici yanı şudur: bir işin yapıldığını **modelin beyanına**
-bırakmaz. "İçtihadı doğruladım" demek yetmez; kararın tam metni diske inmiş,
-davaya bağı yazılmış ve lehe/aleyhe olarak damgalanmış olmalıdır. "Dilekçe hazır"
-demek yetmez; teslim öncesi kapılar fiilen koşmuş ve tek bir çıkış koduyla
-"hazır" demiş olmalıdır. Bu yüzden aile, muhakemeyi yapan katman ile onu
-denetleyen katmanı bilinçli olarak ayırır: **model kurar, script denetler.**
+- UYAP klasöründeki her evrakı bir kez metne indirir; taranmış sayfayı yerel OCR ile
+  okur ve "teyit gerek" diye işaretler; karşı taraf evrakının gizli katmanını silmez,
+  damgalar; evrak sayımı tutmuyorsa analize başlamaz (`oa-ingest`).
+- Uzun analize girmeden sorar — talep, roller, tebliğ tarihi, eksik belge
+  (`oa-interview`); normu ve ihtisas dairesini araştırmadan önce konumlar (`oa-alan`).
+- Sürenin son gününü mevzuattan teyitli kuralla ve gerekçesiyle hesaplar; dolan süre
+  her işin önüne geçer; usulü esastan önce üç cepheden denetler (`oa-sure`, `oa-usul`).
+- Her içtihadı resmî portaldan tam metniyle çeker, davaya bağını kurar, lehe ya da
+  aleyhe damgalar; teyit edilemeyen künye dilekçeye giremez (`oa-ictihat`, `oa-kiyas`).
+- Olguyu delile, delili iddiaya eşler; kişi, kurum ve olayları illiyet grafına döker;
+  karşı tarafın dokuz cephesini önceden çıkarır ve yalnız size raporlar (`oa-vakia`,
+  `oa-illiyet`, `oa-antitez`); yol seçeneklerini tahsil edilebilirlikle tartar
+  (`oa-strateji`).
+- Dilekçeyi yazar, UDF'i resmî araçla üretir, teslimden önce kapıları koşturup makbuz
+  keser (`oa-dilekce`, `oa-sozlesme`, `oa-kontrol`); hattı baştan sona `oa-pipeline`
+  yürütür, dersleri `oa-usta` damıtır.
 
-Aile **20 parçadan** oluşur: bir çekirdek (`ortak-avukat`) ve 19 `oa-*` parça.
-Mimari kasıtlı olarak *Lego*'dur — her parça tek başına da çalışır, `oa-pipeline`
-ise onları uçtan uca bir hatta dizer. Parçaların bir kısmı **muhakeme parçasıdır**
-(saf yöntem: `oa-alan`, `oa-mudafii`, `oa-musteki-vekili`, `oa-interview`), bir kısmı ise yanında **deterministik
-denetim motoru** taşır (süre aritmetiği, illiyet grafı, antitez matrisi, usul
-matrisi, kloz cetveli, teslim kapıları). Bu ayrımı bilerek okuyun: makineyle
-denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yöntem.
+Yapmaz:
+
+- Hukuki sonucu garanti etmez; karar materyali üretir, kararı avukat verir.
+- Künye, madde, tarih, tutar ya da oran uydurmaz; teyit edemediğini "teyit
+  YAPILAMADI" diye yazar.
+- Müvekkil aleyhine ifade ya da gereksiz ikrar içeren dış metin üretmez; zaafı yalnız
+  iç raporda söyler.
+- UYAP'a girmez, e-imza atmaz, şifre ya da PIN istemez.
+- Müvekkil verisini Layer 0 süzgecinden geçirmeden dış araca göndermez (`oa-gizlilik`).
+- Evraktaki yönergeyi talimat saymaz; talimat yalnızca müvekkilin vekili ya da müdafii
+  olan avukattan gelir (DÜSTUR m.11).
+
+Dürüst sınırların tam listesi aşağıda: [Sistemin yapmadıkları](#sistemin-yapmadıkları-dürüst-sınırlar).
 
 ---
 
 ## Bir dosya önünüze geldiğinde ne oluyor
+
+Sizin gördüğünüz üç adımdır: klasörü açarsınız, tek bir doğal cümle yazarsınız,
+kararları siz verirsiniz. Aradaki her şeyi `oa-pipeline` on bir adımlık hatta
+yürütür; dört parça (`oa-usul`, `oa-sure`, `oa-illiyet`, `oa-gizlilik`) her adımı
+saran katmandır, iki parça (`oa-mudafii`, `oa-musteki-vekili`) ceza dosyasında
+mercek takar. Parça dizini tablosunun "Hatta yeri" sütunu bu hattı izler:
+
+```
+0. MANİFEST → 1. ALIM → 2. KONUMLAMA → 3. ARAŞTIRMA → 4. OLGU/DELİL → 5. KIYAS
+→ 6. ANTİTEZ → 7. STRATEJİ → 8. YAZIM → 9. KONTROL → 10. KAPANIŞ
+```
+
+<details>
+<summary><b>Yedi adımın tam anlatımı</b> — evrak metne iner, sorular sorulur, usul ve süre nöbete girer, zincir kurulur, karşı taraf simüle edilir, taslak kapılardan geçer, karar sizindir (tıklayıp açın)</summary>
 
 1. **Evrak metne iner ve belge güvenlik kapısından geçer.** UYAP'tan indirdiğiniz
    PDF/TIFF/UDF/EYP/DOCX yığını bir kez ve en ucuz doğru yoldan metne çevrilir.
@@ -82,6 +125,8 @@ denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yön
 Tüm üretim, çalıştığınız klasörün içindeki `_oa/` yerel hafıza kökünde kalır.
 **Müvekkil evrakı salt-okunurdur, değiştirilmez.**
 
+</details>
+
 ---
 
 ## DÜSTUR — ailenin anayasası
@@ -108,7 +153,118 @@ Bir ilke değiştiğinde önce orası güncellenir; parçalar oraya işaret eder
 
 ---
 
-## Yirmi parça
+## Kurulum
+
+Kurulumun **tek kaynağı** depo kökündeki README'dir:
+**[Kurulum — kolay yol](../../README.md#kurulum--kolay-yol)**. Orada, Claude Code'un
+sohbet kutusuna yapıştırdığınızda eklentiyi ve bütün yerel bağımlılıkları (Python
+paketleri, Tesseract + Türkçe dil verisi, Node.js + `udf-cli@0.5.6` girişi, ilk çağrı
+derlemesi) Claude'un kendisinin kurup **dosya kanıtıyla** doğruladığı tek bir
+**master prompt** vardır. Bu dosyada kopyası yoktur — iki yerde iki sürüm yaşamasın.
+İçtihat/mevzuat teyidi için kurulacak sunucu yoktur (aşağıda 2. adım).
+
+Zincirin kanıt halkası eklentinin içindedir:
+`python "<eklenti klasörü>/skills/ortak-avukat/scripts/oa_kurulum.py"` her gereksinimi
+(Python, paketler, Tesseract + Türkçe, Node.js, eklenti bütünlüğü, ilk çağrı derlemesi,
+aile yapısı) tek satırda TAMAM / EKSİK / ELİMDE diye denetler ve eksiğin resmî komutunu
+basar; `--uygula` yalnız Python paketlerini ve derlemeyi tamamlar, sistem yazılımı kurmaz.
+Teyit kanalını yalnız BİLGİ satırı olarak bildirir (resmî portallar; kurulum gerektirmez).
+
+Elle kuranlar için kısa yol:
+
+### 1) Eklentiyi kurun
+
+```
+/plugin marketplace add bcancapar-spec/ortak-avukat
+```
+
+```
+/plugin install ortak-avukat@ortak-avukat
+```
+
+İkinci komut eklentinin sayfasını açar; **Install for you** seçin. Kurulumdan sonra
+Claude Code'u **TAM kapatıp açın**; skill listesinde tek bir `ortak-avukat` ailesi
+(20 parça) görünmeli. Güncellemede önce `/plugin marketplace update ortak-avukat`,
+sonra `/plugin` → Installed → Update now; ardından yine TAM kapatıp açın.
+
+### 2) Teyit kanalı — resmî portallar (kurulum gerektirmez)
+İçtihat, mevzuat ve kurum kararı doğrulaması **resmî portallardan** yapılır (2026-10-15
+avukat kararı — hibrit teyit kanalı): mevzuat.gov.tr, Resmî Gazete, Adalet Bakanlığı
+içtihat portalı (Bedesten), Yargıtay/Danıştay karar arama, UYAP Emsal, AYM kararlar
+bilgi bankası, HUDOC ve her `.gov.tr` alan adı; beyaz liste
+[`skills/ortak-avukat/references/resmi-kaynaklar.md`](skills/ortak-avukat/references/resmi-kaynaklar.md)
+(tek kaynak `skills/oa-kontrol/scripts/kunye_ortak.py`). Model bu portallara Claude
+Code'un kendi web araçlarıyla ulaşır (`WebSearch` keşif, `WebFetch` tam metin). **Eklenti
+hiçbir MCP sunucusu ilan etmez** (`plugin.json`'da `mcpServers` yok); `/mcp` panelinde
+eklentiye ait bir girdi beklenmez, `claude mcp` komutuyla bir içtihat sunucusu
+**eklemeyin**. Teyidin kanıtı resmî portalın adresi + diske inmiş tam metindir: tam metin
+çeken araçlarda `--kaynak-url` zorunlu ve beyaz listeli; adresi olmayan ya da liste dışı
+kayıt dilekçeye dayanak olamaz ([G7] teslim engeli). Resmî portala ulaşılamıyorsa aile
+çalışır ama içtihat "teyit YAPILAMADI" damgasıyla işlenir; hiçbir atıf dış çıktıya
+teyitli giremez.
+
+> **v0.5.17.1 (B-23) ve 2026-10-15:** v0.5.7.4'te eklenen açık kaynak yedek sunucu ilanı
+> KALDIRILDI — kaynak proje artık herkese açık değildi ve alan adı ilgisiz bir sunucuya
+> çözülüyordu; sahipsiz bir uç noktaya kendiliğinden güvenmek, sorgularınızı okuyup sahte
+> "içtihat" döndürebilecek bir kanal açardı. 2026-10-15'te kalan tek üçüncü taraf ilanı da
+> kaldırıldı: eklenti artık hiçbir sunucu ilan etmez ve başka sunucuya geçmez; çıktıya
+> "teyit YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu olanlar,
+> eklentinin artık ilan etmediği içtihat sunucusu bağlantılarını connectors bölümünden
+> kaldırmalıdır (adlar [CHANGELOG](../../CHANGELOG.md)'da).
+
+> **Mevzuat MCP** (norm) ile **Literatür/DergiPark** ve **YÖK Tez** (doktrin) de
+> bağlıysa doğrulama zinciri tamdır. Bu paket hiçbir MCP kimlik bilgisi içermez;
+> sunucular kendi ortamınızda bağlanır.
+
+### 3) Yardımcı programlar
+Python 3.12+ ve `python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]"`
+(macOS/Linux'ta `python3`; PyMuPDF alt sınırı depo kökündeki `requirements.txt` ile
+aynı), Tesseract (`tur` dil paketiyle — taranmış evrak) ve Node.js +
+`npx -y udf-cli@0.5.6 login` (UDF üretimi). Adım adım açılımı ve her güncellemeden
+sonra yinelenen ilk çağrı derlemesi kök README'de.
+
+---
+
+## Parça dizini
+
+Aile **20 parçadan** oluşur: bir çekirdek (`ortak-avukat`) ve 19 `oa-*` parça.
+Mimari kasıtlı olarak *Lego*'dur — her parça tek başına da çalışır, `oa-pipeline`
+ise onları uçtan uca bir hatta dizer. Parçaların bir kısmı **muhakeme parçasıdır**
+(saf yöntem: `oa-alan`, `oa-mudafii`, `oa-musteki-vekili`, `oa-interview`), bir kısmı ise yanında **deterministik
+denetim motoru** taşır (süre aritmetiği, illiyet grafı, antitez matrisi, usul
+matrisi, kloz cetveli, teslim kapıları). Bu ayrımı bilerek okuyun: makineyle
+denetlenen yerde ölçüm vardır, saf muhakeme parçasında ise disiplinli yöntem.
+
+Tablo hattaki yeri ve yanındaki script sayısını gösterir; sayı ölçümdür
+(`skills/<parça>/scripts/*.py`, testle kilitli), "—" parçanın saf muhakeme parçası
+olduğunu söyler. Her parçanın tam anlatımı hemen altındaki katlanır bölümde; bu sürümde
+her parçada ne yapıldığı [docs/SURUM-0.6.0-YETENEKLER.md](../../docs/SURUM-0.6.0-YETENEKLER.md)'de.
+
+| Parça | Rol | Hatta yeri | Script |
+|---|---|---|---|
+| [`ortak-avukat`](skills/ortak-avukat/) | Çekirdek kimlik + anayasa; işi `oa-pipeline`'a devreder; kurulum motoru (`oa_kurulum.py`) | çekirdek | 1 script |
+| [`oa-pipeline`](skills/oa-pipeline/) | Başbakan: uçtan uca hat + defter + revizyon farkı | orkestra | 11 script |
+| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili + belge güvenlik kapısı — Excel'de gizli satır/sütun, zeminle aynı renk, `;;;` biçimi, minik punto dahil + kritik alan teyidi) | 0. MANİFEST | 6 script |
+| [`oa-interview`](skills/oa-interview/) | İlk inceleme / mülakat + meslek kuralları kontrol listeleri | 1. ALIM | — |
+| [`oa-alan`](skills/oa-alan/) | Norm + ihtisas dairesi konumlama | 2. KONUMLAMA | — |
+| [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi (güvenli kapanış) | 3. ARAŞTIRMA | 1 script |
+| [`oa-vakia`](skills/oa-vakia/) | Kronoloji + iddia↔delil matrisi + özne eşleştirici | 4. OLGU/DELİL | 4 script |
+| [`oa-kiyas`](skills/oa-kiyas/) | Açık kıyas + içtihat muhakemesi | 5. KIYAS | 1 script |
+| [`oa-antitez`](skills/oa-antitez/) | Dokuz cephe + gizli cephanelik + zabıt denetimi | 6. ANTİTEZ | 2 script |
+| [`oa-strateji`](skills/oa-strateji/) | Yol seçimi + maliyet-fayda + oran teyidi | 7. STRATEJİ | 1 script |
+| [`oa-dilekce`](skills/oa-dilekce/) | Dilekçe yazımı (icra ailesi dahil) + UDF üretimi | 8. YAZIM | 4 script |
+| [`oa-sozlesme`](skills/oa-sozlesme/) | Sözleşme tahrir / redline | 8. YAZIM | 1 script |
+| [`oa-kontrol`](skills/oa-kontrol/) | Teslim kapıları + makbuz (atıf kapısı, Layer 0 katı engel) | 9. KONTROL | 8 script |
+| [`oa-usta`](skills/oa-usta/) | Ders damıtma + aile yapı denetimi | 10. KAPANIŞ | 1 script |
+| [`oa-usul`](skills/oa-usul/) | Usul denetimi (kesişen katman) + AYM/AİHM yolu | saran katman | 1 script |
+| [`oa-sure`](skills/oa-sure/) | Süre / zamanaşımı nöbetçisi (başlangıç kapısı) | saran katman | 2 script |
+| [`oa-illiyet`](skills/oa-illiyet/) | Nedensellik / ilişki grafı | saran katman | 1 script |
+| [`oa-gizlilik`](skills/oa-gizlilik/) | Layer 0 gizlilik süzgeci | saran katman | 1 script |
+| [`oa-mudafii`](skills/oa-mudafii/) | Ceza müdafiliği (savunma) | ceza dalı | — |
+| [`oa-musteki-vekili`](skills/oa-musteki-vekili/) | Müşteki/mağdur vekilliği (iddia) | ceza dalı | — |
+
+<details>
+<summary><b>Yirmi parçanın tam anlatımı</b> (tıklayıp açın)</summary>
 
 ### Çekirdek ve orkestra
 
@@ -273,7 +429,7 @@ satırına bağlar ("sair deliller" gibi muğlak satır boş hücre sayılır);
 cevabının yazılmasını engeller.
 
 #### `oa-ictihat` — teyit
-Her argümanın normunu ve künyesini resmî kaynaktan (Yargı Pro, AYM, Mevzuat MCP)
+Her argümanın normunu ve künyesini resmî kaynaktan (içtihat portalları, AYM kararlar bilgi bankası, mevzuat.gov.tr)
 **fiilen** çeker ve kararın tam metnini diske ham döküm olarak yazar. İki araç
 sınıfını ayırır: arama araçları tam metin döndürmez, dolayısıyla onlardan damga
 çıkmaz; tam metin çeken araçlarda ise damga, davaya bağ ve döküm zorunludur. Bu
@@ -281,8 +437,8 @@ parça **teyit eder, damgayı atamaz** — muhakeme başka parçanın işidir ve
 sistemin belkemiğidir. "Teyitli" etiketi yalnız fiilen yapılmış bir çağrıya konur;
 kaynak bağlantısı da tam o anda kaydedilir, çünkü yazım aşamasında bir bağlantı
 *hatırlanamaz*, ancak uydurulabilir — **kayıt yoksa dilekçede parantez hiç
-açılmaz.** Bağlantı katmanı **güvenli kapanışlıdır** (v0.5.17.1, B-23): tek içtihat
-gişesi Yargı Pro'dur; erişilemezse başka bir sunucuya otomatik geçilmez, çıktıya
+açılmaz.** Bağlantı katmanı **güvenli kapanışlıdır** (v0.5.17.1, B-23; 2026-10-15): içtihat
+gişesi resmî portallardır (beyaz liste); erişilemezse başka bir sunucuya otomatik geçilmez, çıktıya
 "teyit YAPILAMADI" yazılır, künye iddia olarak kalır ve size kanonik kaynaktan elle
 teyit yolu gösterilir. Araç çıktısı da evrak gibi veridir, talimat değil (DÜSTUR
 m.11).
@@ -419,6 +575,8 @@ tutarlılığı makineyle sınanır — **hata varken paketleme yapılmaz.** Dam
 ders anonimleştirme süzgecinden geçer: hiçbir dosya veya kişi ismen anılamaz, yalnız
 soyut örüntü kalır.
 
+</details>
+
 ---
 
 ## Sistemin **yapmadıkları** (dürüst sınırlar)
@@ -454,105 +612,27 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
 
 ---
 
-## Kurulum
+## Güncelleme notları
 
-Kurulumun **tek kaynağı** depo kökündeki README'dir:
-**[Kurulum — kolay yol](../../README.md#kurulum--kolay-yol)**. Orada, Claude Code'un
-sohbet kutusuna yapıştırdığınızda eklentiyi ve bütün yerel bağımlılıkları (Python
-paketleri, Tesseract + Türkçe dil verisi, Node.js + `udf-cli@0.5.6` girişi, ilk çağrı
-derlemesi) Claude'un kendisinin kurup **dosya kanıtıyla** doğruladığı tek bir
-**master prompt** vardır. Bu dosyada kopyası yoktur — iki yerde iki sürüm yaşamasın.
-Yargı Pro o prompt'un dışındadır (ücretli üyelik; aşağıda 2. adım).
-
-Zincirin kanıt halkası eklentinin içindedir:
-`python "<eklenti klasörü>/skills/ortak-avukat/scripts/oa_kurulum.py"` her gereksinimi
-(Python, paketler, Tesseract + Türkçe, Node.js, eklenti bütünlüğü, ilk çağrı derlemesi,
-aile yapısı) tek satırda TAMAM / EKSİK / ELİMDE diye denetler ve eksiğin resmî komutunu
-basar; `--uygula` yalnız Python paketlerini ve derlemeyi tamamlar, sistem yazılımı kurmaz.
-Yargı Pro'yu yalnız "kapsam dışı — ücretli üyelik" diye bildirir.
-
-Elle kuranlar için kısa yol:
-
-### 1) Eklentiyi kurun
-
-```
-/plugin marketplace add bcancapar-spec/ortak-avukat
-```
-
-```
-/plugin install ortak-avukat@ortak-avukat
-```
-
-İkinci komut eklentinin sayfasını açar; **Install for you** seçin. Kurulumdan sonra
-Claude Code'u **TAM kapatıp açın**; skill listesinde tek bir `ortak-avukat` ailesi
-(20 parça) görünmeli. Güncellemede önce `/plugin marketplace update ortak-avukat`,
-sonra `/plugin` → Installed → Update now; ardından yine TAM kapatıp açın.
-
-### 2) Yargı Pro — yetkilendirme (ücretli üyelik; kurulum değil)
-İçtihat, mevzuat ve kurum kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır ve
-Yargı Pro **ücretli üyelik** ister. Eklenti `yargi-pro` bağlantısını **kendisi ilan eder**
-(`plugin.json` → `mcpServers`); kurulumdan sonra `/mcp` panelinde
-`plugin:ortak-avukat:yargi-pro` adıyla görünür. Üyeliğiniz varsa `/mcp` → o girdi →
-yetkilendirme adımı (**Authenticate**); tarayıcıda açılan oturumu siz onaylayın. Aynı
-adresi `claude mcp` komutuyla bir de elle **eklemeyin**: aynı uç noktanın ikinci tanımı
-olur, yerel/kullanıcı kapsamı eklenti kaydının önüne geçer ve eklenti güncellense ya da
-kaldırılsa bile yerinde kalır. Pro bağlı değilse aile çalışır ama içtihat "teyit
-YAPILAMADI" damgasıyla işlenir; hiçbir atıf dış çıktıya teyitli giremez.
-
-> **v0.5.17.1 (B-23):** v0.5.7.4'te eklenen `yargi-mcp-yedek` ilanı KALDIRILDI — kaynak
-> proje artık herkese açık değil ve alan adı ilgisiz bir sunucuya çözülüyor; sahipsiz bir
-> uç noktaya kendiliğinden güvenmek, sorgularınızı okuyup sahte "içtihat" döndürebilecek
-> bir kanal açardı. Pro erişilemezse aile başka sunucuya geçmez: çıktıya "teyit
-> YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu olanlar
-> `yargi-mcp-yedek` bağlantısını connectors bölümünden kaldırmalıdır.
-
-> **Mevzuat MCP** (norm) ile **Literatür/DergiPark** ve **YÖK Tez** (doktrin) de
-> bağlıysa doğrulama zinciri tamdır. Bu paket hiçbir MCP kimlik bilgisi içermez;
-> sunucular kendi ortamınızda bağlanır.
-
-### 3) Yardımcı programlar
-Python 3.12+ ve `python -m pip install "pymupdf>=1.24.2" pillow "markitdown[all]"`
-(macOS/Linux'ta `python3`; PyMuPDF alt sınırı depo kökündeki `requirements.txt` ile
-aynı), Tesseract (`tur` dil paketiyle — taranmış evrak) ve Node.js +
-`npx -y udf-cli@0.5.6 login` (UDF üretimi). Adım adım açılımı ve her güncellemeden
-sonra yinelenen ilk çağrı derlemesi kök README'de.
-
----
-
-## Parça dizini
-
-| Parça | Rol | Denetim motoru |
-|---|---|---|
-| [`ortak-avukat`](skills/ortak-avukat/) | Çekirdek kimlik + anayasa | — |
-| [`oa-pipeline`](skills/oa-pipeline/) | Başbakan: uçtan uca hat + defter + revizyon farkı | 10 script |
-| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili + belge güvenlik kapısı + kritik alan teyidi) | 5 script |
-| [`oa-interview`](skills/oa-interview/) | İlk inceleme / mülakat + meslek kuralları kontrol listeleri | — |
-| [`oa-alan`](skills/oa-alan/) | Norm + ihtisas dairesi konumlama | — |
-| [`oa-usul`](skills/oa-usul/) | Usul denetimi (kesişen katman) + AYM/AİHM yolu | 1 script |
-| [`oa-sure`](skills/oa-sure/) | Süre / zamanaşımı nöbetçisi (başlangıç kapısı) | 2 script |
-| [`oa-gizlilik`](skills/oa-gizlilik/) | Layer 0 gizlilik süzgeci | 1 script |
-| [`oa-illiyet`](skills/oa-illiyet/) | Nedensellik / ilişki grafı | 1 script |
-| [`oa-vakia`](skills/oa-vakia/) | Kronoloji + iddia↔delil matrisi + özne eşleştirici | 4 script |
-| [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi (güvenli kapanış) | 1 script |
-| [`oa-kiyas`](skills/oa-kiyas/) | Açık kıyas + içtihat muhakemesi | 1 script |
-| [`oa-strateji`](skills/oa-strateji/) | Yol seçimi + maliyet-fayda + oran teyidi | 1 script |
-| [`oa-antitez`](skills/oa-antitez/) | Dokuz cephe + gizli cephanelik + zabıt denetimi | 2 script |
-| [`oa-dilekce`](skills/oa-dilekce/) | Dilekçe yazımı (icra ailesi dahil) + UDF üretimi | 4 script |
-| [`oa-sozlesme`](skills/oa-sozlesme/) | Sözleşme tahrir / redline | 1 script |
-| [`oa-kontrol`](skills/oa-kontrol/) | Teslim kapıları + makbuz (atıf kapısı, Layer 0 katı engel) | 8 script |
-| [`oa-mudafii`](skills/oa-mudafii/) | Ceza müdafiliği (savunma) | — |
-| [`oa-musteki-vekili`](skills/oa-musteki-vekili/) | Müşteki/mağdur vekilliği (iddia) | — |
-| [`oa-usta`](skills/oa-usta/) | Ders damıtma + aile yapı denetimi | 1 script |
-
----
-
-## Sürüm
+Sürüm **0.6.0** (2026-10-12), v0.5.18 çizgisinin yayınıdır; sürüm numarası avukat
+kararıdır. Yeni ilke ya da yeni parça yoktur; kod davranışı v0.5.18 çizgisinin son
+hâliyle aynıdır. Olguların kaynağı depo kökündeki [CHANGELOG.md](../../CHANGELOG.md)
+(v0.6.0, v0.5.18 ve v0.5.17.1 kayıtları); her parçada ne yapıldığı
+[docs/SURUM-0.6.0-YETENEKLER.md](../../docs/SURUM-0.6.0-YETENEKLER.md); güncelleyenin
+adım adım listesi kök README'nin [Güncelleme notları](../../README.md#güncelleme-notları)
+bölümünde. **2026-10-15 bağımsız denetimi** sürüm numarasını değiştirmedi: kaynak
+hijyeni ve bağlantı kapıları, katmanlı vitrin (kök README ve bu dosya), tarihî
+kayıtların `docs/arsiv/`'e taşınması — bulgular, ölçüm ve avukat kararı bekleyenler
+[docs/DENETIM-2026-10-15.md](../../docs/DENETIM-2026-10-15.md)'de.
 
 Tam değişiklik günlüğü her parçanın `references/degisiklik-gunlugu.md` dosyasındadır;
 ailenin anayasası [`skills/ortak-avukat/references/anayasa.md`](skills/ortak-avukat/references/anayasa.md)
 dosyasında tek kaynak olarak durur.
 
-### Güncelleme notları — v0.5.18 (2026-10-06)
+<details>
+<summary><b>v0.5.18 (2026-10-06)</b> — avukatın işine dokunan değişiklikler, güncelleyen için kısa liste, bu sürümde ölçülmeyenler (tıklayıp açın)</summary>
+
+### v0.5.18 (2026-10-06) — avukatın işine dokunan değişiklikler
 
 Avukatın işine dokunan değişiklikler. Ayrıntı ve gerekçe depo kökündeki
 [CHANGELOG.md](../../CHANGELOG.md) dosyasında (v0.5.18 ve v0.5.17.1 kayıtları);
@@ -581,15 +661,15 @@ güncelleyenin adım adım listesi kök README'nin
   görünmeyen metin olgusal bir bölümle dilekçeye varsayılan olarak girer; bölüm yoksa
   dilekçe denetiminde görünür uyarı; gerekçeli bilinçli atlama kayda geçer; makbuzda
   ifşa durumu.
-- **Kurulum motoru:** `skills/ortak-avukat/scripts/oa_kurulum.py` — Yargı Pro hariç her
-  gereksinimi TAMAM / EKSİK / ELİMDE diye denetler (bkz. Kurulum).
+- **Kurulum motoru:** `skills/ortak-avukat/scripts/oa_kurulum.py` — her gereksinimi
+  TAMAM / EKSİK / ELİMDE diye denetler; teyit kanalı BİLGİ satırıdır (bkz. Kurulum).
 - **Dilekçe ve kontrol:** icra dilekçe ailesi; AYM bireysel başvuru ve AİHM yolu kontrol
   listesi. **UDF teslimde Layer 0 katı engel:** dilekçe metninde müvekkil verisi varsa dış
   araçla (`udf-cli`) UDF üretilmez; teslim `--udf-yok` ile kapanır ve UDF'i UYAP
   editöründe avukat oluşturur.
 - **Özne eşleştirici:** yalnız yazım eşdeğerliğinde birleştirir; aynı soyadlı farklı ön
   adlar ayrı kişidir; OCR varyantları ve yazım farkları avukata soru olarak gelir.
-- **Diğer parçalar (Yargı Pro skill kütüphanesinden fikir düzeyinde uyarlama; kod ve
+- **Diğer parçalar (dış skill kütüphanesinden fikir düzeyinde uyarlama; kod ve
   metin alınmadı, her madde resmî metinden okundu):** merci bazlı harç kalemleri ve
   güncel oran teyidi protokolü — script oran üretmez (oa-strateji); meslek kuralları
   kontrol listeleri — vekâlet kapsamı, istifa/azilde hak kaybı, teyit-onam notu, ücret
@@ -597,8 +677,9 @@ güncelleyenin adım adım listesi kök README'nin
   menfaati esastır (oa-interview); revizyon farkı (oa-pipeline); zabıt denetimi
   (oa-antitez); delil tedarik ve tanık soru planı denetçileri (oa-vakia).
 - **B-23 (v0.5.17.1 güvenlik yaması):** yedek içtihat sunucusu ilanı kaldırıldı; tek
-  bağlayıcı Yargı Pro, erişilemezse "teyit YAPILAMADI". Eski kurulumlardaki
-  `yargi-mcp-yedek` bağlantısı connectors bölümünden elle kaldırılmalıdır.
+  bağlayıcı kaldı, erişilemezse "teyit YAPILAMADI" (2026-10-15'te o ilan da kaldırıldı;
+  teyit kanalı resmî portallar). Eski kurulumlardaki yedek bağlantı connectors
+  bölümünden elle kaldırılmalıdır (adı CHANGELOG v0.5.17.1 kaydında).
 - **Bağımlılık:** `pymupdf>=1.24.2` (depo kökündeki `requirements.txt`).
 
 Güncelleyen için kısa liste: Claude Code'u TAM kapatıp açın; eski sürümle üretilmiş
@@ -613,3 +694,5 @@ Belge güvenlik kapısının ölçmediği katmanlar (taranmış görüntünün p
 [Sistemin yapmadıkları](#sistemin-yapmadıkları-dürüst-sınırlar) bölümündedir; terimlerin
 avukat diliyle karşılıkları depo kökündeki [SOZLUK.md](../../SOZLUK.md) "v0.5.18 terimleri"
 bölümünde.
+
+</details>
