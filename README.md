@@ -9,7 +9,7 @@
 > Bir Claude Code / Cowork plugin marketplace deposudur.
 >
 > Bir avukatın Türk hukuku metodoloji sistemidir. Dil modelleri şimdilik zekâ
-> sahibi değildir; AGI henüz oluşmamıştır. Bu yüzden modelin yetenekleri,
+> sahibi değildir; AGI/ASI henüz oluşmamıştır. Bu yüzden modelin yetenekleri,
 > deterministik olması için Python kodlarıyla kurulmuştur (eklenti kodlaması
 > deneme-yanılmayla ilerledi) ve geliştirilmeye devam edilmektedir. Unutmayınız:
 > dil modelleri OLASILIK ile çalışır, akıl ve zekâ ile değil. Gerçek davalarda
