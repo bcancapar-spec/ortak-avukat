@@ -382,6 +382,41 @@ kırmızı testle; dal GitHub'a push edilmedi.
   dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
   toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
   [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
+- **Hibrit teyit kanalı — 2026-10-15 avukat kararı (dal `teyit/resmi-kaynak-beyaz-listesi`,
+  bu denetim dalına yığılı PR):** eklenti üçüncü taraf MCP sunucusu ilan etmez — `plugin.json`
+  `mcpServers` (Yargı Pro, `yargi.betaspacestudio.com/mcp`) kaldırıldı; mağaza açıklaması ve
+  anahtar sözcükler güncellendi. **Neden:** anayasa m.5 teyidi RESMÎ KAYNAĞA bağlar; tek bir
+  ticari sunucuya bağlı kanal (ücretli üyelik; ad canlı metinlerde ölçümle 87 dosya / 290
+  satırda) hem sahipsiz uç nokta dersini (B-23) hem "teyidin kanıtı sunucunun beyanıdır"
+  zaafını taşıyordu. **Ne:** teyidin kanıtı artık resmî portalın ADRESİ + diske inmiş tam
+  metin — beyaz liste `oa-kontrol/scripts/kunye_ortak.py` `RESMI_KAYNAKLAR` (21 kaynak + her
+  `.gov.tr`; `resmi_kaynak_mi` fail-closed: şema, boş değer, sondan ekleme reddedilir) ve avukat
+  nüshası `skills/ortak-avukat/references/resmi-kaynaklar.md` (kod↔belge testle özdeş). Kanal
+  hibrittir: model portallara `WebFetch` (GETİR — damga + döküm zorunlu) / `WebSearch` (ARAMA)
+  ile ulaşır; `oa_hafiza.py teyit` tam metin çeken araçlarda `--kaynak-url` ister ve beyaz
+  listeyle karşılaştırır (liste yüklenemezse FAIL-CLOSED); üçüncü taraf araç adları sözlükten
+  çıktı. `ictihat_muhakeme_denetim.py` yeni **[G7]**: dayanak kaydının adresi yok ya da liste
+  dışı → TESLİM ENGELİ, dayanak olmayanda UYARI. Kurulum motorunun `yargi_pro` adımı →
+  `teyit_kanali` (BİLGİ; kurulum gerektirmez). Master prompt 7-8. adımlar (TEYİT KANALI / ESKİ
+  BAĞLANTILAR — eski bağlantı adı verilmez, kişi kendi listesinde görür), kök README 5. adım ve
+  gereksinim tablosu, emek etiketi (kişi adı ve bağlantı korunur, ürün adı anılmaz) yeniden
+  yazıldı. Canlı metinler kanal-bağımsız: 87 dosya / 290 satır → 0 ("resmî kaynaktan teyit",
+  "resmî portal (beyaz liste)", "web aracıyla", "dış skill kütüphanesi N-N fikri"); araç
+  adları aynen (ne yaptığını söyler, kimin yaptığını değil); hukuki içerik (madde, süre, künye)
+  değişmedi; tarihli kayıtlar (bu defter, parça günlükleri, docs/arsiv, docs/heyet, iki tarihli
+  belge, STATUS/YOL-HARITASI'nın tarihli bölümleri) dokunulmadı. **Kanıt (önce kırmızı):**
+  `tests/test_teyit_kanali.py` (35 sınama: beyaz liste kabul/ret, teyit kapıları, [G7], ilan
+  yok) ve `tests/test_kanal_bagimsiz_metin.py` (2: desen + canlı metin taraması; ilk ölçüm 87
+  dosya → 0). Eski sözleşmeyi şart koşan testler yeni sözleşmeye çevrildi, gerekçesi
+  docstring'de: `test_kaynak_url` (URL'siz GETİR kaydı artık RET), `test_v0518_mcp_ilan` (6 → 4;
+  izinli liste boş, çift kilit yok), `test_v0518_kurulum`, `test_v0518_master_prompt`. Kanal
+  değişiminin kırdığı 86 eski test (damga / döküm / akıbet / enjeksiyon disiplini) kapıyı değil
+  disiplini sınadığından `tests/oa_teyit_kanali.py` yardımcısıyla beyaz listeli sentetik adres
+  alır. OA-SUIT-SAYISI 3816 → 3851. Ölçüm (Python 3.14, Windows): tam süit 3838 geçti · 12 ortam
+  gerekçesiyle atlandı · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi
+  TEMİZ; kurulu eklentide kanca doktoru yeşil. **Yol haritası:** yerel `oa-kaynak` MCP (resmî
+  portalları saran, açık kodlu keşif katmanı) — kurulmadı, kararı avukatın. Dokunulmayan: sürüm
+  (0.6.0), hukuki playbook'lar. Birleştirme kararı avukatın.
 
 ---
 

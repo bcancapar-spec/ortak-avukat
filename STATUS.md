@@ -27,6 +27,16 @@
 > dalda ayrı commit ya da açık kalem (K-3, K-4, K-10 … K-16):
 > [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Push kararı avukatın.
 
+> **2026-10-16 — hibrit teyit kanalı** (dal `teyit/resmi-kaynak-beyaz-listesi`, denetim dalına yığılı PR;
+> 2026-10-15 avukat kararı): eklenti üçüncü taraf MCP sunucusu ilan etmez, içtihat/mevzuat teyidinin
+> kanıtı resmî portalın adresi (beyaz liste `kunye_ortak.RESMI_KAYNAKLAR`) + diske inmiş tam metindir,
+> kanal hibrittir (`WebFetch` tam metin / `WebSearch` keşif), `oa_hafiza.py teyit` tam metin çeken
+> araçlarda `--kaynak-url` ister, `ictihat_muhakeme_denetim.py` [G7] beyaz liste dışı dayanağı teslim
+> engeli sayar ve canlı metinler kanal-bağımsız yazıldı (87 dosya / 290 satır → 0). Kilitler:
+> `tests/test_teyit_kanali.py`, `tests/test_kanal_bagimsiz_metin.py`. Ölçüm: tam süit 3838 geçti · 12
+> atlandı · 0 kırmızı; OA-SUIT-SAYISI 3851. Yerel `oa-kaynak` MCP yol haritasında. Birleştirme kararı
+> avukatın; ayrıntı CHANGELOG "Sürümsüz" kaydında.
+
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
 > yerleri gösterdi; hepsi kırmızı testle yakalanıp kapatıldı:

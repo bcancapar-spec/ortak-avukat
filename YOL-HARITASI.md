@@ -37,6 +37,14 @@
   `docs/arsiv/` + bağlantı kapısı, katmanlı README, `.github` güvenlik bildirimi ve PR şablonu;
   ardından v0.5.19 kalemi Excel gizli katmanı (gizli satır/sütun, yazı rengi, `;;;`, punto).
   Bulgular ve plan: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md). Açık: GitHub açıklaması/etiketleri (B-8), PR #6.
+- **2026-10-15 — hibrit teyit kanalı (avukat kararı; dal `teyit/resmi-kaynak-beyaz-listesi`):**
+  eklenti MCP sunucusu ilan etmez; teyidin kanıtı resmî portal adresi (beyaz liste) + diske inmiş
+  tam metin; model portallara `WebFetch`/`WebSearch` ile ulaşır; canlı metinler kanal-bağımsız.
+  **Sıradaki kalem — `oa-kaynak` yerel MCP (resmî portalları saran keşif katmanı):** mevzuat.gov.tr,
+  Bedesten, Yargıtay/Danıştay karar arama, UYAP Emsal, AYM bilgi bankaları, Resmî Gazete ve HUDOC'u
+  saran, açık kodlu, yerelde koşan arama / sayfalama / tam metin çekme araçları; beyaz liste dışına
+  çıkmaz, sorgu Layer 0 süzgecinden geçer, teyit kanıtı yine adres + döküm. Kurulana kadar keşif
+  `WebSearch`/`WebFetch` ile. Kurulmadı; tasarım ve kurulum kararı avukatın.
 
 ## DURUM — 2026-10-08 · v0.5.18 (önceki)
 
