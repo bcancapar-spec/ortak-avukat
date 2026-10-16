@@ -348,9 +348,17 @@ kırmızı testle; dal GitHub'a push edilmedi.
   sürüm notları katlanır bloklarda aynen korundu; DÜSTUR m.6 satırı ve dizgi hataları
   düzeltildi. Avukatın commit'lenmemiş README düzeltmeleri (Excel okuyucuları, Mağaza
   kısayolu, prompt satırları) dala alındı.
+  Eklenti README'si (ikinci vitrin) de aynı düzene geçti (`8a1c882`): kısa giriş ve okuyucu
+  yönlendirmesi, "Bir bakışta: yapar / yapmaz", hatta yeri ve script sayısı taşıyan özet parça
+  tablosu, katlanır tam katalog, v0.6.0 ve bu denetime bağlantı; kilitli bloklar aynen.
+  Tablodaki üç script sayısı elle yazılmıştı ve bayattı (oa-pipeline 10 → 11, oa-ingest 5 → 6,
+  çekirdek "—" → 1, kurulum motoru); kök kataloğun başlıkları da aynı sayıları taşıyordu,
+  düzeltildi. `tests/test_eklenti_vitrini.py` iki vitrindeki sayıları
+  `skills/<parça>/scripts/*.py` sayımına, katmanlı düzeni ve belge bağlantılarını kilitler
+  (OA-SUIT-SAYISI 3781 → 3785).
 - **Depo hijyeni:** `.github/SECURITY.md` (güvenlik bildirimi: müvekkil verisi içeren bulgu
   herkese açık issue'ya yazılmaz) ve `.github/PULL_REQUEST_TEMPLATE.md` (depo sözleşmesi).
-- **Ölçüm (avukatın makinesi, Python 3.14.8, Windows):** tam süit 3768 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (83,4 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3781, OA-SUIT-SAYISI ile birebir.
+- **Ölçüm (avukatın makinesi, Python 3.14.8, Windows):** tam süit 3800 geçti · 12 ortam gerekçesiyle atlandı (udf-cli oturumu, saha referansı) · 0 kırmızı (87,0 s, paralel); zamanlama testi 1 geçti; aile yapı denetimi TEMİZ; ruff kapısı temiz; kurulu eklentide 6/6 kanca olayı sağlıklı; toplanan test 3813, OA-SUIT-SAYISI ile birebir.
 - **Dokunulmayan (avukat kararı):** sürüm numarası; GitHub depo açıklaması ve konu etiketleri
   (B-8, öneri belgede); hukuki içerik ve playbook'lar (m.4, m.9); `_gorus/`; `revizyon_farki.py`
   iç fonksiyonunun geç bağlanması (B-10, bugün hata değil).

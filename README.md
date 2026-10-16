@@ -779,7 +779,7 @@ yazılıdır: makineyle denetlenen yerde ölçüm vardır.
 
 ### Çekirdek ve orkestra
 
-#### [`ortak-avukat`](plugins/ortak-avukat/skills/ortak-avukat/) — çekirdek kimlik
+#### [`ortak-avukat`](plugins/ortak-avukat/skills/ortak-avukat/) — çekirdek kimlik · 1 script
 Türk hukuku işi geldiğinde devreye giren varsayılan çalışma kimliğidir; kıdemli
 bir eş-avukat duruşunu ve anayasayı bağlama yükler, işi hemen `oa-pipeline`'a
 devreder — sizin elle parça çağırmanız beklenmez. Anayasa fiziken bu parçanın
@@ -789,7 +789,7 @@ güvenlik kapısının damgaladığı hiçbir yönerge hiçbir parçada uygulanm
 bildirilir. Ayırt edici kuralı: **devir sözle değil çağrıyla olur** — bir parçayı
 tarifinden taklit etmek, çalıştırmak değildir.
 
-#### [`oa-pipeline`](plugins/ortak-avukat/skills/oa-pipeline/) — Başbakan · 10 script
+#### [`oa-pipeline`](plugins/ortak-avukat/skills/oa-pipeline/) — Başbakan · 11 script
 Dosyayı 0. MANİFEST'ten 10. KAPANIŞ'a kadar sırayla yürüten icra organıdır. Bir
 adımın "yapıldı" iddiası beyanla kaydedilemez: o adımın fiziksel çıktısı diskte
 yoksa kayıt yazılamaz; analiz, evrak dökümü tamamlanmadan başlayamaz. Dosyanın
@@ -809,7 +809,7 @@ kurulur (revizyon farkı); hangi nüshanın verildiğine siz karar verirsiniz.
 ### Dosyayı ele alma
  v0.5.11 ile **kit güvenlik katmanı** geldi: araç kopyaları yalnız güvenilir kaynaktan doğar (uygulamanın rpm anlık-görüntü yolu karantinada), tam-nesil çekirdek scriptler salt-okunur kilitlenir, tazelik uyarısı yön bilir (bayat / kanaldan-yeni / özdeş) ve her defter olayı ile makbuz, hangi oturumun ürünü olduğunu söyleyen **oturum damgası** taşır — çok oturumlu çalışmada (aynı dosyada 5-6 paralel oturum sahada ölçüldü) kim-ne-yaptı sorusu artık cevaplıdır.
 
-#### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 5 script
+#### [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) — evrak metne iner · 6 script
 UYAP klasöründeki her evrağın metnini **bir kez** ve en ucuz doğru yoldan
 çıkarır: metin PDF'ten doğrudan, taranmış olandan OCR ile, UDF/EYP/DOCX'ten
 açarak; belge başına metin dosyası + künye + indeks üretir. İndirilen evrak
