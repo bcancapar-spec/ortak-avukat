@@ -1,7 +1,7 @@
 # DURUM — Ortak Avukat
 
-**Tarih:** 2026-10-12 · **Sürüm:** 0.6.0 · **Commit:** dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine; bkz. CHANGELOG)
-*(önceki kayıtlar: 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
+**Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` push edilmedi (bkz. CHANGELOG)
+*(önceki kayıtlar: 2026-10-12 · 0.6.0 · PR #8 — 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
 > **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; push
 > edilmedi; sürüm numarası değişmedi, birleştirme kararı avukatın). v0.6.0 ölçümle denetlendi;
@@ -22,6 +22,10 @@
 > Avukat kararı (aynı gün): push yok, önce K-1 ve K-2 — kapatıldı (Excel kapısı var olan hücreleri gezer;
 > boyut sınırı `xl/` bütününe; tablo stili aralığı ZAYIF; önce kırmızı test, +3); ikinci heyet koşumu bu
 > onarımdan sonra.
+> İkinci koşum (HEAD `ca37539`): usul ve esas ŞARTLI PUSH, güvenlik PUSH — BLOKLAYICI 0 · UYARI 4 · NOT 22;
+> K-1/K-2 kapandı; usulün kayıt şartları bu kayıtla kapatıldı; push öncesi açık şart kalmadı, kalanlar aynı
+> dalda ayrı commit ya da açık kalem (K-3, K-4, K-10 … K-16):
+> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Push kararı avukatın.
 
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği

@@ -1,7 +1,7 @@
 # Heyet — kıdemli avukat denetim kurulu (push öncesi)
 
-**Ne:** Üç Fable düzeyinde kıdemli avukat ajanı; tanımları depo kökündeki `.claude/agents/` dizinindedir (yerel kopya; git'te yok sayılan
-dizin olduğu için kayıt kopyaları [`ajanlar/`](ajanlar/oa-heyet-usul.md) altında durur, ikisi
+**Ne:** Üç Fable düzeyinde kıdemli avukat ajanı; tanımları depo kökündeki `.claude/agents/` dizinindedir (yerel kopya; `.gitignore` ile yok sayılan
+dizin olduğu için — 2026-10-16'ya kadar yalnız yerel exclude'daydı, heyet K-7 — kayıt kopyaları [`ajanlar/`](ajanlar/oa-heyet-usul.md) altında durur, ikisi
 özdeş tutulur — yeni makinede `cp docs/heyet/ajanlar/*.md .claude/agents/`):
 `oa-heyet-usul` (depo sözleşmesi, kapılar, kayıt), `oa-heyet-esas` (hukuki yöntem,
 müvekkil menfaati), `oa-heyet-guvenlik` (sır, gizli talimat, tedarik zinciri). Avukat

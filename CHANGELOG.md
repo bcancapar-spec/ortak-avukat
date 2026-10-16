@@ -332,7 +332,8 @@ kırmızı testle; dal GitHub'a push edilmedi.
   ([dizin notu](docs/arsiv/README.md)), yaşayan iki defter (`PERFORMANS-STATUS`,
   `SICRAMA-NOTU`) `docs/`'a taşındı; 69 bağlantı yeniden yazıldı;
   `tests/test_belge_baglantilari.py` her belge bağlantısının hedefini denetler (taşımayla 29
-  kırık gösterdi, yeniden yazımla yeşil).
+  kırık gösterdi, yeniden yazımla yeşil). Kayıt notu (heyet 2026-10-16 USUL U-1): 13 dosyalık
+  taşıma fiilen `47bba4d` ile girdi; `45a6d2e` bağlantıları yeniden yazdı ve kapıyı ekledi.
 - **Excel'de gizli katman (YOL-HARITASI v0.5.19 kalemi; anayasa m.11):** belge güvenlik kapısı
   tabloyu artık "DENETLENEMEZ" diye sarmıyor; çalışma kitabını yeniden açıp gizli satır/sütun,
   sıfır yükseklik/genişlik, zeminle aynı renkteki yazı (tema/dizin/tint çözülür), `;;;` biçimi ve
@@ -374,6 +375,13 @@ kırmızı testle; dal GitHub'a push edilmedi.
   0,01 s / 0,3 MB); boyut sınırı `xl/` bütününe uygulanır; tablo stili aralığı koşullu biçimle aynı ZAYIF
   kural (koyu başlıkta beyaz yazı yanlış BULGU üretmez). Önce kırmızı: `tests/test_v0519_excel_gizli_katman.py`
   +3 (OA-SUIT-SAYISI 3813 → 3816). İkinci heyet koşumu bu onarımdan sonra.
+  **İkinci koşum (aynı gün, HEAD `ca37539`):** usul ŞARTLI PUSH (BLOKLAYICI 0 · UYARI 2 · NOT 6), esas
+  ŞARTLI PUSH (0 · 2 · 11), güvenlik PUSH (0 · 0 · 5); tam süit temiz kopyada 3803 geçti · 12 atlandı ·
+  0 kırmızı; K-1 ve K-2 üç üyenin ölçümüyle kapandı; usulün push öncesi kayıt şartları (taşıma atfı notu,
+  `.gitignore` `.claude/`, STATUS tarihi, DENETIM ölçüm satırı) bu kayıtla kapatıldı; kalan kalemler aynı
+  dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
+  toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
+  [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
 
 ---
 

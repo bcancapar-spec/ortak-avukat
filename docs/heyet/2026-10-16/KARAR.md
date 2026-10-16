@@ -150,13 +150,13 @@ sınıflandırmasıdır.
 
 | Kalem | Bulgu | Üye şartı | Zamanlama | Ne yapılacak |
 |---|---|---|---|---|
-| K-1 | H-1 | ESAS Ş-1, GÜVENLİK 1 | **push'tan önce** | `_xlsx_sayfalar` / `_xlsx_satirlar`'a sayfa başına koordinat tavanı → sebepli DENETLENEMEDİ (GÜVENLİK N-1'deki `xl/` toplamı aynı kalemde); önce kırmızı test; OA-SUIT-SAYISI ve oa-ingest günlüğü. GÜVENLİK alternatifi: avukat bunu açık kalem olarak STATUS/YOL-HARITASI'na yazmayı seçerse push edilebilir; üyenin tercihi kapatmaktır |
-| K-2 | H-2 | ESAS Ş-2 | **push'tan önce** | `ws.tables` aralığında açık yazı ZAYIF ya da zemin "ölçülmez"; SKILL.md ve README dürüst sınırına "tablo stili"; önce kırmızı test (stil başlıklı kurgu tablo → rapor yok) |
+| K-1 | H-1 | ESAS Ş-1, GÜVENLİK 1 | **push'tan önce** | `_xlsx_sayfalar` / `_xlsx_satirlar`'a sayfa başına koordinat tavanı → sebepli DENETLENEMEDİ (GÜVENLİK N-1'deki `xl/` toplamı aynı kalemde); önce kırmızı test; OA-SUIT-SAYISI ve oa-ingest günlüğü. GÜVENLİK alternatifi: avukat bunu açık kalem olarak STATUS/YOL-HARITASI'na yazmayı seçerse push edilebilir; üyenin tercihi kapatmaktır — **kapatıldı: `ca37539`** (ikinci koşum: [../2026-10-16-2/KARAR.md](../2026-10-16-2/KARAR.md)) |
+| K-2 | H-2 | ESAS Ş-2 | **push'tan önce** | `ws.tables` aralığında açık yazı ZAYIF ya da zemin "ölçülmez"; SKILL.md ve README dürüst sınırına "tablo stili"; önce kırmızı test (stil başlıklı kurgu tablo → rapor yok) — **kapatıldı: `ca37539`** (ikinci koşum: [../2026-10-16-2/KARAR.md](../2026-10-16-2/KARAR.md)) |
 | K-3 | H-3 | ESAS Ş-3 | aynı dalda ayrı commit | Excel gizli-katman UYARI'sı için etiket ve md başlığı türe uygun; `okuma_kapisi` tek kaynak; test |
 | K-4 | H-4 | ESAS Ş-4 | aynı dalda ayrı commit | udf-cli oturumuyla `<ol start>` UDF düzeyinde bir kez ölçülüp kaydedilir; ölçülene kadar CHANGELOG/DENETIM cümlesi "UDF-HTML'de" diye sınırlanır |
-| K-5 | H-5 | USUL 2 | kayıt; tarihçe düzeltmesi avukat kararı | DENETIM §6 (Görev 2 / Görev 4) ve CHANGELOG'a "taşıma fiilen `47bba4d`'de" notu; istenirse tarihçe düzeltmesi |
+| K-5 | H-5 | USUL 2 | kayıt; tarihçe düzeltmesi avukat kararı | DENETIM §6 (Görev 2 / Görev 4) ve CHANGELOG'a "taşıma fiilen `47bba4d`'de" notu; istenirse tarihçe düzeltmesi — **kapatıldı: ikinci koşum kayıt commit'i** ([../2026-10-16-2/KARAR.md](../2026-10-16-2/KARAR.md)) |
 | K-6 | H-6 | USUL 1 | **bu commit** | CHANGELOG "Sürümsüz" kaydına Heyet maddesi + STATUS'a 2026-10-16 notu — yapıldı |
-| K-7 | H-7 | USUL 3 | kayıt | `.gitignore`'a `.claude/`; README cümlesi |
+| K-7 | H-7 | USUL 3 | kayıt | `.gitignore`'a `.claude/`; README cümlesi — **kapatıldı: ikinci koşum kayıt commit'i** ([../2026-10-16-2/KARAR.md](../2026-10-16-2/KARAR.md)) |
 | K-8 | — | USUL 4 | **bu commit** | heyet dosyaları (`docs/heyet/2026-10-16/**`, CHANGELOG, STATUS) commit'li içerikle bağlantı / metin hijyeni / kaynak hijyeni / b38 / b35 kapılarından geçirilir — ölçüm §4.1 |
 | K-9 | §6 | USUL 5, GÜVENLİK 3 | kapsam | commit'siz iş push kapsamına girmez; commit'lenince OA-SUIT-SAYISI (ölçülen toplam 3850), sürüm damgası ve ilan testleri (`test_v0518_mcp_ilan`), `.github/SECURITY.md` cümlesi, tam süit ve heyetin yeniden koşumu (B-23 dersi) |
 
