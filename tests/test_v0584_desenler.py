@@ -25,6 +25,7 @@ Tüm girdiler tmp_path + SENTETİK veridir (repo kuralı m.7 + sabit-yol-sızın
 dersi — gerçek dava klasörü yolu / kişi adı / TC yazılmaz).
 """
 import importlib.util
+from oa_teyit_kanali import RESMI_URL  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import json
 import pathlib
 import subprocess
@@ -85,7 +86,8 @@ def _teyit_asilmis(tmp_path, damga="LEHE"):
         "--sonuc", KUNYE, "--damga", damga, "--bag", BAG_METNI,
         "--ilgili-kisim", ILGILI_KISIM, "--dokum-icerik", DOKUM_METIN,
         "--asan-kaynak", ASAN, "--asilma-tarihi", ASILMA_TARIHI,
-        "--gecerlilik-bitis", GECERLILIK_BITIS, "--kok", str(tmp_path)],
+        "--gecerlilik-bitis", GECERLILIK_BITIS, "--kaynak-url", RESMI_URL,
+        "--kok", str(tmp_path)],
         cwd=tmp_path)
 
 

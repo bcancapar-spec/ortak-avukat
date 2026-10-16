@@ -1,6 +1,6 @@
 # Test Mimarisi — mühendisler için
 
-<!-- OA-SUIT-SAYISI: 3816 -->
+<!-- OA-SUIT-SAYISI: 3851 -->
 
 > **Süit büyüklüğünün TEK kaynağı yukarıdaki `OA-SUIT-SAYISI` işaretçisidir.**
 > `tests/test_v0514_vitrin.py` bu sayıyı her koşuda `pytest --collect-only`
@@ -103,6 +103,17 @@ tolerans; imzasız dosyada sıfır tolerans, iki yön de testli).
   ama gerekçesi test docstring'ine ve değişiklik günlüğüne yazılır
   (ör. çift-uzantı ad şeması değişiminde eski adı kilitleyen testler,
   yeni sözleşmeye taşındı).
+
+### 7. Teyit kanalı: sentetik resmî adres (2026-10-15 avukat kararı)
+
+`oa_hafiza.py teyit` tam metin çeken araçlarda `--kaynak-url` ister ve adresi resmî kaynak
+beyaz listesiyle karşılaştırır; `ictihat_muhakeme_denetim.py` [G7] dayanak kaydının adresi
+yoksa teslim engeli sayar (kapıların kendisi `test_teyit_kanali.py`). Bu kapıyı değil damga /
+döküm / akıbet / enjeksiyon disiplinini sınayan testler `tests/oa_teyit_kanali.py`
+yardımcısını kullanır: `kaynak_url_ekle(args)` GETİR sınıfı çağrıya beyaz listeli sentetik
+adresi ekler, `KAYNAK_URL_SATIRI` elle yazılmış muhakeme kaydına girer. Adres sentetiktir,
+hiçbir adrese gidilmez; üçüncü taraf ad/adres canlı metinde geçmez
+(`test_kanal_bagimsiz_metin.py` — tarihli kayıtlar muaf).
 
 ## Koşum tarifleri
 

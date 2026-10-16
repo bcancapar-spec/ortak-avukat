@@ -8,6 +8,7 @@ BİREBİR test senaryosuna çevirir — ZORUNLU TESTLER listesindeki dört
 senaryonun HEPSİ burada AÇIKÇA sömürü girişimi olarak yazılıdır.
 """
 import importlib.util
+from oa_teyit_kanali import KAYNAK_URL_SATIRI, kaynak_url_ekle  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
@@ -35,7 +36,7 @@ ko = _load(KUNYE_ORTAK, "kunye_ortak_arac_guvenlik_test")
 
 def _cli(args, cwd):
     cp = subprocess.run(
-        [sys.executable, str(SCRIPT)] + args,
+        [sys.executable, str(SCRIPT)] + kaynak_url_ekle(args),
         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(cwd),
     )
     return cp.returncode, (cp.stdout or "") + (cp.stderr or "")
@@ -245,7 +246,7 @@ def test_t3_negatif_gercek_teyitli_kunye_kutuk_dayanagiyla_gecer(tmp_path):
     satirlar = [
         "# 01 — İçtihat Muhakeme Kaydı", "",
         f"**KUNYE:** {KUNYE_GERCEK}",
-        "**KAYNAK-IZI:** _oa/teyit/dokum/a.md",
+        "**KAYNAK-IZI:** _oa/teyit/dokum/a.md", KAYNAK_URL_SATIRI,
         "**DAMGA:** LEHE", "",
         "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
         "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",

@@ -30,6 +30,7 @@ Tüm fikstürler SENTETİKTİR (m.7); tempfile ile izole dizinlerde koşar,
 depo dosyalarına yazılmaz.
 """
 import importlib.util
+from oa_teyit_kanali import KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import pathlib
 import subprocess
 import sys
@@ -300,7 +301,7 @@ def _akibet_koku(damga="LEHE", akibet=None, akibet_kaynak=None, kutuk_akibet=Non
     cikti.mkdir(parents=True)
     satirlar = ["# 01 — İçtihat Muhakeme Kaydı", "",
                 f"**KUNYE:** {KUNYE}",
-                "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+                "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
                 f"**DAMGA:** {damga}"]
     if akibet:
         satirlar.append(f"**AKIBET:** {akibet}")

@@ -17,6 +17,7 @@ ile açılan izole bir _oa iskeletine verilir; gerçek repo hiç dokunulmaz.
       UDF üretilir, exit 0.
 """
 import pathlib
+from oa_teyit_kanali import KAYNAK_URL_SATIRI  # 2026-10-15 teyit kanalı: beyaz listeli sentetik adres (tests/oa_teyit_kanali.py)
 import subprocess
 import sys
 import tempfile
@@ -221,7 +222,7 @@ def _b2_kur(izole_kok, muhakeme_kaydi=True, damga="LEHE", ayirt_etme=""):
         satirlar = [
             "# 01 — İçtihat Muhakeme Kaydı", "",
             f"**KUNYE:** {KUNYE_ICTIHAT}",
-            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md",
+            "**KAYNAK-IZI:** _oa/teyit/dokum/kaynak.md", KAYNAK_URL_SATIRI,
             f"**DAMGA:** {damga}", "",
             "## İLGİLİ-KISIM", "...ilgili kısım metni...", "",
             "## DAVAYA-BAĞ", "...davaya bağ açıklaması...", "",

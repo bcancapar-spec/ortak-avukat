@@ -919,6 +919,30 @@ def kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar):
     return bloklar, uyarilar
 
 
+# ── [G7] RESMÎ KAYNAK ADRESİ (2026-10-15 — hibrit teyit kanalı, avukat kararı) ──
+# Teyidin kanıtı artık resmî portalın adresi + diske inmiş tam metindir (anayasa
+# m.5; beyaz liste `kunye_ortak.RESMI_KAYNAKLAR`). Dilekçeye dayanak olan (atfı OK
+# sayılan) her muhakeme kaydının KAYNAK-URL'i VAR ve beyaz listede olmalı → aksi
+# TESLİM ENGELİ. Dayanak olmayan kayıttaki aynı eksiklik UYARI'dır (kütük hijyeni:
+# o karar dilekçeye girerse engel olur). [G4] bağlantının İZİNİ, [G7] bağlantının
+# KAYNAĞINI denetler — ikisi ayrı sorudur.
+def resmi_kaynak_denetimi(atiflar, sonuclar, kayitlar):
+    """Döndürür: (bloklar, uyarilar) — her ikisi de [str]."""
+    bloklar, uyarilar = [], []
+    dayanak = {id(k) for (durum, _e, _u, k) in sonuclar if durum == "OK" and k is not None}
+    for k in kayitlar:
+        url = getattr(k, "kaynak_url", None)
+        if url and ko.resmi_kaynak_mi(url):
+            continue
+        sebep = ("KAYNAK-URL yok" if not url
+                 else f"adres resmî kaynak beyaz listesi DIŞINDA ({url[:90]})")
+        satir = (f"{(k.kunye_ham or '?')[:80]}: {sebep} — teyit kanalı resmî portal adresi "
+                 "+ tam metindir (ortak-avukat/references/resmi-kaynaklar.md); kaydı "
+                 "`oa_hafiza.py teyit --kaynak-url <resmî adres>` ile yenileyin.")
+        (bloklar if id(k) in dayanak else uyarilar).append(satir)
+    return bloklar, uyarilar
+
+
 def asilmis_ictihat_denetimi(atiflar, kayitlar):
     """v0.5.8 [G5] AŞILMIŞ-İÇTİHAT kapısı (semantica superseded deseni).
 
@@ -1315,6 +1339,21 @@ def main():
             engel_var = True
             print("SONUÇ-EK: TESLİM ENGELİ — kütükte izi olmayan bağlantı dilekçede "
                   "kalamaz (uydurma-bağlantı yasağı).")
+
+    g7_bloklar, g7_uyarilar = resmi_kaynak_denetimi(atiflar, sonuclar, kayitlar)
+    if g7_bloklar or g7_uyarilar:
+        print("\n" + "-" * 72)
+        print("[G7] RESMÎ KAYNAK ADRESİ (2026-10-15 — teyit kanalı: beyaz listeli adres "
+              "+ tam metin)")
+        print("-" * 72)
+        for b in g7_bloklar:
+            print(f"  ✗ {b}")
+        for u in g7_uyarilar:
+            print(f"  ⚠ {u}")
+        if g7_bloklar:
+            engel_var = True
+            print("SONUÇ-EK: TESLİM ENGELİ — resmî kaynak adresi olmayan ya da beyaz liste "
+                  "dışı adresli kayıt dilekçeye dayanak olamaz (anayasa m.5).")
 
     g5_bloklar, g5_uyarilar = asilmis_ictihat_denetimi(atiflar, kayitlar)
     if g5_bloklar or g5_uyarilar:

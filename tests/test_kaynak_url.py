@@ -66,16 +66,18 @@ def test_kaynak_url_muhakeme_kaydina_gecer(kok):
     assert f"**KAYNAK-URL:** {url}" in icerik, icerik
 
 
-def test_url_verilmezse_satir_HIC_yazilmaz(kok):
-    """Yokluk, boş değere DÖNÜŞMEZ: dilekçe yazarı 'kayıt yok' ile 'kayıt boş'
-    arasını ayırt edebilmeli — boş bir `**KAYNAK-URL:**` satırı, parantezin
-    açılıp boş bırakılmasına davetiye olurdu."""
+def test_url_verilmezse_getir_teyidi_fail_closed_durur(kok):
+    """2026-10-15 avukat kararı (hibrit teyit kanalı): tam metin çeken araçta adres
+    yoksa teyit YOKTUR — kayıt hiç doğmaz. Eski sözleşme (v0.5.5.3) URL'siz GETİR
+    kaydını kabul edip yalnız KAYNAK-URL satırını yazmıyordu; kanal bir üçüncü taraf
+    sunucuya bağlıyken bu meşruydu, çünkü kanıt sunucunun kendisiydi. Kanal resmî
+    portallara geçince kanıt adres oldu (tests/test_teyit_kanali.py). Eski ilke
+    korunur: yokluk boş değere dönüşmez — boş `**KAYNAK-URL:**` satırı yine yazılmaz,
+    bu kez kayıt da yazılmaz."""
     kod, cikti = _kos(_teyit_args(kok), kok)
-    assert kod == 0, cikti
-
-    icerik = _muhakeme(kok)
-    assert "KAYNAK-URL" not in icerik, icerik
-    assert "**DAMGA:** LEHE" in icerik, "diğer alanlar normal yazılmalı"
+    assert kod != 0, cikti
+    assert "--kaynak-url" in cikti
+    assert _muhakeme(kok) == "", "RET'te muhakeme kaydı yazılmamalı"
 
 
 @pytest.mark.parametrize("bozuk", [

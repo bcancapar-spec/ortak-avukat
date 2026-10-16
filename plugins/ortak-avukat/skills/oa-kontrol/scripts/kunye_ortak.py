@@ -100,7 +100,7 @@ AIHM_BASVURU_RE = re.compile(   # v0.5.18: aynı dil, tek serbest `\s*` (ReDoS k
 # ── v0.5.18 (Y-09 / AİHM yolu) — AİHM BAŞVURU NO'SUNUN TÜRKÇE YAZIMI ────────
 # AİHM'in kendi Türkçe çeviri kararları başvuru numarasını «Başvuru no.
 # NNNNN/YY», «no. NNNNN/YY» biçiminde yazar (sıra/İKİ HANELİ yıl — HUDOC,
-# Yargı PRO `aihm_ictihat_ara` + `ictihat_getir` ile görüldü 2026-10-05).
+# `aihm_ictihat_ara` + `ictihat_getir` ile resmî kaynaktan görüldü 2026-10-05).
 # Eski tanıyıcı yalnız İngilizce «Application no.» kalıbını görüyordu; Türkçe
 # yazılmış DOĞRU bir AİHM künyesi («Örnek/Türkiye, no. 12345/18») künye
 # sayılmıyor, `_KARAR_IMASI_RE` ise «2345/18» kesitine takılıp satırı
@@ -1029,7 +1029,7 @@ def kutukte_damgali_dayanak_satiri_var_mi(kutuk_yolu, esas, karar, damga, kaynak
 # kararı — E.+K. çifti TAM, daire anılı) [F] kapısında «çıplak künye», künye
 # kapısında «TEYİTSİZ» sayılıp TESLİM ENGELİ üretiyordu. Oysa HMK m.342/2-c
 # istinaf dilekçesinde «kararı veren mahkemenin adı, kararın tarihi ve
-# sayısı»nı ZORUNLU kılar (Yargı PRO `mevzuat_getir` teyidi bulgular
+# sayısı»nı ZORUNLU kılar (resmî metin `mevzuat_getir` teyidi bulgular
 # kaydında) — kapı tam da kanunun istediği içeriği engelliyordu; her kanun
 # yolu dilekçesi `--zorla`ya itiliyor, kapıyı aşma alışkanlığı da gerçek
 # uyarıları körleştiriyordu. B1/B8 muafiyeti (`kendi_dosya_no_mu`) bu satırı
@@ -1212,3 +1212,64 @@ def dava_gecmisi_satiri_mi(satir, kunyeler):
         if not _merci_izleri(pencere) <= beyan_izleri:
             return False
     return True
+
+
+# ── 2026-10-15 — RESMÎ KAYNAK BEYAZ LİSTESİ (hibrit teyit kanalı; avukat kararı) ──
+# NEDEN VAR: içtihat/mevzuat teyidi v0.6.0'a kadar tek bir üçüncü taraf sunucuya
+# bağlıydı; ilan ve anmaları kaldırıldı. Anayasa m.5 teyidi RESMÎ KAYNAĞA bağlar;
+# kanal değişince kanıt da değişir: teyidin kanıtı artık resmî portalın ADRESİ
+# (bu liste) + diske inmiş tam metindir. Bu tuple TEK kaynaktır: `oa_hafiza.py
+# teyit --kaynak-url` ve `ictihat_muhakeme_denetim.py` [G7] buradan okur; avukatın
+# okuduğu nüsha `ortak-avukat/references/resmi-kaynaklar.md`'dir ve
+# `tests/test_teyit_kanali.py` ikisini özdeş tutar. Kural: alan adı listede ya da
+# `.gov.tr` ile bitiyor (devlet alan adı). Yol/sorgu dizesine bakılmaz — portallar
+# adres biçimini değiştirebilir; alan adı değişmez.
+import urllib.parse as _urlparse
+
+RESMI_KAYNAKLAR = (
+    {"ad": "Mevzuat Bilgi Sistemi", "alan": "mevzuat.gov.tr", "tur": "mevzuat"},
+    {"ad": "Resmî Gazete", "alan": "resmigazete.gov.tr", "tur": "resmi-gazete"},
+    {"ad": "Bedesten — Adalet Bakanlığı içtihat portalı", "alan": "mevzuat.adalet.gov.tr", "tur": "ictihat"},
+    {"ad": "Yargıtay Karar Arama", "alan": "karararama.yargitay.gov.tr", "tur": "ictihat"},
+    {"ad": "Yargıtay (kurul kararları, İBK)", "alan": "yargitay.gov.tr", "tur": "ictihat"},
+    {"ad": "UYAP Emsal Karar", "alan": "emsal.uyap.gov.tr", "tur": "ictihat"},
+    {"ad": "Danıştay Karar Arama", "alan": "karararama.danistay.gov.tr", "tur": "ictihat"},
+    {"ad": "Danıştay", "alan": "danistay.gov.tr", "tur": "ictihat"},
+    {"ad": "AYM Kararlar Bilgi Bankası (bireysel başvuru)", "alan": "kararlarbilgibankasi.anayasa.gov.tr", "tur": "ictihat"},
+    {"ad": "AYM Norm Denetimi Kararlar Bilgi Bankası", "alan": "normkararlarbilgibankasi.anayasa.gov.tr", "tur": "ictihat"},
+    {"ad": "Anayasa Mahkemesi", "alan": "anayasa.gov.tr", "tur": "ictihat"},
+    {"ad": "Uyuşmazlık Mahkemesi", "alan": "uyusmazlik.gov.tr", "tur": "ictihat"},
+    {"ad": "AİHM HUDOC", "alan": "hudoc.echr.coe.int", "tur": "aihm"},
+    {"ad": "Türkiye Barolar Birliği (AAÜT)", "alan": "barobirlik.org.tr", "tur": "tarife"},
+    {"ad": "Rekabet Kurumu", "alan": "rekabet.gov.tr", "tur": "kurum"},
+    {"ad": "KVKK", "alan": "kvkk.gov.tr", "tur": "kurum"},
+    {"ad": "Kamu İhale Kurumu", "alan": "kik.gov.tr", "tur": "kurum"},
+    {"ad": "Sayıştay", "alan": "sayistay.gov.tr", "tur": "kurum"},
+    {"ad": "Gelir İdaresi Başkanlığı (özelge)", "alan": "gib.gov.tr", "tur": "kurum"},
+    {"ad": "SPK", "alan": "spk.gov.tr", "tur": "kurum"},
+    {"ad": "BDDK", "alan": "bddk.org.tr", "tur": "kurum"},
+)
+RESMI_GENEL_SONEK = ".gov.tr"
+
+
+def resmi_kaynak_mi(url):
+    """URL resmî kaynak beyaz listesinde mi? Alan adı listedeki bir alan adına
+    eşit ya da onun alt alanı (`www.`, `karararama.`) olmalı; genel kural: `.gov.tr`
+    ile biten her alan adı resmîdir. Şema http(s) değilse, URL boşsa ya da alan adı
+    sondan eklemeyle taklit ediliyorsa (`…gov.tr.sahte.net`) False — fail-closed."""
+    if not url or not isinstance(url, str):
+        return False
+    try:
+        p = _urlparse.urlsplit(url.strip())
+        host = p.hostname
+    except ValueError:
+        return False
+    if p.scheme not in ("http", "https") or not host:
+        return False
+    host = host.lower().rstrip(".")
+    if host == RESMI_GENEL_SONEK[1:] or host.endswith(RESMI_GENEL_SONEK):
+        return True
+    for k in RESMI_KAYNAKLAR:
+        if host == k["alan"] or host.endswith("." + k["alan"]):
+            return True
+    return False
