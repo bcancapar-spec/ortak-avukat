@@ -29,6 +29,12 @@
 > ardından "0.6'yı geliştir": K-3, K-10…K-15 aynı dalda önce kırmızı testle kapatıldı (Excel testi +12,
 > OA-SUIT-SAYISI 3828); üçüncü heyet koşumu birleştirmeden önce.
 
+> **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
+> denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
+> v0.5.18'deki +79 ms'si, çapraz denetim sonucunun içerik özetine bağlı türetilmiş önbellekle isabet
+> turlarında geri alındı (eşleştirilmiş ABBA, v0.5.18'e göre −96,5 ms; PERFORMANS-STATUS §14), tam süit
+> 3840 geçti · 12 ortam gerekçesiyle atlandı · 0 kırmızı; birleştirme kararı avukatın.
+
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
 > yerleri gösterdi; hepsi kırmızı testle yakalanıp kapatıldı:
