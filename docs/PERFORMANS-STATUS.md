@@ -645,3 +645,23 @@ Komut: `hook_olc --gercekci --tekrar 5 --karsilastir --import-dokumu` (ortanca m
 - `aile_dogrula`: AİLE YAPI DENETİMİ TEMİZ (20 parça).
 
 **Sonuç:** büyük dosyada (3000 evrak) Stop kancası, çapraz girdiler değişmediği her turda v0.5.17.1 düzeyine döner (eşleştirilmiş fark v0.5.17.1'e göre −3,6 ms, v0.5.18'e göre −96,5 ms). Girdi değiştiği turda ödenen bedel v0.5.18'inkiyle aynı mertebededir. Standart kökte değişiklik yoktur.
+
+### 14.9 Yeniden ölçüm 2026-10-16 — 61b8e14 üzerine taşıma
+
+- **Taşıma notu:** bu bölüm ilk commit'inde (`ad66357`) §13 numarasını taşıyordu. Denetim dalında §13 v0.5.18 eksikler turuna ait olduğundan `61b8e14` üzerine yeniden temellendirmede §14 oldu; taşınan commit'in (`d996f62`) mesajındaki «§13» bu bölümdür. 14.1–14.8'in sayıları 2026-10-09 ölçümüdür, değiştirilmedi.
+- **Komut:** `py -3.14 tools/hook_olc.py --gercekci --tekrar 3 --karsilastir --import-dokumu` (sürüm defteri kuralı). Tek ağaç ölçüldü, A/B tabanı yoktur; bu satırlardan sürümler arası fark çıkarılmaz.
+- **Koşul:** gerçekçi dava kökü (standart kök; ölçek kökü değil) · ölçümden önce `compileall` ile `.pyc` sıcak (ortamda `PYTHONDONTWRITEBYTECODE=1`) · tek koşu.
+- **Ortam:** Windows 11 · 16 çekirdek · Python 3.14.8 (çıplak başlık 21,34 ms, ortanca).
+
+| olay | ortanca | en hızlı | en yavaş | NET | boş çıktı | doğrudan `pipeline_kayit.py` |
+|---|---|---|---|---|---|---|
+| hook-prompt | 71,2 | 69,4 | 86,0 | 49,8 | 0/3 | 111,0 |
+| hook-pretool | 64,0 | 63,0 | 64,5 | 42,6 | 3/3 | 106,5 |
+| hook-postwrite | 94,6 | 92,6 | 97,4 | 73,3 | 2/3 | 136,2 |
+| hook-denetle | 96,0 | 95,1 | 118,9 | 74,6 | 2/3 | 138,2 |
+| hook-acilis | 67,4 | 64,9 | 68,8 | 46,1 | 0/3 | 106,2 |
+
+- Bileşik (bir Write, Pre+Post): 158,6 ms.
+- Giriş betiği kazancı (hook-prompt, doğrudan − giriş): 39,8 ms. §10 kuralının 30 ms eşiğinin üstünde; gerekçe gerekmez.
+- Import dökümü: `hook-prompt` ve `hook-denetle` yolunda ağır modül YOK (102 import izlendi).
+- Aynı gün kapılar (`d996f62`): tam süit (`-n auto -m "not perf"`) 3840 geçti · 12 atlandı · 0 kırmızı (atlananlar ortam kaynaklıdır: UDF yazıcısı `OA_TEST_UDF_YAZICI=0` ile kapalı, saha referansı tanımsız); zamanlama kanaryası (`-m perf -p no:xdist`) 1 geçti; `ruff` temiz; `aile_dogrula` AİLE YAPI DENETİMİ TEMİZ (20 parça). Toplanan test 3853, OA-SUIT-SAYISI ile birebir.

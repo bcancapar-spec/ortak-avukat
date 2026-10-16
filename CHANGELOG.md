@@ -382,6 +382,29 @@ kırmızı testle; dal GitHub'a push edilmedi.
   dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
   toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
   [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
+- **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
+  `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
+  kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,
+  `_oa/defter/.capraz-onbellek.json`'da tutulur; anahtar sonucu belirleyen her şeyin içerik
+  özetidir (sha256: üç girdi, damgalı denetim JSON'ları, `capraz_denetim.py` ve `pipeline_kayit.py`,
+  yorumlayıcı küçük sürümü, şema). Önbellek fail-closed'dır (bozuk ya da yabancı anahtarlı önbellek dosyasında ve okunamayan
+  girdide sonuç yeniden hesaplanır; önbellek hatası boş, "temiz" görünen sonuç üretemez); dedup
+  parmak izine girmez, `_oa/defter`'i yaratmaz, append-only deftere dokunmaz (CLAUDE.md performans
+  değişmezi #7). **Neden:** v0.5.18'de 3000 evraklık ölçek kökünde Stop kancası +79 ms
+  yavaşlamıştı ([PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12.3); kaynak çapraz
+  denetimdi, girdileri ise çoğu turda değişmez. **Ölçüm** (2026-10-09; eşleştirilmiş ABBA, ölçek
+  kökü, Python 3.14.8): v0.5.18'e göre isabette −96,5 ms, ıskada +22,2 ms, standart kökte −0,3 ms;
+  v0.5.17.1'e göre isabette −3,6 ms; DURUM.md, `--denetle` çıktısı ve çıkış kodu v0.5.18 ile
+  birebir (§14). Bu dalda 2026-10-16 sürüm defteri komutu: §14.9. **Test:**
+  `tests/test_v0519_capraz_onbellek.py` (37; önce kırmızı; 21 mutasyonun 21'i yakalandı);
+  OA-SUIT-SAYISI 3816 → 3853. **Taşıma:** ilk commit `ad66357` v0.6.0 öncesi tabandaydı;
+  `61b8e14` üzerine yeniden temellendirildi (`d996f62`; yazar, tarih ve mesaj aynen; kod
+  değişmedi). İki README künyesi ve OA-SUIT-SAYISI `61b8e14`'ten alınıp yeniden türetildi;
+  PERFORMANS-STATUS bölümü §14 oldu, çünkü bu dalda §13 v0.5.18 eksikler turuna aittir — taşınan
+  commit'in mesajındaki «§13» bu §14'tür. **Kapılar** (2026-10-16, Python 3.14.8): tam süit 3840
+  geçti · 12 ortam gerekçesiyle atlandı (UDF yazıcısı `OA_TEST_UDF_YAZICI=0` ile kapalı, saha
+  referansı tanımsız) · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi TEMİZ.
+  Sürüm numarası değişmedi (0.6.0); birleştirme kararı avukatın.
 
 ---
 
