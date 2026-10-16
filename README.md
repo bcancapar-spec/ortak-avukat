@@ -19,7 +19,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **48.000+** satır eklenti kodu (Python) · **60.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **125.000+** satır · **3.813** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **60.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **125.000+** satır · **3.816** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
 > sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
@@ -1381,9 +1381,10 @@ resmi). Birebir alıntıya dokunulmaz.
   - Gizli sayfa, gizli satır/sütun, zeminle aynı renkteki yazı, `;;;` biçimi ve
     minik punto yerinde damgalanır; değer silinmez, düzeltilmez; tarih ISO
     biçimine çevrilir.
-  - Koşullu biçimin koşulu değerlendirilmez: o aralıktaki açık renkli yazı yalnız
-    talimat diliyle bulgudur (.xls'te koşullu biçim hiç okunamaz). Degrade ya da
-    desenli dolgu üstündeki yazı ve hücrenin üstüne çizilmiş şekil ölçülmez.
+  - Koşullu biçimin koşulu değerlendirilmez, tablo stilinin (Biçimlendir → Tablo)
+    zemini okunmaz: o aralıklardaki açık renkli yazı yalnız talimat diliyle bulgudur
+    (.xls'te ikisi de hiç okunamaz). Degrade ya da desenli dolgu üstündeki yazı ve
+    hücrenin üstüne çizilmiş şekil ölçülmez.
   - Kapı tabloyu yeniden açamaz ya da okuyucunun metniyle eşleyemezse tablo
     DENETLENEMEZ kalır. Gerçek evrak ölçümü henüz küçüktür: eldeki tek gerçek
     .xls temiz çıktı; kalibrasyon sahadan gelecek.

@@ -615,3 +615,68 @@ def test_xls_fiksturu_xlrd_ile_okunur(tmp_path):
     assert sh.nrows == 4 and sh.rowinfo_map[2].hidden == 1 and sh.colinfo_map[1].hidden == 1
     assert xlrd.open_workbook(str(tmp_path / "a.xls"), on_demand=True).sheet_by_index(0).cell(1, 2).value == 42.0
     assert io.BytesIO(pathlib.Path(tmp_path / "a.xls").read_bytes()).read(2) == b"\x09\x08"
+
+
+# ═══════════════ (6) heyet 2026-10-16 — K-1 ızgara gezintisi, K-2 tablo stili zemini ═══════════════
+
+def test_xlsx_tek_uzak_stilli_hucre_izgarayi_gezdirmez_kapi_temiz_kalir(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2026-10-16 H-1): tam kipte `iter_rows()` min–max ızgarasının HER koordinatı için
+    `Cell` kurup saklıyordu; 5 KB'lık kitap + tek uzak, değersiz, yalnız stilli hücre (satır 3000 × sütun 600)
+    kapıyı 6,29 s / 400 MB'a çıkardı, okuyucu (salt-okur kip) 0,00 s — karşı tarafın hazırladığı küçük tablo
+    alımı kilitler. Kilit zamanlamasız (depo kuralı): kapı VAR OLAN hücreleri gezer, ızgarayı değil — tam ızgara
+    gezintisi (`Worksheet.iter_rows`) patlatılır; kapı ona dokunursa karar DENETLENEMEZ olur ve test kırmızıdır."""
+    from openpyxl.worksheet.worksheet import Worksheet
+    wb, ws = _kitap()
+    ws.cell(row=3000, column=600).font = _font(bold=True)      # değersiz, yalnız stilli uzak hücre
+    wb.save(tmp_path / "a.xlsx")
+    metin = ing.tablo_isle(str(tmp_path / "a.xlsx"))[0]         # okuyucu kendi salt-okur yolunu kullanır
+
+    def _izgara_yasak(*a, **k):
+        raise AssertionError("tam ızgara gezintisi (Worksheet.iter_rows) — heyet 2026-10-16 H-1")
+
+    monkeypatch.setattr(Worksheet, "iter_rows", _izgara_yasak)
+    yeni, rapor = bg.tara(str(tmp_path / "a.xlsx"), ".xlsx", metin)
+    assert rapor is None, rapor                                  # değersiz hücre bulgu değildir; tablo temiz
+    assert yeni == metin
+
+
+def test_xlsx_boyut_on_denetimi_sayfa_disi_xl_parcalarini_da_sayar(bg, ing, tmp_path, monkeypatch):
+    """NEDEN VAR (heyet 2026-10-16 GÜVENLİK N-1): ön denetim yalnız `xl/worksheets/` toplamını sınırlıyordu;
+    tam kipin bütünüyle açtığı sharedStrings / styles / yorum / çizim / tablo / pivot önbelleği parçaları
+    sınırsızdı. Sınır artık `xl/` altındaki her girdinin açılmış toplamına uygulanır."""
+    wb, ws = _kitap()
+    wb.save(tmp_path / "a.xlsx")
+    with zipfile.ZipFile(tmp_path / "a.xlsx") as z:
+        sayfa = sum(i.file_size for i in z.infolist() if i.filename.startswith("xl/worksheets/"))
+        hepsi = sum(i.file_size for i in z.infolist() if i.filename.startswith("xl/"))
+    assert hepsi > sayfa > 0
+    monkeypatch.setattr(bg, "AZAMI_TABLO_XML_BAYT", sayfa)        # sayfa XML'leri tam sınırda, xl/ bütünü aşıyor
+    _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
+    assert rapor and rapor["karar"] == "DENETLENEMEZ" and "sınır" in rapor["denetlenemedi"], rapor
+    assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
+
+
+def test_xlsx_tablo_stili_altindaki_beyaz_baslik_yalniz_talimat_diliyle_bulgu(bg, ing, tmp_path):
+    """NEDEN VAR (heyet 2026-10-16 H-2): "Biçimlendir → Tablo" stili başlık satırının koyu zeminini STİL
+    dosyasından çizer, hücrenin kendi dolgusu yoktur; kapı zemini beyaz sayıp koyu başlıktaki beyaz kalın yazıyı
+    BULGU yapıyordu (ifşa bölümüne aday — m.6; DOCX'te 2026-10-05'in 3.343 yanlış alarmıyla aynı sınıf). Stilin
+    hangi satıra hangi zemini çizdiği ölçülmez → o aralıktaki açık renkli yazı koşullu biçimle AYNI ZAYIF kural:
+    yalnız talimat diliyle bulgu."""
+    from openpyxl.worksheet.table import Table, TableStyleInfo
+    for ad, baslik, beklenen in (("temiz", "Aciklama", None), ("yuk", "ZXTS " + YUK, "BULGU")):
+        wb, ws = _kitap()
+        ws["B1"] = baslik
+        for h in ("A1", "B1", "C1"):
+            ws[h].font = _font(bold=True, color="FFFFFFFF")
+        tablo = Table(displayName="Dokum", ref="A1:C3")
+        tablo.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
+        ws.add_table(tablo)
+        wb.save(tmp_path / (ad + ".xlsx"))
+        metin, (yeni, rapor) = _tara(bg, ing, tmp_path / (ad + ".xlsx"))
+        if beklenen is None:
+            assert rapor is None, (ad, rapor)
+            assert yeni == metin
+        else:
+            assert rapor and rapor["karar"] == beklenen and "gizli-talimat" in _turler(rapor), (ad, rapor)
+            assert _damgada(yeni, "ZXTS " + YUK), yeni
+            assert _damgasiz(yeni) == metin

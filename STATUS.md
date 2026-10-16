@@ -19,6 +19,9 @@
 > 0 kırmızı (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (seyrek dev
 > sayfada ızgara tavanı, tablo stili zemini; önce kırmızı test). Karar materyali:
 > [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push kararı avukatın.
+> Avukat kararı (aynı gün): push yok, önce K-1 ve K-2 — kapatıldı (Excel kapısı var olan hücreleri gezer;
+> boyut sınırı `xl/` bütününe; tablo stili aralığı ZAYIF; önce kırmızı test, +3); ikinci heyet koşumu bu
+> onarımdan sonra.
 
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği

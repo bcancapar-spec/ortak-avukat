@@ -154,10 +154,13 @@ AZAMI_ARSIV_GIRDI = 64 * 1024 * 1024   # tek content.xml/document.xml nüshası 
 AZAMI_NUSHA_SAYISI = 8     # bundan fazla aynı adlı nüsha: zip bombası/kasıt — yalnız ilk 8'i okunur + not
 AZAMI_IC_ICE = 64          # DOCX iç içe tablo/hücre derinliği (aşan belge DENETLENEMEZ — karesel yol kapalı)
 AZAMI_DOSYA_BAYT = 512 * 1024 * 1024   # UDF ham okuma sınırı
-AZAMI_TABLO_XML_BAYT = 128 * 1024 * 1024   # .xlsx sayfa XML'lerinin AÇILMIŞ toplamı: openpyxl tam kip (satır/sütun
-                                           # boyutu, stil ve koşullu biçim ancak tam kipte) kitabı belleğe alır.
+AZAMI_TABLO_XML_BAYT = 128 * 1024 * 1024   # .xlsx `xl/` parçalarının AÇILMIŞ toplamı — sayfa XML'leri + sharedStrings,
+                                           # styles, yorum, çizim, tablo, pivot önbelleği: openpyxl tam kip (satır/sütun
+                                           # boyutu, stil ve koşullu biçim ancak tam kipte) kitabı bütünüyle belleğe alır.
                                            # Ölçüm 2026-10-15 (bu makine): 30,7 MB XML / 600.000 hücre → 4,1 sn
                                            # yükleme + 0,4 sn hücre geçişi; sınır ~2,5 M hücre (tahmin: ≤ 0,5 GB).
+                                           # Heyet 2026-10-16 GÜVENLİK N-1: yalnız sayfa XML'i sayılıyordu, öbür parçalar
+                                           # sınırsızdı; artık `xl/` altındaki her girdi sayılır.
 AZAMI_XLS_BAYT = 64 * 1024 * 1024          # .xls (BIFF, sıkıştırmasız): xlrd formatting_info bütün XF/font kayıtlarını yükler
 AZAMI_HUCRE_BULGU = 8      # sayfa başına ayrı kaydedilen gizli hücre (kalanı özet kayıtta; hepsi damgalanır)
 
@@ -2365,9 +2368,28 @@ def _xlsx_hucre_gizliligi(h, tema, deger, onbellek):
     return sonuc
 
 
+def _xlsx_var_olan_hucreler(ws):
+    """Sayfanın VAR OLAN hücreleri satır sırasıyla: (satır_no, [(sütun_no, hücre | None) …]); sütun uzayı
+    `iter_rows()` ile aynı (1. sütundan satırın son var olan hücresine; aradaki boş koordinat None — okuyucu orada
+    boş hücre yazar). NEDEN VAR (heyet 2026-10-16 H-1): tam kipte `iter_rows()` min–max ızgarasının HER koordinatı
+    için `Cell` kurup SAKLAR — 5 KB'lık kitapta tek uzak, değersiz, stilli hücre (satır 3000 × sütun 600) 1,8 M
+    nesne = 6,3 sn / 400 MB demekti; okuyucu (salt-okur kip) 0,00 sn. Karşı tarafın hazırladığı küçük tablo alımı
+    kilitlemesin diye yalnız kitapta gerçekten yazılı hücreler gezilir; maliyet ızgaraya değil hücre sayısına (o da
+    `AZAMI_TABLO_XML_BAYT` ile) bağlıdır. `_cells` openpyxl'in tam kip hücre sözlüğüdür ((satır, sütun) → hücre;
+    2.x'ten beri); yoksa AttributeError dış kapıda DENETLENEMEDİ olur (fail-closed)."""
+    hucreler = ws._cells
+    son_sutun = {}
+    for r, c in hucreler:
+        if c > son_sutun.get(r, 0):
+            son_sutun[r] = c
+    for r in sorted(son_sutun):
+        yield r, [(c, hucreler.get((r, c))) for c in range(1, son_sutun[r] + 1)]
+
+
 def _xlsx_satirlar(ws, tema):
     """Sayfanın DOLU satırları okuyucu sırasıyla: (satır_no, satır_gizli, [(sütun_no, metin, sütun_gizli,
     gizlilik)]). Boş satır okuyucuda atlandığı için burada da atlanır; kuyruk boş hücreler düşer."""
+    from openpyxl.worksheet.cell_range import CellRange
     gizli_satir = set()
     for r, d in ws.row_dimensions.items():
         if d.hidden or (d.height is not None and float(d.height) == 0):
@@ -2381,35 +2403,43 @@ def _xlsx_satirlar(ws, tema):
                 from openpyxl.utils import column_index_from_string
                 gizli_sutun.add(column_index_from_string(str(anahtar)))
     # Koşullu biçim koyu zemin çizebilir; kapı koşulu değerlendirmez → o aralıktaki açık renkli yazı ZAYIF
-    # (yalnız talimat diliyle bulgu), DOCX'teki koyu şekil kuralıyla aynı.
-    kosullu = [cf.sqref for cf in ws.conditional_formatting]
+    # (yalnız talimat diliyle bulgu), DOCX'teki koyu şekil kuralıyla aynı. "Biçimlendir → Tablo" (tablo stili) da
+    # başlık ve şerit zeminini hücre dolgusu olmadan, stil dosyasından çizer; hangi satıra hangi zemin düştüğü
+    # ölçülmez → aynı ZAYIF kural (heyet 2026-10-16 H-2: koyu başlıktaki beyaz kalın yazı yanlış BULGU oluyordu —
+    # DOCX'te 2026-10-05'in 3.343 yanlış alarmıyla aynı sınıf). .xls'te xlrd tablo stilini okumaz (dürüst sınır).
+    zayif = [(cf.sqref, "koşullu biçim altında") for cf in ws.conditional_formatting]
+    zayif += [(CellRange(t.ref), "tablo stili altında") for t in ws.tables.values()
+              if getattr(t, "ref", None) and getattr(getattr(t, "tableStyleInfo", None), "name", None)]
     onbellek = {}
-    for satir in ws.iter_rows():
+    for satir_no, satir in _xlsx_var_olan_hucreler(ws):
         hucreler = []
-        for h in satir:
-            v = h.value
+        for sutun, h in satir:
+            v = None if h is None else h.value
             metin = _tablo_norm(_tablo_hucre_metni(v)) if v is not None else ""
             gizlilik = None
             if metin:
                 gizlilik = _xlsx_hucre_gizliligi(h, tema, v, onbellek)
-                if (gizlilik and gizlilik[0] == "gizli-metin" and "kontrast" in gizlilik[1] and kosullu
-                        and any(h.coordinate in a for a in kosullu)):
-                    gizlilik = (gizlilik[0], gizlilik[1] + "; koşullu biçim altında", True)
-            hucreler.append((h.column, metin, h.column in gizli_sutun, gizlilik))
+                if gizlilik and gizlilik[0] == "gizli-metin" and "kontrast" in gizlilik[1]:
+                    for aralik, etiket in zayif:
+                        if h.coordinate in aralik:
+                            gizlilik = (gizlilik[0], gizlilik[1] + "; " + etiket, True)
+                            break
+            hucreler.append((sutun, metin, sutun in gizli_sutun, gizlilik))
         while hucreler and hucreler[-1][1] == "":
             hucreler.pop()
         if hucreler:
-            yield satir[0].row, satir[0].row in gizli_satir, hucreler
+            yield satir_no, satir_no in gizli_satir, hucreler
 
 
 def _xlsx_sayfalar(yol):
     import openpyxl
     with zipfile.ZipFile(yol) as z:
-        toplam = sum(i.file_size for i in z.infolist()
-                     if i.filename.startswith("xl/worksheets/") and i.filename.endswith(".xml"))
+        # Tam kip yalnız sayfaları değil sharedStrings/styles/yorum/çizim/tablo/pivot parçalarını da bütünüyle açar;
+        # sınır `xl/` altındaki her girdinin açılmış toplamına uygulanır (heyet 2026-10-16 GÜVENLİK N-1).
+        toplam = sum(i.file_size for i in z.infolist() if i.filename.startswith("xl/"))
     if toplam > AZAMI_TABLO_XML_BAYT:
-        raise _TabloOlculemedi("tablo boyut sınırını aşıyor (sayfa XML'i %d MB > %d MB) — gizli satır/sütun ve yazı "
-                               "rengi ölçülemedi" % (toplam >> 20, AZAMI_TABLO_XML_BAYT >> 20))
+        raise _TabloOlculemedi("tablo boyut sınırını aşıyor (açılmış xl/ içeriği %d MB > %d MB) — gizli satır/sütun ve "
+                               "yazı rengi ölçülemedi" % (toplam >> 20, AZAMI_TABLO_XML_BAYT >> 20))
     # Tam kip (read_only=False): satır/sütun boyutları, stil ve koşullu biçim ancak tam kipte okunur.
     wb = openpyxl.load_workbook(yol, data_only=True, keep_links=False)
     tema = _xlsx_tema(wb)

@@ -369,6 +369,11 @@ kırmızı testle; dal GitHub'a push edilmedi.
   (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (ızgara tavanı, tablo
   stili zemini). Üç rapor, birleşik bulgu listesi ve onarım kalemleri:
   [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push yapılmadı; karar avukatın.
+  **Onarım (aynı gün; avukat kararı: push yok, önce K-1 ve K-2):** Excel kapısı var olan hücreleri gezer,
+  ızgarayı değil (`_xlsx_var_olan_hucreler`; tek uzak stilli hücreli 5 KB kitapta 6,29 s / 400 MB →
+  0,01 s / 0,3 MB); boyut sınırı `xl/` bütününe uygulanır; tablo stili aralığı koşullu biçimle aynı ZAYIF
+  kural (koyu başlıkta beyaz yazı yanlış BULGU üretmez). Önce kırmızı: `tests/test_v0519_excel_gizli_katman.py`
+  +3 (OA-SUIT-SAYISI 3813 → 3816). İkinci heyet koşumu bu onarımdan sonra.
 
 ---
 
