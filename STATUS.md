@@ -13,6 +13,13 @@
 > GitHub açıklaması ve konu etiketleri (B-8), PR #6'nın kapatılması, dalın birleştirilmesi.
 > Belge: [docs/DENETIM-2026-10-15.md](docs/DENETIM-2026-10-15.md).
 
+> **2026-10-16 — heyet koşumu** (dal `denetim/fable-2026-10-15`; push edilmedi). Üç kıdemli avukat
+> denetçi ajan (usul, esas, güvenlik) dalın bütününü (`origin/main..HEAD`, 14 commit) temiz kopyada
+> ölçtü: üçü de ŞARTLI PUSH, BLOKLAYICI 0 · UYARI 8 · NOT 18; tam süit 3800 geçti · 12 atlandı ·
+> 0 kırmızı (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (seyrek dev
+> sayfada ızgara tavanı, tablo stili zemini; önce kırmızı test). Karar materyali:
+> [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push kararı avukatın.
+
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza
 > dosyası) ve bağımsız denetimler, yürürlükteki anayasa maddelerinin sahada işlemediği
 > yerleri gösterdi; hepsi kırmızı testle yakalanıp kapatıldı:

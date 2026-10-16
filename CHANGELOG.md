@@ -362,6 +362,13 @@ kırmızı testle; dal GitHub'a push edilmedi.
 - **Dokunulmayan (avukat kararı):** sürüm numarası; GitHub depo açıklaması ve konu etiketleri
   (B-8, öneri belgede); hukuki içerik ve playbook'lar (m.4, m.9); `_gorus/`; `revizyon_farki.py`
   iç fonksiyonunun geç bağlanması (B-10, bugün hata değil).
+- **Heyet (2026-10-16):** push öncesi kıdemli avukat denetim kurulu kuruldu (`c5f739f`, `8be918f`:
+  üç Fable ajanı — usul, esas, güvenlik; protokol [docs/heyet/README.md](docs/heyet/README.md)) ve
+  dalın bütünü (`origin/main..HEAD`, 14 commit) için ilk kez koşuldu: üç üye de ŞARTLI PUSH,
+  BLOKLAYICI 0 · UYARI 8 · NOT 18; tam süit temiz kopyada 3800 geçti · 12 atlandı · 0 kırmızı
+  (93,99 s). Push'tan önce istenen iki kalem Excel gizli katman kapısında (ızgara tavanı, tablo
+  stili zemini). Üç rapor, birleşik bulgu listesi ve onarım kalemleri:
+  [docs/heyet/2026-10-16/KARAR.md](docs/heyet/2026-10-16/KARAR.md). Push yapılmadı; karar avukatın.
 
 ---
 
