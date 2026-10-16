@@ -22,7 +22,7 @@ Bağlayıcı metinler (önce oku): `ANAYASA.md` m.7, m.10, m.11; `.github/SECURI
    commit'lenmemiş değişiklikler ayrı ve karar dışı.
 2. **Sır sızıntısı (herkese açık depo).** Diff'te ve yeni dosyalarda: kişi adı, müvekkil,
    gerçek dosya/esas/karar numarası, TCKN/IBAN/telefon deseni, e-posta, mutlak yerel yol
-   (`C:\Users\…`, `/home/…` — `test_b38`), token/anahtar/parola, `_oa/` içeriği.
+   (kullanıcı profili ya da ev dizini yolu — `test_b38`), token/anahtar/parola, `_oa/` içeriği.
    `py -3.14 -m pytest tests/test_v0514_vitrin.py -q -k b38 -p no:cacheprovider` koştur.
 3. **Layer 0 (m.10).** Dış araca (MCP, web, `npx`, e-posta) metin gönderen her yol süzgeçten
    geçiyor mu; UYAP girişi, e-imza, PIN, parola için hiçbir kod yok mu; UDF üretimi müvekkil
