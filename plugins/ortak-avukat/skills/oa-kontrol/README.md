@@ -26,13 +26,9 @@ Ortak Avukat sisteminin DENETİM/KONTROL parçası. Bir dilekçe, dosya veya mü
 
 `ortak-avukat` çekirdeği tetiklendiğinde `oa-pipeline` bu parçayı otomatik zincire sokar (elle seçmeye gerek yok). Tek başına `/ortak-avukat:oa-kontrol` ile de çağrılabilir.
 
-## Yargı Pro bağlantısı (verimli kullanım için gerekli)
+## Teyit kanalı (resmî kaynak beyaz listesi)
 
-Ailenin içtihat/mevzuat doğrulaması **Yargı Pro** MCP'sine dayanır. Claude Code'da **connectors** bölümünden şu adresi ekleyip bağlanın:
-
-```
-https://yargi.betaspacestudio.com/mcp
-```
+Ailenin içtihat/mevzuat doğrulaması **resmî portallardan** yapılır; model bu portallara Claude Code'un web araçlarıyla (**WebFetch** tam metin / **WebSearch** keşif) ulaşır. Kurulacak ya da bağlanacak bir sunucu yoktur — eklenti üçüncü taraf MCP sunucusu ilan etmez (2026-10-15 avukat kararı). Teyidin kanıtı resmî portalın adresi ve diske inmiş tam metindir; beyaz liste: [resmî kaynaklar](../ortak-avukat/references/resmi-kaynaklar.md).
 
 Kurulum ayrıntısı ve ailenin tamamı için: [plugin README](../../README.md).
 

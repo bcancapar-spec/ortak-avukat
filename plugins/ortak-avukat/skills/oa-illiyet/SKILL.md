@@ -90,7 +90,7 @@ zincirine/çevrime/yük hesabına GİRMEZ — §9 "KANUN YOLU ZİNCİRİ" + JSON
 - `norm`: kenarı hukuken anlamlı kılan madde (örn. zilyetlik→İİK m.97; temsil→TTK m.370)
 
 İlliyet doktrinini uygularken `references/illiyet-doktrini.md`'yi oku. Hangi normun
-illiyeti düzenlediğinden emin değilsen **oa-ictihat ile Mevzuat/Yargı Pro'den teyit
+illiyeti düzenlediğinden emin değilsen **oa-ictihat ile resmî kaynaktan (mevzuat.gov.tr / içtihat portalı) teyit
 et** — hafızadan norm/künye üretme.
 
 ### 2. Grafı JSON yaz ve denetle
@@ -279,7 +279,7 @@ Bu parça, ailenin ortak anayasal ilkelerine tabidir — **Çaba/token standard�
 Bu parça, ailenin Başbakanı `oa-pipeline`'ın icra+denetimine tabidir: çağrıldığında disiplini İSTİSNASIZ ve tam işletilir (ama/fakat/token-tasarrufu gerekçesiyle kestirme YASAK). Görev savsaklanmaz; gerçekten yapılamayan bir şey varsa dürüstçe belirtilir ("yaptım" denmez) ve alternatif yöntem üretilir. Önemli olan proses ve çıktı kalitesidir.
 
 ## Halüsinasyon teftişine tabi (anayasal)
-Grafa yazılan her karar/olgu düğümü Başbakan'ın olgu-teftişine tabidir: künyeye dayanan düğümler Yargı Pro'dan, norma dayananlar Mevzuat MCP'den teyitlidir. Teyit edilemeyen düğüm grafa teyitli olarak girmez — 'doğrulanamadı' işaretlenir veya dışlanır. Uydurma karar/madde üzerine illiyet zinciri kurulamaz.
+Grafa yazılan her karar/olgu düğümü Başbakan'ın olgu-teftişine tabidir: künyeye dayanan düğümler resmî içtihat portalından, norma dayananlar mevzuat.gov.tr'den teyitlidir. Teyit edilemeyen düğüm grafa teyitli olarak girmez — 'doğrulanamadı' işaretlenir veya dışlanır. Uydurma karar/madde üzerine illiyet zinciri kurulamaz.
 
 ## Fiziksel aktivasyon — simülasyon yasağı (anayasal)
 Bu parça yalnızca ÜÇ kanıttan en az biriyle "çalıştı" sayılır: (1) Skill aracıyla FİİLEN çağrıldı ve bu gövde bağlama yüklendi (kullanıcının `/oa-illiyet` komutuyla eşdeğer); (2) scripti gerçekten koştu ve çıktısı görünür; (3) gerektirdiği MCP çağrısı fiilen yapıldı (araç + sorgu + sonuç kaydıyla). Kısa description her zaman bağlamda durur — o VİTRİNDİR, disiplin değildir; gerçek disiplin bu gövdededir. Bu yüzden hiçbir parça bu parçayı description'ından TAKLİT EDEMEZ; bu parça da başka bir parçanın işine ihtiyaç duyduğunda onu Skill aracıyla fiilen çağırır (olmuyorsa SKILL.md'sini Read ile yükler; o da olmuyorsa "FİZİKEN YÜKLENEMEDİ" diye açıkça yazar). Yapılmamış çağrı 'yapılmış', koşmamış script 'koşmuş' gösterilemez — bu, halüsinasyonun ta kendisidir. Devir alırken/verirken kısa DEVİR PAKETİ (ne yapıldı → ne bekleniyor → hangi kanıt) kullanılır ve pipeline defterine (`oa-pipeline/scripts/pipeline_kayit.py`) işlenir. Bu parçanın ürettiği her kalıcı çıktı (JSON/rapor/devir paketi) çalışılan klasörün `_oa/` yerel hafıza kökünde yaşar (yapı: `oa-pipeline` → Çalışma Kökü).

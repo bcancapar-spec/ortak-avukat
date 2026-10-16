@@ -74,7 +74,7 @@ SEZGISEL_ISARETLER = ("kontrast", "alfa", "örtü", "zemin")
 GORUNUR_YAPISAL = ("damga-taklidi", "isaret-taklidi")
 TUTULMA_KAHIN, TUTULMA_YAPISAL = KAHIN_TUR, "gorunur-yapisal"
 
-# Resmî metinden okunan dayanaklar — Yargı PRO `mevzuat_getir`, 2026-10-07 (mevzuat.gov.tr).
+# Resmî metinden okunan dayanaklar — resmî metin (mevzuat.gov.tr), 2026-10-07.
 # Bölümde ANILAN her madde burada kayıtlı olmalıdır; okunmamış madde anılmaz (testle kilitli).
 DAYANAK = [
     {"kanun": "6100 sayılı Hukuk Muhakemeleri Kanunu", "madde": "29",
@@ -82,13 +82,13 @@ DAYANAK = [
      "metin": "(1) Taraflar, dürüstlük kuralına uygun davranmak zorundadırlar. (2) Taraflar, davanın "
               "dayanağı olan vakıalara ilişkin açıklamalarını gerçeğe uygun bir biçimde yapmakla yükümlüdürler.",
      "kaynak": "mevzuat.gov.tr — mevzuatgov:kanun:5:6100:m29",
-     "teyit": "Yargı PRO mevzuat_getir, 2026-10-07"},
+     "teyit": "resmî metin (mevzuat.gov.tr), 2026-10-07"},
     {"kanun": "6100 sayılı Hukuk Muhakemeleri Kanunu", "madde": "199", "baslik": "Belge",
      "metin": "(1) Uyuşmazlık konusu vakıaları ispata elverişli yazılı veya basılı metin, senet, çizim, plan, "
               "kroki, fotoğraf, film, görüntü veya ses kaydı gibi veriler ile elektronik ortamdaki veriler ve "
               "bunlara benzer bilgi taşıyıcıları bu Kanuna göre belgedir.",
      "kaynak": "mevzuat.gov.tr — mevzuatgov:kanun:5:6100:m199",
-     "teyit": "Yargı PRO mevzuat_getir, 2026-10-07"},
+     "teyit": "resmî metin (mevzuat.gov.tr), 2026-10-07"},
 ]
 
 # ------------------------------------------------------------------ dilekçe metni (olgusal, nötr)

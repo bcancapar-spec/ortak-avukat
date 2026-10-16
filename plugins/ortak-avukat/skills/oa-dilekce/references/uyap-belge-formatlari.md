@@ -1,8 +1,8 @@
 # UYAP BELGE FORMATLARI — UDF · TIFF · PDF (operasyonel referans)
 
-> **Kaynak:** Yargı Pro `udf_tiff_pdf_guide` / `yargi-udf-tiff-pdf-guide` skill (rehber sürümü 2026-06-22).
+> **Kaynak:** `udf-cli` geliştiricisinin UDF/TIFF/PDF rehberi (`udf_tiff_pdf_guide` aracı / `yargi-udf-tiff-pdf-guide` skill; rehber sürümü 2026-06-22).
 > Bu dosya, o rehberin **operasyonel içeriğini** ailenin kendi diliyle ve kendi konvansiyonlarıyla yeniden
-> düzenler; rehberin kendisi Yargı Pro ekibine aittir. Güncel sürüm için daima kaynağa bakılır.
+> düzenler; rehberin kendisi `udf-cli` geliştiricisine aittir. Güncel sürüm için daima kaynağa bakılır.
 > Aile kuralı: **UDF üretimi bu dosyadaki hatta göre yapılır — başka yol denenmez.**
 
 ---
@@ -60,7 +60,7 @@ tutulur, kendini yeniler ve **üç CLI arasında paylaşılır** — bir kez gir
 - Durum: `<cli> whoami` · çıkış: `<cli> logout`.
 
 > **AİLE SINIRI (anayasa):** UYAP'ın kendi login/e-imza/PIN adımları **münhasıran avukata aittir**;
-> aile bunlar için kod yazmaz. Buradaki giriş, Yargı Pro CLI hesabıdır — UYAP oturumu değildir.
+> aile bunlar için kod yazmaz. Buradaki giriş, `udf-cli` hesabıdır — UYAP oturumu değildir.
 
 ---
 

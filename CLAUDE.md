@@ -8,8 +8,13 @@ Bu dosya Claude Code'un bu depoda çalışırken uyması gereken kuralları ve
 ## Proje nedir
 
 Türk hukuku için **Claude Code eklentisi** (`plugins/ortak-avukat`): çekirdek +
-19 `oa-*` beceri (skill) tek pakette. Python ≥ 3.12. Yargı Pro MCP ile
-içtihat/mevzuat doğrulaması.
+19 `oa-*` beceri (skill) tek pakette. Python ≥ 3.12. İçtihat/mevzuat teyidi
+resmî portallardan: beyaz liste `oa-kontrol/scripts/kunye_ortak.py`
+(`RESMI_KAYNAKLAR`, `resmi_kaynak_mi`), avukat nüshası
+`skills/ortak-avukat/references/resmi-kaynaklar.md`; kanal hibrittir (model
+portallara `WebFetch` tam metin / `WebSearch` keşif ile ulaşır); eklenti hiçbir
+MCP sunucusu ilan etmez (2026-10-15 avukat kararı; kilit `tests/test_teyit_kanali.py`,
+`tests/test_kanal_bagimsiz_metin.py`).
 
 - Kod: `plugins/ortak-avukat/skills/*/scripts/*.py` (sayı ve satır: `python tools/satir_sayaci.py`)
 - Beceri metinleri: `plugins/ortak-avukat/skills/*/SKILL.md`

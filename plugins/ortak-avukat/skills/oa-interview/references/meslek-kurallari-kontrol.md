@@ -4,7 +4,7 @@
 > 2026-10-07).** Meslek kurallarında otorite yoktur: bu kontrol listeleri de,
 > TBB ve baro metinleri de avukatın yerine karar veren bir merci değildir.
 > Öncelikle müvekkilin menfaati esastır — Avukatlık Kanunu gereği. Dayanaklar
-> (resmî metin, Yargı PRO MCP `mevzuat_getir`, 2026-10-07):
+> (resmî metin, mevzuat.gov.tr `mevzuat_getir`, 2026-10-07):
 > - **Av.K. m.1/2** — avukat, yargının kurucu unsurlarından olan bağımsız
 >   savunmayı serbestçe temsil eder.
 > - **Av.K. m.38/1-b** — aynı işte menfaati zıt bir tarafa avukatlık etmiş ya da
@@ -23,12 +23,12 @@
 > çatışıyor görünürse aile çatışmayı GİZLEMEZ ve kendisi ÇÖZMEZ: iki yanı
 > dayanağıyla avukata sunar; karar avukatındır.
 
-> **Fikir kaynağı:** Yargı PRO 15-3 (vekâlet yetki denetimi), 17-4 (vekâletin sona
+> **Fikir kaynağı:** dış skill kütüphanesi 15-3 (vekâlet yetki denetimi), 17-4 (vekâletin sona
 > ermesi), 13-9 (aydınlatılmış onam), 13-8 (avukatlık sözleşmesi). Metin ve kod
 > ALINMADI; OA yöntemiyle yeniden yazıldı: model kurar, avukat karar verir, olgu
 > MCP-teyitlidir.
 >
-> **Resmî metin teyidi (Yargı PRO MCP `mevzuat_getir`, 2026-10-05):** HMK (6100)
+> **Resmî metin teyidi (mevzuat.gov.tr `mevzuat_getir`, 2026-10-05):** HMK (6100)
 > m.29, 55, 73, 74, 77, 81, 82, 83 · Av.K. (1136) m.27, 36, 38, 39, 41, 56, 163,
 > 164, 165, 166, 174 · TBK (6098) m.504, 512, 513 · KVKK (6698) m.5, 6, 9, 10 ·
 > AAÜT (RG 04.11.2025/33067, mevzuat.gov.tr kaydı 42687) m.1/3. Maddeler kullanım
@@ -160,7 +160,7 @@ vekil bildirimi, baro ya da adli yardım görevlendirmesinden çekilme.
    Av.K. m.41 süresi HMK süresi değildir — HMK m.104 yalnız HMK'nın tayin
    ettiği sürelere uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, İİK m.62
    için; m.41'e uygulanması kıyastır). Belirsizlikte erken tarih esas alınır;
-   karşı tarafa kesin dil kurulmaz (metinler Yargı PRO `mevzuat_getir`/
+   karşı tarafa kesin dil kurulmaz (metinler mevzuat.gov.tr `mevzuat_getir`/
    `ictihat_getir`, 2026-10-07).
 4. **Azil — HMK m.83.** Vekil ile takip edilen davada azil hâlinde vekâlet veren
    davayı takip etmez ve **iki hafta** içinde başka vekil görevlendirmezse tarafın

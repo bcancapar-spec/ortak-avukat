@@ -58,8 +58,10 @@ uzatamaz; MCP, belirli bir hizmete (içtihat arama, mevzuat metni çekme)
 tanımlı ve denetlenebilir bir gişe açar — avukatın UYAP'a kendi
 şifresiyle, tanımlı yetkiyle girmesi gibi. Her gişe tek işe bakar: model
 oradan yalnız o hizmeti alabilir, gişenin verdiği her belge kayda geçer.
-**Yargı Pro MCP** bu sistemin tek içtihat gişesidir (v0.5.17.1'den beri
-yedek gişe ilan edilmez: eski yedeğin adresi sahipsiz kalmıştı). Gişe kapalıysa sistem "hafızadan söyleyeyim" DEMEZ —
+Bu eklenti 2026-10-15'ten beri hiçbir MCP gişesi ilan etmez: içtihat ve mevzuat
+gişesi resmî portalların kendisidir (bkz. "Resmî kaynak beyaz listesi / teyit
+kanalı"; v0.5.17.1'den beri yedek gişe de yoktu — eski yedeğin adresi sahipsiz
+kalmıştı). Kaynağa ulaşılamıyorsa sistem "hafızadan söyleyeyim" DEMEZ —
 kaynağa erişemediğini dürüstçe yazar.
 
 **API anahtarı:** Bir çevrimiçi hizmeti kullanma yetkinizi kanıtlayan gizli
@@ -423,19 +425,20 @@ ve bulgular değişince o karar yeniden sorulur.
 **Kurulum motoru:** Kurulumun kanıt halkası (`oa_kurulum.py`). Python'u,
 paketleri, Tesseract ve Türkçe dil verisini, Node.js'i, eklentinin bütünlüğünü ve
 derlemeyi tek tek denetler; her birini TAMAM / EKSİK / ELİMDE diye yazar, eksiğin
-resmî kurulum komutunu basar. Yargı Pro kapsam dışıdır (ücretli üyelik).
+resmî kurulum komutunu basar. Teyit kanalı kurulum gerektirmez: resmî portallar, BİLGİ satırı.
 
 **Künye — fikir ve dizayn babası, kâtip:** Vitrinin başındaki emek satırı:
 fikri ve tasarımı Av. Bayram Can ÇAPAR'a, yazımı Claude'a (kâtip) ait sayar;
 birlikte yazılan kodun satır sayısı ölçümle (`tools/satir_sayaci.py`) yazılır.
 
-**Güvenli kapanış (B-23):** İçtihat gişesi (Yargı Pro) kapalıyken sistemin
+**Güvenli kapanış (B-23):** İçtihat gişesine (resmî portal) ulaşılamazken sistemin
 davranışı: başka bir sunucuya kendiliğinden geçmez, çıktıya "teyit YAPILAMADI"
 yazar, künyeyi iddia olarak bırakır ve kanonik kaynaktan elle teyit yolunu
 gösterir. Eski sürümlerin ilan ettiği yedek sunucu sahipsiz kalmıştı (alan adı
 ilgisiz bir sunucuya çözülüyordu) — sahipsiz bir gişeye güvenmek, sorgularınızı
-okuyup sahte "içtihat" döndürebilecek bir kanal açardı. Eski kurulumdaki
-`yargi-mcp-yedek` bağlantısı connectors bölümünden kaldırılmalıdır.
+okuyup sahte "içtihat" döndürebilecek bir kanal açardı. Eski kurulumdan kalan,
+eklentinin artık ilan etmediği içtihat sunucusu bağlantıları connectors
+bölümünden kaldırılmalıdır (adlar CHANGELOG v0.5.17.1 ve 2026-10-15 kayıtlarında).
 
 **Halüsinasyon kapısı ve motor damgası:** Vakıa, illiyet, kıyas ve antitez
 parçalarının "uygulandı" sayılması için diskte motorun KENDİ damgasını taşıyan,
@@ -518,6 +521,18 @@ güncel durum STATUS.md ve CHANGELOG.md'dedir.
 **Sürüm damgası:** Deponun aynı sürümü söylemesi gereken yerler: `plugin.json`,
 `marketplace.json`, STATUS.md, YOL-HARITASI.md ve pyproject.toml. Biri geride
 kalırsa aile yapı denetimi uyarır; sürüm numarasının kendisi avukat kararıdır.
+
+**Resmî kaynak beyaz listesi / teyit kanalı (2026-10-15 avukat kararı):** Bir
+künyenin ya da maddenin "teyitli" sayılması için kanıt, resmî portalın adresi ve
+diske inmiş tam metindir — mahkeme kaleminden alınmış onaylı suret gibi. Resmî
+portallar sayılıdır (mevzuat.gov.tr, Resmî Gazete, Adalet Bakanlığı içtihat portalı,
+Yargıtay/Danıştay/AYM karar arama, UYAP Emsal, HUDOC ve her `.gov.tr` alan adı; liste
+`oa-kontrol/scripts/kunye_ortak.py`, avukat nüshası
+`skills/ortak-avukat/references/resmi-kaynaklar.md`). Kanal hibrittir: model bu
+portallara Claude Code'un web araçlarıyla ulaşır (`WebFetch` tam metin, `WebSearch`
+keşif); eklenti üçüncü taraf MCP sunucusu ilan etmez. Adres listede değilse teyit
+yoktur: kütük kaydı doğmaz, dilekçeye dayanak olamaz (`[G7]` teslim engeli). Yerel bir
+`oa-kaynak` keşif katmanı yol haritasındadır; kurulana kadar keşif web aramasıdır.
 
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her

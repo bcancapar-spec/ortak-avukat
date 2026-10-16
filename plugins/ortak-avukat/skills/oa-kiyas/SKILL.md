@@ -29,7 +29,7 @@ saklanır. Üçlü yapı her halkayı açığa çıkarır:
 
 1. **Büyük önerme (norm + içtihat):** Uygulanacak kural. Madde metni + onu
    somutlaştıran Yargıtay/Danıştay/AYM içtihadı. **Yalnızca resmî kaynaktan teyitli**
-   (oa-ictihat → Mevzuat/Yargı Pro). Hafızadan norm/künye üretme.
+   (oa-ictihat → resmî kaynak beyaz listesi: mevzuat.gov.tr / içtihat portalı). Hafızadan norm/künye üretme.
 2. **Küçük önerme (vakıa):** Somut maddi olay. Düz olgu listesi değil; varsa
    **oa-illiyet grafı** (fiil→netice illiyet zinciri, taraf bağları). Her olgu delile
    bağlı (oa-vakia).

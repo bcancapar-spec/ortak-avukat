@@ -69,7 +69,7 @@ Bu mülakat **karşılıklıdır**: tek seferde her şeyi sorup susmaz; avukatı
      (ihtarname, cevap); **gönderim ve temas avukata aittir** ve bu kurala tabidir.
    Her iki madde de kullanım anında Mevzuat MCP'den teyit edilir; sır saklama
    yükümlülüğü (Av.K. m.36) ve Layer 0 (`oa-gizlilik`) bu kapının yanında durur.
-   - **(c) MESLEK KURALLARI KONTROL LİSTELERİ (v0.5.18 adayı; Yargı PRO
+   - **(c) MESLEK KURALLARI KONTROL LİSTELERİ (v0.5.18 adayı; dış skill kütüphanesi
      15-3/17-4/13-9/13-8 fikri, OA yöntemiyle) → `references/meslek-kurallari-kontrol.md`.**
      **ÜST İLKE (avukat talimatı, 2026-10-07): meslek kurallarında otorite yoktur;
      öncelikle müvekkilin menfaati esastır — Avukatlık Kanunu gereği** (Av.K. m.1/2,

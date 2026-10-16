@@ -95,11 +95,11 @@ görüldüğünde model KENDİ KARAR VERMEZ — iki yazımın aynı kişi olup o
 avukata sorar ve cevabı gelene dek kayıtları birleştirmez.** Tarama `saglikli`
 hesabına girmez (advisory); varyant yoksa sessizdir.
 
-## DELİL TEDARİK PLANI ve TANIK SORU PLANI (v0.5.18 adayı; Yargı PRO 16-4/16-3 fikri, OA yöntemiyle)
+## DELİL TEDARİK PLANI ve TANIK SORU PLANI (v0.5.18 adayı; dış skill kütüphanesi 16-4/16-3 fikri, OA yöntemiyle)
 Matris ispat boşluğunu BULUR; bu iki kapı boşluğun nasıl kapatılacağını ve tanığın
 nasıl dinletileceğini disipline eder. İkisi de `vakia_matris.py --dogrula …
 --json _oa/cikti/04-vakia-denetim.json` çıktısını okur, dosya yazmaz (JSON stdout'a),
-hukuki karar vermez; madde metinleri Yargı PRO MCP `mevzuat_getir` ile okundu
+hukuki karar vermez; madde metinleri resmî metinden (mevzuat.gov.tr) `mevzuat_getir` ile okundu
 (teyit 2026-10-05).
 - **Delil tedarik planı — `python scripts/delil_plani.py --matris
   _oa/cikti/04-vakia-denetim.json --iskelet`** her ispat boşluğu için doldurulacak

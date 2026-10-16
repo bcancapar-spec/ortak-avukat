@@ -15,7 +15,7 @@ geçirilmesi şart kalemleri listeler; bu script her kalemi zabıtta ARAR ve
 sonucu ADAY olarak işaretler (GEÇMİŞ GÖRÜNÜYOR / KISMEN / GEÇMEMİŞ GÖRÜNÜYOR).
 Ayrıca ara karar kalemlerini, süre doğurabilecek ifadeleri ve RET kararlarında
 gerekçe ibaresinin bulunup bulunmadığını gösterir.
-Fikir kaynağı: Yargı PRO 16-2 (duruşma zaptı denetimi) — kod/metin ALINMADI.
+Fikir kaynağı: dış skill kütüphanesi 16-2 (duruşma zaptı denetimi) — kod/metin ALINMADI.
 
 SINIR (oa-antitez SKILL: "celse sonrası karşılaştırma model-denetimli bir
 checklisttir, mekanik denetim değildir ve yalnız öneri üretir"): eşleştirme
@@ -25,7 +25,7 @@ paragrafını OKUR; düzeltme talebi verilip verilmeyeceği AVUKATIN takdiridir.
 Script SÜRE HESAPLAMAZ (süre doğuran ara karar → oa-sure) ve dosya YAZMAZ.
 
 Tutanağın düzeltilmesi için HMK'da ayrı bir süre maddesi BULUNAMADI (m.154-158
-okundu, Yargı PRO MCP 2026-10-05): düzeltme yolu ve zamanı TEYİT BEKLİYOR;
+okundu, resmî metin — mevzuat.gov.tr — 2026-10-05): düzeltme yolu ve zamanı TEYİT BEKLİYOR;
 pratik ihtiyat olarak fark celseyi izleyen ilk iş günü avukata raporlanır (bu
 bir kanuni süre değildir).
 

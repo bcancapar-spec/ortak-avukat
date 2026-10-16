@@ -325,7 +325,7 @@ def _kamu_denetle(i, iid, bulgular, bosluklar):
 # ve hatası telafisizdir: süresi kaçmış, yolu tüketilmemiş, formu eksik ya da
 # «dördüncü derece» şikâyetine dönmüş başvuru esasa hiç girmeden reddedilir;
 # AYM'nin kabul edilemezlik kararı «dosya bitti» sanılırsa AİHM penceresi
-# sessizce kapanır. Bu blok, Yargı PRO 5-1/5-3/5-4/5-5 ve 6-1…6-5 skill'lerinin
+# sessizce kapanır. Bu blok, dış skill kütüphanesinin 5-1/5-3/5-4/5-5 ve 6-1…6-5 skill'lerinin
 # FİKRİNİ (eşik → ölçüt → giderim zinciri) OA yöntemiyle kurar: model her ölçütü
 # değerlendirir, script yalnız DEĞERLENDİRMENİN EKSİKSİZ ve kanıtlı olduğunu
 # denetler. Hukuki sonuç (gidilir/gidilmez) AVUKATINDIR — script «karşılanmıyor»

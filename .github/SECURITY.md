@@ -24,10 +24,17 @@ bulursanız şu yolu izleyin.
   (gizli talimat savunması, anayasa m.11)
 - Layer 0 gizlilik süzgeci: `gizlilik_tara.py`
 
-Üçüncü taraf bileşenler (Yargı Pro MCP, `udf-cli`, Tesseract, PyMuPDF) bu deponun
-parçası değildir; onlara ilişkin bulgular kendi sağlayıcılarına bildirilir. Depo
-yalnız Yargı Pro'yu ilan eder; başka bir MCP sunucusu ilan edilmez ve bu testle
-kilitlidir (`tests/test_v0518_mcp_ilan.py`).
+Üçüncü taraf bileşenler (`udf-cli`, Tesseract, PyMuPDF) bu deponun parçası
+değildir; onlara ilişkin bulgular kendi sağlayıcılarına bildirilir. Eklenti hiçbir
+MCP sunucusu ilan etmez (2026-10-15 avukat kararı; B-23 dersi korunur: sahipsiz uç
+nokta ilan edilmez, otomatik yedeğe geçilmez). İçtihat/mevzuat teyidinin kanıtı resmî
+portalın adresi + diske inmiş tam metindir — beyaz liste
+`plugins/ortak-avukat/skills/oa-kontrol/scripts/kunye_ortak.py` (`RESMI_KAYNAKLAR`),
+avukat nüshası `plugins/ortak-avukat/skills/ortak-avukat/references/resmi-kaynaklar.md`;
+kanal hibrittir (model resmî portallara `WebFetch`/`WebSearch` ile ulaşır). Bu sözleşme
+testle kilitlidir: `tests/test_teyit_kanali.py::test_eklenti_hicbir_mcp_sunucusu_ilan_etmez`
+(ilan yok), B-23 dersi `tests/test_v0518_mcp_ilan.py`, canlı metinlerde üçüncü taraf
+sunucu anması `tests/test_kanal_bagimsiz_metin.py`.
 
 ## Desteklenen sürüm
 

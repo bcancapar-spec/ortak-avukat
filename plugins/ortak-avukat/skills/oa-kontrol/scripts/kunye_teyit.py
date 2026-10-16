@@ -135,7 +135,7 @@ KANUN_NO = {
     "İSGK": "6331", "ISGK": "6331", "TKHK": "6502", "HSK": "6087",
     "SGK": "5510", "BK": "818", "MK": "743", "KDV": "3065",
     # v0.5.18 (Y-09) — eşlemede OLMAYAN kısaltmalar. Numara + resmî ad
-    # mevzuat.gov.tr'den Yargı PRO `mevzuat_ara` ile teyit edildi (2026-10-05):
+    # mevzuat.gov.tr'den `mevzuat_ara` ile teyit edildi (2026-10-05):
     # 7036 İŞ MAHKEMELERİ KANUNU (RG 25.10.2017) · 7201 TEBLİGAT KANUNU
     # (RG 19.02.1959) · 6325 HUKUK UYUŞMAZLIKLARINDA ARABULUCULUK KANUNU
     # (RG 22.06.2012) · 634 KAT MÜLKİYETİ KANUNU (RG 02.07.1965) · 1136
@@ -190,7 +190,7 @@ BELIRSIZ_KISALTMA = {
 # taslaklarında 29 Anayasa atfı denetim dışı). Tablo KANUN NUMARASINA bağlıdır
 # (kimlik numaradır; ad ve kısaltma takma addır) ve İKİ YÖNDE aynı desenle
 # kullanılır (tek-yazar): taslaktan çıkarımda ve kütük/döküm eşleşmesinde.
-# Resmî adlar mevzuat.gov.tr'den Yargı PRO `mevzuat_ara` ile teyit edildi
+# Resmî adlar mevzuat.gov.tr'den `mevzuat_ara` ile teyit edildi
 # (2026-10-05). YANLIŞ-POZİTİF KORUMALARI: «Anayasa Mahkemesi» bir atıf
 # değildir (negatif bakış); «Basın İş Kanunu»/«Deniz İş Kanunu» İş Kanunu
 # değildir; numara taşıyan yazımda («765 sayılı Türk Ceza Kanunu») kimlik
@@ -859,8 +859,8 @@ def _tarih_maskele(segment):
 
 
 # v0.5.18 (Fable denetimi K4) — AYM başvuru künyesinin izi AYM bağlamı taşımalı: kütükteki bir
-# Yargıtay esas numarası (aynı «YYYY/N» dizesi) AYM kararının teyidi DEĞİLDİR. Yargı PRO AYM
-# aramaları künyeyi «BB 2015/53» biçiminde döndürür; ayrıştırıcı bu biçimi tanımadığından bağlam
+# Yargıtay esas numarası (aynı «YYYY/N» dizesi) AYM kararının teyidi DEĞİLDİR. AYM arama
+# araçları (`aym_ictihat_ara`) künyeyi «BB 2015/53» biçiminde döndürür; ayrıştırıcı bu biçimi tanımadığından bağlam
 # ayrıca aranır.
 _AYM_IZ_BAGLAMI_RE = re.compile(
     r"(?i:anayasa\s+mahkemesi)|\bAYM\b|\bBB\b|(?i:başvuru\s+(?:numarası|no))|\bB\s*\.?\s*(?i:no)\b")

@@ -60,7 +60,7 @@ KARAR VERMEZ, DAMGA BASAR (advisory; geçerli girdide CLI her zaman exit 0):
   Bilinen bedel: OCR bozulması ("Y.lmaz", "Yılrnaz") ve "Ahmed/Ahmet",
   "Muhammed/Muhammet" gibi yazım farkları BAGLA değil AVUKATA-SOR'dur.
 Semantica'dan BİLİNÇLİ ALINMAYANLAR: Soundex (İngilizce ses sınıfları Ç/Ş/Ğ
-düşürür), embedding (Yargı Pro'da var), sessiz çatışma çözümü (çelişki
+düşürür), embedding (dış içtihat sunucularında var), sessiz çatışma çözümü (çelişki
 avukata ÇIKAR — K3 ilkesi).
 
 Kullanım:

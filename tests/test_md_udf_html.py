@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """oa-dilekce / md_udf_html.py için testler (P0-10 — UDF-REHBER uyumu).
 
-Tamamen ÇEVRİMDIŞI/deterministik: yalnız `donustur()`'ün Yargı Pro UDF
+Tamamen ÇEVRİMDIŞI/deterministik: yalnız `donustur()`'ün `udf-cli` UDF
 rehberinin (A.3/A.4) öngördüğü kurallara uyduğunu doğrular — `<br>` ile
 paragraf ayırmaz, `<p>` bazlı paragraflar üretir, başlıklarda pt birimi
 kullanır, tablo/liste/alıntı bloklarını inline-CSS HTML'e çevirir.

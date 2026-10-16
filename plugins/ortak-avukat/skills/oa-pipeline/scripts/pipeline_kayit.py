@@ -5854,7 +5854,7 @@ def _dosya_klasoru_mu(kok):
     """Bu klasör bir DAVA DOSYASI klasörü mü? Ucuz sezgi: UYAP evrak deseni
     (`NNN_...`/`NNNN_...` adlandırması), `_oa` kökü YA DA — C1 KLON İMZASI
     (v0.5.8.5, saha ölümü: UserPromptSubmit klon kökünde hiç ateşlemedi) —
-    Yargı PRO klon kökü işaretleri: kökte `uyap-project.json` VEYA `evraklar/`
+    dış araçla indirilmiş UYAP klon kökü işaretleri: kökte `uyap-project.json` VEYA `evraklar/`
     dizini VEYA (`INDEX.md` ∧ `dava-analiz.md`) çifti. INDEX.md TEK BAŞINA
     yeterli DEĞİLDİR (her markdown deposu dava klasörü sanılmasın — yanlış-
     pozitif disiplini). ASLA istisna fırlatmaz."""

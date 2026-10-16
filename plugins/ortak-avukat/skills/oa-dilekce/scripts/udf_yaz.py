@@ -9,8 +9,8 @@ GÜNCEL SÖZLEŞME (v0.5.8.4 — 372 sahası A/B hükmü, ders 10-D): elle kurul
 `content.xml`'li UDF'ler **UYAP editöründe AÇILMADI** (7 dosya karantina);
 A/B testi python re-zip'ini ve pageFormat kenar yamasını AKLADI — suçlu,
 yerel motorun `content.xml` içeriğidir (styles bloğunda `name="hvl-default"`
-STİL TANIMI yok; `udf_dogrula` bu imzayı artık GEÇERSİZ sayar). Yargı Pro
-rehberi (`udf_tiff_pdf_guide` MCP aracı / `yargi-udf-tiff-pdf-guide` skill,
+STİL TANIMI yok; `udf_dogrula` bu imzayı artık GEÇERSİZ sayar). `udf-cli`
+geliştiricisinin rehberi (`udf_tiff_pdf_guide` aracı / `yargi-udf-tiff-pdf-guide` skill,
 sürüm 2026-06-22) zaten açıkça söyler: **"UDF opak bir UYAP biçimidir — yalnız
 `udf-cli` üretebilir/okuyabilir; ASLA elle yazma/düzenleme; her zaman
 `html2udf`, ASLA `md2udf`."**

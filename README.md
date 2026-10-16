@@ -19,7 +19,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **60.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **125.000+** satır · **3.816** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **61.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **126.000+** satır · **3.851** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
 > sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
@@ -59,7 +59,7 @@ Yapar:
   işaretler; evrak sayımı tutmuyorsa analize başlamaz.
 - Tebliğ tarihinden sürenin son gününü hesaplar; kuralı mevzuattan teyit eder,
   hesabın her adımını gerekçesiyle gösterir; dolan süre her işin önüne geçer.
-- Her içtihadı Yargı Pro'dan tam metniyle çeker, davaya bağını yazar, lehe ya da
+- Her içtihadı resmî portaldan tam metniyle çeker, davaya bağını yazar, lehe ya da
   aleyhe damgalar; teyit edilemeyen künye dilekçeye giremez.
 - Olguları delile, delilleri iddiaya eşler; karşı tarafın saldırabileceği
   cepheleri önceden çıkarır ve yalnız size raporlar.
@@ -134,7 +134,7 @@ oturumda ham evrakı baştan okumak yerine bu kaydı kullanır.
    m.9). Hiçbir adımda avukat adına karar yazılmaz; her kaydın sahibi (model
    beyanı mı, avukat şerhi mi) ayrı tutulur.
 2. **Her içtihat resmî kaynaktan tam metniyle çekilmiştir.** Dilekçeye yalnız
-   Yargı Pro'dan tam metni diske inmiş, davaya bağı yazılmış ve LEHE ya da ayırt
+   resmî portaldan tam metni diske inmiş, davaya bağı yazılmış ve LEHE ya da ayırt
    edilmiş ALEYHE olarak damgalanmış kararlar girer (m.5). Teyit edilemeyen künye
    "teyit YAPILAMADI" damgası taşır ve teyitli sayılarak dış metne giremez.
    Uydurma kaynak bağlantısı yoktur: bağlantı yalnız teyit anında kaydedilir.
@@ -228,7 +228,7 @@ akışının ilk adımı olan belge güvenlik kapısının ilkesel dayanağıdı
 | **2** | **Usul esasa üstündür** | Usul denetimi esastan **önce** ve en az onun kadar ciddi yapılır. Süre, dosyadaki telafisi olmayan tek hatadır. Düstur çift yönlüdür: kendi usul zaafınız sıfırlanır, karşı tarafın kaçırdığı süre, dava şartı eksiği veya hak düşürücü süre gizlenmez — derhâl ileri sürülür. |
 | **3** | **Örnekleme ilkesi** | Metinlerdeki kanun/dava tipi listeleri kapsamı **daraltmaz**, yalnız metodu gösterir. Listede olmayan konu aynı metotla, kıyasen işlenir. Kapsam istisnasız tüm Türk hukukudur. |
 | **4** | **Doğaçlama meşruiyeti** | Yöntemde serbestlik: muhakeme kurgusu, argüman dizilimi, üslup, strateji özgürce doğaçlanır. Sınır tek ve keskindir — **olguda asla**: illiyet ve vakıa denetiminde künye, madde, tarih, tutar üretilemez. |
-| **5** | **Doğrulama mimarisi** | **Teyit ≠ muhakeme.** Bir içtihat resmî kaynaktan (Yargı Pro, mevzuat.gov.tr) MCP ile çekildiğinde künyenin var olduğunu doğrulamak yetmez; tam metin çekilmiş, davaya bağı kurulmuş ve damgalanmış olmalıdır. Damgasız atıf, çıplak künyeden, perdesiz bir evden farksızdır. İki modelin hemfikir olması doğrulama **değildir**. |
+| **5** | **Doğrulama mimarisi** | **Teyit ≠ muhakeme.** Bir içtihat resmî kaynaktan (içtihat portalı, mevzuat.gov.tr) web aracıyla çekildiğinde künyenin var olduğunu doğrulamak yetmez; tam metin çekilmiş, davaya bağı kurulmuş ve damgalanmış olmalıdır. Damgasız atıf, çıplak künyeden, perdesiz bir evden farksızdır. İki modelin hemfikir olması doğrulama **değildir**. |
 | **6** | **Müvekkil-aleyhi çıktı yasağı** | Zaaf dış belgeye yazılmaz, ama iç analizde **saklanmaz**. Salt aleyhe içtihat dilekçeye giremez; cephanelikte durur ve ancak karşı taraf onu fiilen ileri sürerse çıkar. Bu hususta çalışma klasörüne ayrı dosya açılır ve durum farkındalığı verilir. |
 | **7** | **Anonimleştirme** | Sistem metinlerinde hiçbir müvekkil, karşı taraf veya dosya **ismen anılamaz**; tecrübe yalnız soyut örüntü olarak işlenir (Av.K. m.36 · KVKK). |
 | **8** | **Simülasyon yasağı** | Eklentideki bir parça, tarifinden taklit edilerek "çalıştırılmış" sayılmaz; fiilen çağrılmış olmalıdır. Yüklenemiyorsa çıktıya "fiziken yüklenemedi" diye **açıkça yazılır**. |
@@ -314,17 +314,17 @@ Aşağıdaki bloğu OLDUĞU GİBİ kopyalayıp Claude Code'un sohbet kutusuna
 yapıştırın; kurulumu sizin yerinize Claude yürütür, yalnız insan eli gereken
 yerlerde (kurucu penceresi, tarayıcı onayı, işletim sistemi izni) durup size
 ne yapacağınızı söyler. Oturumu **boş bir klasörde** açın, dava klasöründe
-değil. **Yargı Pro bu prompt'un dışındadır:** ücretli üyelik ister, o adımı
-siz yaparsınız ([5. adım](#5-yargı-pro--yetkilendirme-ücretli-üyelik)); prompt
-yalnız durumunu bildirir ve ne yapacağınızı söyler.
+değil. **İçtihat/mevzuat teyidi için kurulacak bir sunucu yoktur:** teyit kanalı
+resmî portallardır ([5. adım](#5-teyit-kanalı--resmî-portallar-kurulum-gerektirmez));
+prompt bunu yalnız bildirir ve eski sürümden kalan bir bağlantı varsa sorgular.
 
 Zincirin kanıt halkası projenin içindedir: **kurulum motoru**
 (`skills/ortak-avukat/scripts/oa_kurulum.py`) Python'u, Python paketlerini,
 Tesseract + Türkçe dil verisini, Node.js'i, eklentinin bütünlüğünü, ilk çağrı
 derlemesini ve aile yapısını denetler; her gereksinimi tek satırda TAMAM / EKSİK /
 ELİMDE diye yazar ve eksiğin resmî kurulum komutunu basar. Prompt bu motoru koşturur,
-eksikleri onayınızla tamamlatır ve motoru yeniden koşturur — Yargı Pro hariç hepsi
-TAMAM olana dek. Motor sistem yazılımı kurmaz; denetim kipi ağa çıkmaz. `--uygula`
+eksikleri onayınızla tamamlatır ve motoru yeniden koşturur — teyit kanalı BİLGİ
+satırı dışında hepsi TAMAM olana dek. Motor sistem yazılımı kurmaz; denetim kipi ağa çıkmaz. `--uygula`
 yalnız Python paketlerini (pip ile, PyPI'den) ve derlemeyi tamamlar.
 
 <details>
@@ -442,7 +442,7 @@ onaylarım, sen bekle.
    satırının yanına resmî komutu basar. Python paketleri ya da derleme eksikse
    onayımla `--uygula` ekleyerek koş (yalnız pip ve compileall yapar, sistem
    yazılımı kurmaz); öteki EKSİK komutlarını onayımla sen koş; sonra motoru
-   yeniden koş — Yargı Pro hariç hepsi TAMAM olana (çıkış kodu 0) dek zincir.
+   yeniden koş — teyit kanalı BİLGİ satırı dışında hepsi TAMAM olana (çıkış kodu 0) dek zincir.
    Ayrıca etkin sürüm `claude plugin list`
    çıktısındaki Version satırıdır (ortak-avukat@ortak-avukat enabled olmalı);
    önbellekte o sürümün klasörü var, içinde `.claude-plugin/plugin.json`
@@ -453,25 +453,28 @@ onaylarım, sen bekle.
    `python "<o klasör>/skills/oa-usta/scripts/aile_dogrula.py" "<o klasör>/skills"`
    → "AİLE YAPI DENETİMİ TEMİZ" ve çıkış kodu 0. Depo klonu da varsa ayrıca
    `python tools/hook_doktor.py --kurulu`.
-7) YARGI PRO DURUMU (KURMA, YETKİLENDİRME — yalnız bildir): Yargı Pro ücretli
-   üyelik gerektirir; bağlantıyı eklenti kendisi ilan eder, adı
-   plugin:ortak-avukat:yargi-pro. Aynı adresi `claude mcp` ile ikinci kez
-   KAYDETME. Durum için bana `/mcp` yazdır ve plugin:ortak-avukat:yargi-pro
-   satırında ne gördüğümü sor (bağlı / yetkilendirme bekliyor / listede yok);
-   `claude mcp list` koşturma — her sunucuya ağ sağlık denetimi yapar ve
-   eklenti sunucularını göstermeyebilir. Bana aynen şunu söyle: "Üyeliğiniz
-   varsa `/mcp` → plugin:ortak-avukat:yargi-pro → yetkilendirme adımını seçin
-   (Authenticate) ve tarayıcıda siz onaylayın. Üyeliğiniz yoksa sistem çalışır,
-   ama içtihat 'teyit YAPILAMADI' damgasıyla işlenir ve teyitli dilekçe teslim
-   edilmez."
-8) ESKİ YEDEK: `/mcp` listesinde ya da connectors bölümünde `yargi-mcp-yedek`
-   adlı bir bağlantı görüyorsam (0.5.17 ve öncesinden kalır; v0.5.17.1'de
-   kaldırıldı) silinmesini ÖNER, onayım olmadan silme; o adı `claude mcp
-   get` ile YOKLAMA (onaylı sunucuya ağ sağlık denetimi yapar — sahipsiz uç
-   noktaya dokunulmaz). Onayımdan sonra doğrudan
-   `claude mcp remove yargi-mcp-yedek` koş; "bulunamadı" derse kayıt eklenti
-   kalıntısı ya da connector'dır: Claude Code'u tamamen kapatıp açmamı, hâlâ
-   duruyorsa connectors bölümünden silmemi söyle.
+7) TEYİT KANALI (KURMA, YETKİLENDİRME — yalnız bildir): içtihat ve mevzuat
+   teyidi resmî portallardan yapılır (mevzuat.gov.tr, Resmî Gazete, Adalet
+   Bakanlığı içtihat portalı, Yargıtay/Danıştay/AYM karar arama, UYAP Emsal,
+   HUDOC; beyaz liste eklentinin içinde:
+   skills/ortak-avukat/references/resmi-kaynaklar.md) ve bu portallara senin
+   WebFetch (tam metin) ve WebSearch (keşif) araçlarınla ulaşılır. Eklenti hiçbir
+   MCP sunucusu ilan etmez: `/mcp` listesinde eklentiye ait bir girdi BEKLENMEZ,
+   görmemen eksik değildir. Üçüncü taraf bir içtihat sunucusu KURMA, `claude mcp`
+   ile KAYDETME, yetkilendirme, üyelik önerme. `claude mcp list` koşturma — her
+   sunucuya ağ sağlık denetimi yapar. Bana aynen şunu söyle: "Teyit kanalı resmî
+   portallardır; kurulacak ya da yetkilendirilecek bir sunucu yok. Resmî portala
+   ulaşılamazsa sistem çalışır, ama içtihat 'teyit YAPILAMADI' damgasıyla işlenir
+   ve teyitli dilekçe teslim edilmez."
+8) ESKİ BAĞLANTILAR: `/mcp` listesinde ya da connectors bölümünde eski
+   sürümlerden kalma, eklentinin artık ilan etmediği bir içtihat sunucusu
+   bağlantısı görüyorsam (0.5.17 ve öncesinin yedek bağlantısı; 0.6.0 ve
+   öncesinin üçüncü taraf içtihat sunucusu) silinmesini ÖNER, onayım olmadan silme;
+   o adı `claude mcp get` ile YOKLAMA (sunucuya ağ sağlık denetimi yapar —
+   sahipsiz uç noktaya dokunulmaz). Onayımdan sonra doğrudan
+   `claude mcp remove <o ad>` koş; "bulunamadı" derse kayıt eklenti kalıntısı
+   ya da connector'dır: Claude Code'u tamamen kapatıp açmamı, hâlâ duruyorsa
+   connectors bölümünden silmemi söyle.
 9) ÖZET: adım adım liste (tablo değil): TAMAM / EKSİK / ELİMDE — ELİMDE olanlar
    için ne yapacağımı tek cümleyle yaz; her satıra kanıt olan komut çıktısından
    bir parça ekle. En sonda hatırlat: Claude Code'u TAM KAPATIP AÇMAM gerekir
@@ -485,8 +488,9 @@ kod yazma. Var olan kurulumu bozma: önce denetle, eksikse kur, çalışanı yen
 kurma. Her yazılım kurulumundan, PATH değişikliğinden ve dosya indirmeden önce
 benden onay al. `setx PATH` ve `--break-system-packages` yasak. Bulut OCR yok;
 yalnız yerel Tesseract. Müvekkil evrakına dokunma: bu oturum boş bir klasörde
-açıldı, hiçbir evrakı okuma ya da işleme. Yargı Pro'yu kurma, yetkilendirme,
-üyelik bilgisi isteme — yalnız durumunu bildir. Sistem ayarlarını (Windows'ta
+açıldı, hiçbir evrakı okuma ya da işleme. Üçüncü taraf içtihat sunucusu kurma,
+yetkilendirme, üyelik bilgisi isteme — teyit kanalı resmî portallardır, yalnız
+bunu bildir. Sistem ayarlarını (Windows'ta
 "Uygulama yürütme diğer adları" dahil) değiştirme; gerekiyorsa bana söyle.
 ```
 
@@ -512,7 +516,7 @@ sonra adım adım kurun. Bu tablodaki ve repodaki teknik terimler yabancıysa:
 | **Node.js (LTS)** | [nodejs.org](https://nodejs.org/) | UDF üretim araçları npm ekosisteminde yaşar ve `npx` ile koşar. |
 | **udf-cli** (npx, giriş gerekli) | [npmjs.com/package/udf-cli](https://www.npmjs.com/package/udf-cli) | UYAP'ın fiilen AÇABİLDİĞİ .udf dosyasını üreten resmî araç (`html2udf`). Sahada kanıtlandı: elle kurulan UDF editörde açılmıyor — tek geçerli yol budur. Bir kez `npx -y udf-cli@0.5.6 login` gerekir. Sürüm sabittir (`oa-dilekce/scripts/udf_yaz.py` `UDF_CLI_SURUM`); yalnız avukat onayıyla yükseltilir. |
 | **uyap-tiff-cli / uyap-pdf-cli** (npx, aynı giriş) | [npmjs.com/package/uyap-tiff-cli](https://www.npmjs.com/package/uyap-tiff-cli) · [npmjs.com/package/uyap-pdf-cli](https://www.npmjs.com/package/uyap-pdf-cli) | Çok sayfalı TIFF'i kayıpsız PDF'e çevirme ve taranmış PDF'te otomatik OCR — ham UYAP klasörünün iki tuzağını kapatır. Giriş `udf-cli` ile ortaktır. **İsteğe bağlı:** OA'nın kendi okuma hattı (`oa-ingest`) çok sayfalı TIFF'i ve taranmış PDF'i yerelde, ağsız okur (Tesseract). Bu iki araç ağ ve oturumla çalışan dış araçlardır; evrakın sunucuya gidip gitmediği ölçülmedi — müvekkil evrakında anayasa m.10 (Layer 0) kuralı uygulanır. |
-| **Yargı Pro MCP** (geliştirici: [@saidsurucu](https://github.com/saidsurucu)) — **ücretli üyelik** | [yargi.betaspacestudio.com/mcp](https://yargi.betaspacestudio.com/mcp) — bağlantıyı eklenti kendisi ilan eder; siz yalnız `/mcp` ile yetkilendirirsiniz | İçtihat/mevzuat resmî doğrulama kanalı: mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; künye teyidi ve semantik arama buradan beslenir. Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Yedek kanal ilan edilmez (v0.5.17.1, B-23): Yargı Pro erişilemezse içtihat "teyit YAPILAMADI" diye işlenir. |
+| **Teyit kanalı — resmî portallar** (beyaz liste; kurulum ve üyelik gerektirmez) | [mevzuat.gov.tr](https://www.mevzuat.gov.tr) · [mevzuat.adalet.gov.tr](https://mevzuat.adalet.gov.tr) (Bedesten) · [karararama.yargitay.gov.tr](https://karararama.yargitay.gov.tr) · [emsal.uyap.gov.tr](https://emsal.uyap.gov.tr) · [karararama.danistay.gov.tr](https://karararama.danistay.gov.tr) · [kararlarbilgibankasi.anayasa.gov.tr](https://kararlarbilgibankasi.anayasa.gov.tr) · [resmigazete.gov.tr](https://www.resmigazete.gov.tr) · [hudoc.echr.coe.int](https://hudoc.echr.coe.int) — tam liste `skills/ortak-avukat/references/resmi-kaynaklar.md`; eklenti hiçbir MCP sunucusu ilan etmez | İçtihat/mevzuat resmî doğrulama kanalı (2026-10-15 avukat kararı, hibrit): model portallara Claude Code'un web araçlarıyla ulaşır (`WebSearch` keşif, `WebFetch` tam metin); mutlak triyaj [G6] kararların TAM METNİNİ bu kanaldan çeker; teyidin kanıtı resmî portalın adresi + diske inmiş tam metindir (`--kaynak-url` beyaz listeli; [G7] teslim engeli). Bu olmadan sistem "doğrulanmamış atıf iddiadır" kuralı gereği içtihatlı dilekçe teslim etmez. Yedek kanal ilan edilmez (v0.5.17.1, B-23): resmî portala erişilemezse içtihat "teyit YAPILAMADI" diye işlenir. |
 
 Adım adım:
 
@@ -601,38 +605,43 @@ npx -y udf-cli@0.5.6 whoami
 Giriş tek seferliktir; token `~/.config/yargi/token.json`'da tutulur. Giriş
 yapılmamışsa sistem bozuk UDF üretmez — durur ve size giriş talimatı verir.
 
-### 5. Yargı Pro — yetkilendirme (ücretli üyelik)
+### 5. Teyit kanalı — resmî portallar (kurulum gerektirmez)
 
-Eklenti `yargi-pro` bağlantısını **kendisi ilan eder** (`plugin.json` →
-`mcpServers`, uç nokta `https://yargi.betaspacestudio.com/mcp`); 6. adımda
-eklenti kurulunca bağlantı Claude Code'da `plugin:ortak-avukat:yargi-pro`
-adıyla görünür. Yargı Pro **ücretli üyelik** ister; bu yüzden master prompt onu
-kurmaz ve yetkilendirmez, yalnız durumunu bildirir. Üyeliğiniz varsa,
-kurulumdan sonra sohbet kutusuna `/mcp` yazın → `plugin:ortak-avukat:yargi-pro`
-→ yetkilendirme adımını seçin (**Authenticate**); tarayıcıda açılan Yargı Pro
-oturumunu siz onaylayın.
+İçtihat, mevzuat ve kurum kararı teyidi **resmî portallardan** yapılır
+(2026-10-15 avukat kararı — hibrit teyit kanalı): mevzuat.gov.tr, Resmî Gazete,
+Adalet Bakanlığı içtihat portalı (Bedesten), Yargıtay/Danıştay karar arama, UYAP
+Emsal, AYM kararlar bilgi bankası, HUDOC ve her `.gov.tr` alan adı — beyaz liste
+eklentinin içindedir (`skills/ortak-avukat/references/resmi-kaynaklar.md`; tek
+kaynak `oa-kontrol/scripts/kunye_ortak.py`). Model bu portallara Claude Code'un
+kendi web araçlarıyla ulaşır: `WebSearch` keşif, `WebFetch` tam metin. Kurulacak,
+yetkilendirilecek ya da üyelik alınacak bir sunucu yoktur; bu yüzden master
+prompt bu adımda yalnız bilgi verir.
 
-**Aynı adresi elle bir kez daha eklemeyin.** Eski README'ler
-`claude mcp` komutuyla aynı uç noktayı ikinci kez kaydetmeyi öneriyordu; bu,
-eklentinin zaten ilan ettiği sunucunun **ikinci** tanımıdır: Claude Code aynı
-uç noktaya tek tanımla bağlanır ve elle eklenen kayıt (yerel/kullanıcı kapsamı)
-eklentininkinin önüne geçer; eklenti güncellense ya da kaldırılsa bile o kayıt
-yerinde kalır ve bayatlar. Tek kayıt eklentinin ilan ettiğidir; yetkilendirme
-`/mcp` ile yapılır.
+**Eklenti hiçbir MCP sunucusu ilan etmez** (`plugin.json`'da `mcpServers` yok;
+kilit: `tests/test_teyit_kanali.py`). `/mcp` panelinde eklentiye ait bir girdi
+beklenmez; `claude mcp` komutuyla bir içtihat sunucusu **eklemeyin**. Teyidin
+kanıtı araç adı değil, resmî portalın **adresi** ve diske inmiş **tam metindir**:
+`oa_hafiza.py teyit` tam metin çeken araçlarda `--kaynak-url` ister ve adresi
+beyaz listeyle karşılaştırır; `ictihat_muhakeme_denetim.py` [G7] adresi olmayan
+ya da liste dışı adresli kaydı dilekçeye dayanak saymaz (teslim engeli). Üçüncü
+taraf sunucular, özel içtihat siteleri ve arama motoru özetleri teyit kaynağı
+değildir.
 
-Bu bağlantı olmadan sistem çalışır ama künye doğrulaması yapılamaz; içtihat
-"teyit YAPILAMADI" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
+Resmî portala ulaşılamıyorsa sistem çalışır ama künye doğrulaması yapılamaz;
+içtihat "teyit YAPILAMADI" damgasıyla işlenir ve dış çıktıya "teyitli" giremez.
 
-**Yedek kanal yok (v0.5.17.1, B-23):** eskiden önerilen açık kaynak yedek
-sunucunun kaynak deposu artık herkese açık değil ve eklentinin ilan ettiği
-alan adı ilgisiz bir sunucuya çözülüyordu; bu yüzden yedek önerilmez ve
-ilan edilmez. Yargı Pro erişilemezse sistem başka bir sunucuya geçmez:
-içtihat "teyit YAPILAMADI" damgasıyla işlenir, künye iddia olarak kalır.
+**Yedek kanal yok (v0.5.17.1, B-23; 2026-10-15):** eskiden önerilen açık kaynak
+yedek sunucunun kaynak deposu artık herkese açık değildi ve ilan edilen alan adı
+ilgisiz bir sunucuya çözülüyordu; bu dersle eklenti artık hiçbir uç noktayı
+kendiliğinden ilan etmez. Resmî portala erişilemezse sistem başka bir sunucuya
+geçmez: içtihat "teyit YAPILAMADI" damgasıyla işlenir, künye iddia olarak kalır.
+Eski sürümlerden kalan üçüncü taraf bağlantılarını master prompt'un 8. adımındaki
+gibi kaldırın ([Güncelleme notları](#güncelleme-notları)).
 
-> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele açan
-> **Yargı Pro MCP** — ve daha önce açık kaynak olarak yayımlanan **yargi-mcp** —
-> [Said Sürücü](https://github.com/saidsurucu)'nün eseridir. Bu sistemin
-> "resmî kaynaktan tam metin" disiplini, onun kurduğu gişeler üzerinde çalışır.
+> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele ilk açan
+> araçlar [Said Sürücü](https://github.com/saidsurucu)'nün eseridir. Bu sistemin
+> "resmî kaynaktan tam metin" disiplini o gişelerde olgunlaştı; teyit kanalı
+> 2026-10-15'ten beri resmî portalların kendisidir.
 
 ### 6. Eklentiyi (plugin) kurun — hukukçu için adım adım
 
@@ -724,10 +733,10 @@ Sohbetten: `/plugin marketplace update ortak-avukat`, ardından `/plugin` →
 Installed → Update now. Ardından Claude Code'u yine **TAM kapatıp açın**
 (`plugin update` yeni sürümü ancak yeniden başlatmada yükler) ve 8. adımdaki
 derlemeyi yineleyin. Dilerseniz 0. adımdaki master prompt'u yeniden
-yapıştırın: var olanı bozmaz, eksiği tamamlar ve eski `yargi-mcp-yedek`
-kalıntısını da sorgular.
+yapıştırın: var olanı bozmaz, eksiği tamamlar ve eski sürümlerden kalan üçüncü
+taraf içtihat sunucusu bağlantısını da sorgular.
 
-> **Sürüme özel geçiş adımları** — eski `yargi-mcp-yedek` bağlantısının kaldırılması, eski
+> **Sürüme özel geçiş adımları** — eski üçüncü taraf içtihat sunucusu bağlantılarının kaldırılması, eski
 > sürümle üretilmiş `.udf`'lerin yeniden üretimi, PyMuPDF yükseltmesi ve ilk çağrı hızı için
 > derleme — tek yerde: **[Güncelleme notları](#güncelleme-notları)**.
 
@@ -754,7 +763,7 @@ parçada ne yapıldığı [docs/SURUM-0.6.0-YETENEKLER.md](docs/SURUM-0.6.0-YETE
 | [`oa-ingest`](plugins/ortak-avukat/skills/oa-ingest/) | Evrakı bir kez metne indirir; yerel OCR; belge güvenlik kapısı (gizli katman damgası) | 0. MANİFEST |
 | [`oa-interview`](plugins/ortak-avukat/skills/oa-interview/) | Analizden önce sorar: talep, roller, tebliğ tarihi, eksik belge; meslek kuralları kontrol listeleri | 1. ALIM |
 | [`oa-alan`](plugins/ortak-avukat/skills/oa-alan/) | Hangi norm, hangi ihtisas dairesi; yasak bölgeler | 2. KONUMLAMA |
-| [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) | Yargı Pro'dan tam metin çeker, ham dökümü diske yazar; mutlak triyaj | 3. ARAŞTIRMA |
+| [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) | Resmî portaldan tam metin çeker, ham dökümü diske yazar; mutlak triyaj | 3. ARAŞTIRMA |
 | [`oa-vakia`](plugins/ortak-avukat/skills/oa-vakia/) | Kronoloji, iddia-delil matrisi, ispat boşluğu, yetim delil, özne eşleştirici | 4. OLGU/DELİL |
 | [`oa-kiyas`](plugins/ortak-avukat/skills/oa-kiyas/) | Norm → vakıa → sonuç kıyası; unsur eşleşmesi; içtihat muhakeme damgası | 5. KIYAS |
 | [`oa-antitez`](plugins/ortak-avukat/skills/oa-antitez/) | Karşı tarafın dokuz cephesi ve çürütme; zabıt denetimi; yalnız size raporlanır | 6. ANTİTEZ |
@@ -926,7 +935,7 @@ muğlak satır boş hücre sayılır) ve tanık sorularının vakıaya bağlı o
 cevabını içermemesi (`tanik_plani.py`).
 
 #### [`oa-ictihat`](plugins/ortak-avukat/skills/oa-ictihat/) — teyit ve mutlak triyaj · 1 script
-Her argümanın normunu ve künyesini resmî kaynaktan (Yargı Pro, AYM, Mevzuat MCP)
+Her argümanın normunu ve künyesini resmî kaynaktan (içtihat portalları, AYM kararlar bilgi bankası, mevzuat.gov.tr)
 **fiilen** çeker; kararın tam metnini diske ham döküm olarak yazar — dilekçeye
 giren her alıntı hafızadan değil o dosyadan gelir. v0.5.8.5'ten beri **mutlak
 triyaj [G6]** geçerlidir: MCP'den çekilen **her karar istisnasız baştan sona
@@ -1241,12 +1250,13 @@ anayasanın sırasıdır. Saha kanıtı ile dosya ve test düzeyindeki kayıt
 resmî kaynaktan doğrulanmadıkça yoktur.
 - **Künye teyidi sertleşti.** İki kararın parçasından kurulmuş, esas ile karar
   numarası yer değiştirmiş ya da başka daireye ait künye teyitli sayılmaz.
-- **Tek içtihat bağlayıcısı Yargı Pro'dur.** Yedek sunucu ilanı kaldırıldı;
-  Yargı Pro yoksa başka sunucuya geçilmez, "teyit YAPILAMADI" yazılır.
+- **Tek içtihat bağlayıcısı kaldı.** Yedek sunucu ilanı kaldırıldı; bağlayıcı
+  erişilemezse başka sunucuya geçilmez, "teyit YAPILAMADI" yazılır. (2026-10-15:
+  o ilan da kaldırıldı; teyit kanalı resmî portallardır — bkz. kurulum 5. adım.)
 - **İç kaynakça dürüst konuşur.** Dosyanın kendi geçmişini ve kendi dosya
   numarasını "teyitsiz içtihat" sanmaz.
 - **Mühürler doğru sürümü yazar.**
-- **Yargı Pro skill kütüphanesinden fikir düzeyinde uyarlamalar.**
+- **Dış skill kütüphanesinden fikir düzeyinde uyarlamalar** ([uyarlama planı](docs/YARGI-PRO-UYARLAMA-PLANI.md)).
   - Kod ve metin alınmadı; her madde resmî metinden okundu.
   - Gelenler: harç cetveli ve güncel oran teyidi, meslek kuralları kontrol
     listeleri, revizyon farkı, zabıt denetimi, delil tedarik ve tanık soru
@@ -1325,11 +1335,13 @@ resmi). Birebir alıntıya dokunulmaz.
 1. Eklentiyi güncelleyin ([komutlar](#güncelleme)) ve Claude Code'u **TAM kapatıp
    açın** — pencereyi kapatmak yetmez; bayat süreç eski kanca setini taşımaya
    devam eder.
-2. 0.5.17 ve öncesinden kalma **`yargi-mcp-yedek` bağlantısı varsa Claude Code'un
-   connectors bölümünden kaldırın.** Eklenti onu artık ilan etmez, ama eski kayıt
-   kendiliğinden silinmez. Bağlantı listesinde sertifika hatası veren bir
-   `yargi-mcp-yedek` görüyorsanız bu odur; bağlantı TLS ad uyuşmazlığıyla
-   reddedildiği için veri gitmemiştir.
+2. Eski sürümlerden kalma, **eklentinin artık ilan etmediği bir içtihat sunucusu
+   bağlantısı varsa Claude Code'un connectors bölümünden kaldırın** — 0.5.17 ve
+   öncesinin yedek bağlantısı, 0.6.0 ve öncesinin üçüncü taraf içtihat sunucusu
+   (adlar [CHANGELOG](CHANGELOG.md)'da). Eklenti 2026-10-15'ten beri hiçbir MCP
+   sunucusu ilan etmez, ama eski kayıt kendiliğinden silinmez. Bağlantı listesinde
+   sertifika hatası veren eski yedek bağlantı TLS ad uyuşmazlığıyla reddedildiği
+   için ondan veri gitmemiştir.
 3. PyMuPDF'i yükseltin — depo kökünde `pip install -U -r requirements.txt` (ya da
    `pip install -U pymupdf`). Eski sürümde görünürlük kâhini çalışmaz; sistem bunu
    gizlemez, raporda "kahin-devre-disi" notu çıkar. Aynı komut Excel okuyucularını
@@ -1431,7 +1443,7 @@ Güncel ölçüm ve açık bulgular: [STATUS.md](STATUS.md) · yol haritası:
 ortak-avukat/
 ├── .claude-plugin/marketplace.json   # mağaza rafı
 ├── plugins/ortak-avukat/             # eklenti
-│   ├── .claude-plugin/plugin.json    # sürüm ve MCP ilanı (yalnız Yargı Pro)
+│   ├── .claude-plugin/plugin.json    # sürüm; MCP ilanı YOK (teyit kanalı resmî portallar)
 │   ├── hooks/hooks.json              # 6 olaylı model-bağımsız tetik katmanı
 │   └── skills/                       # 20 skill (çekirdek + 19 oa-*)
 ├── tests/                            # pytest süiti (büyüklüğü tests/README.md'de)

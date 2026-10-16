@@ -30,7 +30,7 @@ Meseleyi önceden seçilmiş birkaç dala (iş/ticaret/icra/idare...) **hapsetme
 - **Daire değişmiş olabilir:** eski künyedeki daire bugün o işe bakmıyor olabilir; güncel iş bölümüyle çapraz doğrula (bilinen örnek: istihkakta görev 8. HD → 12. HD, BGK 18/01/2024).
 
 ## Yasak bölgeler — geçmiş halüsinasyon dersleri (bağlayıcı)
-- **Danıştay 8. Daire içtihadı hafızadan ÜRETİLMEZ;** yalnızca AYM/Yargı Pro'den teyitliyse kullanılır, değilse dilekçeye girmez (yasak bölge — bilinçle dışlanır).
+- **Danıştay 8. Daire içtihadı hafızadan ÜRETİLMEZ;** yalnızca resmî kaynaktan (AYM kararlar bilgi bankası / içtihat portalı) teyitliyse kullanılır, değilse dilekçeye girmez (yasak bölge — bilinçle dışlanır).
 - **Hiçbir künye (esas/karar no, tarih, daire) hafızadan yazılmaz** — doğrulanana dek iddia.
 - **Hiçbir süre/parasal sınır ezberden beyan edilmez** (icra istinafı "10 gün → 2 hafta" tuzağı).
 - **Daire kaymalarına dikkat:** istihkak 8. HD → 12. HD (BGK 18/01/2024).

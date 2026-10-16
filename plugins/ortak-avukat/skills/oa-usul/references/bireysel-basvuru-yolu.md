@@ -14,7 +14,7 @@ telafisizdir: süresi kaçmış, yolu tüketilmemiş, formu eksik ya da «dörd�
 (delil takdirine itiraz) şikâyetine dönüşmüş başvuru esasa hiç girmeden reddedilir. İkinci
 büyük kayıp, AYM'nin kabul edilemezlik ya da ihlal-yok kararının «dosya bitti» sanılması ve
 AİHM penceresinin sessizce kapanmasıdır. Kontrol listesi bu iki kaybı mekanik olarak
-görünür kılar. Fikir kaynağı: Yargı PRO 5-1, 5-3, 5-4, 5-5 (AYM) ve 6-1…6-5 (AİHM) skill
+görünür kılar. Fikir kaynağı: dış skill kütüphanesi 5-1, 5-3, 5-4, 5-5 (AYM) ve 6-1…6-5 (AİHM) skill
 tasarımı — metin alınmadı; ölçütler OA'nın kendi yöntemiyle ve resmî metinden kuruldu.
 
 ## 1. Kullanım ve durum sözleşmesi
@@ -40,7 +40,7 @@ Alan hiç yoksa (eski dosya) `[G10]`/`[G11]` satırı basılmaz — mevcut exit 
 
 ## 2. AYM — kabul edilebilirlik ölçütleri `[G10]`
 
-Teyit: Yargı PRO `mevzuat_getir` (mevzuat.gov.tr), `mevzuatgov:kanun:5:6216`, 2026-10-05.
+Teyit: resmî metin — `mevzuat_getir` (mevzuat.gov.tr), `mevzuatgov:kanun:5:6216`, 2026-10-05.
 
 | Anahtar | Ölçüt (OA özeti) | Dayanak |
 |---|---|---|
@@ -96,7 +96,7 @@ m.63, m.66; 6216 m.47/3, m.47/6 (2026-10-05).
   öğrenilme imkânından) işler (aynı karar §§ 31, 35, 46);
   süre kuralı kamu düzenindendir ve resen gözetilir (aynı karar § 23; Aybek ve
   Diğerleri/Türkiye (k.k.), no. 32365/20, 2 Haziran 2026, §§ 6, 9-10). Kaynak: HUDOC,
-  Yargı PRO `aihm_ictihat_ara` + `ictihat_getir` (Türkçe çeviri — Adalet Bakanlığı).
+  `aihm_ictihat_ara` + `ictihat_getir` (Türkçe çeviri — Adalet Bakanlığı; resmî kaynak HUDOC).
   `[G11]` nihai karar tarihini ister ve süreyi dört ay olarak basar; son günü `oa-sure`
   hesaplar; oa-sure v0.5.18 kataloğundaki kural `aihm_basvuru`dur.
   Kural adı katalogda (`oa-sure/scripts/sure_kurallari.json` — adların TEK kaynağı)
@@ -111,7 +111,7 @@ m.63, m.66; 6216 m.47/3, m.47/6 (2026-10-05).
 
 ## 5. AİHM — kabul edilebilirlik ölçütleri `[G11]`
 
-Sözleşme metni Yargı PRO mevzuat aracında yok; ölçütler AİHM'in kendi kararlarından
+Sözleşme metni mevzuat araçlarında (`mevzuat_getir`) yok; ölçütler AİHM'in kendi kararlarından
 (HUDOC, Türkçe çeviri) teyit edildi.
 
 | Anahtar | Ölçüt (OA özeti) | Dayanak · teyit |
@@ -125,7 +125,7 @@ Sözleşme metni Yargı PRO mevzuat aracında yok; ölçütler AİHM'in kendi ka
 | `kotuye_kullanmama` | Bireysel başvuru hakkı kötüye kullanılmıyor (değerlendirme avukatın) | AİHS m.35/3-a · Akdivar ve Diğerleri/Türkiye [BD], no. 21893/93, 16 Eylül 1996 — HUDOC künye özeti «(Art. 35-3-a) Abuse of the right of application» |
 | `eksiksiz_basvuru` | Resmî formun bütün alanları ve zorunlu ekler eksiksiz | AİHM İçtüzüğü m.47 — **TEYİT BEKLİYOR** (metin MCP'de yok) |
 
-## 6. AİHM emsal araştırma protokolü (Yargı PRO MCP)
+## 6. AİHM emsal araştırma protokolü (resmî kaynak HUDOC; araçlar `aihm_ictihat_ara` / `ictihat_getir` / `WebFetch`)
 
 Künye otoritesi HUDOC'tur; ikincil kaynaktaki (makale, kitap) künye iddiadır.
 
@@ -174,7 +174,7 @@ Künye otoritesi HUDOC'tur; ikincil kaynaktaki (makale, kitap) künye iddiadır.
 
 | İniş kolu | Dayanak | Süre (hesap `oa-sure`) |
 |---|---|---|
-| Hukuk | HMK m.375/1-i + m.377/1-e | Kesinleşmiş AİHM kararının **tebliğinden üç ay**; «her hâlde on yıl» azami süresi (e) bendi yönünden AYM E.2022/7, K.2022/79 (21.06.2022, RG 01.07.2022/31883) ile iptal (kaynak: v0.5.18 doğrulama turu kaydı, 2026-10-05; karar Yargı PRO `aym_ictihat_ara` ile görüldü) |
+| Hukuk | HMK m.375/1-i + m.377/1-e | Kesinleşmiş AİHM kararının **tebliğinden üç ay**; «her hâlde on yıl» azami süresi (e) bendi yönünden AYM E.2022/7, K.2022/79 (21.06.2022, RG 01.07.2022/31883) ile iptal (kaynak: v0.5.18 doğrulama turu kaydı, 2026-10-05; karar `aym_ictihat_ara` ile resmî kaynaktan görüldü) |
 | Ceza | CMK m.311/1-f | AİHM kararının **kesinleştiği tarihten bir yıl**; bent 4.2.2003'te kesinleşmiş kararlar ve bu tarihten sonraki başvurular için (m.311/2) |
 | İdari | İYUK m.53/1-ı + m.53/3 | AİHM kararının **kesinleştiği tarihten bir yıl** |
 
@@ -221,7 +221,7 @@ karsilanmiyor` ise `"avukat_karari": "devam|vazgec"` da yazılır. Kurgu tam şa
 
 ## 9. Ceza karar sonrası — koruma tedbiri tazminatı (CMK m.141-142) — yöntem notu
 
-Fikir kaynağı Yargı PRO 1-7 (yalnız tazminat kolu; infaz hesabı bilinçli olarak alınmadı —
+Fikir kaynağı dış skill kütüphanesi 1-7 (yalnız tazminat kolu; infaz hesabı bilinçli olarak alınmadı —
 oranlar geçici maddelerle sık değişir, hesap aracı yokken kesin infaz tarihi verilmez).
 Teyit: `mevzuatgov:kanun:5:5271` m.141-142 (7499 değişiklikleriyle), 2026-10-05.
 

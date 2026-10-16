@@ -8,7 +8,7 @@
 > sorusunu mekanik olarak sorar. Script hukuki nitelendirme yapmaz; yalnız kayıt ile
 > kuralın izinli başlangıç türlerini karşılaştırır ve çelişkiyi görünür kılar.
 >
-> Fikir kaynağı: Yargı PRO 12-2 (tebligat denetimi) ve 12-3 (öğrenme tarihi denetimi).
+> Fikir kaynağı: dış skill kütüphanesi 12-2 (tebligat denetimi) ve 12-3 (öğrenme tarihi denetimi).
 > Metin onlardan kopyalanmadı; OA yöntemiyle (model kurar, script denetler) yeniden yazıldı.
 > Aşağıdaki her norm Mevzuat MCP'den teyitlidir (2026-10-05); teyit edilemeyen yer
 > **TEYİT BEKLİYOR** diye işaretlidir.

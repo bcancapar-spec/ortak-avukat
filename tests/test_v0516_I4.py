@@ -17,7 +17,7 @@ Bulgu → kalem eşlemesi:
 
 Normlar Mevzuat MCP'den teyitli (2026-09-06): HMK m.6, m.7, m.9-16, m.21-23,
 m.77, m.115, m.119; TBK m.60. İçtihat: Antalya BAM 4. HD E.2023/126 K.2023/67
-(24.01.2023) tam metin Yargı Pro'dan okundu.
+(24.01.2023) tam metin resmî içtihat portalından okundu.
 
 Fikstürler SENTETİKTİR (anayasa m.7); tempfile ile izole dizinde koşar, depo
 dosyalarına yazmaz.
@@ -77,7 +77,7 @@ def test_hamle12_usul_skill_merci_tayini_notu_var():
 
 def test_hamle12_bam_kunyesi_kamu_bilgisi_ve_orneklem_ilkesi():
     m = _oku(USUL_SKILL)
-    # Yargı Pro'dan tam metin teyitli künye (kamu bilgisi — kişi/dosya değil)
+    # resmî içtihat portalından tam metin teyitli künye (kamu bilgisi — kişi/dosya değil)
     assert "Antalya BAM 4. HD" in m
     assert "E. 2023/126" in m and "K. 2023/67" in m and "24.01.2023" in m
     # örneklem ilkesi: tüm görev/yetki döngülerine kıyasen, dış hakem = döngü kırıcı

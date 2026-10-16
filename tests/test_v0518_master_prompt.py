@@ -3,15 +3,26 @@
 
 AVUKAT TALİMATI (bağlayıcı): "vitrine bakan ajan bu plug in için tek bir master
 prompt versin; kolay kurulumu Claude Code için kopyala-yapıştır yapan biri direkt
-plug and play yapsın; Yargı Pro haricindeki kısımda — onda ücretli üyelik gerekiyor."
+plug and play yapsın; [üçüncü taraf içtihat sunucusu] haricindeki kısımda — onda ücretli üyelik gerekiyor."
 
 NEDEN VAR: Kurulum anlatımı iki README'de dağınıktı ve kök README'deki eski
-prompt dört yerden yanlıştı: (1) Yargı Pro'yu KURMAYA çalışıyordu — ücretli
+prompt dört yerden yanlıştı: (1) üçüncü taraf içtihat sunucusunu KURMAYA çalışıyordu — ücretli
 üyelik kişiye bırakılmalı; (2) paket alt sınırını taşımıyordu
 (`pymupdf>=1.24.2`, tek kaynak `belge_guvenlik.PYMUPDF_ASGARI`); (3) ilk çağrı
-derlemesini (`compileall`) ve eski `yargi-mcp-yedek` kalıntısını bilmiyordu;
-(4) README aynı MCP sunucusunu `claude mcp add … yargipro` ile bir de elle
+derlemesini (`compileall`) ve eski yedek bağlantı kalıntısını bilmiyordu;
+(4) README aynı MCP sunucusunu `claude mcp add …` ile bir de elle
 eklemeyi öneriyordu — eklentinin zaten ilan ettiği uç noktanın İKİNCİ kaydı.
+
+2026-10-15 AVUKAT KARARI (hibrit teyit kanalı; tests/test_teyit_kanali.py,
+tests/test_kanal_bagimsiz_metin.py): eklenti HİÇBİR MCP sunucusu ilan etmez; içtihat/mevzuat
+teyidi resmî portallardan (beyaz liste) web aracıyla yapılır. Prompt'un 7. adımı (eski ürün
+"durumu" adımı) → "TEYİT KANALI" (bilgi; kurulacak/yetkilendirilecek sunucu yok), 8. adımı "ESKİ
+YEDEK" → "ESKİ BAĞLANTILAR" (eklentinin artık ilan etmediği her eski bağlantı; ad
+verilmez, kişi kendi listesinde görür); README 5. adımı teyit kanalını anlatır; emek
+etiketi kanal-bağımsız yeniden yazıldı (kişi adı ve bağlantı korunur, ürün adı anılmaz) ve
+gereksinim tablosundaki ürün satırı resmî portal satırı oldu (geliştirici parçası testi bu
+yüzden kalktı). Eski sözleşmeyi (ücretli üyelik, eklentinin ilan ettiği sunucu adı, `/mcp`
+yetkilendirme) şart koşan testler aşağıda yeni sözleşmeye çevrildi.
 
 DÜZELTME TURU 1 (bağımsız inceleme, 2026-10-07) dört önemli metin düzeltmesi
 getirdi ve bu dosya onları da kilitler: (Ö-1) `PYTHONDONTWRITEBYTECODE` Claude
@@ -51,12 +62,11 @@ BASLIK_0 = "### 0. Tek yapıştırmayla kurulum"
 
 # Emek etiketi — HARFİ HARFİNE korunur (avukat talimatı). Satır sonu bağımsız.
 EMEK_ETIKETI = (
-    "> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele açan\n"
-    "> **Yargı Pro MCP** — ve daha önce açık kaynak olarak yayımlanan **yargi-mcp** —\n"
-    "> [Said Sürücü](https://github.com/saidsurucu)'nün eseridir. Bu sistemin\n"
-    "> \"resmî kaynaktan tam metin\" disiplini, onun kurduğu gişeler üzerinde çalışır."
+    "> 🙏 **Emek etiketi:** Türk hukuku içtihat/mevzuat erişimini modele ilk açan\n"
+    "> araçlar [Said Sürücü](https://github.com/saidsurucu)'nün eseridir. Bu sistemin\n"
+    "> \"resmî kaynaktan tam metin\" disiplini o gişelerde olgunlaştı; teyit kanalı\n"
+    "> 2026-10-15'ten beri resmî portalların kendisidir."
 )
-GELISTIRICI_PARCASI = "geliştirici: [@saidsurucu](https://github.com/saidsurucu)"
 
 
 def _oku(p):
@@ -135,48 +145,61 @@ def test_plugin_readme_master_prompta_isaret_eder_kopya_tasimaz():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Yargı Pro: KURMAZ, YETKİLENDİRMEZ — yalnız durum + talimat
+# Teyit kanalı: KURMAZ, YETKİLENDİRMEZ — yalnız bilgi (2026-10-15 avukat kararı)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def test_master_prompt_yargi_proyu_kurmaz_yetkilendirmez_yalniz_bildirir():
+def test_master_prompt_teyit_kanalini_kurmaz_yetkilendirmez_yalniz_bildirir():
+    """Eski test 'ücretli üyelik + eklentinin ilan ettiği sunucu adı + /mcp yetkilendirme'
+    cümlelerini şart koşuyordu; 2026-10-15 kararıyla kurulacak/yetkilendirilecek sunucu
+    kalmadı. Yeni sözleşme: resmî portal + web aracı; ilan yok; üçüncü taraf sunucu kurma
+    yasağı; portala ulaşılamazsa 'teyit YAPILAMADI'."""
     blok = _master_prompt_blogu()
-    assert "ücretli" in blok, "Yargı Pro'nun ücretli üyelik istediği yazılı değil"
-    assert "/mcp" in blok, "yetkilendirme yolu (/mcp) kişiye söylenmiyor"
-    assert "plugin:ortak-avukat:yargi-pro" in blok, (
-        "eklentinin ilan ettiği sunucu adı yazılı değil — kişi /mcp'de neyi arayacağını bilemez")
-    assert "teyit YAPILAMADI" in blok, "Pro yoksa içtihadın nasıl işleneceği yazılı değil"
-    assert re.search(r"mcp\s+add", blok) is None, "prompt Yargı Pro'yu KURMAYA çalışıyor (mcp add)"
-    assert "mcp login" not in blok, "prompt Yargı Pro'yu YETKİLENDİRMEYE çalışıyor (mcp login)"
+    assert "resmî portal" in blok, "teyit kanalının resmî portallar olduğu yazılı değil"
+    assert "WebFetch" in blok and "WebSearch" in blok, "web araçları (hibrit kanal) yazılı değil"
+    assert "ilan etmez" in blok, "eklentinin MCP sunucusu ilan etmediği yazılı değil"
+    assert "teyit YAPILAMADI" in blok, "portala ulaşılamazsa içtihadın nasıl işleneceği yazılı değil"
+    assert "sunucusu KURMA" in blok, "üçüncü taraf içtihat sunucusu kurma yasağı yok"
+    assert "ücretli" not in blok and "Authenticate" not in blok, "eski üyelik/yetkilendirme kalıntısı"
+    assert re.search(r"mcp\s+add", blok) is None, "prompt bir MCP sunucusu KURMAYA çalışıyor (mcp add)"
+    assert "mcp login" not in blok, "prompt bir MCP sunucusunu YETKİLENDİRMEYE çalışıyor (mcp login)"
     assert "--transport" not in blok, "prompt elle MCP kaydı açıyor (--transport)"
 
 
-def test_master_prompt_yargi_pro_durumu_mcp_panelinden_okunur():
-    """K-3: `claude mcp list` eklenti sunucularını göstermeyebilir ve her sunucuya
-    ağ sağlık denetimi yapar; durum doğrudan `/mcp` panelinden okunur."""
+def test_master_prompt_mcp_listesinde_eklenti_girdisi_beklenmez_ve_mcp_list_kosturulmaz():
+    """K-3 korunur: `claude mcp list` her sunucuya ağ sağlık denetimi yapar — koşturulmaz.
+    2026-10-15: `/mcp` panelinde eklentiye ait girdi BEKLENMEZ (eski test '/mcp yazdır' ile
+    durum okutuyordu; okunacak girdi kalmadı) — kişi 'eksik' sanmasın diye prompt bunu söyler."""
     blok = _master_prompt_blogu()
-    assert "`/mcp` yazdır" in blok, "durum /mcp panelinden okutulmuyor"
+    assert "eklentiye ait bir girdi BEKLENMEZ" in blok, "/mcp'de girdi beklenmediği söylenmiyor"
     assert re.search(r"claude mcp list[^\n]*koşturma", blok), (
         "`claude mcp list` koşturma yasağı yok (K-3)")
 
 
-def test_readme_claude_mcp_add_yargipro_onerisi_kalmadi():
-    """Eklenti `yargi-pro`'yu plugin.json'da zaten ilan eder; `claude mcp add …
-    yargipro` aynı uç noktanın İKİNCİ kaydıdır. İki README'de de kalmamalı."""
+def test_readme_claude_mcp_add_onerisi_kalmadi():
+    """Eskiden README aynı uç noktayı `claude mcp add …` ile ikinci kez kaydettiriyordu;
+    2026-10-15'ten beri eklenti hiçbir sunucu ilan etmediği için elle MCP kaydı önerisi hiç
+    olmamalı. İki README'de de kalmamalı."""
     hatalar = []
     for yol in (KOK_README, PLUGIN_README):
         for no, satir in enumerate(_oku(yol).splitlines(), 1):
-            if re.search(r"claude\s+mcp\s+add", satir) or "--transport http yargipro" in satir:
+            if re.search(r"claude\s+mcp\s+add", satir) or "--transport http" in satir:
                 hatalar.append("%s:%d → %s" % (yol.name, no, satir.strip()[:100]))
-    assert not hatalar, "elle ikinci MCP kaydı önerisi sürüyor:\n  " + "\n  ".join(hatalar)
+    assert not hatalar, "elle MCP kaydı önerisi sürüyor:\n  " + "\n  ".join(hatalar)
 
 
-def test_readme_yargi_pro_adimi_ucretli_mcp_ile_yetkilendirir_ve_ikinci_kaydi_gerekcelendirir():
+def test_readme_teyit_kanali_adimi_resmi_portal_ve_ilan_yok():
+    """Kök README 5. adımı ve plugin README kurulum bölümü teyit kanalını anlatır: resmî
+    portallar, web aracı, ilan yok, beyaz liste belgesi, 'teyit YAPILAMADI'. (Eski test
+    'ücretli', eklentinin ilan ettiği sunucu adı, 'ikinci kayıt' şart koşuyordu.)"""
     kok = _bolum(_oku(KOK_README), "### 5.", "### 6.")
-    for parca in ("ücretli", "/mcp", "plugin:ortak-avukat:yargi-pro", "ikinci"):
+    for parca in ("resmî portal", "WebFetch", "ilan etmez", "mcpServers",
+                  "resmi-kaynaklar.md", "teyit YAPILAMADI"):
         assert parca in kok, "kök README 5. adımda eksik: %r" % parca
+    assert "ücretli" not in kok and "Authenticate" not in kok
     plugin = _bolum(_oku(PLUGIN_README), "## Kurulum", "## Parça dizini")
-    for parca in ("ücretli", "/mcp", "plugin:ortak-avukat:yargi-pro"):
+    for parca in ("resmî portal", "ilan etmez", "resmi-kaynaklar.md", "teyit YAPILAMADI"):
         assert parca in plugin, "plugin README kurulum bölümünde eksik: %r" % parca
+    assert "ücretli" not in plugin and "Authenticate" not in plugin
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -214,7 +237,7 @@ def test_master_prompt_udf_cli_surumu_sabit_ve_latest_yok():
 
 def test_master_prompt_adim_sirasi_brief_ile_ayni():
     """Önkoşul → eklenti → Python → Tesseract → Node/udf-cli → compileall →
-    doğrulama → Yargı Pro DURUMU → eski yedek → özet → TAM kapat."""
+    doğrulama → TEYİT KANALI → eski bağlantılar → özet → TAM kapat."""
     _sirali(_master_prompt_blogu(), [
         "claude --version",
         "claude plugin marketplace add bcancapar-spec/ortak-avukat",
@@ -223,8 +246,8 @@ def test_master_prompt_adim_sirasi_brief_ile_ayni():
         "udf-cli@%s" % _udf_cli_surum(),
         "compileall",
         "aile_dogrula.py",
-        "YARGI PRO DURUMU",
-        "yargi-mcp-yedek",
+        "TEYİT KANALI",
+        "ESKİ BAĞLANTILAR",
         "ÖZET",
         "TAM KAPATIP",
     ])
@@ -317,15 +340,16 @@ def test_master_prompt_dosya_kanitiyla_dogrular():
 
 
 def test_master_prompt_dogrulama_adimi_kurulum_motorunu_zincirler():
-    """Avukat talimatı (2026-10-07): "projenin içerisinde mutlaka zincirleme şekilde, Yargı Pro
-    hariç kalan tüm gereksinimleri tek prompt'ta indirecek kısmı oluştur". Prompt'un 6. adımı
-    eklentinin İÇİNDEKİ kurulum motorunu koşturur, eksiği onayla tamamlatır ve motoru yeniden
-    koşturur (zincir); motorun yolu depoda gerçekten var; Yargı Pro zincirin dışında kalır."""
+    """Avukat talimatı (2026-10-07): "projenin içerisinde mutlaka zincirleme şekilde, [üçüncü
+    taraf içtihat sunucusu] hariç kalan tüm gereksinimleri tek prompt'ta indirecek kısmı oluştur".
+    Prompt'un 6. adımı eklentinin İÇİNDEKİ kurulum motorunu koşturur, eksiği onayla tamamlatır ve
+    motoru yeniden koşturur (zincir); motorun yolu depoda gerçekten var; teyit kanalı zincirin
+    dışında kalır (BİLGİ satırı — 2026-10-15'ten beri kurulacak sunucu yok)."""
     blok = _master_prompt_blogu()
-    adim6 = _bolum(blok, "6) DOĞRULAMA", "7) YARGI PRO")
+    adim6 = _bolum(blok, "6) DOĞRULAMA", "7) TEYİT KANALI")
     yol = "skills/ortak-avukat/scripts/oa_kurulum.py"
     assert yol in adim6 and (PLUGIN / yol).is_file(), "6. adım kurulum motorunu koşturmuyor"
-    _sirali(adim6, [yol, "--uygula", "yeniden koş", "Yargı Pro hariç hepsi TAMAM"])
+    _sirali(adim6, [yol, "--uygula", "yeniden koş", "teyit kanalı BİLGİ satırı dışında hepsi TAMAM"])
     assert "sistem" in adim6 and "kurmaz" in adim6, "motorun sistem yazılımı kurmadığı söylenmeli"
     for metin in (_oku(KOK_README), _oku(PLUGIN_README)):
         assert yol in metin, "README motoru tanıtmıyor"
@@ -369,12 +393,12 @@ def test_master_prompt_duzeltme_turu_1_kucukler(parca):
     "benden onay al",
     "Bulut OCR yok",
     "Müvekkil evrakına dokunma",
-    "Yargı Pro'yu kurma",
+    "Üçüncü taraf içtihat sunucusu kurma",
 ])
 def test_master_prompt_kurallar_blogu(parca):
     """Şifre/PIN/kart istenmez; e-imza ve UYAP girişi kurulumun parçası değil;
     her kurulumdan önce onay; bulut OCR yok; müvekkil evrakına dokunulmaz;
-    Yargı Pro kurulmaz. (K-7: kısa alt dizgi yerine ayırt edici cümle parçaları,
+    üçüncü taraf içtihat sunucusu kurulmaz. (K-7: kısa alt dizgi yerine ayırt edici cümle parçaları,
     büyük-küçük harf duyarlı — "pin"/"kart" başka sözcüklerde de geçebilirdi.)"""
     assert parca in _master_prompt_blogu(), "kural eksik: %r" % parca
 
@@ -389,10 +413,12 @@ def test_y1_eski_yedek_adiminda_mcp_get_yok_once_oner_sonra_remove():
     önce silinmesini ÖNERİR, onaydan sonra doğrudan `claude mcp remove`;
     eklenti kalıntısıysa tam kapat/aç + connectors talimatı korunur."""
     blok = _master_prompt_blogu()
-    assert re.search(r"mcp\s+get\s+yargi-mcp-yedek", blok) is None, (
-        "prompt `claude mcp get yargi-mcp-yedek` ile ağa dokunuyor (Y-1)")
+    # 2026-10-15: adım artık ad vermez (eklentinin ilan etmediği her eski bağlantı); `claude mcp
+    # get <ad>` hiçbir adla koşturulmaz, kaldırma `claude mcp remove <o ad>` yer tutucusuyla.
+    assert re.search(r"mcp\s+get\s+[\w-]+", blok) is None, (
+        "prompt `claude mcp get <ad>` ile ağa dokunuyor (Y-1)")
     # "connectors" adımın ilk satırında da geçer; sıra, son talimatın kendisiyle denetlenir.
-    _sirali(blok, ["ESKİ YEDEK", "ÖNER", "claude mcp remove yargi-mcp-yedek",
+    _sirali(blok, ["ESKİ BAĞLANTILAR", "ÖNER", "claude mcp remove <o ad>",
                    "connectors bölümünden silmemi"])
     assert "onayım olmadan silme" in blok
 
@@ -418,8 +444,11 @@ def test_y2_tam_yollu_tesseract_dogrulamasi_kabugu_soyler():
 # Emek etiketi — harfi harfine
 # ═══════════════════════════════════════════════════════════════════════════
 
-def test_emek_etiketi_ve_gelistirici_parcasi_harfi_harfine_korunur():
+def test_emek_etiketi_harfi_harfine_korunur():
+    """Emek etiketi (kişi adı + bağlantı) korunur; 2026-10-15'te lafzı kanal-bağımsız yazıldı
+    (ürün adı anılmaz — tests/test_kanal_bagimsiz_metin.py). Gereksinim tablosundaki ürün satırı
+    resmî portal satırı olduğundan 'geliştirici parçası' denetimi kalktı; kredi etikettedir."""
     metin = _oku(KOK_README)
     assert EMEK_ETIKETI in metin, "emek etiketi dört satırı harfi harfine korunmadı"
     assert metin.count("**Emek etiketi:**") == 1
-    assert GELISTIRICI_PARCASI in metin, "gereksinim tablosundaki geliştirici parçası değişti"
+    assert "github.com/saidsurucu" in metin, "emek etiketindeki kişi bağlantısı kayboldu"

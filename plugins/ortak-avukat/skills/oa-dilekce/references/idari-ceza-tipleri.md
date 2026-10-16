@@ -5,9 +5,9 @@
 > unsur değildi; bileşik unsurlarda (ör. "taraf + kimlik", "ihlal edilen hak +
 > Anayasa maddesi") tek bir desen unsuru "var" saydırıyordu; idari dava ve ceza
 > istinafı için tip yoktu. Bu not, kapattığımız açıkları ve dürüst sınırlarını
-> anlatır. Yürütmenin durdurulması talebinin fikri Yargı PRO 4-4'ten, hukuk
+> anlatır. Yürütmenin durdurulması talebinin fikri dış skill kütüphanesi 4-4'ten, hukuk
 > kanun yolu sıkılaştırmasının fikri 2-6'dan alındı (yalnız fikir; metin ve kod
-> alınmadı). Bütün madde metinleri **Yargı PRO MCP `mevzuat_getir` ile
+> alınmadı). Bütün madde metinleri **resmî metinden `mevzuat_getir` ile
 > 2026-10-05'te mevzuat.gov.tr'den okundu.**
 
 ## 1. Bileşik unsur — "her parça ayrı ayrı" (Y-06)
@@ -138,7 +138,7 @@ birlikte).
 - **Müvekkil-aleyhi eksen:** `--taraf sanik` (suç ikrarı), `--taraf katilan`
   ya da `musteki` (şikâyetten vazgeçme/uzlaşma).
 
-## 5. Okunan resmî metinler (Yargı PRO MCP, 2026-10-05)
+## 5. Okunan resmî metinler (mevzuat.gov.tr, 2026-10-05)
 
 HMK (mevzuatgov:kanun:5:6100) m.119, m.342, m.364 · İYUK
 (mevzuatgov:kanun:5:2577) m.3, m.10, m.27 · CMK (mevzuatgov:kanun:5:5271) m.273,

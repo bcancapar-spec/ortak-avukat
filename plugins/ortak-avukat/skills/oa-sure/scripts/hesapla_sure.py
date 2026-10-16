@@ -323,12 +323,12 @@ _RD_TEDBIR_DAVA = ("TEYİT BEKLİYOR — HMK m.397/1 HMK'nın kendi süresidir; 
                    "karşı tarafa kesin dil kurulmaz")
 # v0.5.18 K1 (T5-1) — İSTİFA SÜRELERİ: `hmk_tedbir_esas_dava` kalıbı. NEDEN VAR: müvekkile
 # giden tarih ERKEN olmalı (hak kaybı önleme); geç okuma yalnız avukatın takip sınırı.
-# Metinler Yargı PRO mevzuat_getir ile okundu (2026-10-07): HMK m.82, m.103/3, m.104;
+# Metinler resmî kaynaktan (mevzuat.gov.tr) mevzuat_getir ile okundu (2026-10-07): HMK m.82, m.103/3, m.104;
 # Av.K. m.41. Kararlar ictihat_getir tam metin: Y. 23. HD E.2013/8404 K.2013/7933;
 # Y. 13. HD E.2016/23630 K.2019/746; Y. 7. HD E.2013/26308 K.2013/21244.
 _RD_ISTIFA_HMK = ("TEYİT BEKLİYOR — HMK m.82/1 HMK'nın kendi süresidir; esas dava adli tatile tabiyse "
                   "HMK m.104 lafzen uygulanabilir görünür, ancak m.104'ün m.82/1 süresine uygulandığına "
-                  "ya da reddedildiğine dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07; Y. 13. HD "
+                  "ya da reddedildiğine dair karar bulunamadı (resmî içtihat portalı ictihat_ara, 2026-10-07; Y. 13. HD "
                   "E.2016/23630 K.2019/746 ve Y. 7. HD E.2013/26308 K.2013/21244 m.41/m.82'yi uygular, "
                   "tatil uzamasına girmez). Süre tatilde İŞLER: HMK m.103/3 — adli tatilde her türlü "
                   "tebligat yapılır, istifa tebliği tatilde geçerlidir → TEMKİNLİ: uzatma YOK (erken tarih) "
@@ -338,7 +338,7 @@ _RD_ISTIFA_HMK = ("TEYİT BEKLİYOR — HMK m.82/1 HMK'nın kendi süresidir; es
 _RD_ISTIFA_AVK = ("TEYİT BEKLİYOR — Av.K. m.41 süresi HMK'nın tayin ettiği bir süre DEĞİLDİR; HMK m.104 "
                   "yalnız 'bu Kanunun tayin ettiği sürelere' uygulanır (Y. 23. HD E.2013/8404 K.2013/7933, "
                   "İİK m.62 süresi için — Av.K. m.41'e uygulanması kıyastır); m.104'ün bu süreye "
-                  "uygulandığına dair karar bulunamadı (Yargı PRO ictihat_ara, 2026-10-07). Süre tatilde "
+                  "uygulandığına dair karar bulunamadı (resmî içtihat portalı ictihat_ara, 2026-10-07). Süre tatilde "
                   "İŞLER: HMK m.103/3 — adli tatilde her türlü tebligat yapılır → TEMKİNLİ: uzatma YOK "
                   "(erken tarih) — müvekkile 'yeni vekil bu tarihten ÖNCE' uyarısı bu tarihle verilir; geç "
                   "okuma (31 Ağu + 1 hafta) yalnız istifa eden avukatın kendi takip sınırıdır, karşı tarafa "
@@ -892,7 +892,7 @@ def _kurtarma_kapisi_notu(yargi, kural=None):
             "engelin kalkmasından iki hafta) ayrıca ve ihtiyatla değerlendirilir — buna güvenerek bekleme.")
 
 
-# ── v0.5.18 — BAŞLANGIÇ KAPISI (Yargı PRO 12-2/12-3 FİKRİNİN OA uyarlaması) ──────
+# ── v0.5.18 — BAŞLANGIÇ KAPISI (dış skill kütüphanesi 12-2/12-3 FİKRİNİN OA uyarlaması) ──────
 # Motor tarihi doğru sayar; ama süreyi başlatan OLAY ya da onun KANITI yanlışsa
 # doğru hesap yanlış sonuç verir. Kapı NİTELENDİRME YAPMAZ: kanıt türünün işaret
 # ettiği başlangıç türünü kuralın izinli türleriyle karşılaştırır, kanıtsız ya da

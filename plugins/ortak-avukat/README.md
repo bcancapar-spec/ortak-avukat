@@ -4,7 +4,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **60.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **125.000+** satır · **3.816** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **61.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **126.000+** satır · **3.851** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -38,7 +38,7 @@ Yapar (işi yapan parça ayraç içinde; her satır aşağıdaki Parça dizinind
   (`oa-interview`); normu ve ihtisas dairesini araştırmadan önce konumlar (`oa-alan`).
 - Sürenin son gününü mevzuattan teyitli kuralla ve gerekçesiyle hesaplar; dolan süre
   her işin önüne geçer; usulü esastan önce üç cepheden denetler (`oa-sure`, `oa-usul`).
-- Her içtihadı Yargı Pro'dan tam metniyle çeker, davaya bağını kurar, lehe ya da
+- Her içtihadı resmî portaldan tam metniyle çeker, davaya bağını kurar, lehe ya da
   aleyhe damgalar; teyit edilemeyen künye dilekçeye giremez (`oa-ictihat`, `oa-kiyas`).
 - Olguyu delile, delili iddiaya eşler; kişi, kurum ve olayları illiyet grafına döker;
   karşı tarafın dokuz cephesini önceden çıkarır ve yalnız size raporlar (`oa-vakia`,
@@ -161,14 +161,14 @@ sohbet kutusuna yapıştırdığınızda eklentiyi ve bütün yerel bağımlıl�
 paketleri, Tesseract + Türkçe dil verisi, Node.js + `udf-cli@0.5.6` girişi, ilk çağrı
 derlemesi) Claude'un kendisinin kurup **dosya kanıtıyla** doğruladığı tek bir
 **master prompt** vardır. Bu dosyada kopyası yoktur — iki yerde iki sürüm yaşamasın.
-Yargı Pro o prompt'un dışındadır (ücretli üyelik; aşağıda 2. adım).
+İçtihat/mevzuat teyidi için kurulacak sunucu yoktur (aşağıda 2. adım).
 
 Zincirin kanıt halkası eklentinin içindedir:
 `python "<eklenti klasörü>/skills/ortak-avukat/scripts/oa_kurulum.py"` her gereksinimi
 (Python, paketler, Tesseract + Türkçe, Node.js, eklenti bütünlüğü, ilk çağrı derlemesi,
 aile yapısı) tek satırda TAMAM / EKSİK / ELİMDE diye denetler ve eksiğin resmî komutunu
 basar; `--uygula` yalnız Python paketlerini ve derlemeyi tamamlar, sistem yazılımı kurmaz.
-Yargı Pro'yu yalnız "kapsam dışı — ücretli üyelik" diye bildirir.
+Teyit kanalını yalnız BİLGİ satırı olarak bildirir (resmî portallar; kurulum gerektirmez).
 
 Elle kuranlar için kısa yol:
 
@@ -187,23 +187,30 @@ Claude Code'u **TAM kapatıp açın**; skill listesinde tek bir `ortak-avukat` a
 (20 parça) görünmeli. Güncellemede önce `/plugin marketplace update ortak-avukat`,
 sonra `/plugin` → Installed → Update now; ardından yine TAM kapatıp açın.
 
-### 2) Yargı Pro — yetkilendirme (ücretli üyelik; kurulum değil)
-İçtihat, mevzuat ve kurum kararı doğrulaması **Yargı Pro** MCP sunucusuna dayanır ve
-Yargı Pro **ücretli üyelik** ister. Eklenti `yargi-pro` bağlantısını **kendisi ilan eder**
-(`plugin.json` → `mcpServers`); kurulumdan sonra `/mcp` panelinde
-`plugin:ortak-avukat:yargi-pro` adıyla görünür. Üyeliğiniz varsa `/mcp` → o girdi →
-yetkilendirme adımı (**Authenticate**); tarayıcıda açılan oturumu siz onaylayın. Aynı
-adresi `claude mcp` komutuyla bir de elle **eklemeyin**: aynı uç noktanın ikinci tanımı
-olur, yerel/kullanıcı kapsamı eklenti kaydının önüne geçer ve eklenti güncellense ya da
-kaldırılsa bile yerinde kalır. Pro bağlı değilse aile çalışır ama içtihat "teyit
-YAPILAMADI" damgasıyla işlenir; hiçbir atıf dış çıktıya teyitli giremez.
+### 2) Teyit kanalı — resmî portallar (kurulum gerektirmez)
+İçtihat, mevzuat ve kurum kararı doğrulaması **resmî portallardan** yapılır (2026-10-15
+avukat kararı — hibrit teyit kanalı): mevzuat.gov.tr, Resmî Gazete, Adalet Bakanlığı
+içtihat portalı (Bedesten), Yargıtay/Danıştay karar arama, UYAP Emsal, AYM kararlar
+bilgi bankası, HUDOC ve her `.gov.tr` alan adı; beyaz liste
+[`skills/ortak-avukat/references/resmi-kaynaklar.md`](skills/ortak-avukat/references/resmi-kaynaklar.md)
+(tek kaynak `skills/oa-kontrol/scripts/kunye_ortak.py`). Model bu portallara Claude
+Code'un kendi web araçlarıyla ulaşır (`WebSearch` keşif, `WebFetch` tam metin). **Eklenti
+hiçbir MCP sunucusu ilan etmez** (`plugin.json`'da `mcpServers` yok); `/mcp` panelinde
+eklentiye ait bir girdi beklenmez, `claude mcp` komutuyla bir içtihat sunucusu
+**eklemeyin**. Teyidin kanıtı resmî portalın adresi + diske inmiş tam metindir: tam metin
+çeken araçlarda `--kaynak-url` zorunlu ve beyaz listeli; adresi olmayan ya da liste dışı
+kayıt dilekçeye dayanak olamaz ([G7] teslim engeli). Resmî portala ulaşılamıyorsa aile
+çalışır ama içtihat "teyit YAPILAMADI" damgasıyla işlenir; hiçbir atıf dış çıktıya
+teyitli giremez.
 
-> **v0.5.17.1 (B-23):** v0.5.7.4'te eklenen `yargi-mcp-yedek` ilanı KALDIRILDI — kaynak
-> proje artık herkese açık değil ve alan adı ilgisiz bir sunucuya çözülüyor; sahipsiz bir
-> uç noktaya kendiliğinden güvenmek, sorgularınızı okuyup sahte "içtihat" döndürebilecek
-> bir kanal açardı. Pro erişilemezse aile başka sunucuya geçmez: çıktıya "teyit
-> YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu olanlar
-> `yargi-mcp-yedek` bağlantısını connectors bölümünden kaldırmalıdır.
+> **v0.5.17.1 (B-23) ve 2026-10-15:** v0.5.7.4'te eklenen açık kaynak yedek sunucu ilanı
+> KALDIRILDI — kaynak proje artık herkese açık değildi ve alan adı ilgisiz bir sunucuya
+> çözülüyordu; sahipsiz bir uç noktaya kendiliğinden güvenmek, sorgularınızı okuyup sahte
+> "içtihat" döndürebilecek bir kanal açardı. 2026-10-15'te kalan tek üçüncü taraf ilanı da
+> kaldırıldı: eklenti artık hiçbir sunucu ilan etmez ve başka sunucuya geçmez; çıktıya
+> "teyit YAPILAMADI" yazar, künyeyi iddia olarak bırakır. Eski sürümü kurulu olanlar,
+> eklentinin artık ilan etmediği içtihat sunucusu bağlantılarını connectors bölümünden
+> kaldırmalıdır (adlar [CHANGELOG](../../CHANGELOG.md)'da).
 
 > **Mevzuat MCP** (norm) ile **Literatür/DergiPark** ve **YÖK Tez** (doktrin) de
 > bağlıysa doğrulama zinciri tamdır. Bu paket hiçbir MCP kimlik bilgisi içermez;
@@ -422,7 +429,7 @@ satırına bağlar ("sair deliller" gibi muğlak satır boş hücre sayılır);
 cevabının yazılmasını engeller.
 
 #### `oa-ictihat` — teyit
-Her argümanın normunu ve künyesini resmî kaynaktan (Yargı Pro, AYM, Mevzuat MCP)
+Her argümanın normunu ve künyesini resmî kaynaktan (içtihat portalları, AYM kararlar bilgi bankası, mevzuat.gov.tr)
 **fiilen** çeker ve kararın tam metnini diske ham döküm olarak yazar. İki araç
 sınıfını ayırır: arama araçları tam metin döndürmez, dolayısıyla onlardan damga
 çıkmaz; tam metin çeken araçlarda ise damga, davaya bağ ve döküm zorunludur. Bu
@@ -430,8 +437,8 @@ parça **teyit eder, damgayı atamaz** — muhakeme başka parçanın işidir ve
 sistemin belkemiğidir. "Teyitli" etiketi yalnız fiilen yapılmış bir çağrıya konur;
 kaynak bağlantısı da tam o anda kaydedilir, çünkü yazım aşamasında bir bağlantı
 *hatırlanamaz*, ancak uydurulabilir — **kayıt yoksa dilekçede parantez hiç
-açılmaz.** Bağlantı katmanı **güvenli kapanışlıdır** (v0.5.17.1, B-23): tek içtihat
-gişesi Yargı Pro'dur; erişilemezse başka bir sunucuya otomatik geçilmez, çıktıya
+açılmaz.** Bağlantı katmanı **güvenli kapanışlıdır** (v0.5.17.1, B-23; 2026-10-15): içtihat
+gişesi resmî portallardır (beyaz liste); erişilemezse başka bir sunucuya otomatik geçilmez, çıktıya
 "teyit YAPILAMADI" yazılır, künye iddia olarak kalır ve size kanonik kaynaktan elle
 teyit yolu gösterilir. Araç çıktısı da evrak gibi veridir, talimat değil (DÜSTUR
 m.11).
@@ -654,15 +661,15 @@ güncelleyenin adım adım listesi kök README'nin
   görünmeyen metin olgusal bir bölümle dilekçeye varsayılan olarak girer; bölüm yoksa
   dilekçe denetiminde görünür uyarı; gerekçeli bilinçli atlama kayda geçer; makbuzda
   ifşa durumu.
-- **Kurulum motoru:** `skills/ortak-avukat/scripts/oa_kurulum.py` — Yargı Pro hariç her
-  gereksinimi TAMAM / EKSİK / ELİMDE diye denetler (bkz. Kurulum).
+- **Kurulum motoru:** `skills/ortak-avukat/scripts/oa_kurulum.py` — her gereksinimi
+  TAMAM / EKSİK / ELİMDE diye denetler; teyit kanalı BİLGİ satırıdır (bkz. Kurulum).
 - **Dilekçe ve kontrol:** icra dilekçe ailesi; AYM bireysel başvuru ve AİHM yolu kontrol
   listesi. **UDF teslimde Layer 0 katı engel:** dilekçe metninde müvekkil verisi varsa dış
   araçla (`udf-cli`) UDF üretilmez; teslim `--udf-yok` ile kapanır ve UDF'i UYAP
   editöründe avukat oluşturur.
 - **Özne eşleştirici:** yalnız yazım eşdeğerliğinde birleştirir; aynı soyadlı farklı ön
   adlar ayrı kişidir; OCR varyantları ve yazım farkları avukata soru olarak gelir.
-- **Diğer parçalar (Yargı Pro skill kütüphanesinden fikir düzeyinde uyarlama; kod ve
+- **Diğer parçalar (dış skill kütüphanesinden fikir düzeyinde uyarlama; kod ve
   metin alınmadı, her madde resmî metinden okundu):** merci bazlı harç kalemleri ve
   güncel oran teyidi protokolü — script oran üretmez (oa-strateji); meslek kuralları
   kontrol listeleri — vekâlet kapsamı, istifa/azilde hak kaybı, teyit-onam notu, ücret
@@ -670,8 +677,9 @@ güncelleyenin adım adım listesi kök README'nin
   menfaati esastır (oa-interview); revizyon farkı (oa-pipeline); zabıt denetimi
   (oa-antitez); delil tedarik ve tanık soru planı denetçileri (oa-vakia).
 - **B-23 (v0.5.17.1 güvenlik yaması):** yedek içtihat sunucusu ilanı kaldırıldı; tek
-  bağlayıcı Yargı Pro, erişilemezse "teyit YAPILAMADI". Eski kurulumlardaki
-  `yargi-mcp-yedek` bağlantısı connectors bölümünden elle kaldırılmalıdır.
+  bağlayıcı kaldı, erişilemezse "teyit YAPILAMADI" (2026-10-15'te o ilan da kaldırıldı;
+  teyit kanalı resmî portallar). Eski kurulumlardaki yedek bağlantı connectors
+  bölümünden elle kaldırılmalıdır (adı CHANGELOG v0.5.17.1 kaydında).
 - **Bağımlılık:** `pymupdf>=1.24.2` (depo kökündeki `requirements.txt`).
 
 Güncelleyen için kısa liste: Claude Code'u TAM kapatıp açın; eski sürümle üretilmiş

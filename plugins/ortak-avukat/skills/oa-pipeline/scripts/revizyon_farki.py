@@ -20,7 +20,7 @@ NEDEN VAR (saha kanıtı, derlem denetimi):
   * Karşı tarafın "aynı" dilekçesinin ikinci nüshasında (ıslah, ek beyan,
     düzeltilmiş dilekçe) bir tutarın, tarihin ya da talep satırının sessizce
     değişmesi aynı sınıftır: fark görülmezse cevap eski metne verilir.
-  Fikir kaynağı: Yargı PRO 10-9 (revizyon farkı) — kod ve metin ALINMADI; OA'nın
+  Fikir kaynağı: dış skill kütüphanesi 10-9 (revizyon farkı) — kod ve metin ALINMADI; OA'nın
   "model kurar, script denetler" yöntemiyle yeniden yazıldı.
 
 NE YAPAR:

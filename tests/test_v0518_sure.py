@@ -3,7 +3,7 @@
 AYM/AİHM, tatil takvimi kapısı ve başlangıç kapısı (oa-sure).
 
 Kaynak: 2026-10-03 yetenek denetimi — Y-01…Y-05, Y-08 hukuki doğruluk
-bulguları — ve Yargı PRO 12-1/12-2/12-3 skill'lerinin FİKRİ
+bulguları — ve dış skill kütüphanesinin 12-1/12-2/12-3 skill'lerinin FİKRİ
 (metin kopyalanmadı). Her beklenen tarih ya resmî metinden ya da aşağıda künyesi
 yazılı gerçek bir Yargıtay/AYM/AİHM kararındaki tarihlerden türetildi — oracle
 motorun kendi çıktısı DEĞİLDİR (test_sure.py:188-194 dersi: yanlış oracle hatayı
@@ -674,7 +674,7 @@ def test_Y08_deftere_takvim_eksik_isareti_ve_nobetci_gosterir(tmp_path):
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# BAŞLANGIÇ KAPISI (Yargı PRO 12-2 / 12-3 fikrinin OA uyarlaması)
+# BAŞLANGIÇ KAPISI (dış skill kütüphanesi 12-2 / 12-3 fikrinin OA uyarlaması)
 # ══════════════════════════════════════════════════════════════════════════
 
 def test_kapi_supheli_teblig_tek_kesin_tarih_URETMEZ(tmp_path):

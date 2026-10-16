@@ -12,7 +12,7 @@ davada tanığı hukuka aykırı etkilemeye teşebbüs (TCK m.277) ve yalan tan�
 (TCK m.272) riskini doğrudan büroya taşır. Bu script soru planını MEKANİK
 olarak denetler: her soru matristeki bir vakıaya bağlı mı, plan tanığın
 CEVABINI içeriyor mu, tanık listede mi, vakıa tanıkla ispata elverişli mi.
-Fikir kaynağı: Yargı PRO 16-3 (tanık soruları) — kod/metin ALINMADI.
+Fikir kaynağı: dış skill kütüphanesi 16-3 (tanık soruları) — kod/metin ALINMADI.
 
 Girdi:
   --matris : vakia_matris.py --dogrula … --json <yol> çıktısı (iddia kimlikleri)
@@ -33,7 +33,7 @@ KESİN YASAKLAR (çıkış 1):
 Ne yapmaz: soruyu yazmaz (model yazar), tanıkla görüşmez, süre hesaplamaz,
 dosya yazmaz (JSON stdout'a).
 
-Dayanaklar (Yargı PRO MCP mevzuat_getir, teyit 2026-10-05): HMK m.152 (vekil
+Dayanaklar (resmî metin — mevzuat.gov.tr, mevzuat_getir; teyit 2026-10-05): HMK m.152 (vekil
 tanığa doğrudan soru yöneltebilir; taraf hâkim aracılığıyla), m.240/2 (tanık
 listesi; listede olmayan dinlenemez, ikinci liste verilemez), m.243/1 (hazır
 bulundurulan tanık), m.255 (tanıklığın doğruluğunda kuşku — iddia ve ispat),

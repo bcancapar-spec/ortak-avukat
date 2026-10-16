@@ -5,7 +5,7 @@
 """
 md_udf_html.py — Markdown → UDF-uyumlu inline-CSS HTML (oa-dilekce yardımcısı)
 
-Yargı Pro UDF rehberi (`udf_tiff_pdf_guide` MCP aracı / `yargi-udf-tiff-pdf-guide`
+`udf-cli` geliştiricisinin UDF rehberi (`udf_tiff_pdf_guide` aracı / `yargi-udf-tiff-pdf-guide`
 skill, sürüm 2026-06-22) şu kuralı koyar: "UDF her zaman `html2udf` ile yazılır,
 `md2udf` ASLA kullanılmaz — Markdown yalnızca küçük bir alt küme destekler ve
 gerisini sessizce düşürür." Bu script tam olarak rehberin öngördüğü ARA ADIMI

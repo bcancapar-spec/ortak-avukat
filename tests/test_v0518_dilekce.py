@@ -2,13 +2,13 @@
 """v0.5.18 (aday) — İCRA DİLEKÇE AİLESİ + Y-06 DİLEKÇE KAPISI SIKILAŞTIRMASI.
 
 Saha kanıtı / gerekçe:
-  * 3 Ekim 2026 yetenek denetimi (Yargı PRO ile), bulgu Y-06: dava değeri ayrı
+  * 3 Ekim 2026 yetenek denetimi (dış skill kütüphanesiyle karşılaştırmalı), bulgu Y-06: dava değeri ayrı
     unsur değil; bileşik unsurda tek desen yetiyor; idari dava (İYUK m.3/2) ve
     ceza istinafı tipi yok.
-  * 5 Ekim 2026 Yargı PRO 107-skill analizi: OA'nın dilekçe kapısında icra tipi
+  * 5 Ekim 2026 dış skill kütüphanesi (107 skill) analizi: OA'nın dilekçe kapısında icra tipi
     YOK (3-3 takip başlatma, 3-4 takibe itiraz, 3-5 haciz/satış, 3-8 icra ceza,
     3-9 usul işlemleri "yok"; 3-1, 3-6, 3-7 "kısmen"). Fikir alındı, metin/kod
-    alınmadı; her madde Yargı PRO MCP `mevzuat_getir` ile resmî metinden
+    alınmadı; her madde `mevzuat_getir` ile resmî metinden (mevzuat.gov.tr)
     2026-10-05'te okundu (künyeler: oa-dilekce/references/icra-dilekce-ailesi.md,
     references/idari-ceza-tipleri.md).
 

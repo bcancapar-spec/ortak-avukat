@@ -308,7 +308,7 @@ def test_b6_turkce_morfoloji_capasi():
 # ═══════════════════════════════════════════════════════════════════════════
 # B8 — [F] KAPISI DİLEKÇENİN KENDİ DOSYA NUMARASINI ÇIPLAK KÜNYE SAYIYORDU
 #
-# Yargı Pro'dan çekilen GERÇEK kararlarla yapılan uçtan uca teyit-zinciri
+# resmî içtihat portalından çekilen GERÇEK kararlarla yapılan uçtan uca teyit-zinciri
 # testi (2026-09-10) bunu ortaya çıkardı. 346 sahasının tek ayrıştırıcı
 # yanlış-pozitifi buydu ve `kunye_teyit.py`'de kapatılmıştı — ama KARDEŞ
 # kapıya (`ictihat_muhakeme_denetim.py` [G2]) taşınmamıştı. Sonuç: geçerli
