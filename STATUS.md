@@ -25,7 +25,15 @@
 > İkinci koşum (HEAD `ca37539`): usul ve esas ŞARTLI PUSH, güvenlik PUSH — BLOKLAYICI 0 · UYARI 4 · NOT 22;
 > K-1/K-2 kapandı; usulün kayıt şartları bu kayıtla kapatıldı; push öncesi açık şart kalmadı, kalanlar aynı
 > dalda ayrı commit ya da açık kalem (K-3, K-4, K-10 … K-16):
-> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Push kararı avukatın.
+> [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md) §4. Avukat kararı: push ve PR #9;
+> ardından "0.6'yı geliştir": K-3, K-10…K-15 aynı dalda önce kırmızı testle kapatıldı (Excel testi +12,
+> OA-SUIT-SAYISI 3828); üçüncü heyet koşumu birleştirmeden önce.
+
+> **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
+> denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
+> v0.5.18'deki +79 ms'si, çapraz denetim sonucunun içerik özetine bağlı türetilmiş önbellekle isabet
+> turlarında geri alındı (eşleştirilmiş ABBA, v0.5.18'e göre −96,5 ms; PERFORMANS-STATUS §14), tam süit
+> 3840 geçti · 12 ortam gerekçesiyle atlandı · 0 kırmızı; birleştirme kararı avukatın.
 
 > **2026-10-16 — hibrit teyit kanalı** (dal `teyit/resmi-kaynak-beyaz-listesi`, denetim dalına yığılı PR;
 > 2026-10-15 avukat kararı): eklenti üçüncü taraf MCP sunucusu ilan etmez, içtihat/mevzuat teyidinin
@@ -33,8 +41,9 @@
 > kanal hibrittir (`WebFetch` tam metin / `WebSearch` keşif), `oa_hafiza.py teyit` tam metin çeken
 > araçlarda `--kaynak-url` ister, `ictihat_muhakeme_denetim.py` [G7] beyaz liste dışı dayanağı teslim
 > engeli sayar ve canlı metinler kanal-bağımsız yazıldı (87 dosya / 290 satır → 0). Kilitler:
-> `tests/test_teyit_kanali.py`, `tests/test_kanal_bagimsiz_metin.py`. Ölçüm: tam süit 3838 geçti · 12
-> atlandı · 0 kırmızı; OA-SUIT-SAYISI 3851. Yerel `oa-kaynak` MCP yol haritasında. Birleştirme kararı
+> `tests/test_teyit_kanali.py`, `tests/test_kanal_bagimsiz_metin.py`. Ölçüm (denetim dalının ucuyla birleşik
+> ağaç): tam süit 3887 geçti · 12 atlandı · 0 kırmızı; OA-SUIT-SAYISI 3900. Yerel `oa-kaynak` MCP yol
+> haritasında. Birleştirme kararı
 > avukatın; ayrıntı CHANGELOG "Sürümsüz" kaydında.
 
 > **v0.6.0 (2026-10-12, PR #8) — v0.5.18 çizgisinin yayını; sürüm numarası avukat kararıdır.** Saha turu: iki gerçek saha testi (icra ve ceza

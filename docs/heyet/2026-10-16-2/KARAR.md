@@ -133,19 +133,19 @@ NOT'lar (bloklamaz; kayıt ve izleme):
 | K-1 | ESAS E-1 = GÜV U-1 | **kapandı** (`ca37539`) | üç üye ölçtü: 400 MB → 0,3 MB; eşleme bozulmadı; ızgara kilidi testi |
 | K-2 | ESAS E-2 | **kapandı** (`ca37539`; bedeli H2-3) | tablo stili başlığı → rapor yok; talimat dili → BULGU |
 | GÜV N-1 (ilk) | `xl/` toplamı | **kapandı** (`ca37539`); `xl/` dışı → K-12 | test `:643` |
-| K-3 | ESAS E-3 | açık — aynı dalda ayrı commit | UYARI etiketi `TALİMAT-DİLİ`; `okuma_kapisi.py:69` |
-| K-4 | ESAS E-4 | açık — aynı dalda ayrı commit | `<ol start>` udf-cli ölçümü ya da "UDF-HTML'de" sınırı |
+| K-3 | ESAS E-3 | açık — aynı dalda ayrı commit | UYARI etiketi `TALİMAT-DİLİ`; `okuma_kapisi.py:69` — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-4 | ESAS E-4 | açık — aynı dalda ayrı commit | `<ol start>` udf-cli ölçümü ya da "UDF-HTML'de" sınırı — **cümle sınırı kondu (üçüncü tur)**; udf-cli ölçümü açık |
 | K-5 | USUL U-1 | **kapandı (bu commit)** | DENETIM §6 Görev 2/4 notu, CHANGELOG notu; tarihçe düzeltmesi avukat kararı |
 | K-6 | USUL U-2 (ilk) | kapandı (`47372fc`) | üç üye doğruladı |
 | K-7 | USUL U-3 + GÜV N-5 (ilk) | **kapandı (bu commit)** | `.gitignore` `.claude/`; protokol cümlesi |
 | K-8 | USUL 4 | kapandı (`47372fc`); bu commit için yinelendi | §4.1 |
 | K-9 | USUL 5 + GÜV 3 | değişmedi — kapsam dışı | commit'siz iş (§6); commit'lenince OA-SUIT-SAYISI (ölçülen 3853), ilan testleri, SECURITY.md cümlesi, tam süit, heyet |
-| K-10 | ESAS E-5 (H2-3) | yeni — aynı dalda ayrı commit | ZAYIF aralık kaydı; düz dolgulu hücrede ölçüm; "bildirilir" |
-| K-11 | ESAS E-7 (H2-4) | yeni — aynı dalda ayrı commit | tavan/nesne sayımı ölçümle; yorum düzeltmesi |
-| K-12 | GÜV N-3 | yeni — ayrı commit (tek satır + test) | boyut toplamı bütün girdiler |
-| K-13 | GÜV N-1, N-2; ESAS N-2 | yeni — ayrı commit | satır döngüsünde `AZAMI_SURE_SN`; `<col>` kıskacı; aralık üyeliği nesnesiz |
-| K-14 | GÜV N-4 | yeni — ayrı commit | üreteç hatalarını `_tablo_denetlenemedi`'ye düşürmek |
-| K-15 | USUL N-1 | yeni — ayrı kalem | testte `write_bytes(read_bytes())` |
+| K-10 | ESAS E-5 (H2-3) | yeni — aynı dalda ayrı commit | ZAYIF aralık kaydı; düz dolgulu hücrede ölçüm; "bildirilir" — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-11 | ESAS E-7 (H2-4) | yeni — aynı dalda ayrı commit | tavan/nesne sayımı ölçümle; yorum düzeltmesi — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-12 | GÜV N-3 | yeni — ayrı commit (tek satır + test) | boyut toplamı bütün girdiler — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-13 | GÜV N-1, N-2; ESAS N-2 | yeni — ayrı commit | satır döngüsünde `AZAMI_SURE_SN`; `<col>` kıskacı; aralık üyeliği nesnesiz — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-14 | GÜV N-4 | yeni — ayrı commit | üreteç hatalarını `_tablo_denetlenemedi`'ye düşürmek — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
+| K-15 | USUL N-1 | yeni — ayrı kalem | testte `write_bytes(read_bytes())` — **kapatıldı: üçüncü onarım turu** (CHANGELOG Heyet maddesi; oa-ingest günlüğü 2026-10-16) |
 | K-16 | ESAS N-3, N-4, N-5, N-7; ilk ESAS N-4; USUL N-6 | açık kalemler | kayıt metni, pivot stili, `_cells` sözleşmesi, günlük kaynak notu, eklenti README Excel, `SURUM` kararı |
 
 ### 4.1 K-8 ölçümü (bu commit'in dosyaları)

@@ -65,8 +65,32 @@ for _s in (_sys.stdout, _sys.stderr):
 import argparse, datetime, importlib.util, json, os, re, sys
 
 BUYUK_ESIK_VARSAYILAN = 40000  # oa_ingest.py BUYUK_ESIK_KARAKTER ile aynı varsayılan
-# B-22 (v0.5.18): künyedeki `belge_guvenlik.karar` → okuma etiketi (belge_guvenlik.ozet_etiketi ile aynı)
+# B-22 (v0.5.18): künyedeki `belge_guvenlik.karar` → okuma etiketi (belge_guvenlik.ozet_etiketi ile aynı).
+# Heyet 2026-10-16 ESAS E-3 / K-3: UYARI etiketi artık TÜRE bağlı (Excel gizli katmanı ≠ talimat dili); kural
+# `guvenlik_etiketi` ile raporun bütününden üretilir ve belge_guvenlik.ozet_etiketi ile testle birebir tutulur.
+# Bu sözlük yalnız karar-düzeyi yedek (eski künye kaydı: `guvenlik` alanında yalnız karar varsa).
 GUVENLIK_ETIKETI = {"BULGU": "🛡GİZLİ-KATMAN", "UYARI": "🛡TALİMAT-DİLİ", "DENETLENEMEZ": "🛡DENETLENEMEZ"}
+GIZLI_KATMAN_UYARI_TURLERI = frozenset({"gizli-sayfa", "gizli-satir", "gizli-sutun", "gizli-bicim", "gizli-hucre-ozeti"})
+
+
+def guvenlik_etiketi(rapor):
+    """belge_guvenlik.ozet_etiketi ile birebir (okuma listesi kapıyı import etmez — sıcak yol hafif kalır; tek kaynak
+    garantisi `tests/test_v0519_excel_gizli_katman.py` tek-kaynak testidir). '' = temiz."""
+    if not rapor:
+        return ""
+    if not isinstance(rapor, dict):
+        return GUVENLIK_ETIKETI.get(rapor, "🛡DENETLENEMEZ")
+    karar = rapor.get("karar")
+    if karar == "BULGU":
+        return "🛡GİZLİ-KATMAN"
+    if karar == "UYARI":
+        turler = {b.get("tur") for b in (rapor.get("bulgular") or []) if isinstance(b, dict)}
+        if turler & GIZLI_KATMAN_UYARI_TURLERI:
+            return "🛡GİZLİ-KATMAN (UYARI)"
+        if "zemin-olculemedi" in turler:
+            return "🛡ZEMİN-ÖLÇÜLEMEDİ"
+        return "🛡TALİMAT-DİLİ"
+    return "🛡DENETLENEMEZ"
 
 # ═════════════════════════════════════════════════════════════════════════
 # (3) KRİTİK EVRAK → SÜRE ADAYI (v0.5.16/E — P1-10 / A-4)
@@ -337,6 +361,7 @@ def sure_adaylari(kunye, kok):
         # B-22 (v0.5.18): yalnız işaret varsa alan eklenir (temiz çıktı aynı kalır)
         if isinstance(k.get("belge_guvenlik"), dict):
             aday["guvenlik"] = k["belge_guvenlik"].get("karar")
+            aday["guvenlik_etiketi"] = guvenlik_etiketi(k["belge_guvenlik"])
         gizli_tarih, denet_tarih = _damgali_tarih_sayilari(govde)
         if gizli_tarih:
             aday["gizli_katman_tarih"] = gizli_tarih
@@ -381,7 +406,7 @@ def cmd_sure_adaylari(args):
                 sinif_s += " ⚠OCR"
             not_s = a["not"]
             if a.get("guvenlik"):
-                sinif_s += " " + GUVENLIK_ETIKETI.get(a["guvenlik"], "🛡DENETLENEMEZ")
+                sinif_s += " " + (a.get("guvenlik_etiketi") or GUVENLIK_ETIKETI.get(a["guvenlik"], "🛡DENETLENEMEZ"))
             if a.get("denetlenemeyen_tarih"):
                 not_s = (f"⚠ denetlenemeyen/talimat damgalı bölgede {a['denetlenemeyen_tarih']} tarih — "
                          f"süreye KATILMADI; bu bölge GİZLİ OLMAYABİLİR, tarihleri ORİJİNALDEN oku. "
@@ -495,6 +520,7 @@ def _oncelik_listesi(kunye, esik):
         # B-22 (v0.5.18): yalnız işaret varsa alan eklenir (temiz liste JSON'u aynı kalır)
         if isinstance(k.get("belge_guvenlik"), dict):
             oge["guvenlik"] = k["belge_guvenlik"].get("karar")
+            oge["guvenlik_etiketi"] = guvenlik_etiketi(k["belge_guvenlik"])
         liste.append(oge)
     return liste
 
@@ -631,7 +657,7 @@ def cmd_liste(args):
     for i, k in enumerate(liste, 1):
         etiketler = []
         if k.get("guvenlik"):
-            etiketler.append(GUVENLIK_ETIKETI.get(k["guvenlik"], "🛡DENETLENEMEZ"))
+            etiketler.append(k.get("guvenlik_etiketi") or GUVENLIK_ETIKETI.get(k["guvenlik"], "🛡DENETLENEMEZ"))
         if k["teyit_gerek"]:
             etiketler.append("⚠OCR")
         if k["buyuk"]:

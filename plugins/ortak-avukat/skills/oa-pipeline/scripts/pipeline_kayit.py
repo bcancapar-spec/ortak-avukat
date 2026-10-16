@@ -3547,6 +3547,14 @@ _CAPRAZ_DENETIM_MOD = None
 # (S1 `kaynaklar[rol=girdi]` beyanı o motorun denetim JSON'undan okunur).
 _CAPRAZ_GIRDI_DAMGALARI = (("graf", "grafik_denetim"), ("vakia", "vakia_matris"),
                            ("kiyas", "kiyas_denetim"))
+# v0.5.19 — çapraz denetim SONUÇ ÖNBELLEĞİ (bkz. `_capraz_bosluk_hesapla`).
+# Dosya `_oa/defter/` altında yaşar ama TÜRETİLMİŞTİR: gerçeğin kaynağı
+# değildir, silinmesi hiçbir şey kaybettirmez (bir sonraki koşu yeniden
+# hesaplar). `denetle` dedup parmak izine GİRMEZ (bkz. `_hook_denetle_ayirt`).
+_CAPRAZ_ONBELLEK_ADI = ".capraz-onbellek.json"
+# Önbellek biçimi ya da önbelleğe giren sonucun anlamı değişirse ARTIRILIR;
+# anahtara girer, eski dosyalar kendiliğinden ıskaya düşer.
+_CAPRAZ_ONBELLEK_SEMA = 1
 
 
 def _capraz_denetim_modulu():
@@ -3597,12 +3605,151 @@ def _capraz_girdi_yollari(kok, mod):
     return yollar
 
 
+def _capraz_girdi_coz(ham):
+    """Model girdisinin BAYTLARINI ayrıştırır; `capraz_denetim._yukle`
+    (`open(encoding="utf-8")` + `json.load`) ile EŞDEĞERDİR: katı utf-8 (BOM
+    ve geçersiz bayt reddedilir), dönüş ham JSON değeri. Metin kipinin satır
+    sonu çevirisi (CRLF/CR → LF) JSON'da anlam taşımaz — dize dışında ikisi
+    de boşluk, dize içinde ikisi de geçersiz denetim karakteridir.
+    Eşdeğerlik testle kilitli (`test_bayttan_ayristirma_capraz_denetim_yukle_
+    ile_ESDEGER`); `_yukle` değişirse o test kırmızı yanar.
+
+    NEDEN bayttan: önbellek anahtarındaki içerik özeti ile hesaba giren içerik
+    AYNI okumadan gelmelidir. İki ayrı okuma arasında dosya değişseydi eski
+    özete yeni içeriğin sonucu bağlanırdı (sessiz bayat isabet)."""
+    return json.loads(ham.decode("utf-8"))
+
+
+def _capraz_onbellek_yorumlayici():
+    """Yorumlayıcı etiketi (ör. `cpython-3.14`). NEDEN anahtarda: eşleştirme
+    `str.lower`, `str.isalnum`, `\\w` gibi Unicode veritabanına bağlı
+    işlemlere dayanır; veritabanı küçük sürümle değişir, yama sürümüyle
+    değişmez (aynı küçük sürümdeki kanca ve CLI önbelleği paylaşır)."""
+    return f"{sys.implementation.name}-{sys.version_info[0]}.{sys.version_info[1]}"
+
+
+def _capraz_dosya_ozeti(yol):
+    with open(yol, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def _capraz_onbellek_anahtari(kok, mod, hamlar):
+    """Çapraz denetim sonucunu belirleyen HER şeyin özeti (sha256): üç model
+    girdisinin rol başına içerik özeti (`hamlar` — hesaba giren baytların
+    TA KENDİSİ), S1 seçimini besleyen damgalı denetim JSON'larının özeti,
+    `capraz_denetim.py` (eşleştirme kuralları ve sabitleri: ANAHTAR,
+    BELGESIZ_MESRU, ≥4 karakter eşiği…) ve `pipeline_kayit.py` (seçim,
+    ayrıştırma, ≥2 girdi eşiği) dosyalarının özeti, yorumlayıcı ve şema.
+
+    Seçim (`_capraz_girdi_yollari`) her koşuda YENİDEN yapılır; anahtar
+    seçimin SONUCUNU (hangi rol hangi içerikle) taşır — böylece damgalı
+    JSON'un özetinin alınması ile seçimin yapılması arasındaki bir yarış bile
+    yanlış isabet üretemez, en çok fazladan ıska üretir. İstisna
+    FIRLATABİLİR: çağıran yakalar ve önbelleksiz hesaplar."""
+    damgali = []
+    for _ad, arac in _CAPRAZ_GIRDI_DAMGALARI:
+        for yol, _m in _denetim_jsonlari(kok, arac):
+            damgali.append([arac, os.path.basename(yol), _capraz_dosya_ozeti(yol)])
+    malzeme = {
+        "sema": _CAPRAZ_ONBELLEK_SEMA,
+        "yorumlayici": _capraz_onbellek_yorumlayici(),
+        "kod": {"capraz_denetim": _capraz_dosya_ozeti(mod.__file__),
+                "pipeline_kayit": _capraz_dosya_ozeti(__file__)},
+        "girdi": {ad: (hashlib.sha256(ham).hexdigest() if ham is not None else None)
+                  for ad, ham in hamlar.items()},
+        "damgali": damgali,
+    }
+    ham = json.dumps(malzeme, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(ham.encode("ascii")).hexdigest()
+
+
+def _capraz_onbellek_yolu(kok):
+    return os.path.join(kok, "_oa", "defter", _CAPRAZ_ONBELLEK_ADI)
+
+
+def _capraz_onbellek_oku(kok, anahtar):
+    """İsabet → (kopuk, belirsiz); aksi hâlde None. Biçim: tek satırlık ASCII
+    başlık `{"anahtar": …, "govde": sha256(gövde)}` + "\\n" + gövde (JSON).
+    Gövde özeti tutmuyorsa (yarım yazım, bit çürümesi, elle düzenleme —
+    ör. uyarıları silinmiş gövde), anahtar başka girdilere aitse ya da yapı
+    beklenen değilse None: şüphede hesaplanır. Kasıtlı sahteciliğe karşı
+    koruma DEĞİLDİR — dava klasörü güven sınırıdır (defterde olduğu gibi).
+    İstisna FIRLATABİLİR (dosya yok/okunamaz): çağıran ıska sayar."""
+    with open(_capraz_onbellek_yolu(kok), "rb") as f:
+        ham = f.read()
+    bas, ayrac, govde = ham.partition(b"\n")
+    if not ayrac:
+        return None
+    baslik = json.loads(bas.decode("ascii"))
+    if not isinstance(baslik, dict) or baslik.get("anahtar") != anahtar:
+        return None
+    if baslik.get("govde") != hashlib.sha256(govde).hexdigest():
+        return None
+    veri = json.loads(govde.decode("utf-8"))
+    if not isinstance(veri, dict):
+        return None
+    kopuk, belirsiz = veri.get("kopuk"), veri.get("belirsiz")
+    if not (isinstance(kopuk, list) and isinstance(belirsiz, list)
+            and all(isinstance(o, dict) for o in kopuk)
+            and all(isinstance(o, dict) for o in belirsiz)):
+        return None
+    return kopuk, belirsiz
+
+
+def _capraz_onbellek_yaz(kok, anahtar, kopuk, belirsiz):
+    """Atomik yazım (tmp + os.replace): okuyan süreç ya eski ya yeni TAM
+    dosyayı görür. `_oa/defter` YOKSA yazmaz — o dizinin varlığı "hat açık"
+    anlamı taşır (nabız, dedup, HAT ATLANDI nöbetçisi); türetilmiş önbellek
+    onu yaratamaz. JSON gidiş-dönüşü sonucu birebir geri vermiyorsa (ör.
+    ileride sözlük dışı öğe/tuple) YAZILMAZ: isabet, ıskanın döndüreceğinden
+    farklı bir şey döndüremez. İstisna FIRLATABİLİR: çağıran yutar."""
+    if not os.path.isdir(os.path.join(kok, "_oa", "defter")):
+        return
+    sonuc = {"kopuk": kopuk, "belirsiz": belirsiz}
+    try:
+        govde = json.dumps(sonuc, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    except UnicodeEncodeError:              # eşlenmemiş vekil karakter — kaçışlı yaz
+        govde = json.dumps(sonuc, ensure_ascii=True, separators=(",", ":")).encode("ascii")
+    if json.loads(govde.decode("utf-8")) != sonuc:
+        return
+    baslik = json.dumps({"anahtar": anahtar, "govde": hashlib.sha256(govde).hexdigest()},
+                        separators=(",", ":")).encode("ascii")
+    yol = _capraz_onbellek_yolu(kok)
+    tmp = f"{yol}.tmp.{os.getpid()}"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(baslik + b"\n" + govde)
+        os.replace(tmp, yol)
+    except BaseException:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def _capraz_bosluk_hesapla(kok):
     """(kopuk, belirsiz) ham listeleri — capraz_denetim.caprazla_ayrintili
     in-process. Üç girdiden en az ikisi okunamıyorsa ([], []) (capraz_denetim
     ile aynı eşik: tek dosyayla çapraz denetim olmaz). Okunamayan girdi
     JSON'u burada anılmaz — `_okunamayan_denetim_uyarisi` zaten `_oa/cikti/
-    *.json` tümünü tarar. ASLA fırlatmaz."""
+    *.json` tümünü tarar. ASLA fırlatmaz.
+
+    v0.5.19 — SONUÇ ÖNBELLEĞİ. NEDEN VAR: 3000 evraklık dosyayı temsil eden
+    ölçek kökünde bu hesap Stop kancasına ~+79 ms ekliyordu (PERFORMANS-
+    STATUS §12.3: 1,4 MB grafın yeniden ayrıştırılması + kimliklerin ortak
+    uzayda eşleştirilmesi, ~25.800 `_norm` çağrısı). Kanca gövdesi her Stop'ta
+    TAM koşar; girdiler ise çoğu turda değişmez. Sonuç, onu belirleyen her
+    şeyin İÇERİK özetine bağlanır (`_capraz_onbellek_anahtari`) ve
+    `_oa/defter/.capraz-onbellek.json`da tutulur.
+
+    Önbellek TÜRETİLMİŞTİR ve FAIL-CLOSED'dır: okunamayan girdi, anahtar/
+    okuma/yazma adımındaki her istisna ya da bozuk/yabancı dosya önbelleği
+    devre dışı bırakır ve sonuç önbelleksiz hesaplanır — önbellek hatası ASLA
+    yanlış "temiz" sonuç üretemez: önbellek adımlarının her biri kendi
+    korumasıyla sarılıdır ve dış `except`e (→ ([], [])) DÜŞEMEZ; oraya
+    yalnız önbellekten bağımsız, davranışı değişmeyen eski adımlar (girdi
+    seçimi, hesabın kendisi) düşebilir."""
     try:
         kok = kok or "."
         if not os.path.isdir(os.path.join(kok, "_oa", "cikti")):
@@ -3610,26 +3757,56 @@ def _capraz_bosluk_hesapla(kok):
         mod = _capraz_denetim_modulu()
         if mod is None:
             return [], []
-        yuklu = {}
+        hamlar, okunamayan = {}, False
         for ad, yol in _capraz_girdi_yollari(kok, mod).items():
             if not yol:
-                yuklu[ad] = None
+                hamlar[ad] = None
                 continue
             try:
-                yuklu[ad] = mod._yukle(yol)
+                with open(yol, "rb") as f:
+                    hamlar[ad] = f.read()
+            except Exception:
+                hamlar[ad] = None
+                okunamayan = True          # içerik bilinmiyor → önbellek YOK
+        if sum(1 for h in hamlar.values() if h is not None) < 2:
+            return [], []
+        anahtar = None
+        if not okunamayan:
+            try:
+                anahtar = _capraz_onbellek_anahtari(kok, mod, hamlar)
+            except Exception:
+                anahtar = None
+        if anahtar:
+            try:
+                isabet = _capraz_onbellek_oku(kok, anahtar)
+            except Exception:
+                isabet = None
+            if isabet is not None:
+                return isabet
+        yuklu = {}
+        for ad, ham in hamlar.items():
+            try:
+                yuklu[ad] = _capraz_girdi_coz(ham) if ham is not None else None
             except Exception:
                 yuklu[ad] = None
         if sum(1 for v in yuklu.values() if isinstance(v, dict)) < 2:
-            return [], []
-        girdiler = (yuklu.get("graf") if isinstance(yuklu.get("graf"), dict) else None,
-                    yuklu.get("vakia") if isinstance(yuklu.get("vakia"), dict) else None,
-                    yuklu.get("kiyas") if isinstance(yuklu.get("kiyas"), dict) else None)
-        ayrintili = getattr(mod, "caprazla_ayrintili", None)
-        if callable(ayrintili):
-            kopuk, belirsiz = ayrintili(*girdiler)
-        else:                                   # eski kardeş sürüm — yalnız kopuk
-            kopuk, belirsiz = mod.caprazla(*girdiler), []
-        return list(kopuk or []), list(belirsiz or [])
+            kopuk, belirsiz = [], []
+        else:
+            girdiler = (yuklu.get("graf") if isinstance(yuklu.get("graf"), dict) else None,
+                        yuklu.get("vakia") if isinstance(yuklu.get("vakia"), dict) else None,
+                        yuklu.get("kiyas") if isinstance(yuklu.get("kiyas"), dict) else None)
+            ayrintili = getattr(mod, "caprazla_ayrintili", None)
+            if callable(ayrintili):
+                kopuk, belirsiz = ayrintili(*girdiler)
+            else:                               # eski kardeş sürüm — yalnız kopuk
+                kopuk, belirsiz = mod.caprazla(*girdiler), []
+            kopuk, belirsiz = list(kopuk or []), list(belirsiz or [])
+        if anahtar:
+            try:
+                _capraz_onbellek_yaz(kok, anahtar, kopuk, belirsiz)
+            except Exception:
+                pass                            # yazılamadı: sonuç yine doğru, sonraki koşu hesaplar
+        return kopuk, belirsiz
     except Exception:
         return [], []
 
@@ -4800,8 +4977,9 @@ def _hook_denetle_ayirt(kok):
     İki katman: (a) `_oa/defter` dosyalarının İÇERİK hash'i — denetim
     çıktısı defterden türediği için defterdeki her gerçek değişiklik
     (--isle olayı, makbuz, RED) izi değiştirir; denetle'nin KENDİ yazdığı
-    `.hook-son-iz.json` (+ .tmp artıkları) HARİÇTİR ki ilk koşunun damgası
-    izi bozup dedup'u ölü koda çevirmesin; kendi yeniden-türetimleri
+    `.hook-son-iz.json` ve v0.5.19 çapraz denetim önbelleği
+    (`_CAPRAZ_ONBELLEK_ADI`, + .tmp artıkları) HARİÇTİR ki ilk koşunun kendi
+    yazımı izi bozup dedup'u ölü koda çevirmesin; kendi yeniden-türetimleri
     (pipeline-durum.json/DURUM.md) İÇERİK-AYNI yazdığı için içerik hash'i
     onlardan etkilenmez (mtime'a bakılmaz). (b) `_oa/{cikti,teslim}` +
     kök dizin dosya listesi (ad+boyut+mtime) — model arada dilekçe/UDF
@@ -4814,7 +4992,7 @@ def _hook_denetle_ayirt(kok):
         if os.path.isdir(defter):
             for taban, _dizinler, dosyalar in os.walk(defter):
                 for ad in dosyalar:
-                    if ad == ".hook-son-iz.json" or ".tmp." in ad:
+                    if ad in (".hook-son-iz.json", _CAPRAZ_ONBELLEK_ADI) or ".tmp." in ad:
                         continue          # denetle'nin kendi yazımı — bağışık
                     yol = os.path.join(taban, ad)
                     try:

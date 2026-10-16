@@ -4,7 +4,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **61.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **126.000+** satır · **3.851** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.900** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > **© 2026 Av. Bayram Can Çapar — Tüm hakları saklıdır (5846 sayılı FSEK).** Fikri mülkiyet ile mali/manevi haklar münhasıran hak sahibine aittir; izinsiz çoğaltma/dağıtma/türev yasaktır. Bkz. depo kökündeki [LICENSE](../../LICENSE) ve [NOTICE](../../NOTICE).
 
@@ -244,7 +244,7 @@ her parçada ne yapıldığı [docs/SURUM-0.6.0-YETENEKLER.md](../../docs/SURUM-
 |---|---|---|---|
 | [`ortak-avukat`](skills/ortak-avukat/) | Çekirdek kimlik + anayasa; işi `oa-pipeline`'a devreder; kurulum motoru (`oa_kurulum.py`) | çekirdek | 1 script |
 | [`oa-pipeline`](skills/oa-pipeline/) | Başbakan: uçtan uca hat + defter + revizyon farkı | orkestra | 11 script |
-| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili + belge güvenlik kapısı + kritik alan teyidi) | 0. MANİFEST | 6 script |
+| [`oa-ingest`](skills/oa-ingest/) | Evrak → metin (OCR nöbetçili + belge güvenlik kapısı — Excel'de gizli satır/sütun, zeminle aynı renk, `;;;` biçimi, minik punto dahil + kritik alan teyidi) | 0. MANİFEST | 6 script |
 | [`oa-interview`](skills/oa-interview/) | İlk inceleme / mülakat + meslek kuralları kontrol listeleri | 1. ALIM | — |
 | [`oa-alan`](skills/oa-alan/) | Norm + ihtisas dairesi konumlama | 2. KONUMLAMA | — |
 | [`oa-ictihat`](skills/oa-ictihat/) | İçtihat/mevzuat teyidi (güvenli kapanış) | 3. ARAŞTIRMA | 1 script |

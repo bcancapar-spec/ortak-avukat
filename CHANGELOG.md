@@ -318,8 +318,10 @@ kırmızı testle; dal GitHub'a push edilmedi.
 
 - **Numaralı liste kaynak numarasını korur (B-1):** `md_udf_html.py` ilk madde 1 değilse
   `<ol start="N">` yazar; "A. USUL / B. ESAS" alt başlığıyla bölünen talep bentlerinde 9. bent
-  artık "1." basılmıyor. Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu
-  dalda yeniden yazıldı. 1'den başlayan listede çıktı eskisiyle bayt-özdeş.
+  artık "1." basılmıyor (UDF-HTML dizgesinde testli; udf-cli/PDF yolunda `start` özniteliğinin
+  numaralandırmaya işlenmesi udf-cli oturumu açık makinede ölçülecek — heyet 2026-10-16 E-4 / K-4).
+  Açık PR #6'nın (2026-09-14, main ile çakışmış) saha bulgusu; kod bu dalda yeniden yazıldı. 1'den
+  başlayan listede çıktı eskisiyle bayt-özdeş.
 - **Kaynak hijyeni kapısı (B-2…B-5):** `ruff.toml` yalnız hata sınıfı kurallarla (sözdizimi,
   tanımsız ad, yeniden tanım, kullanılmayan import, yinelenen küme öğesi, ham görünmez /
   çift-yönlü karakter); CI'da bağımsız `lint` işi, ruff sürümü sabit. Cf-sınıfı regex ve üç
@@ -382,6 +384,42 @@ kırmızı testle; dal GitHub'a push edilmedi.
   dalda ayrı commit ya da açık kalem (ZAYIF aralık kaydı, 128 MB tavanının bellek karşılığı, `docProps`
   toplamı, süre denetimi, UYARI etiketi, `<ol start>` UDF ölçümü):
   [docs/heyet/2026-10-16-2/KARAR.md](docs/heyet/2026-10-16-2/KARAR.md). Push yapılmadı; karar avukatın.
+  **Üçüncü onarım turu (avukat kararı: "0.6'yı geliştir"):** K-3 Excel UYARI etiketi ve md başlığı türe
+  göre (`🛡GİZLİ-KATMAN (UYARI)` / `🛡ZEMİN-ÖLÇÜLEMEDİ` / `🛡TALİMAT-DİLİ`; `okuma_kapisi.guvenlik_etiketi`
+  testle tek kaynak); K-10 tablo stili / koşullu biçim aralığında talimat dilsiz açık renkli yazı sayfa
+  başına `zemin-olculemedi` kaydı (UYARI, damga yok), hücrenin kendi düz dolgusu tablo stilini ezer ve
+  ölçülür, ZAYIF kaynaklı talimat kaydı gizliliği kesin saymaz; K-11 bayt tavanına ek nesne tavanları
+  (`AZAMI_TABLO_HUCRE` 1 M, `AZAMI_TABLO_SATIR` 500 k — sayfa XML'i akışla sayılır, kitap yüklenmez);
+  K-12 boyut toplamı arşivin bütünü (docProps dahil); K-13 satır döngüsünde süre bütçesi, gizli sütun
+  aralığı son sütunla kıskaçlı, aralık üyeliği nesnesiz; K-14 üreteç içi hata sebepli sarmalanır (gizli
+  sayfa yine damgalı); K-15 satır sonu duyarlı test `write_bytes`. Önce kırmızı: Excel testi +12 (OA-SUIT-SAYISI
+  3816 → 3828); iki mevcut testin sözleşmesi güncellendi (ZAYIF temiz → UYARI kaydı). Üçüncü heyet koşumu
+  birleştirmeden önce.
+- **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
+  `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
+  kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,
+  `_oa/defter/.capraz-onbellek.json`'da tutulur; anahtar sonucu belirleyen her şeyin içerik
+  özetidir (sha256: üç girdi, damgalı denetim JSON'ları, `capraz_denetim.py` ve `pipeline_kayit.py`,
+  yorumlayıcı küçük sürümü, şema). Önbellek fail-closed'dır (bozuk ya da yabancı anahtarlı önbellek dosyasında ve okunamayan
+  girdide sonuç yeniden hesaplanır; önbellek hatası boş, "temiz" görünen sonuç üretemez); dedup
+  parmak izine girmez, `_oa/defter`'i yaratmaz, append-only deftere dokunmaz (CLAUDE.md performans
+  değişmezi #7). **Neden:** v0.5.18'de 3000 evraklık ölçek kökünde Stop kancası +79 ms
+  yavaşlamıştı ([PERFORMANS-STATUS.md](docs/PERFORMANS-STATUS.md) §12.3); kaynak çapraz
+  denetimdi, girdileri ise çoğu turda değişmez. **Ölçüm** (2026-10-09; eşleştirilmiş ABBA, ölçek
+  kökü, Python 3.14.8): v0.5.18'e göre isabette −96,5 ms, ıskada +22,2 ms, standart kökte −0,3 ms;
+  v0.5.17.1'e göre isabette −3,6 ms; DURUM.md, `--denetle` çıktısı ve çıkış kodu v0.5.18 ile
+  birebir (§14). Bu dalda 2026-10-16 sürüm defteri komutu: §14.9. **Test:**
+  `tests/test_v0519_capraz_onbellek.py` (37; önce kırmızı; 21 mutasyonun 21'i yakalandı);
+  OA-SUIT-SAYISI 3816 → 3853. **Taşıma:** ilk commit `ad66357` v0.6.0 öncesi tabandaydı;
+  `61b8e14` üzerine yeniden temellendirildi (`d996f62`; yazar, tarih ve mesaj aynen; kod
+  değişmedi). İki README künyesi ve OA-SUIT-SAYISI `61b8e14`'ten alınıp yeniden türetildi;
+  PERFORMANS-STATUS bölümü §14 oldu, çünkü bu dalda §13 v0.5.18 eksikler turuna aittir — taşınan
+  commit'in mesajındaki «§13» bu §14'tür. **Kapılar** (2026-10-16, Python 3.14.8): tam süit 3840
+  geçti · 12 ortam gerekçesiyle atlandı (UDF yazıcısı `OA_TEST_UDF_YAZICI=0` ile kapalı, saha
+  referansı tanımsız) · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi TEMİZ.
+  Sürüm numarası değişmedi (0.6.0); birleştirme kararı avukatın.
+  **Denetim dalına birleştirme (2026-10-16, birleştirme commit'i):** OA-SUIT-SAYISI 3865; tam süit 3852 geçti ·
+  12 atlandı · 0 kırmızı; zamanlama 1; ruff temiz; aile TEMİZ (birleşik ağaçta ölçüldü).
 - **Hibrit teyit kanalı — 2026-10-15 avukat kararı (dal `teyit/resmi-kaynak-beyaz-listesi`,
   bu denetim dalına yığılı PR):** eklenti üçüncü taraf MCP sunucusu ilan etmez — `plugin.json`
   `mcpServers` (Yargı Pro, `yargi.betaspacestudio.com/mcp`) kaldırıldı; mağaza açıklaması ve
@@ -412,11 +450,14 @@ kırmızı testle; dal GitHub'a push edilmedi.
   izinli liste boş, çift kilit yok), `test_v0518_kurulum`, `test_v0518_master_prompt`. Kanal
   değişiminin kırdığı 86 eski test (damga / döküm / akıbet / enjeksiyon disiplini) kapıyı değil
   disiplini sınadığından `tests/oa_teyit_kanali.py` yardımcısıyla beyaz listeli sentetik adres
-  alır. OA-SUIT-SAYISI 3816 → 3851. Ölçüm (Python 3.14, Windows): tam süit 3838 geçti · 12 ortam
+  alır. OA-SUIT-SAYISI +35 (bu dalda 3816 → 3851). Ölçüm (Python 3.14, Windows): tam süit 3838 geçti · 12 ortam
   gerekçesiyle atlandı · 0 kırmızı; zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi
   TEMİZ; kurulu eklentide kanca doktoru yeşil. **Yol haritası:** yerel `oa-kaynak` MCP (resmî
   portalları saran, açık kodlu keşif katmanı) — kurulmadı, kararı avukatın. Dokunulmayan: sürüm
   (0.6.0), hukuki playbook'lar. Birleştirme kararı avukatın.
+  **Denetim dalının ilerlemiş ucuyla (`66b5d09`) birleştirme (2026-10-16):** OA-SUIT-SAYISI 3900 (3865 + 35,
+  collect-only ile doğrulandı); birleşik ağaçta tam süit 3887 geçti · 12 atlandı · 0 kırmızı; zamanlama 1;
+  ruff temiz; aile TEMİZ; kurulu eklentide kanca doktoru yeşil; canlı metin taraması 0.
 
 ---
 

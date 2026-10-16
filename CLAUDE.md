@@ -119,8 +119,8 @@ azalma, 9.86×) düşürüldü; sıcak yoldaki ağır modül sayısı **11 → 0
 Ölçüm: `main` vs bu dal, aynı araç, **gerçekçi dava kökü**, dedup yenilmiş.
 Ayrıntı ve kök neden zincirleri: `docs/PERFORMANS-STATUS.md`.
 
-Altı yapısal karar bunu sağlıyor; hepsi kolayca ve sessizce geri alınabilir,
-o yüzden burada yazılıdır.
+Altı yapısal karar bunu sağlıyor (7. madde v0.5.19'un ayrı, ölçek kökündeki
+kazancıdır); hepsi kolayca ve sessizce geri alınabilir, o yüzden burada yazılıdır.
 
 ### 1. `ONBAKIS_DIZIN` sabiti oa_ingest'i YÜRÜTMEDEN okunmalı
 
@@ -234,6 +234,29 @@ yeniden derleniyordu (~38-46 ms).
   — `tools/pc_hizlandir.ps1 -Uygula` bunu yapar.
 - Modül gövdesi **YARIDA** çökerse betik `runpy` yedeğine DÜŞMEZ (çift yan
   etki riski); hatayı olduğu gibi bırakır. Bu bilinçlidir, "iyileştirmeyin".
+
+### 7. (v0.5.19) Çapraz denetim sonucu İÇERİK özetine bağlı önbellekten gelir
+
+Ölçek kökünde (3000 evrak) Stop kancasının v0.5.18'deki +79 ms'si B-2 çapraz
+denetimiydi; sonuç artık `_oa/defter/.capraz-onbellek.json`da tutulur
+(`_capraz_bosluk_hesapla`, ölçüm PERFORMANS-STATUS §14). Sessizce bozulabilecek
+kararlar:
+
+- **Anahtar İÇERİKTİR (sha256), stat değil.** Girdiler, ilgili damgalı denetim
+  JSON'ları, `capraz_denetim.py` + `pipeline_kayit.py` ve yorumlayıcı küçük
+  sürümü anahtardadır. Boyut/mtime'a çevirmeyin: aynı boyutlu tek bayt
+  değişikliği bayat isabet üretir.
+- **Girdi BİR KEZ okunur; özet ve ayrıştırma AYNI baytlardan.** `mod._yukle(yol)`
+  ile ikinci okumaya dönmeyin (okumalar arası yarış eski özete yeni sonucu
+  bağlar). Ayrıştırma `_yukle` ile eşdeğerliği testle kilitli.
+- **Fail-closed.** Önbellek adımlarının (anahtar/okuma/yazma) istisnası dış
+  `except`e (→ `([], [])`, sessiz "temiz") SIZMAMALI; her biri kendi
+  `try`ında. Gövde özeti tutmayan, yabancı anahtarlı ya da biçimsiz dosya ıskadır.
+- **Dedup parmak izinden HARİÇ** (`_hook_denetle_ayirt`); `.hook-son-iz.json`
+  ile aynı gerekçe. **`_oa/defter` yoksa yazılmaz** (dizini yaratmak "hat açık"
+  anlamı taşır). Append-only olay defterine dokunmaz; yazım tmp + `os.replace`.
+- Önbelleğe giren sonucun anlamı ya da biçimi değişirse `_CAPRAZ_ONBELLEK_SEMA`
+  artırılır. 21 mutasyonla kanıtlı kilitler: `tests/test_v0519_capraz_onbellek.py`.
 
 ### Ölçüm aracı — ve ÜÇ ÖLÇÜM TUZAĞI
 
