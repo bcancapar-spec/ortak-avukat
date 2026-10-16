@@ -15,10 +15,11 @@ taraf sunucular, özel içtihat siteleri ve arama motoru özetleri teyit kaynağ
 değildir; eklenti hiçbir MCP sunucusu ilan etmez.
 
 Kanal **hibrittir**: model resmî portallara Claude Code'un kendi web araçlarıyla
-(`WebFetch` tam metin, `WebSearch` keşif) ulaşır; sorgu çıkmadan önce Layer 0
-süzgeci (`oa-gizlilik`) çalışır — müvekkil tanımlayıcı veri sorguya girmez (`oa_hafiza.py teyit`
-`--sorgu` ve `--kaynak-url` için mekanik; web araçlarının kendi çağrıları için kural, mekanik kapı değil —
-heyet 2026-10-17 ESAS E-2, açık kalem). Dürüst sınır: `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
+(`WebFetch` tam metin, `WebSearch` keşif) ulaşır; model sorguyu göndermeden önce Layer 0
+süzgecini (`oa-gizlilik`) uygular (kural) — müvekkil tanımlayıcı veri sorguya ve adrese girmez; mekanik tarama
+`oa_hafiza.py teyit`'te kayıt anındadır (`--sorgu` ve `--kaynak-url`; çağrıdan SONRA koşar, çıkışı geri almaz,
+kaydı ve dilekçeye geçecek bağlantıyı engeller); araç çağrısını saran kanca açık kalemdir (heyet 2026-10-17
+ESAS E-2 / K-19; adres taramasının iki dar boşluğu K-27). Dürüst sınır: `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
 Yerel, açık kodlu bir `oa-kaynak` MCP sunucusu (bu portalları saran keşif katmanı)
 yol haritasındadır; kurulana kadar keşif, resmî alan adlarıyla sınırlı web aramasıdır.
 

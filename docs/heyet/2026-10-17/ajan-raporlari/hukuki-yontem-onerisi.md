@@ -7,7 +7,9 @@
 > anılmıştır ve resmî kaynaktan TEYİT EDİLMEMİŞTİR (anayasa m.4, m.5) — hiçbiri teyitsiz ürüne, playbook'a ya da kurala
 > girmez; §"Sınırlar" hangi hükümlerin repoda teyit kaydı taşımadığını sayar. Heyet üçüncü koşumunun kapsamı dışındadır
 > (koşum `c94e982`'nin kod ve kayıt denetimidir); KARAR-3 §7.1'de avukata soru olarak sunulur. Ajan paylaşılan ağaçta
-> orkestranın tur-4 değişikliklerini (`d6e5550`) izlenmemiş hâlde gördü; raporda o dosyalara satır atfı yoktur.
+> orkestranın tur-4 değişikliklerini (`d6e5550`) izlenmemiş hâlde gördü; raporda o dosyalara satır atfı yoktur. Depo
+> taramasından çıkan bir isabet (grep) hukuki dayanak değildir; "Teyit: gerekir" taşıyan hiçbir kalem resmî kaynaktan
+> okunmadan ürüne, playbook'a ya da kurala girmez (heyet doğrulaması 2026-10-17, ESAS NOT-4).
 
 
 Kapsam: dal `denetim/fable-2026-10-15`, HEAD `c94e982`. Yollar `plugins/ortak-avukat/skills/` köküne göredir; kök dosyalar ayrıca yazılır.

@@ -1407,9 +1407,10 @@ resmi). Birebir alıntıya dokunulmaz.
     kalibrasyon sahadan gelecek.
 - **Hibrit teyit kanalı resmî portalın adresini ve diske inen metni kanıt sayar,
   metnin kelimesi kelimesine tamlığını ölçmez.** `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
-  Web araçlarının çağrıları için Layer 0 kural olarak geçerlidir; mekanik kapı
-  `oa_hafiza.py teyit`'in `--sorgu` ve `--kaynak-url` taramasıdır (açık kalem:
-  araç çağrısını saran kanca).
+  Web araçlarının çağrıları için Layer 0 kural olarak geçerlidir; mekanik tarama
+  `oa_hafiza.py teyit`'in kayıt anındaki `--sorgu` ve `--kaynak-url` taramasıdır — çıkışı
+  geri almaz, kaydı ve dilekçeye geçecek bağlantıyı engeller (açık kalemler: araç
+  çağrısını saran kanca; adres taramasında 0 ile başlayan telefon ve kullanıcı bilgisi).
 - **Kesilen evrak alımı baştan başlar.** Biten evrakın ara kaydı yoktur
   (v0.5.19). Büyük klasörde alım arka planda koşturulmalıdır; sistem 200'den
   fazla evrakta bunu süre tahminiyle söyler.

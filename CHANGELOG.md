@@ -412,6 +412,14 @@ birleştirme kararı avukatın).
   [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Aynı klasörde hukuki yöntem geliştirme
   adayları raporu (salt okunur inceleme; madde atıfları teyitsiz; karar avukatın). Birleştirme avukatın 2026-10-16
   talimatıyla, üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası (KARAR-3 §7-§8).
+  **Şart kapanışı doğrulaması (2026-10-17, fark `c94e982..ef03fd8`):** üçü de ŞART KAPANDI, BLOKLAYICI 0 (usul PUSH
+  0·0·2, güvenlik PUSH 0·2·2, esas ŞARTLI 0·1·5 — şartı birleştirme sonrası ilk commit); temiz kopyada tam süit 3894 ·
+  12 · 0, "önce kırmızı" yeniden üretildi, farkta sır 0, kilitler mutasyonla doğrulandı. Yeni açık kalemler (KARAR-3
+  §8): K-27 adres taramasında 0 ile başlayan telefon TCKN maskesinin ardında kalıyor ve kullanıcı bilgisi taranmıyor
+  (dört satırlık onarım ölçüldü; K-17 ile aynı commit), K-28 nesne sayacı ASCII dışı ad alanı önekini saymıyor, K-29
+  `--sorgu-onayli` geçişi kütükte izsiz. Doğrulamanın küçük kayıt kalemleri (zamanlama cümlesi, STATUS tarihli blok
+  parantezi, öneri raporu başlığı, "4 + 3" → 4 + 1) aynı kayıt commit'inde kapatıldı. Birleştirme: bu kayıttan sonra CI
+  yeşilse PR #9 orkestra eliyle `main`'e birleştirilir (birleştirme commit'i kaydın kendisidir; dal silinmez).
 - **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
   `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
   kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,

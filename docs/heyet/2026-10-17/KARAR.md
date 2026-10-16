@@ -56,7 +56,8 @@ Birleşik şartların zamanlaması ve durumu:
     (`_tckn_saglama_gecer_mi` — resmî portal karar kimlikleri engellenmez); bilinçli geçiş aynı `--sorgu-onayli` bayrağı.
     Önce kırmızı: sağlama geçen sentetik numara adreste → `RET (Layer 0)`, çıkış ≠ 0, muhakeme kaydı doğmaz, numara `_oa`
     altına sızmaz; `--sorgu-onayli` ile geçer; sağlama geçmeyen 11 hane kabul. İkinci kilit ([G7]'de dayanak kaydının adresi)
-    ve SKILL cümlesi → K-17.
+    ve SKILL cümlesi → K-17; doğrulamanın bulduğu iki dar boşluk (0 ile başlayan telefon maskede kalıyor, kullanıcı
+    bilgisi taranmıyor) → K-27 (§8) — kapanış bu yüzden KISMEN.
   - ESAS Ş-1 (H3-3 metin kısmı; N-7): oa-ictihat `SKILL.md` teyit kanalı paragrafına, `references/resmi-kaynaklar.md` Layer 0
     cümlesine ve kök README "Dürüst sınırlar"a tek cümle: `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür,
     kelimesi kelimesine tamlık araca ve portala bağlıdır, döküm sınıfı avukatın beyanıdır, canlı akış sahada sınanmadı;
@@ -90,7 +91,8 @@ sınıfı. **Kapatıldı (`d6e5550`).**
 **H3-2 · UYARI · GÜVENLİK U-2 · `oa_hafiza.py` `--kaynak-url` biçim denetimi ve teyit kanalı kapısı.** Yeni kanalda zorunlu
 olan adres Layer 0'dan geçmiyordu: aynı sentetik numara `--sorgu`'da RET, adresin sorgu dizesinde KABUL ve
 `**KAYNAK-URL:**` satırıyla muhakeme kaydına yazılıyordu (dilekçeye geçebilen tek bağlantı). Mevcut denetim gevşetilmemiş,
-yeni yüzey kapsanmamıştı. **Kapatıldı (`d6e5550`)**; ikinci kilit K-17.
+yeni yüzey kapsanmamıştı. **Kısmen kapatıldı (`d6e5550`)**: ana yüzey (yol + sorgu + parça) kapalı; ikinci kilit K-17;
+doğrulamanın bulduğu iki dar boşluk (telefon maskesi, kullanıcı bilgisi) K-27 (§8).
 
 **H3-3 · UYARI · ESAS E-1 · `resmi-kaynaklar.md:17-18`, oa-ictihat `SKILL.md:22`, README; `oa_hafiza.py:572`, `:1382`,
 `:1476`.** Eski kanalda GETİR aracı portalın belge metnini döndürüyordu; `WebFetch` sayfayı çekip işlenmiş yanıt döndürür —
@@ -206,7 +208,7 @@ yüzden kapılar geçici kopya yerine paylaşılan ağaçta koşuldu (`py -3.14`
 
 | Kapı | Son satır |
 |---|---|
-| Tur 4'ün 7 yeni testi (`-k`) | önce kırmızı (4 + 3), sonra `7 passed, 78 deselected`; ilgili 6 dosya `295 passed in 22.13s` |
+| Tur 4'ün 7 yeni testi (`-k`) | önce kırmızı 4 + 1 (U-2'nin `--sorgu-onayli` ve karar kimliği testleri eski motorla da yeşil koruma testidir — §8), sonra `7 passed, 78 deselected`; ilgili 6 dosya `295 passed in 22.13s` |
 | Tam süit (`-n auto -m "not perf"`) | `1 failed, 3893 passed, 12 skipped in 94.25s` — tek kırmızı `test_belge_baglantilari::test_depo_belgelerinde_kirik_baglanti_yok`: KARAR-2 K-9 satırına tur 4'te düşülen `../2026-10-17/KARAR.md` ileri bağlantısı (bu dosya henüz yazılmamıştı). Orkestra kapı çıktısını `tail` ile süzdüğünden komut zinciri kırmızıda durmadı; commit ve push kırmızı kapıyla gitti (USUL N-1 dersinin yinelenmesi). CI koşusu `38970817066`: 6 test işi aynı tek sebeple kırmızı; OCR bacağı, aile yapı denetimi, kaynak hijyeni yeşil. Bu kayıt commit'i dosyayı yazar; kapı aşağıda yeşil. Orkestra dersi: kapı komutlarının çıkış kodu boru hattında kaybolmaz (`set -o pipefail`); commit yalnız kapılar 0 ile çıkınca |
 | perf (seri) | `1 passed, 3906 deselected in 6.31s` |
 | ruff / aile | `All checks passed!` / `AİLE YAPI DENETİMİ TEMİZ.` |
@@ -294,8 +296,36 @@ Heyet karar vermez. Soru: **PR #9 (`denetim/fable-2026-10-15` → `main`) birle�
 10. İfşa bölümünde ZAYIF-kaynaklı tespitler K-22'ye kadar avukat eliyle süzülür — bilgi.
 11. PR #10: hızlı ileri alınınca GitHub `MERGED` işaretledi — kapalı, işlem yok.
 
-## 8. Şart kapanışı doğrulaması (ikinci kayıt commit'i)
+## 8. Şart kapanışı doğrulaması (ikinci kayıt commit'i; fark `c94e982..ef03fd8`)
 
-Bu bölüm, bu kayıt commit'inden sonra üç üyenin `c94e982..HEAD` farkı üzerindeki kısa doğrulama raporlarıyla doldurulur
-(dosya adları `04-dogrulama-usul.md`, `04-dogrulama-esas.md`, `04-dogrulama-guvenlik.md`; aynı klasör). Doğrulama
-yapılmadıysa ya da bir üye "şart kapanmadı" / BLOKLAYICI derse birleştirme yapılmaz.
+Üç üye, bu kayıttan önceki HEAD `ef03fd8` üzerinde ve yalnız tur 4 + KARAR-3 farkı için, kendi geçici worktree'sinde
+(varsayılan ayar; üçü de kaldırıldı, `git worktree list`'te yok) yeniden çağrıldı. Soru üçtü: kendi şartları tarif ettikleri
+gibi ve önce kırmızı testle kapandı mı; fark BLOKLAYICI getiriyor mu; KARAR-3 raporlarını sadakatle taşıyor mu. Yeni,
+bloklayıcı olmayan bulgular birleştirme şartı değil, açık kalemdir (brief kuralı).
+
+| Üye | Rapor | Doğrulama | BLOKLAYICI | yeni UYARI | NOT | Birleştirme önerisi | Ana ölçümler (son satırlar) |
+|---|---|---|---|---|---|---|---|
+| USUL | [04-dogrulama-usul.md](04-dogrulama-usul.md) | ŞART KAPANDI | 0 | 0 | 2 | PUSH | temiz kopyada tam süit `3894 passed, 12 skipped in 151.64s`; perf `1 passed`; toplanan 3907 = işaretçi; aile TEMİZ; ruff temiz; künye güncel ×2, ağaç boş; K-8 düzeneği `58 passed`; `hook_doktor --kurulu` ✓; PR #9 CI `ef03fd8` 9/9 `pass`, `MERGEABLE / CLEAN`; "önce kırmızı" yeniden üretildi (eski motorlarla `5 failed, 2 passed` → geri yüklemede `7 passed`, `git diff --quiet` 0); iki commit'te yazar kimliği ve `Co-Authored-By`; U-1/U-2/N-4/K-8/m.4 satırları ölçümle kapalı; KARAR-3 §1 sayıları birebir, §3'te atlanan bulgu yok, §4 ağaçla tutarlı; `d6e5550` kırmızısı `git ls-tree` ile kanıtlı |
+| ESAS | [04-dogrulama-esas.md](04-dogrulama-esas.md) | ŞART KAPANDI | 0 | 1 | 5 | ŞARTLI PUSH — şartı birleştirme sonrası ilk commit (K-27) | Ş-1 cümlesi üç yerde dört unsuru taşıyor, N-7 nesne tavanı "tahmin" etiketli ve GÜV ölçümüne izlenebilir; Ş-2 üç yaşayan başlıkta kapalı; adres taraması (fonksiyon + CLI, kurgu kök): sağlamalı TCKN, IBAN, e-posta, ad-soyad, mahkeme+esas, plaka, ayraçlı / 10 haneli / +90 telefon RET; sağlama geçmeyen 11 hane kabul; nesne sayacı 5 kurgu XML vakası doğru, `<c` ile başlayan başka etiket sayılmıyor, 14 parça boyunda değişmez, fail-closed ve tavanlar aynı; hukuki dayanak dosyalarında değişiklik yok; KARAR-3 H3-3 … H3-7 ↔ E-1 … E-5, K-18 … K-23 ↔ Ş-3 … Ş-8, 12/12 NOT, §7.1 altı avukat kararı eksiksiz; N-12 orkestra ölçümü doğrulandı; öneri raporu: orkestra notu m.4/m.5/m.9 için yeterli, m.7 ihlali yok |
+| GÜVENLİK | [04-dogrulama-guvenlik.md](04-dogrulama-guvenlik.md) | ŞART KAPANDI | 0 | 2 | 2 | PUSH | yedi XML yazımı × 5.000 hücre, 19 parça boyu, dilbilgisi ve 1.000.001 hücrelik gerçek tavan (0,78 s / 5 MB) beklenen sonuç; kilitler: eski desen → `4 failed`, `_kaynak_url_layer0_tara` → `None` → `1 failed, 2 passed`; CLI uçtan uca: 3. koşumun B ve C vakaları RET (Layer 0), çıkış 1, kayıt doğmadı, numara `_oa` altına sızmadı; `--sorgu-onayli` ve karar kimliği geçer; farkın 1792 eklenen satırında sır 0; kanca / CI / bağımlılık / manifest değişmedi; tek yeni import fonksiyon-içi `urllib.parse`; `ef03fd8` kod içermiyor; fail-open yok; KARAR-3 0/2/5, şartlar ve N-1 … N-5 eşlemesi sadık |
+| **Bütün** | | **ŞART KAPANDI** | **0** | **3** | **9** | PUSH ×2 + ŞARTLI PUSH ×1 (şart birleştirme sonrası) | |
+
+**Sonuç.** Üç üyenin "birleştirmeden önce" şartları kapalı; farkta BLOKLAYICI yok; esasın tek şartı birleştirme sonrası ilk
+commit'tir (K-27; `main`'de adres taraması hiç olmadığından gerileme yok). Protokol m.3 ile birleştirme yolu açıktır; uygulama
+§7 (3): bu kayıt push edilip CI yeşil olunca PR #9 `main`'e birleştirme commit'iyle birleştirilir, dal silinmez.
+
+**Doğrulamanın yeni bulguları — açık kalemler (birleştirme şartı değil):**
+
+| Kalem | Kaynak | Ne / onarım |
+|---|---|---|
+| **K-27 · UYARI** | GÜV K-28 = ESAS K-27 (ESAS §3.1 delik 1-2); GÜV NOT-1 | `oa_hafiza.py` `_kaynak_url_layer0_tara`: (a) TCKN sağlama maskesi 0 ile başlayan bitişik 11 haneli yerli cep biçimini `#` ile örtüyor, `_TELEFON_RE` maskeli metinde eşleşmiyor — adreste çıkış 0, muhakeme kaydına ve `_oa` altına yazıldı (aynı değer `--sorgu`'da RET); kod yorumu "telefon aynen taranır" bu biçim için yanlış. (b) `netloc` (kullanıcı bilgisi) taranmıyor — oradaki sağlama geçen numara `**KAYNAK-URL:**` satırına yazıldı; `resmi_kaynak_mi` `hostname` ile kullanıcı bilgisini ayıklayıp beyaz listeyi geçiriyor. Gevşeme değil (`c94e982`'de adres hiç taranmıyordu; `--sorgu` yolu değişmedi). Onarım (ölçüldü, dört satır): telefon deseni maskeden ÖNCE ham çözülmüş metinde (ya da bütün desenler maskesiz metinde, TCKN dalı sağlamalı); `p.netloc` taranan metne, `username`/`password` doluysa RET; kod yorumu; adres çözümünde `/`, `=`, `&` → boşluk (parite sınırları: `+`/boşlukla bölünmüş numara, ayrı `ad`/`soyad` alanları, küçük harfli ad — hem adreste hem `--sorgu`'da tasarım sınırı). Önce kırmızı: `tests/test_teyit_kanali.py` (f)'ye üç vaka. K-17 ile aynı commit. |
+| **K-28 · UYARI** | GÜV K-27 | `belge_guvenlik.py` nesne sayacı önek sınıfı ASCII (`[A-Za-z_][\w.-]*`); XML 1.0 ad başlangıcı ASCII dışı harf olabilir: `<ş:c …>` sayaçta 0 (satır da 0), openpyxl 5.000 hücre okur, kapı geçer; 100.000 hücre 585 KB dosyada 1,24 s / tepe 37 MB (U-1 ile aynı sınıf; sessiz geçiş yok). Onarım (ölçüldü): bayt deseninde önek sınıfına `\x80-\xff` (ad başlangıcı ve devamı) — 100.000 sayar; `row` aynı. Önce kırmızı: bölüm (8) parametrelerine ASCII dışı önek vakası. |
+| **K-29 · NOT** | ESAS K-28 | `--sorgu-onayli` geçişi kütükte ve muhakeme kaydında izsiz; tek bayrak iki yüzeyi (sorgu, adres) açıyor. Onarım: kayıt satırına `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey: sorgu veya adres]`; [G7] bu kaydı dayanak yaparken görünür UYARI; isteğe bağlı ayrı bayrak `--kaynak-url-onayli`. |
+| kapatıldı (bu kayıt) | USUL K-27 önerisi = GÜV NOT-2 | §4.1 ilk tablo "önce kırmızı (4 + 3)" → 4 + 1 (U-2'nin `--sorgu-onayli` ve karar kimliği testleri eski motorla da yeşil koruma testidir; `d6e5550` mesajı doğruydu) |
+| kapatıldı (bu kayıt) | USUL K-28 önerisi = ESAS NOT-3 | `STATUS.md` 2026-10-15 tarihli bloğuna "o sırada push edilmemişti — 2026-10-16'da push edildi (PR #9)" parantezi |
+| kapatıldı (bu kayıt) | ESAS NOT-2 | `resmi-kaynaklar.md` ve kök README: mekanik taramanın zamanlaması — kayıt anında, çağrıdan sonra; çıkışı geri almaz, kaydı ve dilekçeye geçecek bağlantıyı engeller; kanca K-19 |
+| kapatıldı (bu kayıt) | ESAS NOT-4 | öneri raporu başlığına "depo taramasından çıkan isabet hukuki dayanak değildir" |
+| kapatıldı (bu kayıt) | ESAS NOT-5 | §2 ve H3-2 "kapatıldı" → "kısmen kapatıldı" (K-27'ye bağ) |
+
+**Bu kayıt commit'inin kapıları** (paylaşılan temiz ağaç, `pipefail`; kod yok): tam süit `3894 passed, 12 skipped in 95.28s (0:01:35)` · perf `1 passed, 3906 deselected in 6.16s` · ruff
+`All checks passed!` · aile `AİLE YAPI DENETİMİ TEMİZ.` · toplanan `3907 tests collected = OA-SUIT-SAYISI 3907` · hijyen (eklenen satırlar) `eklenen 417 · görünmez 0 · mutlak yol 0` · künye `güncel: README.md · güncel: plugins/ortak-avukat/README.md`.

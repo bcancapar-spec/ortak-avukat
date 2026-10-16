@@ -3,8 +3,8 @@
 **Tarih:** 2026-10-16 · **Sürüm:** 0.6.0 · **Commit:** v0.6.0 = dal `guncelleme/0.5.18`, PR #8 (main `4b2f029` üzerine); dal `denetim/fable-2026-10-15` 2026-10-16'da avukat kararıyla push edildi — PR #9; main'e birleştirme avukatın 2026-10-16 talimatıyla, üçüncü heyet koşumu + şart kapanışı doğrulaması + CI sonrası (bkz. CHANGELOG; [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md))
 *(önceki kayıtlar: 2026-10-12 · 0.6.0 · PR #8 — 2026-10-06 · 0.5.18 · dal `guncelleme/0.5.18` — 2026-10-06 · 0.5.17.1 · `4b2f029` — 2026-09-12 · 0.5.17 · `10aa5c1`+ — 2026-08-26 · 0.5.11 · `26bd278` — 2026-08-22 · 0.5.9 · `46bd1d3` — 2026-08-15 · 0.5.8.4 · `fc9cb31` — 2026-08-07 · 0.5.7 · `2804eef` — 2026-08-06 · 0.5.6.1 · `d69187f` — 2026-07-29 · 0.5.5.5 · `a1b9d18`)*
 
-> **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; push
-> edilmedi; sürüm numarası değişmedi, birleştirme kararı avukatın). v0.6.0 ölçümle denetlendi;
+> **2026-10-15 — bağımsız kod ve vitrin denetimi** (dal `denetim/fable-2026-10-15`; o sırada push
+> edilmemişti — 2026-10-16'da avukat kararıyla push edildi, PR #9; sürüm numarası değişmedi, birleştirme kararı avukatın). v0.6.0 ölçümle denetlendi;
 > 11 bulgunun sekizi bu dalda önce kırmızı testle kapatıldı: `<ol start>` (PR #6 bulgusu),
 > kaynak hijyeni kapısı (ruff hata sınıfı + CI `lint`), ham görünmez karakterler kaçışa,
 > pyproject sürüm damgası, kök dizin → `docs/arsiv/` + bağlantı kapısı, katmanlı README,
@@ -36,6 +36,9 @@
 > [docs/heyet/2026-10-17/KARAR.md](docs/heyet/2026-10-17/KARAR.md). Birleştirme: avukatın 2026-10-16 talimatıyla,
 > üç üyenin fark üzerinde şart kapanışı doğrulaması ve CI sonrası orkestra eliyle (PR #9 birleştirme commit'i
 > kaydın kendisidir; dal silinmez).
+> Doğrulama (2026-10-17, fark `c94e982..ef03fd8`): üçü de ŞART KAPANDI, BLOKLAYICI 0 (usul PUSH 0·0·2, güvenlik PUSH
+> 0·2·2, esas ŞARTLI 0·1·5 — şartı birleştirme sonrası ilk commit); yeni açık kalemler K-27 (adres taramasında 0 ile
+> başlayan telefon ve kullanıcı bilgisi), K-28 (ASCII dışı ad alanı öneki), K-29 (`--sorgu-onayli` izi): KARAR-3 §8.
 
 > **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
 > denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
