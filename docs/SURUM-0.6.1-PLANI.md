@@ -69,14 +69,17 @@ Sonraki adım: …
 
 1. Sürmekte olan oturumlar tur sonunda rapor verir (§4); komser kayıtları işler.
 2. E dalı: denetim ucu E'ye birleştirilir (merge; tarih korunur), çatışmalar çözülür, tam süit; sonra
-   E → denetim dalına birleştirme (avukat kararı: PR #11'e yığılı mı, ayrı PR mı).
+   E → denetim dalına birleştirme. **Avukat kararı (2026-10-17):** tek entegrasyon PR'ı; E, F ve süren
+   oturumların işi ona yığılır, sürüm damgası ve heyet koşumundan sonra TEK birleştirme. PR #11 aynı gün
+   avukat eliyle birleştiğinden (yeniden açılamaz) bu işlevi aynı daldan açılacak YENİ PR görür.
 3. F dalı aynı yol.
 4. Sürüm damgası tek commit: `plugin.json`, `marketplace.json`, `pyproject.toml`, STATUS, YOL-HARITASI,
    iki README künyesi, `OA_SURUM` (`pipeline_kayit.py`, `teslim_paketi.py`), Excel `SURUM`; CHANGELOG
    "Sürümsüz" kaydı → "v0.6.1" başlığı; `aile_dogrula` sürüm işaretçisi uyarısı sıfır.
 5. Heyet koşumu (usul / esas / güvenlik; `origin/main..HEAD`) → KARAR; BLOKLAYICI 0 şartı.
-6. CI yeşil → PR #11 birleştirme (avukat) → etiket `v0.6.1` + GitHub Release notu (avukat eliyle;
-   notu komser hazırlar).
+6. CI yeşil → entegrasyon PR'ı birleştirme (avukat) → etiket `v0.6.1` + GitHub Release notu (avukat
+   eliyle; notu komser hazırlar). Heyet koşumu kapsamı `2db90ab..HEAD` — d2c5fbe ve e1e1bb6 için koşum
+   YAPILMAMIŞTI (onarım oturumu raporu), tek koşumda kapanır.
 
 ## 8. Layer 0 ilkesi (avukat lafzı, 2026-10-17) ve hizalama kalemleri
 
