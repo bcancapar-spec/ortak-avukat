@@ -13,6 +13,10 @@ hiçbir adrese gidilmez (ağsız); üçüncü taraf ad ya da adres taşımaz.
 import re
 
 RESMI_URL = "https://karararama.yargitay.gov.tr/karar/sentetik-1"
+# 2026-10-17 heyet K-20: araç sınıfı ↔ adres türü — mevzuat / Resmî Gazete aracı içtihat portalına gidemez.
+MEVZUAT_URL = "https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=6100&MevzuatTur=1&MevzuatTertip=5"
+RG_URL = "https://www.resmigazete.gov.tr/eskiler/2026/01/20260101.htm"
+ARAC_URL = {"mevzuat_getir": MEVZUAT_URL, "resmi_gazete_getir": RG_URL}
 KAYNAK_URL_SATIRI = "**KAYNAK-URL:** " + RESMI_URL
 # oa_hafiza.URL_ZORUNLU_ARACLAR ile aynı küme (casefold); E3 normalize toleransı burada da uygulanır.
 URL_ZORUNLU = {"ictihat_getir", "kurum_karari_getir", "webfetch", "mevzuat_getir",
@@ -32,5 +36,5 @@ def kaynak_url_ekle(args):
         return args
     kanonik = _PARANTEZ_EK.sub("", arac).strip().casefold().replace(" ", "_")
     if kanonik in URL_ZORUNLU:
-        args += ["--kaynak-url", RESMI_URL]
+        args += ["--kaynak-url", ARAC_URL.get(kanonik, RESMI_URL)]
     return args

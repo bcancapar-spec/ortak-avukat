@@ -45,6 +45,17 @@
   saran, açık kodlu, yerelde koşan arama / sayfalama / tam metin çekme araçları; beyaz liste dışına
   çıkmaz, sorgu Layer 0 süzgecinden geçer, teyit kanıtı yine adres + döküm. Kurulana kadar keşif
   `WebSearch`/`WebFetch` ile. Kurulmadı; tasarım ve kurulum kararı avukatın.
+- **2026-10-17 — main'e birleştirme sonrası (aynı dal):** heyet KARAR-3 K-18 … K-26 kapatıldı (WebFetch
+  tam-metin ölçütü, kanca ağında WebFetch/WebSearch Layer 0, araç ↔ adres türü, metin artıkları, ZAYIF Excel
+  tespiti iç nota, SECURITY, önbellek tavanı); K-17 / K-27 / K-28 / K-29 ayrı onarım oturumunda. Saha metinleri
+  anonim ve sayısız ([docs/TESTLER-VE-SAHA-DENEYLERI.md](docs/TESTLER-VE-SAHA-DENEYLERI.md)).
+  **Sıradaki — Yargı Pro boşluklarının repoda tamamlanması** (avukat talimatı; kaynak:
+  [docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md) §0 sırası):
+  (a) metin çelişkileri (oa-musteki-vekili m.260, oa-mudafii:158 kataloğu aşan cümle, oa-pipeline:295 ↔
+  anayasa m.1); (b) oa-sure kural kataloğu — ceza / HMK / İİK / AYM-AİHM / yeniden yargılama, her kural resmî
+  kaynak teyidiyle ve önce kırmızı testle, teyitsiz kural TEYİT BEKLİYOR; (c) `dilekce_denetim.py` tipleri;
+  (d) kayıt katmanı (`--olay`/`--kol`/`--agirlik`, `baglam_cikar.py`, `icra_asama_haritasi.py`);
+  (e) oa-ictihat arama bölümleri; (f) `usul_matris.py`. Bilinçli alınmayanlar (plan §4) yeniden açılmaz.
 
 ## DURUM — 2026-10-08 · v0.5.18 (önceki)
 

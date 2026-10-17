@@ -136,10 +136,10 @@ Norm önce, içtihat sonra:
 
 ## Fallback zincirleri (gerçek kullanımdan)
 - **İçtihat kanalı:** resmî portallar (beyaz liste); kavramsal keşif `semantik_ictihat_ara`/`WebSearch`, güncel karar için **canlı `ictihat_ara`** ya da portalın kendi araması (`WebFetch`) ile teyit. Norm taraması (mevzuat.gov.tr) bundan önce gelir.
-- **Mevzuat MCP timeout →** `mevzuat.gov.tr` `web_fetch` (PDF: `web_fetch_pdf_extract_text=True`); birden çok kaynaktan teyit. (5510 m.21/4'te kullanıldı.)
-- **Literatür MCP timeout →** kısa bekle + retry; ısrarlıysa web_search ile DergiPark, künyeyi ayrı doğrula.
+- **Mevzuat portalı yanıt vermiyor →** `WebFetch` ile `mevzuat.gov.tr` (PDF metni dahil); birden çok resmî kaynaktan teyit. (5510 m.21/4'te kullanıldı.)
+- **Literatür aracı yanıt vermiyor →** kısa bekle + yeniden dene; ısrarlıysa `WebSearch` ile DergiPark, künyeyi ayrı doğrula.
 - **Bedesten şişmesi →** terimi kısalt + daire/tarih; gerekirse Lexpera/Kazancı/UYAP Emsal (Can'ın erişimi).
-- **Genel:** resmî kaynağa erişilemiyorsa **açıkça raporla**, sessizce hafızadan doldurma. Sağlık: Pro'da ayrı sağlık aracı yok — `legal_research_guide` ya da küçük bir deneme çağrısı; Pro erişilemiyorsa "teyit YAPILAMADI" diye raporla (otomatik yedek YOK — B-23).
+- **Genel:** resmî kaynağa erişilemiyorsa **açıkça raporla**, sessizce hafızadan doldurma. Sağlık: ayrı bir sağlık aracı yoktur — portala küçük bir deneme çağrısı; erişilemiyorsa "teyit YAPILAMADI" diye raporla (otomatik yedek YOK — B-23).
 
 ## Araç keşfi ve sahte-teyit yasağı (kritik)
 Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işlevin Türkçe adlı araçları: `ictihat_ara`, `semantik_ictihat_ara`, `mevzuat_ara`, `mevzuat_getir`). Sorgudan önce oturumda MEVCUT araç listesine bak ve gerçekte var olan aracı kullan; adı tutmuyor diye işlevi atlamak da, var olmayan bir araca çağrı yapılmış gibi sonuç yazmak da yasaktır. **"Teyitli" etiketi yalnızca fiilen yapılmış bir çağrıya konur** ve üçlü kayıtla yazılır: araç + sorgu + dönen künye/metin. Araç gerçekten yoksa veya erişilemiyorsa: fallback zinciri + açık beyan ("şu araç kapalı; bu künye teyit edilemedi").
@@ -152,8 +152,8 @@ Bu dosyadaki araç adları kurulumdan kuruluma DEĞİŞEBİLİR (ör. aynı işl
 - **ARAMA sınıfı** (`ictihat_ara`/`semantik_ictihat_ara`/`aym_ictihat_ara`/`aihm_ictihat_ara` — tam metin DÖNMEZ, yalnız aday künye/snippet): `--damga` YASAKTIR (metinsiz damga vurulamaz). Tek-komut:
   `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_ara --sorgu "<sorgu>" --sonuc "<aday künyeler/özet>" [--dokum-icerik "<ham snippet>"]`
   — `--dokum-icerik` verilirse script kendi döküm dosyasını `_oa/teyit/dokum/`'a YAZAR (ayrıca dosyayı elle oluşturup `--dokum <yol>` ile bağlaman GEREKMEZ).
-- **GETİR sınıfı** (`ictihat_getir`/`kurum_karari_getir` — tam metin DÖNER): `--damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR` ZORUNLUDUR (damgasız içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ) — bu, İçtihat Muhakeme Zinciri'nin (MODÜL 2) tek-komut ritüelidir, MUHAKEME adımını (`oa-kiyas`/`oa-kontrol`) de aynı çağrıda tetikler:
-  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<Yargıtay 4. HD, E. 2023/1234, K. 2023/5678>" --damga LEHE --dokum-sinifi tam-metin --bag "<DAVAYA-BAĞ, ≥40 karakter>" --ilgili-kisim "<döküm içinde VERBATİM geçen alıntı>" --dokum-icerik "<ham tam metin>"`
+- **GETİR sınıfı** (`ictihat_getir`/`kurum_karari_getir`/`WebFetch` — tam metin DÖNER; `--kaynak-url <resmî portal adresi>` ZORUNLU — adres beyaz liste dışıysa teyit yoktur ve oa-kontrol [G7] teslim engeli verir; `WebFetch` mevzuat/Resmî Gazete adresinde mevzuat sınıfı sayılır ve damga istemez, içtihat adresinde `tam-metin` sınıfı en az 2.000 karakter döküm ister — heyet 2026-10-17 K-18/K-20): `--damga LEHE|ALEYHE|ALEYHE-AYIRT|NOTR` ZORUNLUDUR (damgasız içtihat kütüğe, kütüksüz künye çıktıya GİREMEZ) — bu, İçtihat Muhakeme Zinciri'nin (MODÜL 2) tek-komut ritüelidir, MUHAKEME adımını (`oa-kiyas`/`oa-kontrol`) de aynı çağrıda tetikler:
+  `python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "<Yargıtay 4. HD, E. 2023/1234, K. 2023/5678>" --kaynak-url "https://mevzuat.adalet.gov.tr/ictihat/<kimlik>" --damga LEHE --dokum-sinifi tam-metin --bag "<DAVAYA-BAĞ, ≥40 karakter>" --ilgili-kisim "<döküm içinde VERBATİM geçen alıntı>" --dokum-icerik "<ham tam metin>"`
   `--sonuc` içinde ayrıştırılabilir bir `E./K. YYYY/NNNN` künyesi bulunmalıdır (yoksa RET — çıplak künye üretmez). Aynı künye için ikinci bir `teyit --damga` çağrısıyla FARKLI bir damga vermek (ör. ALEYHE→LEHE) sessizce kabul edilmez; bilinçli değişim `--damga-degistir "<gerekçe, ≥40 karakter>"` ister.
 
 Her iki sınıfta da dökümü **elle** yazıp yalnızca `--dokum <mevcut-dosya>` ile bağlamak da geçerlidir (ör. daha önce başka bir araçla üretilmiş bir ham metni yeniden kullanmak için); ama normal akışta `--dokum-icerik` tek adımda hem dosyayı yazar hem bağlar.

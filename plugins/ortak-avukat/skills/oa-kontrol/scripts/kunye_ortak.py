@@ -1273,3 +1273,18 @@ def resmi_kaynak_mi(url):
         if host == k["alan"] or host.endswith("." + k["alan"]):
             return True
     return False
+
+
+def resmi_kaynak_turu(url):
+    """Adresin beyaz listedeki TÜRÜ: 'mevzuat' | 'resmi-gazete' | 'ictihat' | 'aihm' | 'tarife' |
+    'kurum'; listede değilse None. Listedeki alan adı genel `.gov.tr` kuralından ÖNCE gelir
+    (mevzuat.adalet.gov.tr → ictihat); listede sayılmayan `.gov.tr` alan adı yalnız 'kurum'dur —
+    bakanlık duyurusu ya da e-Devlet sayfası içtihat/mevzuat teyidi sayılmaz (heyet 2026-10-17 ESAS
+    E-3 / K-20; tüketici: `oa_hafiza.py teyit` ARAC_TUR_UYUMU)."""
+    if not resmi_kaynak_mi(url):
+        return None
+    host = _urlparse.urlsplit(url.strip()).hostname.lower().rstrip(".")
+    for k in RESMI_KAYNAKLAR:
+        if host == k["alan"] or host.endswith("." + k["alan"]):
+            return k["tur"]
+    return "kurum"

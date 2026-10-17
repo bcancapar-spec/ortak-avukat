@@ -19,7 +19,7 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.907** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **128.000+** satır · **3.949** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
 > ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Yöntem,
 > mekanik süit, deney sınıfları ve belgeli saha koşularının anonim özeti tek belgededir:
@@ -1275,7 +1275,7 @@ resmî kaynaktan doğrulanmadıkça yoktur.
 - **İç kaynakça dürüst konuşur.** Dosyanın kendi geçmişini ve kendi dosya
   numarasını "teyitsiz içtihat" sanmaz.
 - **Mühürler doğru sürümü yazar.**
-- **Dış skill kütüphanesinden fikir düzeyinde uyarlamalar** ([uyarlama planı](docs/YARGI-PRO-UYARLAMA-PLANI.md)).
+- **Dış skill kütüphanesinden fikir düzeyinde uyarlamalar** ([uyarlama planı](docs/YARGI-PRO-UYARLAMA-PLANI.md); ölçülmüş boşluk listesi ve uygulama sırası: [boşluk analizi, 2026-10-17](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md)).
   - Kod ve metin alınmadı; her madde resmî metinden okundu.
   - Gelenler: harç cetveli ve güncel oran teyidi, meslek kuralları kontrol
     listeleri, revizyon farkı, zabıt denetimi, delil tedarik ve tanık soru
@@ -1361,6 +1361,12 @@ resmi). Birebir alıntıya dokunulmaz.
    sunucusu ilan etmez, ama eski kayıt kendiliğinden silinmez. Bağlantı listesinde
    sertifika hatası veren eski yedek bağlantı TLS ad uyuşmazlığıyla reddedildiği
    için ondan veri gitmemiştir.
+   - Eski kanaldan kalma, **adres taşımayan teyit kayıtları** (`_oa/teyit/kunye-teyit.md`
+     satırları ve `_oa/cikti/*ictihat-muhakeme*.md` kayıtlarında `**KAYNAK-URL:**` satırı
+     olmayanlar) dilekçeye dayanak olamaz: kontrol parçasının [G7] kapısı teslim engeli verir.
+     Dilekçeden önce her künyeyi resmî portaldan yeniden çekip
+     `oa_hafiza.py teyit --kaynak-url <adres>` ile yenileyin; eski kayıt silinmez, yeni kayıt
+     onun önüne geçer (heyet 2026-10-17 K-23).
 3. PyMuPDF'i yükseltin — depo kökünde `pip install -U -r requirements.txt` (ya da
    `pip install -U pymupdf`). Eski sürümde görünürlük kâhini çalışmaz; sistem bunu
    gizlemez, raporda "kahin-devre-disi" notu çıkar. Aynı komut Excel okuyucularını

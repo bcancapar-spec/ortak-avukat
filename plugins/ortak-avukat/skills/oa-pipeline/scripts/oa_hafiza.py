@@ -595,6 +595,23 @@ MEVZUAT_KURUM_ARACLARI = {
 BILINEN_ARACLAR = ARAMA_ARACLARI | GETIR_ARACLARI | MEVZUAT_KURUM_ARACLARI
 # Tam metin çeken araçlar: teyidin kanıtı kaynağın adresidir — --kaynak-url zorunlu.
 URL_ZORUNLU_ARACLAR = GETIR_ARACLARI | {"mevzuat_getir", "resmi_gazete_getir"}
+# 2026-10-17 heyet K-20 — ARAÇ SINIFI ↔ ADRES TÜRÜ (kunye_ortak.resmi_kaynak_turu): mevzuat aracı
+# içtihat portalına, içtihat aracı mevzuat portalına gidemez; listede sayılmayan genel `.gov.tr`
+# yalnız 'kurum' türüdür. Sözlükte olmayan araç (WebFetch/WebSearch, kurulum-bağımlı adlar) her
+# türe gidebilir — WebFetch'in SINIFI adresin türüne bağlıdır (mevzuat / Resmî Gazete → mevzuat).
+ARAC_TUR_UYUMU = {
+    "mevzuat_ara": {"mevzuat"}, "mevzuat_getir": {"mevzuat"}, "mevzuat_icinde_ara": {"mevzuat"},
+    "resmi_gazete_fihrist": {"resmi-gazete"}, "resmi_gazete_getir": {"resmi-gazete"},
+    "kurum_karari_ara": {"kurum", "ictihat"}, "kurum_karari_getir": {"kurum", "ictihat"},
+    "ictihat_ara": {"ictihat", "aihm", "kurum"}, "semantik_ictihat_ara": {"ictihat", "aihm", "kurum"},
+    "ictihat_getir": {"ictihat", "aihm", "kurum"},
+    "aym_ictihat_ara": {"ictihat"}, "aihm_ictihat_ara": {"aihm"},
+}
+WEBFETCH_MEVZUAT_TURLERI = {"mevzuat", "resmi-gazete"}
+# 2026-10-17 heyet K-18 — WebFetch sayfanın İŞLENMİŞ metnini döndürür: 'tam-metin' sınıfı beyanı
+# için yapı ölçütü — döküm en az bu kadar karakter olmalı (kısa döküm özet/kesiktir, tam okuma
+# kanıtı değildir). Portal araçlarının (ictihat_getir vd.) sözleşmesi değişmez.
+WEBFETCH_TAM_METIN_ASGARI = 2000
 _BILINEN_ARACLAR_CASEFOLD = {a.casefold(): a for a in BILINEN_ARACLAR}
 
 
@@ -1211,6 +1228,19 @@ def cmd_teyit(args):
     is_getir = args.arac in GETIR_ARACLARI
     is_mevzuat_kurum = args.arac in MEVZUAT_KURUM_ARACLARI
 
+    # 2026-10-17 heyet K-20 — WebFetch'in sınıfı ADRESİN TÜRÜNE bağlıdır: mevzuat.gov.tr / Resmî
+    # Gazete sayfası mevzuat sınıfıdır (damga ritüeli içtihata aittir), içtihat portalı sayfası GETİR
+    # sınıfıdır. Tür erken belirlenir ki aşağıdaki damga zorunluluğu doğru sınıfa uygulansın; adresin
+    # biçim, Layer 0 ve beyaz liste denetimleri aşağıda AYNEN koşar (bu ön bakış hiçbir kapıyı açmaz).
+    if args.arac == "WebFetch" and getattr(args, "kaynak_url", None):
+        _ko0 = _kunye_ortak_modulu()
+        if _ko0 is not None and hasattr(_ko0, "resmi_kaynak_turu"):
+            if _ko0.resmi_kaynak_turu(args.kaynak_url.strip()) in WEBFETCH_MEVZUAT_TURLERI:
+                is_getir, is_mevzuat_kurum = False, True
+                print("[BİLGİ] WebFetch adresi mevzuat / Resmî Gazete türünde — kayıt MEVZUAT sınıfında "
+                      "işlendi: damga ritüeli yok, döküm sınıfı yok (K-20). İçtihat sayfası için adres "
+                      "içtihat portalından olmalı; o zaman GETİR sınıfı (damga + döküm) uygulanır.")
+
     # E3 (v0.5.8.5) — mevzuat/kurum kaydında --damga UYGULANMAZ (damga ritüeli
     # içtihat/GETİR sınıfına aittir) ama SESSİZCE de yutulmaz: açık bir [BİLGİ]
     # satırı basılır ve damga bu çağrı için düşürülür (kütüğe DAMGA= yazılmaz,
@@ -1316,6 +1346,21 @@ def cmd_teyit(args):
                      "adları, hudoc.echr.coe.int, barobirlik.org.tr, bddk.org.tr; tam liste: "
                      "ortak-avukat/references/resmi-kaynaklar.md). Üçüncü taraf sunucu ve özel "
                      "içtihat sitesi teyit kaynağı DEĞİLDİR.")
+        # 2026-10-17 heyet K-20 — araç sınıfı ↔ adres türü (fail-closed); şifresiz http görünür UYARI.
+        if not hasattr(_ko, "resmi_kaynak_turu"):
+            sys.exit("RET (teyit kanalı): kunye_ortak.py eski sürüm — adres türü belirlenemiyor; araç "
+                     "çantasını yüklü eklentiden tazeleyin (fail-closed).")
+        _ktur = _ko.resmi_kaynak_turu(_kurl)
+        _izinli = ARAC_TUR_UYUMU.get(args.arac)
+        if _izinli is not None and _ktur not in _izinli:
+            sys.exit(f"RET (teyit kanalı — K-20): --arac {args.arac} için adres TÜRÜ uyumsuz: adres "
+                     f"'{_ktur}' türünde ({_kurl[:100]}), bu araç yalnız {sorted(_izinli)} türüne "
+                     "gidebilir — mevzuat teyidi mevzuat.gov.tr / resmigazete.gov.tr'den, içtihat teyidi "
+                     "içtihat portallarından yapılır; listede sayılmayan .gov.tr adresi yalnız 'kurum' "
+                     "türüdür (bakanlık duyurusu içtihat/mevzuat teyidi değildir).")
+        if _kurl.lower().startswith("http://"):
+            print("UYARI (K-20): --kaynak-url şifresiz http:// adres — resmî portallar https sunar; "
+                  "adresi https:// ile yazın (kayıt yazıldı, bağlantı dilekçeye bu hâliyle geçer).")
 
     # v0.5.8.4 [G5] AŞILMIŞLIK alanları — aşılmış-içtihat kapısının ÜRETİCİ ucu
     # (372 karnesi: `ictihat_muhakeme_denetim.py` [G5] kapısı kuruluydu ama
@@ -1510,6 +1555,18 @@ def cmd_teyit(args):
                          "bulunamadı — özet/parafraz kabul edilmez; alıntıyı döküm dosyasından "
                          "birebir kopyalayın.")
 
+            # 2026-10-17 heyet K-18 — WebFetch dökümü İŞLENMİŞ metindir (sayfa düzeni, kesik uzun
+            # metin, portal bot sınırı): 'tam-metin' beyanı için yapı ölçütü. Portal araçlarının
+            # sözleşmesi değişmez. RET, try/finally ile bu çağrıda yazılan dökümü de geri alır.
+            if (args.arac == "WebFetch" and _dokum_sinifi == "tam-metin"
+                    and len(dokum_icerik) < WEBFETCH_TAM_METIN_ASGARI):
+                esik = f"{WEBFETCH_TAM_METIN_ASGARI:,}".replace(",", ".")
+                sys.exit(f"RET (K-18): WebFetch dökümü {len(dokum_icerik)} karakter — 'tam-metin' "
+                         f"sınıfı için en az {esik} karakter gerekir: WebFetch sayfanın işlenmiş metnini "
+                         "döndürür, kısa döküm özet ya da kesik sayfadır ve tam okuma kanıtı sayılmaz. "
+                         "Ne yapmalı: sayfanın tamamını çekip --dokum-icerik ile verin ya da "
+                         "--dokum-sinifi ilgili-kisim yazın.")
+
             eksik = _sayilar_gecer_mi(args.sonuc, dokum_icerik)
             if eksik:
                 sys.exit("RET: --sonuc içindeki künye no'ları (" + ", ".join(eksik) + ") döküm "
@@ -1585,6 +1642,13 @@ def cmd_teyit(args):
         sonuc_yazilan = _sonuc_damga_ize_karismasin(args.sonuc)
         if is_arama:
             sonuc_yazilan += " [ARAMA — tam metin çekilmedi]"
+        if is_mevzuat_kurum and not args.dokum:
+            # 2026-10-17 heyet K-20 — mevzuat/kurum kaydında adres teyit için yeter, ama madde metni
+            # diske inmemişse kunye_teyit'in teyit evreni (_oa/teyit/dokum) bu kaydı görmez: iz + UYARI.
+            sonuc_yazilan += " [DÖKÜMSÜZ — metin diske inmedi]"
+            print("UYARI (K-20): mevzuat/kurum kaydı DÖKÜMSÜZ — adres kaydedildi ama madde/karar metni "
+                  "diske inmedi; kunye_teyit.py'nin teyit evreni (_oa/teyit/dokum) bu kaydı görmez. "
+                  "Metni --dokum-icerik @metin.md ile kaydedin.")
         if args.damga:
             sonuc_yazilan += f" DAMGA={args.damga}"
             # A1a (v0.5.8.5) — döküm sınıfı kütük satırında yaşar; sınıfsız
@@ -1691,6 +1755,10 @@ def cmd_teyit(args):
                 # olsun diye yine `_muhakeme_kacis`'ten geçirilir — tek
                 # istisna BIRAKILMAZ (tek-yazar kuralı).
                 f.write(f"**KAYNAK-IZI:** {_muhakeme_kacis(_kaynak_izi_yolu(args.dokum, args.kok))}\n")
+                # 2026-10-17 heyet K-18 — araç izi muhakeme kaydında da yaşar (okur:
+                # ictihat_muhakeme_denetim ARAC_LINE_RE; [G6] WebFetch tam-metin kaydında görünür
+                # UYARI basar). Satırın yokluğu = eski kayıt (geriye uyum).
+                f.write(f"**ARAÇ:** {_muhakeme_kacis(args.arac)}\n")
                 # DÜZELTME (v0.5.5 şerh turu — Ş2, BLOKER): `args.arac` bu
                 # satırda da (komşu alanlar gibi) `_muhakeme_kacis`'ten
                 # geçirilir — TAM BÖLÜM enjeksiyonunun `--arac` üzerinden

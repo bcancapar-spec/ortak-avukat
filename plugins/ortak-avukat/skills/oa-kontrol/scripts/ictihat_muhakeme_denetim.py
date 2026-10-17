@@ -162,6 +162,8 @@ DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
 # v0.5.7 — teyit anında kaydedilen resmî bağlantı (bkz. oa-ictihat v0.5.5.3:
 # `oa_hafiza.py teyit --kaynak-url`). Dilekçe-link tutarlılığı [G4] bunu okur.
 KAYNAK_URL_LINE_RE = re.compile(r"^\*\*KAYNAK-URL:\*\*\s*(\S+)\s*$", re.M)
+# 2026-10-17 heyet K-18 — araç izi (yazıcı: oa_hafiza.py teyit `**ARAÇ:**`); yoksa eski kayıt.
+ARAC_LINE_RE = re.compile(r"^\*\*ARAÇ:\*\*\s*(.+)$", re.M)
 # Dilekçe metnindeki http(s) bağlantıları — [G4] uydurma-link taraması.
 HTTP_URL_RE = re.compile(r"https?://[^\s\)\]\>»\"']+")
 # v0.5.8 [G5] AŞILMIŞ-İÇTİHAT (semantica superseded deseninin devşirmesi —
@@ -239,7 +241,7 @@ class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
                  "gecersiz", "kaynak_url", "asan_kaynak", "asilma_tarihi",
-                 "gecerlilik_bitis", "dokum_sinifi", "akibet", "akibet_kaynak")
+                 "gecerlilik_bitis", "dokum_sinifi", "akibet", "akibet_kaynak", "arac")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -265,6 +267,10 @@ class MuhakemeKaydi:
 
         m = KAYNAK_URL_LINE_RE.search(metin)
         self.kaynak_url = m.group(1).strip() if m else None
+
+        # 2026-10-17 heyet K-18 — araç izi; satır yoksa eski kayıt → None (kapı ateşlemez).
+        m = ARAC_LINE_RE.search(metin)
+        self.arac = m.group(1).strip() if m else None
 
         # v0.5.8 [G5] — aşılmışlık alanları (üçü de opsiyonel; herhangi biri
         # doluysa karar AŞILMIŞ sayılır).
@@ -1165,6 +1171,12 @@ def triyaj_denetimi(metin, atiflar, sonuclar, kutuk_yolu, kutuk_kullanimda):
                     "geriye-uyumla 'ilgili-kisim' sayılır). Kararı İSTİSNASIZ baştan "
                     "sona okuyup `teyit --dokum-sinifi tam-metin` ile yeniden "
                     "damgalayın (A1 tam-okuma şartı).")
+        # 2026-10-17 heyet K-18 — WebFetch dökümü işlenmiş metindir: görünür UYARI, blok değil.
+        if getattr(kayit, "arac", None) == "WebFetch" and kayit.dokum_sinifi == "tam-metin":
+            uyarilar.append(
+                f"{etiket}: tam-metin sınıfı döküm WebFetch ile çekildi — web aracı sayfanın işlenmiş "
+                "metnini döndürür (sayfa düzeni, kesik uzun metin, portal bot sınırı); tam-metin beyanı "
+                "avukatındır, dilekçeye girmeden önce portal sayfasıyla karşılaştırın (heyet 2026-10-17 K-18).")
         damga = kayit.damga
         if damga == "NOTR":
             # Şart (3) — eskiden yalnız uyarıydı; triyajda LEHE olmayan damga

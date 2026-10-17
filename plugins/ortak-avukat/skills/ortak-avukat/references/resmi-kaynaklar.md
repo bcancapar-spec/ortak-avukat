@@ -14,6 +14,18 @@ adından ya da herhangi bir `.gov.tr` alan adından değilse teyit yoktur; küny
 taraf sunucular, özel içtihat siteleri ve arama motoru özetleri teyit kaynağı
 değildir; eklenti hiçbir MCP sunucusu ilan etmez.
 
+**Araç ↔ tür eşlemesi (heyet 2026-10-17 K-20).** Adresin listedeki türü aracın sınıfıyla uyuşmalıdır:
+mevzuat araçları yalnız `mevzuat` türüne, Resmî Gazete araçları `resmî gazete` türüne, içtihat GETİR /
+ARAMA araçları `içtihat` / `AİHM` / `kurum` türüne gidebilir; listede sayılmayan bir `.gov.tr` alan adı
+yalnız `kurum` türüdür (bakanlık duyurusu ya da e-Devlet sayfası içtihat/mevzuat teyidi sayılmaz; tek
+kaynak `kunye_ortak.resmi_kaynak_turu`). `WebFetch` adresin türünü alır: mevzuat / Resmî Gazete
+adresinde kayıt mevzuat sınıfındadır (damga ritüeli yok), içtihat adresinde GETİR sınıfıdır (damga +
+döküm; `tam-metin` sınıfı en az 2.000 karakter döküm ister — K-18). `http://` adres kabul edilir ama
+görünür UYARI alır; resmî portallar `https` sunar. **Mevzuat kaydında döküm:** adres teyit için yeter,
+ama madde metni diske inmemişse (`--dokum-icerik` yok) kütük satırı `[DÖKÜMSÜZ — metin diske inmedi]`
+izi taşır ve komut görünür UYARI basar; `kunye_teyit.py`'nin teyit evreni (`_oa/teyit/dokum/`) o
+kaydı görmez. İçtihat (GETİR) kaydında döküm zorunludur.
+
 Kanal **hibrittir**: model resmî portallara Claude Code'un kendi web araçlarıyla
 (`WebFetch` tam metin, `WebSearch` keşif) ulaşır; model sorguyu göndermeden önce Layer 0
 süzgecini (`oa-gizlilik`) uygular (kural) — müvekkil tanımlayıcı veri sorguya ve adrese girmez; mekanik tarama

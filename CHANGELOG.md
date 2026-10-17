@@ -234,6 +234,41 @@ birleştirme kararı avukatın).
   KAYNAK-URL); arşiv dizin notu güncellendi. Tarihli kayıtlar (sürüm kayıtları, `docs/arsiv/`, parça
   günlükleri) dokunulmadı. Kapılar: bağlantı, vitrin, satır sayacı, kanal-bağımsız metin, metin ve kaynak
   hijyeni yeşil; test eklenmedi (OA-SUIT-SAYISI değişmedi).
+- **Heyet KARAR-3 açık kalemleri K-18 … K-26 (2026-10-17, main'e birleştirme sonrası, aynı dal; her biri
+  önce kırmızı testle — `tests/test_heyet3_kalemler.py`, 42 sınama, 35'i kırmızı başladı; K-17 / K-27 / K-28 /
+  K-29 avukat kararıyla ayrı onarım oturumunda):** **K-18** `WebFetch` dökümü işlenmiş metindir —
+  `--dokum-sinifi tam-metin` için yapı ölçütü (en az 2.000 karakter, altı RET), muhakeme kaydında
+  `**ARAÇ:**` izi, [G6] triyajında WebFetch + tam-metin kaydına görünür UYARI (blok değil). **K-19** kanca
+  ağı `WebFetch`/`WebSearch` çağrılarını sarar: `hooks.json` PreToolUse matcher genişledi; `hook_pretool`
+  adres / sorgu / prompt alanlarını `gizlilik_tara` strict kipinden geçirir — MUTLAK bulgu (sağlamalı TCKN,
+  kart, IBAN …) `deny`, olası bulgu `ask`, süzgeç yüklenemezse `ask`; gerekçe veriyi tekrar etmez; dava kökü
+  bulunmasa da tarar. **K-20** araç sınıfı ↔ adres türü: `kunye_ortak.resmi_kaynak_turu` + `oa_hafiza`
+  `ARAC_TUR_UYUMU` — mevzuat aracı içtihat portalına, içtihat aracı mevzuat portalına gidemez (RET); listede
+  sayılmayan `.gov.tr` yalnız `kurum`; `WebFetch` mevzuat / Resmî Gazete adresinde mevzuat sınıfı (damga
+  ritüeli yok); `http://` görünür UYARI; dökümsüz mevzuat kaydı kütükte `[DÖKÜMSÜZ]` izi + UYARI (belge
+  `resmi-kaynaklar.md` kodla aynı şeyi söyler; eski test yardımcısı araç-duyarlı adres verir). **K-21**
+  oa-kontrol SKILL/README'de [G7] anlatımı; oa-ictihat GETİR ritüelinde `WebFetch` ve `--kaynak-url`; eski
+  kanal artıkları kanal-bağımsız; muhakeme şablonunda adres zorunlu + `**ARAÇ:**`; araç çantası talimatına
+  `kunye_ortak.py`. **K-22** ZAYIF-kaynaklı Excel tespiti ("gizli olduğu KESİN DEĞİL") ifşa bölümüne girmez,
+  iç nota niteleyicisiyle düşer (`.xls` notu ayrı); avukat dili niteleyiciyi düşürmez. **K-23** kök README
+  "Güncelleyenin yapacakları": adressiz eski teyit kayıtları dilekçe öncesi resmî portaldan yenilenir.
+  **K-24** iki test docstring'ine NEDEN VAR. **K-25** SECURITY.md: tarihli kayıtlar eski kanalı anar, kilit
+  canlı metin içindir; manifest kilidi sağlayıcıdan bağımsız (`plugin.json` / `marketplace.json` hiçbir
+  `http(s)://` taşımaz). **K-26** `_capraz_onbellek_oku` boyut tavanı (16 MB; aşan dosya ıska).
+  Parça günlükleri (oa-pipeline, oa-kontrol, oa-ingest, oa-ictihat, oa-kiyas, ortak-avukat) işlendi;
+  OA-SUIT-SAYISI 3907 → 3949. Hukuki içerik (madde, süre, künye) değişmedi. **Kapılar** (2026-10-17,
+  Python 3.14, Windows): tam süit 3935 geçti · 12 ortam gerekçesiyle atlandı · 1 kırmızı — README künyesi
+  bayattı (`tools/satir_sayaci.py --yaz` ile tazelendi: toplam 127.000+ → 128.000+ satır; satır sayacı,
+  vitrin ve bağlantı kapıları yeniden yeşil); zamanlama testi 1 geçti; ruff temiz; aile yapı denetimi
+  TEMİZ (20 parça).
+- **Yargı Pro boşluk analizi — tarihli belge (2026-10-15 → 10-17):**
+  [docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md) — 17 aile
+  (107 skill) için karşılaştırma + çürütme turunun makine üretimli özeti (hüküm: TAM 9 · KISMİ 90 · YOK 1 ·
+  bilinçli alınmadı 7; üç ailede çürütme turu hesap limitine takıldı, tek okuma diye işaretli). Sentez
+  ajanı koşamadı; sıralama ve uygulama sırası orkestra oturumunca yazıldı (§0: oa-sure kural kataloğu,
+  dilekçe tipleri, usul matrisi, kayıt katmanı scriptleri, arama bölümleri, ceza parçaları). Madde
+  atıfları TEYİTSİZDİR; her kural koda girmeden resmî kaynaktan teyit edilir. Uyarlama planı
+  ([docs/YARGI-PRO-UYARLAMA-PLANI.md](docs/YARGI-PRO-UYARLAMA-PLANI.md)) tarihli belge olarak işaretlendi.
 
 ---
 

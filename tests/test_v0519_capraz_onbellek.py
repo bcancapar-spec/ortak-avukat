@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """v0.5.19 — ÇAPRAZ DENETİM SONUÇ ÖNBELLEĞİ (türetilmiş, içerik özetine bağlı).
 
-Ölçüm (PERFORMANS-STATUS §12.3): 3000 evraklık dosyayı temsil eden ölçek
+NEDEN VAR — ölçüm (PERFORMANS-STATUS §12.3): 3000 evraklık dosyayı temsil eden ölçek
 kökünde Stop kancası (`--hook-denetle`) v0.5.17.1'de ~390 ms, v0.5.18'de
 ~469 ms (+79 ms). cProfile'a göre artışın neredeyse tamamı B-2 çapraz
 denetimi: `_capraz_bosluk_uyarisi` → `_capraz_bosluk_hesapla` →

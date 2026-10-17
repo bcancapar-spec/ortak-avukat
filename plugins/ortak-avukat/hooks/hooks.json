@@ -26,7 +26,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Bash|PowerShell|SendUserFile",
+        "matcher": "Write|Edit|Bash|PowerShell|SendUserFile|WebFetch|WebSearch",
         "hooks": [
           {
             "type": "command",

@@ -919,7 +919,7 @@ def test_excel_gizli_katman_UYARISI_etiketi_ve_basligi_turu_soyler(bg):
 
 
 def test_okuma_kapisi_guvenlik_etiketi_belge_guvenlik_ile_tek_kaynak(bg):
-    """okuma_kapisi listedeki 🛡 etiketini kendi eşlemesinden üretiyordu (karar → etiket); UYARI artık türe
+    """NEDEN VAR (heyet 2026-10-16 ESAS E-3 / K-3): okuma_kapisi listedeki 🛡 etiketini kendi eşlemesinden üretiyordu (karar → etiket); UYARI artık türe
     bağlı olduğu için eşleme raporun bütününe bakmalı ve belge_guvenlik.ozet_etiketi ile birebir olmalı."""
     ok = _yukle("_okuma_kapisi_etiket", SKILLS / "oa-pipeline" / "scripts" / "okuma_kapisi.py")
     for r in (_rapor("UYARI", "gizli-satir"), _rapor("UYARI", "zemin-olculemedi"), _rapor("UYARI", "talimat-dili"),
