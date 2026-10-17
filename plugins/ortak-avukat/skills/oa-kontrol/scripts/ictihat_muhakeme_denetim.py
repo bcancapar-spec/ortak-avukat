@@ -122,6 +122,7 @@ for _s in (_sys.stdout, _sys.stderr):
 
 import argparse
 import glob
+import importlib.util
 import os
 import re
 import sys
@@ -164,6 +165,11 @@ DAMGA_LINE_RE = re.compile(r"^\*\*DAMGA:\*\*\s*(.+)$", re.M)
 KAYNAK_URL_LINE_RE = re.compile(r"^\*\*KAYNAK-URL:\*\*\s*(\S+)\s*$", re.M)
 # 2026-10-17 heyet K-18 — araç izi (yazıcı: oa_hafiza.py teyit `**ARAÇ:**`); yoksa eski kayıt.
 ARAC_LINE_RE = re.compile(r"^\*\*ARAÇ:\*\*\s*(.+)$", re.M)
+# K-29 (heyet 2026-10-17 doğrulama) — `oa_hafiza.py teyit` bilinçli Layer 0 geçişini
+# (`--sorgu-onayli` / `--kaynak-url-onayli`) kayda `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey:
+# sorgu|adres]` satırıyla işler; [G7] dayanak kaydında görünür UYARI basar. Serbest metne
+# gömülen aynı satır üretici tarafında kaçışlanır (`oa_hafiza._MUHAKEME_YAPISAL_RE`).
+LAYER0_ONAYLI_RE = re.compile(r"^\[LAYER0-ONAYLI GEÇİŞ:\s*(.+?);\s*yüzey:\s*(sorgu|adres)\]\s*$", re.M)
 # Dilekçe metnindeki http(s) bağlantıları — [G4] uydurma-link taraması.
 HTTP_URL_RE = re.compile(r"https?://[^\s\)\]\>»\"']+")
 # v0.5.8 [G5] AŞILMIŞ-İÇTİHAT (semantica superseded deseninin devşirmesi —
@@ -241,7 +247,8 @@ class MuhakemeKaydi:
     __slots__ = ("dosya", "kunye_ham", "esas", "karar", "daire", "kaynak_izi",
                  "damga_ham", "damga", "ilgili_kisim", "davaya_bag", "ayirt_etme",
                  "gecersiz", "kaynak_url", "asan_kaynak", "asilma_tarihi",
-                 "gecerlilik_bitis", "dokum_sinifi", "akibet", "akibet_kaynak", "arac")
+                 "gecerlilik_bitis", "dokum_sinifi", "akibet", "akibet_kaynak", "arac",
+                 "layer0_onay")
 
     def __init__(self, dosya, metin):
         self.dosya = dosya
@@ -271,6 +278,8 @@ class MuhakemeKaydi:
         # 2026-10-17 heyet K-18 — araç izi; satır yoksa eski kayıt → None (kapı ateşlemez).
         m = ARAC_LINE_RE.search(metin)
         self.arac = m.group(1).strip() if m else None
+        # K-29 — bilinçli Layer 0 geçiş izleri: [(desen, yüzey), …]; izsiz kayıtta boş liste.
+        self.layer0_onay = [(m.group(1).strip(), m.group(2)) for m in LAYER0_ONAYLI_RE.finditer(metin)]
 
         # v0.5.8 [G5] — aşılmışlık alanları (üçü de opsiyonel; herhangi biri
         # doluysa karar AŞILMIŞ sayılır).
@@ -932,20 +941,80 @@ def kaynak_url_denetimi(metin, atiflar, sonuclar, kayitlar):
 # TESLİM ENGELİ. Dayanak olmayan kayıttaki aynı eksiklik UYARI'dır (kütük hijyeni:
 # o karar dilekçeye girerse engel olur). [G4] bağlantının İZİNİ, [G7] bağlantının
 # KAYNAĞINI denetler — ikisi ayrı sorudur.
+# K-17 (heyet 2026-10-17 GÜV U-2 ikinci kilit; anayasa m.10): adres de anonimdir — dayanak
+# kaydının adresi, üreticinin (`oa_hafiza.py teyit --kaynak-url`) Layer 0 taramasından geçer;
+# bulgu → TESLİM ENGELİ. TEK tanım oradadır (tek-yazar kuralı): kardeş script in-process
+# yüklenir (`oa_hafiza._kunye_ortak_modulu` deseniyle simetrik). Yüklenemezse kapı KAPANIR
+# (fail-closed) — kırık kardeş modül kapıyı açmaz. K-29: kayıt `[LAYER0-ONAYLI GEÇİŞ: …]`
+# iziyle bilinçli geçişten doğduysa dayanakta görünür UYARI; `yüzey: adres` izi varsa adres
+# bulgusu engel değil uyarıdır (karar avukatın — m.9; iz yalnız scriptin yazdığı satırdır).
+_LAYER0_TARAYICI = None
+
+
+def _layer0_adres_tarayici():
+    """`oa_hafiza._kaynak_url_layer0_tara` (callable) ya da None (kardeş script yok / import çöktü)."""
+    global _LAYER0_TARAYICI
+    if _LAYER0_TARAYICI is not None:
+        return _LAYER0_TARAYICI
+    adaylar = [
+        os.path.join(BURA, "..", "..", "oa-pipeline", "scripts", "oa_hafiza.py"),
+        # araç çantası (`_oa/araclar/`): kardeş script aynı dizindedir
+        os.path.join(BURA, "oa_hafiza.py"),
+    ]
+    betik = next((os.path.normpath(a) for a in adaylar if os.path.isfile(a)), None)
+    if betik is None:
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("_imd_oa_hafiza_inproc", betik)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        tarayici = getattr(mod, "_kaynak_url_layer0_tara", None)
+    except Exception:
+        return None
+    if not callable(tarayici):
+        return None
+    _LAYER0_TARAYICI = tarayici
+    return tarayici
+
+
 def resmi_kaynak_denetimi(atiflar, sonuclar, kayitlar):
-    """Döndürür: (bloklar, uyarilar) — her ikisi de [str]."""
+    """Döndürür: (bloklar, uyarilar) — her ikisi de [str]. Üç soru: adres var mı ve beyaz listede mi
+    (2026-10-15); adres Layer 0'dan geçiyor mu (K-17 — kayıt `yüzey: adres` iziyle bilinçli geçişse
+    engel değil uyarı); kayıt bilinçli Layer 0 geçişiyle mi yazıldı (K-29 — dayanakta görünür UYARI)."""
     bloklar, uyarilar = [], []
     dayanak = {id(k) for (durum, _e, _u, k) in sonuclar if durum == "OK" and k is not None}
+    tarayici = _layer0_adres_tarayici()
     for k in kayitlar:
         url = getattr(k, "kaynak_url", None)
-        if url and ko.resmi_kaynak_mi(url):
+        kunye = (k.kunye_ham or "?")[:80]
+        hedef = bloklar if id(k) in dayanak else uyarilar
+        if not (url and ko.resmi_kaynak_mi(url)):
+            sebep = ("KAYNAK-URL yok" if not url
+                     else f"adres resmî kaynak beyaz listesi DIŞINDA ({url[:90]})")
+            hedef.append(f"{kunye}: {sebep} — teyit kanalı resmî portal adresi + tam metindir "
+                         "(ortak-avukat/references/resmi-kaynaklar.md); kaydı "
+                         "`oa_hafiza.py teyit --kaynak-url <resmî adres>` ile yenileyin.")
             continue
-        sebep = ("KAYNAK-URL yok" if not url
-                 else f"adres resmî kaynak beyaz listesi DIŞINDA ({url[:90]})")
-        satir = (f"{(k.kunye_ham or '?')[:80]}: {sebep} — teyit kanalı resmî portal adresi "
-                 "+ tam metindir (ortak-avukat/references/resmi-kaynaklar.md); kaydı "
-                 "`oa_hafiza.py teyit --kaynak-url <resmî adres>` ile yenileyin.")
-        (bloklar if id(k) in dayanak else uyarilar).append(satir)
+        izler = list(getattr(k, "layer0_onay", None) or [])
+        adres_izli = any(yuzey == "adres" for _d, yuzey in izler)
+        if tarayici is None:
+            hedef.append(f"{kunye}: adres Layer 0 taramasından geçirilemedi — tarayıcı yüklenemedi "
+                         "(oa-pipeline/scripts/oa_hafiza.py bulunamadı; araç çantasına kopyalayın) — [G7] "
+                         "FAIL-CLOSED (kırık kardeş modül kapıyı kapatır, açmaz).")
+            continue
+        bulgu = tarayici(url)
+        if bulgu and not adres_izli:
+            hedef.append(f"{kunye}: adres Layer 0 taramasına takıldı — {bulgu} ({url[:90]}) — adres de "
+                         "anonimdir: portalın arama sayfası adresine müvekkil verisi yazılmaz (anayasa m.10); "
+                         "kaydı anonim adresle yenileyin (`oa_hafiza.py teyit --kaynak-url <anonim adres>`); "
+                         "bilinçli geçiş yalnız `--kaynak-url-onayli` iziyle kabul edilir.")
+            continue
+        if izler and id(k) in dayanak:
+            for desen, yuzey in izler:
+                ek = f" (adres taraması bugün de bulgu veriyor: {bulgu})" if bulgu and yuzey == "adres" else ""
+                uyarilar.append(f"{kunye}: kayıt Layer 0 BİLİNÇLİ GEÇİŞLE yazıldı — [LAYER0-ONAYLI GEÇİŞ: "
+                                f"{desen}; yüzey: {yuzey}]{ek} — dilekçeye dayanak yapılırken avukat görsün "
+                                "(anayasa m.9/m.10).")
     return bloklar, uyarilar
 
 
@@ -1356,7 +1425,7 @@ def main():
     if g7_bloklar or g7_uyarilar:
         print("\n" + "-" * 72)
         print("[G7] RESMÎ KAYNAK ADRESİ (2026-10-15 — teyit kanalı: beyaz listeli adres "
-              "+ tam metin)")
+              "+ tam metin; 2026-10-17 K-17/K-29: adres de Layer 0'dan geçer, bilinçli geçiş izi görünür)")
         print("-" * 72)
         for b in g7_bloklar:
             print(f"  ✗ {b}")
@@ -1364,8 +1433,8 @@ def main():
             print(f"  ⚠ {u}")
         if g7_bloklar:
             engel_var = True
-            print("SONUÇ-EK: TESLİM ENGELİ — resmî kaynak adresi olmayan ya da beyaz liste "
-                  "dışı adresli kayıt dilekçeye dayanak olamaz (anayasa m.5).")
+            print("SONUÇ-EK: TESLİM ENGELİ — resmî kaynak adresi olmayan, beyaz liste dışı ya da Layer 0 "
+                  "taramasına takılan adresli kayıt dilekçeye dayanak olamaz (anayasa m.5, m.10).")
 
     g5_bloklar, g5_uyarilar = asilmis_ictihat_denetimi(atiflar, kayitlar)
     if g5_bloklar or g5_uyarilar:

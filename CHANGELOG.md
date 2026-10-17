@@ -156,6 +156,14 @@ birleştirme kararı avukatın).
   `--sorgu-onayli` geçişi kütükte izsiz. Doğrulamanın küçük kayıt kalemleri (zamanlama cümlesi, STATUS tarihli blok
   parantezi, öneri raporu başlığı, "4 + 3" → 4 + 1) aynı kayıt commit'inde kapatıldı. Birleştirme: bu kayıttan sonra CI
   yeşilse PR #9 orkestra eliyle `main`'e birleştirilir (birleştirme commit'i kaydın kendisidir; dal silinmez).
+  **Doğrulama kalemleri kapatıldı (2026-10-17, avukat kararıyla ayrı onarım oturumu, tek commit, önce kırmızı):** K-17
+  ([G7] dayanak kaydının adresi `oa_hafiza`'nın Layer 0 taramasından geçer — bulgu teslim engeli, tarayıcı yüklenemezse
+  fail-closed; "adres de anonimdir" cümlesi oa-ictihat SKILL ve `resmi-kaynaklar.md`'de; araç çantasına `kunye_ortak.py`
+  kuralı), K-27 (adres taraması maskesiz — 0 ile başlayan 11 haneli telefon yakalanır, kullanıcı bilgili adres RET, ağ
+  konumu taranır, `/` `=` `&` ayraç paritesi; kod yorumu düzeltildi), K-28 (nesne sayacı önek sınıfı ASCII dışı harfi
+  kapsar — `<ş:c …>` sayılır), K-29 (bilinçli geçiş `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey: sorgu|adres]` iziyle kütükte
+  ve muhakeme kaydında, yeni `--kaynak-url-onayli` yalnız adres yüzeyi, [G7] izli dayanakta görünür UYARI); test +21
+  (14 kırmızı + 7 regresyon bekçisi) → OA-SUIT-SAYISI 3970 (K-18 … K-26'nın 3949'u üstüne); kalanlar K-18 … K-26 (KARAR-3 §4).
 - **v0.5.19 adayı — çapraz denetim sonuç önbelleği (2026-10-16; dal
   `performans/0.5.19-capraz-onbellek-r2`, bu dalın — PR #9 — üzerine yığılı):** **Ne:** Stop
   kancasındaki B-2 çapraz denetiminin sonucu (`_capraz_bosluk_hesapla`) türetilmiş bir önbellekte,

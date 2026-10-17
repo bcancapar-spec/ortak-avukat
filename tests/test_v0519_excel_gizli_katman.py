@@ -941,23 +941,27 @@ def _sheet1_donustur(yol, donusum):
             z.writestr(n, veri)
 
 
-def _onekli(x):
-    """Varsayılan ad alanı yerine `x:` öneki: `<worksheet xmlns=…>` → `<x:worksheet xmlns:x=…>`, her etiket `<x:…>`."""
+def _onekli(x, onek="x"):
+    """Varsayılan ad alanı yerine `<onek>:` öneki: `<worksheet xmlns=…>` → `<x:worksheet xmlns:x=…>`, her etiket `<x:…>`.
+    `onek="ş"` ASCII dışı ad alanı öneki üretir (XML 1.0 ad başlangıcı ASCII dışı harf olabilir; openpyxl tam okur)."""
     x = x.replace('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',
-                  '<x:worksheet xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"', 1)
-    return re.sub(r"<(/?)([A-Za-z][A-Za-z0-9]*)(?=[\s/>])", lambda m: "<%sx:%s" % (m.group(1), m.group(2)), x)
+                  '<%s:worksheet xmlns:%s="http://schemas.openxmlformats.org/spreadsheetml/2006/main"' % (onek, onek), 1)
+    return re.sub(r"<(/?)([A-Za-z][A-Za-z0-9]*)(?=[\s/>])", lambda m: "<%s%s:%s" % (m.group(1), onek, m.group(2)), x)
 
 
 @pytest.mark.parametrize("ad, donusum", [
     ("oznitelliksiz", lambda x: re.sub(r'<c r="[A-Z]+[0-9]+"( t="n")?(?=[ />])', "<c", x)),   # sayı hücreleri `<c><v>…`
     ("satir-sonlu", lambda x: x.replace("<c r=", "<c\nr=")),
     ("onekli", _onekli),
+    ("ascii-disi-onekli", lambda x: _onekli(x, "ş")),   # K-28: `<ş:c …>` — önek sınıfı ASCII idi, sayaç 0 kalıyordu
 ])
 def test_xlsx_hucre_tavani_xml_yazim_varyantlarini_da_sayar(bg, ing, tmp_path, monkeypatch, ad, donusum):
     """NEDEN VAR (heyet 2026-10-17 GÜVENLİK U-1): nesne sayacı yalnız `<c ` / `<row ` bayt dizisini sayıyordu;
     öznitelliksiz `<c>`, satır sonlu `<c\\nr=…>` ve önekli `<x:c …>` (üçü geçerli XML, openpyxl tam hücre okur) sayaçta
     0 kalıyor, tavan atlatılıyordu (300.000 öznitelliksiz hücre = 23,6 KB → 8,2 s / 123 MB). Sayaç artık etiket
-    dilbilgisine bağlıdır: `<` + isteğe bağlı önek + `c` + boşluk/`/`/`>`."""
+    dilbilgisine bağlıdır: `<` + isteğe bağlı önek + `c` + boşluk/`/`/`>`. Doğrulama (GÜV K-27 → KARAR-3 §8 K-28):
+    önek sınıfı ASCII idi (`[A-Za-z_][\\w.-]*`); ASCII dışı önekli `<ş:c …>` 100.000 hücrede sayaçta 0, kapı geçiyordu —
+    bayt deseninde önek sınıfına `\\x80-\\xff` (ad başlangıcı ve devamı) eklendi."""
     wb, ws = _kitap()
     wb.save(tmp_path / "a.xlsx")                                   # 9 hücre
     _sheet1_donustur(tmp_path / "a.xlsx", donusum)
@@ -967,10 +971,11 @@ def test_xlsx_hucre_tavani_xml_yazim_varyantlarini_da_sayar(bg, ing, tmp_path, m
     assert _damgada(yeni, "kurgu-hat-1", bg.TABLO_AC), yeni
 
 
-def test_xlsx_satir_tavani_satir_sonlu_ve_onekli_row_etiketini_de_sayar(bg, ing, tmp_path, monkeypatch):
+@pytest.mark.parametrize("onek", ["x", "ş"])   # `ş`: ASCII dışı ad alanı öneki (K-28; `row` deseni de aynı sınıfı taşır)
+def test_xlsx_satir_tavani_satir_sonlu_ve_onekli_row_etiketini_de_sayar(bg, ing, tmp_path, monkeypatch, onek):
     wb, ws = _kitap()
     wb.save(tmp_path / "a.xlsx")                                   # 3 satır
-    _sheet1_donustur(tmp_path / "a.xlsx", lambda x: _onekli(x.replace("<row r=", "<row\nr=")))
+    _sheet1_donustur(tmp_path / "a.xlsx", lambda x: _onekli(x.replace("<row r=", "<row\nr="), onek))
     monkeypatch.setattr(bg, "AZAMI_TABLO_SATIR", 2)
     _, (yeni, rapor) = _tara(bg, ing, tmp_path / "a.xlsx")
     assert rapor and rapor["karar"] == "DENETLENEMEZ" and "satır" in rapor["denetlenemedi"], rapor

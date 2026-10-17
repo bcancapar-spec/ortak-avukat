@@ -31,7 +31,13 @@ Kanal **hibrittir**: model resmî portallara Claude Code'un kendi web araçları
 süzgecini (`oa-gizlilik`) uygular (kural) — müvekkil tanımlayıcı veri sorguya ve adrese girmez; mekanik tarama
 `oa_hafiza.py teyit`'te kayıt anındadır (`--sorgu` ve `--kaynak-url`; çağrıdan SONRA koşar, çıkışı geri almaz,
 kaydı ve dilekçeye geçecek bağlantıyı engeller); araç çağrısını saran kanca açık kalemdir (heyet 2026-10-17
-ESAS E-2 / K-19; adres taramasının iki dar boşluğu K-27). Dürüst sınır: `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
+ESAS E-2 / K-19; adres taramasının iki dar boşluğu K-27 — 2026-10-17'de kapatıldı). **Adres de anonimdir** (anayasa
+m.10): portalın arama sayfası adresine — yoluna, sorgu dizesine, parçasına, kullanıcı bilgisine — müvekkil verisi
+yazılmaz. `teyit` adresi `--sorgu` ile aynı Layer 0 taramasından geçirir (bütün desenler maskesiz metinde; 11 haneli
+sayı yalnız TCKN sağlaması geçiyorsa TCKN'dir, karar kimlikleri engellenmez; kullanıcı bilgili adres RET);
+`ictihat_muhakeme_denetim.py` [G7] dayanak kaydının adresini aynı taramadan geçirir. Bilinçli geçiş (`--sorgu-onayli`
+iki yüzey, `--kaynak-url-onayli` yalnız adres) kütüğe ve muhakeme kaydına `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey:
+sorgu|adres]` izi düşer; [G7] izli kaydı dayanak yaparken görünür UYARI basar (heyet 2026-10-17 K-17, K-27, K-29). Dürüst sınır: `WebFetch` resmî portaldan sayfanın İŞLENMİŞ metnini döndürür (sayfa düzeni, kesilmiş uzun metin, portalın bot sınırı); kelimesi kelimesine tam metin payı araca ve portala bağlıdır — döküm sınıfı (`--dokum-sinifi tam-metin`) avukatın beyanıdır, kapı bunu ölçmez; canlı akış sahada henüz sınanmadı (heyet 2026-10-17 ESAS E-1).
 Yerel, açık kodlu bir `oa-kaynak` MCP sunucusu (bu portalları saran keşif katmanı)
 yol haritasındadır; kurulana kadar keşif, resmî alan adlarıyla sınırlı web aramasıdır.
 
@@ -76,7 +82,8 @@ python oa_hafiza.py teyit --kok . --arac ictihat_getir --sorgu "<anonim sorgu>" 
 - Arama araçlarında (`ictihat_ara`, `WebSearch` …) adres isteğe bağlıdır; verilirse
   listeden olmalıdır.
 - `ictihat_muhakeme_denetim.py` [G7]: dilekçeye dayanak olan muhakeme kaydının adresi
-  yoksa ya da liste dışıysa teslim engelidir.
+  yoksa, liste dışıysa ya da Layer 0 taramasına takılıyorsa teslim engelidir; `yüzey: adres`
+  bilinçli geçiş izi taşıyan kayıtta adres bulgusu engel değil görünür UYARI'dır (karar avukatın).
 
 ## Listeyi değiştirmek
 

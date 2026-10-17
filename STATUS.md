@@ -43,11 +43,17 @@
 > üstündeki iki saha bölümü kelimesi kelimesine `docs/arsiv/SAHA-BOLUMU-2026-10-12.md`'ye taşındı, yerine sayı /
 > hüküm / etiket içermeyen kısa bölüm; tek belge [docs/TESTLER-VE-SAHA-DENEYLERI.md](docs/TESTLER-VE-SAHA-DENEYLERI.md)
 > (mekanik süit, sentetik veri tanımı, "kırmızı test"in üç anlamı ve çözümü, anonim saha koşuları); kök README
-> "Testler ve saha deneyleri", tests/README "Kırmızı test ne demektir", SOZLUK dört terim. K-17 / K-27 / K-28 / K-29
-> avukat kararıyla ayrı onarım oturumunda; K-18 … K-26 bu dalda kapatıldı (önce kırmızı test:
-> `tests/test_heyet3_kalemler.py`; OA-SUIT-SAYISI 3949; kapı ölçümü CHANGELOG'da). Yargı Pro boşluk analizi
-> belgesi yazıldı: [docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md)
+> "Testler ve saha deneyleri", tests/README "Kırmızı test ne demektir", SOZLUK dört terim. K-18 … K-26 bu dalda
+> kapatıldı (önce kırmızı test: `tests/test_heyet3_kalemler.py`; OA-SUIT-SAYISI 3949; kapı ölçümü CHANGELOG'da).
+> Yargı Pro boşluk analizi belgesi yazıldı: [docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md)
 > (17 aile; uygulama sırası §0; madde atıfları teyitsiz, koda girerken resmî kaynaktan teyit).
+> **K-17 / K-27 / K-28 / K-29 kapatıldı** (avukat kararıyla ayrı onarım oturumu, 2026-10-17, tek commit, önce kırmızı —
+> 14 kırmızı + 7 regresyon bekçisi, test +21 → OA-SUIT-SAYISI 3970): adres taraması maskesiz (TCKN dalı sağlamalı; 0 ile
+> başlayan telefon yakalanır), kullanıcı bilgili adres RET, ağ konumu taranır, ayraç paritesi (`/`, `=`, `&`); [G7]
+> dayanak kaydının adresi aynı Layer 0 taramasından (bulgu → teslim engeli; tarayıcı yüklenemezse fail-closed); nesne
+> sayacı önek sınıfı ASCII dışı harfi kapsar; bilinçli geçiş `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey: sorgu|adres]` iziyle
+> kütükte ve kayıtta, `--kaynak-url-onayli` yalnız adres yüzeyi, [G7] izli dayanakta görünür UYARI; oa-ictihat SKILL ve
+> `resmi-kaynaklar.md` "adres de anonimdir": KARAR-3 §4 (K-17), §8 (K-27 … K-29).
 
 > **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
 > denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
