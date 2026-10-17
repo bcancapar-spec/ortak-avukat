@@ -208,15 +208,20 @@ def test_k19_hooks_json_pretool_matcher_web_araclarini_sarar():
     assert any("WebFetch" in m and "WebSearch" in m for m in matcherlar), matcherlar
 
 
-def test_k19_webfetch_adresinde_tckn_deny(tmp_path):
+def test_k19_webfetch_adresinde_tckn_bulgu_gorunur_ve_sorar(tmp_path):
+    """NEDEN VAR (avukat ilkesi 2026-10-17 — Layer 0 avukat iradesine tabidir: tarar, bulguyu görünür yazar,
+    şüphede SORAR; avukatın açık talimatı varsa dış araç yolunu engellemez): kanca MUTLAK bulguda da 'deny'
+    değil 'ask' basar — karar avukatındır; bulgunun sınıfı gerekçede görünür, verinin kendisi tekrar edilmez."""
     kod, karar, cikti = _pretool(tmp_path, {
         "tool_name": "WebFetch", "session_id": "s-sentetik", "cwd": str(tmp_path),
         "tool_input": {"url": "https://mevzuat.adalet.gov.tr/ictihat/ara?q=" + TCKN_SENTETIK,
                        "prompt": "kararı özetle"}})
     assert kod == 0, cikti
-    assert karar and karar["permissionDecision"] == "deny", cikti
-    assert "Layer 0" in karar["permissionDecisionReason"] or "LAYER 0" in karar["permissionDecisionReason"]
-    assert TCKN_SENTETIK not in karar["permissionDecisionReason"], "gerekçe veriyi tekrar etmez"
+    assert karar and karar["permissionDecision"] == "ask", cikti
+    neden = karar["permissionDecisionReason"]
+    assert "Layer 0" in neden or "LAYER 0" in neden
+    assert "TC Kimlik" in neden and "avukat" in neden.lower(), neden
+    assert TCKN_SENTETIK not in neden, "gerekçe veriyi tekrar etmez"
 
 
 def test_k19_websearch_sorgusunda_olasi_kimlik_ask(tmp_path):
@@ -240,7 +245,8 @@ def test_k19_webfetch_prompt_alani_da_taranir(tmp_path):
         "tool_name": "WebFetch", "session_id": "s-sentetik", "cwd": str(tmp_path),
         "tool_input": {"url": MEVZUAT_URL, "prompt": "TCKN " + TCKN_SENTETIK + " olan kisi"}})
     assert kod == 0, cikti
-    assert karar and karar["permissionDecision"] == "deny", cikti
+    assert karar and karar["permissionDecision"] == "ask", cikti
+    assert "TC Kimlik" in karar["permissionDecisionReason"]
 
 
 # ── K-20 — araç sınıfı ↔ adres türü ─────────────────────────────────────────────────────────────

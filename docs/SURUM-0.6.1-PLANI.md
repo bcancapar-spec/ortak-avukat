@@ -78,6 +78,23 @@ Sonraki adım: …
 6. CI yeşil → PR #11 birleştirme (avukat) → etiket `v0.6.1` + GitHub Release notu (avukat eliyle;
    notu komser hazırlar).
 
+## 8. Layer 0 ilkesi (avukat lafzı, 2026-10-17) ve hizalama kalemleri
+
+Avukat: "EK NOT UDF ÜRETİMİ LAYER 0 İSTİSNASIDIR. UDF ÜRETİMİ İÇİN TÜM YOLLAR AÇIKTIR." ve
+"layer 0 avukat ne isterse o yapılacak şekilde değiştir". Uygulanacak hâli: Layer 0 (m.10) avukat
+iradesine tabidir — tarar, bulguyu görünür yazar, şüphede SORAR; avukatın açık talimatı varsa hiçbir
+dış araç yolunu engellemez, onay dışında şart koymaz; her avukat kararı istisna defteri + makbuz izi.
+Değişmeyen (avukat aksini demedikçe): UYAP girişi / e-imza / PIN / parola için kod yazmama, evrak
+salt-okunurluğu, m.7. Kayıt: hafıza `udf-yargi-pro-onayi.md`; dal E (UDF istisnası); genel kural
+Layer 0 oturumunun PR #11 üstüne açacağı yeni dalda.
+
+| Hizalama kalemi | Sahip | Durum |
+|---|---|---|
+| Kanca K-19 (`_pretool_web_layer0`): MUTLAK bulguda `deny` → `ask` (bulgu görünür, karar avukatın) | komser | yapıldı (bu commit) |
+| `oa_hafiza.py teyit --sorgu` / `--kaynak-url` RET + `--sorgu-onayli` / `--kaynak-url-onayli` (onay → gider + kayıt) | Layer 0 oturumu (genel kural dalı) | ilkeyle uyumlu; yalnız gerekçe/şart cümleleri gözden geçirilir |
+| `udf_yaz.py`, `teslim_paketi.py`, `dilekce_denetim.py --udf`, `gizlilik_tara.py` (DENY dahil → SOR; `--onay avukat` → gider + kayıt; tarayıcı yok → SOR) | Layer 0 oturumu | tasarım hazır, avukat onayı bekliyor |
+| Anayasa m.10 metni (iki nüsha özdeş) | Layer 0 oturumu, avukat onayıyla | E dalında başlandı |
+
 ## 7. Bitti sayılma ölçütü
 
 Tam süit 0 kırmızı (altı ortam + yapı + OCR + lint); heyet BLOKLAYICI 0; her hukuki kural teyit

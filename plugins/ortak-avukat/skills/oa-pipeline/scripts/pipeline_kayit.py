@@ -7323,11 +7323,12 @@ def _gizlilik_tara_modulu():
 
 def _pretool_web_layer0(veri, ti, kok):
     """K-19 (heyet 2026-10-17 ESAS E-2; anayasa m.10): WebFetch/WebSearch payload'ının url / query /
-    prompt alanlarını Layer 0 süzgecinden (gizlilik_tara strict) geçirir. MUTLAK bulgu → 'deny'
-    (TCKN, kart, IBAN gibi kimlik verisi dış araca gidemez), olası bulgu → 'ask' (karar devri);
-    süzgeç yüklenemezse 'ask' (fail-closed: denetlenemeyen çıkış sessiz geçmez). Gerekçe VERİYİ
-    TEKRAR ETMEZ (yalnız desen adları). Dava kökü bulunmasa da tarar — veri kökten bağımsız sızar;
-    kök bulunursa olay deftere yazılır. Temiz çağrı sessizdir. Her durumda exit 0."""
+    prompt alanlarını Layer 0 süzgecinden (gizlilik_tara strict) geçirir. Layer 0 ilkesi (avukat,
+    2026-10-17 — "Layer 0 avukat ne isterse onu yapar"): kanca ENGELLEMEZ, bulguyu görünür yazar ve
+    SORAR — MUTLAK bulgu (TCKN, kart, IBAN) da olası bulgu da 'ask' (karar avukatın; gerekçe bulgunun
+    sınıfını söyler, veriyi TEKRAR ETMEZ); süzgeç yüklenemezse yine 'ask' (şüphede sor). Dava kökü
+    bulunmasa da tarar — veri kökten bağımsız sızar; kök bulunursa olay deftere yazılır. Temiz çağrı
+    sessizdir. Her durumda exit 0."""
     arac = str(veri.get("tool_name") or "")
     metin = "\n".join(str(ti.get(a) or "") for a in _WEB_ARAC_ALANLARI)
     if not metin.strip():
@@ -7344,19 +7345,16 @@ def _pretool_web_layer0(veri, ti, kok):
             deny, ask = gt.tara(metin, "strict")
         except Exception:
             deny, ask = [("MUTLAK", "tarama hatası — denetlenemedi")], []
-        if deny:
-            karar = "deny"
-            adlar = ", ".join(sorted({a for _s, a in deny}))
-        elif ask:
-            karar = "ask"
-            adlar = ", ".join(sorted({a for _s, a in ask}))
-        else:
+        if not deny and not ask:
             return 0
-        neden = ("LAYER 0 (anayasa m.10 — heyet 2026-10-17 K-19): %s çağrısının adres/sorgu/prompt "
-                 "alanı müvekkil-tanımlayıcı veri deseni taşıyor (%s) — dış araca gidemez. Sorguyu "
-                 "anonimleştirin (olay örüntüsü + norm; kimlik ve dosya verisi olmadan)%s."
-                 % (arac, adlar, "" if karar == "deny"
-                    else "; olası desen — göndermek avukatın kararıdır"))
+        # Layer 0 ilkesi (avukat, 2026-10-17): engel yok, bulgu görünür + SOR — MUTLAK da 'ask'.
+        karar = "ask"
+        adlar = ", ".join(sorted({a for _s, a in (deny or ask)}))
+        neden = ("LAYER 0 (anayasa m.10 — heyet 2026-10-17 K-19; Layer 0 avukat iradesine tabidir): %s "
+                 "çağrısının adres/sorgu/prompt alanı müvekkil-tanımlayıcı veri deseni taşıyor (%s%s). "
+                 "Sorguyu anonimleştirin (olay örüntüsü + norm; kimlik ve dosya verisi olmadan) ya da "
+                 "bu hâliyle göndermeyi onaylayın — göndermek avukatın kararıdır, karar kayda geçer."
+                 % (arac, adlar, "" if deny else " — olası desen"))
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": karar,

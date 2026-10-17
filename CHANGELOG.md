@@ -250,7 +250,9 @@ birleştirme kararı avukatın).
   ağı `WebFetch`/`WebSearch` çağrılarını sarar: `hooks.json` PreToolUse matcher genişledi; `hook_pretool`
   adres / sorgu / prompt alanlarını `gizlilik_tara` strict kipinden geçirir — MUTLAK bulgu (sağlamalı TCKN,
   kart, IBAN …) `deny`, olası bulgu `ask`, süzgeç yüklenemezse `ask`; gerekçe veriyi tekrar etmez; dava kökü
-  bulunmasa da tarar. **K-20** araç sınıfı ↔ adres türü: `kunye_ortak.resmi_kaynak_turu` + `oa_hafiza`
+  bulunmasa da tarar. *(Aynı gün, Layer 0 ilkesi — avukat: "Layer 0 avukat ne isterse onu yapar": kanca
+  ENGELLEMEZ, MUTLAK bulguda da `ask` basar; bulgunun sınıfı gerekçede görünür, karar avukatın;
+  `docs/SURUM-0.6.1-PLANI.md` §8.)* **K-20** araç sınıfı ↔ adres türü: `kunye_ortak.resmi_kaynak_turu` + `oa_hafiza`
   `ARAC_TUR_UYUMU` — mevzuat aracı içtihat portalına, içtihat aracı mevzuat portalına gidemez (RET); listede
   sayılmayan `.gov.tr` yalnız `kurum`; `WebFetch` mevzuat / Resmî Gazete adresinde mevzuat sınıfı (damga
   ritüeli yok); `http://` görünür UYARI; dökümsüz mevzuat kaydı kütükte `[DÖKÜMSÜZ]` izi + UYARI (belge
