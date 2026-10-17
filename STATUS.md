@@ -47,6 +47,10 @@
 > kapatıldı (önce kırmızı test: `tests/test_heyet3_kalemler.py`; OA-SUIT-SAYISI 3949; kapı ölçümü CHANGELOG'da).
 > Yargı Pro boşluk analizi belgesi yazıldı: [docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md)
 > (17 aile; uygulama sırası §0; madde atıfları teyitsiz, koda girerken resmî kaynaktan teyit).
+> **Hedef 0.6.1 (avukat kararı, 2026-10-17):** koordinasyon panosu
+> [docs/SURUM-0.6.1-PLANI.md](docs/SURUM-0.6.1-PLANI.md) — kapsam, dosya sahipliği, rapor şablonu,
+> birleştirme sırası, avukat kararı bekleyenler. PR #11 (denetim dalı → main) açık, CI 9/9 yeşil;
+> birleştirme ve sürüm kararı avukatın.
 > **K-17 / K-27 / K-28 / K-29 kapatıldı** (avukat kararıyla ayrı onarım oturumu, 2026-10-17, tek commit, önce kırmızı —
 > 14 kırmızı + 7 regresyon bekçisi, test +21 → OA-SUIT-SAYISI 3970): adres taraması maskesiz (TCKN dalı sağlamalı; 0 ile
 > başlayan telefon yakalanır), kullanıcı bilgili adres RET, ağ konumu taranır, ayraç paritesi (`/`, `=`, `&`); [G7]
