@@ -39,6 +39,12 @@
 > Doğrulama (2026-10-17, fark `c94e982..ef03fd8`): üçü de ŞART KAPANDI, BLOKLAYICI 0 (usul PUSH 0·0·2, güvenlik PUSH
 > 0·2·2, esas ŞARTLI 0·1·5 — şartı birleştirme sonrası ilk commit); yeni açık kalemler K-27 (adres taramasında 0 ile
 > başlayan telefon ve kullanıcı bilgisi), K-28 (ASCII dışı ad alanı öneki), K-29 (`--sorgu-onayli` izi): KARAR-3 §8.
+> **Birleştirme sonrası (2026-10-17, aynı dal, ayrı commit'ler):** saha metinleri anonim ve sayısız — CHANGELOG
+> üstündeki iki saha bölümü kelimesi kelimesine `docs/arsiv/SAHA-BOLUMU-2026-10-12.md`'ye taşındı, yerine sayı /
+> hüküm / etiket içermeyen kısa bölüm; tek belge [docs/TESTLER-VE-SAHA-DENEYLERI.md](docs/TESTLER-VE-SAHA-DENEYLERI.md)
+> (mekanik süit, sentetik veri tanımı, "kırmızı test"in üç anlamı ve çözümü, anonim saha koşuları); kök README
+> "Testler ve saha deneyleri", tests/README "Kırmızı test ne demektir", SOZLUK dört terim. K-17 / K-27 / K-28 / K-29
+> avukat kararıyla ayrı onarım oturumunda; K-18 … K-26 bu dalda sırada.
 
 > **2026-10-16 — v0.5.19 adayı, çapraz denetim sonuç önbelleği** (dal `performans/0.5.19-capraz-onbellek-r2`,
 > denetim dalının — PR #9 — üzerine yığılı; sürüm numarası değişmedi): ölçek kökünde Stop kancasının
