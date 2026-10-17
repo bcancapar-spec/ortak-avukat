@@ -19,12 +19,12 @@
 
 **Fikir ve dizayn babası:** Av. Bayram Can ÇAPAR · **Kâtip:** Claude (Anthropic — Claude Code)
 
-**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **127.000+** satır · **3.907** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
+**Birlikte yazılan:** **49.000+** satır eklenti kodu (Python) · **62.000+** satır test kodu · **1.700+** satır araç kodu (tools/) · **13.000+** satır beceri ve başvuru metni · **900+** satır kural ve veri (JSON) · toplam **128.000+** satır · **3.970** test — ölçüm: `python tools/satir_sayaci.py` (git'te izlenen dosyalar, boş satırlar dahil; satır sayıları aşağı yuvarlanmış alt sınırdır) <!-- OA-SATIR-SAYACI -->
 
-> ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Saha
-> sonuçları, ölçümler ve dürüst kayıp listesi sürüm defterindedir:
-> [CHANGELOG.md — Saha sonuçları](CHANGELOG.md#saha-sonuçları). Dosya kimlikleri
-> anayasa m.7 gereği daima anonimdir. Hukuk erişilebilir olmalıdır, su ve nefes gibi.
+> ⚖️ **Gerçek davalarda test edilmektedir; geliştirilmeye devam ediliyor.** Yöntem,
+> mekanik süit, deney sınıfları ve belgeli saha koşularının anonim özeti tek belgededir:
+> [Testler ve saha deneyleri](docs/TESTLER-VE-SAHA-DENEYLERI.md). Sayı ve hüküm yoktur;
+> dosya kimlikleri anayasa m.7 gereği daima anonimdir. Hukuk erişilebilir olmalıdır, su ve nefes gibi.
 
 > **© 2026 Av. Bayram Can Çapar. Tüm hakları saklıdır (5846 sayılı FSEK).** Fikrî
 > mülkiyet ile mali ve manevi haklar münhasıran hak sahibine aittir. Depo kamuya
@@ -1038,7 +1038,7 @@ de gönder" demek sizin kararınızdır, ama artık **görmeden olmaz**. v0.5.10
 **filo-tazelik kapısı** denetimi seçili üründen filoya genişletti: dava kökü +
 40-UYAP'taki TÜM teslim-sınıfı UDF'ler mühür-tazelik hükmünden geçer ve
 tamamı makbuza yazılır — "makbuz yeşil ama yüklenecek dosya başka" penceresi
-(307 karnesi) yapısal olarak kapandı; sunum kilidi de yeşil makbuz varken bile
+(bir saha karnesinde ölçülmüştü) yapısal olarak kapandı; sunum kilidi de yeşil makbuz varken bile
 bayat-mühürlü ürünü yakalar. v0.5.18 iki kapıyı sertleştirdi. **Atıf kapısı:**
 Anayasa, Avukatlık Kanunu, ek/geçici madde ve adıyla anılan kanun atıfları da
 artık çıkarılır ve kütükte aranır (eskiden denetimsiz teslim ediliyordu); teyidin
@@ -1084,10 +1084,29 @@ Parçaların ayrıntılı kataloğu: **[plugins/ortak-avukat/README.md](plugins/
 
 ---
 
-## Saha deneyleri
+## Testler ve saha deneyleri
 
-Test yöntemi, belgeli saha koşuları, gerçek dava ölçümleri ve başarısızlık kayıtları
-sürüm defterindedir: [CHANGELOG.md — Saha deneyleri](CHANGELOG.md#saha-deneyleri--testler-nasıl-yapıldı).
+<details>
+<summary><b>Laboratuvar ve saha</b> — mekanik süit, "kırmızı test" ne demektir, sentetik veri, anonim saha koşuları (tıklayıp açın)</summary>
+
+- **Mekanik süit.** Her sürüm, sahada bulunan her kusuru önce bir teste çevirir; süit
+  ağsızdır, her test kendi geçici klasöründe kurgu bir dava kurar. Büyüklüğünün tek kaynağı
+  [tests/README.md](tests/README.md)'deki işaretçidir ve bir test onu her koşuda gerçek
+  toplamayla karşılaştırır.
+- **Kırmızı test üç şey demektir.** Onarımdan önce bilerek düşürülen test (kanıt: kusur
+  yeniden üretildi), CI'da kapalı kapı (yeşermeden sürüm etiketi atılamaz) ve gerekçesiyle
+  görünür atlama (ağ ya da oturum gerektiren araç yoksa; sessiz atlama yasaktır). Kırmızıda
+  düzeltilen şey koddur, test değil; istisnalar yazılı iz bırakır.
+- **Sentetik veri**, gerçek verinin kişisel verilerden arındırılmış hâlidir: test fikstürleri
+  tamamen kurgudur, saha dersleri anonim örüntü olarak skill metnine girer.
+- **Saha deneyleri.** Avukat gerçek derdest dosyada tek doğal prompt verir ve müdahale etmez;
+  koşu sonra transkript, artefakt ve karne ile adli analize alınır; karne bir sonraki sürümün
+  reçetesidir. Deney sınıfları (müdahalesiz, müdahaleli, çok oturumlu) karıştırılmaz,
+  başarısızlıklar da yazılır. Belgeli koşuların anonim özeti ve tam yöntem:
+  **[docs/TESTLER-VE-SAHA-DENEYLERI.md](docs/TESTLER-VE-SAHA-DENEYLERI.md)**; tarihli karneler
+  [docs/arsiv/](docs/arsiv/README.md).
+
+</details>
 
 ---
 
@@ -1139,7 +1158,7 @@ Bir meslektaş için, sistemin ne yaptığı kadar ne yapmadığı da önemlidir
   onlar için kod dahi yazmaz.
 - **Resmî kaynak bağlı değilse künye doğrulayamaz** — ve bunu gizlemez, "teyit
   edilemedi" damgası basar.
-- **Organik yeşil makbuz bir kez ölçüldü (923 sahası).** v0.5.16 araçlarıyla
+- **Organik yeşil makbuz bir kez ölçüldü (tek bir saha koşusunda).** v0.5.16 araçlarıyla
   uçtan uca insan müdahalesiz yeşil makbuzun tekrar ölçümü açık iştir; bu
   satır o gün ölçümle güncellenecektir.
 - **Belge güvenlik kapısı her gizlemeyi görmez.** Taranmış görüntünün piksel
@@ -1256,7 +1275,7 @@ resmî kaynaktan doğrulanmadıkça yoktur.
 - **İç kaynakça dürüst konuşur.** Dosyanın kendi geçmişini ve kendi dosya
   numarasını "teyitsiz içtihat" sanmaz.
 - **Mühürler doğru sürümü yazar.**
-- **Dış skill kütüphanesinden fikir düzeyinde uyarlamalar** ([uyarlama planı](docs/YARGI-PRO-UYARLAMA-PLANI.md)).
+- **Dış skill kütüphanesinden fikir düzeyinde uyarlamalar** ([uyarlama planı](docs/YARGI-PRO-UYARLAMA-PLANI.md); ölçülmüş boşluk listesi ve uygulama sırası: [boşluk analizi, 2026-10-17](docs/YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md)).
   - Kod ve metin alınmadı; her madde resmî metinden okundu.
   - Gelenler: harç cetveli ve güncel oran teyidi, meslek kuralları kontrol
     listeleri, revizyon farkı, zabıt denetimi, delil tedarik ve tanık soru
@@ -1342,6 +1361,12 @@ resmi). Birebir alıntıya dokunulmaz.
    sunucusu ilan etmez, ama eski kayıt kendiliğinden silinmez. Bağlantı listesinde
    sertifika hatası veren eski yedek bağlantı TLS ad uyuşmazlığıyla reddedildiği
    için ondan veri gitmemiştir.
+   - Eski kanaldan kalma, **adres taşımayan teyit kayıtları** (`_oa/teyit/kunye-teyit.md`
+     satırları ve `_oa/cikti/*ictihat-muhakeme*.md` kayıtlarında `**KAYNAK-URL:**` satırı
+     olmayanlar) dilekçeye dayanak olamaz: kontrol parçasının [G7] kapısı teslim engeli verir.
+     Dilekçeden önce her künyeyi resmî portaldan yeniden çekip
+     `oa_hafiza.py teyit --kaynak-url <adres>` ile yenileyin; eski kayıt silinmez, yeni kayıt
+     onun önüne geçer (heyet 2026-10-17 K-23).
 3. PyMuPDF'i yükseltin — depo kökünde `pip install -U -r requirements.txt` (ya da
    `pip install -U pymupdf`). Eski sürümde görünürlük kâhini çalışmaz; sistem bunu
    gizlemez, raporda "kahin-devre-disi" notu çıkar. Aynı komut Excel okuyucularını

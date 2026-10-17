@@ -595,6 +595,23 @@ MEVZUAT_KURUM_ARACLARI = {
 BILINEN_ARACLAR = ARAMA_ARACLARI | GETIR_ARACLARI | MEVZUAT_KURUM_ARACLARI
 # Tam metin çeken araçlar: teyidin kanıtı kaynağın adresidir — --kaynak-url zorunlu.
 URL_ZORUNLU_ARACLAR = GETIR_ARACLARI | {"mevzuat_getir", "resmi_gazete_getir"}
+# 2026-10-17 heyet K-20 — ARAÇ SINIFI ↔ ADRES TÜRÜ (kunye_ortak.resmi_kaynak_turu): mevzuat aracı
+# içtihat portalına, içtihat aracı mevzuat portalına gidemez; listede sayılmayan genel `.gov.tr`
+# yalnız 'kurum' türüdür. Sözlükte olmayan araç (WebFetch/WebSearch, kurulum-bağımlı adlar) her
+# türe gidebilir — WebFetch'in SINIFI adresin türüne bağlıdır (mevzuat / Resmî Gazete → mevzuat).
+ARAC_TUR_UYUMU = {
+    "mevzuat_ara": {"mevzuat"}, "mevzuat_getir": {"mevzuat"}, "mevzuat_icinde_ara": {"mevzuat"},
+    "resmi_gazete_fihrist": {"resmi-gazete"}, "resmi_gazete_getir": {"resmi-gazete"},
+    "kurum_karari_ara": {"kurum", "ictihat"}, "kurum_karari_getir": {"kurum", "ictihat"},
+    "ictihat_ara": {"ictihat", "aihm", "kurum"}, "semantik_ictihat_ara": {"ictihat", "aihm", "kurum"},
+    "ictihat_getir": {"ictihat", "aihm", "kurum"},
+    "aym_ictihat_ara": {"ictihat"}, "aihm_ictihat_ara": {"aihm"},
+}
+WEBFETCH_MEVZUAT_TURLERI = {"mevzuat", "resmi-gazete"}
+# 2026-10-17 heyet K-18 — WebFetch sayfanın İŞLENMİŞ metnini döndürür: 'tam-metin' sınıfı beyanı
+# için yapı ölçütü — döküm en az bu kadar karakter olmalı (kısa döküm özet/kesiktir, tam okuma
+# kanıtı değildir). Portal araçlarının (ictihat_getir vd.) sözleşmesi değişmez.
+WEBFETCH_TAM_METIN_ASGARI = 2000
 _BILINEN_ARACLAR_CASEFOLD = {a.casefold(): a for a in BILINEN_ARACLAR}
 
 
@@ -841,20 +858,42 @@ def _tckn_saglama_gecer_mi(s):
 
 
 def _kaynak_url_layer0_tara(url):
-    """--kaynak-url'in yolu, sorgu dizesi ve parçası Layer 0'dan geçer (heyet 2026-10-17 GÜVENLİK U-2; anayasa m.10):
-    adres resmî portala giden sorguyu taşır ve dış araca gider. Alan adı beyaz liste denetiminde ayrıca sınanır."""
+    """--kaynak-url Layer 0'dan geçer (heyet 2026-10-17 GÜVENLİK U-2; doğrulama K-27; anayasa m.10): adres resmî
+    portala giden sorguyu taşır ve dış araca gider. Taranan metin: ağ konumu + yol + sorgu dizesi + parça (yüzde ve `+`
+    kodlaması çözülmüş). Kullanıcı bilgisi (`kullanıcı[:parola]@`) dolu adres taranmadan bulgudur — resmî portal
+    adresinde meşru değildir ve `resmi_kaynak_mi` `hostname` ile onu ayıklayıp beyaz listeyi geçirir (K-27 b).
+    Desenler MASKESİZ metinde koşar; yalnız TCKN dalı sağlamalıdır (karar kimlikleri de 11 hane olabilir) — eski
+    sağlama maskesi 0 ile başlayan bitişik 11 haneli telefonu `#` ile örtüp `_TELEFON_RE`'den gizliyordu (K-27 a).
+    İki geçiş: ilki `/`'ü korur (YYYY/N künye deseni kaybolmasın), ikincisi adres ayraçlarını (`/`, `=`, `&`) sözcük
+    sınırı sayar (yol segmentine ya da alan değerine bölünmüş ad-soyad; GÜV NOT-1). Alan adı beyaz liste denetiminde
+    ayrıca sınanır."""
     import urllib.parse as _up
     try:
         p = _up.urlsplit(url)
     except ValueError:
         return "çözümlenemeyen adres"
-    acik = _up.unquote_plus(" ".join(x for x in (p.path, p.query, p.fragment) if x))
-    acik = _TCKN_RE.sub(lambda m: m.group(0) if _tckn_saglama_gecer_mi(m.group(0)) else "#" * 11, acik)
-    return _layer0_sorgu_tara(acik)
+    if p.username or p.password:
+        return "kullanıcı bilgisi (adresin kullanıcı adı / parola alanı)"
+    acik = _up.unquote_plus(" ".join(x for x in (p.netloc, p.path, p.query, p.fragment) if x))
+    return (_layer0_sorgu_tara(acik, tckn_saglamali=True)
+            or _layer0_sorgu_tara(re.sub(r"[/=&]", " ", acik), tckn_saglamali=True))
 
 
-def _layer0_sorgu_tara(sorgu):
-    if _TCKN_RE.search(sorgu):
+def _layer0_onay_izi(bulgu, yuzey):
+    """K-29 (heyet 2026-10-17 doğrulama) — bilinçli Layer 0 geçişinin görünür izi: kütüğün sorgu hücresine ve muhakeme
+    kaydına yazılır, `ictihat_muhakeme_denetim.LAYER0_ONAYLI_RE` ile birebir round-trip. Desenin yalnız SINIFI yazılır
+    (parantezli ayrıntı — eşleşen metin dahil — atılır): iz veriyi yinelemez."""
+    return f"[LAYER0-ONAYLI GEÇİŞ: {bulgu.split(' (', 1)[0].strip()}; yüzey: {yuzey}]"
+
+
+def _layer0_sorgu_tara(sorgu, tckn_saglamali=False):
+    """Layer 0 ucuz desen taraması; bulgu adı (str) ya da None. `tckn_saglamali`: 11 haneli dizi yalnız TCKN sağlaması
+    geçiyorsa TCKN sayılır (adres yüzeyi — karar kimlikleri de 11 hane olabilir); sorgu yüzeyinde her 11 hane TCKN'dir.
+    Öbür desenler her iki kipte de maskesiz metinde koşar."""
+    if tckn_saglamali:
+        if any(_tckn_saglama_gecer_mi(m.group(0)) for m in _TCKN_RE.finditer(sorgu)):
+            return "TCKN deseni (11 haneli sayı)"
+    elif _TCKN_RE.search(sorgu):
         return "TCKN deseni (11 haneli sayı)"
     if _IBAN_RE.search(sorgu):
         return "IBAN deseni"
@@ -995,9 +1034,11 @@ def _sorgu_kutuk_ize_karismasin(s):
 
 # v0.5.16 (K5): **AKIBET:** / **AKIBET-KAYNAK:** satır-başı belirteçleri de
 # kaçışlanır — serbest --akibet-kaynak metni hayalet akıbet satırı üretemez.
+# K-29 (2026-10-17): `[LAYER0-ONAYLI GEÇİŞ:` iz satırı da kaçışlanır — iz yalnız scriptin yazdığıdır; serbest metne
+# gömülen hayalet iz [G7]'yi engelden uyarıya indiremez.
 _MUHAKEME_YAPISAL_RE = re.compile(
     r"(?m)^(\*\*(?:KUNYE|KAYNAK-IZI|DAMGA|DÖKÜM-SINIFI|GEÇERSİZ-KILINDI|"
-    r"AKIBET|AKIBET-KAYNAK):\*\*|#{1,6}\s)"
+    r"AKIBET|AKIBET-KAYNAK):\*\*|#{1,6}\s|\[LAYER0-ONAYLI GEÇİŞ:)"
 )
 
 
@@ -1211,6 +1252,19 @@ def cmd_teyit(args):
     is_getir = args.arac in GETIR_ARACLARI
     is_mevzuat_kurum = args.arac in MEVZUAT_KURUM_ARACLARI
 
+    # 2026-10-17 heyet K-20 — WebFetch'in sınıfı ADRESİN TÜRÜNE bağlıdır: mevzuat.gov.tr / Resmî
+    # Gazete sayfası mevzuat sınıfıdır (damga ritüeli içtihata aittir), içtihat portalı sayfası GETİR
+    # sınıfıdır. Tür erken belirlenir ki aşağıdaki damga zorunluluğu doğru sınıfa uygulansın; adresin
+    # biçim, Layer 0 ve beyaz liste denetimleri aşağıda AYNEN koşar (bu ön bakış hiçbir kapıyı açmaz).
+    if args.arac == "WebFetch" and getattr(args, "kaynak_url", None):
+        _ko0 = _kunye_ortak_modulu()
+        if _ko0 is not None and hasattr(_ko0, "resmi_kaynak_turu"):
+            if _ko0.resmi_kaynak_turu(args.kaynak_url.strip()) in WEBFETCH_MEVZUAT_TURLERI:
+                is_getir, is_mevzuat_kurum = False, True
+                print("[BİLGİ] WebFetch adresi mevzuat / Resmî Gazete türünde — kayıt MEVZUAT sınıfında "
+                      "işlendi: damga ritüeli yok, döküm sınıfı yok (K-20). İçtihat sayfası için adres "
+                      "içtihat portalından olmalı; o zaman GETİR sınıfı (damga + döküm) uygulanır.")
+
     # E3 (v0.5.8.5) — mevzuat/kurum kaydında --damga UYGULANMAZ (damga ritüeli
     # içtihat/GETİR sınıfına aittir) ama SESSİZCE de yutulmaz: açık bir [BİLGİ]
     # satırı basılır ve damga bu çağrı için düşürülür (kütüğe DAMGA= yazılmaz,
@@ -1248,12 +1302,20 @@ def cmd_teyit(args):
     # P0-2 DÜZELTME (e): Layer-0 taraması artık HER --sorgu için çalışır —
     # arac sınıfından (ARAMA/GETİR) BAĞIMSIZ; mevzuat_*/kurum_karari_ara dahil
     # HER araç dış araca giden bir sorgu taşır.
-    if not args.sorgu_onayli:
-        bulunan = _layer0_sorgu_tara(args.sorgu)
-        if bulunan:
+    # K-29 (heyet 2026-10-17 doğrulama): tarama bayrak verilse de koşar — bilinçli geçiş SESSİZ değildir: kütüğün sorgu
+    # hücresine ve muhakeme kaydına `[LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey: sorgu|adres]` izi düşer, ictihat_muhakeme_
+    # denetim [G7] dayanakta görünür UYARI basar. `--sorgu-onayli` iki yüzeyi (sorgu + adres) geçer (geriye uyum);
+    # `--kaynak-url-onayli` yalnız adresi. `getattr` — elle kurulmuş Namespace ile in-process çağrılar çökmesin.
+    _sorgu_onayli = bool(getattr(args, "sorgu_onayli", False))
+    _adres_onayli = _sorgu_onayli or bool(getattr(args, "kaynak_url_onayli", False))
+    _layer0_izler = []
+    bulunan = _layer0_sorgu_tara(args.sorgu)
+    if bulunan:
+        if not _sorgu_onayli:
             sys.exit(f"RET (Layer 0): --sorgu içinde {bulunan} bulundu — sorgu "
                      "ANONİM olmalıdır (müvekkil-tanımlayıcı veri dış araca gönderilemez). "
-                     "Bilinçli geçiş için --sorgu-onayli kullanın.")
+                     "Bilinçli geçiş için --sorgu-onayli kullanın (kütüğe ve kayda iz bırakır).")
+        _layer0_izler.append(_layer0_onay_izi(bulunan, "sorgu"))
 
     if is_arama and args.damga:
         sys.exit("RET: ARAMA araçları (ictihat_ara/semantik_ictihat_ara/aym_ictihat_ara/"
@@ -1281,15 +1343,22 @@ def cmd_teyit(args):
             sys.exit("RET: --kaynak-url yalnız tek parça bir http(s) adresi olabilir "
                      f"(boşluk/satır sonu içeremez). Verilen: {args.kaynak_url!r}")
         args.kaynak_url = u
-        # 2026-10-17 — heyet GÜVENLİK U-2 (anayasa m.10): adres de dış araca gider — yolu/sorgusu/parçası müvekkil-
-        # tanımlayıcı veri taşıyamaz. 11 haneli sayılar yalnız TCKN sağlaması geçiyorsa TCKN sayılır (karar kimlikleri de
-        # 11 hane olabilir); IBAN, e-posta, telefon, plaka, ad-soyad desenleri aynen taranır. Bilinçli geçiş --sorgu-onayli.
-        if not args.sorgu_onayli:
-            bulunan_url = _kaynak_url_layer0_tara(u)
-            if bulunan_url:
+        # 2026-10-17 — heyet GÜVENLİK U-2 + doğrulama K-27 (anayasa m.10): adres de dış araca gider — ağ konumu
+        # (kullanıcı bilgisi), yolu, sorgusu ve parçası müvekkil-tanımlayıcı veri taşıyamaz. Bütün desenler MASKESİZ
+        # metinde koşar; yalnız 11 haneli sayılar TCKN sağlamasıyla TCKN sayılır (karar kimlikleri de 11 hane olabilir),
+        # 0 ile başlayan 11 haneli yerli cep biçimi telefon dalında yakalanır. Bilinçli geçiş: --kaynak-url-onayli (yalnız
+        # adres) ya da --sorgu-onayli (iki yüzey); geçiş kütüğe ve kayda iz düşer (K-29).
+        bulunan_url = _kaynak_url_layer0_tara(u)
+        if bulunan_url:
+            if not _adres_onayli:
                 sys.exit(f"RET (Layer 0): --kaynak-url içinde {bulunan_url} bulundu — adres resmî portala giden sorgu "
                          "dizesini taşır ve dış araca gider; müvekkil-tanımlayıcı veri adrese giremez (anayasa m.10). "
-                         "Bilinçli geçiş için --sorgu-onayli kullanın.")
+                         "Bilinçli geçiş için --kaynak-url-onayli (yalnız adres) ya da --sorgu-onayli kullanın "
+                         "(kütüğe ve kayda iz bırakır).")
+            _layer0_izler.append(_layer0_onay_izi(bulunan_url, "adres"))
+    for _iz in _layer0_izler:
+        print(f"UYARI: Layer 0 bilinçli geçiş — {_iz}; kütüğe ve muhakeme kaydına işlenir, ictihat_muhakeme_denetim "
+              "[G7] bu kaydı dayanak yaparken görünür UYARI basar (anayasa m.9/m.10).")
 
     # 2026-10-15 — HİBRİT TEYİT KANALI (avukat kararı): tam metin çeken araçlarda
     # teyidin kanıtı kaynağın adresidir — --kaynak-url ZORUNLU; verilen her adres
@@ -1316,6 +1385,21 @@ def cmd_teyit(args):
                      "adları, hudoc.echr.coe.int, barobirlik.org.tr, bddk.org.tr; tam liste: "
                      "ortak-avukat/references/resmi-kaynaklar.md). Üçüncü taraf sunucu ve özel "
                      "içtihat sitesi teyit kaynağı DEĞİLDİR.")
+        # 2026-10-17 heyet K-20 — araç sınıfı ↔ adres türü (fail-closed); şifresiz http görünür UYARI.
+        if not hasattr(_ko, "resmi_kaynak_turu"):
+            sys.exit("RET (teyit kanalı): kunye_ortak.py eski sürüm — adres türü belirlenemiyor; araç "
+                     "çantasını yüklü eklentiden tazeleyin (fail-closed).")
+        _ktur = _ko.resmi_kaynak_turu(_kurl)
+        _izinli = ARAC_TUR_UYUMU.get(args.arac)
+        if _izinli is not None and _ktur not in _izinli:
+            sys.exit(f"RET (teyit kanalı — K-20): --arac {args.arac} için adres TÜRÜ uyumsuz: adres "
+                     f"'{_ktur}' türünde ({_kurl[:100]}), bu araç yalnız {sorted(_izinli)} türüne "
+                     "gidebilir — mevzuat teyidi mevzuat.gov.tr / resmigazete.gov.tr'den, içtihat teyidi "
+                     "içtihat portallarından yapılır; listede sayılmayan .gov.tr adresi yalnız 'kurum' "
+                     "türüdür (bakanlık duyurusu içtihat/mevzuat teyidi değildir).")
+        if _kurl.lower().startswith("http://"):
+            print("UYARI (K-20): --kaynak-url şifresiz http:// adres — resmî portallar https sunar; "
+                  "adresi https:// ile yazın (kayıt yazıldı, bağlantı dilekçeye bu hâliyle geçer).")
 
     # v0.5.8.4 [G5] AŞILMIŞLIK alanları — aşılmış-içtihat kapısının ÜRETİCİ ucu
     # (372 karnesi: `ictihat_muhakeme_denetim.py` [G5] kapısı kuruluydu ama
@@ -1510,6 +1594,18 @@ def cmd_teyit(args):
                          "bulunamadı — özet/parafraz kabul edilmez; alıntıyı döküm dosyasından "
                          "birebir kopyalayın.")
 
+            # 2026-10-17 heyet K-18 — WebFetch dökümü İŞLENMİŞ metindir (sayfa düzeni, kesik uzun
+            # metin, portal bot sınırı): 'tam-metin' beyanı için yapı ölçütü. Portal araçlarının
+            # sözleşmesi değişmez. RET, try/finally ile bu çağrıda yazılan dökümü de geri alır.
+            if (args.arac == "WebFetch" and _dokum_sinifi == "tam-metin"
+                    and len(dokum_icerik) < WEBFETCH_TAM_METIN_ASGARI):
+                esik = f"{WEBFETCH_TAM_METIN_ASGARI:,}".replace(",", ".")
+                sys.exit(f"RET (K-18): WebFetch dökümü {len(dokum_icerik)} karakter — 'tam-metin' "
+                         f"sınıfı için en az {esik} karakter gerekir: WebFetch sayfanın işlenmiş metnini "
+                         "döndürür, kısa döküm özet ya da kesik sayfadır ve tam okuma kanıtı sayılmaz. "
+                         "Ne yapmalı: sayfanın tamamını çekip --dokum-icerik ile verin ya da "
+                         "--dokum-sinifi ilgili-kisim yazın.")
+
             eksik = _sayilar_gecer_mi(args.sonuc, dokum_icerik)
             if eksik:
                 sys.exit("RET: --sonuc içindeki künye no'ları (" + ", ".join(eksik) + ") döküm "
@@ -1585,6 +1681,13 @@ def cmd_teyit(args):
         sonuc_yazilan = _sonuc_damga_ize_karismasin(args.sonuc)
         if is_arama:
             sonuc_yazilan += " [ARAMA — tam metin çekilmedi]"
+        if is_mevzuat_kurum and not args.dokum:
+            # 2026-10-17 heyet K-20 — mevzuat/kurum kaydında adres teyit için yeter, ama madde metni
+            # diske inmemişse kunye_teyit'in teyit evreni (_oa/teyit/dokum) bu kaydı görmez: iz + UYARI.
+            sonuc_yazilan += " [DÖKÜMSÜZ — metin diske inmedi]"
+            print("UYARI (K-20): mevzuat/kurum kaydı DÖKÜMSÜZ — adres kaydedildi ama madde/karar metni "
+                  "diske inmedi; kunye_teyit.py'nin teyit evreni (_oa/teyit/dokum) bu kaydı görmez. "
+                  "Metni --dokum-icerik @metin.md ile kaydedin.")
         if args.damga:
             sonuc_yazilan += f" DAMGA={args.damga}"
             # A1a (v0.5.8.5) — döküm sınıfı kütük satırında yaşar; sınıfsız
@@ -1628,7 +1731,9 @@ def cmd_teyit(args):
         arac_h = _hucre(args.arac)
         # v0.5.16.1 — sorgu hücresi de DAMGA=/künye-izi kaçışından geçer
         # (okuyucu satır-geneli arar; bkz. `_sorgu_kutuk_ize_karismasin`).
-        sorgu_h = _hucre(_sorgu_kutuk_ize_karismasin(args.sorgu))
+        # K-29 — bilinçli Layer 0 geçişinin izi sorgu hücresinin sonuna (`_hucre`'den geçer; `_layer0_izler` yalnız
+        # script yazımıdır, kullanıcı metni değil).
+        sorgu_h = _hucre(" ".join([_sorgu_kutuk_ize_karismasin(args.sorgu)] + _layer0_izler))
         sonuc_h = _hucre(sonuc_yazilan)
         with open(yol("teyit", "kunye-teyit.md"), "a", encoding="utf-8") as f:
             f.write(f"| {ts()} | {arac_h} | {sorgu_h} | {sonuc_h} | {dokum_hucre} |\n")
@@ -1691,6 +1796,10 @@ def cmd_teyit(args):
                 # olsun diye yine `_muhakeme_kacis`'ten geçirilir — tek
                 # istisna BIRAKILMAZ (tek-yazar kuralı).
                 f.write(f"**KAYNAK-IZI:** {_muhakeme_kacis(_kaynak_izi_yolu(args.dokum, args.kok))}\n")
+                # 2026-10-17 heyet K-18 — araç izi muhakeme kaydında da yaşar (okur:
+                # ictihat_muhakeme_denetim ARAC_LINE_RE; [G6] WebFetch tam-metin kaydında görünür
+                # UYARI basar). Satırın yokluğu = eski kayıt (geriye uyum).
+                f.write(f"**ARAÇ:** {_muhakeme_kacis(args.arac)}\n")
                 # DÜZELTME (v0.5.5 şerh turu — Ş2, BLOKER): `args.arac` bu
                 # satırda da (komşu alanlar gibi) `_muhakeme_kacis`'ten
                 # geçirilir — TAM BÖLÜM enjeksiyonunun `--arac` üzerinden
@@ -1708,6 +1817,10 @@ def cmd_teyit(args):
                 _kurl = getattr(args, "kaynak_url", None)
                 if _kurl:
                     f.write(f"**KAYNAK-URL:** {_muhakeme_kacis(_kurl)}\n")
+                # K-29 — bilinçli Layer 0 geçişinin izi: scriptin yazdığı satır (serbest metinde aynı satır
+                # `_muhakeme_kacis` ile kaçışlanır); okuyucu `ictihat_muhakeme_denetim.LAYER0_ONAYLI_RE`.
+                for _iz in _layer0_izler:
+                    f.write(_iz + "\n")
                 f.write(f"**DAMGA:** {args.damga}\n")
                 # A1a (v0.5.8.5) — döküm sınıfı muhakeme kaydına da yazılır
                 # (satır biçimi `ictihat_muhakeme_denetim.DOKUM_SINIFI_LINE_RE`
@@ -2510,8 +2623,13 @@ def main():
                          "«araç» (birincil); aksi (künye/UYAP kapağı/ilam beyanı) → sınıf "
                          "«avukat beyanı» — sınıf etiketi kütükte ve kayıtta GÖRÜNÜR")
     s.add_argument("--sorgu-onayli", dest="sorgu_onayli", action="store_true",
-                    help="Layer-0 ucuz sorgu taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN) "
-                         "bilinçli biçimde geçer")
+                    help="Layer-0 ucuz taramasını (TCKN/ad-soyad/mahkeme+esas/IBAN/telefon/e-posta/plaka) "
+                         "iki yüzeyde de (--sorgu ve --kaynak-url) bilinçli biçimde geçer; geçiş sessiz "
+                         "değildir — kütüğe ve muhakeme kaydına [LAYER0-ONAYLI GEÇİŞ: <desen>; yüzey: "
+                         "sorgu|adres] izi yazılır, [G7] dayanakta görünür UYARI basar (K-29)")
+    s.add_argument("--kaynak-url-onayli", dest="kaynak_url_onayli", action="store_true",
+                    help="K-29 — Layer-0 taramasını YALNIZ --kaynak-url yüzeyi için bilinçli geçer (--sorgu "
+                         "yine taranır); aynı iz bırakılır (yüzey: adres)")
     s.add_argument("--damga-degistir", dest="damga_degistir", default=None,
                     help="Aynı künye için kütükteki SON DAMGA'dan FARKLI bir --damga "
                          "veriliyorsa ZORUNLU (≥40 karakter gerekçe) — P0-2 DÜZELTME (d): "

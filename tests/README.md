@@ -1,6 +1,6 @@
 # Test Mimarisi — mühendisler için
 
-<!-- OA-SUIT-SAYISI: 3907 -->
+<!-- OA-SUIT-SAYISI: 3970 -->
 
 > **Süit büyüklüğünün TEK kaynağı yukarıdaki `OA-SUIT-SAYISI` işaretçisidir.**
 > `tests/test_v0514_vitrin.py` bu sayıyı her koşuda `pytest --collect-only`
@@ -9,8 +9,9 @@
 > (v0.5.14/B-35: sayı üç ayrı yerde üç ayrı ve üçü de yanlıştı).
 
 > Bu belge, süiti **geliştirici gözüyle** anlatır: desenler, sözleşmeler,
-> koşum kuralları ve yeni test ekleme disiplini. Avukat-dili özet ana
-> README'nin "Mekanik test altyapısı" bölümündedir.
+> koşum kuralları ve yeni test ekleme disiplini. Avukat-dili özet (mekanik süit,
+> kırmızı test, sentetik veri, anonim saha deneyleri)
+> [docs/TESTLER-VE-SAHA-DENEYLERI.md](../docs/TESTLER-VE-SAHA-DENEYLERI.md)'dedir.
 
 ## Şekil
 
@@ -47,6 +48,8 @@ Standart kurulum `tmp_path` üzerinde `_oa/` iskeletinin gereken kadarını
 elle inşa eder (defter dizini, sentetik künye, kurgu taslak). **Anayasa m.7
 test koduna da uygulanır:** gerçek kişi adı, gerçek dosya numarası, gerçek
 yerel yol test koduna GİREMEZ — kimlikler daima kurgudur ("2024/123 Esas").
+Avukatın tanımı (2026-10-17): **"Sentetik veri, gerçek verinin kişisel verilerden
+arındırılmış hâlidir."** Fikstür tamamen kurgudur; saha dersi anonim örüntü olarak girer.
 Commit öncesi sızıntı taraması (`git grep`) disiplinin parçasıdır; bu kural
 bir kez sabit-yol sızıntısıyla öğrenildi ve o günden beri mekaniktir.
 
@@ -135,6 +138,30 @@ python plugins/ortak-avukat/skills/oa-usta/scripts/aile_dogrula.py plugins/ortak
 Windows notu: Türkçe çıktı için `PYTHONUTF8=1` önerilir. Ubuntu notu:
 kabuk sarmalayıcıları exec-bit ister (`update-index --chmod=+x`) — CI'da
 bir kez `exit 126` ile öğrenildi.
+
+## Kırmızı test ne demektir — üç anlam, tek çözüm
+
+Avukat-dili anlatım [docs/TESTLER-VE-SAHA-DENEYLERI.md](../docs/TESTLER-VE-SAHA-DENEYLERI.md)
+§3'tedir; burada geliştirici kuralı:
+
+1. **TDD kırmızısı — kanıt.** Onarımdan önce kusuru yeniden üreten test yazılır ve
+   düşerken görülür; düşmeyen test kusuru yakalayamıyordur. Onarımla yeşile döner ve
+   süitte kalır (regresyon kilidi).
+2. **CI kırmızısı — kapalı kapı.** Altı ortam + `yapi` + `ocr` + `lint` işleri; biri
+   kırmızıysa sürüm etiketi atılamaz. `pytest … | tail` çıkış kodunu yutar: kapı
+   zincirinde `set -o pipefail` kullanın, çıkış kodunu dosyadan okuyun, commit yalnız 0'da.
+3. **Görünür atlama kırmızı DEĞİLDİR.** Ortam gerektiren test gerekçesiyle atlanır ve
+   `-rs` ile adıyla listelenir; sessiz atlama (hiç koşmayan test) yasaktır.
+
+Çözüm: kırmızıda düzeltilen şey KODDUR, test değil — test susturulmaz, karantinaya
+alınmaz, `skip` ile geçiştirilmez. İki istisna yazılı iz bırakır: davranış bilinçli
+değiştiyse eski test yeni sözleşmeye taşınır ve gerekçe docstring'e + değişiklik günlüğüne
+yazılır (örnek: `test_kaynak_url.py`, URL'siz GETİR kaydı); sebep ortamsa test görünür
+atlama sözleşmesine alınır, kapı gevşetilmez. Teşhis komutu:
+
+```bash
+python -m pytest tests -q -n auto -rsfE
+```
 
 ## Yeni test ekleme kontrol listesi
 

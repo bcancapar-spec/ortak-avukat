@@ -34,7 +34,10 @@ avukat nüshası `plugins/ortak-avukat/skills/ortak-avukat/references/resmi-kayn
 kanal hibrittir (model resmî portallara `WebFetch`/`WebSearch` ile ulaşır). Bu sözleşme
 testle kilitlidir: `tests/test_teyit_kanali.py::test_eklenti_hicbir_mcp_sunucusu_ilan_etmez`
 (ilan yok), B-23 dersi `tests/test_v0518_mcp_ilan.py`, canlı metinlerde üçüncü taraf
-sunucu anması `tests/test_kanal_bagimsiz_metin.py`.
+sunucu anması `tests/test_kanal_bagimsiz_metin.py`. Tarihli kayıtlar (CHANGELOG, `docs/arsiv/`,
+parça günlükleri, heyet raporları) eski kanalı adıyla anar; kilit canlı metin içindir, tarih yeniden
+yazılmaz. Manifest kilidi sağlayıcıdan bağımsızdır: `plugin.json` ve `marketplace.json` hiçbir
+`http(s)://` adresi taşımaz (`tests/test_heyet3_kalemler.py`).
 
 ## Desteklenen sürüm
 

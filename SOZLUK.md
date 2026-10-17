@@ -534,6 +534,32 @@ keşif); eklenti üçüncü taraf MCP sunucusu ilan etmez. Adres listede değils
 yoktur: kütük kaydı doğmaz, dilekçeye dayanak olamaz (`[G7]` teslim engeli). Yerel bir
 `oa-kaynak` keşif katmanı yol haritasındadır; kurulana kadar keşif web aramasıdır.
 
+## 2026-10-17 terimleri (testler ve saha deneyleri)
+
+**Kırmızı test / yeşil test:** Bir testin düşmesi / geçmesi. Depoda kırmızının üç
+anlamı vardır ve karıştırılmaz: onarımdan önce bilerek düşürülen test (kusurun yeniden
+üretildiğinin kanıtı), CI'da kapalı kapı (yeşermeden sürüm etiketi atılamaz) ve görünür
+atlama (ağ ya da oturum gerektiren araç yoksa test gerekçesiyle atlanır; bu kırmızı
+değildir, sessiz atlama ise yasaktır). Kırmızıda düzeltilen şey koddur, test değil.
+Ayrıntı: [docs/TESTLER-VE-SAHA-DENEYLERI.md](docs/TESTLER-VE-SAHA-DENEYLERI.md).
+
+**Sentetik veri:** Avukatın tanımı: "Sentetik veri, gerçek verinin kişisel verilerden
+arındırılmış hâlidir." Test fikstürleri tamamen kurgudur ("2024/123 Esas" gibi); saha
+dersleri kişi ve dosya kimliğinden arındırılıp olay tipi + norm + örüntü olarak skill
+metnine girer. Anayasa m.7'nin test ve belge katmanındaki karşılığıdır.
+
+**Saha deneyi (anonim):** Avukatın gerçek derdest dosyasında tek doğal prompt'la,
+müdahalesiz koşu; ardından transkript, artefakt ve karne ile adli analiz. Deney sınıfları
+(müdahalesiz, müdahaleli, çok oturumlu) ayrı tutulur; mekanik tamlık ile içerik kabulü iki
+ayrı hükümdür. Canlı metinde ad, numara, süre ve token sayısı yazılmaz; tarihli karneler
+`docs/arsiv/` altında etiketleriyle durur.
+
+**KAYNAK-URL:** Teyit anında muhakeme kaydına yazılan resmî portal adresi; dilekçede
+künyenin yanına parantez içinde geçer. Yazım anında hatırlanmaz, teyit anında yakalanır;
+biçimi bozuksa ya da beyaz liste dışındaysa kayıt hiç doğmaz (uydurma bağlantı çıplak
+künyeden kötüdür). Adres de anonimdir: portalın arama adresine müvekkil verisi yazılmaz,
+adres Layer 0 süzgecinden geçer.
+
 ---
 *Eksik terim mi var? Repoda karşılaştığınız ve burada bulamadığınız her
 terim bir eksikliktir — bildirin, eklensin.*

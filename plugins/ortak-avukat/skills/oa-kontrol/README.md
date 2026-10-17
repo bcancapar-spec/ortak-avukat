@@ -6,7 +6,7 @@ Ortak Avukat sisteminin DENETİM/KONTROL parçası. Bir dilekçe, dosya veya mü
 
 ## Deterministik scriptler
 
-- `scripts/ictihat_muhakeme_denetim.py` (içtihat muhakeme zinciri kapısı G1-G11)
+- `scripts/ictihat_muhakeme_denetim.py` (içtihat muhakeme zinciri kapısı G1-G11; [G7] resmî kaynak adresi — 2026-10-15 hibrit teyit kanalı: dayanak kaydının adresi beyaz listede değilse teslim engeli)
 - `scripts/kaynakca_uret.py`
 - `scripts/kaynak_blogu.py`
 - `scripts/kunye_ortak.py`

@@ -2376,9 +2376,11 @@ def _xlsx_hucre_gizliligi(h, tema, deger, onbellek):
 
 # Etiket dilbilgisi: `<` + isteğe bağlı ad alanı öneki + ad + (boşluk | `/` | `>`). Öznitelliksiz `<c>`, satır sonlu
 # `<c\nr=…>` ve önekli `<x:c …>` de sayılır (heyet 2026-10-17 GÜVENLİK U-1: yalnız `<c ` baytları sayılıyor, tavan
-# atlatılabiliyordu — 300.000 öznitelliksiz hücre 23,6 KB dosyada 8,2 s / 123 MB).
-_XML_HUCRE_RE = re.compile(rb"<(?:[A-Za-z_][\w.-]*:)?c(?=[\s/>])")
-_XML_SATIR_RE = re.compile(rb"<(?:[A-Za-z_][\w.-]*:)?row(?=[\s/>])")
+# atlatılabiliyordu — 300.000 öznitelliksiz hücre 23,6 KB dosyada 8,2 s / 123 MB). Önek sınıfı ASCII dışı harfi de
+# kapsar (`\x80-\xff`: UTF-8 çok baytlı karakterin her baytı) — XML 1.0 ad başlangıcı ASCII dışı harf olabilir; `<ş:c …>`
+# 100.000 hücrede sayaçta 0 kalıyor, kapı geçiyordu (heyet 2026-10-17 doğrulama GÜV K-27 → KARAR-3 §8 K-28).
+_XML_HUCRE_RE = re.compile(rb"<(?:[A-Za-z_\x80-\xff][\w.\-\x80-\xff]*:)?c(?=[\s/>])")
+_XML_SATIR_RE = re.compile(rb"<(?:[A-Za-z_\x80-\xff][\w.\-\x80-\xff]*:)?row(?=[\s/>])")
 
 
 def _xml_nesne_say(z, girdi, parca=1 << 20):

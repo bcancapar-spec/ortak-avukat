@@ -3667,6 +3667,12 @@ def _capraz_onbellek_yolu(kok):
     return os.path.join(kok, "_oa", "defter", _CAPRAZ_ONBELLEK_ADI)
 
 
+# 2026-10-17 heyet K-26 — türetilmiş önbellek okunurken boyut tavanı: kendi yazdığı dosya bile olsa
+# tavanı aşan dosya okunmaz, ıska sayılır (şüphede hesaplanır; dava klasörü güven sınırıdır, bu
+# bellek sınırıdır). Gerçek önbellek birkaç KB'dir; tavan onlarca MB.
+_CAPRAZ_ONBELLEK_TAVAN = 16 * 1024 * 1024
+
+
 def _capraz_onbellek_oku(kok, anahtar):
     """İsabet → (kopuk, belirsiz); aksi hâlde None. Biçim: tek satırlık ASCII
     başlık `{"anahtar": …, "govde": sha256(gövde)}` + "\\n" + gövde (JSON).
@@ -3675,7 +3681,10 @@ def _capraz_onbellek_oku(kok, anahtar):
     beklenen değilse None: şüphede hesaplanır. Kasıtlı sahteciliğe karşı
     koruma DEĞİLDİR — dava klasörü güven sınırıdır (defterde olduğu gibi).
     İstisna FIRLATABİLİR (dosya yok/okunamaz): çağıran ıska sayar."""
-    with open(_capraz_onbellek_yolu(kok), "rb") as f:
+    yol = _capraz_onbellek_yolu(kok)
+    if os.path.getsize(yol) > _CAPRAZ_ONBELLEK_TAVAN:    # K-26
+        return None
+    with open(yol, "rb") as f:
         ham = f.read()
     bas, ayrac, govde = ham.partition(b"\n")
     if not ayrac:
@@ -7293,8 +7302,80 @@ def _sunum_kilidi_gerekli_mi(veri, kok):
         return False
 
 
+_WEB_ARACLARI = ("WebFetch", "WebSearch")
+_WEB_ARAC_ALANLARI = ("url", "query", "prompt")
+_GIZLILIK_TARA_MOD = None
+
+
+def _gizlilik_tara_modulu():
+    """oa-gizlilik/scripts/gizlilik_tara.py — İN-PROCESS, paylaşımlı tek örnek (K-19)."""
+    global _GIZLILIK_TARA_MOD
+    if _GIZLILIK_TARA_MOD is not None:
+        return _GIZLILIK_TARA_MOD
+    skills_kok = os.path.dirname(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    betik = os.path.join(skills_kok, "oa-gizlilik", "scripts", "gizlilik_tara.py")
+    mod = _kardes_modul_yukle("_oa_pipeline_gizlilik_tara_inproc", betik, ("tara",))
+    if mod is not None:
+        _GIZLILIK_TARA_MOD = mod
+    return mod
+
+
+def _pretool_web_layer0(veri, ti, kok):
+    """K-19 (heyet 2026-10-17 ESAS E-2; anayasa m.10): WebFetch/WebSearch payload'ının url / query /
+    prompt alanlarını Layer 0 süzgecinden (gizlilik_tara strict) geçirir. MUTLAK bulgu → 'deny'
+    (TCKN, kart, IBAN gibi kimlik verisi dış araca gidemez), olası bulgu → 'ask' (karar devri);
+    süzgeç yüklenemezse 'ask' (fail-closed: denetlenemeyen çıkış sessiz geçmez). Gerekçe VERİYİ
+    TEKRAR ETMEZ (yalnız desen adları). Dava kökü bulunmasa da tarar — veri kökten bağımsız sızar;
+    kök bulunursa olay deftere yazılır. Temiz çağrı sessizdir. Her durumda exit 0."""
+    arac = str(veri.get("tool_name") or "")
+    metin = "\n".join(str(ti.get(a) or "") for a in _WEB_ARAC_ALANLARI)
+    if not metin.strip():
+        return 0
+    gt = _gizlilik_tara_modulu()
+    adlar = ""
+    if gt is None:
+        karar = "ask"
+        neden = ("LAYER 0 SÜZGECİ YÜKLENEMEDİ (oa-gizlilik/scripts/gizlilik_tara.py): %s çağrısının "
+                 "adres/sorgu alanı denetlenemedi — eklentiyi tazeleyin; yine de göndermek avukatın "
+                 "kararıdır." % arac)
+    else:
+        try:
+            deny, ask = gt.tara(metin, "strict")
+        except Exception:
+            deny, ask = [("MUTLAK", "tarama hatası — denetlenemedi")], []
+        if deny:
+            karar = "deny"
+            adlar = ", ".join(sorted({a for _s, a in deny}))
+        elif ask:
+            karar = "ask"
+            adlar = ", ".join(sorted({a for _s, a in ask}))
+        else:
+            return 0
+        neden = ("LAYER 0 (anayasa m.10 — heyet 2026-10-17 K-19): %s çağrısının adres/sorgu/prompt "
+                 "alanı müvekkil-tanımlayıcı veri deseni taşıyor (%s) — dış araca gidemez. Sorguyu "
+                 "anonimleştirin (olay örüntüsü + norm; kimlik ve dosya verisi olmadan)%s."
+                 % (arac, adlar, "" if karar == "deny"
+                    else "; olası desen — göndermek avukatın kararıdır"))
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": karar,
+        "permissionDecisionReason": neden,
+    }}, ensure_ascii=False))
+    try:
+        kokler = _hook_kok_adaylarini_bul(kok, payload=veri)
+        k = next((aday for aday in kokler if _dosya_klasoru_mu(aday)), None)
+        if k is not None:
+            _hook_olay_yaz(k, "pretool-ask",
+                           "Layer 0 web aracı (%s): %s — %s" % (arac, karar, adlar or "süzgeç yok"),
+                           oturum=veri.get("session_id"))
+    except Exception:
+        pass
+    return 0
+
+
 def hook_pretool(kok=None):
-    """PreToolUse(Write|Edit|Bash|PowerShell|SendUserFile) hook komutu —
+    """PreToolUse(Write|Edit|Bash|PowerShell|SendUserFile|WebFetch|WebSearch) hook komutu —
     stdin'deki payload'ın tool_input metnini (content + new_string + command)
     tarar; A1 (v0.5.9) SendUserFile payload'larında SUNUM KİLİDİ'ni denetler.
     YALNIZ dava klasöründe ve kural ateşlerse 'ask' kararı basar; her durumda
@@ -7314,6 +7395,10 @@ def hook_pretool(kok=None):
         ti = veri.get("tool_input")
         if not isinstance(ti, dict):
             return 0
+        # 2026-10-17 heyet K-19 — WEB ARAÇLARI LAYER 0: adres / sorgu / prompt dış araca gider;
+        # dava kökü bulunmasa da taranır (bkz. _pretool_web_layer0).
+        if veri.get("tool_name") in _WEB_ARACLARI:
+            return _pretool_web_layer0(veri, ti, kok)
         metin = "\n".join(str(ti.get(a) or "")
                           for a in ("content", "new_string", "command"))
         # Kök çözümü: hook_denetle/hook_postwrite ile SİMETRİK keşif (açık

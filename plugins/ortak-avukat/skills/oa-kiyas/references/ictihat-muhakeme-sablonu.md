@@ -243,17 +243,19 @@ Kullanım örnekleri:
 
 ```bash
 # LEHE + tam-okuma (dilekçe adayı — [G6] üç şartı da doldurur):
-python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678" --damga LEHE --dokum-sinifi tam-metin --bag "...(≥40 kr)..." --ilgili-kisim "...(döküm içinde VERBATİM alıntı)..." --dokum-icerik @ham.md
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2023/1234, K. 2023/5678" --kaynak-url https://mevzuat.adalet.gov.tr/ictihat/<kimlik> --damga LEHE --dokum-sinifi tam-metin --bag "...(≥40 kr)..." --ilgili-kisim "...(döküm içinde VERBATİM alıntı)..." --dokum-icerik @ham.md
 
 # Karşı tarafın fiilen ileri sürdüğü aleyhe karar (ayırt edilerek karşılanacak):
-python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2022/900, K. 2022/4400" --damga ALEYHE-AYIRT --dokum-sinifi tam-metin --duyulmus --ayirt "...(somut fark)..." --bag "..." --ilgili-kisim "..." --dokum-icerik @ham.md
+python oa-pipeline/scripts/oa_hafiza.py teyit --arac ictihat_getir --sorgu "<sorgu>" --sonuc "Yargıtay 4. HD, E. 2022/900, K. 2022/4400" --kaynak-url https://mevzuat.adalet.gov.tr/ictihat/<kimlik> --damga ALEYHE-AYIRT --dokum-sinifi tam-metin --duyulmus --ayirt "...(somut fark)..." --bag "..." --ilgili-kisim "..." --dokum-icerik @ham.md
 ```
 
-Muhakeme kaydında satır biçimi (KAYNAK-URL varsa onun altında):
+Muhakeme kaydında satır biçimi (KAYNAK-URL ZORUNLUDUR — 2026-10-15 hibrit teyit kanalı: adres yoksa ya da beyaz liste dışıysa oa-kontrol [G7] teslim engeli; `**ARAÇ:**` satırı araç izidir, heyet 2026-10-17 K-18):
 
 ```markdown
 **KUNYE:** Yargıtay 4. HD, E. 2023/1234, K. 2023/5678, T. 12.09.2023
 **KAYNAK-IZI:** _oa/teyit/dokum/2026-08-16-ictihat_getir-ornek.md
+**ARAÇ:** ictihat_getir
+**KAYNAK-URL:** https://mevzuat.adalet.gov.tr/ictihat/<kimlik>
 **DAMGA:** LEHE
 **DÖKÜM-SINIFI:** tam-metin
 ```

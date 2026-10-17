@@ -6,6 +6,10 @@
 > cümleleriyle ve yerel, açık kodla yazıldı. Her hukuki iddia resmî metinden
 > (mevzuat.gov.tr, AYM karar bankası) doğrulandı; doğrulanamayan yer `TEYİT BEKLİYOR`
 > diye işaretlidir. Belgede kişi, dosya numarası ya da yerel yol yoktur (anayasa m.7).
+>
+> **Tarihli belge (2026-10, v0.5.18 adayı; geriye dönük yazılmaz).** Bu planın uygulanma durumu ve 107
+> skill'in 17 aile hâlinde ölçülmüş boşluk listesi ayrı, tarihli belgededir:
+> [YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md](YARGI-PRO-BOSLUK-ANALIZI-2026-10-15.md) (2026-10-17).
 
 ## 0. Sade dille
 

@@ -4,7 +4,8 @@ Bu dizin, deponun **geçmişine** ait kayıtları tutar: her dosya kendi tarihin
 sürümünü taşır ve geriye dönük olarak yeniden yazılmaz. Güncel durum için
 [STATUS.md](../../STATUS.md), sürüm zinciri için [CHANGELOG.md](../../CHANGELOG.md),
 ilkeler için [ANAYASA.md](../../ANAYASA.md) okunur. Dosya kimlikleri anayasa m.7
-gereği anonimdir; saha kayıtları yalnız saha etiketiyle (307, 1865, 923…) anılır.
+gereği anonimdir; tarihli saha kayıtları yalnız saha etiketiyle anılır, canlı metin (README,
+CHANGELOG üstü, docs/TESTLER-VE-SAHA-DENEYLERI.md) etiketi de yazmaz (avukat kararı, 2026-10-17).
 
 2026-10-15 denetiminde kök dizinden buraya taşındı (gerekçe: kök dizinde 23 Markdown
 dosyası vardı, 13'ü tarihî kayıttı; vitrine ilk bakan hukukçu güncel ile geçmişi
@@ -17,6 +18,7 @@ ayırt edemiyordu). Bağlantılar `tests/test_belge_baglantilari.py` ile denetle
 | [SAHA-SONUCU.md](SAHA-SONUCU.md) | Tek promptla gerçek istinaf dosyası: ölçülmüş saha sonucu | 2026-08-07 |
 | [BASARI.md](BASARI.md) | Aynı koşunun anlatı hâli ("bir gecenin hikâyesi") | 2026-08 |
 | [SAHA-DENEYLERI.md](SAHA-DENEYLERI.md) | Dokuz belgeli saha koşusunun tam kaydı | v0.5.x |
+| [SAHA-BOLUMU-2026-10-12.md](SAHA-BOLUMU-2026-10-12.md) | CHANGELOG üstündeki "Saha sonuçları" ve "Saha deneyleri — testler nasıl yapıldı" bölümlerinin 2026-10-17'ye kadarki metni, kelimesi kelimesine | 2026-10-12 → 10-17 |
 | [OLCUMLER.md](OLCUMLER.md) | Token, süre ve verim ölçümleri | v0.5.x |
 | [HEYET-KARARLARI-v0513.md](HEYET-KARARLARI-v0513.md) | Üç bağımsız denetim heyetinin kararlarının infazı | v0.5.13 |
 | [DENETIM-v0514.md](DENETIM-v0514.md) | 62 bulgulu denetimin infazı | v0.5.14 |

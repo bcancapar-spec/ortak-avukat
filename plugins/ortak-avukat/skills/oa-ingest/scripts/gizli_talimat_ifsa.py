@@ -73,6 +73,10 @@ SEZGISEL_ISARETLER = ("kontrast", "alfa", "örtü", "zemin")
 # Ö-1: AGIR ama GÖRÜNÜR ya da İÇERİKSİZ yapısal tespitler — gizli metin göstermez, dilekçeye girmez
 GORUNUR_YAPISAL = ("damga-taklidi", "isaret-taklidi")
 TUTULMA_KAHIN, TUTULMA_YAPISAL = KAHIN_TUR, "gorunur-yapisal"
+# 2026-10-17 heyet K-22 (ESAS E-5): ZAYIF-kaynaklı Excel tespiti (zemini ölçülemeyen tablo stili /
+# koşullu biçim aralığında açık renkli yazı — gizli olduğu KESİN DEĞİL) ifşa bölümüne girmez; iç nota
+# niteleyicisiyle düşer. Görünür bir hücreyi mahkemeye "gizlenmiş" diye anlatmak m.4/m.6 ihlalidir.
+TUTULMA_ZAYIF = "zayif-kaynak"
 
 # Resmî metinden okunan dayanaklar — resmî metin (mevzuat.gov.tr), 2026-10-07.
 # Bölümde ANILAN her madde burada kayıtlı olmalıdır; okunmamış madde anılmaz (testle kilitli).
@@ -387,7 +391,11 @@ def _yontem_aciklama(tur, yontem):
         p.append("gizli biçimli HTML öğesi içinde yazı")
     if "küçük/soluk/görsel altındaki" in yk:
         p.append("küçük, soluk ya da görsel altında kalan yazı")
-    if "açık renkli yazı" in yk:
+    if _zayif_kaynakli_mi(y):
+        # K-22 (heyet 2026-10-17 ESAS E-5): niteleyici avukat diline de taşınır — düşmez.
+        p.append("zemini ölçülemeyen tablo stili / koşullu biçim aralığında açık renkli yazı — gizli olduğu "
+                 "kesin değildir, orijinalde denetlenmelidir")
+    elif "açık renkli yazı" in yk:
         p.append("açık renkli yazı")
     if "küçük görsel üstünde" in yk:
         p.append("küçük bir görselin üstünde")
@@ -462,6 +470,12 @@ def _dogrulama_adimlari(tur, yontem, kaynak):
                 "görünmez/beyaz yazı seçimde ve yapıştırmada belirir")
     return ("UYAP Editörü/Word'de Ctrl+A ile tümünü seçin (seçim vurgusu zeminle aynı renkteki ya da çok küçük "
             "yazıyı gösterir); zemin rengini değiştirin ya da metni düz metin editörüne yapıştırın")
+
+
+def _zayif_kaynakli_mi(yontem):
+    """K-22: kapının "gizli olduğu KESİN DEĞİL" dediği (zemini ölçülemeyen aralık) tespit."""
+    y = str(yontem or "").lower()
+    return "zemini ölçülemeyen" in y or "kesin değil" in y
 
 
 def _sezgisel_mi(yontem):
@@ -579,7 +593,7 @@ def _isle(sonuc, kunye, kaynaklar):
             continue
         kahin_kapali = any(isinstance(b, dict) and b.get("tur") == KAHIN_TUR for b in ham_bulgular)
         sunan = _sunan_taraf(k)
-        girenler, tutulanlar, yapisal, disi, sema_disi = [], [], [], [], 0
+        girenler, tutulanlar, yapisal, zayif, disi, sema_disi = [], [], [], [], [], 0
         for b in ham_bulgular:
             nb = _bulgu_normalize(b)
             if nb is None:
@@ -592,6 +606,8 @@ def _isle(sonuc, kunye, kaynaklar):
                 continue
             if tur in GORUNUR_YAPISAL or (tur == "arsiv-nushasi" and not nb["ornek"].strip()):
                 yapisal.append(nb)          # Ö-1: görünür ya da içeriksiz — gizli metin göstermez
+            elif _zayif_kaynakli_mi(nb["yontem"]):
+                zayif.append(nb)            # K-22: gizliliği kesin değil — iç not, ifşa bölümü değil
             elif kahin_kapali and _sezgisel_mi(nb["yontem"]):
                 tutulanlar.append(nb)       # Ruling: kâhinsiz sezgisel gerekçe
             else:
@@ -629,6 +645,19 @@ def _isle(sonuc, kunye, kaynaklar):
             ic_not.append("%s: yapısal tespit dilekçeye ALINMADI — görünür ya da içeriksiz tespit, gizli metin "
                           "göstermez (yanlış suçlama riski): %s (%s). Avukat gerekli görürse ayrıca değerlendirir."
                           % (ad, _yontem_aciklama(nb["tur"], nb["yontem"]), _konum_aciklama(nb["konum"], nb["tur"])))
+        for nb in zayif:
+            kayit = _json_bulgu(k, kaynak, sunan, nb, False, TUTULMA_ZAYIF)
+            bulgular.append(kayit)
+            xls = str(kaynak).lower().endswith(".xls")
+            ic_not.append("%s: tespit dilekçeye ALINMADI — Excel'de zemini ölçülemeyen aralıkta (tablo stili / "
+                          "koşullu biçim) açık renkli yazı: gizli olduğu KESİN DEĞİL, hücre görünür olabilir (yanlış "
+                          "suçlama riski). Orijinalde Excel'de açıp denetleyin%s. Koyma kararı avukatındır. "
+                          "Tutulan metin (%s): «%s»"
+                          % (ad, (" — .xls biçiminde okuyucu (xlrd) tablo stilini ve koşullu biçimi okumaz, "
+                                  "zemin yalnız orijinalde görülür") if xls
+                              else (" — tablo stilini kaldırıp hücre dolgusuna ve koşullu biçim kuralına "
+                                    "bakın"),
+                             kayit["konum_aciklama"], kayit["alinti"]))
         for nb in tutulanlar:
             kayit = _json_bulgu(k, kaynak, sunan, nb, False, TUTULMA_KAHIN)
             bulgular.append(kayit)
@@ -646,7 +675,7 @@ def _isle(sonuc, kunye, kaynaklar):
         if sema_disi:
             ic_not.append("%s: %d bulgu kaydı şema dışı (tür/metin alanları beklenen biçimde değil) — dilekçeye "
                           "GİRMEDİ; evrakı güncel kapıyla yeniden tarayın." % (ad, sema_disi))
-        if not (girenler or tutulanlar or yapisal or disi or sema_disi):
+        if not (girenler or tutulanlar or yapisal or zayif or disi or sema_disi):
             ic_not.append("%s: kayıt BULGU ama bulgu listesi boş — dilekçeye GİRMEDİ; evrakı yeniden tarayın." % ad)
     if bloklar:
         md = [BOLUM_BASLIGI, "", GIRIS_1, "", GIRIS_2, ""]
