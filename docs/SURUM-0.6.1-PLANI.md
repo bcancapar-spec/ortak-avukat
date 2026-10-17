@@ -9,8 +9,8 @@
 
 | Ne | Durum |
 |---|---|
-| `main` | `2db90ab` (PR #9, 2026-10-17 01:39) — 0.6.0 damgalı, 0.6.0 sonrası iş taşıyor |
-| `denetim/fable-2026-10-15` | `d2c5fbe`; PR #11 → main AÇIK, CI 9/9 yeşil, birleştirilebilir; birleştirme kararı avukatın |
+| `main` | `ceffae2` (PR #11, 2026-10-17 03:43Z) — 0.6.0 damgalı, K-17…K-29 + saha anonim + boşluk analizi + K-18…K-26 taşıyor |
+| `denetim/fable-2026-10-15` | PR #11 (`d2c5fbe`) avukat eliyle main'e BİRLEŞTİ (`ceffae2`, 2026-10-17 03:43Z). Sonraki commit'ler (`4c56e22` pano, `bcb0262` K-19 ask, `32bda68` §9) push edildi, main'de DEĞİL — 0.6.1 kapanışında yeni PR (avukat kararı) |
 | `avukat-karari/udf-layer0-istisnasi` | `86a8ff9` (tabanı `d72feda`, denetim ucunun gerisinde); kendi heyet koşumu 2026-10-17-2 nihai öneri PUSH; push edilmedi |
 | `onarim/ictihat-atif-baglanti` | `d2c5fbe` tabanlı, iş sürüyor (sahipsiz Yargıtay atıfı kapısı) |
 | Paylaşılan worktree `denetim-fable-1015` | iki oturum aynı dalda commit atıyor (boşluk a/b, skill turu) — dosya sahipliği §3 |
@@ -85,7 +85,7 @@ Avukat: "EK NOT UDF ÜRETİMİ LAYER 0 İSTİSNASIDIR. UDF ÜRETİMİ İÇİN T�
 iradesine tabidir — tarar, bulguyu görünür yazar, şüphede SORAR; avukatın açık talimatı varsa hiçbir
 dış araç yolunu engellemez, onay dışında şart koymaz; her avukat kararı istisna defteri + makbuz izi.
 Değişmeyen (avukat aksini demedikçe): UYAP girişi / e-imza / PIN / parola için kod yazmama, evrak
-salt-okunurluğu, m.7. Kayıt: hafıza `udf-yargi-pro-onayi.md`; dal E (UDF istisnası); genel kural
+salt-okunurluğu, m.7. Kayıt: komser hafızası (Layer 0 avukat iradesi notu); dal E (UDF istisnası); genel kural
 Layer 0 oturumunun PR #11 üstüne açacağı yeni dalda.
 
 | Hizalama kalemi | Sahip | Durum |
@@ -94,6 +94,28 @@ Layer 0 oturumunun PR #11 üstüne açacağı yeni dalda.
 | `oa_hafiza.py teyit --sorgu` / `--kaynak-url` RET + `--sorgu-onayli` / `--kaynak-url-onayli` (onay → gider + kayıt) | Layer 0 oturumu (genel kural dalı) | ilkeyle uyumlu; yalnız gerekçe/şart cümleleri gözden geçirilir |
 | `udf_yaz.py`, `teslim_paketi.py`, `dilekce_denetim.py --udf`, `gizlilik_tara.py` (DENY dahil → SOR; `--onay avukat` → gider + kayıt; tarayıcı yok → SOR) | Layer 0 oturumu | tasarım hazır, avukat onayı bekliyor |
 | Anayasa m.10 metni (iki nüsha özdeş) | Layer 0 oturumu, avukat onayıyla | E dalında başlandı |
+
+## 9. 0.6.2 hazırlığı (devam: 2026-10-22 Perşembe)
+
+Kota 2026-10-17'de doldu; çalışma Perşembe sürer. Açılışta komser sırayla ölçer: (1) oturum raporları
+(§4 şablonu) ve commit'siz iş — `git status` + `git log origin/denetim/fable-2026-10-15..HEAD`; (2) PR #11
+CI ve avukat kararı (§6); (3) E ve F dallarının entegrasyon durumu; (4) tam süit, ruff, aile_dogrula,
+perf; (5) STATUS / CHANGELOG kayıtlarının raporlarla eşleşmesi. 0.6.1 kapanınca 0.6.2 sırası:
+
+| Sıra | Kalem | Kaynak |
+|---|---|---|
+| 1 | Boşluk analizi §0 (c) `dilekce_denetim.py` tipleri (soruşturma / kovuşturma / tedbir / HMK ara talep / AİHM-AYM) | YARGI-PRO-BOSLUK-ANALIZI §0, §1 |
+| 2 | §0 (d) kayıt katmanı: `--olay` / `--kol` / `--agirlik`, `baglam_cikar.py`, `icra_asama_haritasi.py` | aynı |
+| 3 | §0 (e) oa-ictihat arama bölümleri (ceza merci sırası, İİK ekseni, `sonuc` alanı) | aynı |
+| 4 | §0 (f) `usul_matris.py` (HMK 114 tablosu, sıfat ayrımı, CMK 141/142 ve 289 listeleri) | aynı |
+| 5 | v0.5.19 açık kalemleri (alım önbelleği, avukat onayı kanıtı, döküm kaynak sınıfı, usul satırları kapısı, dosya-içi akıbet, avukat kavşağı, makbuzun UDF özeti) | YOL-HARITASI |
+| 6 | Hukuki yöntem adayları A1…A10 / B1…B19 — avukat seçimi sonrası, her biri resmî kaynak teyidiyle | KARAR-3 §7.1 (9) |
+| 7 | `oa-kaynak` yerel keşif katmanı (tasarım kararı avukatın) | YOL-HARITASI |
+| 8 | Envanter temizliği (eski dallar, worktree kopyaları) — liste ile avukat kararı | KARAR-3 §7.1 (7) |
+| 9 | Saha: 0.6.1 ile gerçek derdest dosyada müdahalesiz koşu + karne (anonim) | TESTLER-VE-SAHA-DENEYLERI |
+
+Her kalem: önce kırmızı test; hukuki kural teyit damgalı ya da TEYİT BEKLİYOR; parça başına commit;
+kayıtlar komserde. Zero fluff.
 
 ## 7. Bitti sayılma ölçütü
 
